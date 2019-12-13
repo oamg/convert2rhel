@@ -123,14 +123,16 @@ def hide_password(cmd):
 
 
 def install_subscription_manager():
-    """Install subscription-manager RPM and its dependencies bundled with this
-    tool.
-    """
+    """Install subscription-manager RPM and its dependencies."""
     loggerinst = logging.getLogger(__name__)
     sm_dir = os.path.join(utils.data_dir, "subscription-manager")
-    if not os.path.exists(sm_dir):
-        loggerinst.critical("The {0} directory does not exist. Consider using"
-                            " the --disable-submgr option.".format(sm_dir))
+    if not os.path.isdir(sm_dir) or not os.listdir(sm_dir):
+        loggerinst.critical("The {0} directory does not exist or is empty."
+                            " Consider using the --disable-submgr option."
+                            " Before using it it's necessary to define a RHEL"
+                            " repo in /etc/yum.repos.d/ and pass its repoid to"
+                            " the convert2rhel through the --enable-repo"
+                            " option.".format(sm_dir))
         return
     rpms_to_install = [os.path.join(sm_dir, x) for x in os.listdir(sm_dir)]
     if rpms_to_install:
