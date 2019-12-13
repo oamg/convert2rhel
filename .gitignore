@@ -1,0 +1,7 @@
+cover/
+.coverage
+dist/
+*.egg-info/
+.DS_Store
+*.pyc
+system_tests/vmdefs/centos*/.vagrant/
