@@ -58,13 +58,14 @@ rm -rf build/lib/%{name}/unit_tests
 %install
 %{__python2} setup.py install --skip-build --root %{buildroot}
 
-# Move system version and architecture specific tool data
-# to /usr/share/convert2rhel
+# Move system version specific tool data to /usr/share/convert2rhel
 rm -rf %{buildroot}%{python2_sitelib}/%{name}/data
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a build/lib/%{name}/data/version-independent/. \
       %{buildroot}%{_datadir}/%{name}
-cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
+# Even though convert2rhel is able to convert ppc64 CentOS 7, EPEL koji does
+# not allow building packages for ppc64
+cp -a build/lib/%{name}/data/%{rhel}/x86_64/. \
       %{buildroot}%{_datadir}/%{name}
 
 install -d -m 755 %{buildroot}%{_mandir}/man8
