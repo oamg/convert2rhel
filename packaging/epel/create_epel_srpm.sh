@@ -18,7 +18,9 @@ rpmlint convert2rhel.spec
 
 TIMESTAMP=`date +%Y%m%d%H%MZ -u`
 GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
-sed -i "s/1%{?dist}/0.${TIMESTAMP}.${GIT_BRANCH}/g" convert2rhel.spec
+RELEASE="0"
+[ "${GIT_BRANCH}" = "master" ] && RELEASE="1"
+sed -i "s/1%{?dist}/${RELEASE}.${TIMESTAMP}.${GIT_BRANCH}%{?dist}/g" convert2rhel.spec
 
 rpmbuild -bs convert2rhel.spec --define "debug_package %{nil}" \
     --define "_sourcedir ${REPO_ROOT}/dist" \
