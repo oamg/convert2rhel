@@ -8,16 +8,16 @@ Name:           convert2rhel
 Version:        0.9
 Release:        1%{?dist}
 Summary:        Automates the conversion of installed other-than-RHEL Linux distribution to RHEL
-Group:          System Environment/Libraries
-License:        GPLv3
-Source0:        %{name}-%{version}.tar.gz
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+License:        GPLv3
+URL:            https://github.com/oamg/convert2rhel
+Source0:        https://github.com/oamg/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+BuildArch:      noarch
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
-%if ! 0%{?rhel:1}
-BuildRequires:  buildsys-macros
-%endif # rhel macro not defined
+%if ! 0%{?epel:1}
+BuildRequires:  epel-rpm-macros
+%endif
 Requires:       yum
 Requires:       yum-utils
 Requires:       rpm
@@ -27,36 +27,23 @@ Requires:       python
 Requires:       python-dmidecode
 Requires:       python-setuptools
 Requires:       python-dateutil
-# Warning: The python-ethtool package is available since OL/CentOS 5.7. If the
-#          convert2rhel is to be installed on an older system, add any repo
-#          that contains the package or install it manually first from
-#          a downloaded rpm.
 Requires:       python-ethtool
 Requires:       usermode
 Requires:       m2crypto
-# Warning: The virt-what package is available since OL/CentOS 5.7
 Requires:       virt-what
-%if 0%{?rhel} && 0%{?rhel} <= 5
-# Warning: The python-dateutil package is available since OL/CentOS 5.10 
-Requires:       python-dateutil
-# Warning: The python-simplejson package is available since OL/CentOS 5.7
-Requires:       python-simplejson
-%endif
-%if 0%{?rhel} && 0%{?rhel} == 6
+%if 0%{?epel} && 0%{?epel} == 6
 Requires:       python-decorator
 %endif
-%if 0%{?rhel} && 0%{?rhel} >= 7
+%if 0%{?epel} && 0%{?epel} >= 7
 Requires:       python-inotify
 %endif
 
 %description
-The purpose of the %{name} tool is to provide an automated way of converting
-the installed other-than-RHEL OS distribution to Red Hat Enterprise Linux
-(RHEL). The conversion is done in situ without the need to restart the system.
-The tool replaces all the original OS-signed packages with the RHEL ones.
-Available are conversions of CentOS 5/6/7 and Oracle Linux 5/6/7 to the
-respective major version of RHEL. The original OS always converts to the latest
-RHEL minor version.
+The purpose of the convert2rhel tool is to provide an automated way of
+converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
+Linux (RHEL). The tool replaces all the original OS-signed packages with the
+RHEL ones. Available are conversions of CentOS 5/6/7 and Oracle Linux 5/6/7 to
+the respective major version of RHEL.
 
 %prep
 %setup -q
@@ -72,7 +59,7 @@ rm -rf build/lib/%{name}/unit_tests
 %{__python2} setup.py install --skip-build --root %{buildroot}
 
 # Move system version and architecture specific tool data
-# to /usr/share/%{name}
+# to /usr/share/convert2rhel
 rm -rf %{buildroot}%{python2_sitelib}/%{name}/data
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a build/lib/%{name}/data/version-independent/. \
@@ -84,9 +71,7 @@ install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %files
-%defattr(-,root,root,-)
-
-%attr(0755,root,root) %{_bindir}/%{name}
+%{_bindir}/%{name}
 
 %{python2_sitelib}
 %{_datadir}/%{name}
@@ -94,7 +79,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
 %doc README
-%attr(0644,root,root) %{_mandir}/man8/%{name}.8.gz
+%{_mandir}/man8/%{name}.8*
 
 %changelog
 * Fri Dec 13 2019 Michal Bocek <mbocek@redhat.com> 0.9-1
