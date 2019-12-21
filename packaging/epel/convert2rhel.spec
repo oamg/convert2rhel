@@ -1,8 +1,6 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name:           convert2rhel
 Version:        0.9
@@ -11,18 +9,16 @@ Summary:        Automates the conversion of installed other-than-RHEL Linux dist
 
 License:        GPLv3
 URL:            https://github.com/oamg/convert2rhel
-Source0:        https://github.com/oamg/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
-%if ! 0%{?epel:1}
 BuildRequires:  epel-rpm-macros
-%endif
 Requires:       yum
 Requires:       yum-utils
 Requires:       rpm
 Requires:       sed
-Requires:       gnupg
+Requires:       gnupg2
 Requires:       python
 Requires:       python-dmidecode
 Requires:       python-setuptools
@@ -31,10 +27,10 @@ Requires:       python-ethtool
 Requires:       usermode
 Requires:       m2crypto
 Requires:       virt-what
-%if 0%{?epel} && 0%{?epel} == 6
+%if 0%{?el6} && 0%{?epel}
 Requires:       python-decorator
 %endif
-%if 0%{?epel} && 0%{?epel} >= 7
+%if 0%{?el7} && 0%{?epel}
 Requires:       python-inotify
 %endif
 
@@ -54,6 +50,8 @@ the respective major version of RHEL.
 
 # Do not include unit test in the package
 rm -rf build/lib/%{name}/unit_tests
+# Do not include the man building script
+rm -rf build/lib/man
 
 %install
 %{__python2} setup.py install --skip-build --root %{buildroot}
@@ -74,10 +72,9 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %files
 %{_bindir}/%{name}
 
-%{python2_sitelib}
+%{python2_sitelib}/%{name}*
 %{_datadir}/%{name}
 
-%{!?_licensedir:%global license %%doc}
 %license LICENSE
 %doc README
 %{_mandir}/man8/%{name}.8*
