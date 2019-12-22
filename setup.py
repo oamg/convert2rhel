@@ -30,14 +30,14 @@ def read(fname):
 setup(
     name='convert2rhel',
     version='0.9',
-    description='Automates the conversion of the installed other-than-RHEL'
-                ' distribution to Red Hat Enterprise Linux (RHEL)',
+    description='Automates the conversion of Red Hat Enterprise Linux'
+                ' derivative distributions to Red Hat Enterprise Linux.',
     long_description=read('README'),
     author='Michal Bocek',
     author_email='mbocek@redhat.com',
     url='www.redhat.com',
-    license='GNU General Public License v3 (GPLv3)',
-    packages=find_packages(),
+    license='GNU General Public License v3 or later (GPLv3+)',
+    packages=['convert2rhel'],
     entry_points={
         'console_scripts': [
             'convert2rhel = convert2rhel.main:main',
