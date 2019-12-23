@@ -5,6 +5,9 @@ cleanup() {
   rm -rf ${REPO_ROOT}/dist/
   popd
 }
+CHANGE_RELEASE=true
+# Do not change the release in spec, e.g. for Koji builds
+[ "$1" = "--orig-release" ] && CHANGE_RELEASE=false
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 REPO_ROOT=${SCRIPTPATH}/../..
@@ -20,7 +23,10 @@ TIMESTAMP=`date +%Y%m%d%H%MZ -u`
 GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
 RELEASE="0"
 [ "${GIT_BRANCH}" = "master" ] && RELEASE="1"
-sed -i "s/1%{?dist}/${RELEASE}.${TIMESTAMP}.${GIT_BRANCH}%{?dist}/g" convert2rhel.spec
+if [ "$CHANGE_RELEASE" = true ]; then
+    # Suitable for Continous Delivery
+    sed -i "s/1%{?dist}/${RELEASE}.${TIMESTAMP}.${GIT_BRANCH}%{?dist}/g" convert2rhel.spec
+fi
 
 rpmbuild -bs convert2rhel.spec --define "debug_package %{nil}" \
     --define "_sourcedir ${REPO_ROOT}/dist" \
