@@ -1,0 +1,4 @@
+summary:
+    Basic smoke test
+execute:
+    script: convert2rhel --help

@@ -1,0 +1,27 @@
+specfile_path: packaging/epel/convert2rhel.spec
+synced_files:
+    - convert2rhel.spec
+    - .packit.yaml
+upstream_package_name: convert2rhel
+downstream_package_name: convert2rhel
+upstream_project_url: https://github.com/oamg/convert2rhel
+
+jobs:
+- job: copr_build
+  metadata:
+    targets:
+    - epel-6-x86_64
+    - epel-7-x86_64
+  trigger: pull_request
+- job: tests
+  trigger: pull_request
+  metadata:
+    targets:
+    - epel-6-x86_64
+    - epel-7-x86_64
+- job: propose_downstream
+  trigger: release
+  metadata:
+    dist-git-branch:
+    - el6
+    - epel7
