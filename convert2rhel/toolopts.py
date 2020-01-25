@@ -56,13 +56,12 @@ class CLI(object):
                  "  convert2rhel [-h]\n"
                  "  convert2rhel [-u username] [-p password | -f pswd_file]"
                  " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-                 " repoid] [-v variant] [--no-rpm-va] [--debug] [-y]\n"
+                 " repoid] [-v variant] [--no-rpm-va] [--debug] [--restart] [-y]\n"
                  "  convert2rhel [--disable-submgr] [--disablerepo repoid]"
-                 " [--enablerepo repoid] [-v variant] [--no-rpm-va] [--debug]"
-                 " [-y]\n"
+                 " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
                  " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
-                 " variant] [--no-rpm-va] [--debug] [-y]")
+                 " variant] [--no-rpm-va] [--debug] [--restart] [-y]")
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
                                      add_help_option=False)
@@ -89,7 +88,7 @@ class CLI(object):
         group = optparse.OptionGroup(self._parser,
                                      "Subscription Manager Options",
                                      "The following options are specific to"
-                                     "using subscription manager.")
+                                     "using subscription-manager.")
         group.add_option("-u", "--username", help="Username for the"
                          " subscription-manager. If neither --username nor"
                          " --activation-key option is used, the user"
@@ -120,6 +119,12 @@ class CLI(object):
                          " subscriptions. A list of the available"
                          " subscriptions is possible to obtain by running"
                          " 'subscription-manager list --available'.")
+        group.add_option("-v", "--variant", help="The RHEL variant to which"
+                         " the system will be converted. Available variants"
+                         " are: Server, Client, Workstation, ComputeNode for"
+                         " conversions from CentOS/OL 6/7, Server, and Client"
+                         " for conversions from CentOS/OL 5. If not used, the"
+                         " user is asked to choose a variant.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser,
@@ -128,22 +133,16 @@ class CLI(object):
                                      " you do not intend on using"
                                      " subscription-manager")
         group.add_option("--disable-submgr", action="store_true",
-                         help="Do not use the subscription-manager, and use"
+                         help="Do not use the subscription-manager, use"
                          " custom repositories instead. See"
                          " --enablerepo/--disablerepo options. Without this"
-                         " option, the subscription-manager accesses RHEL"
-                         " repositories by default.")
+                         " option, the subscription-manager is used to access"
+                         " RHEL repositories by default.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser, "Automation Options",
                                      "The following options are used to"
                                      " automate the installation")
-        group.add_option("-v", "--variant", help="The RHEL variant to which"
-                         " the system will be converted. Available variants"
-                         " are: Server, Client, Workstation, ComputeNode for"
-                         " conversions from CentOS/OL 6/7, Server, and Client"
-                         " for conversions from CentOS/OL 5. If not used, the"
-                         " user is asked to choose a variant.")
         group.add_option("-r", "--restart", help="Restart the system"
                          " when it is successfully converted to RHEL to boot"
                          " the new RHEL kernel.", action='store_true')
