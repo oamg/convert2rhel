@@ -92,28 +92,25 @@ def main():
         # restart system if required
         utils.restart_system()
 
-    except:
-        traceback_str = utils.get_traceback_str()
-        if toolopts.tool_opts.debug:
-            # Print the traceback to the user when debug option used
-            loggerinst.debug(traceback_str)
-        else:
-            # Print the traceback to the log file in any way
-            loggerinst.file(traceback_str)
+    except (Exception, SystemExit, KeyboardInterrupt), err:
+        # Catching the three exception types separately due to python 2.4
+        # (RHEL 5) - 2.7 (RHEL 7) compatibility.
+
+        utils.log_traceback(toolopts.tool_opts.debug)
 
         print("\n")
-        if process_phase == ConversionPhase.POST_CLI:
+        if is_help_msg_exit(process_phase, err):
+            return 0
+        elif process_phase in (ConversionPhase.INIT, ConversionPhase.POST_CLI):
             print("No changes were made to the system.")
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
-            """
-            After the process of subscription is done and the mass update of
-            packages is started convert2rhel will not be able to guarantee a
-            system rollback without user intervation. If a proper rollback
-            solution is necessary it will need to be future implemented here
-            or with the use of other backup tools.
-            """
+            # After the process of subscription is done and the mass update of
+            # packages is started convert2rhel will not be able to guarantee a
+            # system rollback without user intervation. If a proper rollback
+            # solution is necessary it will need to be future implemented here
+            # or with the use of other backup tools.
             print("Conversion process interrupted and manual user intervation"
                   " will be necessary.")
 
@@ -192,6 +189,16 @@ def post_ponr_conversion():
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
     return
+
+
+def is_help_msg_exit(process_phase, err):
+    """After printing the help message, optparse within the toolopts.CLI()
+    call terminates the process with sys.exit(0).
+    """
+    if process_phase == ConversionPhase.INIT and \
+            isinstance(err, SystemExit) and err.args[0] == 0:
+        return True
+    return False
 
 
 def rollback_changes():
