@@ -7,6 +7,7 @@
 The following software must be installed/present on your local machine before you can run the tests:
 
   - [Vagrant](http://vagrantup.com/)
+  - [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
 ## Usage
 
