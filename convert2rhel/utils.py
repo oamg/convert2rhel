@@ -197,6 +197,20 @@ def prompt_user(question, password=False):
     return response
 
 
+def log_traceback(debug):
+    """Log a traceback either to both a file and stdout, or just file, based
+    on the debug parameter.
+    """
+    loggerinst = logging.getLogger(__name__)
+    traceback_str = get_traceback_str()
+    if debug:
+        # Print the traceback to the user when debug option used
+        loggerinst.debug(traceback_str)
+    else:
+        # Print the traceback to the log file in any way
+        loggerinst.file(traceback_str)
+
+
 def get_traceback_str():
     """Get a traceback of an exception as a string."""
     exc_type, exc_value, exc_traceback = sys.exc_info()
