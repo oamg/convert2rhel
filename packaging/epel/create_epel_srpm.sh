@@ -20,7 +20,8 @@ cp ${SCRIPTPATH}/convert2rhel.spec convert2rhel.spec
 rpmlint convert2rhel.spec
 
 TIMESTAMP=`date +%Y%m%d%H%MZ -u`
-GIT_BRANCH=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "{print \$2}")
+GIT_BRANCH=$(git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | head -n1 | awk "{print \$2}")
+echo GIT_BRANCH: ${GIT_BRANCH}
 RELEASE="0"
 [ "${GIT_BRANCH}" = "master" ] && RELEASE="1"
 if [ "$CHANGE_RELEASE" = true ]; then
