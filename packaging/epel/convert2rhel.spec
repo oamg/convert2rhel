@@ -5,7 +5,7 @@
 Name:           convert2rhel
 Version:        0.9
 Release:        1%{?dist}
-Summary:        Automates the conversion of installed other-than-RHEL Linux distribution to RHEL
+Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
 License:        GPLv3
 URL:            https://github.com/oamg/convert2rhel
@@ -14,24 +14,34 @@ BuildArch:      noarch
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 BuildRequires:  epel-rpm-macros
-Requires:       yum
-Requires:       yum-utils
+Requires:       dbus-python
+Requires:       gnupg2
+Requires:       m2crypto
+Requires:       python
+Requires:       python-dateutil
+Requires:       python-dmidecode
+Requires:       python-iniparse
+Requires:       python-ethtool
 Requires:       rpm
 Requires:       sed
-Requires:       gnupg2
-Requires:       python
-Requires:       python-dmidecode
-Requires:       python-setuptools
-Requires:       python-dateutil
-Requires:       python-ethtool
 Requires:       usermode
-Requires:       m2crypto
 Requires:       virt-what
+Requires:       yum
+Requires:       yum-util
+
 %if 0%{?el6} && 0%{?epel}
 Requires:       python-decorator
+Requires:       python-six
+Requires:       pygobject2
 %endif
 %if 0%{?el7} && 0%{?epel}
+Requires:       gobject-introspection
+Requires:       pygobject3-base
+Requires:       python-decorator
 Requires:       python-inotify
+Requires:       python-setuptools
+Requires:       python-six
+Requires:       python-syspurpose
 %endif
 
 %description

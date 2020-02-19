@@ -1,52 +1,58 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name:           convert2rhel
 Version:        0.9
 Release:        1%{?dist}
-Summary:        Automates the conversion of installed other-than-RHEL Linux distribution to RHEL
+Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
 License:        GPLv3
 URL:            https://github.com/oamg/convert2rhel
-Source0:        https://github.com/oamg/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 %if ! 0%{?rhel:1}
 BuildRequires:  buildsys-macros
 %endif
-Requires:       yum
-Requires:       yum-utils
+Requires:       dbus-python
+Requires:       gnupg2
+Requires:       m2crypto
+Requires:       python
+# Warning: The python-dateutil package is available since OL/CentOS 5.10
+#          If the convert2rhel is to be installed on an older system, add
+#          any repo that contains the package or install it manually first
+#          from a downloaded rpm.
+Requires:       python-dateutil
+Requires:       python-dmidecode
+Requires:       python-iniparse
+# Warning: The python-ethtool package is available since OL/CentOS 5.7
+Requires:       python-ethtool
 Requires:       rpm
 Requires:       sed
-Requires:       gnupg
-Requires:       python
-Requires:       python-dmidecode
-Requires:       python-setuptools
-Requires:       python-dateutil
-# Warning: The python-ethtool package is available since OL/CentOS 5.7. If the
-#          convert2rhel is to be installed on an older system, add any repo
-#          that contains the package or install it manually first from
-#          a downloaded rpm.
-Requires:       python-ethtool
 Requires:       usermode
-Requires:       m2crypto
 # Warning: The virt-what package is available since OL/CentOS 5.7
 Requires:       virt-what
+Requires:       yum
+Requires:       yum-util
 %if 0%{?rhel} && 0%{?rhel} <= 5
-# Warning: The python-dateutil package is available since OL/CentOS 5.10 
-Requires:       python-dateutil
 # Warning: The python-simplejson package is available since OL/CentOS 5.7
 Requires:       python-simplejson
 %endif
 %if 0%{?rhel} && 0%{?rhel} == 6
 Requires:       python-decorator
+Requires:       python-six
+Requires:       pygobject2
 %endif
 %if 0%{?rhel} && 0%{?rhel} >= 7
+Requires:       gobject-introspection
+Requires:       pygobject3-base
+Requires:       python-decorator
 Requires:       python-inotify
+Requires:       python-setuptools
+Requires:       python-six
+Requires:       python-syspurpose
 %endif
 
 %description
@@ -65,6 +71,8 @@ the respective major version of RHEL.
 
 # Do not include unit test in the package
 rm -rf build/lib/%{name}/unit_tests
+# Do not include the man building script
+rm -rf build/lib/man
 
 %install
 %{__python2} setup.py install --skip-build --root %{buildroot}
@@ -84,7 +92,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %files
 %{_bindir}/%{name}
 
-%{python2_sitelib}
+%{python2_sitelib}/%{name}*
 %{_datadir}/%{name}
 
 %{!?_licensedir:%global license %%doc}
