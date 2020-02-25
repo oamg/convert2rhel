@@ -261,7 +261,6 @@ def get_sub_attr(pattern, sub_all_attrs, descr):
         return sub_attr.group(1)
     else:
         raise ValueError(descr)
-    return
 
 
 def print_avail_subs(subs):
