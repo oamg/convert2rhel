@@ -66,13 +66,16 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     return
 
 
-def call_yum_cmd(command, args="", enablerepo=[], disablerepo=[],
+def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None,
                  print_output=True):
     """Call yum command and optionally print its output."""
     loggerinst = logging.getLogger(__name__)
 
     cmd = "yum %s -y" % (command)
     # disablerepo parameter must be added before the enablerepo parameter
+
+    if disablerepo is None:
+        disablerepo = []
     if disablerepo:
         repos = disablerepo
     else:
@@ -80,6 +83,8 @@ def call_yum_cmd(command, args="", enablerepo=[], disablerepo=[],
     for repo in repos:
         cmd += " --disablerepo=%s " % repo
 
+    if enablerepo is None:
+        enablerepo = []
     if enablerepo:
         repos = enablerepo
     else:
