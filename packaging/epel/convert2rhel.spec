@@ -27,7 +27,7 @@ Requires:       sed
 Requires:       usermode
 Requires:       virt-what
 Requires:       yum
-Requires:       yum-util
+Requires:       yum-utils
 
 %if 0%{?el6} && 0%{?epel}
 Requires:       python-decorator

@@ -35,7 +35,7 @@ Requires:       usermode
 # Warning: The virt-what package is available since OL/CentOS 5.7
 Requires:       virt-what
 Requires:       yum
-Requires:       yum-util
+Requires:       yum-utils
 %if 0%{?rhel} && 0%{?rhel} <= 5
 # Warning: The python-simplejson package is available since OL/CentOS 5.7
 Requires:       python-simplejson
