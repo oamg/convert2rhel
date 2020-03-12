@@ -33,18 +33,20 @@
 # Clear existing logging handlers because our custom logging class creates them
 #CLEAR_HANDLERS="--logging-clear-handlers"
 
-command -v nosetests >/dev/null 2>&1 || {
-    echo >&2 "Nose PyPI package required. Aborting.";
+VIRTUALENV=.venv
+
+command -v pip >/dev/null 2>&1 || {
+    echo >&2 "python-pip package required. Aborting.";
+    exit 1;
+}
+command -v virtualenv >/dev/null 2>&1 || {
+    echo >&2 "python-virtualenv package required. Aborting.";
     exit 1;
 }
 
-# Rednose colors the output of nose (red/green - fail/passed). Requires
-# rednose PyPI package.
-if python -c "import rednose" >/dev/null 2>&1; then
-    REDNOSE="--rednose"
-else
-    REDNOSE=""
-fi
+virtualenv --python=python2.7 $VIRTUALENV
+source $VIRTUALENV/bin/activate
+pip install -r convert2rhel/unit_tests/requirements.txt
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $SCRIPT_DIR > /dev/null
