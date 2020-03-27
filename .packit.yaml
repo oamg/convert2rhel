@@ -9,7 +9,7 @@ upstream_project_url: https://github.com/oamg/convert2rhel
 jobs:
 - job: copr_build
   metadata:
-    owner: @oamg
+    owner: "@oamg"
     project: convert2rhel
     targets:
     - epel-6-x86_64
