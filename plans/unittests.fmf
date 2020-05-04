@@ -2,10 +2,11 @@ summary:
     Unit tests
 execute:
     script:
-    - pwd; cd ~/git-source && pwd && nosetests -v
+    - pwd; cd ~/git-source && pwd && nosetests --with-coverage -v
 prepare:
     how: shell
     script:
     - yum --enablerepo=extras install -y epel-release
     - yum install -y python-pip
+    - yum install -y python-coverage
     - pip install nose
