@@ -1,0 +1,45 @@
+name: PyLint Runner
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  pylint_check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 2.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 2.7
+
+    - name: Install Requirements
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint
+        
+    - name: Run Pylint
+      run: |
+        pylint convert2rhel/
+        
+  test_coverage:
+    runs-on: ubuntu-latest
+    container: marceloagmelo/centos7:latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install Requirements
+      run: |
+        yum --enablerepo=extras install -y epel-release
+        yum install -y python-coverage
+        yum install -y python-pip
+        pip install nose
+        
+    - name: Check test coverage
+      run: |
+        nosetests --with-coverage convert2rhel/
