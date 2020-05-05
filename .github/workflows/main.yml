@@ -22,6 +22,7 @@ jobs:
       run: |
         sudo apt-get install -y python-coverage
         python -m pip install --upgrade pip
+        pip install nose
         pip install pylint
         
     - name: Check test coverage
