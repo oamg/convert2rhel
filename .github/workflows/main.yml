@@ -39,7 +39,7 @@ jobs:
 
     - name: Install Requirements
       run: |
-        sudo apt-get install -y python-coverage
+        yum install -y python-coverage
         python -m pip install --upgrade pip
         pip install nose
         
