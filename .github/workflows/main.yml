@@ -40,7 +40,7 @@ jobs:
     - name: Install Requirements
       run: |
         yum install -y python-coverage
-        python -m pip install --upgrade pip
+        yum -y install python-pip
         pip install nose
         
     - name: Check test coverage
