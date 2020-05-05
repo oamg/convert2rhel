@@ -40,7 +40,7 @@ jobs:
     - name: Install Requirements
       run: |
         yum install -y python-coverage
-        yum --enablerepo=extras install epel-release
+        yum --enablerepo=extras install -y epel-release
         yum -y install python-pip
         pip install nose
         
