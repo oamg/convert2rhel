@@ -3,7 +3,7 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:           convert2rhel
-Version:        0.9
+Version:        0.10
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -90,6 +90,12 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed May 06 2020 Michal Bocek <mbocek@redhat.com> 0.10-1
+- fixed rpm dependencies
+- blacklisted kmod-kvdo causing a transaction failure on CentOS 7
+- convert2rhel exits with 0 on a help message
+- added packit configuration for Copr builds and unit testing on a PR
+
 * Fri Dec 13 2019 Michal Bocek <mbocek@redhat.com> 0.9-1
 - basic rollback capability up to the point before replacing all pkgs
 - added basic system tests running on CentOS 5/6/7 Vagrant boxes
