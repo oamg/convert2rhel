@@ -1,0 +1,26 @@
+name: test_coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:        
+  test_coverage:
+    runs-on: ubuntu-latest
+    container: marceloagmelo/centos7:latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install Requirements
+      run: |
+        yum --enablerepo=extras install -y epel-release
+        yum install -y python-coverage
+        yum install -y python-pip
+        pip install nose
+        
+    - name: Check test coverage
+      run: |
+        nosetests --with-coverage convert2rhel/
