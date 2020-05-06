@@ -22,6 +22,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pylint
         
-    - name: Run Pylint
+    - name: Run Pylint Checks
       run: |
         pylint convert2rhel/
