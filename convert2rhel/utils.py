@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import datetime
 import errno
 import getpass
 import inspect
@@ -44,6 +45,12 @@ class Color:
 DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
 TMP_DIR = "/tmp/convert2rhel/"
+
+
+def format_msg_with_datetime(msg, level):
+    """Return a string with msg formatted according to the level"""
+    temp_date = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+    return "[%s] %s - %s", temp_date, level.upper(), msg
 
 
 def get_executable_name():
@@ -220,6 +227,7 @@ def get_traceback_str():
 
 class DictWListValues(dict):
     """Python 2.4 replacement for Python 2.5+ collections.defaultdict(list)."""
+
     def __getitem__(self, item):
         if item not in self.iterkeys():
             self[item] = []
@@ -229,6 +237,7 @@ class DictWListValues(dict):
 
 class ChangedRPMPackagesController(object):
     """Keep control of installed/removed RPM pkgs for backup/restore."""
+
     def __init__(self):
         self.installed_pkgs = []
         self.removed_pkgs = []

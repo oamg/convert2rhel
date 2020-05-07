@@ -122,4 +122,4 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logging.Handler.handle.called, 6)
         tool_opts.debug = False
         loggerinst.debug("debugmsg2")
-        self.assertEqual(logging.Handler.handle.called, 6)
+        self.assertEqual(logging.Handler.handle.called, 7)
