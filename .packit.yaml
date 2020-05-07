@@ -24,6 +24,6 @@ jobs:
 - job: propose_downstream
   trigger: release
   metadata:
-    dist-git-branch:
+    dist_git_branches:
     - el6
     - epel7
