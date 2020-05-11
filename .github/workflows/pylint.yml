@@ -17,7 +17,8 @@ jobs:
     - name: Install Requirements
       run: |
         yum --enablerepo=extras install -y epel-release
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        yum remove -y python-pip
+        curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
         python get-pip.py
         pip install setuptools
         pip install pylint
