@@ -17,11 +17,10 @@ jobs:
     - name: Install Requirements
       run: |
         yum --enablerepo=extras install -y epel-release
-        export PYTHONWARNINGS='ignore:Unverified HTTPS request'
         curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
         python get-pip.py || true
-        pip install setuptools
-        pip install pylint
+        pip install pylint==1.1.0
+        pip install astroid==1.2
         
     - name: Run Pylint Checks
       run: |
