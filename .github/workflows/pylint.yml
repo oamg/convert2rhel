@@ -9,7 +9,7 @@ on:
 jobs:        
   pylint_check_2_6:
     runs-on: ubuntu-latest
-    container: marceloagmelo/centos6:latest
+    container: centos:centos6.9
 
     steps:
     - uses: actions/checkout@v1
@@ -26,7 +26,7 @@ jobs:
         
   pylint_check_2_7:
     runs-on: ubuntu-latest
-    container: marceloagmelo/centos7:latest
+    container: centos:centos7.7.1908
 
     steps:
     - uses: actions/checkout@v1
