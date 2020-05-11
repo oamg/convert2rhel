@@ -6,23 +6,35 @@ on:
   pull_request:
     branches: [ master ]
 
-jobs:
-  pylint_check:
+jobs:        
+  pylint_check_2_6:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [2.6, 2.7]
+    container: marceloagmelo/centos6:latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
+    - uses: actions/checkout@v1
 
     - name: Install Requirements
       run: |
-        python -m pip install --upgrade pip
+        yum --enablerepo=extras install -y epel-release
+        yum install -y python-pip
+        pip install pylint
+        
+    - name: Run Pylint Checks
+      run: |
+        pylint convert2rhel/
+        
+  pylint_check_2_7:
+    runs-on: ubuntu-latest
+    container: marceloagmelo/centos7:latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install Requirements
+      run: |
+        yum --enablerepo=extras install -y epel-release
+        yum install -y python-pip
         pip install pylint
         
     - name: Run Pylint Checks
