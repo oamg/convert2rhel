@@ -18,9 +18,9 @@ jobs:
       run: |
         yum --enablerepo=extras install -y epel-release
         yum remove -y python-pip
+        export PYTHONWARNINGS='ignore:Unverified HTTPS request'
         curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
         python get-pip.py
-        pip install requests==2.5.3
         pip install setuptools
         pip install pylint
         
