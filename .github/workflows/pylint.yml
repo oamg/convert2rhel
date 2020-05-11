@@ -18,7 +18,7 @@ jobs:
       run: |
         yum --enablerepo=extras install -y epel-release
         curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
-        python get-pip.py || true
+        python get-pip.py
         pip install pylint==1.1.0
         pip install astroid==1.2
         
