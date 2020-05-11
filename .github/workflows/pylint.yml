@@ -9,13 +9,16 @@ on:
 jobs:
   pylint_check:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.6, 2.7]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python 2.7
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
-        python-version: 2.7
+        python-version: ${{ matrix.python-version }}
 
     - name: Install Requirements
       run: |
