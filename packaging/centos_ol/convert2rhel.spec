@@ -3,11 +3,11 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:           convert2rhel
-Version:        0.10
+Version:        0.11
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
-License:        GPLv3
+License:        GPLv3+
 URL:            https://github.com/oamg/convert2rhel
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
@@ -101,6 +101,12 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Tue May 12 2020 Michal Bocek <mbocek@redhat.com> 0.11-1
+- updated license in spec files from GPLv3 to GPLv3+
+- set up automated pylint and unit test coverage checks in GitHub
+- removed packit smoke test
+- fixed packit configuration for downstream release proposals
+
 * Wed May 06 2020 Michal Bocek <mbocek@redhat.com> 0.10-1
 - fixed rpm dependencies
 - blacklisted kmod-kvdo causing a transaction failure on CentOS 7
