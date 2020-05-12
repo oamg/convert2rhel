@@ -24,7 +24,7 @@ jobs:
         
     - name: Run Pylint Checks
       run: |
-        pylint convert2rhel/
+        pylint --rcfile=.pylintrc convert2rhel/
         
   pylint_check_2_7:
     runs-on: ubuntu-latest
@@ -43,4 +43,4 @@ jobs:
         
     - name: Run Pylint Checks
       run: |
-        pylint convert2rhel/
+        pylint --rcfile=.pylintrc convert2rhel/
