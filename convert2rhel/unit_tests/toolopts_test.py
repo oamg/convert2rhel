@@ -49,7 +49,7 @@ class TestToolopts(unittest.TestCase):
 
     @unit_tests.mock(sys, "argv", _params(["--username", "uname",
                                           "--password", "passwd"]))
-    def test_cmdline_non_ineractive_with_credentials(self):
+    def test_cmdline_non_interactive_with_credentials(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.username, "uname")
         self.assertEqual(tool_opts.password, "passwd")
