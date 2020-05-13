@@ -175,12 +175,16 @@ class CLI(object):
             tool_opts.password = utils.get_file_content(
                 parsed_opts.password_from_file)
 
-        if parsed_opts.disable_submgr:
-            tool_opts.disable_submgr = True
         if parsed_opts.enablerepo:
             tool_opts.enablerepo = parsed_opts.enablerepo
         if parsed_opts.disablerepo:
             tool_opts.disablerepo = parsed_opts.disablerepo
+        if parsed_opts.disable_submgr:
+            tool_opts.disable_submgr = True
+            if not tool_opts.enablerepo:
+                loggerinst.critical("Error: --enablerepo is required if --disable-submgr is passed ")
+            if not tool_opts.disablerepo:
+                tool_opts.disablerepo = "*"  # Default to disable everything
 
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool
