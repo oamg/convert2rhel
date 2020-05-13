@@ -84,7 +84,9 @@ class CLI(object):
         self._parser.add_option("--disablerepo", metavar="repoidglob",
                                 action="append", help="Disable specific"
                                 " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories.")
+                                " multiple times to add many repositories."
+                                " If --disable-submgr is used this defaults"
+                                " to all repositories.")
         group = optparse.OptionGroup(self._parser,
                                      "Subscription Manager Options",
                                      "The following options are specific to"
@@ -137,7 +139,8 @@ class CLI(object):
                          " custom repositories instead. See"
                          " --enablerepo/--disablerepo options. Without this"
                          " option, the subscription-manager is used to access"
-                         " RHEL repositories by default.")
+                         " RHEL repositories by default. It requires to have"
+                         " the --enablerepo specified.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser, "Automation Options",
