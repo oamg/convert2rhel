@@ -70,6 +70,7 @@ def main():
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
         redhatrelease.yum_conf.backup()
+        rhelvariant.rhn_reg_file.backup()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -145,6 +146,10 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: Remove blacklisted packages")
     pkghandler.remove_blacklisted_pkgs()
 
+    # checking RHN Classic
+    loggerinst.info("Checking RHN Classic")
+    subscription.unregister_from_rhn_classic()
+
     # install redhat release package
     loggerinst.task("Convert: Install Red Hat release package")
     redhatrelease.install_release_pkg()
@@ -210,6 +215,7 @@ def rollback_changes():
     loggerinst.warn("Abnormal exit! Performing rollback ...")
     utils.changed_pkgs_control.restore_pkgs()
     redhatrelease.system_release_file.restore()
+    rhelvariant.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
     subscription.rollback_renamed_repo_files()
     return

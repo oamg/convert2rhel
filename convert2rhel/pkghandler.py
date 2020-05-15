@@ -35,6 +35,7 @@ class PkgWFingerprint(object):
     """Tuple-like storage for the RPM object of a package and a fingerprint
     with which the package was signed.
     """
+
     def __init__(self, pkg_obj, fingerprint):
         self.pkg_obj = pkg_obj
         self.fingerprint = fingerprint
@@ -469,8 +470,7 @@ def replace_non_rhel_installed_kernel(version):
         loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
         return
 
-    loggerinst.info(
-        "Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+    loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)
