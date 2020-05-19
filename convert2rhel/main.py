@@ -108,10 +108,10 @@ def main():
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a
-            # system rollback without user intervation. If a proper rollback
+            # system rollback without user intervention. If a proper rollback
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
-            print("Conversion process interrupted and manual user intervation"
+            print("Conversion process interrupted and manual user intervention"
                   " will be necessary.")
 
         return 1
