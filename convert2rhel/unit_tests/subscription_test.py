@@ -115,7 +115,8 @@ class TestSubscription(unittest.TestCase):
     def test_get_registration_cmd(self):
         tool_opts.username = 'user'
         tool_opts.password = 'pass with space'
-        expected = 'subscription-manager register --force --username=user --password="pass with space"'
+        expected = \
+            'subscription-manager register --force --username=user --password="pass with space"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
@@ -159,11 +160,9 @@ class TestSubscription(unittest.TestCase):
         self.assertRaises(SystemExit, subscription.register_system)
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 1)
 
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(tuples=[
-                                                ("nope", 1),
-                                                ("nope", 2),
-                                                ("Success", 0),
-                                                ]))
+    @unit_tests.mock(utils,
+                     "run_subprocess",
+                     RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(subscription, "get_registration_cmd", GetRegistrationCmdMocked())
     def test_register_system_fail_interactive(self):
@@ -175,7 +174,8 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
 
     def test_hiding_password(self):
-        test_cmd = 'subscription-manager register --force --username=jdoe --password="%s" --org=0123'
+        test_cmd = 'subscription-manager register --force ' \
+                   '--username=jdoe --password="%s" --org=0123'
         pswds_to_test = [
             "my favourite password",
             "\\)(*&^%f %##@^%&*&^(",
@@ -185,38 +185,40 @@ class TestSubscription(unittest.TestCase):
         for pswd in pswds_to_test:
             sanitized_cmd = subscription.hide_password(test_cmd % pswd)
             self.assertEqual(
-                sanitized_cmd, 'subscription-manager register --force --username=jdoe --password="*****" --org=0123')
+                sanitized_cmd,
+                'subscription-manager register --force '
+                '--username=jdoe --password="*****" --org=0123')
 
     class FakeSubscription:
         def __init__(self):
             self.subscription = (
-                    "Subscription Name: Good subscription\n"
-                    "Provides:          Something good\n"
-                    "SKU:               00EEE00EE\n"
-                    "Contract:          01234567\n"
-                    "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
-                    "Available:         1\n"
-                    "Suggested:         1\n"
-                    "Service Level:     Self-icko\n"
-                    "Service Type:      L1-L3\n"
-                    "Subscription Type: Standard\n"
-                    "Ends:              %s\n"
-                    "System Type:       Virtual\n"
-                    )
+                "Subscription Name: Good subscription\n"
+                "Provides:          Something good\n"
+                "SKU:               00EEE00EE\n"
+                "Contract:          01234567\n"
+                "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
+                "Available:         1\n"
+                "Suggested:         1\n"
+                "Service Level:     Self-icko\n"
+                "Service Type:      L1-L3\n"
+                "Subscription Type: Standard\n"
+                "Ends:              %s\n"
+                "System Type:       Virtual\n"
+            )
             self.dates_formats = [
-                    "26.07.2018",
-                    "26. 07. 2018",
-                    "26/07/2018",
-                    "H26.07.2018",
-                    "26-07-2018",
-                    "07.26.2018",
-                    "2018/07/26",
-                    "2018.07.26",
-                    "2018-07-26",
-                    "2018-26-07",
-                    "2018.26.07",
-                    "2018/26/07"
-                ]
+                "26.07.2018",
+                "26. 07. 2018",
+                "26/07/2018",
+                "H26.07.2018",
+                "26-07-2018",
+                "07.26.2018",
+                "2018/07/26",
+                "2018.07.26",
+                "2018-07-26",
+                "2018-26-07",
+                "2018.26.07",
+                "2018/26/07"
+            ]
 
         def __call__(self, date):
             return self.subscription % date
@@ -227,5 +229,4 @@ class TestSubscription(unittest.TestCase):
         sku = self.FakeSubscription()
         for i in sku.dates_formats:
             self.assertEqual(subscription.parse_sub_attrs(sku(i))["ends"], i)
-            self.assertEqual(len(subscription.logging.getLogger.critical_msgs),
-                             0)
+            self.assertEqual(len(subscription.logging.getLogger.critical_msgs),0)

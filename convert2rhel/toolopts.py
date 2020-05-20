@@ -185,7 +185,8 @@ class CLI(object):
         if parsed_opts.disable_submgr:
             tool_opts.disable_submgr = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("Error: --enablerepo is required if --disable-submgr is passed ")
+                loggerinst.critical(
+                    "Error: --enablerepo is required if --disable-submgr is passed ")
             if not tool_opts.disablerepo:
                 tool_opts.disablerepo = "*"  # Default to disable everything
 

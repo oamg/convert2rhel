@@ -47,8 +47,7 @@ def package_analysis():
         rhel_repos_content = read_repo_files(repo_data_files)
         repos_needed = match_repo_pkgs_to_installed(rhel_repos_content)
         loggerinst.info("Repositories needed: %s" % "\n".join(repos_needed) + "\n")
-        loggerinst.info("Listing non-%s and non-Red Hat packages ... "
-                    % system_info.name)
+        loggerinst.info("Listing non-%s and non-Red Hat packages ... " % system_info.name)
     else:
         loggerinst.debug("Offline snapshot of RHEL repositories not found.")
         repos_needed = [system_info.default_repository_id]
