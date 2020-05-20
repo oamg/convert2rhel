@@ -21,7 +21,6 @@ try:
 except ImportError:
     import unittest
 
-from convert2rhel import logger
 
 TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
@@ -48,8 +47,8 @@ except ImportError:
     WRAPPER_UPDATES = ('__dict__',)
     def update_wrapper(wrapper,
                        wrapped,
-                       assigned = WRAPPER_ASSIGNMENTS,
-                       updated = WRAPPER_UPDATES):
+                       assigned=WRAPPER_ASSIGNMENTS,
+                       updated=WRAPPER_UPDATES):
         """Update a wrapper function to look like the wrapped function
 
            wrapper is the function to be updated
@@ -75,8 +74,8 @@ except ImportError:
 
 
     def wraps(wrapped,
-              assigned = WRAPPER_ASSIGNMENTS,
-              updated = WRAPPER_UPDATES):
+              assigned=WRAPPER_ASSIGNMENTS,
+              updated=WRAPPER_UPDATES):
         """Decorator factory to apply update_wrapper() to a wrapper function
 
            Returns a decorator that invokes update_wrapper() with the decorated
@@ -105,9 +104,9 @@ def mock(class_or_module, orig_obj, mock_obj):
                -- string
 
     Example:
-    @tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     -- replaces the original run_subprocess function from the utils module
-       with the run_subprocess_mocked function.
+       with the RunSubprocessMocked function.
     @tests.mock(logging.FileHandler, "_open", FileHandler_open_mocked())
     -- replaces the original _open method of the FileHandler class within
        the logging module with the FileHandler_open_mocked function.
@@ -201,7 +200,7 @@ class MockFunction(object):
 
     Example:
     from convert2rhel import tests  # Imports tests/__init__.py
-    class run_subprocess_mocked(tests.MockFunction):
+    class RunSubprocessMocked(tests.MockFunction):
         ...
     """
 

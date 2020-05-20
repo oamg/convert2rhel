@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import imap
+
 import logging
 import os
 import re
@@ -316,8 +317,7 @@ def remove_blacklisted_pkgs():
     loggerinst.info("\n")
     print_pkg_info(installed_blacklisted_pkgs)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg)
-                      for pkg in installed_blacklisted_pkgs])
+    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_blacklisted_pkgs])
     return
 
 
@@ -474,7 +474,8 @@ def replace_non_rhel_installed_kernel(version):
         loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
         return
 
-    loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+    loggerinst.info(
+        "Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)

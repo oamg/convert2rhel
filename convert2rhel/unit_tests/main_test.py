@@ -15,15 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+import os
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
-import os
-
 from convert2rhel import main
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 
 
@@ -34,7 +35,7 @@ class TestMain(unittest.TestCase):
             return
 
     eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                "..", "data", "version-independent"))
+                                             "..", "data", "version-independent"))
 
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "DATA_DIR", eula_dir)

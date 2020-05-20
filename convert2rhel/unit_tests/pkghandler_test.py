@@ -15,18 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-
 import glob
-import logging
 import os
 import re
 import yum
 
 from convert2rhel import logger
 from convert2rhel import pkghandler
-from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel.systeminfo import system_info
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -101,7 +99,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(error_pkgs, ["systemd", "yum"])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, [])
-        self.assertEqual(error_pkgs, ["libreport-anaconda", "abrt-cli", "libreport-plugin-rhtsupport"])
+        self.assertEqual(error_pkgs,
+                         ["libreport-anaconda", "abrt-cli", "libreport-plugin-rhtsupport"])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, [])
         self.assertEqual(error_pkgs, ["openldap", "p11-kit"])
@@ -401,7 +400,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertNotEqual(len(gpg_keys), 0)
         for gpg_key in gpg_keys:
-            self.assertIn('rpm --import %s' % os.path.join(gpg_dir, gpg_key), utils.run_subprocess.cmds)
+            self.assertIn(
+                'rpm --import %s' % os.path.join(gpg_dir, gpg_key),
+                utils.run_subprocess.cmds)
 
     class GetInstalledPkgsWDifferentFingerprintMocked(
             unit_tests.MockFunction):
@@ -412,12 +413,20 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             if self.is_only_rhel_kernel_installed:
                 return []  # No third-party kernel
             else:
-                return [TestPkgHandler.create_pkg_obj("kernel", "0.1", "1", "x86_64", 295, "Oracle"),
-                        TestPkgHandler.create_pkg_obj("kernel-uek", "0.1", "1", "x86_64", 295, "Oracle"),
-                        TestPkgHandler.create_pkg_obj("kernel-headers", "0.1", "1", "x86_64", 295, "Oracle"),
-                        TestPkgHandler.create_pkg_obj("kernel-uek-headers", "0.1", "1", "x86_64", 295, "Oracle"),
-                        TestPkgHandler.create_pkg_obj("kernel-firmware", "0.1", "1", "x86_64", 295, "Oracle"),
-                        TestPkgHandler.create_pkg_obj("kernel-uek-firmware", "0.1", "1", "x86_64", 295, "Oracle")]
+                return [
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel", "0.1", "1", "x86_64", 295, "Oracle"),
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel-uek", "0.1", "1", "x86_64", 295, "Oracle"),
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel-headers", "0.1", "1", "x86_64", 295, "Oracle"),
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel-uek-headers", "0.1", "1", "x86_64", 295, "Oracle"),
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel-firmware", "0.1", "1", "x86_64", 295, "Oracle"),
+                    TestPkgHandler.create_pkg_obj(
+                        "kernel-uek-firmware", "0.1", "1", "x86_64", 295, "Oracle")
+                ]
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "handle_no_newer_rhel_kernel_available",
@@ -488,7 +497,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.version = version
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(pkghandler, "replace_non_rhel_installed_kernel", ReplaceNonRhelInstalledKernelMocked())
+    @unit_tests.mock(pkghandler,
+                     "replace_non_rhel_installed_kernel",
+                     ReplaceNonRhelInstalledKernelMocked())
     def test_handle_older_rhel_kernel_not_available(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE
 
@@ -532,7 +543,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.replace_non_rhel_installed_kernel(version)
         self.assertEqual(utils.download_pkg.called, 1)
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
-        self.assertEqual(utils.run_subprocess.cmd, "rpm -i --force --replacepkgs /tmp/convert2rhel/kernel-4.7.4-200.fc24*")
+        self.assertEqual(utils.run_subprocess.cmd,
+                         "rpm -i --force --replacepkgs /tmp/convert2rhel/kernel-4.7.4-200.fc24*")
 
     def test_get_kernel(self):
         kernel_version = list(pkghandler.get_kernel(
@@ -582,7 +594,8 @@ Error: Package: abrt-cli-2.1.11-34.el7.x86_64 (rhel-7-server-rpms)
            Installing: libreport-plugin-rhtsupport-2.1.11-21.el7.x86_64 (rhel-7-server-rpms)
                libreport-plugin-rhtsupport = 2.1.11-21.el7"""
 
-YUM_MULTILIB_ERROR = """Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
+YUM_MULTILIB_ERROR = """
+Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
 Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.35-4.fc19.x86_64"""
 
 # The following yum error is currently not being handled by the tool. The
@@ -591,7 +604,7 @@ Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.
 YUM_FILE_CONFLICT_ERROR = """Transaction Check Error:
   file /lib/firmware/ql2500_fw.bin from install of ql2500-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
   file /lib/firmware/ql2400_fw.bin from install of ql2400-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
-  file /lib/firmware/phanfw.bin from install of netxen-firmware-4.0.534-3.1.el6.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch"""
+  file /lib/firmware/phanfw.bin from install of netxen-firmware-4.0.534-3.1.el6.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch""" # pylint: disable=C0301
 
 YUM_KERNEL_LIST_OLDER_AVAILABLE = """Installed Packages
 kernel.x86_64    4.7.4-200.fc24   @updates

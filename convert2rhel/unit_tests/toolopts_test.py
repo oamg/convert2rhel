@@ -16,14 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+
+import sys
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
-import sys
-
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 import convert2rhel.toolopts
 from convert2rhel.toolopts import tool_opts
 
@@ -48,8 +50,8 @@ class TestToolopts(unittest.TestCase):
         self.assertFalse(tool_opts.credentials_thru_cli)
 
     @unit_tests.mock(sys, "argv", _params(["--username", "uname",
-                                          "--password", "passwd"]))
-    def test_cmdline_non_interactive_with_credentials(self):
+                                           "--password", "passwd"]))
+    def test_cmdline_non_ineractive_with_credentials(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.username, "uname")
         self.assertEqual(tool_opts.password, "passwd")

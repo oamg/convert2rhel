@@ -15,20 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
 
 import glob
 import os
 import shutil
 
-from convert2rhel import cert
-from convert2rhel.systeminfo import system_info
-from convert2rhel import utils
+try:
+    import unittest2 as unittest  # Python 2.6 support
+except ImportError:
+    import unittest
 
+from convert2rhel import cert
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import utils
+from convert2rhel.systeminfo import system_info
 
 class TestCert(unittest.TestCase):
 
