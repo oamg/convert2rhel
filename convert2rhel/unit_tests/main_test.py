@@ -29,23 +29,23 @@ from convert2rhel import utils
 
 class TestMain(unittest.TestCase):
 
-    class ask_to_continue_mocked(unit_tests.MockFunction):
+    class AskToContinueMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
 
     eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                 "..", "data", "version-independent"))
 
-    @unit_tests.mock(utils, "ask_to_continue", ask_to_continue_mocked())
+    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "data_dir", eula_dir)
     def test_user_to_accept_eula(self):
         main.user_to_accept_eula()
 
-    class get_file_content_mocked(unit_tests.MockFunction):
+    class GetFileContentMocked(unit_tests.MockFunction):
         def __call__(self, filename):
             return utils.get_file_content_orig(unit_tests.nonexisting_file)
 
-    class getLogger_mocked(unit_tests.MockFunction):
+    class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
             self.info_msgs = []
             self.critical_msgs = []
@@ -63,9 +63,9 @@ class TestMain(unittest.TestCase):
         def debug(self, msg):
             pass
 
-    @unit_tests.mock(main.logging, "getLogger", getLogger_mocked())
-    @unit_tests.mock(utils, "ask_to_continue", ask_to_continue_mocked())
-    @unit_tests.mock(utils, "get_file_content", get_file_content_mocked())
+    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
+    @unit_tests.mock(utils, "get_file_content", GetFileContentMocked())
     def test_user_to_accept_eula_nonexisting_file(self):
         self.assertRaises(SystemExit, main.user_to_accept_eula)
         self.assertEqual(len(main.logging.getLogger.critical_msgs), 1)

@@ -93,14 +93,14 @@ class TestLogger(unittest.TestCase):
         formatted_msg = self.dummy_handler.format(rec)
         self.assertEqual(formatted_msg, expected_result)
 
-    class Handler_handle_mocked(unit_tests.MockFunction):
+    class HandlerHandleMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
         def __call__(self, rec):
             self.called += 1
 
-    @unit_tests.mock(logging.Handler, "handle", Handler_handle_mocked())
+    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
     def test_log_to_file(self):
         loggerinst = logging.getLogger(__name__)
         loggerinst.file(self.test_msg)
@@ -108,7 +108,7 @@ class TestLogger(unittest.TestCase):
         # Handler is a base class for all log handlers (incl. FileHandler)
         self.assertEqual(logging.Handler.handle.called, 1)
 
-    @unit_tests.mock(logging.Handler, "handle", Handler_handle_mocked())
+    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
     @unit_tests.mock(tool_opts, "debug", True)
     def test_log(self):
         loggerinst = logging.getLogger(__name__)

@@ -23,8 +23,6 @@ except ImportError:
 
 import re
 import yum
-import logging
-import os
 
 from convert2rhel import logger
 from convert2rhel import pkghandler
@@ -34,7 +32,7 @@ from convert2rhel import utils
 
 class TestPkgHandler(unittest.TestCase):
 
-    class call_yum_cmd_mocked(unit_tests.MockFunction):
+    class CallYumCmdMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
             self.return_code = 0
@@ -49,7 +47,7 @@ class TestPkgHandler(unittest.TestCase):
             self.called += 1
             return self.return_string, self.return_code
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
 
@@ -58,11 +56,11 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called,
                          pkghandler.MAX_YUM_CMD_CALLS)
 
-    class get_installed_pkgs_by_fingerprint_mocked(unit_tests.MockFunction):
+    class GetInstalledPkgsByFingerprintMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return ["pkg1", "pkg2"]
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = ""
             self.cmds = ""
@@ -77,20 +75,20 @@ class TestPkgHandler(unittest.TestCase):
             return self.output, self.ret_code
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
-                     get_installed_pkgs_by_fingerprint_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+                     GetInstalledPkgsByFingerprintMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd_w_downgrades_correct_cmd(self):
         pkghandler.call_yum_cmd_w_downgrades("update", ["fingerprint"])
 
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y pkg1 pkg2")
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_one_fail(self):
         pkghandler.call_yum_cmd.fail_once = True
 
         pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["fingerprint"])
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd(self):
         pkghandler.call_yum_cmd("install")
 
@@ -109,7 +107,7 @@ class TestPkgHandler(unittest.TestCase):
         error_pkgs = pkghandler.get_problematic_pkgs(yum_multilib_error, [])
         self.assertEqual(error_pkgs, ["openldap", "p11-kit"])
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
         pkghandler.call_yum_cmd.fail_once = True
@@ -118,7 +116,7 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_unable_to_fix_by_downgrades(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -133,7 +131,7 @@ class TestPkgHandler(unittest.TestCase):
         # downgrades do not solve the yum errors)
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_unable_to_detect_problematic_pkgs(self):
         # Even though resolve_dep_errors was called (meaning that the previous
@@ -172,7 +170,7 @@ class TestPkgHandler(unittest.TestCase):
             obj.yumdb_info.from_repo = from_repo
         return obj
 
-    class get_installed_pkgs_w_fingerprints_mocked(unit_tests.MockFunction):
+    class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
         def prepare_test_pkg_tuples_w_fingerprints(self):
             class PkgData:
                 def __init__(self, pkg_obj, fingerprint):
@@ -191,7 +189,7 @@ class TestPkgHandler(unittest.TestCase):
             return self.prepare_test_pkg_tuples_w_fingerprints()
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_fingerprints",
-                     get_installed_pkgs_w_fingerprints_mocked())
+                     GetInstalledPkgsWFingerprintsMocked())
     def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
         pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint(
             "199e2f91fd431d51")
@@ -199,14 +197,14 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(pkgs_by_fingerprint, ["pkg1", "gpg-pubkey"])
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_fingerprints",
-                     get_installed_pkgs_w_fingerprints_mocked())
+                     GetInstalledPkgsWFingerprintsMocked())
     def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(self):
         pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint(
             "non-existing fingerprint")
 
         self.assertEqual(pkgs_by_fingerprint, [])
 
-    class get_installed_pkg_objects_mocked(unit_tests.MockFunction):
+    class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
         def __call__(self, name=""):
             if name and name != "installed_pkg":
                 return []
@@ -216,7 +214,7 @@ class TestPkgHandler(unittest.TestCase):
             return [pkg_obj]
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
-                     get_installed_pkg_objects_mocked())
+                     GetInstalledPkgObjectsMocked())
     def test_get_installed_pkgs_w_fingerprints(self):
         pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
 
@@ -228,7 +226,7 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertEqual(len(pkgs), 0)
 
-    class returnPackages_mocked(unit_tests.MockFunction):
+    class ReturnPackagesMocked(unit_tests.MockFunction):
         def __call__(self, patterns=[]):
             if patterns and patterns != ["installed_pkg"]:
                 return []
@@ -237,7 +235,7 @@ class TestPkgHandler(unittest.TestCase):
             return [pkg_obj]
 
     @unit_tests.mock(yum.rpmsack.RPMDBPackageSack, "returnPackages",
-                     returnPackages_mocked())
+                     ReturnPackagesMocked())
     def test_get_installed_pkg_objects(self):
         pkgs = pkghandler.get_installed_pkg_objects()
 
@@ -248,11 +246,11 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertEqual(len(pkgs), 0)
 
-    class dumb_callable_object(unit_tests.MockFunction):
+    class DumbCallableObject(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
 
-    class print_pkg_info_mocked(unit_tests.MockFunction):
+    class PrintPkgInfoMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
             self.pkgs = []
@@ -261,12 +259,12 @@ class TestPkgHandler(unittest.TestCase):
             self.called += 1
             self.pkgs = pkgs
 
-    @unit_tests.mock(utils, "ask_to_continue", dumb_callable_object())
-    @unit_tests.mock(pkghandler, "print_pkg_info", print_pkg_info_mocked())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
     @unit_tests.mock(system_info, "fingerprints_orig_os",
                      ["24c6a8a7f4a80eb5", "a963bbdbf533f4fa"])
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_fingerprints",
-                     get_installed_pkgs_w_fingerprints_mocked())
+                     GetInstalledPkgsWFingerprintsMocked())
     def test_get_third_party_pkgs(self):
         # This test covers also get_installed_pkgs_w_different_fingerprint
         pkgs = pkghandler.get_third_party_pkgs()
@@ -281,7 +279,7 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertEqual(pkghandler.print_pkg_info.called, 0)
 
-    class log_mocked(unit_tests.MockFunction):
+    class LogMocked(unit_tests.MockFunction):
         def __init__(self):
             self.msg = ""
 
@@ -297,7 +295,7 @@ class TestPkgHandler(unittest.TestCase):
                                              "x86_64", from_repo="test")
         return [obj1, obj2, obj3]
 
-    @unit_tests.mock(logger.CustomLogger, "info", log_mocked())
+    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
     def test_print_pkg_info(self):
         # This test covers also get_pkg_nvra
         pkgs = TestPkgHandler.prepare_pkg_obj_for_print()
@@ -311,16 +309,16 @@ class TestPkgHandler(unittest.TestCase):
         self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
                                   result, re.MULTILINE))
 
-    @unit_tests.mock(pkghandler, "print_pkg_info", print_pkg_info_mocked())
+    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_fingerprints",
-                     get_installed_pkgs_w_fingerprints_mocked())
+                     GetInstalledPkgsWFingerprintsMocked())
     def test_list_non_red_hat_pkgs_left(self):
         pkghandler.list_non_red_hat_pkgs_left()
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 1)
         self.assertEqual(pkghandler.print_pkg_info.pkgs[0].name, "pkg2")
 
-    class remove_pkgs_mocked(unit_tests.MockFunction):
+    class RemovePkgsMocked(unit_tests.MockFunction):
         def __init__(self):
             self.pkgs = None
             self.should_bkp = False
@@ -331,29 +329,29 @@ class TestPkgHandler(unittest.TestCase):
 
     @unit_tests.mock(system_info, "pkg_blacklist", ["installed_pkg",
                                                     "not_installed_pkg"])
-    @unit_tests.mock(utils, "ask_to_continue", dumb_callable_object())
-    @unit_tests.mock(pkghandler, "print_pkg_info", dumb_callable_object())
-    @unit_tests.mock(utils, "remove_pkgs", remove_pkgs_mocked())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
-                     get_installed_pkg_objects_mocked())
+                     GetInstalledPkgObjectsMocked())
     def test_remove_blacklisted_pkgs(self):
         pkghandler.remove_blacklisted_pkgs()
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")
 
-    class call_yum_cmd_w_downgrades_mocked(unit_tests.MockFunction):
+    class CallYumCmdWDowngradesMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = ""
 
         def __call__(self, cmd, fingerprints):
             self.cmd += "%s\n" % cmd
 
-    @unit_tests.mock(utils, "ask_to_continue", dumb_callable_object())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
     @unit_tests.mock(system_info, "version", "5")
     @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
-                     call_yum_cmd_w_downgrades_mocked())
+                     CallYumCmdWDowngradesMocked())
     def test_replace_non_red_hat_packages_downgrade(self):
         pkghandler.replace_non_red_hat_packages()
 
@@ -361,11 +359,11 @@ class TestPkgHandler(unittest.TestCase):
         self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
                         output)
 
-    @unit_tests.mock(utils, "ask_to_continue", dumb_callable_object())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
     @unit_tests.mock(system_info, "version", "6")
     @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
-                     call_yum_cmd_w_downgrades_mocked())
+                     CallYumCmdWDowngradesMocked())
     def test_replace_non_red_hat_packages_distrosync(self):
         pkghandler.replace_non_red_hat_packages()
 
@@ -373,21 +371,21 @@ class TestPkgHandler(unittest.TestCase):
         self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
                         output)
 
-    class install_rhel_kernel_mocked(unit_tests.MockFunction):
+    class InstallRhelKernelMocked(unit_tests.MockFunction):
         def __call__(self):
             return True
 
     @unit_tests.mock(pkghandler, "install_rhel_kernel",
-                     install_rhel_kernel_mocked())
+                     InstallRhelKernelMocked())
     @unit_tests.mock(pkghandler, "remove_non_rhel_kernels",
-                     dumb_callable_object())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+                     DumbCallableObject())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_preserve_only_rhel_kernel(self):
         pkghandler.preserve_only_rhel_kernel()
 
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y kernel")
 
-    class get_installed_pkgs_w_different_fingerprint_mocked(
+    class GetInstalledPkgsWDifferentFingerprintMocked(
             unit_tests.MockFunction):
         def __init__(self):
             self.is_only_rhel_kernel_installed = False
@@ -403,11 +401,11 @@ class TestPkgHandler(unittest.TestCase):
                         TestPkgHandler.create_pkg_obj("kernel-firmware", "0.1", "1", "x86_64", 295, "Oracle"),
                         TestPkgHandler.create_pkg_obj("kernel-uek-firmware", "0.1", "1", "x86_64", 295, "Oracle")]
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "handle_no_newer_rhel_kernel_available",
-                     dumb_callable_object())
+                     DumbCallableObject())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
-                     get_installed_pkgs_w_different_fingerprint_mocked())
+                     GetInstalledPkgsWDifferentFingerprintMocked())
     def test_install_rhel_kernel(self):
         # 1st scenario: kernels collide; the installed one is already RHEL
         # kernel = no action.
@@ -436,7 +434,7 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertFalse(update_kernel)
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_get_kernel_availability(self):
         utils.run_subprocess.output = yum_kernel_list_older_available
         installed, available = pkghandler.get_kernel_availability()
@@ -453,7 +451,7 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(installed, ['4.7.2-201.fc24', '4.7.4-200.fc24'])
         self.assertEqual(available, ['4.7.4-200.fc24'])
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_handle_older_rhel_kernel_available(self):
         utils.run_subprocess.output = yum_kernel_list_older_available
 
@@ -462,7 +460,7 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y kernel-4.7.2-201.fc24")
 
-    class replace_non_rhel_installed_kernel_mocked(unit_tests.MockFunction):
+    class ReplaceNonRhelInstalledKernelMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
             self.version = None
@@ -471,8 +469,8 @@ class TestPkgHandler(unittest.TestCase):
             self.called += 1
             self.version = version
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
-    @unit_tests.mock(pkghandler, "replace_non_rhel_installed_kernel", replace_non_rhel_installed_kernel_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(pkghandler, "replace_non_rhel_installed_kernel", ReplaceNonRhelInstalledKernelMocked())
     def test_handle_older_rhel_kernel_not_available(self):
         utils.run_subprocess.output = yum_kernel_list_older_not_available
 
@@ -480,8 +478,8 @@ class TestPkgHandler(unittest.TestCase):
 
         self.assertEqual(pkghandler.replace_non_rhel_installed_kernel.called, 1)
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
-    @unit_tests.mock(utils, "remove_pkgs", remove_pkgs_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):
         utils.run_subprocess.output = yum_kernel_list_older_not_available_multiple_installed
 
@@ -492,7 +490,7 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y kernel-4.7.4-200.fc24")
 
-    class download_pkg_mocked(unit_tests.MockFunction):
+    class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
             self.pkg = None
@@ -508,9 +506,9 @@ class TestPkgHandler(unittest.TestCase):
             self.enablerepo = dest
             return 0
 
-    @unit_tests.mock(utils, "ask_to_continue", dumb_callable_object())
-    @unit_tests.mock(utils, "download_pkg", download_pkg_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_replace_non_rhel_installed_kernel(self):
         version = '4.7.4-200.fc24'
         pkghandler.replace_non_rhel_installed_kernel(version)
@@ -525,9 +523,9 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(kernel_version, ["4.7.4-200.fc24", "4.7.4-200.fc24"])
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
-                     get_installed_pkgs_w_different_fingerprint_mocked())
-    @unit_tests.mock(pkghandler, "print_pkg_info", dumb_callable_object())
-    @unit_tests.mock(utils, "remove_pkgs", remove_pkgs_mocked())
+                     GetInstalledPkgsWDifferentFingerprintMocked())
+    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_remove_non_rhel_kernels(self):
         removed_pkgs = pkghandler.remove_non_rhel_kernels()
 
@@ -540,10 +538,10 @@ class TestPkgHandler(unittest.TestCase):
                                                           "kernel-uek-firmware"])
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
-                     get_installed_pkgs_w_different_fingerprint_mocked())
-    @unit_tests.mock(pkghandler, "print_pkg_info", dumb_callable_object())
-    @unit_tests.mock(utils, "remove_pkgs", remove_pkgs_mocked())
-    @unit_tests.mock(pkghandler, "call_yum_cmd", call_yum_cmd_mocked())
+                     GetInstalledPkgsWDifferentFingerprintMocked())
+    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_install_additional_rhel_kernel_pkgs(self):
         removed_pkgs = pkghandler.remove_non_rhel_kernels()
         pkghandler.install_additional_rhel_kernel_pkgs(removed_pkgs)

@@ -28,7 +28,7 @@ from convert2rhel import utils
 
 class TestUtils(unittest.TestCase):
 
-    class dummy_func_mocked(unit_tests.MockFunction):
+    class DummyFuncMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
@@ -36,7 +36,7 @@ class TestUtils(unittest.TestCase):
             self.called += 1
             return
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = ""
             self.cmds = ""
@@ -57,7 +57,7 @@ class TestUtils(unittest.TestCase):
             control.track_installed_pkg(pkg)
         self.assertEqual(control.installed_pkgs, pkgs)
 
-    @unit_tests.mock(utils.RestorablePackage, "backup", dummy_func_mocked())
+    @unit_tests.mock(utils.RestorablePackage, "backup", DummyFuncMocked())
     def test_backup_and_track_removed_pkg(self):
         control = utils.ChangedRPMPackagesController()
         pkgs = ['pkg1', 'pkg2', 'pkg3']
@@ -66,13 +66,13 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.RestorablePackage.backup.called, len(pkgs))
         self.assertEqual(len(control.removed_pkgs), len(pkgs))
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_with_empty_list(self):
         utils.remove_pkgs([])
         self.assertEqual(utils.run_subprocess.called, 0)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", dummy_func_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_without_backup(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
         utils.remove_pkgs(pkgs, False)
@@ -84,8 +84,8 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(re.search(r"^%s pkg" % rpm_remove_cmd,
                                   utils.run_subprocess.cmds, re.MULTILINE))
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", dummy_func_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_with_backup(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
         utils.remove_pkgs(pkgs)
@@ -97,13 +97,13 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(re.search(r"^%s pkg" % rpm_remove_cmd,
                                   utils.run_subprocess.cmds, re.MULTILINE))
 
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_pkgs_with_empty_list(self):
         utils.install_pkgs([])
         self.assertEqual(utils.run_subprocess.called, 0)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", dummy_func_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_pkgs_without_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
         utils.install_pkgs(pkgs)
@@ -112,8 +112,8 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertTrue("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", dummy_func_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_pkgs_with_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
         utils.install_pkgs(pkgs, True)
