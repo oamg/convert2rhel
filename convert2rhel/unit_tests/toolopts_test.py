@@ -49,8 +49,20 @@ class TestToolopts(unittest.TestCase):
 
     @unit_tests.mock(sys, "argv", _params(["--username", "uname",
                                           "--password", "passwd"]))
-    def test_cmdline_non_ineractive_with_credentials(self):
+    def test_cmdline_non_interactive_with_credentials(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.username, "uname")
         self.assertEqual(tool_opts.password, "passwd")
         self.assertTrue(tool_opts.credentials_thru_cli)
+
+    @unit_tests.mock(sys, "argv", _params(["--disable-submgr", ""
+                                           "--enablerepo", "foo"]))
+    def test_cmdline_defaults_disablerepo_to_asterisk_with_disable_submgr(self):
+        convert2rhel.toolopts.CLI()
+        self.assertEqual(tool_opts.enablerepo, ["foo"])
+        self.assertEqual(tool_opts.disablerepo, "*")
+        self.assertTrue(tool_opts.disable_submgr)
+
+    @unit_tests.mock(sys, "argv", _params(["--disable-submgr"]))
+    def test_cmdline_exits_on_empty_enablerepo_with_disable_submgr(self):
+        self.assertRaises(SystemExit, convert2rhel.toolopts.CLI)
