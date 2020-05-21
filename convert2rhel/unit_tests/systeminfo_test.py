@@ -33,7 +33,7 @@ from convert2rhel import logger
 
 class TestSysteminfo(unittest.TestCase):
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self, output_tuple=('output', 0)):
             self.output_tuple = output_tuple
             self.called = 0
@@ -44,7 +44,7 @@ class TestSysteminfo(unittest.TestCase):
             self.used_args.append(args)
             return self.output_tuple
 
-    class generate_rpm_va_mocked(unit_tests.MockFunction):
+    class GenerateRpmVaMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
@@ -66,7 +66,7 @@ class TestSysteminfo(unittest.TestCase):
             shutil.rmtree(unit_tests.tmp_dir)
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked(
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(
         ("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # Check that rpm -Va is executed (default) and stored into the specific
@@ -80,7 +80,7 @@ class TestSysteminfo(unittest.TestCase):
                          "rpmva\n")
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_generate_rpm_va_skip(self):
         # Check that rpm -Va is not called when the --no-rpm-va option is used.
         tool_opts.no_rpm_va = True

@@ -32,15 +32,15 @@ from convert2rhel import utils
 
 class TestCert(unittest.TestCase):
 
-    class glob_mocked(unit_tests.MockFunction):
+    class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return [os.path.join(cert._redhat_release_cert_dir, "69.pem")]
 
-    class mkdir_p_mocked(unit_tests.MockFunction):
+    class MkdirPMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
 
-    class copy_mocked(unit_tests.MockFunction):
+    class CopyMocked(unit_tests.MockFunction):
         def __call__(self, source, dest):
             self.source = source
             self.dest = dest
@@ -48,9 +48,9 @@ class TestCert(unittest.TestCase):
     base_data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                   "..", "data", "5", "x86_64"))
 
-    @unit_tests.mock(glob, "glob", glob_mocked())
-    @unit_tests.mock(utils, "mkdir_p", mkdir_p_mocked())
-    @unit_tests.mock(shutil, "copy", copy_mocked())
+    @unit_tests.mock(glob, "glob", GlobMocked())
+    @unit_tests.mock(utils, "mkdir_p", MkdirPMocked())
+    @unit_tests.mock(shutil, "copy", CopyMocked())
     @unit_tests.mock(system_info, "version", "5")
     @unit_tests.mock(utils, "data_dir", base_data_dir)
     def test_copy_cert_for_rhel_5(self):

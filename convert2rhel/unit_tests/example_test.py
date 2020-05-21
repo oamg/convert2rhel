@@ -32,7 +32,7 @@ from convert2rhel import utils
 
 class TestExample(unittest.TestCase):
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             """
             Implementation of the simplest behavior of a mocked function -
@@ -43,7 +43,7 @@ class TestExample(unittest.TestCase):
             return self.ret
 
     @timed(2)  # Check that the test function does not last more than 2 sec
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_example(self):
         # Set a tuple to be returned by the run_subprocess_mocked function
         utils.run_subprocess.ret = ("ls output", 0)

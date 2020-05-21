@@ -32,18 +32,18 @@ class TestRedHatRelease(unittest.TestCase):
 
     supported_rhel_versions = ["5", "6", "7"]
 
-    class dumb_mocked(unit_tests.MockFunction):
+    class DumbMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             pass
 
-    class glob_mocked(unit_tests.MockFunction):
+    class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return [unit_tests.tmp_dir + "redhat-release/pkg1.rpm",
                     unit_tests.tmp_dir + "redhat-release/pkg2.rpm",
                     "Server/redhat-release-7/pkg1.rpm",
                     "Server/redhat-release-7/pkg2.rpm"]
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = None
 
@@ -51,12 +51,12 @@ class TestRedHatRelease(unittest.TestCase):
             self.cmd = cmd
             return "Test output", 0
 
-    @unit_tests.mock(utils.RestorableFile, "remove", dumb_mocked())
+    @unit_tests.mock(utils.RestorableFile, "remove", DumbMocked())
     @unit_tests.mock(utils, "data_dir", unit_tests.tmp_dir)
     @unit_tests.mock(tool_opts, "variant", "Server")
     @unit_tests.mock(system_info, "version", "to_be_changed")
-    @unit_tests.mock(glob, "glob", glob_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(glob, "glob", GlobMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_release_pkg(self):
         for version in self.supported_rhel_versions:
             system_info.version = version
