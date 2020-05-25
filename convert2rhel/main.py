@@ -68,8 +68,8 @@ def main():
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
-        redhatrelease.SYSTEM_RELEASE_FILE.backup()
-        redhatrelease.YUM_CONF.backup()
+        redhatrelease.system_release_file.backup()
+        redhatrelease.yum_conf.backup()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -206,9 +206,9 @@ def rollback_changes():
     loggerinst = logging.getLogger(__name__)
 
     loggerinst.warn("Abnormal exit! Performing rollback ...")
-    utils.CHANGED_PKGS_CONTROL.restore_pkgs()
-    redhatrelease.SYSTEM_RELEASE_FILE.restore()
-    redhatrelease.YUM_CONF.restore()
+    utils.changed_pkgs_control.restore_pkgs()
+    redhatrelease.system_release_file.restore()
+    redhatrelease.yum_conf.restore()
     subscription.rollback_renamed_repo_files()
     return
 
