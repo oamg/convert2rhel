@@ -456,7 +456,7 @@ def replace_non_rhel_installed_kernel(version):
     pkg = "kernel-%s" % version
 
     ret_code = utils.download_pkg(
-        pkg=pkg, dest=utils.tmp_dir, disablerepo=tool_opts.disablerepo,
+        pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
         enablerepo=tool_opts.enablerepo)
     if ret_code != 0:
         loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
@@ -464,7 +464,7 @@ def replace_non_rhel_installed_kernel(version):
 
     loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
-        'rpm -i --force --replacepkgs %s*' % os.path.join(utils.tmp_dir, pkg),
+        'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)
     if ret_code != 0:
         loggerinst.critical("Unable to replace kernel package: %s" % output)

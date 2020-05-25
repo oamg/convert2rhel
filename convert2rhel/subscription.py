@@ -125,7 +125,7 @@ def hide_password(cmd):
 def install_subscription_manager():
     """Install subscription-manager RPM and its dependencies."""
     loggerinst = logging.getLogger(__name__)
-    sm_dir = os.path.join(utils.data_dir, "subscription-manager")
+    sm_dir = os.path.join(utils.DATA_DIR, "subscription-manager")
     if not os.path.isdir(sm_dir) or not os.listdir(sm_dir):
         loggerinst.critical("The %s directory does not exist or is empty."
                             " Using the subscription-manager is not documented"

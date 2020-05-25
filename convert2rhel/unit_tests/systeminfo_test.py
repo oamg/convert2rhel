@@ -54,18 +54,18 @@ class TestSysteminfo(unittest.TestCase):
     ##########################################################################
 
     def setUp(self):
-        if os.path.exists(unit_tests.tmp_dir):
-            shutil.rmtree(unit_tests.tmp_dir)
-        os.makedirs(unit_tests.tmp_dir)
+        if os.path.exists(unit_tests.TMP_DIR):
+            shutil.rmtree(unit_tests.TMP_DIR)
+        os.makedirs(unit_tests.TMP_DIR)
         system_info.logger = logging.getLogger(__name__)
 
-        self.rpmva_output_file = os.path.join(unit_tests.tmp_dir, "rpm_va.log")
+        self.rpmva_output_file = os.path.join(unit_tests.TMP_DIR, "rpm_va.log")
 
     def tearDown(self):
-        if os.path.exists(unit_tests.tmp_dir):
-            shutil.rmtree(unit_tests.tmp_dir)
+        if os.path.exists(unit_tests.TMP_DIR):
+            shutil.rmtree(unit_tests.TMP_DIR)
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(
         ("rpmva\n", 0)))
     def test_generate_rpm_va(self):
@@ -79,7 +79,7 @@ class TestSysteminfo(unittest.TestCase):
         self.assertEqual(utils.get_file_content(self.rpmva_output_file),
                          "rpmva\n")
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_generate_rpm_va_skip(self):
         # Check that rpm -Va is not called when the --no-rpm-va option is used.

@@ -98,13 +98,13 @@ class TestPkgHandler(unittest.TestCase):
         error_pkgs = pkghandler.get_problematic_pkgs("", [])
         self.assertEqual(error_pkgs, [])
 
-        error_pkgs = pkghandler.get_problematic_pkgs(yum_protected_error, [])
+        error_pkgs = pkghandler.get_problematic_pkgs(YUM_PROTECTED_ERROR, [])
         self.assertEqual(error_pkgs, ["systemd", "yum"])
 
-        error_pkgs = pkghandler.get_problematic_pkgs(yum_requires_error, [])
+        error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, [])
         self.assertEqual(error_pkgs, ["libreport-anaconda", "abrt-cli", "libreport-plugin-rhtsupport"])
 
-        error_pkgs = pkghandler.get_problematic_pkgs(yum_multilib_error, [])
+        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, [])
         self.assertEqual(error_pkgs, ["openldap", "p11-kit"])
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
@@ -112,7 +112,7 @@ class TestPkgHandler(unittest.TestCase):
     def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
         pkghandler.call_yum_cmd.fail_once = True
 
-        pkghandler.resolve_dep_errors(yum_protected_error, [])
+        pkghandler.resolve_dep_errors(YUM_PROTECTED_ERROR, [])
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
 
@@ -120,9 +120,9 @@ class TestPkgHandler(unittest.TestCase):
     @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_unable_to_fix_by_downgrades(self):
         pkghandler.call_yum_cmd.return_code = 1
-        pkghandler.call_yum_cmd.return_string = yum_multilib_error
+        pkghandler.call_yum_cmd.return_string = YUM_MULTILIB_ERROR
 
-        pkghandler.resolve_dep_errors(yum_protected_error, [])
+        pkghandler.resolve_dep_errors(YUM_PROTECTED_ERROR, [])
 
         # Firts call of the resolve_dep_errors, pkgs from protected error
         # are detected, the second call pkgs from multilib error are detected,
@@ -436,24 +436,24 @@ class TestPkgHandler(unittest.TestCase):
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_get_kernel_availability(self):
-        utils.run_subprocess.output = yum_kernel_list_older_available
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
         installed, available = pkghandler.get_kernel_availability()
         self.assertEqual(installed, ['4.7.4-200.fc24'])
         self.assertEqual(available, ['4.5.5-300.fc24', '4.7.2-201.fc24', '4.7.4-200.fc24'])
 
-        utils.run_subprocess.output = yum_kernel_list_older_not_available
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE
         installed, available = pkghandler.get_kernel_availability()
         self.assertEqual(installed, ['4.7.4-200.fc24'])
         self.assertEqual(available, ['4.7.4-200.fc24'])
 
-        utils.run_subprocess.output = yum_kernel_list_older_not_available_multiple_installed
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE_MULTIPLE_INSTALLED
         installed, available = pkghandler.get_kernel_availability()
         self.assertEqual(installed, ['4.7.2-201.fc24', '4.7.4-200.fc24'])
         self.assertEqual(available, ['4.7.4-200.fc24'])
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_handle_older_rhel_kernel_available(self):
-        utils.run_subprocess.output = yum_kernel_list_older_available
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
@@ -472,7 +472,7 @@ class TestPkgHandler(unittest.TestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "replace_non_rhel_installed_kernel", ReplaceNonRhelInstalledKernelMocked())
     def test_handle_older_rhel_kernel_not_available(self):
-        utils.run_subprocess.output = yum_kernel_list_older_not_available
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
@@ -481,7 +481,7 @@ class TestPkgHandler(unittest.TestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):
-        utils.run_subprocess.output = yum_kernel_list_older_not_available_multiple_installed
+        utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE_MULTIPLE_INSTALLED
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
@@ -518,7 +518,7 @@ class TestPkgHandler(unittest.TestCase):
 
     def test_get_kernel(self):
         kernel_version = list(pkghandler.get_kernel(
-            yum_kernel_list_older_not_available))
+            YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE))
 
         self.assertEqual(kernel_version, ["4.7.4-200.fc24", "4.7.4-200.fc24"])
 
@@ -548,10 +548,10 @@ class TestPkgHandler(unittest.TestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
 
-yum_protected_error = """Error: Trying to remove "systemd", which is protected
+YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""
 
-yum_requires_error = """Error: Package: libreport-anaconda-2.1.11-30.el7.x86_64 (rhel-7-server-rpms)
+YUM_REQUIRES_ERROR = """Error: Package: libreport-anaconda-2.1.11-30.el7.x86_64 (rhel-7-server-rpms)
            Requires: libreport-plugin-rhtsupport = 2.1.11-30.el7
            Available: libreport-plugin-rhtsupport-2.1.11-10.el7.x86_64 (rhel-7-server-rpms)
                libreport-plugin-rhtsupport = 2.1.11-10.el7
@@ -564,30 +564,30 @@ Error: Package: abrt-cli-2.1.11-34.el7.x86_64 (rhel-7-server-rpms)
            Installing: libreport-plugin-rhtsupport-2.1.11-21.el7.x86_64 (rhel-7-server-rpms)
                libreport-plugin-rhtsupport = 2.1.11-21.el7"""
 
-yum_multilib_error = """Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
+YUM_MULTILIB_ERROR = """Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
 Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.35-4.fc19.x86_64"""
 
 # The following yum error is currently not being handled by the tool. The
 # tool would somehow need to decide, which of the two packages to remove and
 # ask the user to confirm the removal.
-yum_file_conflict_error = """Transaction Check Error:
+YUM_FILE_CONFLICT_ERROR = """Transaction Check Error:
   file /lib/firmware/ql2500_fw.bin from install of ql2500-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
   file /lib/firmware/ql2400_fw.bin from install of ql2400-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
   file /lib/firmware/phanfw.bin from install of netxen-firmware-4.0.534-3.1.el6.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch"""
 
-yum_kernel_list_older_available = """Installed Packages
+YUM_KERNEL_LIST_OLDER_AVAILABLE = """Installed Packages
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.5.5-300.fc24   fedora
 kernel.x86_64    4.7.2-201.fc24   @updates
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
-yum_kernel_list_older_not_available = """Installed Packages
+YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE = """Installed Packages
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
-yum_kernel_list_older_not_available_multiple_installed = """Installed Packages
+YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE_MULTIPLE_INSTALLED = """Installed Packages
 kernel.x86_64    4.7.2-201.fc24   @updates
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages

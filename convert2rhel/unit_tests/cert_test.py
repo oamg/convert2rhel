@@ -34,7 +34,7 @@ class TestCert(unittest.TestCase):
 
     class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [os.path.join(cert._redhat_release_cert_dir, "69.pem")]
+            return [os.path.join(cert._REDHAT_RELEASE_CERT_DIR, "69.pem")]
 
     class MkdirPMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -52,9 +52,9 @@ class TestCert(unittest.TestCase):
     @unit_tests.mock(utils, "mkdir_p", MkdirPMocked())
     @unit_tests.mock(shutil, "copy", CopyMocked())
     @unit_tests.mock(system_info, "version", "5")
-    @unit_tests.mock(utils, "data_dir", base_data_dir)
+    @unit_tests.mock(utils, "DATA_DIR", base_data_dir)
     def test_copy_cert_for_rhel_5(self):
         cert.copy_cert_for_rhel_5()
         self.assertEqual(shutil.copy.source,
-                         os.path.join(cert._redhat_release_cert_dir, "69.pem"))
-        self.assertEqual(shutil.copy.dest, cert._subscription_manager_cert_dir)
+                         os.path.join(cert._REDHAT_RELEASE_CERT_DIR, "69.pem"))
+        self.assertEqual(shutil.copy.dest, cert._SUBSCRIPTION_MANAGER_CERT_DIR)

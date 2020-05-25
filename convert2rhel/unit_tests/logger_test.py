@@ -31,10 +31,10 @@ from convert2rhel.toolopts import tool_opts
 
 class TestLogger(unittest.TestCase):
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     def setUp(self):
         # initialize class variables
-        self.LOG_DIR = logger.LOG_DIR
+        self.log_dir = logger.LOG_DIR
         self.log_file = "convert2rhel.log"
         self.test_msg = "testmsg"
 
@@ -54,21 +54,21 @@ class TestLogger(unittest.TestCase):
             handlers = loggerinst.handlers
 
         # verify both StreamHandler and FileHandler have been created
-        hasStreamHandlerInstance = False
-        hasFileHandlerInstance = False
+        has_stream_handler_instance = False
+        has_file_handler_instance = False
         for handler in handlers:
             if isinstance(handler, logging.StreamHandler):
-                hasStreamHandlerInstance = True
+                has_stream_handler_instance = True
             if isinstance(handler, logging.FileHandler):
-                hasFileHandlerInstance = True
+                has_file_handler_instance = True
 
-        self.assertTrue(hasStreamHandlerInstance)
-        self.assertTrue(hasFileHandlerInstance)
+        self.assertTrue(has_stream_handler_instance)
+        self.assertTrue(has_file_handler_instance)
 
         # verify log file name
         for handler in handlers:
             if type(handler) is logging.FileHandler:
-                log_path = os.path.join(self.LOG_DIR, self.log_file)
+                log_path = os.path.join(self.log_dir, self.log_file)
                 self.assertEqual(log_path, handler.baseFilename)
 
     def test_log_format(self):

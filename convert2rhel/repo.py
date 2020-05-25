@@ -67,7 +67,7 @@ def package_analysis():
 
 def get_repo_data_files():
     """Get list of paths to dark matrix-generated repository files."""
-    path = os.path.join(utils.data_dir, "repo-mapping", system_info.id)
+    path = os.path.join(utils.DATA_DIR, "repo-mapping", system_info.id)
     # Skip the files for a different variant than the one in
     # config file. Note: 'Common' files hold pkg names of all
     # variants.
@@ -179,7 +179,7 @@ def get_supported_repos():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Getting supported %s repositories ... "
                     % tool_opts.variant)
-    minimap_path = os.path.join(utils.data_dir, "repo-mapping", "repo_minimap")
+    minimap_path = os.path.join(utils.DATA_DIR, "repo-mapping", "repo_minimap")
     minimap = utils.get_file_content(minimap_path, as_list=True)
     repos = {}
     for line in minimap:
@@ -285,7 +285,7 @@ def get_avail_repos():
     repo_id_prefix = "Repo-id      : "
     for line in repos_raw.split("\n"):
         if (line.startswith(repo_id_prefix)):
-            repoID = line.split(repo_id_prefix)[1]
-            repos.append(repoID)
+            repo_id = line.split(repo_id_prefix)[1]
+            repos.append(repo_id)
 
     return repos

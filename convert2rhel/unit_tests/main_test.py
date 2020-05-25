@@ -37,13 +37,13 @@ class TestMain(unittest.TestCase):
                                 "..", "data", "version-independent"))
 
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
-    @unit_tests.mock(utils, "data_dir", eula_dir)
+    @unit_tests.mock(utils, "DATA_DIR", eula_dir)
     def test_user_to_accept_eula(self):
         main.user_to_accept_eula()
 
     class GetFileContentMocked(unit_tests.MockFunction):
         def __call__(self, filename):
-            return utils.get_file_content_orig(unit_tests.nonexisting_file)
+            return utils.get_file_content_orig(unit_tests.NONEXISTING_FILE)
 
     class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
