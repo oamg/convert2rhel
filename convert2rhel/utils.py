@@ -294,7 +294,7 @@ def remove_pkgs(pkgs_to_remove, should_backup=True, critical=True):
         # impossible to access the repositories to download a backup. For this
         # reason we first backup all packages and only after that we remove
         for nvra in pkgs_to_remove:
-            CHANGED_PKGS_CONTROL.backup_and_track_removed_pkg(nvra)
+            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
 
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")
@@ -342,7 +342,7 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 
     for path in pkgs_to_install:
         nvra, _ = os.path.splitext(os.path.basename(path))
-        CHANGED_PKGS_CONTROL.track_installed_pkg(nvra)
+        changed_pkgs_control.track_installed_pkg(nvra)
 
     return True
 
@@ -445,4 +445,4 @@ class RestorablePackage(object):
             loggerinst.warning("Can't find %s" % TMP_DIR)
 
 
-CHANGED_PKGS_CONTROL = ChangedRPMPackagesController()
+changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
