@@ -27,7 +27,7 @@ import sys
 import traceback
 
 
-class color:
+class Color:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -41,9 +41,9 @@ class color:
 
 
 # Absolute path of a directory holding data for this tool
-data_dir = "/usr/share/convert2rhel/"
+DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
-tmp_dir = "/tmp/convert2rhel/"
+TMP_DIR = "/tmp/convert2rhel/"
 
 
 def get_executable_name():
@@ -188,7 +188,7 @@ def ask_to_continue():
 
 def prompt_user(question, password=False):
     loggerinst = logging.getLogger(__name__)
-    color_question = color.BOLD + question + color.END
+    color_question = Color.BOLD + question + Color.END
     if password:
         response = getpass.getpass(color_question)
     else:
@@ -294,7 +294,7 @@ def remove_pkgs(pkgs_to_remove, should_backup=True, critical=True):
         # impossible to access the repositories to download a backup. For this
         # reason we first backup all packages and only after that we remove
         for nvra in pkgs_to_remove:
-            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
+            CHANGED_PKGS_CONTROL.backup_and_track_removed_pkg(nvra)
 
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")
@@ -342,12 +342,12 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 
     for path in pkgs_to_install:
         nvra, _ = os.path.splitext(os.path.basename(path))
-        changed_pkgs_control.track_installed_pkg(nvra)
+        CHANGED_PKGS_CONTROL.track_installed_pkg(nvra)
 
     return True
 
 
-def download_pkg(pkg, dest=tmp_dir, disablerepo=[], enablerepo=[]):
+def download_pkg(pkg, dest=TMP_DIR, disablerepo=[], enablerepo=[]):
     """Download the specified package."""
     cmd = "yumdownloader"
 
@@ -374,21 +374,21 @@ class RestorableFile(object):
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
         if (os.path.isfile(self.filepath) and
-                os.path.isdir(tmp_dir)):
+                os.path.isdir(TMP_DIR)):
             try:
-                loggerinst.info("Copying %s to %s" % (self.filepath, tmp_dir))
-                shutil.copy2(self.filepath, tmp_dir)
+                loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
+                shutil.copy2(self.filepath, TMP_DIR)
             except IOError, err:
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
         else:
             loggerinst.warning("Can't find %s or %s"
-                               % (self.filepath, tmp_dir))
+                               % (self.filepath, TMP_DIR))
 
     def restore(self):
         """ Restore a previously backed up file """
         loggerinst = logging.getLogger(__name__)
-        backup_filepath = os.path.join(tmp_dir,
+        backup_filepath = os.path.join(TMP_DIR,
                                        os.path.basename(self.filepath))
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
 
@@ -428,21 +428,21 @@ class RestorablePackage(object):
         """ Save version of RPM package """
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
-        if os.path.isdir(tmp_dir):
+        if os.path.isdir(TMP_DIR):
             ret_code = download_pkg(self.name)
             if ret_code != 0:
                 loggerinst.warning("Couldn't download %s package." % self.name)
                 return
 
-            for file in os.listdir(tmp_dir):
+            for file in os.listdir(TMP_DIR):
                 if file.startswith(self.name):
-                    self.path = os.path.join(tmp_dir, file)
+                    self.path = os.path.join(TMP_DIR, file)
 
             if self.path is None:
                 loggerinst.warning("Couldn't retrieve downloaded %s package."
                                    % self.name)
         else:
-            loggerinst.warning("Can't find %s" % tmp_dir)
+            loggerinst.warning("Can't find %s" % TMP_DIR)
 
 
-changed_pkgs_control = ChangedRPMPackagesController()
+CHANGED_PKGS_CONTROL = ChangedRPMPackagesController()

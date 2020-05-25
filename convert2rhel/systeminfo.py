@@ -30,7 +30,7 @@ class SystemInfo(object):
         # Operating system name (e.g. Oracle Linux)
         self.name = None
         # Single-word lowercase identificator of the system (e.g. oracle)
-        self.id = None
+        self.id = None  # pylint: disable=C0103
         # Major version of the operating system (e.g. 6)
         self.version = None
         # Platform architecture
@@ -62,7 +62,7 @@ class SystemInfo(object):
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
-        utils.mkdir_p(utils.tmp_dir)
+        utils.mkdir_p(utils.TMP_DIR)
 
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
@@ -109,7 +109,7 @@ class SystemInfo(object):
         file.
         """
         cfg_parser = ConfigParser.ConfigParser()
-        cfg_filepath = os.path.join(utils.data_dir, "configs",
+        cfg_filepath = os.path.join(utils.DATA_DIR, "configs",
                                     self.cfg_filename)
         if not cfg_parser.read(cfg_filepath):
             self.logger.critical("Current combination of system distribution"
@@ -158,4 +158,4 @@ class SystemInfo(object):
 
 
 # Code to be executed upon module import
-system_info = SystemInfo()
+system_info = SystemInfo()  # pylint: disable=C0103

@@ -29,8 +29,8 @@ def install_release_pkg():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Installing %s package" % get_release_pkg_name())
 
-    system_release_file.remove()
-    pkg_path = os.path.join(utils.data_dir, "redhat-release",
+    SYSTEM_RELEASE_FILE.remove()
+    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release",
                             tool_opts.variant, "redhat-release-*")
 
     success = utils.install_pkgs(glob.glob(pkg_path))
@@ -133,5 +133,5 @@ class YumConf(object):
 
 
 # Code to be executed upon module import
-system_release_file = utils.RestorableFile(get_system_release_filepath())
-yum_conf = utils.RestorableFile(YumConf.get_yum_conf_filepath())
+SYSTEM_RELEASE_FILE = utils.RestorableFile(get_system_release_filepath())
+YUM_CONF = utils.RestorableFile(YumConf.get_yum_conf_filepath())

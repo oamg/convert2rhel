@@ -160,7 +160,7 @@ class CLI(object):
         loggerinst = logging.getLogger(__name__)
         parsed_opts, _ = self._parser.parse_args()
 
-        global tool_opts
+        global tool_opts  # pylint: disable=C0103
         if parsed_opts.debug:
             tool_opts.debug = True
 
@@ -223,7 +223,7 @@ def print_non_interactive_opts():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("For the non-interactive use of the tool, run the"
                     " following command:")
-    global tool_opts
+    global tool_opts  # pylint: disable=C0103
     cmd = utils.get_executable_name()
 
     if tool_opts.disable_submgr:
@@ -252,4 +252,4 @@ def print_non_interactive_opts():
 
 
 # Code to be executed upon module import
-tool_opts = ToolOpts()
+tool_opts = ToolOpts()  # pylint: disable=C0103

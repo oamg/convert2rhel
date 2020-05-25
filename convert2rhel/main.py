@@ -68,8 +68,8 @@ def main():
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
-        redhatrelease.system_release_file.backup()
-        redhatrelease.yum_conf.backup()
+        redhatrelease.SYSTEM_RELEASE_FILE.backup()
+        redhatrelease.YUM_CONF.backup()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -126,7 +126,7 @@ def user_to_accept_eula():
     loggerinst = logging.getLogger(__name__)
 
     eula_filename = "GLOBAL_EULA_RHEL"
-    eula_filepath = os.path.join(utils.data_dir, eula_filename)
+    eula_filepath = os.path.join(utils.DATA_DIR, eula_filename)
     eula_text = utils.get_file_content(eula_filepath)
     if eula_text:
         loggerinst.info(eula_text)
@@ -206,9 +206,9 @@ def rollback_changes():
     loggerinst = logging.getLogger(__name__)
 
     loggerinst.warn("Abnormal exit! Performing rollback ...")
-    utils.changed_pkgs_control.restore_pkgs()
-    redhatrelease.system_release_file.restore()
-    redhatrelease.yum_conf.restore()
+    utils.CHANGED_PKGS_CONTROL.restore_pkgs()
+    redhatrelease.SYSTEM_RELEASE_FILE.restore()
+    redhatrelease.YUM_CONF.restore()
     subscription.rollback_renamed_repo_files()
     return
 

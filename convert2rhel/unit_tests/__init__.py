@@ -19,11 +19,11 @@ import os
 
 from convert2rhel import logger
 
-tmp_dir = "/tmp/convert2rhel_test/"
-nonexisting_dir = os.path.join(tmp_dir, "nonexisting_dir/")
-nonexisting_file = os.path.join(tmp_dir, "nonexisting.file")
+TMP_DIR = "/tmp/convert2rhel_test/"
+NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
+NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
-dummy_file = os.path.join(os.path.dirname(__file__), "dummy_file")
+DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 
 try:
     from functools import wraps
@@ -110,10 +110,10 @@ def mock(class_or_module, orig_obj, mock_obj):
     -- replaces the gpgkey module-scoped variable gpg_key_system_dir with the
        "/nonexisting_dir/" string
     """
-    def wrap(fn):
+    def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
-        @wraps(fn)
+        @wraps(func)
         def wrapped_fn(*args, **kwargs):
             # Save temporarily the original object
             orig_obj_saved = getattr(class_or_module, orig_obj)
@@ -129,7 +129,7 @@ def mock(class_or_module, orig_obj, mock_obj):
             return_value = None
             try:
                 try:
-                    return_value = fn(*args, **kwargs)
+                    return_value = func(*args, **kwargs)
                 except:
                     raise
             finally:
