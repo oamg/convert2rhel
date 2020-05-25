@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import imap
-
 import logging
 import os
 import re
@@ -353,6 +352,14 @@ def replace_non_red_hat_packages():
 def preserve_only_rhel_kernel():
     loggerinst = logging.getLogger(__name__)
     needs_update = install_rhel_kernel()
+
+    loggerinst.info("Verifying that RHEL kernel has been installed")
+    if not is_rhel_kernel_installed():
+        loggerinst.critical(
+            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
+    else:
+        loggerinst.info("RHEL kernel has been installed.")
+
     non_rhel_kernel_pkgs = remove_non_rhel_kernels()
     if non_rhel_kernel_pkgs:
         install_additional_rhel_kernel_pkgs(non_rhel_kernel_pkgs)
@@ -371,6 +378,7 @@ def install_gpg_keys():
             print_output=False)
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
+
 
 
 def install_rhel_kernel():
@@ -507,3 +515,8 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
             call_yum_cmd("install %s" % name)
+
+
+def is_rhel_kernel_installed():
+    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
+    return len(installed_rhel_kernels) > 0
