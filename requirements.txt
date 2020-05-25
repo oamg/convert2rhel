@@ -1,0 +1,1 @@
+pylint<2  # Pylint >2.0 dropped py2 support

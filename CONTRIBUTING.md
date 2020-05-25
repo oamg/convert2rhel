@@ -7,18 +7,26 @@
 ## Unit tests
 Our unit tests are run within containers. To first create the container images run
 
-    $ make images
+```bash
+$ make images
+```
 
 Once images have been setup you can now run unit tests within the containers using
 
-    $ make tests
+```bash
+$ make tests
+```
 
 ## Linting
-Linting can be done using 
+Linting can be done locally using `virtualenv`.
 
-    $ make lint
+```bash
+# Setup a virtual environment
+$ pip install virtualenv
+$ virtualenv .venv --python=python2
+$ source .venv/bin/activate
+$ pip install -r requirements.txt
 
-Or by installing locally using `pipenv`
-
-    $ pipenv install
-    $ pipenv run pylint convert2rhel/
+# Run pylint
+$ pylint convert2rhel/
+```
