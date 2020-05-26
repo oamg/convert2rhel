@@ -97,7 +97,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
-%doc README
+%doc README.md
 %{_mandir}/man8/%{name}.8*
 
 %changelog

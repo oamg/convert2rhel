@@ -32,7 +32,7 @@ setup(
     version='0.9',
     description='Automates the conversion of Red Hat Enterprise Linux'
                 ' derivative distributions to Red Hat Enterprise Linux.',
-    long_description=read('README'),
+    long_description=read('README.md'),
     author='Michal Bocek',
     author_email='mbocek@redhat.com',
     url='www.redhat.com',
