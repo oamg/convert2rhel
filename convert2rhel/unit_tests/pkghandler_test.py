@@ -16,11 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
 
+import glob
+import logging
+import os
 import re
 import yum
 
@@ -30,7 +29,7 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
 
 
-class TestPkgHandler(unittest.TestCase):
+class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     class CallYumCmdMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -379,11 +378,30 @@ class TestPkgHandler(unittest.TestCase):
                      InstallRhelKernelMocked())
     @unit_tests.mock(pkghandler, "remove_non_rhel_kernels",
                      DumbCallableObject())
+    @unit_tests.mock(pkghandler, "install_gpg_keys",
+                     DumbCallableObject())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_preserve_only_rhel_kernel(self):
         pkghandler.preserve_only_rhel_kernel()
 
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y kernel")
+
+
+    gpg_keys_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
+                                                 "..", "data", "version-independent"))
+
+    @unit_tests.mock(utils, "DATA_DIR", gpg_keys_dir)
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_install_gpg_keys(self):
+        pkghandler.install_gpg_keys()
+
+        gpg_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
+                                                "../data/version-independent/gpg-keys/*"))
+        gpg_keys = glob.glob(gpg_dir)
+
+        self.assertNotEqual(len(gpg_keys), 0)
+        for gpg_key in gpg_keys:
+            self.assertIn('rpm --import %s' % os.path.join(gpg_dir, gpg_key), utils.run_subprocess.cmds)
 
     class GetInstalledPkgsWDifferentFingerprintMocked(
             unit_tests.MockFunction):

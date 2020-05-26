@@ -16,10 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import imap
-import re
-import yum
 import logging
 import os
+import re
+import yum
 
 from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
@@ -364,6 +364,18 @@ def preserve_only_rhel_kernel():
         call_yum_cmd(command="update", args="kernel")
     return
 
+
+def install_gpg_keys():
+    loggerinst = logging.getLogger(__name__)
+    gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
+    gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
+    for gpg_key in gpg_keys:
+        output, ret_code = utils.run_subprocess(
+            'rpm --import %s' % os.path.join(gpg_path, gpg_key),
+            print_output=False)
+        if ret_code != 0:
+            loggerinst.critical("Unable to import GPG key: %s", output)
+    return
 
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
