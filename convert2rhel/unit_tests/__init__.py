@@ -16,6 +16,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+try:
+    import unittest2 as unittest  # Python 2.6 support
+except ImportError:
+    import unittest
 
 from convert2rhel import logger
 
@@ -24,6 +28,7 @@ NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
 NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
+_MAX_LENGTH = 80
 
 try:
     from functools import wraps
@@ -141,6 +146,52 @@ def mock(class_or_module, orig_obj, mock_obj):
             return return_value
         return wrapped_fn
     return wrap
+
+
+def safe_repr(obj, short=False):
+    """
+    Safetly calls repr(). 
+    Returns a truncated string if repr message is too long.
+    """
+    try:
+        result = repr(obj)
+    except Exception:
+        result = object.__repr__(obj)
+    if not short or len(result) < _MAX_LENGTH:
+        return result
+    return result[:_MAX_LENGTH] + ' [truncated]...'
+
+
+class ExtendedTestCase(unittest.TestCase):
+    """
+    Extends Nose test case with more helpers.
+    Most of these functions are taken from newer versions of Nose 
+    test and can be removed when we upgrade Nose test.
+    """
+    def assertIn(self, member, container, msg=None):
+        """ 
+        Taken from newer nose test version.
+        Just like self.assertTrue(a in b), but with a nicer default message.
+        """
+        if member not in container:
+            standardMsg = '%s not found in %s' % (safe_repr(member),
+                                                    safe_repr(container))
+            self.fail(self._formatMessage(msg, standardMsg))
+
+
+    def _formatMessage(self, msg, standardMsg):
+        """ 
+        Taken from newer nose test version.
+        Formats the message in a safe manner for better readability.
+        """
+        if msg is None:
+            return standardMsg
+        try:
+            # don't switch to '{}' formatting in Python 2.X
+            # it changes the way unicode input is handled
+            return '%s : %s' % (standardMsg, msg)
+        except UnicodeDecodeError:
+            return  '%s : %s' % (safe_repr(standardMsg), safe_repr(msg))
 
 
 class MockFunction(object):

@@ -182,6 +182,8 @@ def post_ponr_conversion():
     """Perform main steps for system conversion."""
     loggerinst = logging.getLogger(__name__)
 
+    loggerinst.task("Convert: Import Red Hat GPG keys")
+    pkghandler.install_gpg_keys()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: Replace packages")
