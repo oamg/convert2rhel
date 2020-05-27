@@ -422,7 +422,7 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(["kernel-%s" % older])
+            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], should_backup=False)
             call_yum_cmd(command="install", args="kernel-%s" % older)
         else:
             replace_non_rhel_installed_kernel(installed[0])
@@ -494,7 +494,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in non_rhel_kernels])
+        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], should_backup=False)
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels
