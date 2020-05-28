@@ -225,7 +225,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(len(pkgs), 0)
 
     class ReturnPackagesMocked(unit_tests.MockFunction):
-        def __call__(self, patterns=[]):
+        def __call__(self, patterns=None):
+            if patterns is None:
+                patterns = []
             if patterns and patterns != ["installed_pkg"]:
                 return []
             pkg_obj = TestPkgHandler.TestPkgObj()

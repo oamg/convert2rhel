@@ -18,6 +18,7 @@
 import os
 import re
 import logging
+
 from convert2rhel import utils
 
 _SUPPORTED_VARIANTS = None
@@ -33,7 +34,6 @@ def determine_rhel_variant():
     if not tool_opts.variant:
         tool_opts.variant = _user_to_choose_rhel_variant()
     loggerinst.info("Variant: %s" % tool_opts.variant)
-    return
 
 
 def _user_to_choose_rhel_variant():
@@ -59,7 +59,6 @@ def print_supported_variants():
     for index, variant in enumerate(get_supported_variants()):
         index += 1
         loggerinst.info("%s) %s" % (index, variant))
-    return
 
 
 def get_supported_variants():

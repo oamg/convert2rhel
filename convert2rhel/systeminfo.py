@@ -19,6 +19,7 @@ import ConfigParser
 import os
 import re
 import logging
+
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import logger
@@ -123,7 +124,6 @@ class SystemInfo(object):
 
     def _get_default_repository_id(self):
         return self._get_cfg_opt("default_repository_id")
-
 
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""

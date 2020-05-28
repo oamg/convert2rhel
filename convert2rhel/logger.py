@@ -31,6 +31,7 @@ import os
 import sys
 from utils import format_msg_with_datetime
 
+
 LOG_DIR = "/var/log/convert2rhel"
 
 

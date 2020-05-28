@@ -291,7 +291,6 @@ def list_non_red_hat_pkgs_left():
         print_pkg_info(non_red_hat_pkgs)
     else:
         loggerinst.info("All packages are now signed by Red Hat.")
-    return
 
 
 def remove_blacklisted_pkgs():
@@ -318,7 +317,6 @@ def remove_blacklisted_pkgs():
     print_pkg_info(installed_blacklisted_pkgs)
     utils.ask_to_continue()
     utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_blacklisted_pkgs])
-    return
 
 
 def replace_non_red_hat_packages():
@@ -350,8 +348,6 @@ def replace_non_red_hat_packages():
     loggerinst.info("Performing %s of the packages left ..." % cmd)
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 
-    return
-
 
 def preserve_only_rhel_kernel():
     loggerinst = logging.getLogger(__name__)
@@ -362,7 +358,6 @@ def preserve_only_rhel_kernel():
     if needs_update:
         loggerinst.info("Updating RHEL kernel.")
         call_yum_cmd(command="update", args="kernel")
-    return
 
 
 def install_gpg_keys():
@@ -375,7 +370,7 @@ def install_gpg_keys():
             print_output=False)
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
-    return
+
 
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
@@ -512,4 +507,3 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
             call_yum_cmd("install %s" % name)
-    return

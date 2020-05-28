@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from datetime import datetime
 
 import logging
 import os
@@ -78,7 +79,6 @@ class TestLogger(unittest.TestCase):
         custom_formatter = logger.CustomFormatter("%(message)s")
 
         self.dummy_handler.setFormatter(custom_formatter)
-        from datetime import datetime
         dt_strformat = '[%m/%d/%Y %H:%M:%S] DEBUG - '
         tempstr = datetime.now().strftime(dt_strformat) + self.test_msg
         self.check_formatter_result(

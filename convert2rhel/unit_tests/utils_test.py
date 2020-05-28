@@ -35,7 +35,6 @@ class TestUtils(unittest.TestCase):
 
         def __call__(self, *args, **kargs):
             self.called += 1
-            return
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
