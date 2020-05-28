@@ -87,7 +87,6 @@ class TestSubscription(unittest.TestCase):
 
         def __call__(self, *args, **kwargs):
             self.called += 1
-            return
 
     class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -229,4 +228,4 @@ class TestSubscription(unittest.TestCase):
         sku = self.FakeSubscription()
         for i in sku.dates_formats:
             self.assertEqual(subscription.parse_sub_attrs(sku(i))["ends"], i)
-            self.assertEqual(len(subscription.logging.getLogger.critical_msgs),0)
+            self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)

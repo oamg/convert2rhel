@@ -31,7 +31,7 @@ from convert2rhel.toolopts import tool_opts
 
 
 class TestToolopts(unittest.TestCase):
-    def _params(params):
+    def _params(params):  # pylint: disable=E0213
         return sys.argv[0:1] + params
 
     def setUp(self):

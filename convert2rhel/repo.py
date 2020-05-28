@@ -166,7 +166,6 @@ def warn_about_nonavail_pkgs(pkgs):
         loggerinst.info("\n".join(pkgs["removed"]))
         loggerinst.info("\n")
         utils.ask_to_continue()
-    return
 
 
 def get_supported_repos():
@@ -208,7 +207,6 @@ def print_supported_repos(repos):
     for key, value in repos.iteritems():
         loggerinst.info("%-*s  %s" % (max_key_length, key, value))
     loggerinst.info("\n")
-    return
 
 
 def get_repos_needed(repo_suffixes, supported_repos):
@@ -267,7 +265,6 @@ def check_needed_repos_availability(repo_ids_needed):
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed repos are available.")
-    return
 
 
 def get_avail_repos():

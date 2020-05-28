@@ -45,6 +45,7 @@ except ImportError:
 
     WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__doc__')
     WRAPPER_UPDATES = ('__dict__',)
+
     def update_wrapper(wrapper,
                        wrapped,
                        assigned=WRAPPER_ASSIGNMENTS,
@@ -149,7 +150,7 @@ def mock(class_or_module, orig_obj, mock_obj):
 
 def safe_repr(obj, short=False):
     """
-    Safetly calls repr(). 
+    Safetly calls repr().
     Returns a truncated string if repr message is too long.
     """
     try:
@@ -164,33 +165,32 @@ def safe_repr(obj, short=False):
 class ExtendedTestCase(unittest.TestCase):
     """
     Extends Nose test case with more helpers.
-    Most of these functions are taken from newer versions of Nose 
+    Most of these functions are taken from newer versions of Nose
     test and can be removed when we upgrade Nose test.
     """
     def assertIn(self, member, container, msg=None):
-        """ 
+        """
         Taken from newer nose test version.
         Just like self.assertTrue(a in b), but with a nicer default message.
         """
         if member not in container:
-            standardMsg = '%s not found in %s' % (safe_repr(member),
-                                                    safe_repr(container))
-            self.fail(self._formatMessage(msg, standardMsg))
+            standard_msg = '%s not found in %s' % (safe_repr(member),
+                                                  safe_repr(container))
+            self.fail(self._formatMessage(msg, standard_msg))
 
-
-    def _formatMessage(self, msg, standardMsg):
-        """ 
+    def _formatMessage(self, msg, standard_msg):
+        """
         Taken from newer nose test version.
         Formats the message in a safe manner for better readability.
         """
         if msg is None:
-            return standardMsg
+            return standard_msg
         try:
             # don't switch to '{}' formatting in Python 2.X
             # it changes the way unicode input is handled
-            return '%s : %s' % (standardMsg, msg)
+            return '%s : %s' % (standard_msg, msg)
         except UnicodeDecodeError:
-            return  '%s : %s' % (safe_repr(standardMsg), safe_repr(msg))
+            return '%s : %s' % (safe_repr(standard_msg), safe_repr(msg))
 
 
 class MockFunction(object):
