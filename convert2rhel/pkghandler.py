@@ -236,22 +236,23 @@ def print_pkg_info(pkgs):
     for pkg in pkgs:
         if not pkg.vendor:
             pkg.vendor = "N/A"
-    max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg), pkgs)))  # pylint disable: bad-builtin, deprecated-lambda
+    max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg),
+                                        pkgs)))  # pylint: disable=line-too-long, bad-builtin, deprecated-lambda
     max_vendor_length = max(max(imap(len, map(lambda pkg: pkg.vendor, pkgs))),
-                            len("Vendor")) # pylint disable: bad-builtin, deprecated-lambda
+                            len("Vendor"))  # pylint: disable=bad-builtin, deprecated-lambda
     loggerinst = logging.getLogger(__name__)
     result = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length,
                                  "Vendor", "Repository") + "\n"
     loggerinst.info("%-*s  %-*s  %s"
                     % (max_nvra_length, "Package", max_vendor_length, "Vendor",
-                       "Repository"))  # pylint disable: logging-not-lazy
+                       "Repository"))  # pylint: disable=logging-not-lazy
     result += "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
                                   max_vendor_length, "-" * len("Vendor"),
                                   "-" * len("Repository")) + "\n"
     loggerinst.info("%-*s  %-*s  %s"
                     % (max_nvra_length, "-" * len("Package"),
                        max_vendor_length, "-" * len("Vendor"),
-                       "-" * len("Repository")))  # pylint disable: logging-not-lazy
+                       "-" * len("Repository")))  # pylint: disable=logging-not-lazy
     for pkg in pkgs:
         try:
             from_repo = pkg.yumdb_info.from_repo
@@ -266,7 +267,7 @@ def print_pkg_info(pkgs):
         loggerinst.info("%-*s  %-*s  %s"
                         % (max_nvra_length, get_pkg_nvra(pkg),
                            max_vendor_length, pkg.vendor,
-                           from_repo))  # pylint disable: logging-not-lazy
+                           from_repo))  # pylint: disable=logging-not-lazy
     loggerinst.info("")
     return result
 
@@ -510,5 +511,5 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
-            call_yum_cmd("install %s", name)  # pylint disable: logging-not-lazy
+            call_yum_cmd("install %s", name)
     return
