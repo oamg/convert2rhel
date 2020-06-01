@@ -106,6 +106,9 @@ def get_registration_cmd():
     if 'org' in locals():
         # TODO: test how this option works with org name with spaces
         registration_cmd += " --org=%s" % org
+    if tool_opts.serverurl:
+        loggerinst.debug("    ... using custom RHSM URL")
+        registration_cmd += ' --serverurl="%s"' % tool_opts.serverurl
     return registration_cmd
 
 

@@ -189,6 +189,15 @@ class TestSubscription(unittest.TestCase):
                 'subscription-manager register --force '
                 '--username=jdoe --password="*****" --org=0123')
 
+
+    def test_rhsm_serverurl(self):
+        tool_opts.username = 'user'
+        tool_opts.password = 'pass'
+        tool_opts.serverurl = 'url'
+        expected = \
+            'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
+        self.assertEqual(subscription.get_registration_cmd(), expected)
+
     class FakeSubscription:
         def __init__(self):
             self.subscription = (
