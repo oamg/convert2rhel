@@ -32,6 +32,7 @@ class ToolOpts(object):
         self.disablerepo = []
         self.pool = None
         self.variant = None
+        self.serverurl = None
         self.autoaccept = None
         self.auto_attach = None
         self.restart = None
@@ -56,12 +57,14 @@ class CLI(object):
                  "  convert2rhel [-h]\n"
                  "  convert2rhel [-u username] [-p password | -f pswd_file]"
                  " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-                 " repoid] [-v variant] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+                 " repoid] [-v variant] [--serverurl url] [--no-rpm-va]"
+                 " [--debug] [--restart] [-y]\n"
                  "  convert2rhel [--disable-submgr] [--disablerepo repoid]"
                  " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
                  " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
-                 " variant] [--no-rpm-va] [--debug] [--restart] [-y]")
+                 " variant] [--serverurl url] [--no-rpm-va] [--debug]"
+                 " [--restart] [-y]")
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
                                      add_help_option=False)
@@ -127,6 +130,10 @@ class CLI(object):
                          " conversions from CentOS/OL 6/7, Server, and Client"
                          " for conversions from CentOS/OL 5. If not used, the"
                          " user is asked to choose a variant.")
+        group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
+                         " Manager server URL to register the system with. If"
+                         " not provided subscription-manager defaults will be"
+                         " used")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser,
@@ -201,6 +208,9 @@ class CLI(object):
                                     % ", ".join(
                                         rhelvariant.get_supported_variants()))
             tool_opts.variant = parsed_opts.variant
+
+        if parsed_opts.serverurl:
+            tool_opts.serverurl = parsed_opts.serverurl
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach

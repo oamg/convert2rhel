@@ -57,6 +57,11 @@ class TestToolopts(unittest.TestCase):
         self.assertEqual(tool_opts.password, "passwd")
         self.assertTrue(tool_opts.credentials_thru_cli)
 
+    @unit_tests.mock(sys, "argv", _params(["--serverurl", "url"]))
+    def test_custom_serverurl(self):
+        convert2rhel.toolopts.CLI()
+        self.assertEqual(tool_opts.serverurl, "url")
+
     @unit_tests.mock(sys, "argv", _params(["--disable-submgr", ""
                                            "--enablerepo", "foo"]))
     def test_cmdline_defaults_disablerepo_to_asterisk_with_disable_submgr(self):
