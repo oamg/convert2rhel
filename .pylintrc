@@ -23,6 +23,8 @@ disable=
  old-style-class,
 # "R" Refactor recommendations
  too-few-public-methods,
+# we need, some time, to disable pylint locally :)
+ locally-disabled,
 
 [REPORTS]
 
