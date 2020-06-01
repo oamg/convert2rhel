@@ -213,11 +213,11 @@ def rollback_changes():
     loggerinst = logging.getLogger(__name__)
 
     loggerinst.warn("Abnormal exit! Performing rollback ...")
+    subscription.rollback()
     utils.changed_pkgs_control.restore_pkgs()
     redhatrelease.system_release_file.restore()
     subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
-    subscription.rollback()
     return
 
 

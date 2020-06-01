@@ -58,7 +58,7 @@ def unregister_system():
                     " command ... ")
     _, ret_code = utils.run_subprocess(unregistration_cmd)
     if ret_code != 0:
-        loggerinst.info("System unregistration failed with return code = {0}}".format(str(ret_code)))
+        loggerinst.debug("System unregistration failed with return code = {0}}".format(str(ret_code)))
 
 
 def register_system():
@@ -422,5 +422,9 @@ def rollback_renamed_repo_files():
 
 def rollback():
     """Rollback all subscription related changes"""
+    loggerinst = logging.getLogger(__name__)
     rollback_renamed_repo_files()
-    unregister_system()
+    try:
+        unregister_system()
+    except OSError:
+        loggerinst.debug("subscription-manager not installed, skipping")
