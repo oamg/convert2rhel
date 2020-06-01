@@ -35,6 +35,7 @@ class PkgWFingerprint(object):
     """Tuple-like storage for the RPM object of a package and a fingerprint
     with which the package was signed.
     """
+
     def __init__(self, pkg_obj, fingerprint):
         self.pkg_obj = pkg_obj
         self.fingerprint = fingerprint
@@ -50,7 +51,7 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     for _ in xrange(MAX_YUM_CMD_CALLS):
         output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(
             get_installed_pkgs_by_fingerprint(fingerprints))))
-        loggerinst.info("Received return code: %s\n" % str(ret_code))
+        loggerinst.info("Received return code: %s\n", str(ret_code))
         # handle success condition #1
         if ret_code == 0:
             break
@@ -113,20 +114,20 @@ def get_problematic_pkgs(output, known_problematic_pkgs):
     loggerinst.info("\n\n")
     protected = re.findall("Error.*?\"(.*?)\".*?protected",
                            output, re.MULTILINE)
-    loggerinst.info("Found protected packages: %s" % protected)
+    loggerinst.info("Found protected packages: %s", protected)
     deps = re.findall("Error: Package: %s" % package_nevr_re,
                       output, re.MULTILINE)
-    loggerinst.info("Found deps packages: %s" % deps)
+    loggerinst.info("Found deps packages: %s", deps)
     multilib = re.findall("multilib versions: %s" % package_nevr_re,
                           output, re.MULTILINE)
-    loggerinst.info("Found multilib packages: %s" % multilib)
+    loggerinst.info("Found multilib packages: %s", multilib)
     req = re.findall("Requires: ([a-z-]*)", output, re.MULTILINE)
-    loggerinst.info("Found req packages: %s" % req)
+    loggerinst.info("Found req packages: %s", req)
 
     if protected + deps + multilib + req:
         newpkg = list(set(protected + deps + multilib + req) -
                       set(known_problematic_pkgs))
-        loggerinst.info("Adding packages to yum command: %s" % newpkg)
+        loggerinst.info("Adding packages to yum command: %s", newpkg)
         new_problematic_pkgs.extend(list(set(protected + deps + multilib + req)
                                          - set(known_problematic_pkgs)))
     return known_problematic_pkgs + new_problematic_pkgs
@@ -154,8 +155,7 @@ def resolve_dep_errors(output, pkgs):
     cmd = "downgrade"
     if int(system_info.version) >= 6:
         cmd = "distro-sync"
-    loggerinst.info("\n\nTrying to resolve the following packages: %s"
-                    % ", ".join(pkgs))
+    loggerinst.info("\n\nTrying to resolve the following packages: %s", ", ".join(pkgs))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs))
     if ret_code != 0:
         resolve_dep_errors(output, pkgs)
@@ -236,22 +236,22 @@ def print_pkg_info(pkgs):
     for pkg in pkgs:
         if not pkg.vendor:
             pkg.vendor = "N/A"
-    max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg), pkgs)))
+    max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg), pkgs)))  # pylint disable: bad-builtin, deprecated-lambda
     max_vendor_length = max(max(imap(len, map(lambda pkg: pkg.vendor, pkgs))),
-                            len("Vendor"))
+                            len("Vendor")) # pylint disable: bad-builtin, deprecated-lambda
     loggerinst = logging.getLogger(__name__)
     result = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length,
                                  "Vendor", "Repository") + "\n"
     loggerinst.info("%-*s  %-*s  %s"
                     % (max_nvra_length, "Package", max_vendor_length, "Vendor",
-                       "Repository"))
+                       "Repository"))  # pylint disable: logging-not-lazy
     result += "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
                                   max_vendor_length, "-" * len("Vendor"),
                                   "-" * len("Repository")) + "\n"
     loggerinst.info("%-*s  %-*s  %s"
                     % (max_nvra_length, "-" * len("Package"),
                        max_vendor_length, "-" * len("Vendor"),
-                       "-" * len("Repository")))
+                       "-" * len("Repository")))  # pylint disable: logging-not-lazy
     for pkg in pkgs:
         try:
             from_repo = pkg.yumdb_info.from_repo
@@ -266,7 +266,7 @@ def print_pkg_info(pkgs):
         loggerinst.info("%-*s  %-*s  %s"
                         % (max_nvra_length, get_pkg_nvra(pkg),
                            max_vendor_length, pkg.vendor,
-                           from_repo))
+                           from_repo))  # pylint disable: logging-not-lazy
     loggerinst.info("")
     return result
 
@@ -306,7 +306,7 @@ def remove_blacklisted_pkgs():
         temp = '.' * (50 - len(blacklisted_pkg) - 2)
         pkg_objects = get_installed_pkg_objects(blacklisted_pkg)
         installed_blacklisted_pkgs.extend(pkg_objects)
-        loggerinst.info("%s %s %s" %
+        loggerinst.info("%s %s %s",
                         (blacklisted_pkg, temp, str(len(pkg_objects))))
 
     if not installed_blacklisted_pkgs:
@@ -330,12 +330,10 @@ def replace_non_red_hat_packages():
     # TODO: run yum commands with --assumeno first and show the user what will
     # be done and then ask if we should continue the operation
 
-    loggerinst.info(
-        "Performing update of the %s packages ..." % system_info.name)
+    loggerinst.info("Performing update of the %s packages ...", system_info.name)
     call_yum_cmd_w_downgrades("update", system_info.fingerprints_orig_os)
 
-    loggerinst.info(
-        "Performing reinstallation of the %s packages ..." % system_info.name)
+    loggerinst.info("Performing reinstallation of the %s packages ...", system_info.name)
     call_yum_cmd_w_downgrades("reinstall", system_info.fingerprints_orig_os)
 
     # distro-sync/downgrade the packages that had the following:
@@ -347,7 +345,7 @@ def replace_non_red_hat_packages():
     cmd = "downgrade"
     if int(system_info.version) >= 6:
         cmd = "distro-sync"
-    loggerinst.info("Performing %s of the packages left ..." % cmd)
+    loggerinst.info("Performing %s of the packages left ...", cmd)
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 
     return
@@ -376,6 +374,7 @@ def install_gpg_keys():
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
     return
+
 
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
@@ -471,19 +470,19 @@ def replace_non_rhel_installed_kernel(version):
         pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
         enablerepo=tool_opts.enablerepo)
     if ret_code != 0:
-        loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
+        loggerinst.critical("Unable to download %s from RHEL repository", pkg)
         return
 
     loggerinst.info(
-        "Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+        "Replacing %s %s with RHEL kernel with the same NEVRA ... ", (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Unable to replace kernel package: %s" % output)
+        loggerinst.critical("Unable to replace kernel package: %s", output)
         return
 
-    loggerinst.info("\nRHEL %s installed.\n" % pkg)
+    loggerinst.info("\nRHEL %s installed.\n", pkg)
 
 
 def remove_non_rhel_kernels():
@@ -511,5 +510,5 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
-            call_yum_cmd("install %s" % name)
+            call_yum_cmd("install %s", name)  # pylint disable: logging-not-lazy
     return
