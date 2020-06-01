@@ -27,3 +27,14 @@ disable=
 [REPORTS]
 
 msg-template='[{msg_id} {symbol}] {msg} File: {path}, line {line}, in {obj}'
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=120
+
+[LOGGING]
+
+# Format style used to check logging format string. `old` means using %
+# formatting, `new` is for `{}` formatting,and `fstr` is for f-strings.
+logging-format-style=old
