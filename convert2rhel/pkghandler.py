@@ -196,8 +196,8 @@ def get_installed_pkg_objects(name=""):
     yum_base.doConfigSetup(init_plugins=False)
     if name:
         return yum_base.rpmdb.returnPackages(patterns=[name])
-    else:
-        return yum_base.rpmdb.returnPackages()
+
+    return yum_base.rpmdb.returnPackages()
 
 
 def get_third_party_pkgs():

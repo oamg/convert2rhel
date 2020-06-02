@@ -12,7 +12,9 @@ jobs:
     container: centos:centos6.9
 
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout Code
+      uses: actions/checkout@v1
+
 
     - name: Install Requirements
       run: |
@@ -21,11 +23,19 @@ jobs:
         python get-pip.py
         pip install pylint==1.1.0
         pip install astroid==1.2
-        
+
     - name: Run Pylint Checks
       run: |
-        pylint --rcfile=.pylintrc convert2rhel/
-        
+         function interpreted_pylint() {
+            local error_code=0
+            pylint --rcfile=.pylintrc convert2rhel/ || error_code=$?
+            if ! [ $((error_code & 3)) -eq 0 ]; then
+                return $error_code;
+            fi;
+            return 0;
+         }
+         interpreted_pylint
+
   pylint_check_2_7:
     runs-on: ubuntu-latest
     container: centos:centos7.7.1908
@@ -40,7 +50,15 @@ jobs:
         pip install --upgrade pip
         pip install setuptools
         pip install pylint
-        
+
     - name: Run Pylint Checks
       run: |
-        pylint --rcfile=.pylintrc convert2rhel/
+         function interpreted_pylint() {
+            local error_code=0
+            pylint --rcfile=.pylintrc convert2rhel/ || error_code=$?
+            if ! [ $((error_code & 3)) -eq 0 ]; then
+                return $error_code;
+            fi;
+            return 0;
+         }
+         interpreted_pylint

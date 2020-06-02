@@ -82,8 +82,8 @@ def get_file_content(filename, as_list=False):
     if as_list:
         # remove newline character from each line
         return [x.strip() for x in lines]
-    else:
-        return "".join(lines)
+
+    return "".join(lines)
 
 
 def store_content_to_file(filename, content):
@@ -345,9 +345,9 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
         if critical:
             loggerinst.critical("Error: Couldn't install %s packages." % pkgs)
             return False
-        else:
-            loggerinst.warning("Couldn't install %s packages." % pkgs)
-            return False
+
+        loggerinst.warning("Couldn't install %s packages." % pkgs)
+        return False
 
     for path in pkgs_to_install:
         nvra, _ = os.path.splitext(os.path.basename(path))

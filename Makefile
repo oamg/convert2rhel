@@ -19,3 +19,9 @@ images:
 tests:
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 ./run_unit_tests.sh
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 ./run_unit_tests.sh
+
+lint:
+	@pylint --rcfile=.pylintrc convert2rhel/
+
+lint-errors:
+	@pylint --rcfile=.pylintrc convert2rhel/ --errors-only
