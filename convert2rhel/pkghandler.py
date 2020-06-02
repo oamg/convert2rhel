@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import imap
+
 import logging
 import os
 import re
@@ -457,6 +458,11 @@ def replace_non_rhel_installed_kernel(version):
     utils.ask_to_continue()
 
     pkg = "kernel-%s" % version
+
+    utils.remove_pkgs(['kmod-kvdo', 'libreport'], critical=False)
+    for pkgname in set(system_info.pkg_blacklist):
+
+        utils.install_pkgs([pkgname.replace("centos", "redhat"), pkgname.replace("centos", "rhel")], replace=True)
 
     ret_code = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,

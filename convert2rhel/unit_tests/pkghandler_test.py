@@ -327,12 +327,29 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     class RemovePkgsMocked(unit_tests.MockFunction):
         def __init__(self):
+            self.called = 0
             self.pkgs = None
             self.should_bkp = False
+            self.critical = True
 
-        def __call__(self, pkgs_to_remove, should_backup=False):
+        def __call__(self, pkgs_to_remove, should_backup=False, critical=True):
+            self.called += 1
             self.pkgs = pkgs_to_remove
             self.should_bkp = should_backup
+            self.critical = critical
+
+    class InstallPkgsMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.pkgs = []
+            self.replace = False
+            self.critical = True
+
+        def __call__(self, pkgs_to_install, replace=False, critical=True):
+            self.called += 1
+            self.pkgs += pkgs_to_install
+            self.replace = replace
+            self.critical = critical
 
     @unit_tests.mock(system_info, "pkg_blacklist", ["installed_pkg",
                                                     "not_installed_pkg"])
@@ -544,9 +561,18 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(utils, "install_pkgs", InstallPkgsMocked())
+    @unit_tests.mock(system_info, "pkg_blacklist", ['centos-test-pkg', 'centos-test-pkg2'])
     def test_replace_non_rhel_installed_kernel(self):
         version = '4.7.4-200.fc24'
         pkghandler.replace_non_rhel_installed_kernel(version)
+        self.assertEqual(utils.remove_pkgs.called, 1)
+        self.assertIn("kmod-kvdo", utils.remove_pkgs.pkgs)
+        self.assertIn("libreport", utils.remove_pkgs.pkgs)
+        self.assertEqual(utils.install_pkgs.called, 2)
+        self.assertEqual(utils.install_pkgs.pkgs,
+                         ['redhat-test-pkg2', 'rhel-test-pkg2', 'redhat-test-pkg', 'rhel-test-pkg'])
         self.assertEqual(utils.download_pkg.called, 1)
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
         self.assertEqual(utils.run_subprocess.cmd,
