@@ -30,8 +30,8 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 from convert2rhel.systeminfo import system_info
 
-class TestCert(unittest.TestCase):
 
+class TestCert(unittest.TestCase):
     class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return [os.path.join(cert._REDHAT_RELEASE_CERT_DIR, "69.pem")]
@@ -45,8 +45,7 @@ class TestCert(unittest.TestCase):
             self.source = source
             self.dest = dest
 
-    base_data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                                  "..", "data", "5", "x86_64"))
+    base_data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "5", "x86_64"))
 
     @unit_tests.mock(glob, "glob", GlobMocked())
     @unit_tests.mock(utils, "mkdir_p", MkdirPMocked())
@@ -55,6 +54,5 @@ class TestCert(unittest.TestCase):
     @unit_tests.mock(utils, "DATA_DIR", base_data_dir)
     def test_copy_cert_for_rhel_5(self):
         cert.copy_cert_for_rhel_5()
-        self.assertEqual(shutil.copy.source,
-                         os.path.join(cert._REDHAT_RELEASE_CERT_DIR, "69.pem"))
+        self.assertEqual(shutil.copy.source, os.path.join(cert._REDHAT_RELEASE_CERT_DIR, "69.pem"))
         self.assertEqual(shutil.copy.dest, cert._SUBSCRIPTION_MANAGER_CERT_DIR)

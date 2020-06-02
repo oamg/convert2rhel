@@ -25,7 +25,6 @@ from convert2rhel import logger
 
 
 class SystemInfo(object):
-
     def __init__(self):
         # Operating system name (e.g. Oracle Linux)
         self.name = None
@@ -47,7 +46,8 @@ class SystemInfo(object):
             "5326810137017186",
             # RHEL 5: RPM-GPG-KEY-redhat-former
             # RHEL 6/7: RPM-GPG-KEY-redhat-legacy-former
-            "219180cddb42a60e"]
+            "219180cddb42a60e",
+        ]
         # Packages to be removed before the system conversion
         self.pkg_blacklist = []
         self.cfg_filename = None
@@ -73,17 +73,16 @@ class SystemInfo(object):
 
     def _get_system_release_file_content(self):
         from convert2rhel import redhatrelease
+
         return redhatrelease.get_system_release_content()
 
     def _get_system_name(self):
-        name = re.search(r"(.+?)\s?(?:release\s?)?\d",
-                         self.system_release_file_content).group(1)
+        name = re.search(r"(.+?)\s?(?:release\s?)?\d", self.system_release_file_content).group(1)
         self.logger.info("%-20s %s" % ("Name:", name))
         return name
 
     def _get_system_version(self):
-        version = re.search(r".+?(\d+)\.?",
-                            self.system_release_file_content).group(1)
+        version = re.search(r".+?(\d+)\.?", self.system_release_file_content).group(1)
 
         self.logger.info("%-20s %s" % ("OS major version:", version))
         return version
@@ -95,9 +94,7 @@ class SystemInfo(object):
         return arch
 
     def _get_cfg_filename(self):
-        cfg_filename = "%s-%s-%s.cfg" % (self.id,
-                                         self.version,
-                                         self.arch)
+        cfg_filename = "%s-%s-%s.cfg" % (self.id, self.version, self.arch)
         self.logger.info("%-20s %s" % ("Config filename:", cfg_filename))
         return cfg_filename
 
@@ -109,30 +106,28 @@ class SystemInfo(object):
         file.
         """
         cfg_parser = ConfigParser.ConfigParser()
-        cfg_filepath = os.path.join(utils.DATA_DIR, "configs",
-                                    self.cfg_filename)
+        cfg_filepath = os.path.join(utils.DATA_DIR, "configs", self.cfg_filename)
         if not cfg_parser.read(cfg_filepath):
-            self.logger.critical("Current combination of system distribution"
-                                 " and architecture is not supported for the"
-                                 " conversion to RHEL.")
+            self.logger.critical(
+                "Current combination of system distribution"
+                " and architecture is not supported for the"
+                " conversion to RHEL."
+            )
 
         options_list = cfg_parser.options(section_name)
-        return dict(zip(options_list,
-                        map(lambda opt: cfg_parser.get(section_name, opt),
-                            options_list)))
+        return dict(zip(options_list, map(lambda opt: cfg_parser.get(section_name, opt), options_list)))
 
     def _get_default_repository_id(self):
         return self._get_cfg_opt("default_repository_id")
-
 
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""
         if option_name in self.cfg_content:
             return self.cfg_content[option_name]
         else:
-            self.logger.error("Internal error: %s option not found in %s"
-                              " config file."
-                              % (option_name, self.cfg_filename))
+            self.logger.error(
+                "Internal error: %s option not found in %s" " config file." % (option_name, self.cfg_filename)
+            )
 
     def _get_gpg_key_fingerprints(self):
         return self._get_cfg_opt("gpg_fingerprints").split()
@@ -147,14 +142,15 @@ class SystemInfo(object):
             self.logger.info("Skipping execution of 'rpm -Va'.")
             return
 
-        self.logger.info("Running the 'rpm -Va' command which can take several"
-                         " minutes. It can be disabled by using the"
-                         " --no-rpm-va option.")
+        self.logger.info(
+            "Running the 'rpm -Va' command which can take several"
+            " minutes. It can be disabled by using the"
+            " --no-rpm-va option."
+        )
         rpm_va, _ = utils.run_subprocess("rpm -Va", print_output=False)
         output_file = os.path.join(logger.LOG_DIR, "rpm_va.log")
         utils.store_content_to_file(output_file, rpm_va)
-        self.logger.info("The 'rpm -Va' output has been stored in the %s file"
-                         % output_file)
+        self.logger.info("The 'rpm -Va' output has been stored in the %s file" % output_file)
 
 
 # Code to be executed upon module import

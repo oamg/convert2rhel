@@ -29,13 +29,11 @@ from convert2rhel import utils
 
 
 class TestMain(unittest.TestCase):
-
     class AskToContinueMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
 
-    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                             "..", "data", "version-independent"))
+    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
 
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "DATA_DIR", eula_dir)

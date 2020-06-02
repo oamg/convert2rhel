@@ -29,16 +29,16 @@ import traceback
 
 
 class Color:
-    PURPLE = '\033[95m'
-    CYAN = '\033[96m'
-    DARKCYAN = '\033[36m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    END = '\033[0m'
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    DARKCYAN = "\033[36m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    END = "\033[0m"
 
 
 # Absolute path of a directory holding data for this tool
@@ -109,11 +109,11 @@ def store_content_to_file(filename, content):
 def restart_system():
     loggerinst = logging.getLogger(__name__)
     from convert2rhel.toolopts import tool_opts
+
     if tool_opts.restart:
         run_subprocess("reboot")
     else:
-        loggerinst.warning("In order to boot the RHEL kernel,"
-                           " restart of the system is needed.")
+        loggerinst.warning("In order to boot the RHEL kernel," " restart of the system is needed.")
     return
 
 
@@ -122,23 +122,20 @@ def run_subprocess(cmd="", **kwargs):
     output. Swiching off printing the command can be useful in case it contains
     a password in plain text.
     """
-    print_cmd = kwargs.get('print_cmd', True)
-    print_output = kwargs.get('print_output', True)
+    print_cmd = kwargs.get("print_cmd", True)
+    print_output = kwargs.get("print_output", True)
     loggerinst = logging.getLogger(__name__)
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
     cmd = shlex.split(cmd, False)
-    sp_popen = subprocess.Popen(cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                bufsize=1)
-    stdout = ''
-    for line in iter(sp_popen.stdout.readline, ''):
+    sp_popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    stdout = ""
+    for line in iter(sp_popen.stdout.readline, ""):
         # communicate() method buffers everything in memory, we will
         # read stdout directly
         stdout += line
         if print_output:
-            loggerinst.info(line.rstrip('\n'))
+            loggerinst.info(line.rstrip("\n"))
     sp_popen.communicate()
 
     return stdout, sp_popen.returncode
@@ -148,8 +145,7 @@ def let_user_choose_item(num_of_options, item_to_choose):
     """Ask user to enter a number corresponding to the item they choose."""
     loggerinst = logging.getLogger(__name__)
     while True:  # Loop until user enters a valid number
-        opt_num = prompt_user("Enter number of the chosen %s: "
-                              % item_to_choose)
+        opt_num = prompt_user("Enter number of the chosen %s: " % item_to_choose)
         try:
             opt_num = int(opt_num)
         except ValueError:
@@ -158,8 +154,7 @@ def let_user_choose_item(num_of_options, item_to_choose):
         if 0 < opt_num <= num_of_options:
             break
         else:
-            loggerinst.warning("The entered number is not in range"
-                               " 1 - %s." % num_of_options)
+            loggerinst.warning("The entered number is not in range" " 1 - %s." % num_of_options)
     return opt_num - 1  # Get zero-based list index
 
 
@@ -182,6 +177,7 @@ def ask_to_continue():
     """
     loggerinst = logging.getLogger(__name__)
     from convert2rhel.toolopts import tool_opts
+
     if tool_opts.autoaccept:
         return
     while True:
@@ -221,8 +217,7 @@ def log_traceback(debug):
 def get_traceback_str():
     """Get a traceback of an exception as a string."""
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    return "".join(traceback.format_exception(exc_type, exc_value,
-                                              exc_traceback))
+    return "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
 
 class DictWListValues(dict):
@@ -265,8 +260,7 @@ class ChangedRPMPackagesController(object):
         pkgs_to_install = []
         for restorable_pkg in self.removed_pkgs:
             if restorable_pkg.path is None:
-                loggerinst.warning("Couldn't find a backup for %s package."
-                                   % restorable_pkg.name)
+                loggerinst.warning("Couldn't find a backup for %s package." % restorable_pkg.name)
                 continue
             pkgs_to_install.append(restorable_pkg.path)
 
@@ -284,8 +278,7 @@ def remove_orphan_folders():
     stil present, are empty, and that blocks us from installing centos-release
     pkg back. So, by now, we are removing them manually.
     """
-    rh_release_paths = ['/usr/share/redhat-release',
-                        '/usr/share/doc/redhat-release']
+    rh_release_paths = ["/usr/share/redhat-release", "/usr/share/doc/redhat-release"]
 
     def is_dir_empty(path):
         return not os.listdir(path)
@@ -374,7 +367,6 @@ def download_pkg(pkg, dest=TMP_DIR, disablerepo=[], enablerepo=[]):
 
 
 class RestorableFile(object):
-
     def __init__(self, filepath):
         self.filepath = filepath
 
@@ -382,23 +374,19 @@ class RestorableFile(object):
         """ Save current version of a file """
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
-        if (os.path.isfile(self.filepath) and
-                os.path.isdir(TMP_DIR)):
+        if os.path.isfile(self.filepath) and os.path.isdir(TMP_DIR):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
                 shutil.copy2(self.filepath, TMP_DIR)
             except IOError, err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno,
-                                                           err.strerror))
+                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
         else:
-            loggerinst.warning("Can't find %s or %s"
-                               % (self.filepath, TMP_DIR))
+            loggerinst.warning("Can't find %s or %s" % (self.filepath, TMP_DIR))
 
     def restore(self):
         """ Restore a previously backed up file """
         loggerinst = logging.getLogger(__name__)
-        backup_filepath = os.path.join(TMP_DIR,
-                                       os.path.basename(self.filepath))
+        backup_filepath = os.path.join(TMP_DIR, os.path.basename(self.filepath))
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
 
         if not os.path.isfile(backup_filepath):
@@ -409,8 +397,7 @@ class RestorableFile(object):
         except IOError, err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
-            loggerinst.warning("I/O error(%s): %s" % (err.errno,
-                                                      err.strerror))
+            loggerinst.warning("I/O error(%s): %s" % (err.errno, err.strerror))
             return
         loggerinst.info("File %s restored" % self.filepath)
 
@@ -418,17 +405,14 @@ class RestorableFile(object):
         """ Remove a previously backed up file """
         loggerinst = logging.getLogger(__name__)
         if os.path.isfile(self.filepath):
-            loggerinst.warning("Removing %s saved during previous run of"
-                               " convert2rhel" % self.filepath)
+            loggerinst.warning("Removing %s saved during previous run of" " convert2rhel" % self.filepath)
             try:
                 os.remove(self.filepath)
             except IOError, err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno,
-                                                           err.strerror))
+                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
 
 
 class RestorablePackage(object):
-
     def __init__(self, pkgname):
         self.name = pkgname
         self.path = None
@@ -448,8 +432,7 @@ class RestorablePackage(object):
                     self.path = os.path.join(TMP_DIR, file)
 
             if self.path is None:
-                loggerinst.warning("Couldn't retrieve downloaded %s package."
-                                   % self.name)
+                loggerinst.warning("Couldn't retrieve downloaded %s package." % self.name)
         else:
             loggerinst.warning("Can't find %s" % TMP_DIR)
 

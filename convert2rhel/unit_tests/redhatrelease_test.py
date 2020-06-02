@@ -38,10 +38,12 @@ class TestRedHatRelease(unittest.TestCase):
 
     class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
-                    unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
-                    "Server/redhat-release-7/pkg1.rpm",
-                    "Server/redhat-release-7/pkg2.rpm"]
+            return [
+                unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
+                unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
+                "Server/redhat-release-7/pkg1.rpm",
+                "Server/redhat-release-7/pkg2.rpm",
+            ]
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -63,11 +65,14 @@ class TestRedHatRelease(unittest.TestCase):
 
             redhatrelease.install_release_pkg()
 
-            self.assertEqual(utils.run_subprocess.cmd, "rpm -i" +
-                             " /tmp/convert2rhel_test/redhat-release/pkg1.rpm" +
-                             " /tmp/convert2rhel_test/redhat-release/pkg2.rpm" +
-                             " Server/redhat-release-7/pkg1.rpm" +
-                             " Server/redhat-release-7/pkg2.rpm")
+            self.assertEqual(
+                utils.run_subprocess.cmd,
+                "rpm -i"
+                + " /tmp/convert2rhel_test/redhat-release/pkg1.rpm"
+                + " /tmp/convert2rhel_test/redhat-release/pkg2.rpm"
+                + " Server/redhat-release-7/pkg1.rpm"
+                + " Server/redhat-release-7/pkg2.rpm",
+            )
 
     @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     def test_get_yum_conf_content(self):
@@ -94,10 +99,8 @@ class TestRedHatRelease(unittest.TestCase):
             # Call just this function to avoid unmockable built-in write func
             yum_conf._insert_distroverpkg_tag()
 
-            self.assertTrue("\ndistroverpkg=redhat-release" in
-                            yum_conf._yum_conf_content)
-            self.assertEqual(yum_conf._yum_conf_content.count(
-                                "\ndistroverpkg="), 1)
+            self.assertTrue("\ndistroverpkg=redhat-release" in yum_conf._yum_conf_content)
+            self.assertEqual(yum_conf._yum_conf_content.count("\ndistroverpkg="), 1)
 
 
 YUM_CONF_WITHOUT_DISTROVERPKG = """[main]

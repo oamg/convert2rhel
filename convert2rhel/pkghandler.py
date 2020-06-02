@@ -35,6 +35,7 @@ class PkgWFingerprint(object):
     """Tuple-like storage for the RPM object of a package and a fingerprint
     with which the package was signed.
     """
+
     def __init__(self, pkg_obj, fingerprint):
         self.pkg_obj = pkg_obj
         self.fingerprint = fingerprint
@@ -48,8 +49,7 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
 
     loggerinst = logging.getLogger(__name__)
     for _ in xrange(MAX_YUM_CMD_CALLS):
-        output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(
-            get_installed_pkgs_by_fingerprint(fingerprints))))
+        output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(get_installed_pkgs_by_fingerprint(fingerprints))))
         loggerinst.info("Received return code: %s\n" % str(ret_code))
         # handle success condition #1
         if ret_code == 0:
@@ -67,8 +67,7 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     return
 
 
-def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None,
-                 print_output=True):
+def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None, print_output=True):
     """Call yum command and optionally print its output."""
     loggerinst = logging.getLogger(__name__)
 
@@ -99,8 +98,7 @@ def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None,
     # handle when yum returns non-zero code when there is nothing to do
     nothing_to_do_error_exists = stdout.endswith("Error: Nothing to do\n")
     if returncode == 1 and nothing_to_do_error_exists:
-        loggerinst.info("Return code 1 however nothing to do. Returning code 0"
-                        " ... ")
+        loggerinst.info("Return code 1 however nothing to do. Returning code 0" " ... ")
         returncode = 0
     return stdout, returncode
 
@@ -111,24 +109,19 @@ def get_problematic_pkgs(output, known_problematic_pkgs):
 
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("\n\n")
-    protected = re.findall("Error.*?\"(.*?)\".*?protected",
-                           output, re.MULTILINE)
+    protected = re.findall('Error.*?"(.*?)".*?protected', output, re.MULTILINE)
     loggerinst.info("Found protected packages: %s" % protected)
-    deps = re.findall("Error: Package: %s" % package_nevr_re,
-                      output, re.MULTILINE)
+    deps = re.findall("Error: Package: %s" % package_nevr_re, output, re.MULTILINE)
     loggerinst.info("Found deps packages: %s" % deps)
-    multilib = re.findall("multilib versions: %s" % package_nevr_re,
-                          output, re.MULTILINE)
+    multilib = re.findall("multilib versions: %s" % package_nevr_re, output, re.MULTILINE)
     loggerinst.info("Found multilib packages: %s" % multilib)
     req = re.findall("Requires: ([a-z-]*)", output, re.MULTILINE)
     loggerinst.info("Found req packages: %s" % req)
 
     if protected + deps + multilib + req:
-        newpkg = list(set(protected + deps + multilib + req) -
-                      set(known_problematic_pkgs))
+        newpkg = list(set(protected + deps + multilib + req) - set(known_problematic_pkgs))
         loggerinst.info("Adding packages to yum command: %s" % newpkg)
-        new_problematic_pkgs.extend(list(set(protected + deps + multilib + req)
-                                         - set(known_problematic_pkgs)))
+        new_problematic_pkgs.extend(list(set(protected + deps + multilib + req) - set(known_problematic_pkgs)))
     return known_problematic_pkgs + new_problematic_pkgs
 
 
@@ -143,8 +136,7 @@ def resolve_dep_errors(output, pkgs):
     if set(prev_pkgs) == set(pkgs):
         # No package has been added to the list of packages to be downgraded.
         # There's no point in calling the yum downgrade command again.
-        loggerinst.info("No other package to try to downgrade in order to"
-                        " resolve yum dependency errors.")
+        loggerinst.info("No other package to try to downgrade in order to" " resolve yum dependency errors.")
         return
 
     # distro-sync is not available until yum v3.2.28:
@@ -154,8 +146,7 @@ def resolve_dep_errors(output, pkgs):
     cmd = "downgrade"
     if int(system_info.version) >= 6:
         cmd = "distro-sync"
-    loggerinst.info("\n\nTrying to resolve the following packages: %s"
-                    % ", ".join(pkgs))
+    loggerinst.info("\n\nTrying to resolve the following packages: %s" % ", ".join(pkgs))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs))
     if ret_code != 0:
         resolve_dep_errors(output, pkgs)
@@ -169,8 +160,7 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     filtered by name.
     """
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
-    return [pkg.pkg_obj.name for pkg in pkgs_w_fingerprints
-            if pkg.fingerprint in fingerprints]
+    return [pkg.pkg_obj.name for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints]
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
@@ -181,13 +171,12 @@ def get_installed_pkgs_w_fingerprints(name=""):
     package_objects = get_installed_pkg_objects(name)
     pkgs_w_fingerprints = []
     for pkg_obj in package_objects:
-        pkg_sig = pkg_obj.hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:"
-                                      "{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:"
-                                      "{(none)}|}|")
+        pkg_sig = pkg_obj.hdr.sprintf(
+            "%|DSAHEADER?{%{DSAHEADER:pgpsig}}:" "{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:" "{(none)}|}|"
+        )
         fingerprint_match = re.search("Key ID (.*)", pkg_sig)
         if fingerprint_match:
-            pkgs_w_fingerprints.append(PkgWFingerprint(
-                pkg_obj, fingerprint_match.group(1)))
+            pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, fingerprint_match.group(1)))
         else:
             pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, "none"))
     return pkgs_w_fingerprints
@@ -211,7 +200,8 @@ def get_third_party_pkgs():
     signed) which are going to be kept untouched.
     """
     third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_orig_os + system_info.fingerprints_rhel)
+        system_info.fingerprints_orig_os + system_info.fingerprints_rhel
+    )
     return third_party_pkgs
 
 
@@ -226,9 +216,11 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
         return []
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
     # Skip the gpg-pubkey package, it never has a signature
-    return [pkg.pkg_obj for pkg in pkgs_w_fingerprints
-            if pkg.fingerprint not in fingerprints and
-            pkg.pkg_obj.name != "gpg-pubkey"]
+    return [
+        pkg.pkg_obj
+        for pkg in pkgs_w_fingerprints
+        if pkg.fingerprint not in fingerprints and pkg.pkg_obj.name != "gpg-pubkey"
+    ]
 
 
 def print_pkg_info(pkgs):
@@ -237,21 +229,19 @@ def print_pkg_info(pkgs):
         if not pkg.vendor:
             pkg.vendor = "N/A"
     max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg), pkgs)))
-    max_vendor_length = max(max(imap(len, map(lambda pkg: pkg.vendor, pkgs))),
-                            len("Vendor"))
+    max_vendor_length = max(max(imap(len, map(lambda pkg: pkg.vendor, pkgs))), len("Vendor"))
     loggerinst = logging.getLogger(__name__)
-    result = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length,
-                                 "Vendor", "Repository") + "\n"
-    loggerinst.info("%-*s  %-*s  %s"
-                    % (max_nvra_length, "Package", max_vendor_length, "Vendor",
-                       "Repository"))
-    result += "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
-                                  max_vendor_length, "-" * len("Vendor"),
-                                  "-" * len("Repository")) + "\n"
-    loggerinst.info("%-*s  %-*s  %s"
-                    % (max_nvra_length, "-" * len("Package"),
-                       max_vendor_length, "-" * len("Vendor"),
-                       "-" * len("Repository")))
+    result = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length, "Vendor", "Repository") + "\n"
+    loggerinst.info("%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length, "Vendor", "Repository"))
+    result += (
+        "%-*s  %-*s  %s"
+        % (max_nvra_length, "-" * len("Package"), max_vendor_length, "-" * len("Vendor"), "-" * len("Repository"))
+        + "\n"
+    )
+    loggerinst.info(
+        "%-*s  %-*s  %s"
+        % (max_nvra_length, "-" * len("Package"), max_vendor_length, "-" * len("Vendor"), "-" * len("Repository"))
+    )
     for pkg in pkgs:
         try:
             from_repo = pkg.yumdb_info.from_repo
@@ -260,22 +250,18 @@ def print_pkg_info(pkgs):
             # KeyError is for Python 2.4, AttributeError is for Python 2.6+ due
             # to a different implementation of rpm library.
             from_repo = "N/A"
-        result += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
-                                      max_vendor_length, pkg.vendor,
-                                      from_repo) + "\n"
-        loggerinst.info("%-*s  %-*s  %s"
-                        % (max_nvra_length, get_pkg_nvra(pkg),
-                           max_vendor_length, pkg.vendor,
-                           from_repo))
+        result += (
+            "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg), max_vendor_length, pkg.vendor, from_repo) + "\n"
+        )
+        loggerinst.info(
+            "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg), max_vendor_length, pkg.vendor, from_repo)
+        )
     loggerinst.info("")
     return result
 
 
 def get_pkg_nvra(pkg_obj):
-    return "%s-%s-%s.%s" % (pkg_obj.name,
-                            pkg_obj.version,
-                            pkg_obj.release,
-                            pkg_obj.arch)
+    return "%s-%s-%s.%s" % (pkg_obj.name, pkg_obj.version, pkg_obj.release, pkg_obj.arch)
 
 
 def list_non_red_hat_pkgs_left():
@@ -284,8 +270,7 @@ def list_non_red_hat_pkgs_left():
     """
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Listing packages not signed by Red Hat")
-    non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_rhel)
+    non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
     if non_red_hat_pkgs:
         loggerinst.info("The following packages were left unchanged.")
         print_pkg_info(non_red_hat_pkgs)
@@ -303,11 +288,10 @@ def remove_blacklisted_pkgs():
     installed_blacklisted_pkgs = []
     loggerinst.info("Searching for the following blacklisted packages:\n")
     for blacklisted_pkg in system_info.pkg_blacklist:
-        temp = '.' * (50 - len(blacklisted_pkg) - 2)
+        temp = "." * (50 - len(blacklisted_pkg) - 2)
         pkg_objects = get_installed_pkg_objects(blacklisted_pkg)
         installed_blacklisted_pkgs.extend(pkg_objects)
-        loggerinst.info("%s %s %s" %
-                        (blacklisted_pkg, temp, str(len(pkg_objects))))
+        loggerinst.info("%s %s %s" % (blacklisted_pkg, temp, str(len(pkg_objects))))
 
     if not installed_blacklisted_pkgs:
         loggerinst.info("\nNothing to do.")
@@ -330,12 +314,10 @@ def replace_non_red_hat_packages():
     # TODO: run yum commands with --assumeno first and show the user what will
     # be done and then ask if we should continue the operation
 
-    loggerinst.info(
-        "Performing update of the %s packages ..." % system_info.name)
+    loggerinst.info("Performing update of the %s packages ..." % system_info.name)
     call_yum_cmd_w_downgrades("update", system_info.fingerprints_orig_os)
 
-    loggerinst.info(
-        "Performing reinstallation of the %s packages ..." % system_info.name)
+    loggerinst.info("Performing reinstallation of the %s packages ..." % system_info.name)
     call_yum_cmd_w_downgrades("reinstall", system_info.fingerprints_orig_os)
 
     # distro-sync/downgrade the packages that had the following:
@@ -370,12 +352,11 @@ def install_gpg_keys():
     gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
-        output, ret_code = utils.run_subprocess(
-            'rpm --import %s' % os.path.join(gpg_path, gpg_key),
-            print_output=False)
+        output, ret_code = utils.run_subprocess("rpm --import %s" % os.path.join(gpg_path, gpg_key), print_output=False)
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
     return
+
 
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
@@ -387,22 +368,21 @@ def install_rhel_kernel():
 
     # check condition - failed installation
     if ret_code:
-        loggerinst.critical("Error occured while attempting to install the"
-                            " RHEL kernel")
+        loggerinst.critical("Error occured while attempting to install the" " RHEL kernel")
 
     # check condition - kernel with same version is already installed
     already_installed = re.search(r" (.*?) already installed", output)
     if already_installed:
         kernel_version = already_installed.group(1)
-        kernel_obj = get_installed_pkgs_w_different_fingerprint(
-            system_info.fingerprints_rhel, kernel_version)
+        kernel_obj = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, kernel_version)
         if kernel_obj:
             # If the installed kernel is from a third party (non-RHEL) and has
             # the same NEVRA as the one available from RHEL repos, it's
             # necessary to install an older version RHEL kernel, because the
             # third party one will be removed later in the conversion process.
-            loggerinst.info("\nConflict of kernels: One of the installed kernels"
-                            " has the same version as the latest RHEL kernel.")
+            loggerinst.info(
+                "\nConflict of kernels: One of the installed kernels" " has the same version as the latest RHEL kernel."
+            )
             handle_no_newer_rhel_kernel_available()
             return True
     return False
@@ -437,16 +417,12 @@ def get_kernel_availability():
     """Return a tuple - a list of installed kernel versions and a list of
     available kernel versions.
     """
-    output, _ = call_yum_cmd(command="list", args="--showduplicates kernel",
-                             print_output=False)
-    return (list(get_kernel(data))
-            for data in output.split("Available Packages"))
+    output, _ = call_yum_cmd(command="list", args="--showduplicates kernel", print_output=False)
+    return (list(get_kernel(data)) for data in output.split("Available Packages"))
 
 
 def get_kernel(kernels_raw):
-    for kernel in re.findall(
-            r"kernel.*?\s+(\S+)\s+\S+",
-            kernels_raw, re.MULTILINE):
+    for kernel in re.findall(r"kernel.*?\s+(\S+)\s+\S+", kernels_raw, re.MULTILINE):
         yield kernel
 
 
@@ -455,30 +431,31 @@ def replace_non_rhel_installed_kernel(version):
     version.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.warning("The convert2rhel is going to force-replace the only"
-                       " kernel installed, which has the same NEVRA as the"
-                       " only available RHEL kernel. If anything goes wrong"
-                       " with such replacement, the system will become"
-                       " unbootable. If you want the convert2rhel to install"
-                       " the RHEL kernel in a safer manner, you can install a"
-                       " different version of kernel first and then run"
-                       " convert2rhel again.")
+    loggerinst.warning(
+        "The convert2rhel is going to force-replace the only"
+        " kernel installed, which has the same NEVRA as the"
+        " only available RHEL kernel. If anything goes wrong"
+        " with such replacement, the system will become"
+        " unbootable. If you want the convert2rhel to install"
+        " the RHEL kernel in a safer manner, you can install a"
+        " different version of kernel first and then run"
+        " convert2rhel again."
+    )
     utils.ask_to_continue()
 
     pkg = "kernel-%s" % version
 
     ret_code = utils.download_pkg(
-        pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
-        enablerepo=tool_opts.enablerepo)
+        pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo, enablerepo=tool_opts.enablerepo
+    )
     if ret_code != 0:
         loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
         return
 
-    loggerinst.info(
-        "Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+    loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
-        'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
-        print_output=False)
+        "rpm -i --force --replacepkgs %s*" % os.path.join(utils.TMP_DIR, pkg), print_output=False
+    )
     if ret_code != 0:
         loggerinst.critical("Unable to replace kernel package: %s" % output)
         return
@@ -489,8 +466,7 @@ def replace_non_rhel_installed_kernel(version):
 def remove_non_rhel_kernels():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Searching for non-RHEL kernels ...")
-    non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_rhel, "kernel*")
+    non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel*")
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
@@ -506,8 +482,8 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     # Enterprise Kernel), e.g. kernel-uek-devel instead of kernel-devel. Such
     # package names need to be mapped to the RHEL kernel package names to have
     # them installed on the converted system.
-    ol_kernel_ext = '-uek'
-    pkg_names = [p.name.replace(ol_kernel_ext, '', 1) for p in additional_pkgs]
+    ol_kernel_ext = "-uek"
+    pkg_names = [p.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)

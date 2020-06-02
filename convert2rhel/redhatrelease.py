@@ -30,8 +30,7 @@ def install_release_pkg():
     loggerinst.info("Installing %s package" % get_release_pkg_name())
 
     system_release_file.remove()
-    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release",
-                            tool_opts.variant, "redhat-release-*")
+    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release", tool_opts.variant, "redhat-release-*")
 
     success = utils.install_pkgs(glob.glob(pkg_path))
     if success:
@@ -44,8 +43,7 @@ def install_release_pkg():
     # done when user selects to disable submgr
     repofile = "/etc/yum.repos.d/rhel-source.repo"
     if tool_opts.disable_submgr and os.path.isfile(repofile):
-        loggerinst.info("Removing /etc/yum.repos.d/rhel-source.repo "
-                        "that was installed by the package ...")
+        loggerinst.info("Removing /etc/yum.repos.d/rhel-source.repo " "that was installed by the package ...")
         os.remove(repofile)
     return
 
@@ -56,6 +54,7 @@ def get_release_pkg_name():
     redhat-release-server.
     """
     from convert2rhel.systeminfo import system_info
+
     if int(system_info.version) >= 6:
         release_pkg_name = "redhat-release-" + tool_opts.variant.lower()
     else:
@@ -68,14 +67,17 @@ def get_system_release_filepath():
     version.
     """
     loggerinst = logging.getLogger(__name__)
-    possible_release_filenames = ["system-release",  # RHEL 6/7 based OSes
-                                  "oracle-release",  # Oracle Linux 5
-                                  "redhat-release"]  # CentOS 5
+    possible_release_filenames = [
+        "system-release",  # RHEL 6/7 based OSes
+        "oracle-release",  # Oracle Linux 5
+        "redhat-release",
+    ]  # CentOS 5
     for release_file in possible_release_filenames:
         if os.path.isfile("/etc/%s" % release_file):
             return "/etc/%s" % release_file
-    loggerinst.critical("Error: Unable to find any file containing name of the"
-                        " OS and its version, e.g. /etc/system-release")
+    loggerinst.critical(
+        "Error: Unable to find any file containing name of the" " OS and its version, e.g. /etc/system-release"
+    )
 
 
 def get_system_release_content():
@@ -87,8 +89,7 @@ def get_system_release_content():
     try:
         return utils.get_file_content(filepath)
     except EnvironmentError, err:
-        loggerinst.critical("%s\n%s file is essential for running this tool."
-                            % (err, filepath))
+        loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
 class YumConf(object):
@@ -111,17 +112,13 @@ class YumConf(object):
     def _insert_distroverpkg_tag(self):
         if "distroverpkg=" not in self._yum_conf_content:
             self._yum_conf_content = sub(
-                r"(\[main\].*)", r"\1\ndistroverpkg=%s" %
-                get_release_pkg_name(),
-                self._yum_conf_content)
+                r"(\[main\].*)", r"\1\ndistroverpkg=%s" % get_release_pkg_name(), self._yum_conf_content
+            )
         else:
-            self._yum_conf_content = sub(
-                r"(distroverpkg=).*",
-                r"\1%s" % get_release_pkg_name(),
-                self._yum_conf_content)
+            self._yum_conf_content = sub(r"(distroverpkg=).*", r"\1%s" % get_release_pkg_name(), self._yum_conf_content)
 
     def _write_altered_yum_conf(self):
-        file_to_write = open(self._yum_conf_path, 'w')
+        file_to_write = open(self._yum_conf_path, "w")
         try:
             file_to_write.write(self._yum_conf_content)
         finally:

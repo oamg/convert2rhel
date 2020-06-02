@@ -17,6 +17,7 @@
 
 # Required imports:
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
@@ -28,14 +29,17 @@ from convert2rhel.toolopts import tool_opts
 
 
 class TestSubscription(unittest.TestCase):
-
     class GetAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [{'name': 'sample',
-                     'available': True,
-                     'ends': '31/12/2999',
-                     'systype': 'sampletype',
-                     'pool': 'samplepool'}]
+            return [
+                {
+                    "name": "sample",
+                    "available": True,
+                    "ends": "31/12/2999",
+                    "systype": "sampletype",
+                    "pool": "samplepool",
+                }
+            ]
 
     class GetNoAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -51,11 +55,15 @@ class TestSubscription(unittest.TestCase):
                 return []
 
             self.empty_last_call = False
-            return [{'name': 'sample',
-                     'available': True,
-                     'ends': '31/12/2999',
-                     'systype': 'sampletype',
-                     'pool': 'samplepool'}]
+            return [
+                {
+                    "name": "sample",
+                    "available": True,
+                    "ends": "31/12/2999",
+                    "systype": "sampletype",
+                    "pool": "samplepool",
+                }
+            ]
 
     class LetUserChooseItemMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -72,7 +80,7 @@ class TestSubscription(unittest.TestCase):
             # call; when the list is consumed or it is empty, the default
             # tuple is returned
             self.tuples = tuples
-            self.default_tuple = ('output', 0)
+            self.default_tuple = ("output", 0)
             self.called = 0
 
         def __call__(self, *args, **kwargs):
@@ -113,10 +121,9 @@ class TestSubscription(unittest.TestCase):
         tool_opts.__init__()
 
     def test_get_registration_cmd(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass with space'
-        expected = \
-            'subscription-manager register --force --username=user --password="pass with space"'
+        tool_opts.username = "user"
+        tool_opts.password = "pass with space"
+        expected = 'subscription-manager register --force --username=user --password="pass with space"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
@@ -134,8 +141,8 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_subscribe_system(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 1)
 
@@ -144,8 +151,8 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_subscribe_system_fail_once(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 2)
 
@@ -154,15 +161,13 @@ class TestSubscription(unittest.TestCase):
     def test_register_system_fail_non_interactive(self):
         # Check the critical severity is logged when the credentials are given
         # on the cmdline but registration fails
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         tool_opts.credentials_thru_cli = True
         self.assertRaises(SystemExit, subscription.register_system)
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 1)
 
-    @unit_tests.mock(utils,
-                     "run_subprocess",
-                     RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(subscription, "get_registration_cmd", GetRegistrationCmdMocked())
     def test_register_system_fail_interactive(self):
@@ -174,20 +179,13 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
 
     def test_hiding_password(self):
-        test_cmd = 'subscription-manager register --force ' \
-                   '--username=jdoe --password="%s" --org=0123'
-        pswds_to_test = [
-            "my favourite password",
-            "\\)(*&^%f %##@^%&*&^(",
-            " ",
-            ""
-        ]
+        test_cmd = "subscription-manager register --force " '--username=jdoe --password="%s" --org=0123'
+        pswds_to_test = ["my favourite password", "\\)(*&^%f %##@^%&*&^(", " ", ""]
         for pswd in pswds_to_test:
             sanitized_cmd = subscription.hide_password(test_cmd % pswd)
             self.assertEqual(
-                sanitized_cmd,
-                'subscription-manager register --force '
-                '--username=jdoe --password="*****" --org=0123')
+                sanitized_cmd, "subscription-manager register --force " '--username=jdoe --password="*****" --org=0123'
+            )
 
     class FakeSubscription:
         def __init__(self):
@@ -217,7 +215,7 @@ class TestSubscription(unittest.TestCase):
                 "2018-07-26",
                 "2018-26-07",
                 "2018.26.07",
-                "2018/26/07"
+                "2018/26/07",
             ]
 
         def __call__(self, date):
@@ -229,4 +227,4 @@ class TestSubscription(unittest.TestCase):
         sku = self.FakeSubscription()
         for i in sku.dates_formats:
             self.assertEqual(subscription.parse_sub_attrs(sku(i))["ends"], i)
-            self.assertEqual(len(subscription.logging.getLogger.critical_msgs),0)
+            self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)

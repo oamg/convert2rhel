@@ -42,20 +42,17 @@ def register_system():
     # Loop the registration process until successful registration
     while True:
         registration_cmd = get_registration_cmd()
-        loggerinst.info("Registering system by running subscription-manager"
-                        " command ... ")
+        loggerinst.info("Registering system by running subscription-manager" " command ... ")
         ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
             break
-        loggerinst.info("System registration failed with return code = %s"
-                        % str(ret_code))
+        loggerinst.info("System registration failed with return code = %s" % str(ret_code))
         if tool_opts.credentials_thru_cli:
-            loggerinst.critical("Error: Unable to register your system with"
-                                " subscription-manager using the provided"
-                                " credentials.")
+            loggerinst.critical(
+                "Error: Unable to register your system with" " subscription-manager using the provided" " credentials."
+            )
         else:
-            loggerinst.info("Trying again - please provide correct username"
-                            " and password.")
+            loggerinst.info("Trying again - please provide correct username" " and password.")
             tool_opts.username = None
             tool_opts.password = None
     return
@@ -70,13 +67,11 @@ def get_registration_cmd():
         # Activation key has been passed
         # -> username/password not required
         # -> organization required
-        loggerinst.info("    ... activation key detected: %s"
-                        % tool_opts.activation_key)
+        loggerinst.info("    ... activation key detected: %s" % tool_opts.activation_key)
         registration_cmd += " --activationkey=%s" % tool_opts.activation_key
     else:
         # No activation key -> username/password required
-        loggerinst.info("    ... activation key not found, username and"
-                        " password required")
+        loggerinst.info("    ... activation key not found, username and" " password required")
         if tool_opts.username:
             loggerinst.info("    ... username detected")
             username = tool_opts.username
@@ -90,8 +85,7 @@ def get_registration_cmd():
                 # Hint user for which username they need to enter pswd
                 loggerinst.info("Username: " + username)
             password = utils.prompt_user("Password: ", password=True)
-        registration_cmd += ' --username=%s --password="%s"' % (username,
-                                                                password)
+        registration_cmd += ' --username=%s --password="%s"' % (username, password)
         tool_opts.username = username
     if tool_opts.org:
         loggerinst.info("    ... organization detected")
@@ -103,7 +97,7 @@ def get_registration_cmd():
         # user choose from the available organizations. If there's just one,
         # pick it automatically.
         org = utils.prompt_user("Organization: ")
-    if 'org' in locals():
+    if "org" in locals():
         # TODO: test how this option works with org name with spaces
         registration_cmd += " --org=%s" % org
     return registration_cmd
@@ -119,7 +113,7 @@ def call_registration_cmd(registration_cmd):
 
 def hide_password(cmd):
     """Replace plaintext password with asterisks."""
-    return re.sub("--password=\".*?\"", "--password=\"*****\"", cmd)
+    return re.sub('--password=".*?"', '--password="*****"', cmd)
 
 
 def install_subscription_manager():
@@ -127,12 +121,13 @@ def install_subscription_manager():
     loggerinst = logging.getLogger(__name__)
     sm_dir = os.path.join(utils.DATA_DIR, "subscription-manager")
     if not os.path.isdir(sm_dir) or not os.listdir(sm_dir):
-        loggerinst.critical("The %s directory does not exist or is empty."
-                            " Using the subscription-manager is not documented"
-                            " yet. Please use the --disable-submgr option."
-                            " Read more about the tool usage in the article"
-                            " https://access.redhat.com/articles/2360841."
-                            % sm_dir)
+        loggerinst.critical(
+            "The %s directory does not exist or is empty."
+            " Using the subscription-manager is not documented"
+            " yet. Please use the --disable-submgr option."
+            " Read more about the tool usage in the article"
+            " https://access.redhat.com/articles/2360841." % sm_dir
+        )
         return
     rpms_to_install = [os.path.join(sm_dir, x) for x in os.listdir(sm_dir)]
     if rpms_to_install:
@@ -162,8 +157,7 @@ def attach_subscription():
         # option
         pool = "--pool %s" % tool_opts.pool
         tool_opts.pool = pool
-        loggerinst.info("Attaching provided subscription pool ID to the"
-                        " system ...")
+        loggerinst.info("Attaching provided subscription pool ID to the" " system ...")
     else:
         # Let the user choose the subscription appropriate for the conversion
         loggerinst.info("Manually select subscription appropriate for the conversion")
@@ -176,8 +170,7 @@ def attach_subscription():
         sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
         pool = "--pool " + subs_list[sub_num]["pool"]
         tool_opts.pool = pool
-        loggerinst.info("Attaching '%s' subscription to the system ..."
-                        % subs_list[sub_num]["name"])
+        loggerinst.info("Attaching '%s' subscription to the system ..." % subs_list[sub_num]["name"])
 
     _, ret_code = utils.run_subprocess("subscription-manager attach %s" % pool)
     if ret_code != 0:
@@ -194,12 +187,9 @@ def get_avail_subs():
     loggerinst = logging.getLogger(__name__)
     # Get multiline string holding all the subscriptions available to the
     # logged-in user
-    subs_raw, ret_code = utils.run_subprocess("subscription-manager list"
-                                              " --available",
-                                              print_output=False)
+    subs_raw, ret_code = utils.run_subprocess("subscription-manager list" " --available", print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Unable to get list of available subscriptions:"
-                            "\n%s" % subs_raw)
+        loggerinst.critical("Unable to get list of available subscriptions:" "\n%s" % subs_raw)
     return list(get_sub(subs_raw))
 
 
@@ -208,10 +198,7 @@ def get_sub(subs_raw):
     the form of dictionaries, one dictionary per subscription.
     """
     # Split all available subscriptions per one subscription
-    for sub_raw_attrs in re.findall(
-            r"Subscription Name.*?System Type:\s+\w+\n",
-            subs_raw,
-            re.DOTALL | re.MULTILINE):
+    for sub_raw_attrs in re.findall(r"Subscription Name.*?System Type:\s+\w+\n", subs_raw, re.DOTALL | re.MULTILINE):
         sub_dict = parse_sub_attrs(sub_raw_attrs)
         yield sub_dict
 
@@ -223,24 +210,12 @@ def parse_sub_attrs(sub_raw_attrs):
     loggerinst = logging.getLogger(__name__)
     sub_dict = {}  # A dictionary to hold subscription attributes
     try:
-        sub_dict["name"] = get_sub_attr(r"^Subscription Name:\s+(.*?)$",
-                                        sub_raw_attrs,
-                                        "subscription name")
-        sub_dict["pool"] = get_sub_attr(r"^Pool ID:\s+(.*?)$",
-                                        sub_raw_attrs,
-                                        "subscription pool ID")
-        sub_dict["available"] = get_sub_attr(r"^Available:\s+(.*?)$",
-                                             sub_raw_attrs,
-                                             "subscription availability")
-        sub_dict["systype"] = get_sub_attr(r"^System Type:\s+(.*?)$",
-                                           sub_raw_attrs,
-                                           "subscription system type")
-        sub_dict["ends"] = get_sub_attr(r"^Ends:\s+([^\n]+)$",
-                                        sub_raw_attrs,
-                                        "subscription end date")
-        sub_dict["entitlements"] = get_sub_attr(r"Provides:\s+(.*?)\nSKU",
-                                                sub_raw_attrs,
-                                                "subscription entitlements")
+        sub_dict["name"] = get_sub_attr(r"^Subscription Name:\s+(.*?)$", sub_raw_attrs, "subscription name")
+        sub_dict["pool"] = get_sub_attr(r"^Pool ID:\s+(.*?)$", sub_raw_attrs, "subscription pool ID")
+        sub_dict["available"] = get_sub_attr(r"^Available:\s+(.*?)$", sub_raw_attrs, "subscription availability")
+        sub_dict["systype"] = get_sub_attr(r"^System Type:\s+(.*?)$", sub_raw_attrs, "subscription system type")
+        sub_dict["ends"] = get_sub_attr(r"^Ends:\s+([^\n]+)$", sub_raw_attrs, "subscription end date")
+        sub_dict["entitlements"] = get_sub_attr(r"Provides:\s+(.*?)\nSKU", sub_raw_attrs, "subscription entitlements")
     except ValueError, err:
         loggerinst.critical("Cannot parse %s." % err.args[0])
 
@@ -254,9 +229,7 @@ def get_sub_attr(pattern, sub_all_attrs, descr):
     """Parse a string with all the subscription attributes to get value of a
     single subscription attribute.
     """
-    sub_attr = re.search(pattern,
-                         sub_all_attrs,
-                         re.MULTILINE | re.DOTALL)
+    sub_attr = re.search(pattern, sub_all_attrs, re.MULTILINE | re.DOTALL)
     if sub_attr:
         return sub_attr.group(1)
     else:
@@ -267,19 +240,15 @@ def print_avail_subs(subs):
     """Print the subscriptions available to the user so they can choose one.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.info("Choose one of your subscriptions that is to be used"
-                    " for converting this system to RHEL:")
+    loggerinst.info("Choose one of your subscriptions that is to be used" " for converting this system to RHEL:")
     for index, sub in enumerate(subs):
         index += 1
-        loggerinst.info("%s) %s\n"
-                        "    - available: %s\n"
-                        "    - ends: %s\n"
-                        "    - type: %s"
-                        % (index,
-                           sub["name"],
-                           sub["available"],
-                           sub["ends"],
-                           sub["systype"]))
+        loggerinst.info(
+            "%s) %s\n"
+            "    - available: %s\n"
+            "    - ends: %s\n"
+            "    - type: %s" % (index, sub["name"], sub["available"], sub["ends"], sub["systype"])
+        )
     return
 
 
@@ -287,8 +256,7 @@ def get_avail_repos():
     """Get list of all the repositories (their IDs) currently available for
     the registered system through subscription-manager.
     """
-    repos_raw, _ = utils.run_subprocess("subscription-manager repos",
-                                        print_output=False)
+    repos_raw, _ = utils.run_subprocess("subscription-manager repos", print_output=False)
     return list(get_repo(repos_raw))
 
 
@@ -296,10 +264,7 @@ def get_repo(repos_raw):
     """Generator that parses the raw string of available repositores and
     provides the repository IDs, one at a time.
     """
-    for repo_id in re.findall(
-            r"Repo ID:\s+(.*?)\n",
-            repos_raw,
-            re.DOTALL | re.MULTILINE):
+    for repo_id in re.findall(r"Repo ID:\s+(.*?)\n", repos_raw, re.DOTALL | re.MULTILINE):
         yield repo_id
 
 
@@ -316,11 +281,9 @@ def disable_repos():
         # Default is to disable all repos to make clean environment for
         # enabling repos later
         disable_cmd = " --disable='*'"
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s"
-                                            % disable_cmd, print_output=False)
+    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % disable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to disable through"
-                            " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to disable through" " subscription-manager:\n%s" % output)
     loggerinst.info("Repositories disabled.")
     return
 
@@ -339,11 +302,9 @@ def enable_repos(repos_needed):
     enable_cmd = ""
     for repo in repos_to_enable:
         enable_cmd += " --enable=%s" % repo
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s"
-                                            % enable_cmd, print_output=False)
+    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % enable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to enable through"
-                            " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to enable through" " subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
     return
 
@@ -360,8 +321,7 @@ def rename_repo_files():
             filepath_old = os.path.join("/etc/yum.repos.d/", filename)
             filepath_new = "%s.%s_renamed" % (filepath_old, exe_name)
             shutil.move(filepath_old, filepath_new)
-            loggerinst.info("Renamed: %s -> %s"
-                            % (filepath_old, filepath_new))
+            loggerinst.info("Renamed: %s -> %s" % (filepath_old, filepath_new))
             repo_files_renamed = True
     if not repo_files_renamed:
         loggerinst.info("No .repo file renamed.")
@@ -373,8 +333,7 @@ def rollback_renamed_repo_files():
     renamed.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.task("Rollback: Rollback all non-Red Hat .repo files renamed in"
-                    " /etc/yum.repos.d/")
+    loggerinst.task("Rollback: Rollback all non-Red Hat .repo files renamed in" " /etc/yum.repos.d/")
     exe_name = utils.get_executable_name()
     file_restored = False
     for filename in os.listdir("/etc/yum.repos.d/"):
@@ -382,8 +341,7 @@ def rollback_renamed_repo_files():
             filepath_old = os.path.join("/etc/yum.repos.d/", filename)
             filepath_new = os.path.splitext(filepath_old)[0]
             shutil.move(filepath_old, filepath_new)
-            loggerinst.info("Renamed: %s -> %s"
-                            % (filepath_old, filepath_new))
+            loggerinst.info("Renamed: %s -> %s" % (filepath_old, filepath_new))
             file_restored = True
 
     if not file_restored:

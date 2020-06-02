@@ -92,12 +92,10 @@ class CustomLogger(logging.Logger, object):
     """
 
     def task(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelTask.level, msg, *args,
-                                      **kwargs)
+        super(CustomLogger, self).log(LogLevelTask.level, msg, *args, **kwargs)
 
     def file(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelFile.level, msg, *args,
-                                      **kwargs)
+        super(CustomLogger, self).log(LogLevelFile.level, msg, *args, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
         super(CustomLogger, self).critical(msg, *args, **kwargs)
@@ -105,12 +103,11 @@ class CustomLogger(logging.Logger, object):
 
     def debug(self, msg, *args, **kwargs):
         from convert2rhel.toolopts import tool_opts
+
         if tool_opts.debug:
             super(CustomLogger, self).debug(msg, *args, **kwargs)
         else:
-            super(CustomLogger, self).log(LogLevelFile.level,
-                                          format_msg_with_datetime(msg, "debug"),
-                                          *args, **kwargs)
+            super(CustomLogger, self).log(LogLevelFile.level, format_msg_with_datetime(msg, "debug"), *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
         super(CustomLogger, self).info(msg, *args, **kwargs)
@@ -126,7 +123,7 @@ class CustomFormatter(logging.Formatter, object):
 
     def format(self, record):
         if record.levelno == LogLevelTask.level:
-            temp = '*' * (90 - len(record.msg) - 25)
+            temp = "*" * (90 - len(record.msg) - 25)
             self._fmt = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
             self.datefmt = "%m/%d/%Y %H:%M:%S"
         elif record.levelno in [logging.INFO, LogLevelFile.level]:

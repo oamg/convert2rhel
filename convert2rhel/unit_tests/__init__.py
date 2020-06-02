@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
@@ -43,12 +44,10 @@ except ImportError:
     [1] https://hg.python.org/cpython/file/b48e1b48e670/Lib/functools.py
     """
 
-    WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__doc__')
-    WRAPPER_UPDATES = ('__dict__',)
-    def update_wrapper(wrapper,
-                       wrapped,
-                       assigned=WRAPPER_ASSIGNMENTS,
-                       updated=WRAPPER_UPDATES):
+    WRAPPER_ASSIGNMENTS = ("__module__", "__name__", "__doc__")
+    WRAPPER_UPDATES = ("__dict__",)
+
+    def update_wrapper(wrapper, wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
         """Update a wrapper function to look like the wrapped function
 
            wrapper is the function to be updated
@@ -67,15 +66,11 @@ except ImportError:
         # Return the wrapper so this can be used as a decorator via partial()
         return wrapper
 
-
     def partial(func, *args, **kwds):
         "Emulate Python2.6's functools.partial"
-        return lambda *fargs, **fkwds: func(*(args+fargs), **dict(kwds, **fkwds))
+        return lambda *fargs, **fkwds: func(*(args + fargs), **dict(kwds, **fkwds))
 
-
-    def wraps(wrapped,
-              assigned=WRAPPER_ASSIGNMENTS,
-              updated=WRAPPER_UPDATES):
+    def wraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
         """Decorator factory to apply update_wrapper() to a wrapper function
 
            Returns a decorator that invokes update_wrapper() with the decorated
@@ -84,8 +79,7 @@ except ImportError:
            This is a convenience function to simplify applying partial() to
            update_wrapper().
         """
-        return partial(update_wrapper, wrapped=wrapped,
-                       assigned=assigned, updated=updated)
+        return partial(update_wrapper, wrapped=wrapped, assigned=assigned, updated=updated)
 
 
 def mock(class_or_module, orig_obj, mock_obj):
@@ -114,6 +108,7 @@ def mock(class_or_module, orig_obj, mock_obj):
     -- replaces the gpgkey module-scoped variable gpg_key_system_dir with the
        "/nonexisting_dir/" string
     """
+
     def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
@@ -143,7 +138,9 @@ def mock(class_or_module, orig_obj, mock_obj):
                 # Remove the temporary attribute holding the original object
                 delattr(class_or_module, orig_obj_attr)
             return return_value
+
         return wrapped_fn
+
     return wrap
 
 
@@ -158,7 +155,7 @@ def safe_repr(obj, short=False):
         result = object.__repr__(obj)
     if not short or len(result) < _MAX_LENGTH:
         return result
-    return result[:_MAX_LENGTH] + ' [truncated]...'
+    return result[:_MAX_LENGTH] + " [truncated]..."
 
 
 class ExtendedTestCase(unittest.TestCase):
@@ -167,16 +164,15 @@ class ExtendedTestCase(unittest.TestCase):
     Most of these functions are taken from newer versions of Nose 
     test and can be removed when we upgrade Nose test.
     """
+
     def assertIn(self, member, container, msg=None):
         """ 
         Taken from newer nose test version.
         Just like self.assertTrue(a in b), but with a nicer default message.
         """
         if member not in container:
-            standardMsg = '%s not found in %s' % (safe_repr(member),
-                                                    safe_repr(container))
+            standardMsg = "%s not found in %s" % (safe_repr(member), safe_repr(container))
             self.fail(self._formatMessage(msg, standardMsg))
-
 
     def _formatMessage(self, msg, standardMsg):
         """ 
@@ -188,9 +184,9 @@ class ExtendedTestCase(unittest.TestCase):
         try:
             # don't switch to '{}' formatting in Python 2.X
             # it changes the way unicode input is handled
-            return '%s : %s' % (standardMsg, msg)
+            return "%s : %s" % (standardMsg, msg)
         except UnicodeDecodeError:
-            return  '%s : %s' % (safe_repr(standardMsg), safe_repr(msg))
+            return "%s : %s" % (safe_repr(standardMsg), safe_repr(msg))
 
 
 class MockFunction(object):

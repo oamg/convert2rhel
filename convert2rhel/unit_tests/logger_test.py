@@ -31,7 +31,6 @@ from convert2rhel.toolopts import tool_opts
 
 
 class TestLogger(unittest.TestCase):
-
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     def setUp(self):
         # initialize class variables
@@ -79,15 +78,13 @@ class TestLogger(unittest.TestCase):
 
         self.dummy_handler.setFormatter(custom_formatter)
         from datetime import datetime
-        dt_strformat = '[%m/%d/%Y %H:%M:%S] DEBUG - '
+
+        dt_strformat = "[%m/%d/%Y %H:%M:%S] DEBUG - "
         tempstr = datetime.now().strftime(dt_strformat) + self.test_msg
-        self.check_formatter_result(
-            logging.DEBUG, tempstr)
-        self.check_formatter_result(
-            logging.INFO, self.test_msg)
+        self.check_formatter_result(logging.DEBUG, tempstr)
+        self.check_formatter_result(logging.INFO, self.test_msg)
         tempstr = "WARNING - %s" % self.test_msg
-        self.check_formatter_result(
-            logging.WARNING, tempstr)
+        self.check_formatter_result(logging.WARNING, tempstr)
 
     def check_formatter_result(self, log_level, expected_result):
         rec = logging.LogRecord("", log_level, "", 0, self.test_msg, (), None)

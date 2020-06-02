@@ -35,9 +35,8 @@ from convert2rhel.systeminfo import system_info
 
 
 class TestSysteminfo(unittest.TestCase):
-
     class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self, output_tuple=('output', 0)):
+        def __init__(self, output_tuple=("output", 0)):
             self.output_tuple = output_tuple
             self.called = 0
             self.used_args = []
@@ -69,8 +68,7 @@ class TestSysteminfo(unittest.TestCase):
             shutil.rmtree(unit_tests.TMP_DIR)
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(
-        ("rpmva\n", 0)))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # Check that rpm -Va is executed (default) and stored into the specific
         # file.
@@ -79,8 +77,7 @@ class TestSysteminfo(unittest.TestCase):
         self.assertTrue(utils.run_subprocess.called > 0)
         self.assertEqual(utils.run_subprocess.used_args[0][0], "rpm -Va")
         self.assertTrue(os.path.isfile(self.rpmva_output_file))
-        self.assertEqual(utils.get_file_content(self.rpmva_output_file),
-                         "rpmva\n")
+        self.assertEqual(utils.get_file_content(self.rpmva_output_file), "rpmva\n")
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())

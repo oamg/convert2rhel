@@ -41,8 +41,7 @@ def package_analysis():
 
     repo_data_files = get_repo_data_files()
     if repo_data_files:
-        loggerinst.info("Reading offline snapshot of RHEL repositories"
-                        " for %s variant" % tool_opts.variant)
+        loggerinst.info("Reading offline snapshot of RHEL repositories" " for %s variant" % tool_opts.variant)
         loggerinst.info("\n".join(repo_data_files) + "\n")
         rhel_repos_content = read_repo_files(repo_data_files)
         repos_needed = match_repo_pkgs_to_installed(rhel_repos_content)
@@ -53,10 +52,11 @@ def package_analysis():
         repos_needed = [system_info.default_repository_id]
     third_party_pkgs = pkghandler.get_third_party_pkgs()
     if third_party_pkgs:
-        loggerinst.warning("Only packages signed by %s are to be"
-                           " reinstalled. Red Hat support won't be provided"
-                           " for the following third party packages:\n"
-                           % system_info.name)
+        loggerinst.warning(
+            "Only packages signed by %s are to be"
+            " reinstalled. Red Hat support won't be provided"
+            " for the following third party packages:\n" % system_info.name
+        )
         pkghandler.print_pkg_info(third_party_pkgs)
         utils.ask_to_continue()
     else:
@@ -73,8 +73,11 @@ def get_repo_data_files():
     if not os.path.exists(path):
         # if path does not exists is means no repomap is installed.
         return []
-    return [os.path.join(path, repo_file) for repo_file in os.listdir(path)
-            if re.match("%s|Common" % tool_opts.variant, repo_file)]
+    return [
+        os.path.join(path, repo_file)
+        for repo_file in os.listdir(path)
+        if re.match("%s|Common" % tool_opts.variant, repo_file)
+    ]
 
 
 def read_repo_files(repo_data_files):
@@ -97,21 +100,20 @@ def read_repo_files(repo_data_files):
             # TODO: This may not be true -> implement logic to cope with repos
             # different from base repo in which the packages are 'kept'
             for pkg in utils.get_file_content(repo_file, True):
-                rhel_repos_content["kept"].append(pkg.split(' kept')[0])
+                rhel_repos_content["kept"].append(pkg.split(" kept")[0])
         if "_removed" in repo_file:
             # Put all removed packages into one list, no matter in which repo
             # they are missing. This list will be used to determine which
             # packages are not available in the RHEL repos.
             for pkg in utils.get_file_content(repo_file, True):
-                rhel_repos_content["removed"].append(pkg.split(' removed')[0])
+                rhel_repos_content["removed"].append(pkg.split(" removed")[0])
         if "_moved" in repo_file:
             # The moved packages are stored into separate dictionaries to
             # distinguish in which repository is each 'moved' package
             # available.
-            moved_to = repo_file.rsplit('moved_', 1)[1]
+            moved_to = repo_file.rsplit("moved_", 1)[1]
             for pkg in utils.get_file_content(repo_file, True):
-                rhel_repos_content["moved"][moved_to].append(
-                    pkg.split(' moved')[0])
+                rhel_repos_content["moved"][moved_to].append(pkg.split(" moved")[0])
     return rhel_repos_content
 
 
@@ -120,8 +122,7 @@ def match_repo_pkgs_to_installed(rhel_repos_content):
     available and report which packages are not available in any RHEL repo.
     Return list of the needed RHEL repositories.
     """
-    installed_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(
-        system_info.fingerprints_orig_os)
+    installed_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
     pkgs = determine_pkg_availability(rhel_repos_content, installed_pkgs)
     warn_about_nonavail_pkgs(pkgs)
     supported_repos = get_supported_repos()
@@ -156,13 +157,15 @@ def warn_about_nonavail_pkgs(pkgs):
     """
     loggerinst = logging.getLogger(__name__)
     if pkgs["removed"]:
-        loggerinst.warning("The following packages were not found in the"
-                           " offline snapshot of RHEL repositories. \nIt may"
-                           " be that the snapshot is either not up-to-date or"
-                           " does not cover special RHEL repos that hold these"
-                           " packages. \nBut possibly these packages will not"
-                           " be replaced by the Red Hat-signed ones and"
-                           " therefore not supported by Red Hat:\n")
+        loggerinst.warning(
+            "The following packages were not found in the"
+            " offline snapshot of RHEL repositories. \nIt may"
+            " be that the snapshot is either not up-to-date or"
+            " does not cover special RHEL repos that hold these"
+            " packages. \nBut possibly these packages will not"
+            " be replaced by the Red Hat-signed ones and"
+            " therefore not supported by Red Hat:\n"
+        )
         loggerinst.info("\n".join(pkgs["removed"]))
         loggerinst.info("\n")
         utils.ask_to_continue()
@@ -176,8 +179,7 @@ def get_supported_repos():
     captured in the repo_minimap file.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.info("Getting supported %s repositories ... "
-                    % tool_opts.variant)
+    loggerinst.info("Getting supported %s repositories ... " % tool_opts.variant)
     minimap_path = os.path.join(utils.DATA_DIR, "repo-mapping", "repo_minimap")
     minimap = utils.get_file_content(minimap_path, as_list=True)
     repos = {}
@@ -186,11 +188,10 @@ def get_supported_repos():
             # Skip the variants different from the chosen one
             continue
         # Save into a dictionary in format 'repo name':'repo ID'
-        repos[re.match("(.+?);", line).group(1)] = re.search(";.*?;(.+?);",
-                                                             line).group(1)
+        repos[re.match("(.+?);", line).group(1)] = re.search(";.*?;(.+?);", line).group(1)
     if not repos:
         # If there is no repos, add the default one.
-        repos['Server'] = system_info.default_repository_id
+        repos["Server"] = system_info.default_repository_id
     print_supported_repos(repos)
     return repos
 
@@ -203,8 +204,7 @@ def print_supported_repos(repos):
     loggerinst.info("Supported %s repositories:\n" % tool_opts.variant)
     max_key_length = max(imap(len, repos))
     loggerinst.info("%-*s  %s" % (max_key_length, "Repo name", "Repo ID"))
-    loggerinst.info("%-*s  %s" % (max_key_length, "-" * len("Repo name"),
-                                  "-" * len("Repo ID")))
+    loggerinst.info("%-*s  %s" % (max_key_length, "-" * len("Repo name"), "-" * len("Repo ID")))
     for key, value in repos.iteritems():
         loggerinst.info("%-*s  %s" % (max_key_length, key, value))
     loggerinst.info("\n")
@@ -216,8 +216,7 @@ def get_repos_needed(repo_suffixes, supported_repos):
     conversion.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.info("Getting repository IDs of the RHEL repositories needed"
-                    " for the system conversion ... ")
+    loggerinst.info("Getting repository IDs of the RHEL repositories needed" " for the system conversion ... ")
     if "" not in repo_suffixes:
         # Empty string means base repository (in the realm of dark matrix),
         # i.e. its name is equivalent to the chosen variant of RHEL. If it's
@@ -233,14 +232,11 @@ def get_repos_needed(repo_suffixes, supported_repos):
             additional_dash = ""
         else:
             additional_dash = "-"
-        repo_name = "%s%s%s" % (tool_opts.variant,
-                                additional_dash,
-                                repo_suffix)
+        repo_name = "%s%s%s" % (tool_opts.variant, additional_dash, repo_suffix)
         if repo_name in supported_repos.keys():
             repo_ids_list.append(supported_repos[repo_name])
         else:
-            loggerinst.critical("Repository %s not found in repo_minimap."
-                                % repo_name)
+            loggerinst.critical("Repository %s not found in repo_minimap." % repo_name)
     return repo_ids_list
 
 
@@ -260,9 +256,10 @@ def check_needed_repos_availability(repo_ids_needed):
     for repo_id in repo_ids_needed:
         if repo_id not in avail_repos:
             # TODO: List the packages that would be left untouched
-            loggerinst.warning("%s repository is not available - some packages"
-                               " may not be replaced and thus not supported."
-                               % repo_id)
+            loggerinst.warning(
+                "%s repository is not available - some packages"
+                " may not be replaced and thus not supported." % repo_id
+            )
             utils.ask_to_continue()
             all_repos_avail = False
     if all_repos_avail:
@@ -275,15 +272,14 @@ def get_avail_repos():
     the registered system.
     """
     loggerinst = logging.getLogger(__name__)
-    repos_raw, ret_code = pkghandler.call_yum_cmd(command="repolist -v ",
-                                                  print_output=False)
+    repos_raw, ret_code = pkghandler.call_yum_cmd(command="repolist -v ", print_output=False)
     if ret_code:
         loggerinst.critical("yum repolist command failed: \n\n" + repos_raw)
     line = ""
     repos = []
     repo_id_prefix = "Repo-id      : "
     for line in repos_raw.split("\n"):
-        if (line.startswith(repo_id_prefix)):
+        if line.startswith(repo_id_prefix):
             repo_id = line.split(repo_id_prefix)[1]
             repos.append(repo_id)
 

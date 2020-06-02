@@ -30,6 +30,7 @@ def is_variant_supported(variant):
 def determine_rhel_variant():
     loggerinst = logging.getLogger(__name__)
     from convert2rhel.toolopts import tool_opts
+
     if not tool_opts.variant:
         tool_opts.variant = _user_to_choose_rhel_variant()
     loggerinst.info("Variant: %s" % tool_opts.variant)
@@ -54,8 +55,7 @@ def print_supported_variants():
     """Print the supported RHEL variants to the user so they can choose one.
     """
     loggerinst = logging.getLogger(__name__)
-    loggerinst.info("Choose the RHEL variant to which this system will be"
-                    " converted to:")
+    loggerinst.info("Choose the RHEL variant to which this system will be" " converted to:")
     for index, variant in enumerate(get_supported_variants()):
         index += 1
         loggerinst.info("%s) %s" % (index, variant))
@@ -85,6 +85,6 @@ def _load_supported_variants_from_file():
             supported_variants.append(variant_found)
 
     if not supported_variants:
-        supported_variants.append('Server')
+        supported_variants.append("Server")
 
     return supported_variants
