@@ -22,3 +22,17 @@ Or by installing locally using `pipenv`
 
     $ pipenv install
     $ pipenv run pylint convert2rhel/
+
+## Formatting
+To automatically format your code, we recommend installing [Black](https://black.readthedocs.io/en/stable/index.html).
+Install globally using pip
+
+```bash
+$ pip install black
+```
+
+There's two options for running Black: you can either integrate Black with your editor, or run black itseld
+
+```bash
+$ black .
+```

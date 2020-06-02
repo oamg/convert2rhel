@@ -3,6 +3,9 @@
 # Regular expression matching correct function names
 function-rgx=[a-z_][a-z0-9_]{2,50}$
 
+indent-string='    '
+max-line-length=120
+
 [MESSAGES CONTROL]
 
 disable=
@@ -23,6 +26,8 @@ disable=
  old-style-class,
 # "R" Refactor recommendations
  too-few-public-methods,
+# Doesn't follow PEP8, removed in later versions of pylint
+ bad-continuation,
 
 [REPORTS]
 
