@@ -69,7 +69,8 @@ class SystemInfo(object):
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self._generate_rpm_va()
 
-    def _get_system_release_file_content(self):
+    @staticmethod
+    def _get_system_release_file_content():
         from convert2rhel import redhatrelease
         return redhatrelease.get_system_release_content()
 

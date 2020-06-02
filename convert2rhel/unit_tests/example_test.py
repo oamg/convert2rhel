@@ -27,7 +27,6 @@ try:
 except ImportError:
     import unittest
 
-from nose.tools import timed
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 
@@ -44,7 +43,6 @@ class TestExample(unittest.TestCase):
             self.ret = (self.prefix + self.ret[0], self.ret[1])
             return self.ret
 
-    @timed(2)  # Check that the test function does not last more than 2 sec
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_example(self):
         # Set a tuple to be returned by the RunSubprocessMocked function

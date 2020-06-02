@@ -193,7 +193,7 @@ class TestSubscription(unittest.TestCase):
     def test_subscribe_system_fail_once(self):
         tool_opts.username = 'user'
         tool_opts.password = 'pass'
-        subscription.subscribe_system()
+        subscription.subscribe_system()  # pylint: disable=function-redefined
         self.assertEqual(subscription.register_system.called, 2)
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
