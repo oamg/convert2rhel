@@ -31,6 +31,7 @@ Requires:       yum-utils
 
 %if 0%{?el6} && 0%{?epel}
 Requires:       python-decorator
+Requires:       python-setuptools
 Requires:       python-six
 Requires:       pygobject2
 %endif

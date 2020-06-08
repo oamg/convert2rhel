@@ -42,6 +42,7 @@ Requires:       python-simplejson
 %endif
 %if 0%{?rhel} && 0%{?rhel} == 6
 Requires:       python-decorator
+Requires:       python-setuptools
 Requires:       python-six
 Requires:       pygobject2
 %endif
