@@ -43,10 +43,8 @@ class SystemInfo(object):
         self.fingerprints_rhel = [
             # RHEL 6/7: RPM-GPG-KEY-redhat-release
             "199e2f91fd431d51",
-            # RHEL 5: RPM-GPG-KEY-redhat-release
             # RHEL 6/7: RPM-GPG-KEY-redhat-legacy-release
             "5326810137017186",
-            # RHEL 5: RPM-GPG-KEY-redhat-former
             # RHEL 6/7: RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e"]
         # Packages to be removed before the system conversion

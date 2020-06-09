@@ -68,9 +68,7 @@ def get_system_release_filepath():
     version.
     """
     loggerinst = logging.getLogger(__name__)
-    possible_release_filenames = ["system-release",  # RHEL 6/7 based OSes
-                                  "oracle-release",  # Oracle Linux 5
-                                  "redhat-release"]  # CentOS 5
+    possible_release_filenames = ["system-release"]  # RHEL 6/7 based OSes
     for release_file in possible_release_filenames:
         if os.path.isfile("/etc/%s" % release_file):
             return "/etc/%s" % release_file

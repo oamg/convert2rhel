@@ -106,7 +106,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(error_pkgs, ["openldap", "p11-kit"])
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
         pkghandler.call_yum_cmd.fail_once = True
 
@@ -115,7 +114,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_unable_to_fix_by_downgrades(self):
         pkghandler.call_yum_cmd.return_code = 1
         pkghandler.call_yum_cmd.return_string = YUM_MULTILIB_ERROR
@@ -130,7 +128,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(system_info, "version", "5")
     def test_resolve_dep_errors_unable_to_detect_problematic_pkgs(self):
         # Even though resolve_dep_errors was called (meaning that the previous
         # yum call ended with non-zero status), the string returned by yum
@@ -347,21 +344,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def __call__(self, cmd, fingerprints):
             self.cmd += "%s\n" % cmd
 
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
-    @unit_tests.mock(system_info, "version", "5")
-    @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
-                     CallYumCmdWDowngradesMocked())
-    def test_replace_non_red_hat_packages_downgrade(self):
-        pkghandler.replace_non_red_hat_packages()
-
-        output = "update\nreinstall\ndowngrade\n"
-        self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
-                        output)
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
-    @unit_tests.mock(system_info, "version", "6")
     @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
                      CallYumCmdWDowngradesMocked())
     def test_replace_non_red_hat_packages_distrosync(self):

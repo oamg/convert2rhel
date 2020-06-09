@@ -148,13 +148,7 @@ def resolve_dep_errors(output, pkgs):
                         " resolve yum dependency errors.")
         return
 
-    # distro-sync is not available until yum v3.2.28:
-    #  (http://yum.baseurl.org/wiki/whatsnew/3.2.28)
-    # linux 5.x only provides yum v3.2.22 so we need to use downgrade argument
-    #  instead of distro-sync
-    cmd = "downgrade"
-    if int(system_info.version) >= 6:
-        cmd = "distro-sync"
+    cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
                     % ", ".join(pkgs))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs))
@@ -337,15 +331,9 @@ def replace_non_red_hat_packages():
         "Performing reinstallation of the %s packages ..." % system_info.name)
     call_yum_cmd_w_downgrades("reinstall", system_info.fingerprints_orig_os)
 
-    # distro-sync/downgrade the packages that had the following:
+    # distro-sync (downgrade) the packages that had the following:
     #  'Installed package <package> not available.'
-    # distro-sync is not available until yum v3.2.28:
-    #  (http://yum.baseurl.org/wiki/whatsnew/3.2.28)
-    # linux 5.x only provides yum v3.2.22 so we need to use downgrade argument
-    #  instead of distro-sync
-    cmd = "downgrade"
-    if int(system_info.version) >= 6:
-        cmd = "distro-sync"
+    cmd = "distro-sync"
     loggerinst.info("Performing %s of the packages left ..." % cmd)
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 

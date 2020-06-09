@@ -20,26 +20,16 @@ Requires:       dbus-python
 Requires:       gnupg2
 Requires:       m2crypto
 Requires:       python
-# Warning: The python-dateutil package is available since OL/CentOS 5.10
-#          If the convert2rhel is to be installed on an older system, add
-#          any repo that contains the package or install it manually first
-#          from a downloaded rpm.
 Requires:       python-dateutil
 Requires:       python-dmidecode
 Requires:       python-iniparse
-# Warning: The python-ethtool package is available since OL/CentOS 5.7
 Requires:       python-ethtool
 Requires:       rpm
 Requires:       sed
 Requires:       usermode
-# Warning: The virt-what package is available since OL/CentOS 5.7
 Requires:       virt-what
 Requires:       yum
 Requires:       yum-utils
-%if 0%{?rhel} && 0%{?rhel} <= 5
-# Warning: The python-simplejson package is available since OL/CentOS 5.7
-Requires:       python-simplejson
-%endif
 %if 0%{?rhel} && 0%{?rhel} == 6
 Requires:       python-decorator
 Requires:       python-setuptools
@@ -60,7 +50,7 @@ Requires:       python-syspurpose
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS 5/6/7 and Oracle Linux 5/6/7 to
+RHEL ones. Available are conversions of CentOS 6/7 and Oracle Linux 6/7 to
 the respective major version of RHEL.
 
 %prep
