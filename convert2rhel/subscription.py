@@ -50,6 +50,17 @@ def subscribe_system():
         tool_opts.password = None
 
 
+def unregister_system():
+    """Unregister the system"""
+    loggerinst = logging.getLogger(__name__)
+    unregistration_cmd = "subscription-manager unregister"
+    loggerinst.info("Unregistering system by running subscription-manager"
+                    " command ... ")
+    _, ret_code = utils.run_subprocess(unregistration_cmd)
+    if ret_code != 0:
+        loggerinst.info("System unregistration failed with return code = {0}}".format(str(ret_code)))
+
+
 def register_system():
     """Register OS using subscription-manager."""
     loggerinst = logging.getLogger(__name__)
@@ -408,3 +419,8 @@ def rollback_renamed_repo_files():
         loggerinst.info("No .repo files to rollback")
 
     return
+
+def rollback():
+    """Rollback all subscription related changes"""
+    rollback_renamed_repo_files()
+    unregister_system()

@@ -217,7 +217,7 @@ def rollback_changes():
     redhatrelease.system_release_file.restore()
     subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
-    subscription.rollback_renamed_repo_files()
+    subscription.rollback()
     return
 
 

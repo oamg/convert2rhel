@@ -218,3 +218,12 @@ class MockFunction(object):
         def __call__(self, *args, **kwargs):
             pass
         """
+
+
+class CountableMockObject(MockFunction):
+    def __init__(self, *args, **kwargs):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return
