@@ -147,7 +147,7 @@ def pre_ponr_conversion():
     pkghandler.remove_blacklisted_pkgs()
 
     # checking RHN Classic
-    loggerinst.info("Checking RHN Classic")
+    loggerinst.task("Checking RHN Classic")
     subscription.unregister_from_rhn_classic()
 
     # install redhat release package
