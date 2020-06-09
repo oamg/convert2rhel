@@ -546,7 +546,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.download_pkg.called, 1)
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
         self.assertEqual(utils.run_subprocess.cmd,
-                         "rpm -i --force --replacepkgs /tmp/convert2rhel/kernel-4.7.4-200.fc24*")
+                         "rpm -i --force --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR)
 
     def test_get_kernel(self):
         kernel_version = list(pkghandler.get_kernel(

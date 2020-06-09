@@ -63,7 +63,6 @@ class SystemInfo(object):
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
-        utils.mkdir_p(utils.TMP_DIR)
 
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
