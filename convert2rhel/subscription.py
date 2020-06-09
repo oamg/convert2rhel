@@ -51,14 +51,15 @@ def subscribe_system():
 
 
 def unregister_system():
-    """Unregister the system"""
+    """Unregister the system from RHSM"""
     loggerinst = logging.getLogger(__name__)
     unregistration_cmd = "subscription-manager unregister"
-    loggerinst.info("Unregistering system by running subscription-manager"
-                    " command ... ")
-    _, ret_code = utils.run_subprocess(unregistration_cmd)
+    loggerinst.info("Unregistering the system from RHSM ...")
+    output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.debug("System unregistration failed with return code = {0}}".format(str(ret_code)))
+        loggerinst.warn("System unregistration failed with return code %d and message:\n%s", ret_code, output)
+    else:
+        loggerinst.info("System unregistered successfully")
 
 
 def register_system():
@@ -427,4 +428,4 @@ def rollback():
     try:
         unregister_system()
     except OSError:
-        loggerinst.debug("subscription-manager not installed, skipping")
+        loggerinst.warn("subscription-manager not installed, skipping")
