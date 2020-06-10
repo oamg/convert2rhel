@@ -59,6 +59,7 @@ def print_supported_variants():
     for index, variant in enumerate(get_supported_variants()):
         index += 1
         loggerinst.info("%s) %s" % (index, variant))
+    return
 
 
 def get_supported_variants():

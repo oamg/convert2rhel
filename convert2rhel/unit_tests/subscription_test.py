@@ -16,7 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
+import os
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
@@ -28,7 +30,6 @@ from convert2rhel.toolopts import tool_opts
 
 
 class TestSubscription(unittest.TestCase):
-
     class GetAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return [{'name': 'sample',
@@ -91,6 +92,7 @@ class TestSubscription(unittest.TestCase):
     class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
             self.info_msgs = []
+            self.warning_msgs = []
             self.critical_msgs = []
 
         def __call__(self, msg):
@@ -101,15 +103,52 @@ class TestSubscription(unittest.TestCase):
             raise SystemExit(1)
 
         def info(self, msg):
-            pass
+            self.info_msgs.append(msg)
+
+        def warning(self, msg):
+            self.warning_msgs.append(msg)
 
         def debug(self, msg):
             pass
+
+    class IsFileMocked(unit_tests.MockFunction):
+        def __init__(self, is_file):
+            self.is_file = is_file
+
+        def __call__(self, *args, **kwargs):
+            return self.is_file
+
+    class PromptUserMocked(unit_tests.MockFunction):
+
+        def __call__(self, *args, **kwargs):
+            return True
+
+    class RemoveFileMocked(unit_tests.MockFunction):
+        def __init__(self, removed=True):
+            self.removed = removed
+
+        def __call__(self, *args, **kwargs):
+            return self.removed
 
     ##########################################################################
 
     def setUp(self):
         tool_opts.__init__()
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
+    def test_rhn_classic_not_exist(self):
+        subscription.unregister_from_rhn_classic()
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(subscription.rhn_reg_file, "remove", RemoveFileMocked())
+    def test_rhn_classic_not_exist(self):
+        subscription.unregister_from_rhn_classic()
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
+        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
 
     def test_get_registration_cmd(self):
         tool_opts.username = 'user'
