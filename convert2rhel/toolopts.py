@@ -132,8 +132,8 @@ class CLI(object):
                          " user is asked to choose a variant.")
         group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
                          " Manager server URL to register the system with. If"
-                         " not provided subscription-manager defaults will be"
-                         " used")
+                         " not provided, the subscription-manager defaults will be"
+                         " used.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser,
@@ -210,7 +210,10 @@ class CLI(object):
             tool_opts.variant = parsed_opts.variant
 
         if parsed_opts.serverurl:
-            tool_opts.serverurl = parsed_opts.serverurl
+            if parsed_opts.disable_submgr:
+                loggerinst.warn("Ignoring the --serverurl option. It has no effect when --disable-submgr is used.")
+            else:
+                tool_opts.serverurl = parsed_opts.serverurl
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
