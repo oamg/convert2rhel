@@ -23,6 +23,21 @@ import logging
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import utils
 
+_RHN_REGISTRATION_FILE = "/etc/sysconfig/rhn/systemid"
+rhn_reg_file = utils.RestorableFile(_RHN_REGISTRATION_FILE)  # pylint: disable=C0103
+
+
+def unregister_from_rhn_classic():
+    loggerinst = logging.getLogger(__name__)
+    if os.path.isfile(_RHN_REGISTRATION_FILE):
+        loggerinst.warning("The use of RHN Classic is not allowed during the conversion.\n"
+                           "The convert2rhel is going to unregister from RHN Classic.\n"
+                           "See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/unregister-rhn for details.")
+        utils.ask_to_continue()
+        rhn_reg_file.remove()
+    else:
+        loggerinst.info("RHN Classic not detected.")
+
 
 def subscribe_system():
     """Register and attach a specific subscription to OS."""
@@ -33,6 +48,18 @@ def subscribe_system():
         # Clear potentially wrong credentials
         tool_opts.username = None
         tool_opts.password = None
+
+
+def unregister_system():
+    """Unregister the system from RHSM"""
+    loggerinst = logging.getLogger(__name__)
+    unregistration_cmd = "subscription-manager unregister"
+    loggerinst.info("Unregistering the system from RHSM ...")
+    output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
+    if ret_code != 0:
+        loggerinst.warn("System unregistration failed with return code %d and message:\n%s", ret_code, output)
+    else:
+        loggerinst.info("System unregistered successfully")
 
 
 def register_system():
@@ -106,6 +133,9 @@ def get_registration_cmd():
     if 'org' in locals():
         # TODO: test how this option works with org name with spaces
         registration_cmd += " --org=%s" % org
+    if tool_opts.serverurl:
+        loggerinst.debug("    ... using custom RHSM URL")
+        registration_cmd += ' --serverurl="%s"' % tool_opts.serverurl
     return registration_cmd
 
 
@@ -125,7 +155,7 @@ def hide_password(cmd):
 def install_subscription_manager():
     """Install subscription-manager RPM and its dependencies."""
     loggerinst = logging.getLogger(__name__)
-    sm_dir = os.path.join(utils.data_dir, "subscription-manager")
+    sm_dir = os.path.join(utils.DATA_DIR, "subscription-manager")
     if not os.path.isdir(sm_dir) or not os.listdir(sm_dir):
         loggerinst.critical("The %s directory does not exist or is empty."
                             " Using the subscription-manager is not documented"
@@ -390,3 +420,12 @@ def rollback_renamed_repo_files():
         loggerinst.info("No .repo files to rollback")
 
     return
+
+def rollback():
+    """Rollback all subscription related changes"""
+    loggerinst = logging.getLogger(__name__)
+    rollback_renamed_repo_files()
+    try:
+        unregister_system()
+    except OSError:
+        loggerinst.warn("subscription-manager not installed, skipping")

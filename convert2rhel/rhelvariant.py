@@ -18,9 +18,10 @@
 import os
 import re
 import logging
+
 from convert2rhel import utils
 
-_supported_variants = None
+_SUPPORTED_VARIANTS = None
 
 
 def is_variant_supported(variant):
@@ -33,7 +34,6 @@ def determine_rhel_variant():
     if not tool_opts.variant:
         tool_opts.variant = _user_to_choose_rhel_variant()
     loggerinst.info("Variant: %s" % tool_opts.variant)
-    return
 
 
 def _user_to_choose_rhel_variant():
@@ -66,17 +66,17 @@ def get_supported_variants():
     """Set the global variable once to not load the supported variants
     from file every time.
     """
-    global _supported_variants
-    if not _supported_variants:
-        _supported_variants = _load_supported_variants_from_file()
-    return _supported_variants
+    global _SUPPORTED_VARIANTS
+    if not _SUPPORTED_VARIANTS:
+        _SUPPORTED_VARIANTS = _load_supported_variants_from_file()
+    return _SUPPORTED_VARIANTS
 
 
 def _load_supported_variants_from_file():
     """The repo_minimap contains all the available repos whose name are
     prepended by a variant.
     """
-    minimap_path = os.path.join(utils.data_dir, "repo-mapping", "repo_minimap")
+    minimap_path = os.path.join(utils.DATA_DIR, "repo-mapping", "repo_minimap")
     minimap = utils.get_file_content(minimap_path, as_list=True)
     supported_variants = []
     for line in minimap:

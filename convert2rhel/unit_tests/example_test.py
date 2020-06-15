@@ -20,19 +20,21 @@ This is an example test file containing a simple test.
 """
 
 # Required imports:
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
 from nose.tools import timed
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 
 
 class TestExample(unittest.TestCase):
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             """
             Implementation of the simplest behavior of a mocked function -
@@ -43,9 +45,9 @@ class TestExample(unittest.TestCase):
             return self.ret
 
     @timed(2)  # Check that the test function does not last more than 2 sec
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_example(self):
-        # Set a tuple to be returned by the run_subprocess_mocked function
+        # Set a tuple to be returned by the RunSubprocessMocked function
         utils.run_subprocess.ret = ("ls output", 0)
         output, ret_code = utils.run_subprocess("ls -l")
         self.assertEqual(output, "this ain't ls output")

@@ -15,6 +15,15 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
   trigger: pull_request
+- job: copr_build
+  metadata:
+    branch: master
+    owner: "@oamg"
+    project: convert2rhel
+    targets:
+    - epel-6-x86_64
+    - epel-7-x86_64
+  trigger: commit
 - job: tests
   metadata:
     targets:

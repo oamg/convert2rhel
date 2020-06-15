@@ -16,20 +16,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+
+import sys
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
-import sys
-
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 import convert2rhel.toolopts
 from convert2rhel.toolopts import tool_opts
 
 
 class TestToolopts(unittest.TestCase):
-    def _params(params):
+    def _params(params):  # pylint: disable=E0213
         return sys.argv[0:1] + params
 
     def setUp(self):
@@ -48,9 +50,26 @@ class TestToolopts(unittest.TestCase):
         self.assertFalse(tool_opts.credentials_thru_cli)
 
     @unit_tests.mock(sys, "argv", _params(["--username", "uname",
-                                          "--password", "passwd"]))
+                                           "--password", "passwd"]))
     def test_cmdline_non_ineractive_with_credentials(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.username, "uname")
         self.assertEqual(tool_opts.password, "passwd")
         self.assertTrue(tool_opts.credentials_thru_cli)
+
+    @unit_tests.mock(sys, "argv", _params(["--serverurl", "url"]))
+    def test_custom_serverurl(self):
+        convert2rhel.toolopts.CLI()
+        self.assertEqual(tool_opts.serverurl, "url")
+
+    @unit_tests.mock(sys, "argv", _params(["--disable-submgr", ""
+                                           "--enablerepo", "foo"]))
+    def test_cmdline_defaults_disablerepo_to_asterisk_with_disable_submgr(self):
+        convert2rhel.toolopts.CLI()
+        self.assertEqual(tool_opts.enablerepo, ["foo"])
+        self.assertEqual(tool_opts.disablerepo, "*")
+        self.assertTrue(tool_opts.disable_submgr)
+
+    @unit_tests.mock(sys, "argv", _params(["--disable-submgr"]))
+    def test_cmdline_exits_on_empty_enablerepo_with_disable_submgr(self):
+        self.assertRaises(SystemExit, convert2rhel.toolopts.CLI)

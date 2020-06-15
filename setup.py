@@ -24,7 +24,7 @@ from man.build_manpage import build_manpage
 
 # Utility function to read content of a file.
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
 
 
 setup(
@@ -32,7 +32,7 @@ setup(
     version='0.11',
     description='Automates the conversion of Red Hat Enterprise Linux'
                 ' derivative distributions to Red Hat Enterprise Linux.',
-    long_description=read('README'),
+    long_description=read('README.md'),
     author='Michal Bocek',
     author_email='mbocek@redhat.com',
     url='www.redhat.com',

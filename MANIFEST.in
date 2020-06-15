@@ -1,4 +1,4 @@
 recursive-include convert2rhel/data *
 include man/*
 include LICENSE
-include README
+include README.md

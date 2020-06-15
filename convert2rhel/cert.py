@@ -21,8 +21,8 @@ import shutil
 from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
 
-_redhat_release_cert_dir = "/etc/pki/product-default/"
-_subscription_manager_cert_dir = "/etc/pki/product/"
+_REDHAT_RELEASE_CERT_DIR = "/etc/pki/product-default/"
+_SUBSCRIPTION_MANAGER_CERT_DIR = "/etc/pki/product/"
 
 
 def copy_cert_for_rhel_5():
@@ -34,6 +34,6 @@ def copy_cert_for_rhel_5():
     WONTFIX status.
     """
     if system_info.version == "5":
-        for cert in glob.glob(_redhat_release_cert_dir + "*.pem"):
-            utils.mkdir_p(_subscription_manager_cert_dir)
-            shutil.copy(cert, _subscription_manager_cert_dir)
+        for cert in glob.glob(_REDHAT_RELEASE_CERT_DIR + "*.pem"):
+            utils.mkdir_p(_SUBSCRIPTION_MANAGER_CERT_DIR)
+            shutil.copy(cert, _SUBSCRIPTION_MANAGER_CERT_DIR)

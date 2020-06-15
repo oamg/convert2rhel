@@ -47,8 +47,7 @@ def package_analysis():
         rhel_repos_content = read_repo_files(repo_data_files)
         repos_needed = match_repo_pkgs_to_installed(rhel_repos_content)
         loggerinst.info("Repositories needed: %s" % "\n".join(repos_needed) + "\n")
-        loggerinst.info("Listing non-%s and non-Red Hat packages ... "
-                    % system_info.name)
+        loggerinst.info("Listing non-%s and non-Red Hat packages ... " % system_info.name)
     else:
         loggerinst.debug("Offline snapshot of RHEL repositories not found.")
         repos_needed = [system_info.default_repository_id]
@@ -67,7 +66,7 @@ def package_analysis():
 
 def get_repo_data_files():
     """Get list of paths to dark matrix-generated repository files."""
-    path = os.path.join(utils.data_dir, "repo-mapping", system_info.id)
+    path = os.path.join(utils.DATA_DIR, "repo-mapping", system_info.id)
     # Skip the files for a different variant than the one in
     # config file. Note: 'Common' files hold pkg names of all
     # variants.
@@ -167,7 +166,6 @@ def warn_about_nonavail_pkgs(pkgs):
         loggerinst.info("\n".join(pkgs["removed"]))
         loggerinst.info("\n")
         utils.ask_to_continue()
-    return
 
 
 def get_supported_repos():
@@ -179,7 +177,7 @@ def get_supported_repos():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Getting supported %s repositories ... "
                     % tool_opts.variant)
-    minimap_path = os.path.join(utils.data_dir, "repo-mapping", "repo_minimap")
+    minimap_path = os.path.join(utils.DATA_DIR, "repo-mapping", "repo_minimap")
     minimap = utils.get_file_content(minimap_path, as_list=True)
     repos = {}
     for line in minimap:
@@ -209,7 +207,6 @@ def print_supported_repos(repos):
     for key, value in repos.iteritems():
         loggerinst.info("%-*s  %s" % (max_key_length, key, value))
     loggerinst.info("\n")
-    return
 
 
 def get_repos_needed(repo_suffixes, supported_repos):
@@ -268,7 +265,6 @@ def check_needed_repos_availability(repo_ids_needed):
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed repos are available.")
-    return
 
 
 def get_avail_repos():
@@ -285,7 +281,7 @@ def get_avail_repos():
     repo_id_prefix = "Repo-id      : "
     for line in repos_raw.split("\n"):
         if (line.startswith(repo_id_prefix)):
-            repoID = line.split(repo_id_prefix)[1]
-            repos.append(repoID)
+            repo_id = line.split(repo_id_prefix)[1]
+            repos.append(repo_id)
 
     return repos

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import datetime
 import errno
 import getpass
 import inspect
@@ -27,7 +28,7 @@ import sys
 import traceback
 
 
-class color:
+class Color:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -41,9 +42,15 @@ class color:
 
 
 # Absolute path of a directory holding data for this tool
-data_dir = "/usr/share/convert2rhel/"
+DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
-tmp_dir = "/tmp/convert2rhel/"
+TMP_DIR = "/tmp/convert2rhel/"
+
+
+def format_msg_with_datetime(msg, level):
+    """Return a string with msg formatted according to the level"""
+    temp_date = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+    return "[%s] %s - %s", temp_date, level.upper(), msg
 
 
 def get_executable_name():
@@ -188,7 +195,7 @@ def ask_to_continue():
 
 def prompt_user(question, password=False):
     loggerinst = logging.getLogger(__name__)
-    color_question = color.BOLD + question + color.END
+    color_question = Color.BOLD + question + Color.END
     if password:
         response = getpass.getpass(color_question)
     else:
@@ -220,6 +227,7 @@ def get_traceback_str():
 
 class DictWListValues(dict):
     """Python 2.4 replacement for Python 2.5+ collections.defaultdict(list)."""
+
     def __getitem__(self, item):
         if item not in self.iterkeys():
             self[item] = []
@@ -229,6 +237,7 @@ class DictWListValues(dict):
 
 class ChangedRPMPackagesController(object):
     """Keep control of installed/removed RPM pkgs for backup/restore."""
+
     def __init__(self):
         self.installed_pkgs = []
         self.removed_pkgs = []
@@ -347,7 +356,7 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
     return True
 
 
-def download_pkg(pkg, dest=tmp_dir, disablerepo=[], enablerepo=[]):
+def download_pkg(pkg, dest=TMP_DIR, disablerepo=[], enablerepo=[]):
     """Download the specified package."""
     cmd = "yumdownloader"
 
@@ -374,21 +383,21 @@ class RestorableFile(object):
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
         if (os.path.isfile(self.filepath) and
-                os.path.isdir(tmp_dir)):
+                os.path.isdir(TMP_DIR)):
             try:
-                loggerinst.info("Copying %s to %s" % (self.filepath, tmp_dir))
-                shutil.copy2(self.filepath, tmp_dir)
+                loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
+                shutil.copy2(self.filepath, TMP_DIR)
             except IOError, err:
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
         else:
             loggerinst.warning("Can't find %s or %s"
-                               % (self.filepath, tmp_dir))
+                               % (self.filepath, TMP_DIR))
 
     def restore(self):
         """ Restore a previously backed up file """
         loggerinst = logging.getLogger(__name__)
-        backup_filepath = os.path.join(tmp_dir,
+        backup_filepath = os.path.join(TMP_DIR,
                                        os.path.basename(self.filepath))
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
 
@@ -428,21 +437,21 @@ class RestorablePackage(object):
         """ Save version of RPM package """
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
-        if os.path.isdir(tmp_dir):
+        if os.path.isdir(TMP_DIR):
             ret_code = download_pkg(self.name)
             if ret_code != 0:
                 loggerinst.warning("Couldn't download %s package." % self.name)
                 return
 
-            for file in os.listdir(tmp_dir):
+            for file in os.listdir(TMP_DIR):
                 if file.startswith(self.name):
-                    self.path = os.path.join(tmp_dir, file)
+                    self.path = os.path.join(TMP_DIR, file)
 
             if self.path is None:
                 loggerinst.warning("Couldn't retrieve downloaded %s package."
                                    % self.name)
         else:
-            loggerinst.warning("Can't find %s" % tmp_dir)
+            loggerinst.warning("Can't find %s" % TMP_DIR)
 
 
-changed_pkgs_control = ChangedRPMPackagesController()
+changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

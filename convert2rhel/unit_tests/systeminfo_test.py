@@ -16,24 +16,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+
+import logging
+import os
+import shutil
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
-import logging
-import os
-import shutil
+from convert2rhel import logger
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.systeminfo import system_info
-from convert2rhel import logger
 
 
 class TestSysteminfo(unittest.TestCase):
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self, output_tuple=('output', 0)):
             self.output_tuple = output_tuple
             self.called = 0
@@ -44,7 +47,7 @@ class TestSysteminfo(unittest.TestCase):
             self.used_args.append(args)
             return self.output_tuple
 
-    class generate_rpm_va_mocked(unit_tests.MockFunction):
+    class GenerateRpmVaMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
@@ -54,19 +57,19 @@ class TestSysteminfo(unittest.TestCase):
     ##########################################################################
 
     def setUp(self):
-        if os.path.exists(unit_tests.tmp_dir):
-            shutil.rmtree(unit_tests.tmp_dir)
-        os.makedirs(unit_tests.tmp_dir)
+        if os.path.exists(unit_tests.TMP_DIR):
+            shutil.rmtree(unit_tests.TMP_DIR)
+        os.makedirs(unit_tests.TMP_DIR)
         system_info.logger = logging.getLogger(__name__)
 
-        self.rpmva_output_file = os.path.join(unit_tests.tmp_dir, "rpm_va.log")
+        self.rpmva_output_file = os.path.join(unit_tests.TMP_DIR, "rpm_va.log")
 
     def tearDown(self):
-        if os.path.exists(unit_tests.tmp_dir):
-            shutil.rmtree(unit_tests.tmp_dir)
+        if os.path.exists(unit_tests.TMP_DIR):
+            shutil.rmtree(unit_tests.TMP_DIR)
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked(
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(
         ("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # Check that rpm -Va is executed (default) and stored into the specific
@@ -79,8 +82,8 @@ class TestSysteminfo(unittest.TestCase):
         self.assertEqual(utils.get_file_content(self.rpmva_output_file),
                          "rpmva\n")
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_generate_rpm_va_skip(self):
         # Check that rpm -Va is not called when the --no-rpm-va option is used.
         tool_opts.no_rpm_va = True

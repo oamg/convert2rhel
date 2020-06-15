@@ -32,18 +32,18 @@ class TestRedHatRelease(unittest.TestCase):
 
     supported_rhel_versions = ["5", "6", "7"]
 
-    class dumb_mocked(unit_tests.MockFunction):
+    class DumbMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             pass
 
-    class glob_mocked(unit_tests.MockFunction):
+    class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [unit_tests.tmp_dir + "redhat-release/pkg1.rpm",
-                    unit_tests.tmp_dir + "redhat-release/pkg2.rpm",
+            return [unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
+                    unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
                     "Server/redhat-release-7/pkg1.rpm",
                     "Server/redhat-release-7/pkg2.rpm"]
 
-    class run_subprocess_mocked(unit_tests.MockFunction):
+    class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = None
 
@@ -51,12 +51,12 @@ class TestRedHatRelease(unittest.TestCase):
             self.cmd = cmd
             return "Test output", 0
 
-    @unit_tests.mock(utils.RestorableFile, "remove", dumb_mocked())
-    @unit_tests.mock(utils, "data_dir", unit_tests.tmp_dir)
+    @unit_tests.mock(utils.RestorableFile, "remove", DumbMocked())
+    @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(tool_opts, "variant", "Server")
     @unit_tests.mock(system_info, "version", "to_be_changed")
-    @unit_tests.mock(glob, "glob", glob_mocked())
-    @unit_tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @unit_tests.mock(glob, "glob", GlobMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_release_pkg(self):
         for version in self.supported_rhel_versions:
             system_info.version = version
@@ -69,19 +69,19 @@ class TestRedHatRelease(unittest.TestCase):
                              " Server/redhat-release-7/pkg1.rpm" +
                              " Server/redhat-release-7/pkg2.rpm")
 
-    @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.dummy_file)
+    @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     def test_get_yum_conf_content(self):
         yum_conf = redhatrelease.YumConf()
 
         self.assertTrue("Dummy file to read" in yum_conf._yum_conf_content)
 
     def test_patch_yum_conf_missing_distroverpkg(self):
-        self.patch_yum_conf(yum_conf_without_distroverpkg)
+        self.patch_yum_conf(YUM_CONF_WITHOUT_DISTROVERPKG)
 
     def test_patch_yum_conf_existing_distroverpkg(self):
-        self.patch_yum_conf(yum_conf_with_distroverpkg)
+        self.patch_yum_conf(YUM_CONF_WITH_DISTROVERPKG)
 
-    @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.dummy_file)
+    @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     @unit_tests.mock(system_info, "version", "to_be_changed")
     @unit_tests.mock(tool_opts, "variant", "Server")
     def patch_yum_conf(self, yum_conf_content):
@@ -100,12 +100,12 @@ class TestRedHatRelease(unittest.TestCase):
                                 "\ndistroverpkg="), 1)
 
 
-yum_conf_without_distroverpkg = """[main]
+YUM_CONF_WITHOUT_DISTROVERPKG = """[main]
 installonly_limit=3
 
 #  This is the default"""
 
-yum_conf_with_distroverpkg = """[main]
+YUM_CONF_WITH_DISTROVERPKG = """[main]
 installonly_limit=3
 distroverpkg=centos-release
 

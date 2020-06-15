@@ -15,26 +15,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+from datetime import datetime
 
 import logging
 import os
 import shutil
 
+try:
+    import unittest2 as unittest  # Python 2.6 support
+except ImportError:
+    import unittest
+
 from convert2rhel import logger
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.toolopts import tool_opts
 
 
 class TestLogger(unittest.TestCase):
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.tmp_dir)
+    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     def setUp(self):
         # initialize class variables
-        self.LOG_DIR = logger.LOG_DIR
+        self.log_dir = logger.LOG_DIR
         self.log_file = "convert2rhel.log"
         self.test_msg = "testmsg"
 
@@ -54,21 +56,21 @@ class TestLogger(unittest.TestCase):
             handlers = loggerinst.handlers
 
         # verify both StreamHandler and FileHandler have been created
-        hasStreamHandlerInstance = False
-        hasFileHandlerInstance = False
+        has_stream_handler_instance = False
+        has_file_handler_instance = False
         for handler in handlers:
             if isinstance(handler, logging.StreamHandler):
-                hasStreamHandlerInstance = True
+                has_stream_handler_instance = True
             if isinstance(handler, logging.FileHandler):
-                hasFileHandlerInstance = True
+                has_file_handler_instance = True
 
-        self.assertTrue(hasStreamHandlerInstance)
-        self.assertTrue(hasFileHandlerInstance)
+        self.assertTrue(has_stream_handler_instance)
+        self.assertTrue(has_file_handler_instance)
 
         # verify log file name
         for handler in handlers:
             if type(handler) is logging.FileHandler:
-                log_path = os.path.join(self.LOG_DIR, self.log_file)
+                log_path = os.path.join(self.log_dir, self.log_file)
                 self.assertEqual(log_path, handler.baseFilename)
 
     def test_log_format(self):
@@ -77,7 +79,6 @@ class TestLogger(unittest.TestCase):
         custom_formatter = logger.CustomFormatter("%(message)s")
 
         self.dummy_handler.setFormatter(custom_formatter)
-        from datetime import datetime
         dt_strformat = '[%m/%d/%Y %H:%M:%S] DEBUG - '
         tempstr = datetime.now().strftime(dt_strformat) + self.test_msg
         self.check_formatter_result(
@@ -93,14 +94,14 @@ class TestLogger(unittest.TestCase):
         formatted_msg = self.dummy_handler.format(rec)
         self.assertEqual(formatted_msg, expected_result)
 
-    class Handler_handle_mocked(unit_tests.MockFunction):
+    class HandlerHandleMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
         def __call__(self, rec):
             self.called += 1
 
-    @unit_tests.mock(logging.Handler, "handle", Handler_handle_mocked())
+    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
     def test_log_to_file(self):
         loggerinst = logging.getLogger(__name__)
         loggerinst.file(self.test_msg)
@@ -108,7 +109,7 @@ class TestLogger(unittest.TestCase):
         # Handler is a base class for all log handlers (incl. FileHandler)
         self.assertEqual(logging.Handler.handle.called, 1)
 
-    @unit_tests.mock(logging.Handler, "handle", Handler_handle_mocked())
+    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
     @unit_tests.mock(tool_opts, "debug", True)
     def test_log(self):
         loggerinst = logging.getLogger(__name__)
@@ -121,4 +122,4 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logging.Handler.handle.called, 6)
         tool_opts.debug = False
         loggerinst.debug("debugmsg2")
-        self.assertEqual(logging.Handler.handle.called, 6)
+        self.assertEqual(logging.Handler.handle.called, 7)

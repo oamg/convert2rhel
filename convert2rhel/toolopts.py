@@ -32,6 +32,7 @@ class ToolOpts(object):
         self.disablerepo = []
         self.pool = None
         self.variant = None
+        self.serverurl = None
         self.autoaccept = None
         self.auto_attach = None
         self.restart = None
@@ -56,12 +57,14 @@ class CLI(object):
                  "  convert2rhel [-h]\n"
                  "  convert2rhel [-u username] [-p password | -f pswd_file]"
                  " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-                 " repoid] [-v variant] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+                 " repoid] [-v variant] [--serverurl url] [--no-rpm-va]"
+                 " [--debug] [--restart] [-y]\n"
                  "  convert2rhel [--disable-submgr] [--disablerepo repoid]"
                  " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
                  " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
-                 " variant] [--no-rpm-va] [--debug] [--restart] [-y]")
+                 " variant] [--serverurl url] [--no-rpm-va] [--debug]"
+                 " [--restart] [-y]")
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
                                      add_help_option=False)
@@ -84,7 +87,9 @@ class CLI(object):
         self._parser.add_option("--disablerepo", metavar="repoidglob",
                                 action="append", help="Disable specific"
                                 " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories.")
+                                " multiple times to add many repositories."
+                                " If --disable-submgr is used this defaults"
+                                " to all repositories.")
         group = optparse.OptionGroup(self._parser,
                                      "Subscription Manager Options",
                                      "The following options are specific to"
@@ -125,6 +130,10 @@ class CLI(object):
                          " conversions from CentOS/OL 6/7, Server, and Client"
                          " for conversions from CentOS/OL 5. If not used, the"
                          " user is asked to choose a variant.")
+        group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
+                         " Manager server URL to register the system with. If"
+                         " not provided, the subscription-manager defaults will be"
+                         " used.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser,
@@ -137,7 +146,8 @@ class CLI(object):
                          " custom repositories instead. See"
                          " --enablerepo/--disablerepo options. Without this"
                          " option, the subscription-manager is used to access"
-                         " RHEL repositories by default.")
+                         " RHEL repositories by default. It requires to have"
+                         " the --enablerepo specified.")
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(self._parser, "Automation Options",
@@ -157,7 +167,7 @@ class CLI(object):
         loggerinst = logging.getLogger(__name__)
         parsed_opts, _ = self._parser.parse_args()
 
-        global tool_opts
+        global tool_opts  # pylint: disable=C0103
         if parsed_opts.debug:
             tool_opts.debug = True
 
@@ -175,12 +185,17 @@ class CLI(object):
             tool_opts.password = utils.get_file_content(
                 parsed_opts.password_from_file)
 
-        if parsed_opts.disable_submgr:
-            tool_opts.disable_submgr = True
         if parsed_opts.enablerepo:
             tool_opts.enablerepo = parsed_opts.enablerepo
         if parsed_opts.disablerepo:
             tool_opts.disablerepo = parsed_opts.disablerepo
+        if parsed_opts.disable_submgr:
+            tool_opts.disable_submgr = True
+            if not tool_opts.enablerepo:
+                loggerinst.critical(
+                    "Error: --enablerepo is required if --disable-submgr is passed ")
+            if not tool_opts.disablerepo:
+                tool_opts.disablerepo = "*"  # Default to disable everything
 
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool
@@ -193,6 +208,12 @@ class CLI(object):
                                     % ", ".join(
                                         rhelvariant.get_supported_variants()))
             tool_opts.variant = parsed_opts.variant
+
+        if parsed_opts.serverurl:
+            if parsed_opts.disable_submgr:
+                loggerinst.warn("Ignoring the --serverurl option. It has no effect when --disable-submgr is used.")
+            else:
+                tool_opts.serverurl = parsed_opts.serverurl
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
@@ -216,7 +237,7 @@ def print_non_interactive_opts():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("For the non-interactive use of the tool, run the"
                     " following command:")
-    global tool_opts
+    global tool_opts  # pylint: disable=C0103
     cmd = utils.get_executable_name()
 
     if tool_opts.disable_submgr:
@@ -245,4 +266,4 @@ def print_non_interactive_opts():
 
 
 # Code to be executed upon module import
-tool_opts = ToolOpts()
+tool_opts = ToolOpts()  # pylint: disable=C0103

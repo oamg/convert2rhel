@@ -42,6 +42,7 @@ Requires:       python-simplejson
 %endif
 %if 0%{?rhel} && 0%{?rhel} == 6
 Requires:       python-decorator
+Requires:       python-setuptools
 Requires:       python-six
 Requires:       pygobject2
 %endif
@@ -97,7 +98,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
-%doc README
+%doc README.md
 %{_mandir}/man8/%{name}.8*
 
 %changelog

@@ -16,14 +16,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+try:
+    import unittest2 as unittest  # Python 2.6 support
+except ImportError:
+    import unittest
 
-from convert2rhel import logger
 
-tmp_dir = "/tmp/convert2rhel_test/"
-nonexisting_dir = os.path.join(tmp_dir, "nonexisting_dir/")
-nonexisting_file = os.path.join(tmp_dir, "nonexisting.file")
+TMP_DIR = "/tmp/convert2rhel_test/"
+NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
+NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
-dummy_file = os.path.join(os.path.dirname(__file__), "dummy_file")
+DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
+_MAX_LENGTH = 80
 
 try:
     from functools import wraps
@@ -41,10 +45,11 @@ except ImportError:
 
     WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__doc__')
     WRAPPER_UPDATES = ('__dict__',)
+
     def update_wrapper(wrapper,
                        wrapped,
-                       assigned = WRAPPER_ASSIGNMENTS,
-                       updated = WRAPPER_UPDATES):
+                       assigned=WRAPPER_ASSIGNMENTS,
+                       updated=WRAPPER_UPDATES):
         """Update a wrapper function to look like the wrapped function
 
            wrapper is the function to be updated
@@ -70,8 +75,8 @@ except ImportError:
 
 
     def wraps(wrapped,
-              assigned = WRAPPER_ASSIGNMENTS,
-              updated = WRAPPER_UPDATES):
+              assigned=WRAPPER_ASSIGNMENTS,
+              updated=WRAPPER_UPDATES):
         """Decorator factory to apply update_wrapper() to a wrapper function
 
            Returns a decorator that invokes update_wrapper() with the decorated
@@ -100,9 +105,9 @@ def mock(class_or_module, orig_obj, mock_obj):
                -- string
 
     Example:
-    @tests.mock(utils, "run_subprocess", run_subprocess_mocked())
+    @tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     -- replaces the original run_subprocess function from the utils module
-       with the run_subprocess_mocked function.
+       with the RunSubprocessMocked function.
     @tests.mock(logging.FileHandler, "_open", FileHandler_open_mocked())
     -- replaces the original _open method of the FileHandler class within
        the logging module with the FileHandler_open_mocked function.
@@ -110,10 +115,10 @@ def mock(class_or_module, orig_obj, mock_obj):
     -- replaces the gpgkey module-scoped variable gpg_key_system_dir with the
        "/nonexisting_dir/" string
     """
-    def wrap(fn):
+    def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
-        @wraps(fn)
+        @wraps(func)
         def wrapped_fn(*args, **kwargs):
             # Save temporarily the original object
             orig_obj_saved = getattr(class_or_module, orig_obj)
@@ -129,7 +134,7 @@ def mock(class_or_module, orig_obj, mock_obj):
             return_value = None
             try:
                 try:
-                    return_value = fn(*args, **kwargs)
+                    return_value = func(*args, **kwargs)
                 except:
                     raise
             finally:
@@ -143,6 +148,51 @@ def mock(class_or_module, orig_obj, mock_obj):
     return wrap
 
 
+def safe_repr(obj, short=False):
+    """
+    Safetly calls repr().
+    Returns a truncated string if repr message is too long.
+    """
+    try:
+        result = repr(obj)
+    except Exception:
+        result = object.__repr__(obj)
+    if not short or len(result) < _MAX_LENGTH:
+        return result
+    return result[:_MAX_LENGTH] + ' [truncated]...'
+
+
+class ExtendedTestCase(unittest.TestCase):
+    """
+    Extends Nose test case with more helpers.
+    Most of these functions are taken from newer versions of Nose
+    test and can be removed when we upgrade Nose test.
+    """
+    def assertIn(self, member, container, msg=None):
+        """
+        Taken from newer nose test version.
+        Just like self.assertTrue(a in b), but with a nicer default message.
+        """
+        if member not in container:
+            standard_msg = '%s not found in %s' % (safe_repr(member),
+                                                  safe_repr(container))
+            self.fail(self._formatMessage(msg, standard_msg))
+
+    def _formatMessage(self, msg, standard_msg):
+        """
+        Taken from newer nose test version.
+        Formats the message in a safe manner for better readability.
+        """
+        if msg is None:
+            return standard_msg
+        try:
+            # don't switch to '{}' formatting in Python 2.X
+            # it changes the way unicode input is handled
+            return '%s : %s' % (standard_msg, msg)
+        except UnicodeDecodeError:
+            return '%s : %s' % (safe_repr(standard_msg), safe_repr(msg))
+
+
 class MockFunction(object):
     """
     This class should be used as a base class when creating a mocked
@@ -150,7 +200,7 @@ class MockFunction(object):
 
     Example:
     from convert2rhel import tests  # Imports tests/__init__.py
-    class run_subprocess_mocked(tests.MockFunction):
+    class RunSubprocessMocked(tests.MockFunction):
         ...
     """
 
@@ -168,3 +218,12 @@ class MockFunction(object):
         def __call__(self, *args, **kwargs):
             pass
         """
+
+
+class CountableMockObject(MockFunction):
+    def __init__(self, *args, **kwargs):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return

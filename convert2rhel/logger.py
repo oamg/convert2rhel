@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 Customized logging functionality
 
 CRITICAL  (50)    Calls critical() function and sys.exit(1)
@@ -24,36 +24,40 @@ INFO      (20)    Prints info message (no date/time, just plain message)
 TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
 FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
-'''
+"""
+from convert2rhel.toolopts import tool_opts
 import logging
-import sys
 import os
+import sys
+from utils import format_msg_with_datetime
+
 
 LOG_DIR = "/var/log/convert2rhel"
 
-class LOG_LEVEL_TASK:
+
+class LogLevelTask:
     level = 15
     label = "TASK"
 
 
-class LOG_LEVEL_FILE:
+class LogLevelFile:
     level = 5
     label = "FILE"
 
 
 def initialize_logger(log_name):
-    '''Initialize custom logging levels, handlers, and so on. Call this method
+    """Initialize custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
         log_name = the name for the log file
-    '''
+    """
     # check if already initialized with custom class
     if logging.getLoggerClass() == CustomLogger:
         return
     # set custom class
     logging.setLoggerClass(CustomLogger)
     # set custom labels
-    logging.addLevelName(LOG_LEVEL_TASK.level, LOG_LEVEL_TASK.label)
-    logging.addLevelName(LOG_LEVEL_FILE.level, LOG_LEVEL_FILE.label)
+    logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
+    logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
     # enable raising exceptions
     logging.raiseExceptions = True
     # get root logger
@@ -61,7 +65,7 @@ def initialize_logger(log_name):
     # propagate
     logger.propagate = False
     # set default logging level
-    logger.setLevel(LOG_LEVEL_FILE.level)
+    logger.setLevel(LogLevelFile.level)
 
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -76,7 +80,7 @@ def initialize_logger(log_name):
     handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "w")
     formatter = CustomFormatter("%(message)s")
     handler.setFormatter(formatter)
-    handler.setLevel(LOG_LEVEL_FILE.level)
+    handler.setLevel(LogLevelFile.level)
     logger.addHandler(handler)
 
 
@@ -87,12 +91,13 @@ class CustomLogger(logging.Logger, object):
         class and causes 'TypeError: super() argument 1 must be type, not
         classobj' so we use multiple inheritance to get around the problem.
     """
+
     def task(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LOG_LEVEL_TASK.level, msg, *args,
+        super(CustomLogger, self).log(LogLevelTask.level, msg, *args,
                                       **kwargs)
 
     def file(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LOG_LEVEL_FILE.level, msg, *args,
+        super(CustomLogger, self).log(LogLevelFile.level, msg, *args,
                                       **kwargs)
 
     def critical(self, msg, *args, **kwargs):
@@ -104,7 +109,9 @@ class CustomLogger(logging.Logger, object):
         if tool_opts.debug:
             super(CustomLogger, self).debug(msg, *args, **kwargs)
         else:
-            pass
+            super(CustomLogger, self).log(LogLevelFile.level,
+                                          format_msg_with_datetime(msg, "debug"),
+                                          *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
         super(CustomLogger, self).info(msg, *args, **kwargs)
@@ -117,12 +124,13 @@ class CustomFormatter(logging.Formatter, object):
         class and causes 'TypeError: super() argument 1 must be type, not
         classobj' so we use multiple inheritance to get around the problem.
     """
+
     def format(self, record):
-        if record.levelno == LOG_LEVEL_TASK.level:
+        if record.levelno == LogLevelTask.level:
             temp = '*' * (90 - len(record.msg) - 25)
             self._fmt = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
             self.datefmt = "%m/%d/%Y %H:%M:%S"
-        elif record.levelno in [logging.INFO, LOG_LEVEL_FILE.level]:
+        elif record.levelno in [logging.INFO, LogLevelFile.level]:
             self._fmt = "%(message)s"
             self.datefmt = ""
         elif record.levelno in [logging.WARNING]:

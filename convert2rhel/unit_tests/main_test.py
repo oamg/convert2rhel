@@ -15,37 +15,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+
+import os
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
     import unittest
 
-import os
-
 from convert2rhel import main
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import redhatrelease
+from convert2rhel import subscription
 from convert2rhel import utils
 
 
 class TestMain(unittest.TestCase):
 
-    class ask_to_continue_mocked(unit_tests.MockFunction):
+    class AskToContinueMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
 
     eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                "..", "data", "version-independent"))
+                                             "..", "data", "version-independent"))
 
-    @unit_tests.mock(utils, "ask_to_continue", ask_to_continue_mocked())
-    @unit_tests.mock(utils, "data_dir", eula_dir)
+    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
+    @unit_tests.mock(utils, "DATA_DIR", eula_dir)
     def test_user_to_accept_eula(self):
         main.user_to_accept_eula()
 
-    class get_file_content_mocked(unit_tests.MockFunction):
+    class GetFileContentMocked(unit_tests.MockFunction):
         def __call__(self, filename):
-            return utils.get_file_content_orig(unit_tests.nonexisting_file)
+            return utils.get_file_content_orig(unit_tests.NONEXISTING_FILE)
 
-    class getLogger_mocked(unit_tests.MockFunction):
+    class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
             self.info_msgs = []
             self.critical_msgs = []
@@ -63,9 +66,20 @@ class TestMain(unittest.TestCase):
         def debug(self, msg):
             pass
 
-    @unit_tests.mock(main.logging, "getLogger", getLogger_mocked())
-    @unit_tests.mock(utils, "ask_to_continue", ask_to_continue_mocked())
-    @unit_tests.mock(utils, "get_file_content", get_file_content_mocked())
+    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
+    @unit_tests.mock(utils, "get_file_content", GetFileContentMocked())
     def test_user_to_accept_eula_nonexisting_file(self):
         self.assertRaises(SystemExit, main.user_to_accept_eula)
         self.assertEqual(len(main.logging.getLogger.critical_msgs), 1)
+
+    @unit_tests.mock(utils.changed_pkgs_control, "restore_pkgs", unit_tests.CountableMockObject())
+    @unit_tests.mock(redhatrelease.system_release_file, "restore", unit_tests.CountableMockObject())
+    @unit_tests.mock(redhatrelease.yum_conf, "restore", unit_tests.CountableMockObject())
+    @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
+    def test_rollback_changes(self):
+        main.rollback_changes()
+        self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
+        self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
+        self.assertEqual(redhatrelease.yum_conf.restore.called, 1)
+        self.assertEqual(subscription.rollback.called, 1)

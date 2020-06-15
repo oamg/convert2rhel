@@ -1,19 +1,29 @@
+[BASIC]
+
+# Regular expression matching correct function names
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+
 [MESSAGES CONTROL]
+
 disable=
 # "E" Error for important programming issues (likely bugs)
  no-member,
 # "W" Warnings for stylistic problems or minor programming issues
  arguments-differ,
- broad-except,  # we can drop this when we drop py2.4 support
+# we can drop this when we drop py2.4 support
+ broad-except,
  fixme,
- global-statement,  # we can discuss this if we find an easy alternative to the "globale" use
+# we can discuss this if we find an easy alternative to the "globale" use
+ global-statement,
  no-init,
  protected-access,
 # "C" Coding convention violations
  missing-docstring,
- old-style-class,  # we can drop this when we drop py2.4 support
+# we can drop this when we drop py2.4 support
+ old-style-class,
 # "R" Refactor recommendations
  too-few-public-methods,
 
 [REPORTS]
+
 msg-template='[{msg_id} {symbol}] {msg} File: {path}, line {line}, in {obj}'
