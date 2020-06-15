@@ -30,7 +30,7 @@ class TestOther(unittest.TestCase):
 
     def test_correct_constants(self):
         # Prevents unintentional change of constants
-        self.assertEqual(utils.TMP_DIR, "/tmp/convert2rhel/")
+        self.assertEqual(utils.TMP_DIR, "/var/lib/convert2rhel/")
         self.assertEqual(utils.DATA_DIR, "/usr/share/convert2rhel/")
         self.assertEqual(cert._REDHAT_RELEASE_CERT_DIR,
                          "/etc/pki/product-default/")

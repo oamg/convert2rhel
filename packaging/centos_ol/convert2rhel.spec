@@ -87,6 +87,9 @@ cp -a build/lib/%{name}/data/version-independent/. \
 cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
       %{buildroot}%{_datadir}/%{name}
 
+# Temporary directory used mainly for backing up files during the conversion
+install -d %{buildroot}%{_sharedstatedir}/%{name}
+
 install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
@@ -95,6 +98,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %{python2_sitelib}/%{name}*
 %{_datadir}/%{name}
+%{_sharedstatedir}/%{name}
 
 %{!?_licensedir:%global license %%doc}
 %license LICENSE

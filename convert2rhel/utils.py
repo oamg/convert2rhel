@@ -44,7 +44,7 @@ class Color:
 # Absolute path of a directory holding data for this tool
 DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
-TMP_DIR = "/tmp/convert2rhel/"
+TMP_DIR = "/var/lib/convert2rhel/"
 
 
 def format_msg_with_datetime(msg, level):
@@ -382,8 +382,7 @@ class RestorableFile(object):
         """ Save current version of a file """
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
-        if (os.path.isfile(self.filepath) and
-                os.path.isdir(TMP_DIR)):
+        if os.path.isfile(self.filepath):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
                 shutil.copy2(self.filepath, TMP_DIR)
@@ -391,8 +390,7 @@ class RestorableFile(object):
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
         else:
-            loggerinst.warning("Can't find %s or %s"
-                               % (self.filepath, TMP_DIR))
+            loggerinst.info("Can't find %s", self.filepath)
 
     def restore(self):
         """ Restore a previously backed up file """
@@ -451,7 +449,7 @@ class RestorablePackage(object):
                 loggerinst.warning("Couldn't retrieve downloaded %s package."
                                    % self.name)
         else:
-            loggerinst.warning("Can't find %s" % TMP_DIR)
+            loggerinst.warning("Can't access %s" % TMP_DIR)
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
