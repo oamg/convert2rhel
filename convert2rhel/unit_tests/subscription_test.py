@@ -94,6 +94,7 @@ class TestSubscription(unittest.TestCase):
 
     class GetLoggerMocked(unit_tests.MockFunction):
         def __init__(self):
+            self.task_msgs = []
             self.info_msgs = []
             self.warning_msgs = []
             self.critical_msgs = []
@@ -104,6 +105,9 @@ class TestSubscription(unittest.TestCase):
         def critical(self, msg):
             self.critical_msgs.append(msg)
             raise SystemExit(1)
+
+        def task(self, msg):
+            self.task_msgs.append(msg)
 
         def info(self, msg):
             self.info_msgs.append(msg)
@@ -292,7 +296,8 @@ class TestSubscription(unittest.TestCase):
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 2)
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
         self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 0)
 
 
@@ -303,7 +308,8 @@ class TestSubscription(unittest.TestCase):
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
+        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
         self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
 
     @unit_tests.mock(subscription, "rollback_renamed_repo_files", unit_tests.CountableMockObject())
