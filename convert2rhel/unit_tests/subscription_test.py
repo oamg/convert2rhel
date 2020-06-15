@@ -75,9 +75,12 @@ class TestSubscription(unittest.TestCase):
             self.tuples = tuples
             self.default_tuple = ('output', 0)
             self.called = 0
+            self.cmd = ""
 
-        def __call__(self, *args, **kwargs):
+        def __call__(self, cmd, *args, **kwargs):
+            self.cmd = cmd
             self.called += 1
+
             if self.tuples:
                 return self.tuples.pop(0)
             return self.default_tuple
@@ -105,8 +108,11 @@ class TestSubscription(unittest.TestCase):
         def info(self, msg):
             self.info_msgs.append(msg)
 
-        def warning(self, msg):
+        def warn(self, msg, *args):
             self.warning_msgs.append(msg)
+
+        def warning(self, msg, *args):
+            self.warn(msg, *args)
 
         def debug(self, msg):
             pass
@@ -277,3 +283,32 @@ class TestSubscription(unittest.TestCase):
         for i in sku.dates_formats:
             self.assertEqual(subscription.parse_sub_attrs(sku(i))["ends"], i)
             self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
+
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_unregister_system_successfully(self):
+        unregistration_cmd = "subscription-manager unregister"
+        subscription.unregister_system()
+        self.assertEqual(utils.run_subprocess.called, 1)
+        self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 2)
+        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 0)
+
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([('output', 1)]))
+    def test_unregister_system_fails(self):
+        unregistration_cmd = "subscription-manager unregister"
+        subscription.unregister_system()
+        self.assertEqual(utils.run_subprocess.called, 1)
+        self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
+
+    @unit_tests.mock(subscription, "rollback_renamed_repo_files", unit_tests.CountableMockObject())
+    @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
+    def test_rollback(self):
+        subscription.rollback()
+        self.assertEqual(subscription.rollback_renamed_repo_files.called, 1)
+        self.assertEqual(subscription.unregister_system.called, 1)
