@@ -28,6 +28,14 @@ from convert2rhel.systeminfo import system_info
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
+    class GetInstalledPkgsWithFingerprintMocked(unit_tests.MockFunction):
+        def __init__(self, data=None):
+            self.data = data
+            self.called = 0
+
+        def __call__(self, *args, **kwargs):
+            self.called += 1
+            return self.data
 
     class CallYumCmdMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -142,8 +150,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     class TestPkgObj(object):
         class PkgObjHdr(object):
             def sprintf(self, *args, **kwargs):
-                return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID"\
+                return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID" \
                        " 73bde98381b46521"
+
         hdr = PkgObjHdr()
 
     @staticmethod
@@ -151,6 +160,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                        from_repo=""):
         class DumbObj(object):
             pass
+
         obj = TestPkgHandler.TestPkgObj()
         obj.yumdb_info = DumbObj()
         obj.name = name
@@ -372,21 +382,30 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                         output)
 
     class InstallRhelKernelMocked(unit_tests.MockFunction):
+
         def __call__(self):
             return True
 
-    @unit_tests.mock(pkghandler, "install_rhel_kernel",
-                     InstallRhelKernelMocked())
-    @unit_tests.mock(pkghandler, "remove_non_rhel_kernels",
-                     DumbCallableObject())
-    @unit_tests.mock(pkghandler, "install_gpg_keys",
-                     DumbCallableObject())
+    class IsRHELKernelInstalledMocked(unit_tests.MockFunction):
+        def __call__(self):
+            return False
+
+    @unit_tests.mock(pkghandler, "install_rhel_kernel", InstallRhelKernelMocked())
+    @unit_tests.mock(pkghandler, "is_rhel_kernel_installed", IsRHELKernelInstalledMocked())
+    def test_preserve_only_rhel_kernel_rhel_not_installed(self):
+        self.assertRaises(SystemExit, pkghandler.preserve_only_rhel_kernel)
+
+    @unit_tests.mock(pkghandler, "install_rhel_kernel", InstallRhelKernelMocked())
+    @unit_tests.mock(pkghandler, "remove_non_rhel_kernels", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "install_gpg_keys", DumbCallableObject())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
+                     GetInstalledPkgsWithFingerprintMocked(data=['kernel']))
     def test_preserve_only_rhel_kernel(self):
         pkghandler.preserve_only_rhel_kernel()
 
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y kernel")
-
+        self.assertEqual(pkghandler.get_installed_pkgs_by_fingerprint.called, 1)
 
     gpg_keys_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                  "..", "data", "version-independent"))
@@ -407,7 +426,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 utils.run_subprocess.cmds)
 
     class GetInstalledPkgsWDifferentFingerprintMocked(
-            unit_tests.MockFunction):
+        unit_tests.MockFunction):
         def __init__(self):
             self.is_only_rhel_kernel_installed = False
 
@@ -439,7 +458,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         # 1st scenario: kernels collide; the installed one is already RHEL
         # kernel = no action.
         utils.run_subprocess.output = "Package kernel-4.7.4-200.fc24" \
-            " already installed, skipping."
+                                      " already installed, skipping."
         pkghandler.get_installed_pkgs_w_different_fingerprint \
             .is_only_rhel_kernel_installed = True
 
@@ -579,6 +598,16 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.install_additional_rhel_kernel_pkgs(removed_pkgs)
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
+                     GetInstalledPkgsWithFingerprintMocked(data=['kernel']))
+    def test_check_installed_rhel_kernel_returns_true(self):
+        self.assertEqual(pkghandler.is_rhel_kernel_installed(), True)
+
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
+                     GetInstalledPkgsWithFingerprintMocked(data=[]))
+    def test_check_installed_rhel_kernel_returns_false(self):
+        self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
+
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""
@@ -606,7 +635,7 @@ Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.
 YUM_FILE_CONFLICT_ERROR = """Transaction Check Error:
   file /lib/firmware/ql2500_fw.bin from install of ql2500-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
   file /lib/firmware/ql2400_fw.bin from install of ql2400-firmware-7.03.00-1.el6_5.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch
-  file /lib/firmware/phanfw.bin from install of netxen-firmware-4.0.534-3.1.el6.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch""" # pylint: disable=C0301
+  file /lib/firmware/phanfw.bin from install of netxen-firmware-4.0.534-3.1.el6.noarch conflicts with file from package linux-firmware-20140911-0.1.git365e80c.0.8.el6.noarch"""  # pylint: disable=C0301
 
 YUM_KERNEL_LIST_OLDER_AVAILABLE = """Installed Packages
 kernel.x86_64    4.7.4-200.fc24   @updates
