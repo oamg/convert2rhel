@@ -54,7 +54,7 @@ def unregister_system():
     """Unregister the system from RHSM"""
     loggerinst = logging.getLogger(__name__)
     unregistration_cmd = "subscription-manager unregister"
-    loggerinst.info("Unregistering the system from RHSM ...")
+    loggerinst.task("Rollback: Unregistering the system from RHSM")
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
         loggerinst.warn("System unregistration failed with return code %d and message:\n%s", ret_code, output)
