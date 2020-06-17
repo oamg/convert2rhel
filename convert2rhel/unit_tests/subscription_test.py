@@ -147,7 +147,7 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
-    def test_rhn_classic_not_exist(self):
+    def test_rhn_classic_does_not_exist(self):
         subscription.unregister_from_rhn_classic()
         self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
 
@@ -155,7 +155,7 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription.rhn_reg_file, "remove", RemoveFileMocked())
-    def test_rhn_classic_not_exist(self):
+    def test_rhn_classic_does_exist(self):
         subscription.unregister_from_rhn_classic()
         self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
         self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
