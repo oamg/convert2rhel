@@ -19,7 +19,6 @@ import logging
 import os
 import sys
 
-from convert2rhel import cert
 from convert2rhel import logger
 from convert2rhel import pkghandler
 from convert2rhel import redhatrelease
@@ -156,9 +155,6 @@ def pre_ponr_conversion():
     # replace distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
-
-    if systeminfo.system_info.version == "5":
-        cert.copy_cert_for_rhel_5()
 
     # package analysis
     loggerinst.task("Convert: Package analysis")

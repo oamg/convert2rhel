@@ -1,9 +1,0 @@
-convert2rhel_branch_name: master
-convert2rhel:
-    requirements:
-        - yum-utils
-    pkg: convert2rhel
-    copr:
-        name: convert2rhel
-        description: "convert2rhel copr repo"
-        baseurl: "{{ copr_baseurl }}"

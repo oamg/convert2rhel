@@ -126,10 +126,8 @@ class CLI(object):
                          " 'subscription-manager list --available'.")
         group.add_option("-v", "--variant", help="The RHEL variant to which"
                          " the system will be converted. Available variants"
-                         " are: Server, Client, Workstation, ComputeNode for"
-                         " conversions from CentOS/OL 6/7, Server, and Client"
-                         " for conversions from CentOS/OL 5. If not used, the"
-                         " user is asked to choose a variant.")
+                         " are: Server, Client, Workstation, ComputeNode. If"
+                         " not used, the user is asked to choose a variant.")
         group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
                          " Manager server URL to register the system with. If"
                          " not provided, the subscription-manager defaults will be"

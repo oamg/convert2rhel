@@ -1,7 +1,0 @@
----
-- name: Add Red Hat Enterprise Linux repo
-  yum_repository:
-    name: "{{ custom_repo.name }}"
-    description: "{{ custom_repo.description }}"
-    baseurl: "{{ custom_repo.baseurl }}"
-    gpgcheck: no

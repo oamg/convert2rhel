@@ -1,4 +1,0 @@
-custom_repo:
-    name: rhel
-    description: Red Hat Enterprise Linux
-    baseurl: "{{ rhel_repo }}"
