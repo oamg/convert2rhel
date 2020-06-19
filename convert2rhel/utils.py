@@ -189,7 +189,7 @@ def ask_to_continue():
         if cont == "y":
             break
         if cont == "n":
-            loggerinst.critical("User cancelled the conversion\n")
+            loggerinst.critical("User canceled the conversion\n")
     return
 
 
