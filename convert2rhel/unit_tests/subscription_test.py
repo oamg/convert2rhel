@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from collections import namedtuple
 
 # Required imports:
 import os
@@ -32,11 +33,10 @@ from convert2rhel.toolopts import tool_opts
 class TestSubscription(unittest.TestCase):
     class GetAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [{'name': 'sample',
-                     'available': True,
-                     'ends': '31/12/2999',
-                     'systype': 'sampletype',
-                     'pool': 'samplepool'}]
+            return [namedtuple('Sub', ['pool_id', 'sub_raw'])(
+                'samplepool',
+                'Subscription description'
+            )]
 
     class GetNoAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -52,11 +52,10 @@ class TestSubscription(unittest.TestCase):
                 return []
 
             self.empty_last_call = False
-            return [{'name': 'sample',
-                     'available': True,
-                     'ends': '31/12/2999',
-                     'systype': 'sampletype',
-                     'pool': 'samplepool'}]
+            return [namedtuple('Sub', ['pool_id', 'sub_raw'])(
+                'samplepool',
+                'Subscription description'
+            )]
 
     class LetUserChooseItemMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -246,47 +245,30 @@ class TestSubscription(unittest.TestCase):
             'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
-    class FakeSubscription:
-        def __init__(self):
-            self.subscription = (
-                "Subscription Name: Good subscription\n"
-                "Provides:          Something good\n"
-                "SKU:               00EEE00EE\n"
-                "Contract:          01234567\n"
-                "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
-                "Available:         1\n"
-                "Suggested:         1\n"
-                "Service Level:     Self-icko\n"
-                "Service Type:      L1-L3\n"
-                "Subscription Type: Standard\n"
-                "Ends:              %s\n"
-                "System Type:       Virtual\n"
-            )
-            self.dates_formats = [
-                "26.07.2018",
-                "26. 07. 2018",
-                "26/07/2018",
-                "H26.07.2018",
-                "26-07-2018",
-                "07.26.2018",
-                "2018/07/26",
-                "2018.07.26",
-                "2018-07-26",
-                "2018-26-07",
-                "2018.26.07",
-                "2018/26/07"
-            ]
-
-        def __call__(self, date):
-            return self.subscription % date
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    def test_parse_sub_date(self):
-        # Check that various formats of date don't affect parsing of SKU
-        sku = self.FakeSubscription()
-        for i in sku.dates_formats:
-            self.assertEqual(subscription.parse_sub_attrs(sku(i))["ends"], i)
-            self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
+    def test_get_pool_id(self):
+        # Check that we can distill the pool id from the subscription description
+        pool_id = subscription.get_pool_id(self.SUBSCRIPTION_DETAILS)
+
+        self.assertEqual(pool_id, "8aaaa123045897fb564240aa00aa0000")
+
+
+    # Details of one subscription as output by `subscription-manager list --available`
+    SUBSCRIPTION_DETAILS = (
+        "Subscription Name: Good subscription\n"
+        "Provides:          Something good\n"
+        "SKU:               00EEE00EE\n"
+        "Contract:          01234567\n"
+        "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
+        "Available:         1\n"
+        "Suggested:         1\n"
+        "Service Level:     Self-icko\n"
+        "Service Type:      L1-L3\n"
+        "Subscription Type: Standard\n"
+        "Ends:              2018/26/07\n"
+        "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
+    )
 
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())

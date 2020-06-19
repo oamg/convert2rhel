@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import namedtuple
 import os
 import re
 import shutil
@@ -204,10 +205,10 @@ def attach_subscription():
 
         print_avail_subs(subs_list)
         sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
-        pool = "--pool " + subs_list[sub_num]["pool"]
+        pool = "--pool " + subs_list[sub_num].pool_id
         tool_opts.pool = pool
-        loggerinst.info("Attaching '%s' subscription to the system ..."
-                        % subs_list[sub_num]["name"])
+        loggerinst.info("Attaching subscription with pool ID %s to the system ..."
+                        % subs_list[sub_num].pool_id)
 
     _, ret_code = utils.run_subprocess("subscription-manager attach %s" % pool)
     if ret_code != 0:
@@ -234,63 +235,28 @@ def get_avail_subs():
 
 
 def get_sub(subs_raw):
-    """Generator that provides subscriptions available to a logged-in user in
-    the form of dictionaries, one dictionary per subscription.
+    """Generator that provides subscriptions available to a logged-in user.
     """
-    # Split all available subscriptions per one subscription
-    for sub_raw_attrs in re.findall(
-            r"Subscription Name.*?System Type:\s+\w+\n",
+    # Split all the available subscriptions per one subscription
+    for sub_raw in re.findall(
+            r"Subscription Name.*?Type:\s+\w+\n\n",
             subs_raw,
             re.DOTALL | re.MULTILINE):
-        sub_dict = parse_sub_attrs(sub_raw_attrs)
-        yield sub_dict
+        pool_id = get_pool_id(sub_raw)
+        yield namedtuple('Sub', ['pool_id', 'sub_raw'])(pool_id, sub_raw)
 
 
-def parse_sub_attrs(sub_raw_attrs):
-    """Parse input multiline string holding subscription attributes to
-    distill the important ones into a dictionary.
+def get_pool_id(sub_raw_attrs):
+    """Parse the input multiline string holding subscription attributes to distill the pool ID.
     """
     loggerinst = logging.getLogger(__name__)
-    sub_dict = {}  # A dictionary to hold subscription attributes
-    try:
-        sub_dict["name"] = get_sub_attr(r"^Subscription Name:\s+(.*?)$",
-                                        sub_raw_attrs,
-                                        "subscription name")
-        sub_dict["pool"] = get_sub_attr(r"^Pool ID:\s+(.*?)$",
-                                        sub_raw_attrs,
-                                        "subscription pool ID")
-        sub_dict["available"] = get_sub_attr(r"^Available:\s+(.*?)$",
-                                             sub_raw_attrs,
-                                             "subscription availability")
-        sub_dict["systype"] = get_sub_attr(r"^System Type:\s+(.*?)$",
-                                           sub_raw_attrs,
-                                           "subscription system type")
-        sub_dict["ends"] = get_sub_attr(r"^Ends:\s+([^\n]+)$",
-                                        sub_raw_attrs,
-                                        "subscription end date")
-        sub_dict["entitlements"] = get_sub_attr(r"Provides:\s+(.*?)\nSKU",
-                                                sub_raw_attrs,
-                                                "subscription entitlements")
-    except ValueError, err:
-        loggerinst.critical("Cannot parse %s." % err.args[0])
+    pool_id = re.search(r"^Pool ID:\s+(.*?)$",
+                        sub_raw_attrs,
+                        re.MULTILINE | re.DOTALL)
+    if pool_id:
+        return pool_id.group(1)
 
-    # Transform entitlements from multiline string into a list
-    sub_dict["entitlements"] = re.split(r"\n\s*", sub_dict["entitlements"])
-
-    return sub_dict
-
-
-def get_sub_attr(pattern, sub_all_attrs, descr):
-    """Parse a string with all the subscription attributes to get value of a
-    single subscription attribute.
-    """
-    sub_attr = re.search(pattern,
-                         sub_all_attrs,
-                         re.MULTILINE | re.DOTALL)
-    if sub_attr:
-        return sub_attr.group(1)
-    else:
-        raise ValueError(descr)
+    loggerinst.critical("Cannot parse the subscription pool ID from string:\n%s" % sub_raw_attrs)
 
 
 def print_avail_subs(subs):
@@ -301,16 +267,8 @@ def print_avail_subs(subs):
                     " for converting this system to RHEL:")
     for index, sub in enumerate(subs):
         index += 1
-        loggerinst.info("%s) %s\n"
-                        "    - available: %s\n"
-                        "    - ends: %s\n"
-                        "    - type: %s"
-                        % (index,
-                           sub["name"],
-                           sub["available"],
-                           sub["ends"],
-                           sub["systype"]))
-    return
+        loggerinst.info(
+            "\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
 
 
 def get_avail_repos():
