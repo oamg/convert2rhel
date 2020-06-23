@@ -74,7 +74,7 @@ def get_system_release_content():
     filepath = get_system_release_filepath()
     try:
         return utils.get_file_content(filepath)
-    except EnvironmentError, err:
+    except EnvironmentError as err:
         loggerinst.critical("%s\n%s file is essential for running this tool."
                             % (err, filepath))
 

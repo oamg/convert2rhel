@@ -19,10 +19,11 @@ import glob
 import os
 import re
 import sys
-import yum
+import rpm
 
 from convert2rhel import logger
 from convert2rhel import pkghandler
+from convert2rhel import pkgmanager
 from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
@@ -186,24 +187,30 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y pkg1 pkg2")
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
     def test_call_yum_cmd_w_downgrades_one_fail(self):
         pkghandler.call_yum_cmd.fail_once = True
 
         pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["fingerprint"])
+
+        self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
     def test_get_problematic_pkgs(self):
         error_pkgs = pkghandler.get_problematic_pkgs("", [])
         self.assertEqual(error_pkgs, [])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_PROTECTED_ERROR, [])
-        self.assertEqual(error_pkgs, ["systemd", "yum"])
+        self.assertIn("systemd", error_pkgs)
+        self.assertIn("yum", error_pkgs)
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, [])
-        self.assertEqual(error_pkgs,
-                         ["libreport-anaconda", "abrt-cli", "libreport-plugin-rhtsupport"])
+        self.assertIn("libreport-anaconda", error_pkgs)
+        self.assertIn("abrt-cli", error_pkgs)
+        self.assertIn("libreport-plugin-rhtsupport", error_pkgs)
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, [])
-        self.assertEqual(error_pkgs, ["openldap", "p11-kit"])
+        self.assertIn("openldap", error_pkgs)
+        self.assertIn("p11-kit", error_pkgs)
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
@@ -245,7 +252,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         hdr = PkgObjHdr()
 
     @staticmethod
-    def create_pkg_obj(name, version="", release="", arch="", vendor="",
+    def create_pkg_obj(name, version="", release="", arch="", packager="",
                        from_repo=""):
         class DumbObj(object):
             pass
@@ -253,16 +260,20 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         obj = TestPkgHandler.TestPkgObj()
         obj.yumdb_info = DumbObj()
         obj.name = name
-        obj.vendor = None
+        obj.packager = None
 
         if version:
             obj.version = version
+            obj.v = version
         if release:
             obj.release = release
+            obj.r = release
+        if version and release:
+            obj.evr = version + "-" + release
         if arch:
             obj.arch = arch
-        if vendor:
-            obj.vendor = vendor
+        if packager:
+            obj.packager = packager
         if from_repo:
             obj.yumdb_info.from_repo = from_repo
         return obj
@@ -310,18 +321,66 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                                     "Oracle")
             return [pkg_obj]
 
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
-                     GetInstalledPkgObjectsMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
+    @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
     def test_get_installed_pkgs_w_fingerprints(self):
         pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
 
         self.assertEqual(len(pkgs), 1)
         self.assertEqual(pkgs[0].pkg_obj.name, "installed_pkg")
-        self.assertEqual(pkgs[0].fingerprint, "73bde98381b46521")
+        self.assertEqual(pkgs[0].fingerprint, "some_fingerprint")
 
         pkgs = pkghandler.get_installed_pkgs_w_fingerprints("non_existing")
 
         self.assertEqual(len(pkgs), 0)
+
+    @unit_tests.mock(pkghandler, "get_rpm_header", lambda pkg: TestPkgHandler.TestPkgObj.PkgObjHdr())
+    def test_get_pkg_fingerprint(self):
+        pkg = TestPkgHandler.create_pkg_obj("pkg")
+
+        fingerprint = pkghandler.get_pkg_fingerprint(pkg)
+
+        self.assertEqual(fingerprint, "73bde98381b46521")
+
+    class LogMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.msg = ""
+
+        def __call__(self, msg):
+            self.msg += "%s\n" % msg
+
+    class TransactionSetMocked(unit_tests.MockFunction):
+        def __call__(self):
+            return self
+
+        def dbMatch(self, key='name', value=''):
+            db = [{rpm.RPMTAG_NAME: "pkg1",
+                   rpm.RPMTAG_VERSION: "1",
+                   rpm.RPMTAG_RELEASE: "2",
+                   rpm.RPMTAG_EVR: "1-2"},
+                  {rpm.RPMTAG_NAME: "pkg2",
+                   rpm.RPMTAG_VERSION: "2",
+                   rpm.RPMTAG_RELEASE: "3",
+                   rpm.RPMTAG_EVR: "2-3"}]
+            if key != 'name': # everything else than 'name' is unsupported ATM :)
+                return []
+            if not value:
+                return db
+            else:
+                return [db_entry for db_entry in db if db_entry[rpm.RPMTAG_NAME] == value]
+
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
+    def test_get_rpm_header(self):
+        pkg = TestPkgHandler.create_pkg_obj("pkg1", "1", "2")
+        hdr = pkghandler.get_rpm_header(pkg)
+        self.assertEqual(hdr, {rpm.RPMTAG_NAME: "pkg1",
+                               rpm.RPMTAG_VERSION: "1",
+                               rpm.RPMTAG_RELEASE: "2",
+                               rpm.RPMTAG_EVR: "1-2"})
+
+        unknown_pkg = TestPkgHandler.create_pkg_obj("unknown", "1", "1")
+        self.assertRaises(SystemExit, pkghandler.get_rpm_header, unknown_pkg)
 
     class ReturnPackagesMocked(unit_tests.MockFunction):
         def __call__(self, patterns=None):
@@ -333,10 +392,64 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             pkg_obj.name = "installed_pkg"
             return [pkg_obj]
 
-    @unit_tests.mock(yum.rpmsack.RPMDBPackageSack, "returnPackages",
-                     ReturnPackagesMocked())
-    def test_get_installed_pkg_objects(self):
+    class QueryMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.filter_called = 0
+            self.installed_called = 0
+            self.stop_iteration = False
+            self.pkg_obj = None
+
+        def __call__(self, *args):
+            self._setup_pkg()
+            return self
+
+        def __iter__(self):  # pylint: disable=non-iterator-returned
+            return self
+
+        def __next__(self):
+            if self.stop_iteration or not self.pkg_obj:
+                self.stop_iteration = False
+                raise StopIteration
+            self.stop_iteration = True
+            return self.pkg_obj
+
+        def _setup_pkg(self):
+            self.pkg_obj = TestPkgHandler.TestPkgObj()
+            self.pkg_obj.name = "installed_pkg"
+
+        def filterm(self, empty):
+            # Called internally in DNF when calling fill_sack - ignore, not needed
+            pass
+
+        def installed(self):
+            self.installed_called += 1
+            return self
+
+        def filter(self, name__glob):
+            self.filter_called += 1
+            if name__glob and name__glob == "installed_pkg":
+                self._setup_pkg()
+            elif name__glob:
+                self.pkg_obj = None
+            return self
+
+    try:
+        @unit_tests.mock(pkgmanager.rpmsack.RPMDBPackageSack, "returnPackages",
+                         ReturnPackagesMocked())
+        def test_get_installed_pkg_objects_yum(self):
+            self.get_installed_pkg_objects()
+    except AttributeError:
+        @unit_tests.mock(pkgmanager.query, "Query", QueryMocked())
+        def test_get_installed_pkg_objects_dnf(self):
+            self.get_installed_pkg_objects()
+
+    def get_installed_pkg_objects(self):
         pkgs = pkghandler.get_installed_pkg_objects()
+
+        self.assertEqual(len(pkgs), 1)
+        self.assertEqual(pkgs[0].name, "installed_pkg")
+
+        pkgs = pkghandler.get_installed_pkg_objects("installed_pkg")
 
         self.assertEqual(len(pkgs), 1)
         self.assertEqual(pkgs[0].name, "installed_pkg")
@@ -374,13 +487,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.print_pkg_info.called, 0)
 
-    class LogMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.msg = ""
-
-        def __call__(self, msg):
-            self.msg += "%s\n" % msg
-
     @staticmethod
     def prepare_pkg_obj_for_print():
         obj1 = TestPkgHandler.create_pkg_obj("pkg1", "0.1", "1", "x86_64",
@@ -390,12 +496,11 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                              "x86_64", from_repo="test")
         return [obj1, obj2, obj3]
 
-    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
     def test_print_pkg_info(self):
         # This test covers also get_pkg_nvra
         pkgs = TestPkgHandler.prepare_pkg_obj_for_print()
         result = pkghandler.print_pkg_info(pkgs)
-        self.assertTrue(re.search(r"^Package\s+Vendor\s+Repository$",
+        self.assertTrue(re.search(r"^Package\s+Packager\s+Repository$",
                                   result, re.MULTILINE))
         self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
                                   result, re.MULTILINE))

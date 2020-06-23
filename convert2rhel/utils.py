@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from six import moves
 import datetime
 import errno
 import getpass
@@ -28,7 +29,7 @@ import sys
 import traceback
 
 
-class Color:
+class Color(object):
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -126,21 +127,23 @@ def run_subprocess(cmd="", **kwargs):
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
     cmd = shlex.split(cmd, False)
-    sp_popen = subprocess.Popen(cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                bufsize=1,
-                                env={'LC_ALL':'C'})
-    stdout = ''
-    for line in iter(sp_popen.stdout.readline, ''):
-        # communicate() method buffers everything in memory, we will
-        # read stdout directly
-        stdout += line
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               bufsize=1,
+                               env={'LC_ALL':'C'})
+    output = ''
+    for line in iter(process.stdout.readline, b''):
+        output += line.decode()
         if print_output:
-            loggerinst.info(line.rstrip('\n'))
-    sp_popen.communicate()
+            loggerinst.info(line.decode().rstrip('\n'))
 
-    return stdout, sp_popen.returncode
+    # Call communicate() to wait for the process to terminate so that we can get the return code by poll().
+    # It's just for py2.6, py2.7+/3 doesn't need this.
+    process.communicate()
+
+    return_code = process.poll()
+    return output, return_code
 
 
 def let_user_choose_item(num_of_options, item_to_choose):
@@ -168,7 +171,7 @@ def mkdir_p(path):
     """
     try:
         os.makedirs(path)
-    except OSError, err:
+    except OSError as err:
         if err.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else:
@@ -197,7 +200,7 @@ def prompt_user(question, password=False):
     if password:
         response = getpass.getpass(color_question)
     else:
-        response = raw_input(color_question)
+        response = moves.input(color_question)
     loggerinst.info("\n")
     return response
 
@@ -227,7 +230,7 @@ class DictWListValues(dict):
     """Python 2.4 replacement for Python 2.5+ collections.defaultdict(list)."""
 
     def __getitem__(self, item):
-        if item not in self.iterkeys():
+        if item not in iter(self.keys()):
             self[item] = []
 
         return super(DictWListValues, self).__getitem__(item)
@@ -387,7 +390,7 @@ class RestorableFile(object):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
                 shutil.copy2(self.filepath, TMP_DIR)
-            except IOError, err:
+            except IOError as err:
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
         else:
@@ -405,7 +408,7 @@ class RestorableFile(object):
             return
         try:
             shutil.copy2(backup_filepath, self.filepath)
-        except IOError, err:
+        except IOError as err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
             loggerinst.warning("I/O error(%s): %s" % (err.errno,
@@ -421,7 +424,7 @@ class RestorableFile(object):
                                " convert2rhel" % self.filepath)
             try:
                 os.remove(self.filepath)
-            except IOError, err:
+            except IOError as err:
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
 

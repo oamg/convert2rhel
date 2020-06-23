@@ -2,7 +2,7 @@ summary:
     Unit tests
 execute:
     script:
-    - pwd; cd ~/git-source && pwd && nosetests -v
+    - pwd; cd ~/git-source && pwd && ./run_unit_tests.sh
 prepare:
     how: shell
     script:

@@ -11,16 +11,25 @@ cleanup() {
 }
 
 BASEDIR=$(dirname "$0")
-pushd ${BASEDIR}/../..
+pushd ${BASEDIR}/..
 
 rm -rf dist/ SRPMS/
-python2 setup.py sdist
+echo "Creating a tarball for building the RPM ..."
+if [ -x "$(command -v python3)" ]; then
+  python3 setup.py sdist
+elif [ -x "$(command -v python2)" ]; then
+  python2 setup.py sdist
+else
+  echo "Error: Can't find python interpreter."
+  exit 1
+fi
 
 cp ${BASEDIR}/convert2rhel.spec convert2rhel.spec
 rpmlint convert2rhel.spec
 
 TIMESTAMP=`date +%Y%m%d%H%MZ -u`
 GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
+GIT_BRANCH=${GIT_BRANCH////_}  # Sanitize the git branch name (no "/" allowed for sed)
 sed -i "s/1%{?dist}/0.${TIMESTAMP}.${GIT_BRANCH}/g" convert2rhel.spec
 
 rpmbuild -bs convert2rhel.spec --define "debug_package %{nil}" \

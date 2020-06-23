@@ -12,43 +12,39 @@
 # - name of each test method (within a class derived from unittest.TestCase)
 #   shall start with 'test_' prefix
 # - name of the class derived from unittest.TestCase can be arbitrary
-# Tests location: convert2rhel/tests
+# Tests location: convert2rhel/unit_tests
 
 # -- SPECIFIC TESTS EXECUTION --
 # To execute specific tests only, add the tests as arguments to this script.
 # Example:
 # ./run_unit_tests.sh convert2rhel.tests.example_test:TestExample.test_example
 
-# -- CODE COVERAGE --
-# To see how much of the convert2rhel python code is covered by tests:
-# 1. python-coverage package needs to be installed
-# 2. Uncomment the following line:
-#GET_COVERAGE="--cover-package=convert2rhel --with-coverage --cover-html"
-
 # -- TEST OUTPUT --
 # To let the tests print to stdout, uncomment the following line:
 #TEST_OUTPUT="--nocapture"
 
-# -- CLEAR LOGGING HANDLERS --
-# Clear existing logging handlers because our custom logging class creates them
-#CLEAR_HANDLERS="--logging-clear-handlers"
-
-command -v nosetests >/dev/null 2>&1 || {
-    echo >&2 "Nose PyPI package required. Aborting.";
-    exit 1;
-}
-
-# Rednose colors the output of nose (red/green - fail/passed). Requires
-# rednose PyPI package.
-if python -c "import rednose" >/dev/null 2>&1; then
-    REDNOSE="--rednose"
-else
-    REDNOSE=""
+# Determine Python version
+if command -v python3 -v >/dev/null 2>&1; then
+    PYTHON=3
+elif command -v python2 -v >/dev/null 2>&1; then
+    PYTHON=2
+    # Make sure nosetests are installed for Py2 tests
+    command -v nosetests >/dev/null 2>&1 || {
+        echo >&2 "Nose PyPI package required. Aborting.";
+        exit 1;
+    }
 fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $SCRIPT_DIR > /dev/null
-nosetests -v $GET_COVERAGE $TEST_OUTPUT $CLEAR_HANDLERS $REDNOSE "$@"
+if [[ $PYTHON = 2 ]]; then
+    nosetests -v $TEST_OUTPUT "$@"
+elif [[ $PYTHON = 3 ]]; then
+    nosetests-3 -v $TEST_OUTPUT "$@"
+else
+    echo "Error: Python version not determined"
+    exit 1
+fi
 ret_code=$?
 popd > /dev/null
 

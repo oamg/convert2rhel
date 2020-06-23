@@ -15,15 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from itertools import imap
 import logging
 import os
 import re
-import yum
+import rpm
 
 from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
+from convert2rhel import pkgmanager
 from convert2rhel.toolopts import tool_opts
+import sys
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
@@ -49,7 +50,7 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     """
 
     loggerinst = logging.getLogger(__name__)
-    for _ in xrange(MAX_YUM_CMD_CALLS):
+    for _ in range(MAX_YUM_CMD_CALLS):
         output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(
             get_installed_pkgs_by_fingerprint(fingerprints))))
         loggerinst.info("Received return code: %s\n" % str(ret_code))
@@ -169,30 +170,75 @@ def get_installed_pkgs_w_fingerprints(name=""):
     package_objects = get_installed_pkg_objects(name)
     pkgs_w_fingerprints = []
     for pkg_obj in package_objects:
-        pkg_sig = pkg_obj.hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:"
-                                      "{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:"
-                                      "{(none)}|}|")
-        fingerprint_match = re.search("Key ID (.*)", pkg_sig)
-        if fingerprint_match:
-            pkgs_w_fingerprints.append(PkgWFingerprint(
-                pkg_obj, fingerprint_match.group(1)))
-        else:
-            pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, "none"))
+        fingerprint = get_pkg_fingerprint(pkg_obj)
+        pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, fingerprint))
+
     return pkgs_w_fingerprints
+
+
+def get_pkg_fingerprint(pkg_obj):
+    """Get fingerprint of the key used to sign a package"""
+    loggerinst = logging.getLogger(__name__)
+    if pkgmanager.TYPE == 'yum':
+        hdr = pkg_obj.hdr
+    else:
+        hdr = get_rpm_header(pkg_obj)
+
+    pkg_sig = hdr.sprintf(
+        '%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|')
+    fingerprint_match = re.search("Key ID (.*)", pkg_sig)
+    if fingerprint_match:
+        return fingerprint_match.group(1)
+    else:
+        return "none"
+
+
+def get_rpm_header(pkg_obj):
+    """The dnf python API does not provide the package rpm header:
+      https://bugzilla.redhat.com/show_bug.cgi?id=1876606.
+    So instead, we're getting the header directly from the rpm db.
+    """
+    ts = rpm.TransactionSet()
+    rpm_hdr_iter = ts.dbMatch('name', pkg_obj.name)
+    for rpm_hdr in rpm_hdr_iter:
+        # There might be multiple pkgs with the same name installed.
+        if rpm_hdr[rpm.RPMTAG_VERSION] == pkg_obj.v and rpm_hdr[rpm.RPMTAG_RELEASE] == pkg_obj.r:
+            # One might think that we could have used the package EVR for comparison, instead of version and release
+            #  separately, but there's a bug: https://bugzilla.redhat.com/show_bug.cgi?id=1876885.
+            return rpm_hdr
+    else:
+        # Package not found in the rpm db
+        loggerinst = logging.getLogger(__name__)
+        loggerinst.critical(
+            "Unable to find package '%s' in the rpm database." % pkg_obj.name)
 
 
 def get_installed_pkg_objects(name=""):
     """Return list with installed package objects. The packages can be
     optionally filtered by name.
     """
-    yum_base = yum.YumBase()
+    if pkgmanager.TYPE == 'yum':
+        return _get_installed_pkg_objects_yum(name)
+    return _get_installed_pkg_objects_dnf(name)
+
+def _get_installed_pkg_objects_yum(name):
+    yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
     yum_base.doConfigSetup(init_plugins=False)
     if name:
         return yum_base.rpmdb.returnPackages(patterns=[name])
-
     return yum_base.rpmdb.returnPackages()
 
+def _get_installed_pkg_objects_dnf(name):
+    dnf_base = pkgmanager.Base()
+    dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
+    query = dnf_base.sack.query()
+    installed = query.installed()
+    if name:
+        # name__glob provides "shell-style wildcard match" per
+        #  https://dnf.readthedocs.io/en/latest/api_queries.html#dnf.query.Query.filter
+        installed = installed.filter(name__glob=name)
+    return list(installed)
 
 def get_third_party_pkgs():
     """Get all the third party packages (non-Red Hat and non-original OS
@@ -237,43 +283,33 @@ def list_third_party_pkgs():
 
 
 def print_pkg_info(pkgs):
-    """Print package information."""
-    for pkg in pkgs:
-        if not pkg.vendor:
-            pkg.vendor = "N/A"
-    max_nvra_length = max(imap(len, map(lambda pkg: get_pkg_nvra(pkg), pkgs)))
-    max_vendor_length = max(max(imap(len, map(lambda pkg: pkg.vendor, pkgs))),
-                            len("Vendor"))
-    loggerinst = logging.getLogger(__name__)
-    result = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_vendor_length,
-                                 "Vendor", "Repository") + "\n"
-    loggerinst.info("%-*s  %-*s  %s"
-                    % (max_nvra_length, "Package", max_vendor_length, "Vendor",
-                       "Repository"))
-    result += "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
-                                  max_vendor_length, "-" * len("Vendor"),
-                                  "-" * len("Repository")) + "\n"
-    loggerinst.info("%-*s  %-*s  %s"
-                    % (max_nvra_length, "-" * len("Package"),
-                       max_vendor_length, "-" * len("Vendor"),
-                       "-" * len("Repository")))
+    """Print package information.
+    We print a packager instead of a vendor because the dnf python API does not provide the information about vendor
+    (https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
+    """
+    max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
+    max_packager_length = max(max(map(len, [get_packager(pkg) for pkg in pkgs])), len("Packager"))
+
+    header = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_packager_length,
+                                 "Packager", "Repository") + "\n"
+    header_underline = "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
+                                           max_packager_length, "-" * len("Packager"),
+                                           "-" * len("Repository")) + "\n"
+
+    pkg_list = ""
     for pkg in pkgs:
         try:
             from_repo = pkg.yumdb_info.from_repo
-        except (KeyError, AttributeError):
-            # A package may not have repo set if it's installed by rpm.
-            # KeyError is for Python 2.4, AttributeError is for Python 2.6+ due
-            # to a different implementation of rpm library.
+        except AttributeError:
+            # A package may not have the installation repo set in case it was installed through rpm
             from_repo = "N/A"
-        result += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
-                                      max_vendor_length, pkg.vendor,
-                                      from_repo) + "\n"
-        loggerinst.info("%-*s  %-*s  %s"
-                        % (max_nvra_length, get_pkg_nvra(pkg),
-                           max_vendor_length, pkg.vendor,
-                           from_repo))
-    loggerinst.info("")
-    return result
+        pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
+                                        max_packager_length, get_packager(pkg), from_repo) + "\n"
+
+    pkg_table = header + header_underline + pkg_list
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info(pkg_table)
+    return pkg_table
 
 
 def get_pkg_nvra(pkg_obj):
@@ -281,6 +317,16 @@ def get_pkg_nvra(pkg_obj):
                             pkg_obj.version,
                             pkg_obj.release,
                             pkg_obj.arch)
+
+
+def get_packager(pkg_obj):
+    # The packager may not be set for all packages
+    packager = pkg_obj.packager if pkg_obj.packager else "N/A"
+    # Typical packager format:
+    #  Red Hat, Inc. <http://bugzilla.redhat.com/bugzilla>
+    #  CentOS Buildsys <bugs@centos.org>
+    # Get only the string before the left angle bracket
+    return packager.split("<", 1)[0].rstrip()
 
 
 def list_non_red_hat_pkgs_left():
@@ -318,7 +364,6 @@ def remove_excluded_pkgs():
         return
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
-    loggerinst.info("\n")
     print_pkg_info(installed_excluded_pkgs)
     utils.ask_to_continue()
     utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
