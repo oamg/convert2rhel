@@ -40,6 +40,10 @@ class ConversionPhase:
 
 def main():
     """Perform all steps for the entire conversion process."""
+
+    # the tool will not run if not executed under the root user
+    utils.require_root()
+
     process_phase = ConversionPhase.INIT
     # initialize logging
     logger.initialize_logger("convert2rhel.log")
@@ -51,9 +55,6 @@ def main():
         toolopts.CLI()
 
         process_phase = ConversionPhase.POST_CLI
-
-        # the tool will not run if not executed under the root user
-        utils.require_root()
 
         # license agreement
         loggerinst.task("Prepare: End user license agreement")
@@ -159,7 +160,6 @@ def pre_ponr_conversion():
     # package analysis
     loggerinst.task("Convert: Package analysis")
     repos_needed = repo.package_analysis()
-
     if toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Check required repos")
         repo.check_needed_repos_availability(repos_needed)

@@ -17,6 +17,7 @@
 
 
 import re
+import os
 
 try:
     import unittest2 as unittest  # Python 2.6 support
@@ -49,6 +50,17 @@ class TestUtils(unittest.TestCase):
             self.cmds += "%s\n" % cmd
             self.called += 1
             return self.output, self.ret_code
+
+    class DummyGetUID(unit_tests.MockFunction):
+        def __call__(self, *args, **kargs):
+            return 1
+
+    @unit_tests.mock(os, "geteuid", DummyGetUID())
+    def test_require_root_is_not_root(self):
+        self.assertRaises(SystemExit, utils.require_root)
+
+    def test_require_root_is_root(self):
+        self.assertEqual(utils.require_root(), None)
 
     def test_track_installed_pkg(self):
         control = utils.ChangedRPMPackagesController()
