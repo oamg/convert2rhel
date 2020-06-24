@@ -65,6 +65,17 @@ class TestUtils(unittest.TestCase):
     def test_require_root_is_root(self):
         self.assertEqual(utils.require_root(), None)
 
+    def test_locale(self):
+        utils.set_env_locale()
+        self.assertEqual(os.environ["LC_ALL"], "C")
+        self.assertEqual(os.environ["LC_CTYPE"], "en_US.UTF-8")
+        self.assertEqual(os.environ["LANGUAGE"], "en_US.UTF-8")
+
+        utils.set_env_locale(lc_all_str='test', lc_ctype_str='test', language_str='test')
+        self.assertEqual(os.environ["LC_ALL"], "test")
+        self.assertEqual(os.environ["LC_CTYPE"], "test")
+        self.assertEqual(os.environ["LANGUAGE"], "test")
+
     def test_track_installed_pkg(self):
         control = utils.ChangedRPMPackagesController()
         pkgs = ['pkg1', 'pkg2', 'pkg3']
