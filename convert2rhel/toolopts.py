@@ -82,14 +82,14 @@ class CLI(object):
                                 " its output is stored in a log file.")
         self._parser.add_option("--enablerepo", metavar="repoidglob",
                                 action="append", help="Enable specific"
-                                " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories.")
+                                " repositories by ID or glob. For more repositories to enable, use this option"
+                                " multiple times. If you don't use the --disable-submgr option, you can use this option"
+                                " to override the default RHEL CDN repoids that convert2rhel enables through"
+                                " subscription-manager.")
         self._parser.add_option("--disablerepo", metavar="repoidglob",
                                 action="append", help="Disable specific"
-                                " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories."
-                                " If --disable-submgr is used this defaults"
-                                " to all repositories.")
+                                " repositories by ID or glob. For more repositories to disable, use this option"
+                                " multiple times. This option defaults to all repositories ('*').")
         group = optparse.OptionGroup(self._parser,
                                      "Subscription Manager Options",
                                      "The following options are specific to"
@@ -190,8 +190,11 @@ class CLI(object):
             if not tool_opts.enablerepo:
                 loggerinst.critical(
                     "Error: --enablerepo is required if --disable-submgr is passed ")
-            if not tool_opts.disablerepo:
-                tool_opts.disablerepo = "*"  # Default to disable everything
+        if not tool_opts.disablerepo:
+            # Default to disable every repo except:
+            # - the ones passed through --enablerepo
+            # - the ones enabled through subscription-manager based on convert2rhel config files
+            tool_opts.disablerepo = ["*"]
 
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool

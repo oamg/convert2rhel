@@ -62,13 +62,11 @@ class TestToolopts(unittest.TestCase):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.serverurl, "url")
 
-    @unit_tests.mock(sys, "argv", _params(["--disable-submgr", ""
-                                           "--enablerepo", "foo"]))
-    def test_cmdline_defaults_disablerepo_to_asterisk_with_disable_submgr(self):
+    @unit_tests.mock(sys, "argv", _params(["--enablerepo", "foo"]))
+    def test_cmdline_disablerepo_defaults_to_asterisk(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.enablerepo, ["foo"])
-        self.assertEqual(tool_opts.disablerepo, "*")
-        self.assertTrue(tool_opts.disable_submgr)
+        self.assertEqual(tool_opts.disablerepo, ["*"])
 
     @unit_tests.mock(sys, "argv", _params(["--disable-submgr"]))
     def test_cmdline_exits_on_empty_enablerepo_with_disable_submgr(self):

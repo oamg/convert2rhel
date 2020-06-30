@@ -244,7 +244,6 @@ class TestSubscription(unittest.TestCase):
                 'subscription-manager register --force '
                 '--username=jdoe --password="*****" --org=0123')
 
-
     def test_rhsm_serverurl(self):
         tool_opts.username = 'user'
         tool_opts.password = 'pass'
@@ -253,14 +252,12 @@ class TestSubscription(unittest.TestCase):
             'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
-
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     def test_get_pool_id(self):
         # Check that we can distill the pool id from the subscription description
         pool_id = subscription.get_pool_id(self.SUBSCRIPTION_DETAILS)
 
         self.assertEqual(pool_id, "8aaaa123045897fb564240aa00aa0000")
-
 
     # Details of one subscription as output by `subscription-manager list --available`
     SUBSCRIPTION_DETAILS = (
@@ -278,7 +275,6 @@ class TestSubscription(unittest.TestCase):
         "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
     )
 
-
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_unregister_system_successfully(self):
@@ -289,7 +285,6 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
         self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
         self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 0)
-
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([('output', 1)]))

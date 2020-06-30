@@ -26,6 +26,7 @@ from convert2rhel import pkghandler
 from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -144,16 +145,28 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertRaises(SystemExit, pkghandler.clear_yum_versionlock)
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_call_yum_cmd(self):
+        pkghandler.call_yum_cmd("install")
+
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
 
-        self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades,
-                          "test_cmd", ["fingerprint"])
-        self.assertEqual(pkghandler.call_yum_cmd.called,
-                         pkghandler.MAX_YUM_CMD_CALLS)
+        self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["fingerprint"])
+        self.assertEqual(pkghandler.call_yum_cmd.called, pkghandler.MAX_YUM_CMD_CALLS)
 
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(tool_opts, "disablerepo", ['*'])
+    @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
+    def test_call_yum_cmd_with_disablerepo(self):
+        pkghandler.call_yum_cmd("install")
+
+        self.assertEqual(utils.run_subprocess.cmd,
+                         "yum install -y --disablerepo=* --enablerepo=rhel-7-extras-rpm")
+        
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsByFingerprintMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -167,12 +180,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.call_yum_cmd.fail_once = True
 
         pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["fingerprint"])
-
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_call_yum_cmd(self):
-        pkghandler.call_yum_cmd("install")
-
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
 
     def test_get_problematic_pkgs(self):
         error_pkgs = pkghandler.get_problematic_pkgs("", [])
@@ -560,8 +567,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        self.assertEqual(utils.run_subprocess.cmd,
-                         "yum install -y kernel-4.7.2-201.fc24")
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y kernel-4.7.2-201.fc24")
 
     class ReplaceNonRhelInstalledKernelMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -592,8 +598,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
-        self.assertEqual(utils.run_subprocess.cmd,
-                         "yum install -y kernel-4.7.4-200.fc24")
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y kernel-4.7.4-200.fc24")
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -679,7 +684,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
         self.assertTrue("Only packages signed by" in logger.CustomLogger.warning.msg)
-        
+
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""
