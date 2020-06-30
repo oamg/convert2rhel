@@ -69,31 +69,20 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     return
 
 
-def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None,
-                 print_output=True):
+def call_yum_cmd(command, args="", print_output=True):
     """Call yum command and optionally print its output."""
     loggerinst = logging.getLogger(__name__)
 
-    cmd = "yum %s -y" % (command)
-    # disablerepo parameter must be added before the enablerepo parameter
+    cmd = "yum %s -y" % command
 
-    if disablerepo is None:
-        disablerepo = []
-    if disablerepo:
-        repos = disablerepo
-    else:
-        repos = tool_opts.disablerepo
-    for repo in repos:
-        cmd += " --disablerepo=%s " % repo
+    # The --disablerepo yum option must be added before --enablerepo,
+    #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
+    for repo in tool_opts.disablerepo:
+        cmd += " --disablerepo=%s" % repo
 
-    if enablerepo is None:
-        enablerepo = []
-    if enablerepo:
-        repos = enablerepo
-    else:
-        repos = tool_opts.enablerepo
-    for repo in repos:
-        cmd += " --enablerepo=%s " % repo
+    for repo in tool_opts.enablerepo:
+        cmd += " --enablerepo=%s" % repo
+
     if args:
         cmd += " " + args
 
@@ -101,8 +90,7 @@ def call_yum_cmd(command, args="", enablerepo=None, disablerepo=None,
     # handle when yum returns non-zero code when there is nothing to do
     nothing_to_do_error_exists = stdout.endswith("Error: Nothing to do\n")
     if returncode == 1 and nothing_to_do_error_exists:
-        loggerinst.info("Return code 1 however nothing to do. Returning code 0"
-                        " ... ")
+        loggerinst.debug("Yum has nothing to do. Ignoring.")
         returncode = 0
     return stdout, returncode
 
