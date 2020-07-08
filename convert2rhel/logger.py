@@ -102,7 +102,7 @@ class CustomLogger(logging.Logger, object):
 
     def critical(self, msg, *args, **kwargs):
         super(CustomLogger, self).critical(msg, *args, **kwargs)
-        sys.exit(1)
+        sys.exit(msg)
 
     def debug(self, msg, *args, **kwargs):
         from convert2rhel.toolopts import tool_opts
