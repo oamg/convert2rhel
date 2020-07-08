@@ -77,7 +77,7 @@ def initialize_logger(log_name):
     # create file handler
     if not os.path.isdir(LOG_DIR):
         os.makedirs(LOG_DIR)
-    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "w")
+    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "a")
     formatter = CustomFormatter("%(message)s")
     handler.setFormatter(formatter)
     handler.setLevel(LogLevelFile.level)
