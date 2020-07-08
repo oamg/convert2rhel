@@ -356,9 +356,13 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
     return True
 
 
-def download_pkg(pkg, dest=TMP_DIR, disablerepo=[], enablerepo=[]):
+def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
     """Download the specified package."""
     cmd = "yumdownloader"
+    if disablerepo is None:
+        disablerepo = []
+    if enablerepo is None:
+        enablerepo = []
 
     for repo in disablerepo:
         cmd += " --disablerepo=%s " % repo
