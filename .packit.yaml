@@ -13,6 +13,12 @@ jobs:
     - epel-7-x86_64
   trigger: pull_request
 - job: copr_build
+  trigger: commit
+  actions:
+    # bump spec so we get release starting with 2 and hence all master builds will
+    # have higher NVR than all the PR builds
+    post-upstream-clone:
+    - rpmdev-bumpspec --comment='latest upstream build' ./packaging/epel/convert2rhel.spec
   metadata:
     branch: master
     owner: "@oamg"
@@ -20,7 +26,6 @@ jobs:
     targets:
     - epel-6-x86_64
     - epel-7-x86_64
-  trigger: commit
 - job: tests
   metadata:
     targets:
