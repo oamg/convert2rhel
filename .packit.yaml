@@ -1,7 +1,4 @@
 specfile_path: packaging/epel/convert2rhel.spec
-synced_files:
-    - convert2rhel.spec
-    - .packit.yaml
 upstream_package_name: convert2rhel
 downstream_package_name: convert2rhel
 upstream_project_url: https://github.com/oamg/convert2rhel
