@@ -368,7 +368,6 @@ def install_gpg_keys():
             loggerinst.critical("Unable to import GPG key: %s", output)
 
 
-
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
     later on.

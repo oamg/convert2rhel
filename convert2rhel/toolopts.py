@@ -158,8 +158,6 @@ class CLI(object):
                          " tool asks.", action='store_true')
         self._parser.add_option_group(group)
 
-        return
-
     def _process_cli_options(self):
         """Process command line options used with the tool."""
         loggerinst = logging.getLogger(__name__)
@@ -225,7 +223,6 @@ class CLI(object):
 
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True
-        return
 
 
 def print_non_interactive_opts():
@@ -260,7 +257,6 @@ def print_non_interactive_opts():
     cmd += " -v %s" % tool_opts.variant
     cmd += " -y"
     loggerinst.info(cmd + "\n\n")
-    return
 
 
 # Code to be executed upon module import
