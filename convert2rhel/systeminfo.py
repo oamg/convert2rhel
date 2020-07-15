@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import ConfigParser
+import difflib
 import os
 import re
 import logging
@@ -23,6 +24,8 @@ import logging
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import logger
+
+DEFAULT_RPM_VA_LOG_FILENAME = 'rpm_va.log'
 
 
 class SystemInfo(object):
@@ -140,9 +143,10 @@ class SystemInfo(object):
     def _get_pkg_blacklist(self):
         return self._get_cfg_opt("pkg_blacklist").split()
 
-    def _generate_rpm_va(self):
-        """Verify the installed files on the system with the rpm metadata
-        for debug and support purposes."""
+    def _generate_rpm_va(self, log_filename=DEFAULT_RPM_VA_LOG_FILENAME):
+        """Let the rpm command to list all those rpm files that have been modified after the the rpm installation.
+        Such a list is useful for debug and support purposes. It's being saved to the default
+        log folder as log_filename."""
         if tool_opts.no_rpm_va:
             self.logger.info("Skipping execution of 'rpm -Va'.")
             return
@@ -151,10 +155,28 @@ class SystemInfo(object):
                          " minutes. It can be disabled by using the"
                          " --no-rpm-va option.")
         rpm_va, _ = utils.run_subprocess("rpm -Va", print_output=False)
-        output_file = os.path.join(logger.LOG_DIR, "rpm_va.log")
+        output_file = os.path.join(logger.LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
-        self.logger.info("The 'rpm -Va' output has been stored in the %s file"
-                         % output_file)
+        self.logger.info("The 'rpm -Va' output has been stored in the %s file" % output_file)
+
+    def log_modified_rpms_diff(self):
+        """Generate a log and print stdout message with modified rpms after the convert process."""
+        self._generate_rpm_va(log_filename='rpm_va_after_conversion.log')
+
+        pre_rpm_va_log_path = os.path.join(logger.LOG_DIR, DEFAULT_RPM_VA_LOG_FILENAME)
+        if not os.path.exists(pre_rpm_va_log_path):
+            self.logger.info("Skipping the comparison of the 'rpm -Va' output from before and after the conversion.")
+            return
+        pre_rpm_va = utils.get_file_content(pre_rpm_va_log_path, True)
+        post_rpm_va_log_path = os.path.join(logger.LOG_DIR, "rpm_va_after_conversion.log")
+        post_rpm_va = utils.get_file_content(post_rpm_va_log_path, True)
+        modified_rpm_files_diff = "\n".join(
+            difflib.unified_diff(pre_rpm_va, post_rpm_va, fromfile=pre_rpm_va_log_path, tofile=post_rpm_va_log_path,
+                                 n=0, lineterm=""))
+
+        if modified_rpm_files_diff:
+            self.logger.info(
+                "Comparison of modified rpm files from before and after the conversion:\n%s" % modified_rpm_files_diff)
 
 
 # Code to be executed upon module import
