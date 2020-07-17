@@ -1,5 +1,20 @@
 name: pylint
 
+env:
+  interpreted_pylint: |
+    function fail_on_fatal_or_error_only() {
+      # We care about fatal (1) and error (2) messages only.
+      # The exit code is a sum of numbers corresponding to the message severity level.
+      # E.g. if there are both error (2) and warning (4) messages, the exit code is 6.
+      local exit_code=0
+      pylint --rcfile=.pylintrc convert2rhel/ || exit_code=$?
+      if ! [ $((exit_code & 3)) -eq 0 ]; then
+        return $exit_code;
+      fi;
+      return 0;
+    }
+    fail_on_fatal_or_error_only
+
 on:
   push:
     branches: [ master ]
@@ -25,16 +40,7 @@ jobs:
         pip install astroid==1.2
 
     - name: Run Pylint Checks
-      run: |
-         function interpreted_pylint() {
-            local error_code=0
-            pylint --rcfile=.pylintrc convert2rhel/ || error_code=$?
-            if ! [ $((error_code & 3)) -eq 0 ]; then
-                return $error_code;
-            fi;
-            return 0;
-         }
-         interpreted_pylint
+      run: ${{ env.interpreted_pylint }}
 
   pylint_check_2_7:
     runs-on: ubuntu-latest
@@ -52,13 +58,4 @@ jobs:
         pip install pylint
 
     - name: Run Pylint Checks
-      run: |
-         function interpreted_pylint() {
-            local error_code=0
-            pylint --rcfile=.pylintrc convert2rhel/ || error_code=$?
-            if ! [ $((error_code & 3)) -eq 0 ]; then
-                return $error_code;
-            fi;
-            return 0;
-         }
-         interpreted_pylint
+      run: ${{ env.interpreted_pylint }}
