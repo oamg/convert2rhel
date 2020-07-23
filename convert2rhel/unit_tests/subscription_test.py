@@ -172,6 +172,13 @@ class TestSubscription(unittest.TestCase):
     def test_attach_subscription_available(self):
         self.assertEqual(subscription.attach_subscription(), True)
 
+    @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
+    @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(tool_opts, "activation_key", "dummy_activate_key")
+    def test_attach_subscription_available_with_activation_key(self):
+        self.assertEqual(subscription.attach_subscription(), True)
+
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsMocked())
     def test_attach_subscription_none_available(self):
         self.assertEqual(subscription.attach_subscription(), False)

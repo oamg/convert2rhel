@@ -184,6 +184,10 @@ def attach_subscription():
     #       all the appropriate subscriptions during registration already.
 
     loggerinst = logging.getLogger(__name__)
+
+    if tool_opts.activation_key:
+        return True
+
     if tool_opts.auto_attach:
         pool = "--auto"
         tool_opts.pool = "-a"
