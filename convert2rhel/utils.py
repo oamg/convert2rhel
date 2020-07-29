@@ -103,7 +103,6 @@ def store_content_to_file(filename, content):
         file_to_write.write(content)
     finally:
         file_to_write.close()
-    return
 
 
 def restart_system():
@@ -114,7 +113,6 @@ def restart_system():
     else:
         loggerinst.warning("In order to boot the RHEL kernel,"
                            " restart of the system is needed.")
-    return
 
 
 def run_subprocess(cmd="", **kwargs):
@@ -190,7 +188,6 @@ def ask_to_continue():
             break
         if cont == "n":
             loggerinst.critical("User canceled the conversion\n")
-    return
 
 
 def prompt_user(question, password=False):
@@ -317,7 +314,6 @@ def remove_pkgs(pkgs_to_remove, should_backup=True, critical=True):
                 loggerinst.critical("Error: Couldn't remove %s." % nvra)
             else:
                 loggerinst.warning("Couldn't remove %s." % nvra)
-    return
 
 
 def install_pkgs(pkgs_to_install, replace=False, critical=True):

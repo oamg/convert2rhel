@@ -381,7 +381,6 @@ def rollback_renamed_repo_files():
     if not file_restored:
         loggerinst.info("No .repo files to rollback")
 
-    return
 
 def rollback():
     """Rollback all subscription related changes"""
