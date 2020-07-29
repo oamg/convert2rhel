@@ -28,6 +28,8 @@ from convert2rhel.toolopts import tool_opts
 # Limit the number of loops over yum command calls for the case there was
 # an error.
 MAX_YUM_CMD_CALLS = 2
+_VERSIONLOCK_FILE_PATH = '/etc/yum/pluginconf.d/versionlock.list'
+versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 
 class PkgWFingerprint(object):
@@ -524,3 +526,19 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
 def is_rhel_kernel_installed():
     installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
     return len(installed_rhel_kernels) > 0
+
+
+def clear_yum_versionlock():
+    loggerinst = logging.getLogger(__name__)
+
+    if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
+        loggerinst.warn("yum versionlock plugin is in use. It may cause the conversion to fail.")
+        loggerinst.info("Upon continuing, we will clear all package version locks.")
+        utils.ask_to_continue()
+
+        versionlock_file.backup()
+
+        loggerinst.info("Clearing package versions locks...")
+        call_yum_cmd("versionlock clear", print_output=False)
+    else:
+        loggerinst.info("Usage of yum versionlock plugin not detected.")

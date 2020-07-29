@@ -72,6 +72,9 @@ def main():
         redhatrelease.yum_conf.backup()
         subscription.rhn_reg_file.backup()
 
+        loggerinst.task("Prepare: Clear yum version locks")
+        pkghandler.clear_yum_versionlock()
+
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_ponr_conversion()
@@ -213,6 +216,8 @@ def rollback_changes():
     redhatrelease.system_release_file.restore()
     subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
+    pkghandler.versionlock_file.restore()
+
     return
 
 
