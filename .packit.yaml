@@ -12,6 +12,10 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
   trigger: pull_request
+  actions:
+    # do not get the version from a tag (git describe) but from the spec file
+    get-current-version:
+    - grep -oP '^Version:\s+\K\S+' packaging/epel/convert2rhel.spec
 - job: copr_build
   trigger: commit
   actions:
@@ -19,6 +23,9 @@ jobs:
     # have higher NVR than all the PR builds
     post-upstream-clone:
     - rpmdev-bumpspec --comment='latest upstream build' ./packaging/epel/convert2rhel.spec
+    # do not get the version from a tag (git describe) but from the spec file
+    get-current-version:
+    - grep -oP '^Version:\s+\K\S+' packaging/epel/convert2rhel.spec
   metadata:
     branch: master
     owner: "@oamg"
