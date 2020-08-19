@@ -104,7 +104,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 - add missing python-setuptools dependency on RHEL 6 to a spec file
 - unregister from RHN Classic if in use
 - change a temporary folder path from /tmp/convert2rhel/ to /var/lib/convert2rhel
-- add the ability to specify custom RHSM url
+- add the ability to specify custom RHSM URL
 - unsubscribe from RHSM during a rollback
 - drop the support for conversions of RHEL 5
 - make sure that RHEL kernel has been installed correctly during the conversion
