@@ -29,7 +29,7 @@ def read(fname):
 
 setup(
     name='convert2rhel',
-    version='0.11',
+    version='0.12',
     description='Automates the conversion of Red Hat Enterprise Linux'
                 ' derivative distributions to Red Hat Enterprise Linux.',
     long_description=read('README.md'),
