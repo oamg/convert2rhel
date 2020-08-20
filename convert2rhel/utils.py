@@ -47,12 +47,6 @@ DATA_DIR = "/usr/share/convert2rhel/"
 TMP_DIR = "/var/lib/convert2rhel/"
 
 
-def set_env_locale(lc_all_str="C", lc_ctype_str="en_US.UTF-8", language_str="en_US.UTF-8"):
-    os.environ["LC_ALL"] = lc_all_str
-    os.environ["LC_CTYPE"] = lc_ctype_str
-    os.environ["LANGUAGE"] = language_str
-
-
 def format_msg_with_datetime(msg, level):
     """Return a string with msg formatted according to the level"""
     temp_date = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
@@ -135,7 +129,8 @@ def run_subprocess(cmd="", **kwargs):
     sp_popen = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                bufsize=1)
+                                bufsize=1,
+                                env={'LC_ALL':'C'})
     stdout = ''
     for line in iter(sp_popen.stdout.readline, ''):
         # communicate() method buffers everything in memory, we will

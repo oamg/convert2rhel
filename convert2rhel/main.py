@@ -39,9 +39,6 @@ class ConversionPhase:
 
 
 def main():
-    # setting locale to LANG=C before start convert2rhel process
-    utils.set_env_locale()
-
     """Perform all steps for the entire conversion process."""
 
     # the tool will not run if not executed under the root user

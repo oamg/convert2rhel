@@ -29,7 +29,6 @@ from convert2rhel import utils
 
 
 class TestUtils(unittest.TestCase):
-
     class DummyFuncMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
@@ -53,7 +52,8 @@ class TestUtils(unittest.TestCase):
 
     class DummyGetUID(unit_tests.MockFunction):
         def __init__(self, uid):
-        	self.uid = uid
+            self.uid = uid
+
         def __call__(self, *args, **kargs):
             return self.uid
 
@@ -64,17 +64,6 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(os, "geteuid", DummyGetUID(0))
     def test_require_root_is_root(self):
         self.assertEqual(utils.require_root(), None)
-
-    def test_locale(self):
-        utils.set_env_locale()
-        self.assertEqual(os.environ["LC_ALL"], "C")
-        self.assertEqual(os.environ["LC_CTYPE"], "en_US.UTF-8")
-        self.assertEqual(os.environ["LANGUAGE"], "en_US.UTF-8")
-
-        utils.set_env_locale(lc_all_str='test', lc_ctype_str='test', language_str='test')
-        self.assertEqual(os.environ["LC_ALL"], "test")
-        self.assertEqual(os.environ["LC_CTYPE"], "test")
-        self.assertEqual(os.environ["LANGUAGE"], "test")
 
     def test_track_installed_pkg(self):
         control = utils.ChangedRPMPackagesController()
