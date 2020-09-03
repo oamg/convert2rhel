@@ -46,9 +46,9 @@ A: Whenever we decide that users of CentOS and Oracle Linux should be able to ta
 The procedure below expects that [a new upstream GitHub release](https://github.com/oamg/convert2rhel/releases) has been created already.
 
 ```bash
-$ # replace the <the_version_released_in_GitHub> below with the version of convert2rhel which you've created a release in GitHub for
-$ VER=<the_version_released_in_GitHub>  # e.g. VER=0.12
-$ # replace the <your_FAS_user_name> below with your FAS user name
+$ # replace the <version_released_in_GitHub> below with the version for which you've created a release in GitHub
+$ VER=<version_released_in_GitHub>  # e.g. VER=0.12
+$ # replace the <your_FAS_user_name> below with your Fedora Account System user name
 $ kinit <your_FAS_user_name>@FEDORAPROJECT.ORG  # see [1] on setting up Kerberos credentials
 $ fedpkg clone convert2rhel convert2rhel-distgit  # to get the fedpkg utility, see [2]
 $ cd convert2rhel-distgit
@@ -56,9 +56,9 @@ $ cd convert2rhel-distgit
 $ fedpkg switch-branch el6  # for EPEL 6
 $ fedpkg pull  # make sure you work with the latest branch content
 $ rm -rf convert2rhel*  # remove all the files related to the previous release
-$ wget https://github.com/oamg/convert2rhel/archive/v${VER}/convert2rhel-${VER}.tar.gz
 $ wget https://raw.githubusercontent.com/oamg/convert2rhel/master/packaging/epel/convert2rhel.spec
-$ fedpkg new-sources *.tar.gz  # upload the new version tarball from GitHub to dist-git
+$ spectool -g -A *.spec  # download the new version tarball from GitHub
+$ fedpkg new-sources *.tar.gz  # upload the tarball to dist-git
 $ fedpkg srpm
 $ fedpkg lint  # make sure there are no errors or warnings in the lint output
 $ git add -u
