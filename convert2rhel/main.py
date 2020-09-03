@@ -160,10 +160,7 @@ def pre_ponr_conversion():
     # package analysis
     loggerinst.task("Convert: Package analysis")
     repos_needed = repo.package_analysis()
-    if toolopts.tool_opts.disable_submgr:
-        loggerinst.task("Convert: Check required repos")
-        repo.check_needed_repos_availability(repos_needed)
-    else:
+    if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Install")
         subscription.install_subscription_manager()
         loggerinst.task("Convert: Subscription Manager - Subscribe system")
