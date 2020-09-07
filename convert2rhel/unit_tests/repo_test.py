@@ -15,16 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-
+from convert2rhel import repo
+from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 
 
-def get_rhel_repoids():
-    """Get IDs of the Red Hat CDN repositories that correspond to the current system."""
-    repos_needed = [system_info.default_repository_id]
+class TestRepo(unit_tests.ExtendedTestCase):
+    @unit_tests.mock(system_info, "default_repository_id", "rhel_server")
+    def test_get_rhel_repoids(self):
+        repos = repo.get_rhel_repoids()
 
-    loggerinst = logging.getLogger(__name__)
-    loggerinst.info("RHEL repository IDs: %s" % ', '.join(repos_needed))
-
-    return repos_needed
+        self.assertEqual(repos, ["rhel_server"])

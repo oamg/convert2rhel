@@ -53,6 +53,8 @@ class SystemInfo(object):
         self.cfg_content = None
         self.system_release_file_content = None
         self.logger = None
+        # ID of the default Red Hat CDN repository that corresponds to the current system
+        self.default_repository_id = None
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
