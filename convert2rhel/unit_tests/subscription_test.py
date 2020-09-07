@@ -25,6 +25,7 @@ try:
 except ImportError:
     import unittest
 
+from convert2rhel import logger
 from convert2rhel import subscription
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
@@ -307,3 +308,28 @@ class TestSubscription(unittest.TestCase):
         subscription.rollback()
         self.assertEqual(subscription.rollback_renamed_repo_files.called, 1)
         self.assertEqual(subscription.unregister_system.called, 1)
+
+    class LogMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.msg = ""
+
+        def __call__(self, msg):
+            self.msg += "%s\n" % msg
+
+    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
+    def test_check_needed_repos_availability(self):
+        subscription.check_needed_repos_availability(["rhel_x"])
+        self.assertTrue("Needed RHEL repos are available" in logger.CustomLogger.info.msg)
+
+        subscription.check_needed_repos_availability(["rhel_z"])
+        self.assertTrue("rhel_z repository is not available" in logger.CustomLogger.warning.msg)
+
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
+    def test_check_needed_repos_availability_no_repo_available(self):
+        subscription.check_needed_repos_availability(["rhel"])
+        self.assertTrue("rhel repository is not available" in logger.CustomLogger.warning.msg)

@@ -158,21 +158,23 @@ def pre_ponr_conversion():
     redhatrelease.YumConf().patch()
 
     # package analysis
-    loggerinst.task("Convert: Package analysis")
-    repos_needed = repo.package_analysis()
+    loggerinst.task("Convert: List third-party packages")
+    pkghandler.list_third_party_pkgs()
     if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Install")
         subscription.install_subscription_manager()
         loggerinst.task("Convert: Subscription Manager - Subscribe system")
         subscription.subscribe_system()
-        loggerinst.task("Convert: Subscription Manager - Check required repos")
-        repo.check_needed_repos_availability(repos_needed)
-        loggerinst.task("Convert: Subscription Manager - Disable all repos")
+        loggerinst.task("Convert: Get RHEL repository IDs")
+        rhel_repoids = repo.get_rhel_repoids()
+        loggerinst.task("Convert: Subscription Manager - Check required repositories")
+        repo.check_needed_repos_availability(rhel_repoids)
+        loggerinst.task("Convert: Subscription Manager - Disable all repositories")
         subscription.disable_repos()
-        loggerinst.task("Convert: Subscription Manager - Enable needed repos")
-        subscription.enable_repos(repos_needed)
+        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
+        subscription.enable_repos(rhel_repoids)
         # TODO: Replace renaming .repo files by using --enable for yum command
-        loggerinst.task("Convert: Subscription Manager - Rename repos")
+        loggerinst.task("Convert: Subscription Manager - Rename repositories")
         subscription.rename_repo_files()
 
 

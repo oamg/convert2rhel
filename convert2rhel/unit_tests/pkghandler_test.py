@@ -593,6 +593,23 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_check_installed_rhel_kernel_returns_false(self):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
 
+    @unit_tests.mock(pkghandler, "get_third_party_pkgs", lambda: [])
+    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
+    def test_list_third_party_pkgs_no_pkgs(self):
+        pkghandler.list_third_party_pkgs()
+
+        self.assertEqual(logger.CustomLogger.info.msg, "No third party packages installed.\n")
+
+    @unit_tests.mock(pkghandler, "get_third_party_pkgs", GetInstalledPkgsWFingerprintsMocked())
+    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    def test_list_third_party_pkgs(self):
+        pkghandler.list_third_party_pkgs()
+
+        self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
+        self.assertTrue("Only packages signed by" in logger.CustomLogger.warning.msg)
+        
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""

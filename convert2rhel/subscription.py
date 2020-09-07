@@ -390,3 +390,26 @@ def rollback():
         unregister_system()
     except OSError:
         loggerinst.warn("subscription-manager not installed, skipping")
+
+
+def check_needed_repos_availability(repo_ids_needed):
+    """Check whether all the RHEL repositories needed for the system
+    conversion are available through subscription-manager.
+    """
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Verifying needed RHEL repositories are available ... ")
+    avail_repos = get_avail_repos()
+    loggerinst.info("Repositories available through RHSM:\n%s" %
+                    "\n".join(avail_repos) + "\n")
+
+    all_repos_avail = True
+    for repo_id in repo_ids_needed:
+        if repo_id not in avail_repos:
+            # TODO: List the packages that would be left untouched
+            loggerinst.warning("%s repository is not available - some packages"
+                               " may not be replaced and thus not supported."
+                               % repo_id)
+            utils.ask_to_continue()
+            all_repos_avail = False
+    if all_repos_avail:
+        loggerinst.info("Needed RHEL repos are available.")
