@@ -14,17 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from collections import namedtuple
 import os
 import re
 import shutil
+import sys
 import logging
+import subprocess
 
-from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import pkghandler
 from convert2rhel import utils
+from convert2rhel import pkghandler
+from convert2rhel.systeminfo import system_info
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 
@@ -408,3 +410,47 @@ def check_needed_repos_availability(repo_ids_needed):
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed RHEL repos are available.")
+
+
+def download_subscription_manager_packages():
+    loggerinst = logging.getLogger(__name__)
+
+    _CENTOS_CONTRIB_REPO = '[contrib]\n' \
+                           'name=CentOS-$releasever - Contrib\n' \
+                           'mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib\n' \
+                           'gpgcheck=0\n' \
+                           'enabled=1\n' \
+                           'protect=0\n'
+
+    _TEMP_REPOFILE_DIR = '/tmp/convert2rhel/centos_contrib.repo'
+
+    version = utils.parse_version_number(system_info.system_release_file_content)
+
+    if version['major'] <= 6 and (version['minor'] is None or ('minor' in version and version['minor'] <= 6)):
+        loggerinst.error(msg='Unable to download subscription-manager on CentOS/Oracle Linux 6.6 and older. '
+                             'Please use the --disable-submgr option or update to CentOS/Oracle Linux 6.7 or later')
+        sys.exit(1)
+
+    if version['major'] == 6:
+        utils.store_content_to_file(filename=_TEMP_REPOFILE_DIR, content=_CENTOS_CONTRIB_REPO)
+        pkghandler.call_yum_cmd(command="install",
+                                args="subscription-manager "
+                                     "subscription-manager-rhsm "
+                                     "subscription-manager-rhsm-certificates"
+                                     " --setopt=reposdir=/tmp/convert2rhel/ --downloadonly"
+                                     " --downloaddir=/usr/share/convert2rhel/subscription-manager")
+
+    elif version['major'] == 7:
+        pkghandler.call_yum_cmd(command="install", args="subscription-manager subscription-manager-rhsm "
+                                                        "subscription-manager-rhsm-certificates "
+                                                        "--downloadonly "
+                                                        "--downloaddir=/usr/share/convert2rhel/subscription-manager")
+
+        utils.download_pkg(pkg='python-rhsm-certificates', dest='/tmp/')
+
+        utils.mkdir_p("/etc/rhsm/ca/")
+        rpm2cpio = subprocess.Popen("rpm2cpio /tmp/python-rhsm-certificates*.rpm", stdout=subprocess.PIPE, shell=True)
+        cpio = subprocess.Popen("cpio -iv --to-stdout ./etc/rhsm/ca/redhat-uep.pem > /etc/rhsm/ca/redhat-uep.pem",
+                                stdin=rpm2cpio.stdout, stdout=None, shell=True)
+        rpm2cpio.wait()
+        cpio.wait()

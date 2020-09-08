@@ -94,6 +94,7 @@ class TestSubscription(unittest.TestCase):
             self.info_msgs = []
             self.warning_msgs = []
             self.critical_msgs = []
+            self.error_msgs = []
 
         def __call__(self, msg):
             return self
@@ -101,6 +102,9 @@ class TestSubscription(unittest.TestCase):
         def critical(self, msg):
             self.critical_msgs.append(msg)
             raise SystemExit(1)
+
+        def error(self, msg):
+            self.error_msgs.append(msg)
 
         def task(self, msg):
             self.task_msgs.append(msg)
@@ -135,6 +139,25 @@ class TestSubscription(unittest.TestCase):
 
         def __call__(self, *args, **kwargs):
             return self.removed
+
+    class CallYumCmdMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.return_code = 0
+            self.return_string = "Test output"
+            self.fail_once = False
+            self.command = None
+            self.args = None
+
+        def __call__(self, command, args):
+            if self.fail_once and self.called == 0:
+                self.return_code = 1
+            if self.fail_once and self.called > 0:
+                self.return_code = 0
+            self.called += 1
+            self.command = command
+            self.args = args
+            return self.return_string, self.return_code
 
     ##########################################################################
 
@@ -335,3 +358,79 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos, set_releasever: (None, 1))
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
+
+    class VersionMocked(unit_tests.MockFunction):
+        def __init__(self, version):
+            self.version = version
+
+        def __call__(self, version):
+            return self.version
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "parse_version_number",
+                     VersionMocked(version={'major': 1, 'minor': None, 'release': None}))
+    def test_download_subscription_manager_packages_rhel1(self):
+        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
+        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
+        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "parse_version_number",
+                     VersionMocked(version={'major': 5, 'minor': None, 'release': None}))
+    def test_download_subscription_manager_packages_rhel5(self):
+        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
+        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
+        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "parse_version_number",
+                     VersionMocked(version={'major': 6, 'minor': 6, 'release': None}))
+    def test_download_subscription_manager_packages_rhel66(self):
+        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
+        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
+        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+
+    class StoreContentMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.filename = None
+            self.content = None
+
+        def __call__(self, filename, content):
+            self.filename = filename
+            self.content = content
+            return True
+
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
+    @unit_tests.mock(utils, "parse_version_number",
+                     VersionMocked(version={'major': 6, 'minor': 7, 'release': None}))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    def test_download_subscription_manager_packages_rhel67(self):
+        subscription.download_subscription_manager_packages()
+        self.assertTrue("centos_contrib.repo" in utils.store_content_to_file.filename)
+        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
+        self.assertEqual("install", pkghandler.call_yum_cmd.command)
+        self.assertTrue("subscription-manager subscription-manager-rhsm" in pkghandler.call_yum_cmd.args)
+
+
+    class DownloadPkgMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.pkg = None
+            self.dest = None
+
+        def __call__(self, pkg, dest):
+            self.called += 1
+            self.pkg = pkg
+            self.dest = dest
+
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
+    @unit_tests.mock(utils, "parse_version_number", VersionMocked(version={'major': 7, 'minor': 0, 'release': 1}))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
+    def test_download_subscription_manager_packages_rhel7_or_above(self):
+        subscription.download_subscription_manager_packages()
+        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
+        self.assertEqual("install", pkghandler.call_yum_cmd.command)
+        self.assertEqual(utils.download_pkg.called, 1)
+        self.assertEqual(utils.download_pkg.pkg, "python-rhsm-certificates")
+        self.assertEqual(utils.download_pkg.dest, "/tmp/")

@@ -540,4 +540,24 @@ class RestorablePackage(object):
             loggerinst.warning("Can't access %s" % TMP_DIR)
 
 
+def parse_version_number(version_str):
+    """
+    Parses the version number from the version string in /etc/system-release.
+    Returns a dict with major, minor, and release keys where each key is a number or None
+    """
+    if not isinstance(version_str, str):
+        raise TypeError("Expected version_str to be a string")
+
+    version_number_regex = re.search(r"(?:^|\s)(\d+)(?:\.(\d+))?(?:\.(\d+))?", version_str)
+
+    if version_number_regex is None:
+        raise Exception("Could not find Operating System version number in \"" + version_str + "\"")
+
+    version_dict = {'major': int(version_number_regex.group(1)) if version_number_regex.group(1) else None,
+                    'minor': int(version_number_regex.group(2)) if version_number_regex.group(2) else None,
+                    'release': int(version_number_regex.group(3)) if version_number_regex.group(3) else None}
+
+    return version_dict
+
+
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

@@ -216,5 +216,14 @@ class TestUtils(unittest.TestCase):
 
             self.assertEqual(path, os.path.join(utils.TMP_DIR, self.DOWNLOADED_RPM_FILENAME))
 
+    def test_parse_version_number(self):
+        self.assertRaises(TypeError, utils.parse_version_number, 10)
+        self.assertRaises(Exception, utils.parse_version_number, "empty version string")
+        self.assertEqual(utils.parse_version_number('12'), {'major': 12, 'minor': None, 'release': None})
+        self.assertEqual(utils.parse_version_number('12.34'), {'major': 12, 'minor': 34, 'release': None})
+        self.assertEqual(utils.parse_version_number('12.34.56'), {'major': 12, 'minor': 34, 'release': 56})
+        self.assertEqual(utils.parse_version_number('test 1.2.3'), {'major': 1, 'minor': 2, 'release': 3})
+        self.assertEqual(utils.parse_version_number('test 1.2.3 test'), {'major': 1, 'minor': 2, 'release': 3})
+
     def test_is_rpm_based_os(self):
         assert is_rpm_based_os() in (True, False)

@@ -111,7 +111,8 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
     else:
         # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
         # through subscription-manager
-        repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+       repos_to_enable = system_info.submgr_enabled_repos if (
+               not tool_opts.disable_submgr and system_info.submgr_enabled_repos) else tool_opts.enablerepo
 
     for repo in repos_to_enable:
         cmd += " --enablerepo=%s" % repo

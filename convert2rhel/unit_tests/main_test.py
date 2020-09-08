@@ -35,14 +35,15 @@ from convert2rhel import (
     subscription,
     utils,
 )
+from convert2rhel.systeminfo import SystemInfo
 from convert2rhel.toolopts import tool_opts
 
 
 def mock_calls(class_or_module, method_name, mock_obj):
     return unit_tests.mock(class_or_module, method_name, mock_obj(method_name))
 
-class TestMain(unittest.TestCase):
 
+class TestMain(unittest.TestCase):
     class AskToContinueMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return
@@ -82,6 +83,7 @@ class TestMain(unittest.TestCase):
 
     class CallOrderMocked(unit_tests.MockFunction):
         calls = OrderedDict()
+
         def __init__(self, method_name):
             self.method_name = method_name
 
@@ -101,6 +103,25 @@ class TestMain(unittest.TestCase):
             cls.calls = OrderedDict()
 
 
+
+    class CallYumCmdMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.return_code = 0
+            self.return_string = "Test output"
+            self.fail_once = False
+            self.command = None
+            self.args = None
+
+        def __call__(self, command, args):
+            if self.fail_once and self.called == 0:
+                self.return_code = 1
+            if self.fail_once and self.called > 0:
+                self.return_code = 0
+            self.called += 1
+            self.command = command
+            self.args = args
+            return self.return_string, self.return_code
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
@@ -122,7 +143,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
 
-
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
@@ -137,6 +157,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
+    @mock_calls(subscription, "download_subscription_manager_packages", CallOrderMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -144,6 +165,7 @@ class TestMain(unittest.TestCase):
         intended_call_order = OrderedDict()
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
+        intended_call_order["download_subscription_manager_packages"] = 1
         intended_call_order["replace_subscription_manager"] = 1
         intended_call_order["install"] = 1
         intended_call_order["subscribe_system"] = 1
@@ -160,8 +182,6 @@ class TestMain(unittest.TestCase):
             if expected[1] > 0:
                 self.assertEqual(expected, actual)
 
-
-
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
@@ -176,6 +196,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
+    @mock_calls(subscription, "download_subscription_manager_packages", CallOrderMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -186,8 +207,9 @@ class TestMain(unittest.TestCase):
         intended_call_order["remove_excluded_pkgs"] = 1
 
         # Do not expect this one to be called - related to RHSM
+        intended_call_order["download_subscription_manager_packages"] = 1
         intended_call_order["replace_subscription_manager"] = 0
-        intended_call_order["install"] = 1
+        intended_call_order["install"] = 0
         intended_call_order["subscribe_system"] = 0
         intended_call_order["get_rhel_repoids"] = 0
         intended_call_order["check_needed_repos_availability"] = 0
