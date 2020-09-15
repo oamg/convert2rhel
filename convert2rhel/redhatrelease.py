@@ -51,16 +51,10 @@ def install_release_pkg():
 
 
 def get_release_pkg_name():
-    """Starting with RHEL 6 the release package changed its name from
-    redhat-release to redhat-release-<lowercase variant>, e.g.
+    """Starting with RHEL 6 the release package name follows this schema: redhat-release-<lowercase variant>, e.g.
     redhat-release-server.
     """
-    from convert2rhel.systeminfo import system_info
-    if int(system_info.version) >= 6:
-        release_pkg_name = "redhat-release-" + tool_opts.variant.lower()
-    else:
-        release_pkg_name = "redhat-release"
-    return release_pkg_name
+    return "redhat-release-" + tool_opts.variant.lower()
 
 
 def get_system_release_filepath():
