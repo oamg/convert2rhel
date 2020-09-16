@@ -64,16 +64,12 @@ def get_release_pkg_name():
 
 
 def get_system_release_filepath():
-    """Return name of the file containing name of the operating system and its
-    version.
-    """
+    """Return path of the file containing the OS name and version."""
+    release_filepath = "/etc/system-release"  # RHEL 6/7/8 based OSes
+    if os.path.isfile(release_filepath):
+        return release_filepath
     loggerinst = logging.getLogger(__name__)
-    possible_release_filenames = ["system-release"]  # RHEL 6/7 based OSes
-    for release_file in possible_release_filenames:
-        if os.path.isfile("/etc/%s" % release_file):
-            return "/etc/%s" % release_file
-    loggerinst.critical("Error: Unable to find any file containing name of the"
-                        " OS and its version, e.g. /etc/system-release")
+    loggerinst.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
 
 
 def get_system_release_content():
