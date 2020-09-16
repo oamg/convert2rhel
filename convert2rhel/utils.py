@@ -129,7 +129,8 @@ def run_subprocess(cmd="", **kwargs):
     sp_popen = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                bufsize=1)
+                                bufsize=1,
+                                env={'LC_ALL':'C'})
     stdout = ''
     for line in iter(sp_popen.stdout.readline, ''):
         # communicate() method buffers everything in memory, we will

@@ -29,7 +29,6 @@ from convert2rhel import utils
 
 
 class TestUtils(unittest.TestCase):
-
     class DummyFuncMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
@@ -53,7 +52,8 @@ class TestUtils(unittest.TestCase):
 
     class DummyGetUID(unit_tests.MockFunction):
         def __init__(self, uid):
-        	self.uid = uid
+            self.uid = uid
+
         def __call__(self, *args, **kargs):
             return self.uid
 
