@@ -23,12 +23,18 @@ try:
 except ImportError:
     import unittest
 
+from collections import OrderedDict
 from convert2rhel import main
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import redhatrelease
+from convert2rhel import repo
 from convert2rhel import subscription
 from convert2rhel import utils
+from convert2rhel import pkghandler
+from convert2rhel.toolopts import tool_opts
 
+def mock_calls(class_or_module, method_name, mock_obj):
+    return unit_tests.mock(class_or_module, method_name, mock_obj(method_name))
 
 class TestMain(unittest.TestCase):
 
@@ -56,6 +62,9 @@ class TestMain(unittest.TestCase):
         def __call__(self, msg):
             return self
 
+        def task(self, msg):
+            pass
+
         def critical(self, msg):
             self.critical_msgs.append(msg)
             raise SystemExit(1)
@@ -65,6 +74,28 @@ class TestMain(unittest.TestCase):
 
         def debug(self, msg):
             pass
+
+    class CallOrderMocked(unit_tests.MockFunction):
+        calls = OrderedDict()
+        def __init__(self, method_name):
+            self.method_name = method_name
+
+        def __call__(self, *args):
+            self.add_call(self.method_name)
+            return args
+
+        @classmethod
+        def add_call(cls, method_name):
+            if method_name in cls.calls:
+                cls.calls[method_name] += 1
+            else:
+                cls.calls[method_name] = 1
+
+        @classmethod
+        def reset(cls):
+            cls.calls = OrderedDict()
+
+
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
@@ -83,3 +114,84 @@ class TestMain(unittest.TestCase):
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
         self.assertEqual(redhatrelease.yum_conf.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
+
+
+    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "disable_submgr", False)
+    @mock_calls(pkghandler, "remove_blacklisted_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "unregister_from_rhn_classic", CallOrderMocked)
+    @mock_calls(redhatrelease, "install_release_pkg", CallOrderMocked)
+    @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
+    @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "install_subscription_manager", CallOrderMocked)
+    @mock_calls(subscription, "subscribe_system", CallOrderMocked)
+    @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
+    @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
+    @mock_calls(subscription, "disable_repos", CallOrderMocked)
+    @mock_calls(subscription, "enable_repos", CallOrderMocked)
+    @mock_calls(subscription, "rename_repo_files", CallOrderMocked)
+    def test_pre_ponr_conversion_order_with_rhsm(self):
+        self.CallOrderMocked.reset()
+        main.pre_ponr_conversion()
+
+        intended_call_order = OrderedDict()
+        intended_call_order["remove_blacklisted_pkgs"] = 1
+        intended_call_order["unregister_from_rhn_classic"] = 1
+        intended_call_order["install_release_pkg"] = 1
+        intended_call_order["patch"] = 1
+        intended_call_order["list_third_party_pkgs"] = 1
+        intended_call_order["install_subscription_manager"] = 1
+        intended_call_order["subscribe_system"] = 1
+        intended_call_order["get_rhel_repoids"] = 1
+        intended_call_order["check_needed_repos_availability"] = 1
+        intended_call_order["disable_repos"] = 1
+        intended_call_order["enable_repos"] = 1
+        intended_call_order["rename_repo_files"] = 1
+
+        # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
+        zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
+        for expected, actual in zipped_call_order:
+            if expected[1] > 0:
+                self.assertEqual(expected, actual)
+
+
+
+    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "disable_submgr", False)
+    @mock_calls(pkghandler, "remove_blacklisted_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "unregister_from_rhn_classic", CallOrderMocked)
+    @mock_calls(redhatrelease, "install_release_pkg", CallOrderMocked)
+    @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
+    @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "install_subscription_manager", CallOrderMocked)
+    @mock_calls(subscription, "subscribe_system", CallOrderMocked)
+    @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
+    @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
+    @mock_calls(subscription, "disable_repos", CallOrderMocked)
+    @mock_calls(subscription, "enable_repos", CallOrderMocked)
+    @mock_calls(subscription, "rename_repo_files", CallOrderMocked)
+    def test_pre_ponr_conversion_order_without_rhsm(self):
+        self.CallOrderMocked.reset()
+        main.pre_ponr_conversion()
+
+        intended_call_order = OrderedDict()
+        intended_call_order["remove_blacklisted_pkgs"] = 1
+        intended_call_order["unregister_from_rhn_classic"] = 1
+        intended_call_order["install_release_pkg"] = 1
+        intended_call_order["patch"] = 1
+        intended_call_order["list_third_party_pkgs"] = 1
+
+        # Do not expect these to be called - related to RHSM
+        intended_call_order["install_subscription_manager"] = 0
+        intended_call_order["subscribe_system"] = 0
+        intended_call_order["get_rhel_repoids"] = 0
+        intended_call_order["check_needed_repos_availability"] = 0
+        intended_call_order["disable_repos"] = 0
+        intended_call_order["enable_repos"] = 0
+        intended_call_order["rename_repo_files"] = 0
+
+        # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
+        zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
+        for expected, actual in zipped_call_order:
+            if expected[1] > 0:
+                self.assertEqual(expected, actual)
