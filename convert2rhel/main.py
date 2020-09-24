@@ -168,7 +168,7 @@ def pre_ponr_conversion():
         loggerinst.task("Convert: Get RHEL repository IDs")
         rhel_repoids = repo.get_rhel_repoids()
         loggerinst.task("Convert: Subscription Manager - Check required repositories")
-        repo.check_needed_repos_availability(rhel_repoids)
+        subscription.check_needed_repos_availability(rhel_repoids)
         loggerinst.task("Convert: Subscription Manager - Disable all repositories")
         subscription.disable_repos()
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
