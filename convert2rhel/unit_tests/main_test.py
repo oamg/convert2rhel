@@ -23,7 +23,11 @@ try:
 except ImportError:
     import unittest
 
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from convert2rhel import main
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import redhatrelease
