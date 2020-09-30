@@ -17,7 +17,9 @@ images:
 
 .PHONY: tests
 tests:
+	@echo 'CentOS 6 tests'
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 ./run_unit_tests.sh
+	@echo 'CentOS 7 tests'
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 ./run_unit_tests.sh
 
 lint:
