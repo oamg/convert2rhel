@@ -401,6 +401,7 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 
 def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
     """Download an rpm using yumdownloader and return its filepath. If not successful, return None."""
+    from convert2rhel.systeminfo import system_info
     loggerinst = logging.getLogger(__name__)
     loggerinst.debug("Downloading the %s package." % pkg)
 
@@ -416,6 +417,9 @@ def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
 
     for repo in enablerepo:
         cmd += " --enablerepo=%s" % repo
+
+    if system_info.releasever:
+        cmd += " --releasever=%s" % system_info.releasever
 
     cmd += ' --destdir="%s"' % dest
     cmd += " %s" % pkg

@@ -179,3 +179,26 @@ def is_rpm_based_os():
         return False
     else:
         return True
+
+
+
+class GetLoggerMocked(MockFunction):
+    def __init__(self):
+        self.info_msgs = []
+        self.critical_msgs = []
+
+    def __call__(self, msg):
+        return self
+
+    def task(self, msg):
+        pass
+
+    def critical(self, msg):
+        self.critical_msgs.append(msg)
+        raise SystemExit(1)
+
+    def info(self, msg):
+        pass
+
+    def debug(self, msg):
+        pass

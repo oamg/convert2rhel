@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 
+from convert2rhel import cert
 from convert2rhel import logger
 from convert2rhel import pkghandler
 from convert2rhel import redhatrelease
@@ -153,9 +154,13 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
 
-    # install redhat release package
-    loggerinst.task("Convert: Install Red Hat release package")
-    redhatrelease.install_release_pkg()
+    # install RHEL certificates depending on variant and arch
+    # this allows us to skip installing redhat-release pkg to get certs as 
+    # they're needed for RHSM repos
+    loggerinst.task("Convert: Install Red Hat Enterprise Linux certificates")
+    system_cert = cert.SystemCert()
+    system_cert.install()
+
     # replace distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
