@@ -18,6 +18,7 @@
 import glob
 import os
 import re
+import sys
 import yum
 
 from convert2rhel import logger
@@ -43,14 +44,106 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.return_code = 0
             self.return_string = "Test output"
             self.fail_once = False
+            self.command = None
 
-        def __call__(self, *args, **kwargs):
+        def __call__(self, command, *args, **kwargs):
             if self.fail_once and self.called == 0:
                 self.return_code = 1
             if self.fail_once and self.called > 0:
                 self.return_code = 0
             self.called += 1
+            self.command = command
             return self.return_string, self.return_code
+
+    class GetInstalledPkgsByFingerprintMocked(unit_tests.MockFunction):
+        def __call__(self, *args, **kwargs):
+            return ["pkg1", "pkg2"]
+
+    class RunSubprocessMocked(unit_tests.MockFunction):
+        def __init__(self, output_text="Test output"):
+            self.cmd = ""
+            self.cmds = ""
+            self.called = 0
+            self.output = output_text
+            self.ret_code = 0
+
+        def __call__(self, cmd, print_cmd=True, print_output=True):
+            self.cmd = cmd
+            self.cmds += "%s\n" % cmd
+            self.called += 1
+            return self.output, self.ret_code
+
+    class IsFileMocked(unit_tests.MockFunction):
+        def __init__(self, is_file):
+            self.is_file = is_file
+
+        def __call__(self, *args, **kwargs):
+            return self.is_file
+
+    class DumbCallableObject(unit_tests.MockFunction):
+        def __call__(self, *args, **kwargs):
+            return
+
+    class SysExitCallableObject(unit_tests.MockFunction):
+        def __call__(self, *args, **kwargs):
+            sys.exit(1)
+
+    class GetSizeMocked(unit_tests.MockFunction):
+        def __init__(self, file_size):
+            self.file_size = file_size
+
+        def __call__(self, *args, **kwargs):
+            return self.file_size
+
+    class GetLoggerMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.info_msgs = []
+            self.warning_msgs = []
+
+        def __call__(self, msg):
+            return self
+
+        def info(self, msg):
+            self.info_msgs.append(msg)
+
+        def warn(self, msg, *args):
+            self.warning_msgs.append(msg)
+
+        def warning(self, msg, *args):
+            self.warn(msg, *args)
+
+        def debug(self, msg):
+            pass
+
+
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
+    @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
+    def test_clear_yum_versionlock_plugin_not_enabled(self):
+        self.assertFalse(pkghandler.clear_yum_versionlock())
+        self.assertEqual(len(pkghandler.logging.getLogger.info_msgs), 1)
+        self.assertEqual(pkghandler.logging.getLogger.info_msgs, ['Usage of yum versionlock plugin not detected.'])
+
+
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
+    @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=1))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    @unit_tests.mock(utils.RestorableFile, "backup", DumbCallableObject)
+    @unit_tests.mock(utils.RestorableFile, "restore", DumbCallableObject)
+    def test_clear_yum_versionlock_user_says_yes(self):
+        pkghandler.clear_yum_versionlock()
+        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
+        self.assertEqual(pkghandler.call_yum_cmd.command, "versionlock clear")
+
+    @unit_tests.mock(utils, "ask_to_continue", SysExitCallableObject())
+    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
+    @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=1))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    def test_clear_yum_versionlock_user_says_no(self):
+        self.assertRaises(SystemExit, pkghandler.clear_yum_versionlock)
+        self.assertEqual(pkghandler.call_yum_cmd.called, 0)
+
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
@@ -60,24 +153,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                           "test_cmd", ["fingerprint"])
         self.assertEqual(pkghandler.call_yum_cmd.called,
                          pkghandler.MAX_YUM_CMD_CALLS)
-
-    class GetInstalledPkgsByFingerprintMocked(unit_tests.MockFunction):
-        def __call__(self, *args, **kwargs):
-            return ["pkg1", "pkg2"]
-
-    class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.cmd = ""
-            self.cmds = ""
-            self.called = 0
-            self.output = "Test output"
-            self.ret_code = 0
-
-        def __call__(self, cmd, print_cmd=True, print_output=True):
-            self.cmd = cmd
-            self.cmds += "%s\n" % cmd
-            self.called += 1
-            return self.output, self.ret_code
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsByFingerprintMocked())
@@ -253,10 +328,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(pkgs), 0)
 
-    class DumbCallableObject(unit_tests.MockFunction):
-        def __call__(self, *args, **kwargs):
-            return
-
     class PrintPkgInfoMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
@@ -353,7 +424,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         def __call__(self, cmd, fingerprints):
             self.cmd += "%s\n" % cmd
-
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
