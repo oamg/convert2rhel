@@ -126,10 +126,8 @@ class CLI(object):
                          " 'subscription-manager list --available'.")
         group.add_option("-v", "--variant", help="The RHEL variant to which"
                          " the system will be converted. Available variants"
-                         " are: Server, Client, Workstation, ComputeNode for"
-                         " conversions from CentOS/OL 6/7, Server, and Client"
-                         " for conversions from CentOS/OL 5. If not used, the"
-                         " user is asked to choose a variant.")
+                         " are: Server, Client, Workstation, ComputeNode. If"
+                         " not used, the user is asked to choose a variant.")
         group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
                          " Manager server URL to register the system with. If"
                          " not provided, the subscription-manager defaults will be"
@@ -159,8 +157,6 @@ class CLI(object):
         group.add_option("-y", help="Answer yes to all yes/no questions the"
                          " tool asks.", action='store_true')
         self._parser.add_option_group(group)
-
-        return
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
@@ -227,7 +223,6 @@ class CLI(object):
 
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True
-        return
 
 
 def print_non_interactive_opts():
@@ -262,7 +257,6 @@ def print_non_interactive_opts():
     cmd += " -v %s" % tool_opts.variant
     cmd += " -y"
     loggerinst.info(cmd + "\n\n")
-    return
 
 
 # Code to be executed upon module import

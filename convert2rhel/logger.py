@@ -77,7 +77,7 @@ def initialize_logger(log_name):
     # create file handler
     if not os.path.isdir(LOG_DIR):
         os.makedirs(LOG_DIR)
-    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "w")
+    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "a")
     formatter = CustomFormatter("%(message)s")
     handler.setFormatter(formatter)
     handler.setLevel(LogLevelFile.level)
@@ -102,7 +102,7 @@ class CustomLogger(logging.Logger, object):
 
     def critical(self, msg, *args, **kwargs):
         super(CustomLogger, self).critical(msg, *args, **kwargs)
-        sys.exit(1)
+        sys.exit(msg)
 
     def debug(self, msg, *args, **kwargs):
         from convert2rhel.toolopts import tool_opts

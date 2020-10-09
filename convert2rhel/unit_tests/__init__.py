@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from functools import wraps
 import os
 try:
     import unittest2 as unittest  # Python 2.6 support
@@ -28,65 +29,6 @@ NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
-
-try:
-    from functools import wraps
-except ImportError:
-    """ functools.wrap is not available on Python 2.4
-
-    On Centos/OL/RHEL 5 the available version of Python is 2.4 which does not have
-    functools.wrap decorator used on our tests. Following the solution described
-    here[0], following code is a copy from functools code from Python official
-    repo[1]. Only the use of partial func was changed as described.
-
-    [0] https://stackoverflow.com/questions/12274814/functools-wraps-for-python-2-4
-    [1] https://hg.python.org/cpython/file/b48e1b48e670/Lib/functools.py
-    """
-
-    WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__doc__')
-    WRAPPER_UPDATES = ('__dict__',)
-
-    def update_wrapper(wrapper,
-                       wrapped,
-                       assigned=WRAPPER_ASSIGNMENTS,
-                       updated=WRAPPER_UPDATES):
-        """Update a wrapper function to look like the wrapped function
-
-           wrapper is the function to be updated
-           wrapped is the original function
-           assigned is a tuple naming the attributes assigned directly
-           from the wrapped function to the wrapper function (defaults to
-           functools.WRAPPER_ASSIGNMENTS)
-           updated is a tuple naming the attributes off the wrapper that
-           are updated with the corresponding attribute from the wrapped
-           function (defaults to functools.WRAPPER_UPDATES)
-        """
-        for attr in assigned:
-            setattr(wrapper, attr, getattr(wrapped, attr))
-        for attr in updated:
-            getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
-        # Return the wrapper so this can be used as a decorator via partial()
-        return wrapper
-
-
-    def partial(func, *args, **kwds):
-        "Emulate Python2.6's functools.partial"
-        return lambda *fargs, **fkwds: func(*(args+fargs), **dict(kwds, **fkwds))
-
-
-    def wraps(wrapped,
-              assigned=WRAPPER_ASSIGNMENTS,
-              updated=WRAPPER_UPDATES):
-        """Decorator factory to apply update_wrapper() to a wrapper function
-
-           Returns a decorator that invokes update_wrapper() with the decorated
-           function as the wrapper argument and the arguments to wraps() as the
-           remaining arguments. Default arguments are as for update_wrapper().
-           This is a convenience function to simplify applying partial() to
-           update_wrapper().
-        """
-        return partial(update_wrapper, wrapped=wrapped,
-                       assigned=assigned, updated=updated)
 
 
 def mock(class_or_module, orig_obj, mock_obj):

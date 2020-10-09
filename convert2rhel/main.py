@@ -19,7 +19,6 @@ import logging
 import os
 import sys
 
-from convert2rhel import cert
 from convert2rhel import logger
 from convert2rhel import pkghandler
 from convert2rhel import redhatrelease
@@ -41,6 +40,10 @@ class ConversionPhase:
 
 def main():
     """Perform all steps for the entire conversion process."""
+
+    # the tool will not run if not executed under the root user
+    utils.require_root()
+
     process_phase = ConversionPhase.INIT
     # initialize logging
     logger.initialize_logger("convert2rhel.log")
@@ -52,9 +55,6 @@ def main():
         toolopts.CLI()
 
         process_phase = ConversionPhase.POST_CLI
-
-        # the tool will not run if not executed under the root user
-        utils.require_root()
 
         # license agreement
         loggerinst.task("Prepare: End user license agreement")
@@ -72,6 +72,9 @@ def main():
         redhatrelease.yum_conf.backup()
         subscription.rhn_reg_file.backup()
 
+        loggerinst.task("Prepare: Clear yum version locks")
+        pkghandler.clear_yum_versionlock()
+
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_ponr_conversion()
@@ -85,6 +88,9 @@ def main():
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_ponr_conversion()
+
+        loggerinst.task("Final: rpm files modified by the conversion")
+        systeminfo.system_info.log_modified_rpms_diff()
 
         # recommend non-interactive command
         loggerinst.task("Final: Non-interactive mode")
@@ -157,29 +163,24 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
 
-    if systeminfo.system_info.version == "5":
-        cert.copy_cert_for_rhel_5()
-
     # package analysis
-    loggerinst.task("Convert: Package analysis")
-    repos_needed = repo.package_analysis()
-
-    if toolopts.tool_opts.disable_submgr:
-        loggerinst.task("Convert: Check required repos")
-        repo.check_needed_repos_availability(repos_needed)
-    else:
+    loggerinst.task("Convert: List third-party packages")
+    pkghandler.list_third_party_pkgs()
+    if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Install")
         subscription.install_subscription_manager()
         loggerinst.task("Convert: Subscription Manager - Subscribe system")
         subscription.subscribe_system()
-        loggerinst.task("Convert: Subscription Manager - Check required repos")
-        repo.check_needed_repos_availability(repos_needed)
-        loggerinst.task("Convert: Subscription Manager - Disable all repos")
+        loggerinst.task("Convert: Get RHEL repository IDs")
+        rhel_repoids = repo.get_rhel_repoids()
+        loggerinst.task("Convert: Subscription Manager - Check required repositories")
+        subscription.check_needed_repos_availability(rhel_repoids)
+        loggerinst.task("Convert: Subscription Manager - Disable all repositories")
         subscription.disable_repos()
-        loggerinst.task("Convert: Subscription Manager - Enable needed repos")
-        subscription.enable_repos(repos_needed)
+        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
+        subscription.enable_repos(rhel_repoids)
         # TODO: Replace renaming .repo files by using --enable for yum command
-        loggerinst.task("Convert: Subscription Manager - Rename repos")
+        loggerinst.task("Convert: Subscription Manager - Rename repositories")
         subscription.rename_repo_files()
 
 
@@ -218,6 +219,8 @@ def rollback_changes():
     redhatrelease.system_release_file.restore()
     subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
+    pkghandler.versionlock_file.restore()
+
     return
 
 

@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from itertools import imap
-
 import logging
 import os
 import re
@@ -29,6 +28,8 @@ from convert2rhel.toolopts import tool_opts
 # Limit the number of loops over yum command calls for the case there was
 # an error.
 MAX_YUM_CMD_CALLS = 2
+_VERSIONLOCK_FILE_PATH = '/etc/yum/pluginconf.d/versionlock.list'
+versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 
 class PkgWFingerprint(object):
@@ -148,13 +149,7 @@ def resolve_dep_errors(output, pkgs):
                         " resolve yum dependency errors.")
         return
 
-    # distro-sync is not available until yum v3.2.28:
-    #  (http://yum.baseurl.org/wiki/whatsnew/3.2.28)
-    # linux 5.x only provides yum v3.2.22 so we need to use downgrade argument
-    #  instead of distro-sync
-    cmd = "downgrade"
-    if int(system_info.version) >= 6:
-        cmd = "distro-sync"
+    cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
                     % ", ".join(pkgs))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs))
@@ -203,8 +198,8 @@ def get_installed_pkg_objects(name=""):
     yum_base.doConfigSetup(init_plugins=False)
     if name:
         return yum_base.rpmdb.returnPackages(patterns=[name])
-    else:
-        return yum_base.rpmdb.returnPackages()
+
+    return yum_base.rpmdb.returnPackages()
 
 
 def get_third_party_pkgs():
@@ -230,6 +225,23 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
     return [pkg.pkg_obj for pkg in pkgs_w_fingerprints
             if pkg.fingerprint not in fingerprints and
             pkg.pkg_obj.name != "gpg-pubkey"]
+
+
+def list_third_party_pkgs():
+    """List packages not packaged by the original OS vendor or Red Hat and warn that these are not going
+    to be converted.
+    """
+    loggerinst = logging.getLogger(__name__)
+    third_party_pkgs = get_third_party_pkgs()
+    if third_party_pkgs:
+        loggerinst.warning("Only packages signed by %s are to be"
+                           " reinstalled. Red Hat support won't be provided"
+                           " for the following third party packages:\n"
+                           % system_info.name)
+        print_pkg_info(third_party_pkgs)
+        utils.ask_to_continue()
+    else:
+        loggerinst.info("No third party packages installed.")
 
 
 def print_pkg_info(pkgs):
@@ -337,15 +349,9 @@ def replace_non_red_hat_packages():
         "Performing reinstallation of the %s packages ..." % system_info.name)
     call_yum_cmd_w_downgrades("reinstall", system_info.fingerprints_orig_os)
 
-    # distro-sync/downgrade the packages that had the following:
+    # distro-sync (downgrade) the packages that had the following:
     #  'Installed package <package> not available.'
-    # distro-sync is not available until yum v3.2.28:
-    #  (http://yum.baseurl.org/wiki/whatsnew/3.2.28)
-    # linux 5.x only provides yum v3.2.22 so we need to use downgrade argument
-    #  instead of distro-sync
-    cmd = "downgrade"
-    if int(system_info.version) >= 6:
-        cmd = "distro-sync"
+    cmd = "distro-sync"
     loggerinst.info("Performing %s of the packages left ..." % cmd)
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 
@@ -353,6 +359,14 @@ def replace_non_red_hat_packages():
 def preserve_only_rhel_kernel():
     loggerinst = logging.getLogger(__name__)
     needs_update = install_rhel_kernel()
+
+    loggerinst.info("Verifying that RHEL kernel has been installed")
+    if not is_rhel_kernel_installed():
+        loggerinst.critical(
+            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
+    else:
+        loggerinst.info("RHEL kernel has been installed.")
+
     non_rhel_kernel_pkgs = remove_non_rhel_kernels()
     if non_rhel_kernel_pkgs:
         install_additional_rhel_kernel_pkgs(non_rhel_kernel_pkgs)
@@ -507,3 +521,24 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
             call_yum_cmd("install %s" % name)
+
+
+def is_rhel_kernel_installed():
+    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
+    return len(installed_rhel_kernels) > 0
+
+
+def clear_yum_versionlock():
+    loggerinst = logging.getLogger(__name__)
+
+    if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
+        loggerinst.warn("yum versionlock plugin is in use. It may cause the conversion to fail.")
+        loggerinst.info("Upon continuing, we will clear all package version locks.")
+        utils.ask_to_continue()
+
+        versionlock_file.backup()
+
+        loggerinst.info("Clearing package versions locks...")
+        call_yum_cmd("versionlock clear", print_output=False)
+    else:
+        loggerinst.info("Usage of yum versionlock plugin not detected.")

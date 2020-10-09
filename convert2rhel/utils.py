@@ -44,7 +44,7 @@ class Color:
 # Absolute path of a directory holding data for this tool
 DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
-TMP_DIR = "/tmp/convert2rhel/"
+TMP_DIR = "/var/lib/convert2rhel/"
 
 
 def format_msg_with_datetime(msg, level):
@@ -60,9 +60,9 @@ def get_executable_name():
 
 def require_root():
     if os.geteuid() != 0:
-        loggerinst = logging.getLogger(__name__)
-        loggerinst.critical("The tool needs to be run under the root user.")
-    return
+        print("The tool needs to be run under the root user.")
+        print("\nNo changes were made to the system.")
+        sys.exit(1)
 
 
 def get_file_content(filename, as_list=False):
@@ -82,8 +82,8 @@ def get_file_content(filename, as_list=False):
     if as_list:
         # remove newline character from each line
         return [x.strip() for x in lines]
-    else:
-        return "".join(lines)
+
+    return "".join(lines)
 
 
 def store_content_to_file(filename, content):
@@ -103,7 +103,6 @@ def store_content_to_file(filename, content):
         file_to_write.write(content)
     finally:
         file_to_write.close()
-    return
 
 
 def restart_system():
@@ -114,7 +113,6 @@ def restart_system():
     else:
         loggerinst.warning("In order to boot the RHEL kernel,"
                            " restart of the system is needed.")
-    return
 
 
 def run_subprocess(cmd="", **kwargs):
@@ -131,7 +129,8 @@ def run_subprocess(cmd="", **kwargs):
     sp_popen = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
-                                bufsize=1)
+                                bufsize=1,
+                                env={'LC_ALL':'C'})
     stdout = ''
     for line in iter(sp_popen.stdout.readline, ''):
         # communicate() method buffers everything in memory, we will
@@ -189,8 +188,7 @@ def ask_to_continue():
         if cont == "y":
             break
         if cont == "n":
-            loggerinst.critical("User cancelled the conversion\n")
-    return
+            loggerinst.critical("User canceled the conversion\n")
 
 
 def prompt_user(question, password=False):
@@ -317,7 +315,6 @@ def remove_pkgs(pkgs_to_remove, should_backup=True, critical=True):
                 loggerinst.critical("Error: Couldn't remove %s." % nvra)
             else:
                 loggerinst.warning("Couldn't remove %s." % nvra)
-    return
 
 
 def install_pkgs(pkgs_to_install, replace=False, critical=True):
@@ -345,9 +342,9 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
         if critical:
             loggerinst.critical("Error: Couldn't install %s packages." % pkgs)
             return False
-        else:
-            loggerinst.warning("Couldn't install %s packages." % pkgs)
-            return False
+
+        loggerinst.warning("Couldn't install %s packages." % pkgs)
+        return False
 
     for path in pkgs_to_install:
         nvra, _ = os.path.splitext(os.path.basename(path))
@@ -356,9 +353,13 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
     return True
 
 
-def download_pkg(pkg, dest=TMP_DIR, disablerepo=[], enablerepo=[]):
+def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
     """Download the specified package."""
     cmd = "yumdownloader"
+    if disablerepo is None:
+        disablerepo = []
+    if enablerepo is None:
+        enablerepo = []
 
     for repo in disablerepo:
         cmd += " --disablerepo=%s " % repo
@@ -382,8 +383,7 @@ class RestorableFile(object):
         """ Save current version of a file """
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
-        if (os.path.isfile(self.filepath) and
-                os.path.isdir(TMP_DIR)):
+        if os.path.isfile(self.filepath):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, TMP_DIR))
                 shutil.copy2(self.filepath, TMP_DIR)
@@ -391,8 +391,7 @@ class RestorableFile(object):
                 loggerinst.critical("I/O error(%s): %s" % (err.errno,
                                                            err.strerror))
         else:
-            loggerinst.warning("Can't find %s or %s"
-                               % (self.filepath, TMP_DIR))
+            loggerinst.info("Can't find %s", self.filepath)
 
     def restore(self):
         """ Restore a previously backed up file """
@@ -451,7 +450,7 @@ class RestorablePackage(object):
                 loggerinst.warning("Couldn't retrieve downloaded %s package."
                                    % self.name)
         else:
-            loggerinst.warning("Can't find %s" % TMP_DIR)
+            loggerinst.warning("Can't access %s" % TMP_DIR)
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

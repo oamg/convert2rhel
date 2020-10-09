@@ -3,7 +3,7 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name:           convert2rhel
-Version:        0.11
+Version:        0.12
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -20,26 +20,16 @@ Requires:       dbus-python
 Requires:       gnupg2
 Requires:       m2crypto
 Requires:       python
-# Warning: The python-dateutil package is available since OL/CentOS 5.10
-#          If the convert2rhel is to be installed on an older system, add
-#          any repo that contains the package or install it manually first
-#          from a downloaded rpm.
 Requires:       python-dateutil
 Requires:       python-dmidecode
 Requires:       python-iniparse
-# Warning: The python-ethtool package is available since OL/CentOS 5.7
 Requires:       python-ethtool
 Requires:       rpm
 Requires:       sed
 Requires:       usermode
-# Warning: The virt-what package is available since OL/CentOS 5.7
 Requires:       virt-what
 Requires:       yum
 Requires:       yum-utils
-%if 0%{?rhel} && 0%{?rhel} <= 5
-# Warning: The python-simplejson package is available since OL/CentOS 5.7
-Requires:       python-simplejson
-%endif
 %if 0%{?rhel} && 0%{?rhel} == 6
 Requires:       python-decorator
 Requires:       python-setuptools
@@ -60,7 +50,7 @@ Requires:       python-syspurpose
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS 5/6/7 and Oracle Linux 5/6/7 to
+RHEL ones. Available are conversions of CentOS 6/7 and Oracle Linux 6/7 to
 the respective major version of RHEL.
 
 %prep
@@ -87,6 +77,9 @@ cp -a build/lib/%{name}/data/version-independent/. \
 cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
       %{buildroot}%{_datadir}/%{name}
 
+# Temporary directory used mainly for backing up files during the conversion
+install -d %{buildroot}%{_sharedstatedir}/%{name}
+
 install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
@@ -95,6 +88,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %{python2_sitelib}/%{name}*
 %{_datadir}/%{name}
+%{_sharedstatedir}/%{name}
 
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
@@ -102,6 +96,24 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed Aug 19 2020 Michal Bocek <mbocek@redhat.com> 0.12-1
+- require --enablerepo with --disable-submgr
+- fix failing conversions if gpgcheck=1 not in used custom repos
+- always logging debug info to the log file
+- unnecessary backup of kernel packages is not being performed
+- add missing python-setuptools dependency on RHEL 6 to a spec file
+- unregister from RHN Classic if in use
+- change a temporary folder path from /tmp/convert2rhel/ to /var/lib/convert2rhel
+- add the ability to specify custom RHSM URL
+- unsubscribe from RHSM during a rollback
+- drop the support for conversions of RHEL 5
+- make sure that RHEL kernel has been installed correctly during the conversion
+- fix parsing RHSM output due to its change in RHEL 7.8
+- fix stopping the convert2rhel execution when not running as root
+- the convert2rhel.log file is not being overwritten but appended
+- do not traceback when intentionally stopping the conversion
+- do not ask for subscription SKU pool IDs when activation key is used
+
 * Tue May 12 2020 Michal Bocek <mbocek@redhat.com> 0.11-1
 - updated license in spec files from GPLv3 to GPLv3+
 - set up automated pylint and unit test coverage checks in GitHub

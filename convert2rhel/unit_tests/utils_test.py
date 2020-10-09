@@ -17,6 +17,7 @@
 
 
 import re
+import os
 
 try:
     import unittest2 as unittest  # Python 2.6 support
@@ -28,7 +29,6 @@ from convert2rhel import utils
 
 
 class TestUtils(unittest.TestCase):
-
     class DummyFuncMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
@@ -49,6 +49,21 @@ class TestUtils(unittest.TestCase):
             self.cmds += "%s\n" % cmd
             self.called += 1
             return self.output, self.ret_code
+
+    class DummyGetUID(unit_tests.MockFunction):
+        def __init__(self, uid):
+            self.uid = uid
+
+        def __call__(self, *args, **kargs):
+            return self.uid
+
+    @unit_tests.mock(os, "geteuid", DummyGetUID(1000))
+    def test_require_root_is_not_root(self):
+        self.assertRaises(SystemExit, utils.require_root)
+
+    @unit_tests.mock(os, "geteuid", DummyGetUID(0))
+    def test_require_root_is_root(self):
+        self.assertEqual(utils.require_root(), None)
 
     def test_track_installed_pkg(self):
         control = utils.ChangedRPMPackagesController()

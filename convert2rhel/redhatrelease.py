@@ -51,31 +51,19 @@ def install_release_pkg():
 
 
 def get_release_pkg_name():
-    """Starting with RHEL 6 the release package changed its name from
-    redhat-release to redhat-release-<lowercase variant>, e.g.
+    """Starting with RHEL 6 the release package name follows this schema: redhat-release-<lowercase variant>, e.g.
     redhat-release-server.
     """
-    from convert2rhel.systeminfo import system_info
-    if int(system_info.version) >= 6:
-        release_pkg_name = "redhat-release-" + tool_opts.variant.lower()
-    else:
-        release_pkg_name = "redhat-release"
-    return release_pkg_name
+    return "redhat-release-" + tool_opts.variant.lower()
 
 
 def get_system_release_filepath():
-    """Return name of the file containing name of the operating system and its
-    version.
-    """
+    """Return path of the file containing the OS name and version."""
+    release_filepath = "/etc/system-release"  # RHEL 6/7/8 based OSes
+    if os.path.isfile(release_filepath):
+        return release_filepath
     loggerinst = logging.getLogger(__name__)
-    possible_release_filenames = ["system-release",  # RHEL 6/7 based OSes
-                                  "oracle-release",  # Oracle Linux 5
-                                  "redhat-release"]  # CentOS 5
-    for release_file in possible_release_filenames:
-        if os.path.isfile("/etc/%s" % release_file):
-            return "/etc/%s" % release_file
-    loggerinst.critical("Error: Unable to find any file containing name of the"
-                        " OS and its version, e.g. /etc/system-release")
+    loggerinst.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
 
 
 def get_system_release_content():
