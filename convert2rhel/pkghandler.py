@@ -306,30 +306,30 @@ def list_non_red_hat_pkgs_left():
         loggerinst.info("All packages are now signed by Red Hat.")
 
 
-def remove_blacklisted_pkgs():
+def remove_excluded_pkgs():
     """Certain packages need to be removed before the system conversion,
     depending on the system to be converted. At least removing <os>-release
     package is a must.
     """
     loggerinst = logging.getLogger(__name__)
-    installed_blacklisted_pkgs = []
-    loggerinst.info("Searching for the following blacklisted packages:\n")
-    for blacklisted_pkg in system_info.pkg_blacklist:
-        temp = '.' * (50 - len(blacklisted_pkg) - 2)
-        pkg_objects = get_installed_pkg_objects(blacklisted_pkg)
-        installed_blacklisted_pkgs.extend(pkg_objects)
+    installed_excluded_pkgs = []
+    loggerinst.info("Searching for the following excluded packages:\n")
+    for excluded_pkg in system_info.excluded_pkgs:
+        temp = '.' * (50 - len(excluded_pkg) - 2)
+        pkg_objects = get_installed_pkg_objects(excluded_pkg)
+        installed_excluded_pkgs.extend(pkg_objects)
         loggerinst.info("%s %s %s" %
-                        (blacklisted_pkg, temp, str(len(pkg_objects))))
+                        (excluded_pkg, temp, str(len(pkg_objects))))
 
-    if not installed_blacklisted_pkgs:
+    if not installed_excluded_pkgs:
         loggerinst.info("\nNothing to do.")
         return
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
     loggerinst.info("\n")
-    print_pkg_info(installed_blacklisted_pkgs)
+    print_pkg_info(installed_excluded_pkgs)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_blacklisted_pkgs])
+    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
 
 
 def replace_non_red_hat_packages():
