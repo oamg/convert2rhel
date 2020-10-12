@@ -22,7 +22,7 @@ import unittest
 from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import logger, subscription, utils
+from convert2rhel import logger, pkghandler, subscription, utils
 from convert2rhel.toolopts import tool_opts
 
 
@@ -306,3 +306,18 @@ class TestSubscription(unittest.TestCase):
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
         self.assertTrue("rhel repository is not available" in logger.CustomLogger.warning.msg)
+
+    @unit_tests.mock(os.path, "isdir", lambda x: True)
+    @unit_tests.mock(os, "listdir", lambda x: [])
+    def test_install_subscription_manager_rpms_not_available(self):
+        self.assertRaises(SystemExit, subscription.install_subscription_manager)
+
+        os.path.isdir = lambda x: False
+        os.listdir = lambda x: ["filename"]
+        self.assertRaises(SystemExit, subscription.install_subscription_manager)
+
+    @unit_tests.mock(os.path, "isdir", lambda x: True)
+    @unit_tests.mock(os, "listdir", lambda x: ["filename"])
+    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos: (None, 1))
+    def test_install_subscription_manager_unable_to_install(self):
+        self.assertRaises(SystemExit, subscription.install_subscription_manager)

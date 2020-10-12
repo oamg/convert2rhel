@@ -23,6 +23,7 @@ import logging
 
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from convert2rhel import pkghandler
 from convert2rhel import utils
 
 
@@ -150,13 +151,21 @@ def install_subscription_manager():
                             " https://access.redhat.com/articles/2360841."
                             % sm_dir)
         return
-    rpms_to_install = [os.path.join(sm_dir, x) for x in os.listdir(sm_dir)]
+    rpms_to_install = [os.path.join(sm_dir, filename) for filename in os.listdir(sm_dir)]
     if rpms_to_install:
-        utils.install_pkgs(rpms_to_install, True)
-        loggerinst.info("RPMs installed:\n%s" % "\n".join(rpms_to_install))
-    else:
-        loggerinst.info("No RPM to be installed.")
-    return
+        _, ret_code = pkghandler.call_yum_cmd(
+            "install",
+            " ".join(rpms_to_install),
+            # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
+            # the repos that are available on the system
+            enable_repos=[],
+            disable_repos=[]
+        )
+        if ret_code:
+            loggerinst.critical("Failed to install subscription-manager packages."
+                                " See the above yum output for details.")
+        else:
+            loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
 
 
 def attach_subscription():

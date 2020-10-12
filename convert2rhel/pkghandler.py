@@ -69,15 +69,28 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     return
 
 
-def call_yum_cmd(command, args="", print_output=True):
-    """Call yum command and optionally print its output."""
+def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable_repos=None):
+    """Call yum command and optionally print its output.
+
+    The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
+    which is:
+    * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
+    * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
+      file for the particular system OR passed through a CLI option by the user
+    """
     loggerinst = logging.getLogger(__name__)
 
     cmd = "yum %s -y" % command
 
     # The --disablerepo yum option must be added before --enablerepo,
     #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
-    for repo in tool_opts.disablerepo:
+    repos_to_disable = []
+    if isinstance(disable_repos, list):
+        repos_to_disable = disable_repos
+    else:
+        repos_to_disable = tool_opts.disablerepo
+
+    for repo in repos_to_disable:
         cmd += " --disablerepo=%s" % repo
 
     # Since the release package is not installed in the early stages of the conversion,
@@ -90,9 +103,13 @@ def call_yum_cmd(command, args="", print_output=True):
     if int(system_info.version) == 8:
         cmd += " --setopt=module_platform_id=platform:el8"
 
-    # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
-    # through subscription-manager
-    repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+    repos_to_enable = []
+    if isinstance(enable_repos, list):
+        repos_to_enable = enable_repos
+    else:
+        # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
+        # through subscription-manager
+        repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
 
     for repo in repos_to_enable:
         cmd += " --enablerepo=%s" % repo

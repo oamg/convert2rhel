@@ -188,6 +188,19 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y --enablerepo=rhel-7-extras-rpm")
 
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(system_info, "submgr_enabled_repos", ['not-to-be-used-in-the-yum-call'])
+    @unit_tests.mock(tool_opts, "enablerepo", ['not-to-be-used-in-the-yum-call'])
+    def test_call_yum_cmd_with_repo_overrides(self):
+        pkghandler.call_yum_cmd("install", "pkg", enable_repos=[], disable_repos=[])
+
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y pkg")
+
+        pkghandler.call_yum_cmd("install", "pkg", enable_repos=["enable-repo"], disable_repos=["disable-repo"])
+
+        self.assertEqual(utils.run_subprocess.cmd,
+                         "yum install -y --disablerepo=disable-repo --enablerepo=enable-repo pkg")
+
     @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsByFingerprintMocked())
