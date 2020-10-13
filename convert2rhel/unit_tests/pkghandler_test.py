@@ -121,10 +121,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
-    def test_clear_yum_versionlock_plugin_not_enabled(self):
-        self.assertFalse(pkghandler.clear_yum_versionlock())
+    def test_clear_versionlock_plugin_not_enabled(self):
+        self.assertFalse(pkghandler.clear_versionlock())
         self.assertEqual(len(pkghandler.logging.getLogger.info_msgs), 1)
-        self.assertEqual(pkghandler.logging.getLogger.info_msgs, ['Usage of yum versionlock plugin not detected.'])
+        self.assertEqual(pkghandler.logging.getLogger.info_msgs, ['Usage of YUM/DNF versionlock plugin not detected.'])
 
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
@@ -133,8 +133,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(utils.RestorableFile, "backup", DumbCallableObject)
     @unit_tests.mock(utils.RestorableFile, "restore", DumbCallableObject)
-    def test_clear_yum_versionlock_user_says_yes(self):
-        pkghandler.clear_yum_versionlock()
+    def test_clear_versionlock_user_says_yes(self):
+        pkghandler.clear_versionlock()
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
         self.assertEqual(pkghandler.call_yum_cmd.command, "versionlock clear")
 
@@ -142,8 +142,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=1))
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_clear_yum_versionlock_user_says_no(self):
-        self.assertRaises(SystemExit, pkghandler.clear_yum_versionlock)
+    def test_clear_versionlock_user_says_no(self):
+        self.assertRaises(SystemExit, pkghandler.clear_versionlock)
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())

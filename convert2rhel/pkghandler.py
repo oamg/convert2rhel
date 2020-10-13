@@ -29,7 +29,8 @@ import sys
 # Limit the number of loops over yum command calls for the case there was
 # an error.
 MAX_YUM_CMD_CALLS = 2
-_VERSIONLOCK_FILE_PATH = '/etc/yum/pluginconf.d/versionlock.list'
+
+_VERSIONLOCK_FILE_PATH = '/etc/yum/pluginconf.d/versionlock.list'  # This file is used by the dnf plugin as well
 versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 
@@ -565,11 +566,18 @@ def is_rhel_kernel_installed():
     return len(installed_rhel_kernels) > 0
 
 
-def clear_yum_versionlock():
+def clear_versionlock():
+    """A package can be locked to a specific version using a YUM/DNF versionlock plugin. Then, even if a newer version
+    of a package is available, yum or dnf won't update it. That may cause a problem during the conversion as other
+    RHEL packages may depend on a different version than is locked. That's why we clear all the locks to prevent a
+    system conversion failure.
+    DNF has been designed to be backwards compatible with YUM. So the file in which the version locks are defined for
+    YUM works correctly even with DNF thanks to symlinks created by DNF.
+    """
     loggerinst = logging.getLogger(__name__)
 
     if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
-        loggerinst.warn("yum versionlock plugin is in use. It may cause the conversion to fail.")
+        loggerinst.warn("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
@@ -578,4 +586,4 @@ def clear_yum_versionlock():
         loggerinst.info("Clearing package versions locks...")
         call_yum_cmd("versionlock clear", print_output=False)
     else:
-        loggerinst.info("Usage of yum versionlock plugin not detected.")
+        loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
