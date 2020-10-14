@@ -6,6 +6,4 @@ execute:
 prepare:
     how: shell
     script:
-    - yum --enablerepo=extras install -y epel-release
-    - yum install -y python-pip
-    - pip install nose
+    - yum install -y python-nose
