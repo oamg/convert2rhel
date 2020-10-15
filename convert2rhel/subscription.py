@@ -21,6 +21,7 @@ import re
 import shutil
 import logging
 
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import utils
 
@@ -317,16 +318,15 @@ def disable_repos():
     return
 
 
-def enable_repos(repos_needed):
-    """By default, enable just the repos identified by the tool as needed and
-    disable any other using subscription-manager. This can be overriden by the
-    --enablerepo option.
+def enable_repos(rhel_repoids):
+    """By default, enable the standard Red Hat CDN RHEL repository IDs using subscription-manager.
+    This can be overriden by the --enablerepo option.
     """
     loggerinst = logging.getLogger(__name__)
     if tool_opts.enablerepo:
         repos_to_enable = tool_opts.enablerepo
     else:
-        repos_to_enable = repos_needed
+        repos_to_enable = rhel_repoids
 
     enable_cmd = ""
     for repo in repos_to_enable:
@@ -337,7 +337,8 @@ def enable_repos(repos_needed):
         loggerinst.critical("Repos were not possible to enable through"
                             " subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
-    return
+
+    system_info.submgr_enabled_repos = repos_to_enable
 
 
 def rename_repo_files():
