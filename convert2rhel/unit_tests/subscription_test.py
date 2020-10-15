@@ -24,6 +24,7 @@ from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import logger, pkghandler, subscription, utils
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
@@ -81,7 +82,7 @@ class TestSubscription(unittest.TestCase):
                 return self.tuples.pop(0)
             return self.default_tuple
 
-    class DumbCallableObject(unit_tests.MockFunction):
+    class DumbCallable(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
@@ -188,7 +189,7 @@ class TestSubscription(unittest.TestCase):
     def test_attach_subscription_none_available(self):
         self.assertEqual(subscription.attach_subscription(), False)
 
-    @unit_tests.mock(subscription, "register_system", DumbCallableObject())
+    @unit_tests.mock(subscription, "register_system", DumbCallable())
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -198,7 +199,7 @@ class TestSubscription(unittest.TestCase):
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 1)
 
-    @unit_tests.mock(subscription, "register_system", DumbCallableObject())
+    @unit_tests.mock(subscription, "register_system", DumbCallable())
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsOnceMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -346,7 +347,7 @@ class TestSubscription(unittest.TestCase):
                      lambda x, y: [namedtuple('Pkg', ['name'])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(utils, "remove_pkgs", DumbCallableObject())
+    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
 
@@ -359,78 +360,123 @@ class TestSubscription(unittest.TestCase):
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
 
-    class VersionMocked(unit_tests.MockFunction):
-        def __init__(self, version):
-            self.version = version
+    class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
 
-        def __call__(self, version):
-            return self.version
+        def __call__(self, pkgs_to_download, repo_path, repo_content):
+            self.called += 1
+            self.pkgs_to_download = pkgs_to_download
+            self.repo_path = repo_path
+            self.repo_content = repo_content
+    
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
+    @unit_tests.mock(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
+    @unit_tests.mock(subscription, "_get_rhsm_cert_on_centos_7", DumbCallable())
+    @unit_tests.mock(utils, "mkdir_p", DumbCallable())
+    def test_download_rhsm_pkgs(self):
+        subscription.download_rhsm_pkgs()
+        
+        self.assertEqual(subscription._download_rhsm_pkgs.called, 1)
+        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
+                         ["subscription-manager",
+                          "subscription-manager-rhsm-certificates",
+                          "subscription-manager-rhsm"])
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(utils, "parse_version_number",
-                     VersionMocked(version={'major': 1, 'minor': None, 'release': None}))
-    def test_download_subscription_manager_packages_rhel1(self):
-        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
-        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
-        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(utils, "parse_version_number",
-                     VersionMocked(version={'major': 5, 'minor': None, 'release': None}))
-    def test_download_subscription_manager_packages_rhel5(self):
-        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
-        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
-        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+        subscription.download_rhsm_pkgs()
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(utils, "parse_version_number",
-                     VersionMocked(version={'major': 6, 'minor': 6, 'release': None}))
-    def test_download_subscription_manager_packages_rhel66(self):
-        self.assertRaises(SystemExit, subscription.download_subscription_manager_packages)
-        self.assertTrue(len(subscription.logging.getLogger.error_msgs), 1)
-        self.assertTrue("Unable to download subscription-manager" in subscription.logging.getLogger.error_msgs[0])
+        self.assertEqual(subscription._download_rhsm_pkgs.called, 2)
+        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
+                         ["subscription-manager",
+                          "subscription-manager-rhsm-certificates",
+                          "subscription-manager-rhsm",
+                          "python-syspurpose"])
+        self.assertEqual(subscription._get_rhsm_cert_on_centos_7.called, 1)
+
+        system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
+
+        subscription.download_rhsm_pkgs()
+
+        self.assertEqual(subscription._download_rhsm_pkgs.called, 3)
+        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
+                         ["subscription-manager",
+                          "subscription-manager-rhsm-certificates",
+                          "python3-subscription-manager-rhsm",
+                          "dnf-plugin-subscription-manager",
+                          "python3-syspurpose"])
 
     class StoreContentMocked(unit_tests.MockFunction):
         def __init__(self):
+            self.called = 0
             self.filename = None
             self.content = None
 
         def __call__(self, filename, content):
+            self.called += 1
             self.filename = filename
             self.content = content
             return True
 
-    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
-    @unit_tests.mock(utils, "parse_version_number",
-                     VersionMocked(version={'major': 6, 'minor': 7, 'release': None}))
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_download_subscription_manager_packages_rhel67(self):
-        subscription.download_subscription_manager_packages()
-        self.assertTrue("centos_contrib.repo" in utils.store_content_to_file.filename)
-        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
-        self.assertEqual("install", pkghandler.call_yum_cmd.command)
-        self.assertTrue("subscription-manager subscription-manager-rhsm" in pkghandler.call_yum_cmd.args)
+    class DownloadPkgsMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.to_return = ["/path/to.rpm"]
 
+        def __call__(self, pkgs, dest, reposdir=None):
+            self.called += 1
+            self.pkgs = pkgs
+            self.dest = dest
+            self.reposdir = reposdir
+            return self.to_return
+
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
+    @unit_tests.mock(utils, "download_pkgs", DownloadPkgsMocked())
+    def test__download_rhsm_pkgs(self):
+        subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
+
+        self.assertTrue("/path/to.repo" in utils.store_content_to_file.filename)
+        self.assertEqual(utils.download_pkgs.called, 1)
+
+        utils.download_pkgs.to_return.append(None)
+
+        self.assertRaises(SystemExit, subscription._download_rhsm_pkgs, ["testpkg"], "/path/to.repo", "content")
+        
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
-            self.pkg = None
-            self.dest = None
+            self.to_return = "/path/to.rpm"
 
-        def __call__(self, pkg, dest):
+        def __call__(self, pkg, dest, reposdir=None):
             self.called += 1
             self.pkg = pkg
             self.dest = dest
+            self.reposdir = reposdir
+            return self.to_return
 
-    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
-    @unit_tests.mock(utils, "parse_version_number", VersionMocked(version={'major': 7, 'minor': 0, 'release': 1}))
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
-    def test_download_subscription_manager_packages_rhel7_or_above(self):
-        subscription.download_subscription_manager_packages()
-        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
-        self.assertEqual("install", pkghandler.call_yum_cmd.command)
-        self.assertEqual(utils.download_pkg.called, 1)
-        self.assertEqual(utils.download_pkg.pkg, "python-rhsm-certificates")
-        self.assertEqual(utils.download_pkg.dest, "/tmp/")
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
+    @unit_tests.mock(utils, "mkdir_p", DumbCallable())
+    def test_get_rhsm_cert_on_centos_7(self):
+        # test the case of python-rhsm-certificates download failing
+        utils.download_pkg.to_return = None
+        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
+        # return back some sane output
+        utils.download_pkg.to_return = "/path/to.rpm"
+
+        # test the case when getting the cpio archive out of the python-rhsm-certificates rpm is failing
+        utils.run_subprocess.tuples = [("output", 1)]
+        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
+        
+        # test the case when extracting the certificate out of the cpio archive fails
+        utils.run_subprocess.tuples = [("output", 0), ("output", 1)]
+        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
+        # reset the called counter
+        utils.store_content_to_file.called = 0
+
+        # test the case when everything passes and two files are stored - the cpio archive and the extracted cert file
+        subscription._get_rhsm_cert_on_centos_7()
+        self.assertEqual(utils.store_content_to_file.called, 2)

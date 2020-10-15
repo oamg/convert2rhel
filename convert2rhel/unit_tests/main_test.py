@@ -157,7 +157,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "download_subscription_manager_packages", CallOrderMocked)
+    @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -165,7 +165,7 @@ class TestMain(unittest.TestCase):
         intended_call_order = OrderedDict()
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["download_subscription_manager_packages"] = 1
+        intended_call_order["download_rhsm_pkgs"] = 1
         intended_call_order["replace_subscription_manager"] = 1
         intended_call_order["install"] = 1
         intended_call_order["subscribe_system"] = 1
@@ -196,7 +196,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "download_subscription_manager_packages", CallOrderMocked)
+    @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -207,7 +207,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["remove_excluded_pkgs"] = 1
 
         # Do not expect this one to be called - related to RHSM
-        intended_call_order["download_subscription_manager_packages"] = 1
+        intended_call_order["download_rhsm_pkgs"] = 0
         intended_call_order["replace_subscription_manager"] = 0
         intended_call_order["install"] = 0
         intended_call_order["subscribe_system"] = 0

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import namedtuple
 try:
     import ConfigParser as configparser
 except ImportError:
@@ -41,7 +42,7 @@ class SystemInfo(object):
         self.name = None
         # Single-word lowercase identificator of the system (e.g. oracle)
         self.id = None  # pylint: disable=C0103
-        # Major version of the operating system (e.g. 6)
+        # Major and minor version of the operating system (e.g. version.major == 6, version.minor == 10)
         self.version = None
         # Platform architecture
         self.arch = None
@@ -99,10 +100,22 @@ class SystemInfo(object):
         return name
 
     def _get_system_version(self):
-        version = re.search(r".+?(\d+)\.?",
-                            self.system_release_file_content).group(1)
+        """Return a namedtuple with major and minor elements, both of an int type.
+        
+        Examples:
+        Oracle Linux Server release 6.10
+        Oracle Linux Server release 7.8
+        CentOS release 6.10 (Final)
+        CentOS Linux release 7.6.1810 (Core)
+        CentOS Linux release 8.1.1911 (Core)
+        """
+        match = re.search(r".+?(\d+)\.(\d+)\D?", self.system_release_file_content)
+        if not match:
+            from convert2rhel import redhatrelease
+            self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
+        version = namedtuple("Version", ["major", "minor"])(int(match.group(1)), int(match.group(2)))
 
-        self.logger.info("%-20s %s" % ("OS major version:", version))
+        self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
         return version
 
     def _get_architecture(self):
@@ -112,8 +125,8 @@ class SystemInfo(object):
         return arch
 
     def _get_cfg_filename(self):
-        cfg_filename = "%s-%s-%s.cfg" % (self.id,
-                                         self.version,
+        cfg_filename = "%s-%d-%s.cfg" % (self.id,
+                                         self.version.major,
                                          self.arch)
         self.logger.info("%-20s %s" % ("Config filename:", cfg_filename))
         return cfg_filename
