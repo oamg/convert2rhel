@@ -134,7 +134,7 @@ class TestUtils(unittest.TestCase):
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertTrue("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
 
     @unit_tests.mock(utils.ChangedRPMPackagesController,
                      "track_installed_pkg",
@@ -147,4 +147,4 @@ class TestUtils(unittest.TestCase):
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertTrue("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
