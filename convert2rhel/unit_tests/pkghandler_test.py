@@ -422,15 +422,15 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.pkgs = pkgs_to_remove
             self.should_bkp = should_backup
 
-    @unit_tests.mock(system_info, "pkg_blacklist", ["installed_pkg",
+    @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg",
                                                     "not_installed_pkg"])
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
                      GetInstalledPkgObjectsMocked())
-    def test_remove_blacklisted_pkgs(self):
-        pkghandler.remove_blacklisted_pkgs()
+    def test_remove_excluded_pkgs(self):
+        pkghandler.remove_excluded_pkgs()
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")

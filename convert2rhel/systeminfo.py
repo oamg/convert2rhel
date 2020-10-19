@@ -54,7 +54,7 @@ class SystemInfo(object):
             # RHEL 6/7: RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e"]
         # Packages to be removed before the system conversion
-        self.pkg_blacklist = []
+        self.excluded_pkgs = []
         self.cfg_filename = None
         self.cfg_content = None
         self.system_release_file_content = None
@@ -74,7 +74,7 @@ class SystemInfo(object):
 
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
-        self.pkg_blacklist = self._get_pkg_blacklist()
+        self.excluded_pkgs = self._get_excluded_pkgs()
         self.default_repository_id = self._get_default_repository_id()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
@@ -145,8 +145,8 @@ class SystemInfo(object):
     def _get_gpg_key_fingerprints(self):
         return self._get_cfg_opt("gpg_fingerprints").split()
 
-    def _get_pkg_blacklist(self):
-        return self._get_cfg_opt("pkg_blacklist").split()
+    def _get_excluded_pkgs(self):
+        return self._get_cfg_opt("excluded_pkgs").split()
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
         """RPM is able to detect if any file installed as part of a package has been changed in any way after the

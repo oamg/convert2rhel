@@ -148,9 +148,9 @@ def pre_ponr_conversion():
     """Perform steps and checks to guarantee system is ready for conversion."""
     loggerinst = logging.getLogger(__name__)
 
-    # remove blacklisted packages
-    loggerinst.task("Convert: Remove blacklisted packages")
-    pkghandler.remove_blacklisted_pkgs()
+    # remove excluded packages
+    loggerinst.task("Convert: Remove excluded packages")
+    pkghandler.remove_excluded_pkgs()
 
     # checking RHN Classic
     loggerinst.task("Checking RHN Classic")
