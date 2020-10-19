@@ -25,7 +25,10 @@ from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import logger
 
-DEFAULT_RPM_VA_LOG_FILENAME = 'rpm_va.log'
+# For a list of modified rpm files before the conversion starts
+PRE_RPM_VA_LOG_FILENAME = 'rpm_va.log'
+# For a list of modified rpm files after the conversion finishes for comparison purposes
+POST_RPM_VA_LOG_FILENAME = 'rpm_va_after_conversion.log'
 
 
 class SystemInfo(object):
@@ -72,7 +75,7 @@ class SystemInfo(object):
         self.pkg_blacklist = self._get_pkg_blacklist()
         self.default_repository_id = self._get_default_repository_id()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
-        self._generate_rpm_va()
+        self.generate_rpm_va()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -143,12 +146,14 @@ class SystemInfo(object):
     def _get_pkg_blacklist(self):
         return self._get_cfg_opt("pkg_blacklist").split()
 
-    def _generate_rpm_va(self, log_filename=DEFAULT_RPM_VA_LOG_FILENAME):
-        """Let the rpm command to list all those rpm files that have been modified after the the rpm installation.
-        Such a list is useful for debug and support purposes. It's being saved to the default
-        log folder as log_filename."""
+    def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
+        """RPM is able to detect if any file installed as part of a package has been changed in any way after the
+        package installation.
+
+        Here we are getting a list of changed package files of all the installed packages. Such a list is useful for
+        debug and support purposes. It's being saved to the default log folder as log_filename."""
         if tool_opts.no_rpm_va:
-            self.logger.info("Skipping execution of 'rpm -Va'.")
+            self.logger.info("Skipping the execution of 'rpm -Va'.")
             return
 
         self.logger.info("Running the 'rpm -Va' command which can take several"
@@ -159,16 +164,17 @@ class SystemInfo(object):
         utils.store_content_to_file(output_file, rpm_va)
         self.logger.info("The 'rpm -Va' output has been stored in the %s file" % output_file)
 
-    def log_modified_rpms_diff(self):
-        """Generate a log and print stdout message with modified rpms after the convert process."""
-        self._generate_rpm_va(log_filename='rpm_va_after_conversion.log')
+    def modified_rpm_files_diff(self):
+        """Get a list of modified rpm files after the conversion and compare it to the one from before the conversion.
+        """
+        self.generate_rpm_va(log_filename=POST_RPM_VA_LOG_FILENAME)
 
-        pre_rpm_va_log_path = os.path.join(logger.LOG_DIR, DEFAULT_RPM_VA_LOG_FILENAME)
+        pre_rpm_va_log_path = os.path.join(logger.LOG_DIR, PRE_RPM_VA_LOG_FILENAME)
         if not os.path.exists(pre_rpm_va_log_path):
-            self.logger.info("Skipping the comparison of the 'rpm -Va' output from before and after the conversion.")
+            self.logger.info("Skipping comparison of the 'rpm -Va' output from before and after the conversion.")
             return
         pre_rpm_va = utils.get_file_content(pre_rpm_va_log_path, True)
-        post_rpm_va_log_path = os.path.join(logger.LOG_DIR, "rpm_va_after_conversion.log")
+        post_rpm_va_log_path = os.path.join(logger.LOG_DIR, POST_RPM_VA_LOG_FILENAME)
         post_rpm_va = utils.get_file_content(post_rpm_va_log_path, True)
         modified_rpm_files_diff = "\n".join(
             difflib.unified_diff(pre_rpm_va, post_rpm_va, fromfile=pre_rpm_va_log_path, tofile=post_rpm_va_log_path,

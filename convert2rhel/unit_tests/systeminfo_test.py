@@ -114,14 +114,14 @@ class TestSysteminfo(unittest.TestCase):
             shutil.rmtree(unit_tests.TMP_DIR)
 
     @unit_tests.mock(tool_opts, "no_rpm_va", True)
-    def test_log_modified_rpms_diff_with_no_rpm_va(self):
-        self.assertEqual(system_info.log_modified_rpms_diff(), None)
+    def test_modified_rpm_files_diff_with_no_rpm_va(self):
+        self.assertEqual(system_info.modified_rpm_files_diff(), None)
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "get_file_content", GetFileContentMocked(data=[['rpm1', 'rpm2'],
                                                                            ['rpm1', 'rpm2']]))
-    def test_log_modified_rpms_diff_without_rpm_different_after_convert(self):
-        self.assertEqual(system_info.log_modified_rpms_diff(), None)
+    def test_modified_rpm_files_diff_without_differences_after_conversion(self):
+        self.assertEqual(system_info.modified_rpm_files_diff(), None)
 
     @unit_tests.mock(os.path, "exists", PathExistsMocked(True))
     @unit_tests.mock(tool_opts, "no_rpm_va", False)
@@ -131,15 +131,15 @@ class TestSysteminfo(unittest.TestCase):
         data=[['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts'],
               ['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts',
                'S.5....T.  c /etc/yum.conf']]))
-    def test_log_modified_rpms_diff_with_difference_after_convert(self):
-        system_info.log_modified_rpms_diff()
+    def test_modified_rpm_files_diff_with_differences_after_conversion(self):
+        system_info.modified_rpm_files_diff()
         self.assertTrue(any('S.5....T.  c /etc/yum.conf' in elem for elem in system_info.logger.info_msgs))
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # Check that rpm -Va is executed (default) and stored into the specific file.
-        system_info._generate_rpm_va()
+        system_info.generate_rpm_va()
 
         self.assertTrue(utils.run_subprocess.called > 0)
         self.assertEqual(utils.run_subprocess.used_args[0][0], "rpm -Va")
@@ -151,7 +151,7 @@ class TestSysteminfo(unittest.TestCase):
     def test_generate_rpm_va_skip(self):
         # Check that rpm -Va is not called when the --no-rpm-va option is used.
         tool_opts.no_rpm_va = True
-        res = system_info._generate_rpm_va()
+        res = system_info.generate_rpm_va()
 
         self.assertEqual(utils.run_subprocess.called, 0)
         self.assertFalse(os.path.exists(self.rpmva_output_file))

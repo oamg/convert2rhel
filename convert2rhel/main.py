@@ -90,7 +90,7 @@ def main():
         post_ponr_conversion()
 
         loggerinst.task("Final: rpm files modified by the conversion")
-        systeminfo.system_info.log_modified_rpms_diff()
+        systeminfo.system_info.modified_rpm_files_diff()
 
         # recommend non-interactive command
         loggerinst.task("Final: Non-interactive mode")
