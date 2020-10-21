@@ -15,7 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import ConfigParser
+try:
+    import ConfigParser as configparser
+except ImportError:
+    import configparser  # pylint: disable=import-error
 import difflib
 import os
 import re
@@ -59,8 +62,8 @@ class SystemInfo(object):
         self.cfg_content = None
         self.system_release_file_content = None
         self.logger = None
-        # ID of the default Red Hat CDN repository that corresponds to the current system
-        self.default_repository_id = None
+        # IDs of the default Red Hat CDN repositories that correspond to the current system
+        self.default_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
 
@@ -75,7 +78,7 @@ class SystemInfo(object):
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
         self.excluded_pkgs = self._get_excluded_pkgs()
-        self.default_repository_id = self._get_default_repository_id()
+        self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
 
@@ -117,7 +120,7 @@ class SystemInfo(object):
         """Read out options from within a specific section in a configuration
         file.
         """
-        cfg_parser = ConfigParser.ConfigParser()
+        cfg_parser = configparser.ConfigParser()
         cfg_filepath = os.path.join(utils.DATA_DIR, "configs",
                                     self.cfg_filename)
         if not cfg_parser.read(cfg_filepath):
@@ -127,11 +130,10 @@ class SystemInfo(object):
 
         options_list = cfg_parser.options(section_name)
         return dict(zip(options_list,
-                        map(lambda opt: cfg_parser.get(section_name, opt),
-                            options_list)))
+                        [cfg_parser.get(section_name, opt) for opt in options_list]))
 
-    def _get_default_repository_id(self):
-        return self._get_cfg_opt("default_repository_id")
+    def _get_default_rhsm_repoids(self):
+        return self._get_cfg_opt("default_rhsm_repoids").split()
 
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""

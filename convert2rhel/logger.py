@@ -29,18 +29,18 @@ from convert2rhel.toolopts import tool_opts
 import logging
 import os
 import sys
-from utils import format_msg_with_datetime
+from convert2rhel.utils import format_msg_with_datetime
 
 
 LOG_DIR = "/var/log/convert2rhel"
 
 
-class LogLevelTask:
+class LogLevelTask(object):
     level = 15
     label = "TASK"
 
 
-class LogLevelFile:
+class LogLevelFile(object):
     level = 5
     label = "FILE"
 
@@ -139,5 +139,10 @@ class CustomFormatter(logging.Formatter, object):
         else:
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
             self.datefmt = "%m/%d/%Y %H:%M:%S"
+
+        if hasattr(self, '_style'):
+            # Python 3 has _style for formatter
+            # Overwriting the style _fmt gets the result we want
+            self._style._fmt = self._fmt
 
         return super(CustomFormatter, self).format(record)

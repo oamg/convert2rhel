@@ -8,7 +8,7 @@ install_build_deps:
 
 srpm: install_build_deps
 	@echo --- Building SRPM ---
-	$(repo_root)/packaging/epel/create_epel_srpm.sh
+	$(repo_root)/packaging/create_epel_srpm.sh
 	@mv $(repo_root)/SRPMS/*.rpm $(outdir)
 	@rm -rf $(repo_root)/SRPMS/
 	@echo --- Done ---

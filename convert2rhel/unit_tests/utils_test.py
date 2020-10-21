@@ -148,3 +148,14 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+
+    def test_run_subprocess(self):
+        output, code = utils.run_subprocess("echo ahoj")
+
+        self.assertEqual(output, "ahoj\n")
+        self.assertEqual(code, 0)
+
+        output, code = utils.run_subprocess("sh -c 'exit 56'")  # a command that just returns 56
+
+        self.assertEqual(output, "")
+        self.assertEqual(code, 56)

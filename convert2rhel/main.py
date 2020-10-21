@@ -30,7 +30,7 @@ from convert2rhel import toolopts
 from convert2rhel import utils
 
 
-class ConversionPhase:
+class ConversionPhase(object):
     INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return
@@ -72,8 +72,8 @@ def main():
         redhatrelease.yum_conf.backup()
         subscription.rhn_reg_file.backup()
 
-        loggerinst.task("Prepare: Clear yum version locks")
-        pkghandler.clear_yum_versionlock()
+        loggerinst.task("Prepare: Clear YUM/DNF version locks")
+        pkghandler.clear_versionlock()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -99,17 +99,19 @@ def main():
         # restart system if required
         utils.restart_system()
 
-    except (Exception, SystemExit, KeyboardInterrupt), err:
+    except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
 
         utils.log_traceback(toolopts.tool_opts.debug)
+        no_changes_msg = "No changes were made to the system."
 
-        print("\n")
         if is_help_msg_exit(process_phase, err):
             return 0
-        elif process_phase in (ConversionPhase.INIT, ConversionPhase.POST_CLI):
-            print("No changes were made to the system.")
+        elif process_phase == ConversionPhase.INIT:
+            print(no_changes_msg)
+        elif process_phase == ConversionPhase.POST_CLI:
+            loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
@@ -118,8 +120,7 @@ def main():
             # system rollback without user intervention. If a proper rollback
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
-            print("Conversion process interrupted and manual user intervention"
-                  " will be necessary.")
+            loggerinst.warning("Conversion process interrupted and manual user intervention will be necessary.")
 
         return 1
 

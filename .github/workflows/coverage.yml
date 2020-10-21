@@ -9,17 +9,14 @@ on:
 jobs:        
   test_coverage:
     runs-on: ubuntu-latest
-    container: marceloagmelo/centos7:latest
+    container: centos:centos7
 
     steps:
     - uses: actions/checkout@v1
 
     - name: Install Requirements
       run: |
-        yum --enablerepo=extras install -y epel-release
-        yum install -y python-coverage
-        yum install -y python-pip
-        pip install nose
+        yum install -y python-coverage python-nose python-six
         
     - name: Check test coverage
       run: |

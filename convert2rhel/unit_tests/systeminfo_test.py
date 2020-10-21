@@ -151,8 +151,7 @@ class TestSysteminfo(unittest.TestCase):
     def test_generate_rpm_va_skip(self):
         # Check that rpm -Va is not called when the --no-rpm-va option is used.
         tool_opts.no_rpm_va = True
-        res = system_info.generate_rpm_va()
+        system_info.generate_rpm_va()
 
         self.assertEqual(utils.run_subprocess.called, 0)
         self.assertFalse(os.path.exists(self.rpmva_output_file))
-        self.assertFalse(res)
