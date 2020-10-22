@@ -37,12 +37,12 @@ class TestUtils(unittest.TestCase):
             self.called += 1
 
     class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self):
+        def __init__(self, output="Test output", ret_code=0):
             self.cmd = ""
             self.cmds = ""
             self.called = 0
-            self.output = "Test output"
-            self.ret_code = 0
+            self.output = output
+            self.ret_code = ret_code
 
         def __call__(self, cmd, print_cmd=True, print_output=True):
             self.cmd = cmd
@@ -159,3 +159,35 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(output, "")
         self.assertEqual(code, 56)
+
+    DOWNLOADED_RPM_NAME = "kernel-4.18.0-193.28.1.el8_2.x86_64.rpm"
+
+    YUMDOWNLOADER_OUTPUT = (
+        "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
+        "%s         2.7 MB/s | 2.8 MB     00:01\n" % DOWNLOADED_RPM_NAME
+    )
+
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(output=YUMDOWNLOADER_OUTPUT))
+    def test_download_pkg_success(self):
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual('yumdownloader --destdir="%s" kernel' % utils.TMP_DIR, utils.run_subprocess.cmd)
+        self.assertEqual(path, os.path.join(utils.TMP_DIR, self.DOWNLOADED_RPM_NAME))
+
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(ret_code=1))
+    def test_download_pkg_failed_download(self):
+        dest = "/test dir/"
+        disablerepo = "x"
+        enablerepo = "y"
+        path = utils.download_pkg("kernel", dest=dest, disablerepo=disablerepo, enablerepo=enablerepo)
+
+        self.assertEqual('yumdownloader --disablerepo=%s --enablerepo=%s --destdir="%s" kernel'
+                         % (disablerepo, enablerepo, dest),
+                         utils.run_subprocess.cmd)
+        self.assertEqual(path, None)
+
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(output="bogus", ret_code=0))
+    def test_download_pkg_incorrect_output(self):
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual(path, None)

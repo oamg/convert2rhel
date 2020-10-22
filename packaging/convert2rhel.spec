@@ -28,6 +28,8 @@ Requires:       python%{python_pkgversion}-six
 
 %if 0%{?el8} && 0%{?rhel}
 Requires:       dnf
+# dnf-utils includes yumdownloader we use
+Requires:       dnf-utils
 %endif
 
 %if 0%{?rhel} && 0%{?rhel} <= 7

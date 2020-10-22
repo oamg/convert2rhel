@@ -15,18 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from six import moves
 import datetime
 import errno
 import getpass
 import inspect
 import logging
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
 import traceback
+from six import moves
 
 
 class Color(object):
@@ -362,7 +363,10 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 
 
 def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
-    """Download the specified package."""
+    """Download an rpm using yumdownloader and return its path."""
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.debug("Downloading the %s package." % pkg)
+
     cmd = "yumdownloader"
     if disablerepo is None:
         disablerepo = []
@@ -370,16 +374,29 @@ def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
         enablerepo = []
 
     for repo in disablerepo:
-        cmd += " --disablerepo=%s " % repo
+        cmd += " --disablerepo=%s" % repo
 
     for repo in enablerepo:
-        cmd += " --enablerepo=%s " % repo
+        cmd += " --enablerepo=%s" % repo
 
-    cmd += " --destdir %s " % dest
+    cmd += ' --destdir="%s"' % dest
     cmd += " %s" % pkg
 
-    _, ret_code = run_subprocess(cmd, print_output=False)
-    return ret_code
+    output, ret_code = run_subprocess(cmd, print_output=False)
+    if ret_code != 0:
+        loggerinst.warning("Couldn't download the %s package using yumdownloader:\n%s." % (pkg, output))
+        return None
+
+    # The name of the downloaded rpm is on the last line of the output from yumdownloader
+    # The line looks like:
+    #  "vim-enhanced-8.0.1763-13.0.1.el8.x86_64.rpm     2.2 MB/s | 1.4 MB     00:00"
+    rpm_name_match = re.search(r"^.*\.rpm", output.splitlines()[-1])
+    if not rpm_name_match:
+        loggerinst.warning("Couldn't find the name of the downloaded rpm in the output of yumdownloader:\n%s" % output)
+        return None
+
+    loggerinst.debug("Successfully downloaded the %s package." % pkg)
+    return os.path.join(dest, rpm_name_match.group(0))
 
 
 class RestorableFile(object):
@@ -445,20 +462,7 @@ class RestorablePackage(object):
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(TMP_DIR):
-            loggerinst.debug("Downloading %s package." % self.name)
-            ret_code = download_pkg(self.name)
-            if ret_code != 0:
-                loggerinst.warning("Couldn't download %s package." % self.name)
-                return
-            loggerinst.debug("Successfully downloaded %s package." % self.name)
-
-            for file in os.listdir(TMP_DIR):
-                if file.startswith(self.name):
-                    self.path = os.path.join(TMP_DIR, file)
-
-            if self.path is None:
-                loggerinst.warning("Couldn't retrieve downloaded %s package."
-                                   % self.name)
+            self.path = download_pkg(self.name)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
 

@@ -24,7 +24,6 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
 from convert2rhel import pkgmanager
 from convert2rhel.toolopts import tool_opts
-import sys
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
@@ -35,9 +34,7 @@ versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disab
 
 
 class PkgWFingerprint(object):
-    """Tuple-like storage for the RPM object of a package and a fingerprint
-    with which the package was signed.
-    """
+    """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
 
     def __init__(self, pkg_obj, fingerprint):
         self.pkg_obj = pkg_obj
@@ -164,8 +161,8 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
-    """Return a list of objects, each holding one of the installed packages
-    (rpm object) and GPG key fingerprints used to sign it. The packages can be
+    """Return a list of objects, each holding one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
+    of yum and hawkey.Package in case of dnf) and GPG key fingerprints used to sign it. The packages can be
     optionally filtered by name.
     """
     package_objects = get_installed_pkg_objects(name)
@@ -222,6 +219,7 @@ def get_installed_pkg_objects(name=""):
         return _get_installed_pkg_objects_yum(name)
     return _get_installed_pkg_objects_dnf(name)
 
+
 def _get_installed_pkg_objects_yum(name):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
@@ -229,6 +227,7 @@ def _get_installed_pkg_objects_yum(name):
     if name:
         return yum_base.rpmdb.returnPackages(patterns=[name])
     return yum_base.rpmdb.returnPackages()
+
 
 def _get_installed_pkg_objects_dnf(name):
     dnf_base = pkgmanager.Base()
@@ -241,6 +240,7 @@ def _get_installed_pkg_objects_dnf(name):
         installed = installed.filter(name__glob=name)
     return list(installed)
 
+
 def get_third_party_pkgs():
     """Get all the third party packages (non-Red Hat and non-original OS
     signed) which are going to be kept untouched.
@@ -251,7 +251,8 @@ def get_third_party_pkgs():
 
 
 def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
-    """Return list of all the packages (rpm objects) that are not signed
+    """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
+    of yum and hawkey.Package objects in case of dnf) that are not signed
     by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
@@ -288,7 +289,7 @@ def print_pkg_info(pkgs):
     We print a packager instead of a vendor because the dnf python API does not provide the information about vendor
     (https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
-    max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
+    max_nvra_length = max(map(len, [get_pkg_nevra(pkg) for pkg in pkgs]))
     max_packager_length = max(max(map(len, [get_packager(pkg) for pkg in pkgs])), len("Packager"))
 
     header = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_packager_length,
@@ -304,7 +305,7 @@ def print_pkg_info(pkgs):
         except AttributeError:
             # A package may not have the installation repo set in case it was installed through rpm
             from_repo = "N/A"
-        pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
+        pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nevra(pkg),
                                         max_packager_length, get_packager(pkg), from_repo) + "\n"
 
     pkg_table = header + header_underline + pkg_list
@@ -313,11 +314,25 @@ def print_pkg_info(pkgs):
     return pkg_table
 
 
-def get_pkg_nvra(pkg_obj):
-    return "%s-%s-%s.%s" % (pkg_obj.name,
-                            pkg_obj.version,
-                            pkg_obj.release,
-                            pkg_obj.arch)
+def get_pkg_nevra(pkg_obj):
+    """Get package NEVRA as a string: name, epoch, version, release, architecture.
+
+    Epoch is included only when non-zero. However it's on a different position when printed by YUM or DNF:
+      YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
+      DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+    """
+    if pkgmanager.TYPE == 'yum':
+        return "%s%s-%s-%s.%s" % ("" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
+                                  pkg_obj.name,
+                                  pkg_obj.version,
+                                  pkg_obj.release,
+                                  pkg_obj.arch)
+    # DNF
+    return "%s-%s%s-%s.%s" % (pkg_obj.name,
+                              "" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
+                              pkg_obj.version,
+                              pkg_obj.release,
+                              pkg_obj.arch)
 
 
 def get_packager(pkg_obj):
@@ -367,7 +382,7 @@ def remove_excluded_pkgs():
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(installed_excluded_pkgs)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
+    utils.remove_pkgs([get_pkg_nevra(pkg) for pkg in installed_excluded_pkgs])
     loggerinst.debug("Successfully removed %s packages" % str(len(installed_excluded_pkgs)))
 
 
@@ -434,26 +449,28 @@ def install_rhel_kernel():
     loggerinst.info("Installing RHEL kernel ...")
     output, ret_code = call_yum_cmd(command="install", args="kernel")
 
-    # check condition - failed installation
-    if ret_code:
+    if ret_code != 0:
         loggerinst.critical("Error occured while attempting to install the"
                             " RHEL kernel")
 
-    # check condition - kernel with same version is already installed
-    already_installed = re.search(r" (.*?) already installed", output)
+    # Check if kernel with same version is already installed.
+    # Example output from yum and dnf:
+    #  "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+    #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
+    already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
     if already_installed:
-        kernel_version = already_installed.group(1)
-        kernel_obj = get_installed_pkgs_w_different_fingerprint(
-            system_info.fingerprints_rhel, kernel_version)
-        if kernel_obj:
-            # If the installed kernel is from a third party (non-RHEL) and has
-            # the same NEVRA as the one available from RHEL repos, it's
-            # necessary to install an older version RHEL kernel, because the
-            # third party one will be removed later in the conversion process.
-            loggerinst.info("\nConflict of kernels: One of the installed kernels"
-                            " has the same version as the latest RHEL kernel.")
-            handle_no_newer_rhel_kernel_available()
-            return True
+        rhel_kernel_nevra = already_installed.group(1)
+        non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
+        for non_rhel_kernel in non_rhel_kernels:
+            # We're comparing to NEVRA since that's what yum/dnf prints out
+            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
+                # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
+                # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
+                # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
+                loggerinst.info("\nConflict of kernels: One of the installed kernels"
+                                " has the same version as the latest RHEL kernel.")
+                handle_no_newer_rhel_kernel_available()
+                return True
     return False
 
 
@@ -544,7 +561,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], should_backup=False)
+        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nevra(pkg) for pkg in non_rhel_kernels], should_backup=False)
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels

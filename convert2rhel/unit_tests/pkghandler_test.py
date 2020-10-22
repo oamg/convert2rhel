@@ -117,7 +117,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def debug(self, msg):
             pass
 
-
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
@@ -125,7 +124,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertFalse(pkghandler.clear_versionlock())
         self.assertEqual(len(pkghandler.logging.getLogger.info_msgs), 1)
         self.assertEqual(pkghandler.logging.getLogger.info_msgs, ['Usage of YUM/DNF versionlock plugin not detected.'])
-
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
@@ -252,7 +250,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         hdr = PkgObjHdr()
 
     @staticmethod
-    def create_pkg_obj(name, version="", release="", arch="", packager="",
+    def create_pkg_obj(name, epoch=0, version="", release="", arch="", packager=None,
                        from_repo=""):
         class DumbObj(object):
             pass
@@ -260,20 +258,12 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         obj = TestPkgHandler.TestPkgObj()
         obj.yumdb_info = DumbObj()
         obj.name = name
-        obj.packager = None
-
-        if version:
-            obj.version = version
-            obj.v = version
-        if release:
-            obj.release = release
-            obj.r = release
-        if version and release:
-            obj.evr = version + "-" + release
-        if arch:
-            obj.arch = arch
-        if packager:
-            obj.packager = packager
+        obj.epoch = obj.e = epoch
+        obj.version = obj.v = version
+        obj.release = obj.r = release
+        obj.evr = version + "-" + release
+        obj.arch = arch
+        obj.packager = packager
         if from_repo:
             obj.yumdb_info.from_repo = from_repo
         return obj
@@ -316,9 +306,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def __call__(self, name=""):
             if name and name != "installed_pkg":
                 return []
-            pkg_obj = TestPkgHandler.create_pkg_obj("installed_pkg", "0.1",
-                                                    "1", "x86_64", 295,
-                                                    "Oracle")
+            pkg_obj = TestPkgHandler.create_pkg_obj(name="installed_pkg", version="0.1", release="1",
+                                                    arch="x86_64", packager="Oracle", from_repo="repoid")
             return [pkg_obj]
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
@@ -362,7 +351,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                    rpm.RPMTAG_VERSION: "2",
                    rpm.RPMTAG_RELEASE: "3",
                    rpm.RPMTAG_EVR: "2-3"}]
-            if key != 'name': # everything else than 'name' is unsupported ATM :)
+            if key != 'name':  # everything else than 'name' is unsupported ATM :)
                 return []
             if not value:
                 return db
@@ -372,14 +361,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
     def test_get_rpm_header(self):
-        pkg = TestPkgHandler.create_pkg_obj("pkg1", "1", "2")
+        pkg = TestPkgHandler.create_pkg_obj(name="pkg1", version="1", release="2")
         hdr = pkghandler.get_rpm_header(pkg)
         self.assertEqual(hdr, {rpm.RPMTAG_NAME: "pkg1",
                                rpm.RPMTAG_VERSION: "1",
                                rpm.RPMTAG_RELEASE: "2",
                                rpm.RPMTAG_EVR: "1-2"})
 
-        unknown_pkg = TestPkgHandler.create_pkg_obj("unknown", "1", "1")
+        unknown_pkg = TestPkgHandler.create_pkg_obj(name="unknown", version="1", release="1")
         self.assertRaises(SystemExit, pkghandler.get_rpm_header, unknown_pkg)
 
     class ReturnPackagesMocked(unit_tests.MockFunction):
@@ -489,25 +478,34 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @staticmethod
     def prepare_pkg_obj_for_print():
-        obj1 = TestPkgHandler.create_pkg_obj("pkg1", "0.1", "1", "x86_64",
-                                             "Oracle", "anaconda")
-        obj2 = TestPkgHandler.create_pkg_obj("pkg2", "0.1", "1", "x86_64")
-        obj3 = TestPkgHandler.create_pkg_obj("gpg-pubkey", "0.1", "1",
-                                             "x86_64", from_repo="test")
+        obj1 = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
+                                             arch="x86_64", packager="Oracle", from_repo="anaconda")
+        obj2 = TestPkgHandler.create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64")
+        obj3 = TestPkgHandler.create_pkg_obj(name="gpg-pubkey", version="0.1", release="1",
+                                             arch="x86_64", from_repo="test")
         return [obj1, obj2, obj3]
 
+    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
     def test_print_pkg_info(self):
-        # This test covers also get_pkg_nvra
         pkgs = TestPkgHandler.prepare_pkg_obj_for_print()
         result = pkghandler.print_pkg_info(pkgs)
         self.assertTrue(re.search(r"^Package\s+Packager\s+Repository$",
                                   result, re.MULTILINE))
         self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
                                   result, re.MULTILINE))
-        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$",
+        self.assertTrue(re.search(r"^pkg2-1:0\.1-1\.x86_64\s+N/A\s+N/A$",
                                   result, re.MULTILINE))
         self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
                                   result, re.MULTILINE))
+
+    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
+    def test_get_pkg_nevra(self):
+        obj = TestPkgHandler.create_pkg_obj(name="pkg", epoch=1, version="2", release="3", arch="x86_64")
+        # The DNF style is the default
+        self.assertEqual(pkghandler.get_pkg_nevra(obj), "pkg-1:2-3.x86_64")
+
+        pkgmanager.TYPE = "yum"
+        self.assertEqual(pkghandler.get_pkg_nevra(obj), "1:pkg-2-3.x86_64")
 
     @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_fingerprints",
@@ -603,27 +601,29 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 utils.run_subprocess.cmds)
 
     class GetInstalledPkgsWDifferentFingerprintMocked(
-        unit_tests.MockFunction):
+            unit_tests.MockFunction):
         def __init__(self):
             self.is_only_rhel_kernel_installed = False
+            self.called = 0
 
         def __call__(self, *args, **kwargs):
+            self.called += 1
             if self.is_only_rhel_kernel_installed:
                 return []  # No third-party kernel
             else:
                 return [
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel", "0.1", "1", "x86_64", 295, "Oracle"),
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel-uek", "0.1", "1", "x86_64", 295, "Oracle"),
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel-headers", "0.1", "1", "x86_64", 295, "Oracle"),
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel-uek-headers", "0.1", "1", "x86_64", 295, "Oracle"),
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel-firmware", "0.1", "1", "x86_64", 295, "Oracle"),
-                    TestPkgHandler.create_pkg_obj(
-                        "kernel-uek-firmware", "0.1", "1", "x86_64", 295, "Oracle")
+                    TestPkgHandler.create_pkg_obj(name="kernel", version="3.10.0", release="1127.19.1.el7",
+                                                  arch="x86_64", packager="Oracle"),
+                    TestPkgHandler.create_pkg_obj(name="kernel-uek", version="0.1", release="1",
+                                                  arch="x86_64", packager="Oracle", from_repo="repoid"),
+                    TestPkgHandler.create_pkg_obj(name="kernel-headers", version="0.1", release="1",
+                                                  arch="x86_64", packager="Oracle", from_repo="repoid"),
+                    TestPkgHandler.create_pkg_obj(name="kernel-uek-headers", version="0.1", release="1",
+                                                  arch="x86_64", packager="Oracle", from_repo="repoid"),
+                    TestPkgHandler.create_pkg_obj(name="kernel-firmware", version="0.1", release="1",
+                                                  arch="x86_64", packager="Oracle", from_repo="repoid"),
+                    TestPkgHandler.create_pkg_obj(name="kernel-uek-firmware", version="0.1", release="1",
+                                                  arch="x86_64", packager="Oracle", from_repo="repoid")
                 ]
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -632,12 +632,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
                      GetInstalledPkgsWDifferentFingerprintMocked())
     def test_install_rhel_kernel(self):
-        # 1st scenario: kernels collide; the installed one is already RHEL
-        # kernel = no action.
-        utils.run_subprocess.output = "Package kernel-4.7.4-200.fc24" \
-                                      " already installed, skipping."
-        pkghandler.get_installed_pkgs_w_different_fingerprint \
-            .is_only_rhel_kernel_installed = True
+        # 1st scenario: kernels collide; the installed one is already a RHEL kernel = no action.
+        utils.run_subprocess.output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
+        pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = True
 
         update_kernel = pkghandler.install_rhel_kernel()
 
@@ -645,8 +642,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         # 2nd scenario: kernels collide; the installed one is from third party
         # = older-version RHEL kernel is to be installed.
-        pkghandler.get_installed_pkgs_w_different_fingerprint \
-            .is_only_rhel_kernel_installed = False
+        pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = False
 
         update_kernel = pkghandler.install_rhel_kernel()
 
@@ -658,6 +654,24 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         update_kernel = pkghandler.install_rhel_kernel()
 
         self.assertFalse(update_kernel)
+
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
+                     GetInstalledPkgsWDifferentFingerprintMocked())
+    def test_install_rhel_kernel_already_installed_regexp(self):
+        # RHEL 6 and 7
+        utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+
+        pkghandler.install_rhel_kernel()
+
+        self.assertEqual(pkghandler.get_installed_pkgs_w_different_fingerprint.called, 1)
+
+        # RHEL 8
+        utils.run_subprocess.output = "Package kernel-4.18.0-193.el8.x86_64 is already installed."
+
+        pkghandler.install_rhel_kernel()
+
+        self.assertEqual(pkghandler.get_installed_pkgs_w_different_fingerprint.called, 2)
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_get_kernel_availability(self):

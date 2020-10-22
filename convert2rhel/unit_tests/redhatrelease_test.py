@@ -30,7 +30,7 @@ except ImportError:
 
 class TestRedHatRelease(unittest.TestCase):
 
-    supported_rhel_versions = ["5", "6", "7"]
+    supported_rhel_versions = ["6", "7", "8"]
 
     class DumbMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -94,10 +94,8 @@ class TestRedHatRelease(unittest.TestCase):
             # Call just this function to avoid unmockable built-in write func
             yum_conf._insert_distroverpkg_tag()
 
-            self.assertTrue("\ndistroverpkg=redhat-release" in
-                            yum_conf._yum_conf_content)
-            self.assertEqual(yum_conf._yum_conf_content.count(
-                                "\ndistroverpkg="), 1)
+            self.assertTrue("\ndistroverpkg=redhat-release" in yum_conf._yum_conf_content)
+            self.assertEqual(yum_conf._yum_conf_content.count("\ndistroverpkg="), 1)
 
 
 YUM_CONF_WITHOUT_DISTROVERPKG = """[main]
