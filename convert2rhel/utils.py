@@ -440,10 +440,12 @@ class RestorablePackage(object):
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(TMP_DIR):
+            loggerinst.debug("Downloading %s package." % self.name)
             ret_code = download_pkg(self.name)
             if ret_code != 0:
                 loggerinst.warning("Couldn't download %s package." % self.name)
                 return
+            loggerinst.debug("Successfully downloaded %s package." % self.name)
 
             for file in os.listdir(TMP_DIR):
                 if file.startswith(self.name):

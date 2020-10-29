@@ -368,6 +368,7 @@ def remove_excluded_pkgs():
     print_pkg_info(installed_excluded_pkgs)
     utils.ask_to_continue()
     utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
+    loggerinst.debug("Successfully removed %s packages" % str(len(installed_excluded_pkgs)))
 
 
 def replace_non_red_hat_packages():
@@ -515,12 +516,14 @@ def replace_non_rhel_installed_kernel(version):
 
     pkg = "kernel-%s" % version
 
+    loggerinst.debug("Downloading %s package." % pkg)
     ret_code = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
         enablerepo=tool_opts.enablerepo)
     if ret_code != 0:
-        loggerinst.critical("Unable to download %s from RHEL repository" % pkg)
+        loggerinst.critical("Unable to download %s from RHEL repository." % pkg)
         return
+    loggerinst.debug("Successfully downloaded %s package." % pkg)
 
     loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
