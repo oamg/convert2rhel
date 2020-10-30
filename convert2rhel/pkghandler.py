@@ -179,7 +179,7 @@ def get_pkg_fingerprint(pkg_obj):
     loggerinst = logging.getLogger(__name__)
     if pkgmanager.TYPE == 'yum':
         hdr = pkg_obj.hdr
-    else:
+    elif pkgmanager.TYPE == 'dnf':
         hdr = get_rpm_header(pkg_obj)
 
     pkg_sig = hdr.sprintf(
@@ -217,7 +217,8 @@ def get_installed_pkg_objects(name=""):
     """
     if pkgmanager.TYPE == 'yum':
         return _get_installed_pkg_objects_yum(name)
-    return _get_installed_pkg_objects_dnf(name)
+    elif pkgmanager.TYPE == 'dnf':
+        return _get_installed_pkg_objects_dnf(name)
 
 
 def _get_installed_pkg_objects_yum(name):
@@ -327,12 +328,12 @@ def get_pkg_nevra(pkg_obj):
                                   pkg_obj.version,
                                   pkg_obj.release,
                                   pkg_obj.arch)
-    # DNF
-    return "%s-%s%s-%s.%s" % (pkg_obj.name,
-                              "" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
-                              pkg_obj.version,
-                              pkg_obj.release,
-                              pkg_obj.arch)
+    elif pkgmanager.TYPE == 'dnf':
+        return "%s-%s%s-%s.%s" % (pkg_obj.name,
+                                  "" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
+                                  pkg_obj.version,
+                                  pkg_obj.release,
+                                  pkg_obj.arch)
 
 
 def get_packager(pkg_obj):
