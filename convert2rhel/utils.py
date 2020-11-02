@@ -21,6 +21,7 @@ import getpass
 import inspect
 import logging
 import os
+import pexpect
 import re
 import shlex
 import shutil
@@ -117,13 +118,11 @@ def restart_system():
                            " restart of the system is needed.")
 
 
-def run_subprocess(cmd="", **kwargs):
-    """Call the passed command and optionally log the called command and its
-    output. Swiching off printing the command can be useful in case it contains
+def run_subprocess(cmd="", print_cmd=True, print_output=True):
+    """Call the passed command and optionally log the called command (print_cmd=True) and its
+    output (print_output=True). Switching off printing the command can be useful in case it contains
     a password in plain text.
     """
-    print_cmd = kwargs.get('print_cmd', True)
-    print_output = kwargs.get('print_output', True)
     loggerinst = logging.getLogger(__name__)
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
@@ -137,7 +136,7 @@ def run_subprocess(cmd="", **kwargs):
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                bufsize=1,
-                               env={'LC_ALL':'C'})
+                               env={'LC_ALL': 'C'})
     output = ''
     for line in iter(process.stdout.readline, b''):
         output += line.decode()
@@ -149,6 +148,44 @@ def run_subprocess(cmd="", **kwargs):
     process.communicate()
 
     return_code = process.poll()
+    return output, return_code
+
+
+def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
+    """Similar to run_subprocess(), but the command is executed in a pseudo-terminal.
+
+    The pseudo-terminal can be useful when a command prints out a different output with or without an active terminal
+    session. E.g. yumdownloader does not print the name of the downloaded rpm if not executed from a terminal.
+    Switching off printing the command can be useful in case it contains a password in plain text.
+
+    :param cmd: The command to execute, including the options, e.g. "ls -al"
+    :type cmd: string
+    :param print_cmd: Log the command (to both logfile and stdout)
+    :type print_cmd: bool
+    :param print_output: Log the combined stdout and stderr of the executed command (to both logfile and stdout)
+    :type print_output: bool
+    :param columns: Number of columns of the pseudo-terminal (characters on a line). This may influence the output.
+    :type columns: int
+    :return: The output (combined stdout and stderr) and the return code of the executed command
+    :rtype: tuple
+    """
+    loggerinst = logging.getLogger(__name__)
+
+    process = pexpect.spawn(cmd, env={'LC_ALL': 'C'}, timeout=None)
+    if print_cmd:
+        # This debug print somehow needs to be called after(!) the pexpect.spawn(), otherwise the setwinsize()
+        # wouldn't have any effect. Weird.
+        loggerinst.debug("Calling command '%s'" % cmd)
+
+    process.setwinsize(0, columns)
+    process.expect(pexpect.EOF)
+    output = process.before.decode()
+    if print_output:
+        loggerinst.info(output.rstrip('\n'))
+
+    process.close()  # Per the pexpect API, this is necessary in order to get the return code
+    return_code = process.exitstatus
+
     return output, return_code
 
 
@@ -363,11 +400,12 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 
 
 def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
-    """Download an rpm using yumdownloader and return its path."""
+    """Download an rpm using yumdownloader and return its filepath. If not successful, return None."""
     loggerinst = logging.getLogger(__name__)
     loggerinst.debug("Downloading the %s package." % pkg)
 
-    cmd = "yumdownloader"
+    # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
+    cmd = "yumdownloader -v"
     if disablerepo is None:
         disablerepo = []
     if enablerepo is None:
@@ -382,21 +420,48 @@ def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
     cmd += ' --destdir="%s"' % dest
     cmd += " %s" % pkg
 
-    output, ret_code = run_subprocess(cmd, print_output=False)
+    output, ret_code = run_cmd_in_pty(cmd)
     if ret_code != 0:
         loggerinst.warning("Couldn't download the %s package using yumdownloader:\n%s." % (pkg, output))
         return None
 
-    # The name of the downloaded rpm is on the last line of the output from yumdownloader
-    # The line looks like:
-    #  "vim-enhanced-8.0.1763-13.0.1.el8.x86_64.rpm     2.2 MB/s | 1.4 MB     00:00"
-    rpm_name_match = re.search(r"^.*\.rpm", output.splitlines()[-1])
-    if not rpm_name_match:
-        loggerinst.warning("Couldn't find the name of the downloaded rpm in the output of yumdownloader:\n%s" % output)
+    path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
+    if path:
+        loggerinst.info("Successfully downloaded the %s package." % pkg)
+        loggerinst.debug("Path of the downloaded package: %s" % path)
+
+    return path
+
+
+def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
+    """Parse the output of yumdownloader to get the filepath of the downloaded rpm.
+
+    The name of the downloaded rpm is on the last line of the output from yumdownloader. The line can look like:
+      RHEL 6 & 7 & 8: "vim-enhanced-8.0.1763-13.0.1.el8.x86_64.rpm     2.2 MB/s | 1.4 MB     00:00"
+      RHEL 6: "/var/lib/convert2rhel/yum-plugin-ulninfo-0.2-13.el6.noarch.rpm already exists and appears to be complete"
+      RHEL 7: "using local copy of 7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
+      RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
+    """
+    loggerinst = logging.getLogger(__name__)
+    if output:
+        last_output_line = output.splitlines()[-1]
+    else:
+        loggerinst.warning("The output of running yumdownloader is unexpectedly empty. Command:\n%s" % cmd)
         return None
 
-    loggerinst.debug("Successfully downloaded the %s package." % pkg)
-    return os.path.join(dest, rpm_name_match.group(0))
+    rpm_name_match = re.search(r"\S*\.rpm", last_output_line)
+    pkg_nevra_match = re.search(r"^using local copy of (?:\d+:)?(.*)$", last_output_line)
+
+    if rpm_name_match:
+        path = os.path.join(dest, rpm_name_match.group(0))
+    elif pkg_nevra_match:
+        path = os.path.join(dest, pkg_nevra_match.group(1) + ".rpm")
+    else:
+        loggerinst.warning("Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
+                           "Command:\n%sOutput:\n%s" % (cmd, output))
+        return None
+
+    return path
 
 
 class RestorableFile(object):

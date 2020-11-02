@@ -290,7 +290,7 @@ def print_pkg_info(pkgs):
     We print a packager instead of a vendor because the dnf python API does not provide the information about vendor
     (https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
-    max_nvra_length = max(map(len, [get_pkg_nevra(pkg) for pkg in pkgs]))
+    max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
     max_packager_length = max(max(map(len, [get_packager(pkg) for pkg in pkgs])), len("Packager"))
 
     header = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_packager_length,
@@ -306,13 +306,24 @@ def print_pkg_info(pkgs):
         except AttributeError:
             # A package may not have the installation repo set in case it was installed through rpm
             from_repo = "N/A"
-        pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nevra(pkg),
+        pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
                                         max_packager_length, get_packager(pkg), from_repo) + "\n"
 
     pkg_table = header + header_underline + pkg_list
     loggerinst = logging.getLogger(__name__)
     loggerinst.info(pkg_table)
     return pkg_table
+
+
+def get_pkg_nvra(pkg_obj):
+    """Get package NVRA as a string: name, version, release, architecture.
+
+    Some utilities don't accept the full NEVRA of a package, for example rpm.
+    """
+    return "%s-%s-%s.%s" % (pkg_obj.name,
+                            pkg_obj.version,
+                            pkg_obj.release,
+                            pkg_obj.arch)
 
 
 def get_pkg_nevra(pkg_obj):
@@ -323,14 +334,14 @@ def get_pkg_nevra(pkg_obj):
       DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
     """
     if pkgmanager.TYPE == 'yum':
-        return "%s%s-%s-%s.%s" % ("" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
+        return "%s%s-%s-%s.%s" % ("" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
                                   pkg_obj.name,
                                   pkg_obj.version,
                                   pkg_obj.release,
                                   pkg_obj.arch)
     elif pkgmanager.TYPE == 'dnf':
         return "%s-%s%s-%s.%s" % (pkg_obj.name,
-                                  "" if pkg_obj.epoch == 0 else str(pkg_obj.epoch) + ":",
+                                  "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
                                   pkg_obj.version,
                                   pkg_obj.release,
                                   pkg_obj.arch)
@@ -383,7 +394,7 @@ def remove_excluded_pkgs():
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(installed_excluded_pkgs)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nevra(pkg) for pkg in installed_excluded_pkgs])
+    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
     loggerinst.debug("Successfully removed %s packages" % str(len(installed_excluded_pkgs)))
 
 
@@ -534,14 +545,11 @@ def replace_non_rhel_installed_kernel(version):
 
     pkg = "kernel-%s" % version
 
-    loggerinst.debug("Downloading %s package." % pkg)
     ret_code = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
         enablerepo=tool_opts.enablerepo)
     if ret_code != 0:
-        loggerinst.critical("Unable to download %s from RHEL repository." % pkg)
         return
-    loggerinst.debug("Successfully downloaded %s package." % pkg)
 
     loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
@@ -562,7 +570,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nevra(pkg) for pkg in non_rhel_kernels], should_backup=False)
+        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], should_backup=False)
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels

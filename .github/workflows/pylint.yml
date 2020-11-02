@@ -33,7 +33,7 @@ jobs:
 
     - name: Install Requirements
       run: |
-        yum install -y python-six
+        yum install -y python-six pexpect
         curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
         python get-pip.py
         pip install pylint==1.1.0
@@ -52,7 +52,7 @@ jobs:
     - name: Install Requirements
       run: |
         yum --enablerepo=extras install -y epel-release  # to get pylint
-        yum install -y python-six pylint
+        yum install -y python-six pylint pexpect
 
     - name: Run Pylint Checks
       run: ${{ env.interpreted_pylint }}
@@ -67,7 +67,7 @@ jobs:
     - name: Install Requirements
       run: |
         yum --enablerepo=extras install -y epel-release  # to get pylint
-        yum install -y pylint
+        yum install -y pylint python3-pexpect
         
     - name: Run Pylint Checks
       run: ${{ env.interpreted_pylint }}

@@ -485,7 +485,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                              arch="x86_64", from_repo="test")
         return [obj1, obj2, obj3]
 
-    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
     def test_print_pkg_info(self):
         pkgs = TestPkgHandler.prepare_pkg_obj_for_print()
         result = pkghandler.print_pkg_info(pkgs)
@@ -493,7 +492,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                   result, re.MULTILINE))
         self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
                                   result, re.MULTILINE))
-        self.assertTrue(re.search(r"^pkg2-1:0\.1-1\.x86_64\s+N/A\s+N/A$",
+        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$",
                                   result, re.MULTILINE))
         self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
                                   result, re.MULTILINE))
