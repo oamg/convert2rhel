@@ -145,21 +145,6 @@ class TestSubscription(unittest.TestCase):
     def setUp(self):
         tool_opts.__init__()
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
-    def test_rhn_classic_does_not_exist(self):
-        subscription.unregister_from_rhn_classic()
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
-
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(subscription.rhn_reg_file, "remove", RemoveFileMocked())
-    def test_rhn_classic_does_exist(self):
-        subscription.unregister_from_rhn_classic()
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
-        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
-
     def test_get_registration_cmd(self):
         tool_opts.username = 'user'
         tool_opts.password = 'pass with space'

@@ -25,21 +25,6 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import utils
 
-_RHN_REGISTRATION_FILE = "/etc/sysconfig/rhn/systemid"
-rhn_reg_file = utils.RestorableFile(_RHN_REGISTRATION_FILE)  # pylint: disable=C0103
-
-
-def unregister_from_rhn_classic():
-    loggerinst = logging.getLogger(__name__)
-    if os.path.isfile(_RHN_REGISTRATION_FILE):
-        loggerinst.warning("The use of RHN Classic is not allowed during the conversion.\n"
-                           "The convert2rhel is going to unregister from RHN Classic.\n"
-                           "See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/unregister-rhn for details.")
-        utils.ask_to_continue()
-        rhn_reg_file.remove()
-    else:
-        loggerinst.info("RHN Classic not detected.")
-
 
 def subscribe_system():
     """Register and attach a specific subscription to OS."""

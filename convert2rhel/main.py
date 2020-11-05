@@ -70,7 +70,6 @@ def main():
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
         redhatrelease.yum_conf.backup()
-        subscription.rhn_reg_file.backup()
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")
         pkghandler.clear_versionlock()
@@ -153,10 +152,6 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
 
-    # checking RHN Classic
-    loggerinst.task("Checking RHN Classic")
-    subscription.unregister_from_rhn_classic()
-
     # install redhat release package
     loggerinst.task("Convert: Install Red Hat release package")
     redhatrelease.install_release_pkg()
@@ -218,7 +213,6 @@ def rollback_changes():
     subscription.rollback()
     utils.changed_pkgs_control.restore_pkgs()
     redhatrelease.system_release_file.restore()
-    subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
     pkghandler.versionlock_file.restore()
 
