@@ -126,6 +126,11 @@ def run_subprocess(cmd="", **kwargs):
     loggerinst = logging.getLogger(__name__)
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
+
+    # Python 2.6 has a bug in shlex that interprets certain characters in a string as 
+    # a NULL character. This is a workaround that encodes the string to avoid the issue.
+    if sys.version_info[0] == 2 and sys.version_info[1] == 6:
+        cmd = cmd.encode("ascii")
     cmd = shlex.split(cmd, False)
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE,
