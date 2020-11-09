@@ -222,6 +222,7 @@ def get_installed_pkg_objects(name=""):
         return _get_installed_pkg_objects_dnf(name)
 
 
+
 def _get_installed_pkg_objects_yum(name):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
@@ -676,3 +677,15 @@ def clear_versionlock():
         call_yum_cmd("versionlock clear", print_output=False)
     else:
         loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
+
+
+def has_duplicate_repos_across_disablerepo_enablerepo_options():
+    loggerinst = logging.getLogger(__name__)
+
+    duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
+    if duplicate_repos:
+        message = "Duplicate repositories was found across disablerepo and enablerepo options:"
+        for repo in duplicate_repos:
+            message += "\n%s" % repo
+        message += "\nThis ambiguity may have unintended consequences."
+        loggerinst.warning(message)
