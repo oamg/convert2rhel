@@ -36,6 +36,7 @@ Requires:       python%{python_pkgversion}-six
 Requires:       dnf
 # dnf-utils includes yumdownloader we use
 Requires:       dnf-utils
+Requires:       grubby
 Requires:       python3-pexpect
 %endif
 %if 0%{?rhel} && 0%{?rhel} <= 7

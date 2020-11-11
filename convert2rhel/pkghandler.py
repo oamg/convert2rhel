@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import glob
 import logging
 import os
 import re
@@ -422,25 +423,6 @@ def replace_non_red_hat_packages():
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 
 
-def preserve_only_rhel_kernel():
-    loggerinst = logging.getLogger(__name__)
-    needs_update = install_rhel_kernel()
-
-    loggerinst.info("Verifying that RHEL kernel has been installed")
-    if not is_rhel_kernel_installed():
-        loggerinst.critical(
-            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
-    else:
-        loggerinst.info("RHEL kernel has been installed.")
-
-    non_rhel_kernel_pkgs = remove_non_rhel_kernels()
-    if non_rhel_kernel_pkgs:
-        install_additional_rhel_kernel_pkgs(non_rhel_kernel_pkgs)
-    if needs_update:
-        loggerinst.info("Updating RHEL kernel.")
-        call_yum_cmd(command="update", args="kernel")
-
-
 def install_gpg_keys():
     loggerinst = logging.getLogger(__name__)
     gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
@@ -451,6 +433,19 @@ def install_gpg_keys():
             print_output=False)
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
+
+
+def preserve_only_rhel_kernel():
+    kernel_update_needed = install_rhel_kernel()
+    verify_rhel_kernel_installed()
+
+    kernel_pkgs_to_install = remove_non_rhel_kernels()
+    fix_invalid_grub2_entries()
+
+    if kernel_pkgs_to_install:
+        install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
+    if kernel_update_needed:
+        update_rhel_kernel()
 
 
 def install_rhel_kernel():
@@ -562,6 +557,21 @@ def replace_non_rhel_installed_kernel(version):
     loggerinst.info("\nRHEL %s installed.\n" % pkg)
 
 
+def verify_rhel_kernel_installed():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Verifying that RHEL kernel has been installed")
+    if not is_rhel_kernel_installed():
+        loggerinst.critical(
+            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
+    else:
+        loggerinst.info("RHEL kernel has been installed.")
+
+
+def is_rhel_kernel_installed():
+    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
+    return len(installed_rhel_kernels) > 0
+
+
 def remove_non_rhel_kernels():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Searching for non-RHEL kernels ...")
@@ -576,7 +586,52 @@ def remove_non_rhel_kernels():
     return non_rhel_kernels
 
 
+def fix_invalid_grub2_entries():
+    """
+    On systems derived from RHEL 8 and later, /etc/machine-id is being used to identify grub2 boot loader entries per
+    the Boot Loader Specification.
+
+    However, at the time of executing convert2rhel, the current machine-id can be different from the machine-id from the
+    time when the kernels were installed. If that happens:
+    - convert2rhel installs the RHEL kernel, but it's not set as default
+    - convert2rhel removes the original OS kernels, but for these the boot entries are not removed
+
+    The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
+    OS kernels, and setting the RHEL kernel as default.
+    """
+    if int(system_info.version) < 8 or system_info.arch == "s390x":
+        # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
+        return
+
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Fixing GRUB boot loader entries.")
+
+    machine_id = utils.get_file_content("/etc/machine-id")
+    boot_entries = glob.glob("/boot/loader/entries/*.conf")
+    for entry in boot_entries:
+        # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
+        if machine_id.strip() not in os.path.basename(entry):
+            loggerinst.debug("Removing boot entry %s" % entry)
+            os.remove(entry)
+
+    # Removing a boot entry that used to be the default makes grubby to choose a different entry as default, but we will
+    # call grub --set-default to set the new default on all the proper places, e.g. for grub2-editenv
+    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --default-kernel", print_output=False)
+    if ret_code:
+        # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
+        # pick one entry in any case.
+        loggerinst.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
+        return
+    loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
+    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --set-default %s" % output.strip())
+    if ret_code:
+        loggerinst.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
+
+
 def install_additional_rhel_kernel_pkgs(additional_pkgs):
+    """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
+    tries to install back all of these from RHEL repositories.
+    """
     loggerinst = logging.getLogger(__name__)
     # OL renames some of the kernel packages by adding "-uek" (Unbreakable
     # Enterprise Kernel), e.g. kernel-uek-devel instead of kernel-devel. Such
@@ -590,9 +645,14 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
             call_yum_cmd("install %s" % name)
 
 
-def is_rhel_kernel_installed():
-    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
-    return len(installed_rhel_kernels) > 0
+def update_rhel_kernel():
+    """In the corner case where the original system kernel version is the same as the latest available RHEL kernel,
+    convert2rhel needs to install older RHEL kernel version first. In this function, RHEL kernel is updated to the
+    latest available version.
+    """
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Updating RHEL kernel.")
+    call_yum_cmd(command="update", args="kernel")
 
 
 def clear_versionlock():

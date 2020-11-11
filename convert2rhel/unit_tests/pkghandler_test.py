@@ -83,7 +83,11 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             return self.is_file
 
     class DumbCallableObject(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+
         def __call__(self, *args, **kwargs):
+            self.called += 1
             return
 
     class SysExitCallableObject(unit_tests.MockFunction):
@@ -334,9 +338,11 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     class LogMocked(unit_tests.MockFunction):
         def __init__(self):
             self.msg = ""
+            self.called = 0
 
         def __call__(self, msg):
             self.msg += "%s\n" % msg
+            self.called += 1
 
     class TransactionSetMocked(unit_tests.MockFunction):
         def __call__(self):
@@ -555,21 +561,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
                         output)
 
-    class InstallRhelKernelMocked(unit_tests.MockFunction):
-
-        def __call__(self):
-            return True
-
-    class IsRHELKernelInstalledMocked(unit_tests.MockFunction):
-        def __call__(self):
-            return False
-
-    @unit_tests.mock(pkghandler, "install_rhel_kernel", InstallRhelKernelMocked())
-    @unit_tests.mock(pkghandler, "is_rhel_kernel_installed", IsRHELKernelInstalledMocked())
-    def test_preserve_only_rhel_kernel_rhel_not_installed(self):
-        self.assertRaises(SystemExit, pkghandler.preserve_only_rhel_kernel)
-
-    @unit_tests.mock(pkghandler, "install_rhel_kernel", InstallRhelKernelMocked())
+    @unit_tests.mock(pkghandler, "install_rhel_kernel", lambda: True)
+    @unit_tests.mock(pkghandler, "fix_invalid_grub2_entries", lambda: None)
     @unit_tests.mock(pkghandler, "remove_non_rhel_kernels", DumbCallableObject())
     @unit_tests.mock(pkghandler, "install_gpg_keys", DumbCallableObject())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -761,6 +754,22 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(kernel_version, ["4.7.4-200.fc24", "4.7.4-200.fc24"])
 
+    @unit_tests.mock(pkghandler, "is_rhel_kernel_installed", lambda: True)
+    def test_verify_rhel_kernel_installed(self):
+        pkghandler.verify_rhel_kernel_installed()
+
+    @unit_tests.mock(pkghandler, "is_rhel_kernel_installed", lambda: False)
+    def test_verify_rhel_kernel_installed_not_installed(self):
+        self.assertRaises(SystemExit, pkghandler.verify_rhel_kernel_installed)
+
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, name: [])
+    def test_is_rhel_kernel_installed_no(self):
+        self.assertFalse(pkghandler.is_rhel_kernel_installed())
+
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, name: ["kernel"])
+    def test_is_rhel_kernel_installed_yes(self):
+        self.assertTrue(pkghandler.is_rhel_kernel_installed())
+
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
                      GetInstalledPkgsWDifferentFingerprintMocked())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
@@ -775,6 +784,37 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                                           "kernel-uek-headers",
                                                           "kernel-firmware",
                                                           "kernel-uek-firmware"])
+
+    @unit_tests.mock(system_info, "version", "7")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
+    def test_fix_invalid_grub2_entries_not_applicable(self):
+        pkghandler.fix_invalid_grub2_entries()
+        self.assertFalse(logger.CustomLogger.info.called)
+
+        system_info.version = "8"
+        system_info.arch = "s390x"
+        pkghandler.fix_invalid_grub2_entries()
+        self.assertFalse(logger.CustomLogger.info.called)
+
+    @unit_tests.mock(system_info, "version", "8")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(utils, "get_file_content", lambda x: "1b11755afe1341d7a86383ca4944c324\n")
+    @unit_tests.mock(glob, "glob", lambda x: [
+        "/boot/loader/entries/1b11755afe1341d7a86383ca4944c324-0-rescue.conf",
+        "/boot/loader/entries/1b11755afe1341d7a86383ca4944c324-4.18.0-193.28.1.el8_2.x86_64.conf",
+        "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-0-rescue.conf",
+        "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-4.18.0-193.el8.x86_64.conf",
+        "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-5.4.17-2011.7.4.el8uek.x86_64.conf"
+    ])
+    @unit_tests.mock(os, "remove", DumbCallableObject())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_fix_invalid_grub2_entries(self):
+        pkghandler.fix_invalid_grub2_entries()
+
+        self.assertEqual(os.remove.called, 3)
+        self.assertEqual(utils.run_subprocess.called, 2)
+
 
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
                      GetInstalledPkgsWDifferentFingerprintMocked())
