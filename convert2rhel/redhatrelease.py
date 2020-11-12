@@ -22,6 +22,7 @@ from re import sub
 
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
+from convert2rhel.systeminfo import system_info
 
 
 def install_release_pkg():
@@ -51,10 +52,15 @@ def install_release_pkg():
 
 
 def get_release_pkg_name():
-    """Starting with RHEL 6 the release package name follows this schema: redhat-release-<lowercase variant>, e.g.
+    """For RHEL 6 and 7 the release package name follows this schema: redhat-release-<lowercase variant>, e.g.
     redhat-release-server.
+
+    For RHEL 8, the name is just redhat-release.
     """
-    return "redhat-release-" + tool_opts.variant.lower()
+    if system_info.version in ["6", "7"]:
+        return "redhat-release-" + tool_opts.variant.lower()
+    elif system_info.version == "8":
+        return "redhat-release"
 
 
 def get_system_release_filepath():

@@ -19,21 +19,31 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 BuildRequires:  python%{python_pkgversion}-devel
-BuildRequires:  python%{python_pkgversion}-six
 BuildRequires:  python%{python_pkgversion}-setuptools
+BuildRequires:  python%{python_pkgversion}-six
+%if 0%{?rhel} && 0%{?el8}
+BuildRequires:  python3-pexpect
+%endif
+%if 0%{?rhel} && 0%{?rhel} <= 7
+BuildRequires:  pexpect
+%endif
+
 Requires:       rpm
 Requires:       python%{python_pkgversion}
 Requires:       python%{python_pkgversion}-setuptools
 Requires:       python%{python_pkgversion}-six
-
-%if 0%{?el8} && 0%{?rhel}
+%if 0%{?rhel} && 0%{?el8}
 Requires:       dnf
+# dnf-utils includes yumdownloader we use
+Requires:       dnf-utils
+Requires:       grubby
+Requires:       python3-pexpect
 %endif
-
 %if 0%{?rhel} && 0%{?rhel} <= 7
 Requires:       yum
 # yum-utils includes yumdownloader we use
 Requires:       yum-utils
+Requires:       pexpect
 %endif
 
 ### subscription-manager dependencies ###

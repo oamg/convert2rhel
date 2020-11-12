@@ -9,4 +9,4 @@ prepare:
     script:
     # We can't use a simple `command -v dnf` test because the testing farm executes `ln -fs $(which yum) /usr/bin/dnf`
     #  on the epel-8 target.
-    - if [ -e "/usr/bin/dnf-3" ]; then dnf install -y python3-nose; else yum install -y python-nose; fi
+    - if [ -e "/usr/bin/dnf-3" ]; then dnf install -y python3-nose python3-pexpect; else yum install -y python-nose pexpect; fi

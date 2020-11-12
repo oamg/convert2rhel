@@ -16,7 +16,7 @@ jobs:
 
     - name: Install Requirements
       run: |
-        yum install -y python-coverage python-nose python-six
+        yum install -y python-coverage python-nose python-six pexpect
         
     - name: Check test coverage
       run: |

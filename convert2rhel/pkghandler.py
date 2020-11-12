@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import glob
 import logging
 import os
 import re
@@ -24,7 +25,6 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
 from convert2rhel import pkgmanager
 from convert2rhel.toolopts import tool_opts
-import sys
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
@@ -35,9 +35,7 @@ versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disab
 
 
 class PkgWFingerprint(object):
-    """Tuple-like storage for the RPM object of a package and a fingerprint
-    with which the package was signed.
-    """
+    """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
 
     def __init__(self, pkg_obj, fingerprint):
         self.pkg_obj = pkg_obj
@@ -164,8 +162,8 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
-    """Return a list of objects, each holding one of the installed packages
-    (rpm object) and GPG key fingerprints used to sign it. The packages can be
+    """Return a list of objects, each holding one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
+    of yum and hawkey.Package in case of dnf) and GPG key fingerprints used to sign it. The packages can be
     optionally filtered by name.
     """
     package_objects = get_installed_pkg_objects(name)
@@ -182,7 +180,7 @@ def get_pkg_fingerprint(pkg_obj):
     loggerinst = logging.getLogger(__name__)
     if pkgmanager.TYPE == 'yum':
         hdr = pkg_obj.hdr
-    else:
+    elif pkgmanager.TYPE == 'dnf':
         hdr = get_rpm_header(pkg_obj)
 
     pkg_sig = hdr.sprintf(
@@ -220,7 +218,9 @@ def get_installed_pkg_objects(name=""):
     """
     if pkgmanager.TYPE == 'yum':
         return _get_installed_pkg_objects_yum(name)
-    return _get_installed_pkg_objects_dnf(name)
+    elif pkgmanager.TYPE == 'dnf':
+        return _get_installed_pkg_objects_dnf(name)
+
 
 def _get_installed_pkg_objects_yum(name):
     yum_base = pkgmanager.YumBase()
@@ -229,6 +229,7 @@ def _get_installed_pkg_objects_yum(name):
     if name:
         return yum_base.rpmdb.returnPackages(patterns=[name])
     return yum_base.rpmdb.returnPackages()
+
 
 def _get_installed_pkg_objects_dnf(name):
     dnf_base = pkgmanager.Base()
@@ -241,6 +242,7 @@ def _get_installed_pkg_objects_dnf(name):
         installed = installed.filter(name__glob=name)
     return list(installed)
 
+
 def get_third_party_pkgs():
     """Get all the third party packages (non-Red Hat and non-original OS
     signed) which are going to be kept untouched.
@@ -251,7 +253,8 @@ def get_third_party_pkgs():
 
 
 def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
-    """Return list of all the packages (rpm objects) that are not signed
+    """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
+    of yum and hawkey.Package objects in case of dnf) that are not signed
     by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
@@ -314,10 +317,35 @@ def print_pkg_info(pkgs):
 
 
 def get_pkg_nvra(pkg_obj):
+    """Get package NVRA as a string: name, version, release, architecture.
+
+    Some utilities don't accept the full NEVRA of a package, for example rpm.
+    """
     return "%s-%s-%s.%s" % (pkg_obj.name,
                             pkg_obj.version,
                             pkg_obj.release,
                             pkg_obj.arch)
+
+
+def get_pkg_nevra(pkg_obj):
+    """Get package NEVRA as a string: name, epoch, version, release, architecture.
+
+    Epoch is included only when non-zero. However it's on a different position when printed by YUM or DNF:
+      YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
+      DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+    """
+    if pkgmanager.TYPE == 'yum':
+        return "%s%s-%s-%s.%s" % ("" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
+                                  pkg_obj.name,
+                                  pkg_obj.version,
+                                  pkg_obj.release,
+                                  pkg_obj.arch)
+    elif pkgmanager.TYPE == 'dnf':
+        return "%s-%s%s-%s.%s" % (pkg_obj.name,
+                                  "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
+                                  pkg_obj.version,
+                                  pkg_obj.release,
+                                  pkg_obj.arch)
 
 
 def get_packager(pkg_obj):
@@ -395,25 +423,6 @@ def replace_non_red_hat_packages():
     call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
 
 
-def preserve_only_rhel_kernel():
-    loggerinst = logging.getLogger(__name__)
-    needs_update = install_rhel_kernel()
-
-    loggerinst.info("Verifying that RHEL kernel has been installed")
-    if not is_rhel_kernel_installed():
-        loggerinst.critical(
-            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
-    else:
-        loggerinst.info("RHEL kernel has been installed.")
-
-    non_rhel_kernel_pkgs = remove_non_rhel_kernels()
-    if non_rhel_kernel_pkgs:
-        install_additional_rhel_kernel_pkgs(non_rhel_kernel_pkgs)
-    if needs_update:
-        loggerinst.info("Updating RHEL kernel.")
-        call_yum_cmd(command="update", args="kernel")
-
-
 def install_gpg_keys():
     loggerinst = logging.getLogger(__name__)
     gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
@@ -426,6 +435,19 @@ def install_gpg_keys():
             loggerinst.critical("Unable to import GPG key: %s", output)
 
 
+def preserve_only_rhel_kernel():
+    kernel_update_needed = install_rhel_kernel()
+    verify_rhel_kernel_installed()
+
+    kernel_pkgs_to_install = remove_non_rhel_kernels()
+    fix_invalid_grub2_entries()
+
+    if kernel_pkgs_to_install:
+        install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
+    if kernel_update_needed:
+        update_rhel_kernel()
+
+
 def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
     later on.
@@ -434,26 +456,28 @@ def install_rhel_kernel():
     loggerinst.info("Installing RHEL kernel ...")
     output, ret_code = call_yum_cmd(command="install", args="kernel")
 
-    # check condition - failed installation
-    if ret_code:
+    if ret_code != 0:
         loggerinst.critical("Error occured while attempting to install the"
                             " RHEL kernel")
 
-    # check condition - kernel with same version is already installed
-    already_installed = re.search(r" (.*?) already installed", output)
+    # Check if kernel with same version is already installed.
+    # Example output from yum and dnf:
+    #  "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+    #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
+    already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
     if already_installed:
-        kernel_version = already_installed.group(1)
-        kernel_obj = get_installed_pkgs_w_different_fingerprint(
-            system_info.fingerprints_rhel, kernel_version)
-        if kernel_obj:
-            # If the installed kernel is from a third party (non-RHEL) and has
-            # the same NEVRA as the one available from RHEL repos, it's
-            # necessary to install an older version RHEL kernel, because the
-            # third party one will be removed later in the conversion process.
-            loggerinst.info("\nConflict of kernels: One of the installed kernels"
-                            " has the same version as the latest RHEL kernel.")
-            handle_no_newer_rhel_kernel_available()
-            return True
+        rhel_kernel_nevra = already_installed.group(1)
+        non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
+        for non_rhel_kernel in non_rhel_kernels:
+            # We're comparing to NEVRA since that's what yum/dnf prints out
+            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
+                # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
+                # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
+                # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
+                loggerinst.info("\nConflict of kernels: One of the installed kernels"
+                                " has the same version as the latest RHEL kernel.")
+                handle_no_newer_rhel_kernel_available()
+                return True
     return False
 
 
@@ -516,14 +540,11 @@ def replace_non_rhel_installed_kernel(version):
 
     pkg = "kernel-%s" % version
 
-    loggerinst.debug("Downloading %s package." % pkg)
     ret_code = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
         enablerepo=tool_opts.enablerepo)
     if ret_code != 0:
-        loggerinst.critical("Unable to download %s from RHEL repository." % pkg)
         return
-    loggerinst.debug("Successfully downloaded %s package." % pkg)
 
     loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
@@ -534,6 +555,21 @@ def replace_non_rhel_installed_kernel(version):
         return
 
     loggerinst.info("\nRHEL %s installed.\n" % pkg)
+
+
+def verify_rhel_kernel_installed():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Verifying that RHEL kernel has been installed")
+    if not is_rhel_kernel_installed():
+        loggerinst.critical(
+            "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages.")
+    else:
+        loggerinst.info("RHEL kernel has been installed.")
+
+
+def is_rhel_kernel_installed():
+    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
+    return len(installed_rhel_kernels) > 0
 
 
 def remove_non_rhel_kernels():
@@ -550,7 +586,52 @@ def remove_non_rhel_kernels():
     return non_rhel_kernels
 
 
+def fix_invalid_grub2_entries():
+    """
+    On systems derived from RHEL 8 and later, /etc/machine-id is being used to identify grub2 boot loader entries per
+    the Boot Loader Specification.
+
+    However, at the time of executing convert2rhel, the current machine-id can be different from the machine-id from the
+    time when the kernels were installed. If that happens:
+    - convert2rhel installs the RHEL kernel, but it's not set as default
+    - convert2rhel removes the original OS kernels, but for these the boot entries are not removed
+
+    The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
+    OS kernels, and setting the RHEL kernel as default.
+    """
+    if int(system_info.version) < 8 or system_info.arch == "s390x":
+        # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
+        return
+
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Fixing GRUB boot loader entries.")
+
+    machine_id = utils.get_file_content("/etc/machine-id")
+    boot_entries = glob.glob("/boot/loader/entries/*.conf")
+    for entry in boot_entries:
+        # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
+        if machine_id.strip() not in os.path.basename(entry):
+            loggerinst.debug("Removing boot entry %s" % entry)
+            os.remove(entry)
+
+    # Removing a boot entry that used to be the default makes grubby to choose a different entry as default, but we will
+    # call grub --set-default to set the new default on all the proper places, e.g. for grub2-editenv
+    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --default-kernel", print_output=False)
+    if ret_code:
+        # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
+        # pick one entry in any case.
+        loggerinst.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
+        return
+    loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
+    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --set-default %s" % output.strip())
+    if ret_code:
+        loggerinst.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
+
+
 def install_additional_rhel_kernel_pkgs(additional_pkgs):
+    """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
+    tries to install back all of these from RHEL repositories.
+    """
     loggerinst = logging.getLogger(__name__)
     # OL renames some of the kernel packages by adding "-uek" (Unbreakable
     # Enterprise Kernel), e.g. kernel-uek-devel instead of kernel-devel. Such
@@ -564,9 +645,14 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
             call_yum_cmd("install %s" % name)
 
 
-def is_rhel_kernel_installed():
-    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
-    return len(installed_rhel_kernels) > 0
+def update_rhel_kernel():
+    """In the corner case where the original system kernel version is the same as the latest available RHEL kernel,
+    convert2rhel needs to install older RHEL kernel version first. In this function, RHEL kernel is updated to the
+    latest available version.
+    """
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Updating RHEL kernel.")
+    call_yum_cmd(command="update", args="kernel")
 
 
 def clear_versionlock():
