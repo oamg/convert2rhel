@@ -584,9 +584,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.pkgs = None
             self.should_bkp = False
 
-        def __call__(self, pkgs_to_remove, should_backup=False):
+        def __call__(self, pkgs_to_remove, backup=False):
             self.pkgs = pkgs_to_remove
-            self.should_bkp = should_backup
+            self.should_bkp = backup
 
     @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg",
                                                     "not_installed_pkg"])

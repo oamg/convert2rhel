@@ -80,7 +80,7 @@ class TestSubscription(unittest.TestCase):
                 return self.tuples.pop(0)
             return self.default_tuple
 
-    class RegisterSystemMocked(unit_tests.MockFunction):
+    class DumbCallableObject(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
 
@@ -164,7 +164,7 @@ class TestSubscription(unittest.TestCase):
     def test_attach_subscription_none_available(self):
         self.assertEqual(subscription.attach_subscription(), False)
 
-    @unit_tests.mock(subscription, "register_system", RegisterSystemMocked())
+    @unit_tests.mock(subscription, "register_system", DumbCallableObject())
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -174,7 +174,7 @@ class TestSubscription(unittest.TestCase):
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 1)
 
-    @unit_tests.mock(subscription, "register_system", RegisterSystemMocked())
+    @unit_tests.mock(subscription, "register_system", DumbCallableObject())
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsOnceMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -309,15 +309,26 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: [])
-    def test_install_subscription_manager_rpms_not_available(self):
-        self.assertRaises(SystemExit, subscription.install_subscription_manager)
+    def test_replace_subscription_manager_rpms_not_available(self):
+        self.assertRaises(SystemExit, subscription.replace_subscription_manager)
 
         os.path.isdir = lambda x: False
         os.listdir = lambda x: ["filename"]
-        self.assertRaises(SystemExit, subscription.install_subscription_manager)
+        self.assertRaises(SystemExit, subscription.replace_subscription_manager)
+
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
+                     lambda x, y: [namedtuple('Pkg', ['name'])("submgr")])
+    @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(utils, "remove_pkgs", DumbCallableObject())
+    def test_remove_original_subscription_manager(self):
+        subscription.remove_original_subscription_manager()
+
+        self.assertEqual(utils.remove_pkgs.called, 1)
+
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: ["filename"])
     @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos: (None, 1))
-    def test_install_subscription_manager_unable_to_install(self):
-        self.assertRaises(SystemExit, subscription.install_subscription_manager)
+    def test_install_rhel_subscription_manager_unable_to_install(self):
+        self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)

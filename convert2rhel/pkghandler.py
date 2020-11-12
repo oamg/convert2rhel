@@ -204,7 +204,6 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 def get_pkg_fingerprint(pkg_obj):
     """Get fingerprint of the key used to sign a package"""
-    loggerinst = logging.getLogger(__name__)
     if pkgmanager.TYPE == 'yum':
         hdr = pkg_obj.hdr
     elif pkgmanager.TYPE == 'dnf':
@@ -547,7 +546,7 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], should_backup=False)
+            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
             call_yum_cmd(command="install", args="kernel-%s" % older)
         else:
             replace_non_rhel_installed_kernel(installed[0])
@@ -631,7 +630,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], should_backup=False)
+        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], backup=False)
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels
