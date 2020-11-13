@@ -71,7 +71,6 @@ Requires:       m2crypto
 %if 0%{?rhel} && 0%{?rhel} >= 7
 Requires:       gobject-introspection
 Requires:       python%{python_pkgversion}-inotify
-Requires:       python%{python_pkgversion}-syspurpose
 %endif
 ### end of subscription-manager dependencies ###
 
