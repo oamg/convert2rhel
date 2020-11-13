@@ -55,7 +55,7 @@ $ cd convert2rhel-distgit
 $ fedpkg switch-branch el6  # for EPEL 6
 $ fedpkg pull  # make sure you work with the latest branch content
 $ rm -rf convert2rhel*  # remove all the files related to the previous release
-$ wget https://raw.githubusercontent.com/oamg/convert2rhel/master/packaging/epel/convert2rhel.spec
+$ wget https://raw.githubusercontent.com/oamg/convert2rhel/master/packaging/convert2rhel.spec
 $ spectool -g -A *.spec  # download the new version tarball from GitHub
 $ fedpkg new-sources *.tar.gz  # upload the tarball to dist-git
 $ fedpkg srpm
@@ -71,6 +71,8 @@ $ fedpkg build  # create the official build
 $ fedpkg update  # -> this creates a Bodhi request; read [3] and play it by your ear
  
 $ fedpkg switch-branch epel7  # for EPEL 7
+$ # all the steps as for the branch 'el6' above
+$ fedpkg switch-branch epel8  # for EPEL 8
 $ # all the steps as for the branch 'el6' above
 ```
 
