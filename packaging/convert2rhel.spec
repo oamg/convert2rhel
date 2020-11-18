@@ -79,7 +79,7 @@ Requires:       python%{python_pkgversion}-inotify
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS 6/7 and Oracle Linux 6/7 to
+RHEL ones. Available are conversions of CentOS 6/7/8 and Oracle Linux 6/7/8 to
 the respective major version of RHEL.
 
 %prep
