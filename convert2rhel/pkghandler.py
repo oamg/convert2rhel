@@ -425,29 +425,53 @@ def list_non_red_hat_pkgs_left():
 
 
 def remove_excluded_pkgs():
-    """Certain packages need to be removed before the system conversion,
-    depending on the system to be converted. At least removing <os>-release
-    package is a must.
+    """
+    Certain packages need to be removed before the system conversion,
+    depending on the system to be converted.
     """
     loggerinst = logging.getLogger(__name__)
-    installed_excluded_pkgs = []
     loggerinst.info("Searching for the following excluded packages:\n")
-    for excluded_pkg in system_info.excluded_pkgs:
-        temp = '.' * (50 - len(excluded_pkg) - 2)
-        pkg_objects = get_installed_pkg_objects(excluded_pkg)
-        installed_excluded_pkgs.extend(pkg_objects)
-        loggerinst.info("%s %s %s" %
-                        (excluded_pkg, temp, str(len(pkg_objects))))
+    remove_pkgs_with_confirm(system_info.excluded_pkgs)
 
-    if not installed_excluded_pkgs:
+
+def remove_non_rhel_release_pkgs():
+    """
+    Remove non-RHEL *release packages before system conversion to prevent
+    issues with redhat-server package.
+
+    The release packages contain the original system repository files. For this reason 
+    we can't remove them together with the other excluded packages - it wouldn't
+    be possible to install subscription-manager dependencies. At the same time
+    we can't install subscription-manager before removing the excluded packages
+    as there would be a conflict with one of the excluded packages (rhn-client-tools).
+    """
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Searching for the following release packages:\n")
+    remove_pkgs_with_confirm(system_info.release_pkgs)
+
+
+def remove_pkgs_with_confirm(pkgs, backup=True):
+    """
+    Remove selected packages with a breakdown and user confirmation prompt.
+    """
+    pkgs_to_remove = []
+    loggerinst = logging.getLogger(__name__)
+    for pkg in pkgs:
+        temp = '.' * (50 - len(pkg) - 2)
+        pkg_objects = get_installed_pkg_objects(pkg)
+        pkgs_to_remove.extend(pkg_objects)
+        loggerinst.info("%s %s %s" %
+                        (pkg, temp, str(len(pkg_objects))))
+
+    if not pkgs_to_remove:
         loggerinst.info("\nNothing to do.")
         return
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
-    print_pkg_info(installed_excluded_pkgs)
+    print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
-    loggerinst.debug("Successfully removed %s packages" % str(len(installed_excluded_pkgs)))
+    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
 def replace_non_red_hat_packages():

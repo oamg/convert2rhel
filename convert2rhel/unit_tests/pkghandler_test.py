@@ -93,6 +93,16 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.called += 1
             return
 
+    class CommandCallableObject(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = 0
+            self.command = None
+
+        def __call__(self, command):
+            self.called += 1
+            self.command = command
+            return
+
     class SysExitCallableObject(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             sys.exit(1)
@@ -590,13 +600,29 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg",
                                                     "not_installed_pkg"])
+    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    def test_remove_excluded_pkgs(self):
+        pkghandler.remove_excluded_pkgs()
+
+        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
+        self.assertEqual(pkghandler.remove_pkgs_with_confirm.command, system_info.excluded_pkgs)
+
+    @unit_tests.mock(system_info, "release_pkgs", ["installed_pkg",
+                                                    "not_installed_pkg"])
+    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    def test_remove_non_rhel_release_pkgs(self):
+        pkghandler.remove_non_rhel_release_pkgs()
+
+        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
+        self.assertEqual(pkghandler.remove_pkgs_with_confirm.command, system_info.release_pkgs)
+
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
                      GetInstalledPkgObjectsMocked())
-    def test_remove_excluded_pkgs(self):
-        pkghandler.remove_excluded_pkgs()
+    def test_remove_pkgs_with_confirm(self):
+        pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")

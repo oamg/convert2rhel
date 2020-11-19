@@ -177,23 +177,37 @@ def install_rhel_subscription_manager():
     loggerinst = logging.getLogger(__name__)
     loggerinst.info("Installing subscription-manager RPMs.")
     rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
-    if rpms_to_install:
-        _, ret_code = pkghandler.call_yum_cmd(
-            # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
-            # and we need these packages to be replaced with the provided RPMs from RHEL.
-            "install",
-            " ".join(rpms_to_install),
-            # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
-            # the repos that are available on the system
-            enable_repos=[],
-            disable_repos=[]
-        )
-        if ret_code:
-            loggerinst.critical("Failed to install subscription-manager packages."
-                                " See the above yum output for details.")
-        else:
-            loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
 
+    if not rpms_to_install:
+        loggerinst.warn("No RPMs found in %s." % SUBMGR_RPMS_DIR)
+        return
+
+    _, ret_code = pkghandler.call_yum_cmd(
+        # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
+        # and we need these packages to be replaced with the provided RPMs from RHEL.
+        "install",
+        " ".join(rpms_to_install),
+        # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
+        # the repos that are available on the system
+        enable_repos=[],
+        disable_repos=[]
+    )
+    if ret_code:
+        loggerinst.critical("Failed to install subscription-manager packages."
+                            " See the above yum output for details.")
+    else:
+        loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
+
+
+def remove_subscription_manager():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Removing RHEL subscription-manager packages.")
+    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
+    submgr_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, "*subscription-manager*")
+    if not submgr_pkgs:
+        loggerinst.info("No packages related to subscription-manager installed.")
+        return
+    pkghandler.call_yum_cmd("remove", " ".join(submgr_pkgs), print_output=False)
 
 def attach_subscription():
     """Attach a specific subscription to the registered OS. If no
@@ -366,6 +380,7 @@ def rollback():
     loggerinst = logging.getLogger(__name__)
     try:
         unregister_system()
+        remove_subscription_manager()
     except OSError:
         loggerinst.warn("subscription-manager not installed, skipping")
 

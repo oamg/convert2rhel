@@ -150,15 +150,17 @@ def pre_ponr_conversion():
     # check if user pass some repo to both disablerepo and enablerepo options
     pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
 
-    if not toolopts.tool_opts.disable_submgr:
-        # It's necessary to install subscription-manager before removing the excluded packages to have access to the
-        # standard system repositories provided by excluded packages like centos-release or oraclelinux-release.
-        loggerinst.task("Convert: Subscription Manager - Replace")
-        subscription.replace_subscription_manager()
-
     # remove excluded packages
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
+
+    if not toolopts.tool_opts.disable_submgr:
+        loggerinst.task("Convert: Subscription Manager - Replace")
+        subscription.replace_subscription_manager()
+
+    # remove non-RHEL release packages
+    loggerinst.task("Convert: Remove existing OS-release packages")
+    pkghandler.remove_non_rhel_release_pkgs()
 
     # install RHEL certificates depending on variant and arch
     # this allows us to skip installing redhat-release pkg to get certs as 

@@ -343,6 +343,13 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
     """Remove packages not heeding to their dependencies."""
     loggerinst = logging.getLogger(__name__)
 
+    if backup:
+        # Some packages, when removed, will also remove repo files, making it
+        # impossible to access the repositories to download a backup. For this
+        # reason we first backup all packages and only after that we remove
+        for nvra in pkgs_to_remove:
+            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
+
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")
         return
@@ -356,15 +363,8 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
             else:
                 loggerinst.warning("Couldn't remove %s." % nvra)
 
-    if backup:
-        # Some packages, when removed, will also remove repo files, making it
-        # impossible to access the repositories to download a backup. For this
-        # reason we first backup all packages and only after that we remove
-        for nvra in pkgs_to_remove:
-            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
 
-
-def install_pkgs(pkgs_to_install, replace=False, critical=True):
+def install_pkgs(pkgs_to_install, replace=False, critical=True, force=False):
     """Install packages locally available."""
     loggerinst = logging.getLogger(__name__)
 
@@ -375,6 +375,8 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
     cmd_param = ["rpm", "-i"]
     if replace:
         cmd_param.append("--replacepkgs")
+    if force:
+        cmd_param.append("--force")
 
     cmd = " ".join(cmd_param)
     pkgs = " ".join(pkgs_to_install)
