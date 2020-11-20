@@ -302,11 +302,18 @@ def print_pkg_info(pkgs):
 
     pkg_list = ""
     for pkg in pkgs:
-        try:
-            from_repo = pkg.yumdb_info.from_repo
-        except AttributeError:
-            # A package may not have the installation repo set in case it was installed through rpm
-            from_repo = "N/A"
+        if pkgmanager.TYPE == 'yum':
+            try:
+                from_repo = pkg.yumdb_info.from_repo
+            except AttributeError:
+                # A package may not have the installation repo set in case it was installed through rpm
+                from_repo = "N/A"
+
+        elif pkgmanager.TYPE == 'dnf':
+            # There's no public attribute for getting the installation repository.
+            # Bug filed: https://bugzilla.redhat.com/show_bug.cgi?id=1879168
+            from_repo = pkg._from_repo
+
         pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
                                         max_packager_length, get_packager(pkg), from_repo) + "\n"
 

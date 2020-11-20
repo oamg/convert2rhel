@@ -255,7 +255,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @staticmethod
     def create_pkg_obj(name, epoch=0, version="", release="", arch="", packager=None,
-                       from_repo=""):
+                       from_repo="", manager="yum"):
         class DumbObj(object):
             pass
 
@@ -268,8 +268,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         obj.evr = version + "-" + release
         obj.arch = arch
         obj.packager = packager
-        if from_repo:
-            obj.yumdb_info.from_repo = from_repo
+        if manager == "yum":
+            if from_repo:
+                obj.yumdb_info.from_repo = from_repo
+        elif manager == "dnf":
+            if from_repo:
+                obj._from_repo = from_repo
+            else:
+                obj._from_repo = "@@System"
         return obj
 
     class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
@@ -483,7 +489,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.print_pkg_info.called, 0)
 
     @staticmethod
-    def prepare_pkg_obj_for_print():
+    def prepare_pkg_obj_for_print_with_yum():
         obj1 = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
                                              arch="x86_64", packager="Oracle", from_repo="anaconda")
         obj2 = TestPkgHandler.create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64")
@@ -491,17 +497,32 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                              arch="x86_64", from_repo="test")
         return [obj1, obj2, obj3]
 
-    def test_print_pkg_info(self):
-        pkgs = TestPkgHandler.prepare_pkg_obj_for_print()
+    @unit_tests.mock(pkgmanager, "TYPE", "yum")
+    def test_print_pkg_info_yum(self):
+        pkgs = TestPkgHandler.prepare_pkg_obj_for_print_with_yum()
         result = pkghandler.print_pkg_info(pkgs)
-        self.assertTrue(re.search(r"^Package\s+Packager\s+Repository$",
-                                  result, re.MULTILINE))
-        self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
-                                  result, re.MULTILINE))
-        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$",
-                                  result, re.MULTILINE))
-        self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
-                                  result, re.MULTILINE))
+        self.assertTrue(re.search(r"^Package\s+Packager\s+Repository$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$", result, re.MULTILINE))
+
+    @staticmethod
+    def prepare_pkg_obj_for_print_with_dnf():
+        obj1 = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
+                                             arch="x86_64", packager="Oracle", from_repo="anaconda", manager="dnf")
+        obj2 = TestPkgHandler.create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64",
+                                             manager="dnf")
+        obj3 = TestPkgHandler.create_pkg_obj(name="gpg-pubkey", version="0.1", release="1",
+                                             arch="x86_64", from_repo="test", manager="dnf")
+        return [obj1, obj2, obj3]
+
+    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
+    def test_print_pkg_info_dnf(self):
+        pkgs = TestPkgHandler.prepare_pkg_obj_for_print_with_dnf()
+        result = pkghandler.print_pkg_info(pkgs)
+        self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+@@System$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$", result, re.MULTILINE))
 
     @unit_tests.mock(pkgmanager, "TYPE", "dnf")
     def test_get_pkg_nevra(self):
