@@ -37,12 +37,12 @@ class TestUtils(unittest.TestCase):
             self.called += 1
 
     class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self):
+        def __init__(self, output="Test output", ret_code=0):
             self.cmd = ""
             self.cmds = ""
             self.called = 0
-            self.output = "Test output"
-            self.ret_code = 0
+            self.output = output
+            self.ret_code = ret_code
 
         def __call__(self, cmd, print_cmd=True, print_output=True):
             self.cmd = cmd
@@ -134,7 +134,7 @@ class TestUtils(unittest.TestCase):
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertTrue("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
 
     @unit_tests.mock(utils.ChangedRPMPackagesController,
                      "track_installed_pkg",
@@ -147,4 +147,68 @@ class TestUtils(unittest.TestCase):
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertTrue("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+
+    def test_run_subprocess(self):
+        output, code = utils.run_subprocess("echo foobar")
+
+        self.assertEqual(output, "foobar\n")
+        self.assertEqual(code, 0)
+
+        output, code = utils.run_subprocess("sh -c 'exit 56'")  # a command that just returns 56
+
+        self.assertEqual(output, "")
+        self.assertEqual(code, 56)
+
+    DOWNLOADED_RPM_NVRA = "kernel-4.18.0-193.28.1.el8_2.x86_64"
+    DOWNLOADED_RPM_NEVRA = "7:%s" % DOWNLOADED_RPM_NVRA
+    DOWNLOADED_RPM_FILENAME = "%s.rpm" % DOWNLOADED_RPM_NVRA
+
+    YUMDOWNLOADER_OUTPUTS = [
+        "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
+        "%s         2.7 MB/s | 2.8 MB     00:01" % DOWNLOADED_RPM_FILENAME,
+        "/var/lib/convert2rhel/%s already exists and appears to be complete" % DOWNLOADED_RPM_FILENAME,
+        "using local copy of %s" % DOWNLOADED_RPM_NEVRA,
+        "[SKIPPED] %s: Already downloaded" % DOWNLOADED_RPM_FILENAME
+    ]
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
+    @unit_tests.mock(utils, "get_rpm_path_from_yumdownloader_output", lambda x, y, z: "/path/test.rpm")
+    def test_download_pkg_success_with_all_params(self):
+        dest = "/test dir/"
+        disablerepo = "x"
+        enablerepo = "y"
+        path = utils.download_pkg("kernel", dest=dest, disablerepo=disablerepo, enablerepo=enablerepo)
+
+        self.assertEqual('yumdownloader -v --disablerepo=%s --enablerepo=%s --destdir="%s" kernel'
+                         % (disablerepo, enablerepo, dest),
+                         utils.run_cmd_in_pty.cmd)
+        self.assertTrue(path)  # path is not None (which is the case of unsuccessful download)
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+    def test_download_pkg_failed_download(self):
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual(path, None)
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
+    def test_download_pkg_incorrect_output(self):
+        utils.run_cmd_in_pty.output = "bogus"
+
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual(path, None)
+
+        utils.run_cmd_in_pty.output = ""
+
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual(path, None)
+
+    def test_get_rpm_path_from_yumdownloader_output(self):
+        for output in self.YUMDOWNLOADER_OUTPUTS:
+            utils.run_cmd_in_pty.output = output
+
+            path = utils.get_rpm_path_from_yumdownloader_output("cmd not important", output, utils.TMP_DIR)
+
+            self.assertEqual(path, os.path.join(utils.TMP_DIR, self.DOWNLOADED_RPM_FILENAME))

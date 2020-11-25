@@ -1,11 +1,12 @@
+# This plan for running unit tests is executed by packit on three targets: epel-6, epel-7 and epel-8
 summary:
     Unit tests
 execute:
     script:
-    - pwd; cd ~/git-source && pwd && nosetests -v
+    - pwd; cd ~/git-source && pwd && ./run_unit_tests.sh
 prepare:
     how: shell
     script:
-    - yum --enablerepo=extras install -y epel-release
-    - yum install -y python-pip
-    - pip install nose
+    # We can't use a simple `command -v dnf` test because the testing farm executes `ln -fs $(which yum) /usr/bin/dnf`
+    #  on the epel-8 target.
+    - if [ -e "/usr/bin/dnf-3" ]; then dnf install -y python3-nose python3-pexpect; else yum install -y python-nose pexpect; fi

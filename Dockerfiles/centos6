@@ -4,6 +4,6 @@ VOLUME /data
 
 WORKDIR /data
 
-RUN yum update -y && \
-    yum install -y python-nose gnupg &&\
+RUN yum update -y &&\
+    yum install -y python-nose python-six python-wheel pexpect &&\
     yum clean all

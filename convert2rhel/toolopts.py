@@ -20,7 +20,6 @@ import logging
 from convert2rhel import rhelvariant
 from convert2rhel import utils
 
-
 class ToolOpts(object):
     def __init__(self):
         self.debug = False
@@ -76,20 +75,23 @@ class CLI(object):
         self._parser.add_option("--debug", action="store_true", help="Print"
                                 " traceback in case of an abnormal exit and"
                                 " messages that could help find an issue.")
-        self._parser.add_option("--no-rpm-va", action="store_true", help="Skip"
-                                " verification of RPM files using 'rpm -Va'."
-                                " By default the verification is performed and"
-                                " its output is stored in a log file.")
+        # Importing here instead of on top of the file to avoid cyclic dependency
+        from convert2rhel.systeminfo import PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME
+        self._parser.add_option("--no-rpm-va", action="store_true", help="Skip gathering changed rpm files using"
+                                " 'rpm -Va'. By default it's performed before and after the conversion with the output"
+                                " stored in log files %s and %s. At the end of the conversion, these logs are compared"
+                                " to show you what rpm files have been affected by the conversion."
+                                % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME))
         self._parser.add_option("--enablerepo", metavar="repoidglob",
                                 action="append", help="Enable specific"
-                                " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories.")
+                                " repositories by ID or glob. For more repositories to enable, use this option"
+                                " multiple times. If you don't use the --disable-submgr option, you can use this option"
+                                " to override the default RHEL CDN repoids that convert2rhel enables through"
+                                " subscription-manager.")
         self._parser.add_option("--disablerepo", metavar="repoidglob",
                                 action="append", help="Disable specific"
-                                " repositories by ID or glob. Use this option"
-                                " multiple times to add many repositories."
-                                " If --disable-submgr is used this defaults"
-                                " to all repositories.")
+                                " repositories by ID or glob. For more repositories to disable, use this option"
+                                " multiple times. This option defaults to all repositories ('*').")
         group = optparse.OptionGroup(self._parser,
                                      "Subscription Manager Options",
                                      "The following options are specific to"
@@ -190,8 +192,11 @@ class CLI(object):
             if not tool_opts.enablerepo:
                 loggerinst.critical(
                     "Error: --enablerepo is required if --disable-submgr is passed ")
-            if not tool_opts.disablerepo:
-                tool_opts.disablerepo = "*"  # Default to disable everything
+        if not tool_opts.disablerepo:
+            # Default to disable every repo except:
+            # - the ones passed through --enablerepo
+            # - the ones enabled through subscription-manager based on convert2rhel config files
+            tool_opts.disablerepo = ["*"]
 
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool

@@ -24,7 +24,7 @@ on:
 jobs:        
   pylint_check_2_6:
     runs-on: ubuntu-latest
-    container: centos:centos6.9
+    container: centos:centos6
 
     steps:
     - name: Checkout Code
@@ -33,7 +33,7 @@ jobs:
 
     - name: Install Requirements
       run: |
-        yum --enablerepo=extras install -y epel-release
+        yum install -y python-six pexpect
         curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
         python get-pip.py
         pip install pylint==1.1.0
@@ -44,18 +44,30 @@ jobs:
 
   pylint_check_2_7:
     runs-on: ubuntu-latest
-    container: centos:centos7.7.1908
+    container: centos:centos7
 
     steps:
     - uses: actions/checkout@v1
 
     - name: Install Requirements
       run: |
-        yum --enablerepo=extras install -y epel-release
-        yum install -y python-pip
-        pip install --upgrade pip
-        pip install setuptools
-        pip install pylint
+        yum --enablerepo=extras install -y epel-release  # to get pylint
+        yum install -y python-six pylint pexpect
 
+    - name: Run Pylint Checks
+      run: ${{ env.interpreted_pylint }}
+
+  pylint_check_3:
+    runs-on: ubuntu-latest
+    container: centos:centos8
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install Requirements
+      run: |
+        yum --enablerepo=extras install -y epel-release  # to get pylint
+        yum install -y pylint python3-pexpect
+        
     - name: Run Pylint Checks
       run: ${{ env.interpreted_pylint }}

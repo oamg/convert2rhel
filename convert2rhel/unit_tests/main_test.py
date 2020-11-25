@@ -122,8 +122,7 @@ class TestMain(unittest.TestCase):
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
-    @mock_calls(pkghandler, "remove_blacklisted_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "unregister_from_rhn_classic", CallOrderMocked)
+    @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(redhatrelease, "install_release_pkg", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
@@ -139,8 +138,7 @@ class TestMain(unittest.TestCase):
         main.pre_ponr_conversion()
 
         intended_call_order = OrderedDict()
-        intended_call_order["remove_blacklisted_pkgs"] = 1
-        intended_call_order["unregister_from_rhn_classic"] = 1
+        intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["install_release_pkg"] = 1
         intended_call_order["patch"] = 1
         intended_call_order["list_third_party_pkgs"] = 1
@@ -162,8 +160,7 @@ class TestMain(unittest.TestCase):
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
-    @mock_calls(pkghandler, "remove_blacklisted_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "unregister_from_rhn_classic", CallOrderMocked)
+    @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(redhatrelease, "install_release_pkg", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
@@ -179,8 +176,7 @@ class TestMain(unittest.TestCase):
         main.pre_ponr_conversion()
 
         intended_call_order = OrderedDict()
-        intended_call_order["remove_blacklisted_pkgs"] = 1
-        intended_call_order["unregister_from_rhn_classic"] = 1
+        intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["install_release_pkg"] = 1
         intended_call_order["patch"] = 1
         intended_call_order["list_third_party_pkgs"] = 1

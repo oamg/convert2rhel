@@ -1,9 +1,15 @@
+%if 0%{?rhel} && 0%{?rhel} <= 7
 %{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%global __python %{__python2}
+%global python_pkgversion %{nil}
+%else
+%{!?__python3: %global __python3 /usr/bin/python3}
+%global __python %{__python3}
+%global python_pkgversion %{python3_pkgversion}
+%endif
 
 Name:           convert2rhel
-Version:        0.12
+Version:        0.13
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -11,69 +17,93 @@ License:        GPLv3+
 URL:            https://github.com/oamg/convert2rhel
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
-BuildRequires:  epel-rpm-macros
-Requires:       dbus-python
-Requires:       gnupg2
-Requires:       m2crypto
-Requires:       python
-Requires:       python-dateutil
-Requires:       python-dmidecode
-Requires:       python-iniparse
-Requires:       python-ethtool
+
+BuildRequires:  python%{python_pkgversion}-devel
+BuildRequires:  python%{python_pkgversion}-setuptools
+BuildRequires:  python%{python_pkgversion}-six
+%if 0%{?rhel} && 0%{?el8}
+BuildRequires:  python3-pexpect
+%endif
+%if 0%{?rhel} && 0%{?rhel} <= 7
+BuildRequires:  pexpect
+%endif
+
 Requires:       rpm
-Requires:       sed
+Requires:       python%{python_pkgversion}
+Requires:       python%{python_pkgversion}-setuptools
+Requires:       python%{python_pkgversion}-six
+%if 0%{?rhel} && 0%{?el8}
+Requires:       dnf
+# dnf-utils includes yumdownloader we use
+Requires:       dnf-utils
+Requires:       grubby
+Requires:       python3-pexpect
+%endif
+%if 0%{?rhel} && 0%{?rhel} <= 7
+Requires:       yum
+# yum-utils includes yumdownloader we use
+Requires:       yum-utils
+Requires:       pexpect
+%endif
+
+### subscription-manager dependencies ###
 Requires:       usermode
 Requires:       virt-what
-Requires:       yum
-Requires:       yum-utils
-%if 0%{?el6} && 0%{?epel}
-Requires:       python-decorator
-Requires:       python-setuptools
-Requires:       python-six
+Requires:       python%{python_pkgversion}-decorator
+Requires:       python%{python_pkgversion}-dateutil
+Requires:       python%{python_pkgversion}-dmidecode
+Requires:       python%{python_pkgversion}-iniparse
+Requires:       python%{python_pkgversion}-ethtool
+%if 0%{?el6} && 0%{?rhel}
 Requires:       pygobject2
 %endif
-%if 0%{?el7} && 0%{?epel}
-Requires:       gobject-introspection
+%if 0%{?el7} && 0%{?rhel}
 Requires:       pygobject3-base
-Requires:       python-decorator
-Requires:       python-inotify
-Requires:       python-setuptools
-Requires:       python-six
-Requires:       python-syspurpose
 %endif
+%if 0%{?el8} && 0%{?rhel}
+Requires:       python3-gobject-base
+Requires:       python3-dbus
+%endif
+%if 0%{?rhel} && 0%{?rhel} <= 7
+Requires:       dbus-python
+Requires:       m2crypto
+%endif
+%if 0%{?rhel} && 0%{?rhel} >= 7
+Requires:       gobject-introspection
+Requires:       python%{python_pkgversion}-inotify
+%endif
+### end of subscription-manager dependencies ###
+
 
 %description
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS 6/7 and Oracle Linux 6/7 to
+RHEL ones. Available are conversions of CentOS 6/7/8 and Oracle Linux 6/7/8 to
 the respective major version of RHEL.
 
 %prep
 %setup -q
 
 %build
-%{__python2} setup.py build
-%{__python2} setup.py build_manpage
+%{__python} setup.py build
+%{__python} setup.py build_manpage
 
-# Do not include unit test in the package
+# Do not include unit tests in the package
 rm -rf build/lib/%{name}/unit_tests
 # Do not include the man building script
 rm -rf build/lib/man
 
 %install
-%{__python2} setup.py install --skip-build --root %{buildroot}
+%{__python} setup.py install --skip-build --root %{buildroot}
 
-# Move system version specific tool data to /usr/share/convert2rhel
-rm -rf %{buildroot}%{python2_sitelib}/%{name}/data
+rm -rf %{buildroot}%{python_sitelib}/%{name}/data
+
+# Move system version and architecture specific tool data to /usr/share/convert2rhel
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a build/lib/%{name}/data/version-independent/. \
       %{buildroot}%{_datadir}/%{name}
-# Even though convert2rhel is able to convert ppc64 CentOS 7, EPEL koji does
-# not allow building packages for ppc64
-cp -a build/lib/%{name}/data/%{rhel}/x86_64/. \
+cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
       %{buildroot}%{_datadir}/%{name}
 
 # Temporary directory used mainly for backing up files during the conversion
@@ -83,17 +113,36 @@ install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %files
-%{_bindir}/%{name}
 
-%{python2_sitelib}/%{name}*
+%if 0%{?el6} && 0%{?rhel}
+# without this on CentOS/OL 6, rpmlint gives an error "E: files-attr-not-set"
+%defattr(-,root,root,-)
+%endif
+
+%{_bindir}/%{name}
 %{_datadir}/%{name}
 %{_sharedstatedir}/%{name}
+%{python_sitelib}/%{name}*
 
+%{!?_licensedir:%global license %%doc}
 %license LICENSE
 %doc README.md
-%{_mandir}/man8/%{name}.8*
+%attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Nov 13 2020 Michal Bocek <mbocek@redhat.com> 0.13-1
+- allow conversions of CentOS and Oracle Linux 8
+- fix "TypeError: execve()" py2.6-related error when calling external commands
+- remove unused code related to using offline snapshot or RHEL repositories
+- remove all Red Hat Network (RHN)-related code as RHN has been shut down
+- set POSIX/C locale at the start of running the tool
+- remove python-syspurpose dependency from spec - not available on OL 7 and 8
+- not renaming the original system repofiles anymore
+- replace the word blacklist with exclude/excluded
+- clearing yum versionlock that could cause the conversion to fail
+- printing rpm files that were modified during the conversion
+- minor UX improvements and test infrastructure improvements
+
 * Wed Aug 19 2020 Michal Bocek <mbocek@redhat.com> 0.12-1
 - require --enablerepo with --disable-submgr
 - fix failing conversions if gpgcheck=1 not in used custom repos

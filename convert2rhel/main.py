@@ -30,7 +30,7 @@ from convert2rhel import toolopts
 from convert2rhel import utils
 
 
-class ConversionPhase:
+class ConversionPhase(object):
     INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return
@@ -70,10 +70,9 @@ def main():
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
         redhatrelease.yum_conf.backup()
-        subscription.rhn_reg_file.backup()
 
-        loggerinst.task("Prepare: Clear yum version locks")
-        pkghandler.clear_yum_versionlock()
+        loggerinst.task("Prepare: Clear YUM/DNF version locks")
+        pkghandler.clear_versionlock()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -90,7 +89,7 @@ def main():
         post_ponr_conversion()
 
         loggerinst.task("Final: rpm files modified by the conversion")
-        systeminfo.system_info.log_modified_rpms_diff()
+        systeminfo.system_info.modified_rpm_files_diff()
 
         # recommend non-interactive command
         loggerinst.task("Final: Non-interactive mode")
@@ -99,17 +98,19 @@ def main():
         # restart system if required
         utils.restart_system()
 
-    except (Exception, SystemExit, KeyboardInterrupt), err:
+    except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
 
         utils.log_traceback(toolopts.tool_opts.debug)
+        no_changes_msg = "No changes were made to the system."
 
-        print("\n")
         if is_help_msg_exit(process_phase, err):
             return 0
-        elif process_phase in (ConversionPhase.INIT, ConversionPhase.POST_CLI):
-            print("No changes were made to the system.")
+        elif process_phase == ConversionPhase.INIT:
+            print(no_changes_msg)
+        elif process_phase == ConversionPhase.POST_CLI:
+            loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
@@ -118,8 +119,7 @@ def main():
             # system rollback without user intervention. If a proper rollback
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
-            print("Conversion process interrupted and manual user intervention"
-                  " will be necessary.")
+            loggerinst.warning("Conversion process interrupted and manual user intervention will be necessary.")
 
         return 1
 
@@ -148,13 +148,9 @@ def pre_ponr_conversion():
     """Perform steps and checks to guarantee system is ready for conversion."""
     loggerinst = logging.getLogger(__name__)
 
-    # remove blacklisted packages
-    loggerinst.task("Convert: Remove blacklisted packages")
-    pkghandler.remove_blacklisted_pkgs()
-
-    # checking RHN Classic
-    loggerinst.task("Checking RHN Classic")
-    subscription.unregister_from_rhn_classic()
+    # remove excluded packages
+    loggerinst.task("Convert: Remove excluded packages")
+    pkghandler.remove_excluded_pkgs()
 
     # install redhat release package
     loggerinst.task("Convert: Install Red Hat release package")
@@ -217,7 +213,6 @@ def rollback_changes():
     subscription.rollback()
     utils.changed_pkgs_control.restore_pkgs()
     redhatrelease.system_release_file.restore()
-    subscription.rhn_reg_file.restore()
     redhatrelease.yum_conf.restore()
     pkghandler.versionlock_file.restore()
 

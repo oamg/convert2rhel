@@ -21,7 +21,7 @@ from convert2rhel.systeminfo import system_info
 
 
 class TestRepo(unit_tests.ExtendedTestCase):
-    @unit_tests.mock(system_info, "default_repository_id", "rhel_server")
+    @unit_tests.mock(system_info, "default_rhsm_repoids", ["rhel_server"])
     def test_get_rhel_repoids(self):
         repos = repo.get_rhel_repoids()
 

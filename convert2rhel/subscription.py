@@ -21,23 +21,9 @@ import re
 import shutil
 import logging
 
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import utils
-
-_RHN_REGISTRATION_FILE = "/etc/sysconfig/rhn/systemid"
-rhn_reg_file = utils.RestorableFile(_RHN_REGISTRATION_FILE)  # pylint: disable=C0103
-
-
-def unregister_from_rhn_classic():
-    loggerinst = logging.getLogger(__name__)
-    if os.path.isfile(_RHN_REGISTRATION_FILE):
-        loggerinst.warning("The use of RHN Classic is not allowed during the conversion.\n"
-                           "The convert2rhel is going to unregister from RHN Classic.\n"
-                           "See https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/unregister-rhn for details.")
-        utils.ask_to_continue()
-        rhn_reg_file.remove()
-    else:
-        loggerinst.info("RHN Classic not detected.")
 
 
 def subscribe_system():
@@ -317,16 +303,15 @@ def disable_repos():
     return
 
 
-def enable_repos(repos_needed):
-    """By default, enable just the repos identified by the tool as needed and
-    disable any other using subscription-manager. This can be overriden by the
-    --enablerepo option.
+def enable_repos(rhel_repoids):
+    """By default, enable the standard Red Hat CDN RHEL repository IDs using subscription-manager.
+    This can be overriden by the --enablerepo option.
     """
     loggerinst = logging.getLogger(__name__)
     if tool_opts.enablerepo:
         repos_to_enable = tool_opts.enablerepo
     else:
-        repos_to_enable = repos_needed
+        repos_to_enable = rhel_repoids
 
     enable_cmd = ""
     for repo in repos_to_enable:
@@ -337,7 +322,8 @@ def enable_repos(repos_needed):
         loggerinst.critical("Repos were not possible to enable through"
                             " subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
-    return
+
+    system_info.submgr_enabled_repos = repos_to_enable
 
 
 def rename_repo_files():

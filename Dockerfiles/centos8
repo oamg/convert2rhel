@@ -1,0 +1,10 @@
+FROM centos:8
+
+VOLUME /data
+
+WORKDIR /data
+
+RUN dnf update -y &&\
+    dnf install -y python3-nose python3-six python3-pexpect &&\
+    dnf clean all
+
