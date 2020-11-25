@@ -55,7 +55,7 @@ $ cd convert2rhel-distgit
 $ fedpkg switch-branch el6  # for EPEL 6
 $ fedpkg pull  # make sure you work with the latest branch content
 $ rm -rf convert2rhel*  # remove all the files related to the previous release
-$ wget https://raw.githubusercontent.com/oamg/convert2rhel/master/packaging/convert2rhel.spec
+$ wget https://raw.githubusercontent.com/oamg/convert2rhel/main/packaging/convert2rhel.spec
 $ spectool -g -A *.spec  # download the new version tarball from GitHub
 $ fedpkg new-sources *.tar.gz  # upload the tarball to dist-git
 $ fedpkg srpm

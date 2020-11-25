@@ -7,7 +7,7 @@ For details about this tool, please consult one of the following sources:
 1. Run `man convert2rhel` once the tool is installed on your system
 
 ## Contributing
-Contributions are welcome, please look over [CONTRIBUTING.md](https://github.com/oamg/convert2rhel/blob/master/CONTRIBUTING.md) for more information on how to get started.
+Contributions are welcome, please look over [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to get started.
 
 ## Contact
 

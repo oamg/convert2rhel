@@ -20,7 +20,7 @@ jobs:
 - job: copr_build
   trigger: commit
   actions:
-    # bump spec so we get release starting with 2 and hence all master builds will
+    # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
     post-upstream-clone:
     - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
@@ -28,7 +28,7 @@ jobs:
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
   metadata:
-    branch: master
+    branch: main
     owner: "@oamg"
     project: convert2rhel
     targets:
