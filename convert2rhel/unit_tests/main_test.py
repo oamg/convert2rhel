@@ -132,7 +132,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "rename_repo_files", CallOrderMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -148,7 +147,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["check_needed_repos_availability"] = 1
         intended_call_order["disable_repos"] = 1
         intended_call_order["enable_repos"] = 1
-        intended_call_order["rename_repo_files"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
@@ -170,7 +168,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "rename_repo_files", CallOrderMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -188,7 +185,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["check_needed_repos_availability"] = 0
         intended_call_order["disable_repos"] = 0
         intended_call_order["enable_repos"] = 0
-        intended_call_order["rename_repo_files"] = 0
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
