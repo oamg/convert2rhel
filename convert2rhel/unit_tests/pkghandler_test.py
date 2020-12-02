@@ -874,6 +874,21 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
         self.assertTrue("Only packages signed by" in logger.CustomLogger.warning.msg)
 
+    @unit_tests.mock(tool_opts, "disablerepo", ['*', 'rhel-7-extras-rpm'])
+    @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    def test_is_disable_and_enable_repos_has_same_repo(self):
+        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
+        self.assertTrue("Duplicate repositories was found" in logger.CustomLogger.warning.msg)
+
+
+    @unit_tests.mock(tool_opts, "disablerepo", ['*'])
+    @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
+    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    def test_is_disable_and_enable_repos_doesnt_thas_same_repo(self):
+        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
+        self.assertEqual(logger.CustomLogger.warning.called, 0)
+
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""

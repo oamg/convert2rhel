@@ -148,6 +148,9 @@ def pre_ponr_conversion():
     """Perform steps and checks to guarantee system is ready for conversion."""
     loggerinst = logging.getLogger(__name__)
 
+    # check if user pass some repo to both disablerepo and enablerepo options
+    pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
+
     # remove excluded packages
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
