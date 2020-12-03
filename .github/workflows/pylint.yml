@@ -22,26 +22,6 @@ on:
     branches: [ main ]
 
 jobs:        
-  pylint_check_2_6:
-    runs-on: ubuntu-latest
-    container: centos:centos6
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v1
-
-
-    - name: Install Requirements
-      run: |
-        yum install -y python-six pexpect
-        curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
-        python get-pip.py
-        pip install pylint==1.1.0
-        pip install astroid==1.2
-
-    - name: Run Pylint Checks
-      run: ${{ env.interpreted_pylint }}
-
   pylint_check_2_7:
     runs-on: ubuntu-latest
     container: centos:centos7
