@@ -132,12 +132,14 @@ class TestMain(unittest.TestCase):
 
     @unit_tests.mock(utils.changed_pkgs_control, "restore_pkgs", unit_tests.CountableMockObject())
     @unit_tests.mock(redhatrelease.system_release_file, "restore", unit_tests.CountableMockObject())
+    @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
     @unit_tests.mock(redhatrelease.yum_conf, "restore", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
     @unit_tests.mock(pkghandler.versionlock_file, "restore", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
+        self.assertEqual(repo.restore_yum_repos.called, 1)
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
         self.assertEqual(redhatrelease.yum_conf.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
