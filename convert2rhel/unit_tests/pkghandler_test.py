@@ -747,16 +747,17 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.called = 0
             self.pkg = None
             self.dest = None
-            self.disablerepo = []
-            self.enablerepo = []
+            self.disablerepo = None
+            self.enablerepo = None
+            self.to_return = "/path/to.rpm"
 
         def __call__(self, pkg, dest, disablerepo, enablerepo):
             self.called += 1
             self.pkg = pkg
             self.dest = dest
-            self.disablerepo = dest
-            self.enablerepo = dest
-            return 0
+            self.disablerepo = disablerepo
+            self.enablerepo = enablerepo
+            return self.to_return
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
@@ -768,6 +769,21 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
         self.assertEqual(utils.run_subprocess.cmd,
                          "rpm -i --force --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR)
+
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_replace_non_rhel_installed_kernel_failing(self):
+        # First, test utility exiting when unable to download the kernel
+        utils.download_pkg.to_return = None
+        version = '4.7.4-200.fc24'
+        self.assertRaises(SystemExit, pkghandler.replace_non_rhel_installed_kernel, version)
+
+        # Second, test utility exiting when unable to replace the kernel
+        utils.download_pkg.to_return = "/path/to.rpm"
+        utils.run_subprocess.ret_code = 1
+        version = '4.7.4-200.fc24'
+        self.assertRaises(SystemExit, pkghandler.replace_non_rhel_installed_kernel, version)
 
     def test_get_kernel(self):
         kernel_version = list(pkghandler.get_kernel(
