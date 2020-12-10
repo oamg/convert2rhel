@@ -7,6 +7,5 @@ SRPMS/
 *.pyc
 system_tests/vmdefs/centos*/.vagrant/
 *.copr.conf
-c2r-vagrant/
 .vscode/*
 .venv/*
