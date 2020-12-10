@@ -5,19 +5,28 @@ upstream_project_url: https://github.com/oamg/convert2rhel
 
 jobs:
 - job: copr_build
+  trigger: pull_request
   metadata:
     owner: "@oamg"
     project: convert2rhel
     targets:
+    - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
-  trigger: pull_request
   actions:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 - job: copr_build
   trigger: commit
+  metadata:
+    branch: main
+    owner: "@oamg"
+    project: convert2rhel
+    targets:
+    - epel-6-x86_64
+    - epel-7-x86_64
+    - epel-8-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
@@ -26,22 +35,10 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
-  metadata:
-    branch: main
-    owner: "@oamg"
-    project: convert2rhel
-    targets:
-    - epel-7-x86_64
-    - epel-8-x86_64
 - job: tests
   metadata:
     targets:
+    - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
   trigger: pull_request
-- job: propose_downstream
-  trigger: release
-  metadata:
-    dist_git_branches:
-    - epel7
-    - epel8
