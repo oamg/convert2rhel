@@ -31,7 +31,6 @@ import os
 import sys
 from convert2rhel.utils import format_msg_with_datetime
 
-
 LOG_DIR = "/var/log/convert2rhel"
 
 
@@ -70,6 +69,7 @@ def initialize_logger(log_name):
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
     formatter = CustomFormatter("%(message)s")
+    formatter.disable_colors(tool_opts.disable_colors)
     stdout_handler.setFormatter(formatter)
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
@@ -79,6 +79,7 @@ def initialize_logger(log_name):
         os.makedirs(LOG_DIR)
     handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "a")
     formatter = CustomFormatter("%(message)s")
+    formatter.disable_colors(True)
     handler.setFormatter(formatter)
     handler.setLevel(LogLevelFile.level)
     logger.addHandler(handler)
@@ -117,6 +118,13 @@ class CustomLogger(logging.Logger, object):
         super(CustomLogger, self).info(msg, *args, **kwargs)
 
 
+class bcolors:
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+
+
 class CustomFormatter(logging.Formatter, object):
     """Custom formatter to handle different logging formats based on logging level
 
@@ -124,17 +132,30 @@ class CustomFormatter(logging.Formatter, object):
         class and causes 'TypeError: super() argument 1 must be type, not
         classobj' so we use multiple inheritance to get around the problem.
     """
+    color_disabled = False
+
+    def disable_colors(self, value):
+        self.color_disabled = value
 
     def format(self, record):
         if record.levelno == LogLevelTask.level:
             temp = '*' * (90 - len(record.msg) - 25)
-            self._fmt = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
+            fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
+            new_fmt = fmt_orig if self.color_disabled else bcolors.OKGREEN + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
             self.datefmt = "%m/%d/%Y %H:%M:%S"
         elif record.levelno in [logging.INFO, LogLevelFile.level]:
             self._fmt = "%(message)s"
             self.datefmt = ""
         elif record.levelno in [logging.WARNING]:
-            self._fmt = "%(levelname)s - %(message)s"
+            fmt_orig = "%(levelname)s - %(message)s"
+            new_fmt = fmt_orig if self.color_disabled else bcolors.WARNING + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
+            self.datefmt = ""
+        elif record.levelno in [logging.CRITICAL]:
+            fmt_orig = "%(levelname)s - %(message)s"
+            new_fmt = fmt_orig if self.color_disabled else bcolors.FAIL + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
             self.datefmt = ""
         else:
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"

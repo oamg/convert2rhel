@@ -78,11 +78,12 @@ def main():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_ponr_conversion()
 
-        loggerinst.warning("The tool allows rollback of any action until this"
-                           " point.")
+        loggerinst.warning("********************************************************")
+        loggerinst.warning("The tool allows rollback of any action until this point.")
         loggerinst.warning("By continuing all further changes on the system"
                            " will need to be reverted manually by the user,"
                            " if necessary.")
+        loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
