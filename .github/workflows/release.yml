@@ -1,56 +1,79 @@
+---
+name: Build release RPMs
+
 on:
-    push:
-      # Sequence of patterns matched against refs/tags
-      tags:
-        - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+  release:
+    types: [created]
   
-name: Create RPM Release
-
 jobs:
-    build:
-        name: Create RPM Release
-        runs-on: ubuntu-latest
+  build_el6_rpm:
+    name: Build EL6 RPM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-        steps:
+      - name: Build RPM package for EL6
+        id: rpm_build_el6
+        uses: bocekm/rpmbuild@el6
+        with:
+          spec_path: "packaging/convert2rhel.spec"
 
-        - name: Checkout code
-          uses: actions/checkout@master
+      - name: Upload EL6 RPM as release asset
+        id: upload_release_asset_el6
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ github.event.release.upload_url }}
+            asset_path: ${{ steps.rpm_build_el6.outputs.rpm_path }}
+            asset_name: ${{ steps.rpm_build_el6.outputs.rpm_name }}
+            asset_content_type: ${{ steps.rpm_build_el6.outputs.content_type }}
 
-        - name: Create Release
-          id: create_release
-          uses: actions/create-release@latest
-          env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-          with:
-              tag_name: ${{ github.ref }}
-              release_name: Release ${{ github.ref }}
-              # TODO: sturivny
-              # update `body`
-              # or use `body_path` A file with contents describing the release
-              body: |
-                Changes in this Release
-                - Create RPM
-                - Upload Source RPM
-              draft: false
-              prerelease: false
-            
-        - name: build RPM package
-          id: rpm_build
-          # TODO: sturivny
-          # check if it suits for our needs
-          uses: naveenrajm7/rpmbuild@master
-          with:
-              # TODO: sturivny
-              # update spec_file
-              spec_file: "cello.spec"
-            
-        - name: Upload Release Asset
-          id: upload-release-asset 
-          uses: actions/upload-release-asset@v1
-          env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-              upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-              asset_path: ${{ steps.rpm_build.outputs.source_rpm_path }}
-              asset_name: ${{ steps.rpm_build.outputs.source_rpm_name }}
-              asset_content_type: ${{ steps.rpm_build.outputs.rpm_content_type }}
+  build_el7_rpm:
+    name: Build EL7 RPM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build RPM package for EL7
+        id: rpm_build_el7
+        uses: bocekm/rpmbuild@el7
+        with:
+          spec_path: "packaging/convert2rhel.spec"
+
+      - name: Upload EL7 RPM as release asset
+        id: upload_release_asset_el7
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ github.event.release.upload_url }}
+            asset_path: ${{ steps.rpm_build_el7.outputs.rpm_path }}
+            asset_name: ${{ steps.rpm_build_el7.outputs.rpm_name }}
+            asset_content_type: ${{ steps.rpm_build_el7.outputs.content_type }}
+
+  build_el8_rpm:
+    name: Build EL8 RPM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build RPM package for EL8
+        id: rpm_build_el8
+        uses: bocekm/rpmbuild@el8
+        with:
+          spec_path: "packaging/convert2rhel.spec"
+        
+      - name: Upload EL8 RPM as release asset
+        id: upload_release_asset_el8
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ github.event.release.upload_url }}
+            asset_path: ${{ steps.rpm_build_el8.outputs.rpm_path }}
+            asset_name: ${{ steps.rpm_build_el8.outputs.rpm_name }}
+            asset_content_type: ${{ steps.rpm_build_el8.outputs.content_type }}
