@@ -326,52 +326,9 @@ def enable_repos(rhel_repoids):
     system_info.submgr_enabled_repos = repos_to_enable
 
 
-def rename_repo_files():
-    """Rename non-Red Hat .repo files in /etc/yum.repos.d/ so the repositories
-    in them are not used by yum command.
-    """
-    loggerinst = logging.getLogger(__name__)
-    repo_files_renamed = False
-    exe_name = utils.get_executable_name()
-    for filename in os.listdir("/etc/yum.repos.d/"):
-        if filename.endswith(".repo") and filename != "redhat.repo":
-            filepath_old = os.path.join("/etc/yum.repos.d/", filename)
-            filepath_new = "%s.%s_renamed" % (filepath_old, exe_name)
-            shutil.move(filepath_old, filepath_new)
-            loggerinst.info("Renamed: %s -> %s"
-                            % (filepath_old, filepath_new))
-            repo_files_renamed = True
-    if not repo_files_renamed:
-        loggerinst.info("No .repo file renamed.")
-    return
-
-
-def rollback_renamed_repo_files():
-    """Rollback all non-Red Hat .repo files in /etc/yum.repos.d/ that were
-    renamed.
-    """
-    loggerinst = logging.getLogger(__name__)
-    loggerinst.task("Rollback: Rollback all non-Red Hat .repo files renamed in"
-                    " /etc/yum.repos.d/")
-    exe_name = utils.get_executable_name()
-    file_restored = False
-    for filename in os.listdir("/etc/yum.repos.d/"):
-        if filename.endswith(".%s_renamed" % exe_name):
-            filepath_old = os.path.join("/etc/yum.repos.d/", filename)
-            filepath_new = os.path.splitext(filepath_old)[0]
-            shutil.move(filepath_old, filepath_new)
-            loggerinst.info("Renamed: %s -> %s"
-                            % (filepath_old, filepath_new))
-            file_restored = True
-
-    if not file_restored:
-        loggerinst.info("No .repo files to rollback")
-
-
 def rollback():
     """Rollback all subscription related changes"""
     loggerinst = logging.getLogger(__name__)
-    rollback_renamed_repo_files()
     try:
         unregister_system()
     except OSError:

@@ -178,9 +178,6 @@ def pre_ponr_conversion():
         subscription.disable_repos()
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
         subscription.enable_repos(rhel_repoids)
-        # TODO: Replace renaming .repo files by using --enable for yum command
-        loggerinst.task("Convert: Subscription Manager - Rename repositories")
-        subscription.rename_repo_files()
 
 
 def post_ponr_conversion():

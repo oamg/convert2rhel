@@ -282,11 +282,9 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
         self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
 
-    @unit_tests.mock(subscription, "rollback_renamed_repo_files", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
     def test_rollback(self):
         subscription.rollback()
-        self.assertEqual(subscription.rollback_renamed_repo_files.called, 1)
         self.assertEqual(subscription.unregister_system.called, 1)
 
     class LogMocked(unit_tests.MockFunction):
