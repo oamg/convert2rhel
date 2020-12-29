@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.13
+Version:        0.14
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -130,6 +130,13 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu Dec 17 2020 Michal Bocek <mbocek@redhat.com> 0.14-1
+- fix same version kernel not being replaced silently
+- not renaming the original system repofiles anymore
+- fix printing package installation repo with dnf
+- warn users if same repo in both enable/disablerepo options
+- improve manpage/help for the enable/disablerepo options
+
 * Fri Nov 13 2020 Michal Bocek <mbocek@redhat.com> 0.13-1
 - allow conversions of CentOS and Oracle Linux 8
 - fix "TypeError: execve()" py2.6-related error when calling external commands
@@ -137,7 +144,6 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 - remove all Red Hat Network (RHN)-related code as RHN has been shut down
 - set POSIX/C locale at the start of running the tool
 - remove python-syspurpose dependency from spec - not available on OL 7 and 8
-- not renaming the original system repofiles anymore
 - replace the word blacklist with exclude/excluded
 - clearing yum versionlock that could cause the conversion to fail
 - printing rpm files that were modified during the conversion
