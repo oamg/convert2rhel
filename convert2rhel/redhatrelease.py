@@ -31,8 +31,7 @@ def install_release_pkg():
     loggerinst.info("Installing %s package" % get_release_pkg_name())
 
     system_release_file.remove()
-    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release",
-                            tool_opts.variant, "redhat-release-*")
+    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release", "Server", "redhat-release-*")
 
     success = utils.install_pkgs(glob.glob(pkg_path))
     if success:
@@ -58,7 +57,7 @@ def get_release_pkg_name():
     For RHEL 8, the name is just redhat-release.
     """
     if system_info.version in ["6", "7"]:
-        return "redhat-release-" + tool_opts.variant.lower()
+        return "redhat-release-server"
     elif system_info.version == "8":
         return "redhat-release"
 
@@ -106,7 +105,7 @@ class YumConf(object):
         if "distroverpkg=" not in self._yum_conf_content:
             self._yum_conf_content = sub(
                 r"(\[main\].*)", r"\1\ndistroverpkg=%s" %
-                get_release_pkg_name(),
+                                 get_release_pkg_name(),
                 self._yum_conf_content)
         else:
             self._yum_conf_content = sub(
