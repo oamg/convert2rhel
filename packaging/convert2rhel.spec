@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.14
+Version:        0.15
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -130,6 +130,9 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Jan 8 2021 Michal Bocek <mbocek@redhat.com> 0.15-1
+- add missing CentOS 8 packages to be removed prior the conversion
+
 * Thu Dec 17 2020 Michal Bocek <mbocek@redhat.com> 0.14-1
 - fix same version kernel not being replaced silently
 - not renaming the original system repofiles anymore
