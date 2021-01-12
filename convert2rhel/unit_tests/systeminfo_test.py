@@ -22,6 +22,9 @@ import logging
 import os
 import shutil
 
+from convert2rhel.unit_tests import skipIf
+from convert2rhel.utils import is_rpm_based_os
+
 try:
     import unittest2 as unittest  # Python 2.6 support
 except ImportError:
@@ -131,6 +134,7 @@ class TestSysteminfo(unittest.TestCase):
         data=[['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts'],
               ['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts',
                'S.5....T.  c /etc/yum.conf']]))
+    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_modified_rpm_files_diff_with_differences_after_conversion(self):
         system_info.modified_rpm_files_diff()
         self.assertTrue(any('S.5....T.  c /etc/yum.conf' in elem for elem in system_info.logger.info_msgs))

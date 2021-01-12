@@ -28,6 +28,8 @@ from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from convert2rhel.unit_tests import skipIf
+from convert2rhel.utils import is_rpm_based_os
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -154,6 +156,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
 
+    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -372,6 +375,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
+    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_get_rpm_header(self):
         pkg = TestPkgHandler.create_pkg_obj(name="pkg1", version="1", release="2")
         hdr = pkghandler.get_rpm_header(pkg)
@@ -434,15 +438,17 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 self.pkg_obj = None
             return self
 
-    try:
+    if hasattr(pkgmanager, "rpmsack"):
         @unit_tests.mock(pkgmanager.rpmsack.RPMDBPackageSack, "returnPackages",
                          ReturnPackagesMocked())
         def test_get_installed_pkg_objects_yum(self):
             self.get_installed_pkg_objects()
-    except AttributeError:
+    elif hasattr(pkgmanager, "query"):
         @unit_tests.mock(pkgmanager.query, "Query", QueryMocked())
         def test_get_installed_pkg_objects_dnf(self):
             self.get_installed_pkg_objects()
+    else:
+        assert not is_rpm_based_os()
 
     def get_installed_pkg_objects(self):
         pkgs = pkghandler.get_installed_pkg_objects()

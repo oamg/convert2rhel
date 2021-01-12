@@ -15,13 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import wraps
 import os
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import unittest
 
+from functools import wraps
+from warnings import warn
 
 TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
@@ -169,3 +167,21 @@ class CountableMockObject(MockFunction):
     def __call__(self, *args, **kwargs):
         self.called += 1
         return
+
+
+def skipIf(condition, reason):
+    """Simple unittest.skipIf wrapper to make it compatible with py26."""
+    try:
+        return unittest.skipIf(condition, reason)
+    except AttributeError:
+        def skip(reason):
+            def decorator(test_item):
+                if not isinstance(test_item, type):
+                    @wraps(test_item)
+                    def skip_wrapper(*args, **kwargs):
+                        warn("Test %r skipped. Reason: %s" % (test_item, reason))
+
+                    test_item = skip_wrapper
+                return test_item
+            return decorator
+        return skip(reason)

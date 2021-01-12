@@ -19,14 +19,11 @@
 
 
 import sys
+import unittest
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import convert2rhel.toolopts
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-import convert2rhel.toolopts
 from convert2rhel.toolopts import tool_opts
 
 
