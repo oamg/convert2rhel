@@ -17,25 +17,25 @@
 
 
 import os
+import unittest
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
 
 try:
     from collections import OrderedDict
 except ImportError:
     from ordereddict import OrderedDict
 
-from convert2rhel import main
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import redhatrelease
-from convert2rhel import repo
-from convert2rhel import subscription
-from convert2rhel import utils
-from convert2rhel import pkghandler
+from convert2rhel import (
+    main,
+    pkghandler,
+    redhatrelease,
+    repo,
+    subscription,
+    utils,
+)
 from convert2rhel.toolopts import tool_opts
+
 
 def mock_calls(class_or_module, method_name, mock_obj):
     return unit_tests.mock(class_or_module, method_name, mock_obj(method_name))

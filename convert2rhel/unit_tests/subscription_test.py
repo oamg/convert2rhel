@@ -14,20 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# Required imports:
+
+
+import unittest
+
 from collections import namedtuple
 
-# Required imports:
-import os
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
-from convert2rhel import logger
-from convert2rhel import subscription
-from convert2rhel import utils
+from convert2rhel import logger, subscription, utils
 from convert2rhel.toolopts import tool_opts
 
 
