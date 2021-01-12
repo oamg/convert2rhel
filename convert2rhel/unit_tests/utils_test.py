@@ -16,16 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import re
 import os
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import re
+import unittest
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
+from convert2rhel.utils import is_rpm_based_os
 
 
 class TestUtils(unittest.TestCase):
@@ -212,3 +209,6 @@ class TestUtils(unittest.TestCase):
             path = utils.get_rpm_path_from_yumdownloader_output("cmd not important", output, utils.TMP_DIR)
 
             self.assertEqual(path, os.path.join(utils.TMP_DIR, self.DOWNLOADED_RPM_FILENAME))
+
+    def test_is_rpm_based_os(self):
+        assert is_rpm_based_os() in (True, False)

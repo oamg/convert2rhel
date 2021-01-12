@@ -15,14 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import unittest
 
-from convert2rhel import pkghandler
-from convert2rhel import utils
-from convert2rhel import logger
+from convert2rhel import logger, pkghandler, utils
 
 
 class TestOther(unittest.TestCase):
