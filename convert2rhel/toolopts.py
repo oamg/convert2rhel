@@ -207,7 +207,7 @@ class CLI(object):
         if parsed_opts.serverurl:
             if parsed_opts.disable_submgr:
                 loggerinst.warn("Ignoring the --serverurl option. It has no effect when --disable-submgr is used.")
-            else:   
+            else:
                 tool_opts.serverurl = parsed_opts.serverurl
 
         tool_opts.autoaccept = parsed_opts.y
