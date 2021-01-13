@@ -127,7 +127,7 @@ def run_subprocess(cmd="", print_cmd=True, print_output=True):
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
 
-    # Python 2.6 has a bug in shlex that interprets certain characters in a string as 
+    # Python 2.6 has a bug in shlex that interprets certain characters in a string as
     # a NULL character. This is a workaround that encodes the string to avoid the issue.
     if sys.version_info[0] == 2 and sys.version_info[1] == 6:
         cmd = cmd.encode("ascii")
@@ -532,4 +532,29 @@ class RestorablePackage(object):
             loggerinst.warning("Can't access %s" % TMP_DIR)
 
 
+def require_single_user_mode():
+    """
+    Make sure that the system is running in single-user mode and exit if it is not.
+    """
+    loggerinst = logging.getLogger(__name__)
+
+    output, ret_code = run_cmd_in_pty("runlevel", print_cmd=False)
+    runlevel = output.replace("\r\n", "")[-1]
+
+    if ret_code != 0:
+        loggerinst.critical("Unable to determine if the system runs in single-user mode.")
+    elif runlevel != '1':
+        loggerinst.critical("Convert2RHEL requires the system to run in single-user mode.")
+
+
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
+
+
+def is_rpm_based_os():
+    """Check if the OS is rpm based."""
+    try:
+        run_subprocess("rpm")
+    except EnvironmentError:
+        return False
+    else:
+        return True

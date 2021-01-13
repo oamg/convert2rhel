@@ -15,19 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from datetime import datetime
-
 import logging
 import os
 import shutil
+import unittest
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+from datetime import datetime
 
-from convert2rhel import logger
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import logger
 from convert2rhel.toolopts import tool_opts
 
 

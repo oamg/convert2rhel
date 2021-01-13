@@ -20,12 +20,7 @@ This is an example test file containing a simple test.
 """
 
 # Required imports:
-
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import unittest
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils

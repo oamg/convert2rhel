@@ -28,6 +28,8 @@ from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from convert2rhel.unit_tests import skipIf
+from convert2rhel.utils import is_rpm_based_os
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -154,6 +156,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
 
+    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -179,7 +182,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y --enablerepo=rhel-7-extras-rpm")
-        
+
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsByFingerprintMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -255,7 +258,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @staticmethod
     def create_pkg_obj(name, epoch=0, version="", release="", arch="", packager=None,
-                       from_repo="", manager="yum"):
+                       from_repo="", manager="yum", vendor=None):
         class DumbObj(object):
             pass
 
@@ -268,6 +271,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         obj.evr = version + "-" + release
         obj.arch = arch
         obj.packager = packager
+        if vendor:
+            obj.vendor = vendor
         if manager == "yum":
             if from_repo:
                 obj.yumdb_info.from_repo = from_repo
@@ -372,6 +377,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
+    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_get_rpm_header(self):
         pkg = TestPkgHandler.create_pkg_obj(name="pkg1", version="1", release="2")
         hdr = pkghandler.get_rpm_header(pkg)
@@ -434,15 +440,17 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 self.pkg_obj = None
             return self
 
-    try:
+    if hasattr(pkgmanager, "rpmsack"):
         @unit_tests.mock(pkgmanager.rpmsack.RPMDBPackageSack, "returnPackages",
                          ReturnPackagesMocked())
         def test_get_installed_pkg_objects_yum(self):
             self.get_installed_pkg_objects()
-    except AttributeError:
+    elif hasattr(pkgmanager, "query"):
         @unit_tests.mock(pkgmanager.query, "Query", QueryMocked())
         def test_get_installed_pkg_objects_dnf(self):
             self.get_installed_pkg_objects()
+    else:
+        assert not is_rpm_based_os()
 
     def get_installed_pkg_objects(self):
         pkgs = pkghandler.get_installed_pkg_objects()
@@ -501,7 +509,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_print_pkg_info_yum(self):
         pkgs = TestPkgHandler.prepare_pkg_obj_for_print_with_yum()
         result = pkghandler.print_pkg_info(pkgs)
-        self.assertTrue(re.search(r"^Package\s+Packager\s+Repository$", result, re.MULTILINE))
+        self.assertTrue(re.search(r"^Package\s+Vendor/Packager\s+Repository$", result, re.MULTILINE))
         self.assertTrue(re.search(r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$", result, re.MULTILINE))
         self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE))
         self.assertTrue(re.search(r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$", result, re.MULTILINE))
@@ -509,12 +517,22 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @staticmethod
     def prepare_pkg_obj_for_print_with_dnf():
         obj1 = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
-                                             arch="x86_64", packager="Oracle", from_repo="anaconda", manager="dnf")
+                                             arch="x86_64", vendor="Oracle", from_repo="anaconda", manager="dnf")
         obj2 = TestPkgHandler.create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64",
                                              manager="dnf")
         obj3 = TestPkgHandler.create_pkg_obj(name="gpg-pubkey", version="0.1", release="1",
                                              arch="x86_64", from_repo="test", manager="dnf")
         return [obj1, obj2, obj3]
+
+    def test_get_vendor(self):
+        pkg_with_vendor = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
+                                                        arch="x86_64", vendor="Oracle", from_repo="anaconda",
+                                                        manager="dnf")
+        pkg_with_packager = TestPkgHandler.create_pkg_obj(name="pkg1", version="0.1", release="1",
+                                                          arch="x86_64", packager="Oracle", from_repo="anaconda",
+                                                          manager="dnf")
+        self.assertTrue(pkghandler.get_vendor(pkg_with_vendor), 'Oracle')
+        self.assertTrue(pkghandler.get_vendor(pkg_with_packager), 'N/A')
 
     @unit_tests.mock(pkgmanager, "TYPE", "dnf")
     def test_print_pkg_info_dnf(self):
@@ -614,7 +632,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 utils.run_subprocess.cmds)
 
     class GetInstalledPkgsWDifferentFingerprintMocked(
-            unit_tests.MockFunction):
+        unit_tests.MockFunction):
         def __init__(self):
             self.is_only_rhel_kernel_installed = False
             self.called = 0
@@ -852,7 +870,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(os.remove.called, 3)
         self.assertEqual(utils.run_subprocess.called, 2)
 
-
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
                      GetInstalledPkgsWDifferentFingerprintMocked())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
@@ -896,7 +913,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_is_disable_and_enable_repos_has_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
         self.assertTrue("Duplicate repositories was found" in logger.CustomLogger.warning.msg)
-
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])

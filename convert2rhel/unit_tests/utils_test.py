@@ -16,16 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import re
 import os
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import re
+import unittest
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
+from convert2rhel.utils import is_rpm_based_os
 
 
 class TestUtils(unittest.TestCase):
@@ -212,3 +209,57 @@ class TestUtils(unittest.TestCase):
             path = utils.get_rpm_path_from_yumdownloader_output("cmd not important", output, utils.TMP_DIR)
 
             self.assertEqual(path, os.path.join(utils.TMP_DIR, self.DOWNLOADED_RPM_FILENAME))
+
+    def test_is_rpm_based_os(self):
+        assert is_rpm_based_os() in (True, False)
+
+    class GetLoggerMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.task_msgs = []
+            self.info_msgs = []
+            self.warning_msgs = []
+            self.critical_msgs = []
+
+        def __call__(self, msg):
+            return self
+
+        def critical(self, msg):
+            self.critical_msgs.append(msg)
+            raise SystemExit(1)
+
+        def task(self, msg):
+            self.task_msgs.append(msg)
+
+        def info(self, msg):
+            self.info_msgs.append(msg)
+
+        def warn(self, msg, *args):
+            self.warning_msgs.append(msg)
+
+        def warning(self, msg, *args):
+            self.warn(msg, *args)
+
+        def debug(self, msg):
+            pass
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0, output='0\r\n 1\r\n'))
+    @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
+    def test_when_single_user_mode_check_is_true(self):
+        utils.require_single_user_mode()
+        self.assertEqual(len(utils.logging.getLogger.critical_msgs), 0)
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0, output='0\r\n 3\r\n'))
+    @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
+    def test_when_single_user_mode_check_is_false(self):
+        self.assertRaises(SystemExit, utils.require_single_user_mode)
+        self.assertEqual(len(utils.logging.getLogger.critical_msgs), 1)
+        self.assertTrue(
+            "Convert2RHEL requires the system to run in single-user mode" in utils.logging.getLogger.critical_msgs[0])
+
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1, output='0\r\n 3\r\n'))
+    @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
+    def test_when_single_user_mode_check_fails(self):
+        self.assertRaises(SystemExit, utils.require_single_user_mode)
+        self.assertEqual(len(utils.logging.getLogger.critical_msgs), 1)
+        self.assertTrue(
+            "Unable to determine if the system runs in single-user mode" in utils.logging.getLogger.critical_msgs[0])

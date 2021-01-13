@@ -16,16 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import glob
+import unittest
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import redhatrelease, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
 
 
 class TestRedHatRelease(unittest.TestCase):
@@ -53,7 +49,6 @@ class TestRedHatRelease(unittest.TestCase):
 
     @unit_tests.mock(utils.RestorableFile, "remove", DumbMocked())
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(tool_opts, "variant", "Server")
     @unit_tests.mock(system_info, "version", "to_be_changed")
     @unit_tests.mock(glob, "glob", GlobMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -83,7 +78,6 @@ class TestRedHatRelease(unittest.TestCase):
 
     @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     @unit_tests.mock(system_info, "version", "to_be_changed")
-    @unit_tests.mock(tool_opts, "variant", "Server")
     def patch_yum_conf(self, yum_conf_content):
         yum_conf = redhatrelease.YumConf()
         yum_conf._yum_conf_content = yum_conf_content
