@@ -23,7 +23,6 @@ from convert2rhel import logger
 from convert2rhel import pkghandler
 from convert2rhel import redhatrelease
 from convert2rhel import repo
-from convert2rhel import rhelvariant
 from convert2rhel import subscription
 from convert2rhel import systeminfo
 from convert2rhel import toolopts
@@ -63,8 +62,6 @@ def main():
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
-        loggerinst.task("Prepare: Determine RHEL variant")
-        rhelvariant.determine_rhel_variant()
 
         # We check for the single-user mode only after the resolve_system_info() call because that function stops
         # the conversion in case the system vendor/major version is not supported and we don't want users to go
