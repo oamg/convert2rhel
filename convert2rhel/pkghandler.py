@@ -222,7 +222,6 @@ def get_installed_pkg_objects(name=""):
         return _get_installed_pkg_objects_dnf(name)
 
 
-
 def _get_installed_pkg_objects_yum(name):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
@@ -293,12 +292,14 @@ def print_pkg_info(pkgs):
     (https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
     max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
-    max_packager_length = max(max(map(len, [get_packager(pkg) for pkg in pkgs])), len("Packager"))
+    max_packager_length = max(
+        max(map(len, [get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg) for pkg in pkgs])),
+        len("Vendor/Packager"))
 
     header = "%-*s  %-*s  %s" % (max_nvra_length, "Package", max_packager_length,
-                                 "Packager", "Repository") + "\n"
+                                 "Vendor/Packager", "Repository") + "\n"
     header_underline = "%-*s  %-*s  %s" % (max_nvra_length, "-" * len("Package"),
-                                           max_packager_length, "-" * len("Packager"),
+                                           max_packager_length, "-" * len("Vendor/Packager"),
                                            "-" * len("Repository")) + "\n"
 
     pkg_list = ""
@@ -316,7 +317,9 @@ def print_pkg_info(pkgs):
             from_repo = pkg._from_repo
 
         pkg_list += "%-*s  %-*s  %s" % (max_nvra_length, get_pkg_nvra(pkg),
-                                        max_packager_length, get_packager(pkg), from_repo) + "\n"
+                                        max_packager_length,
+                                        get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg),
+                                        from_repo) + "\n"
 
     pkg_table = header + header_underline + pkg_list
     loggerinst = logging.getLogger(__name__)
@@ -364,6 +367,14 @@ def get_packager(pkg_obj):
     #  CentOS Buildsys <bugs@centos.org>
     # Get only the string before the left angle bracket
     return packager.split("<", 1)[0].rstrip()
+
+
+def get_vendor(pkg_obj):
+    # The vendor may not be set for all packages
+    if hasattr(pkg_obj, "vendor") and pkg_obj.vendor:
+        return pkg_obj.vendor
+    else:
+        return "N/A"
 
 
 def list_non_red_hat_pkgs_left():
