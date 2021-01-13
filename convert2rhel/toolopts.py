@@ -40,6 +40,7 @@ class ToolOpts(object):
         self.org = None
         self.arch = None
         self.no_rpm_va = False
+        self.disable_colors = False
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -62,17 +63,21 @@ class CLI(object):
                  "  convert2rhel [--disable-submgr] [--disablerepo repoid]"
                  " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
-                 " -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug]"
-                 " [--restart] [-y]")
+                 " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
+                 " variant] [--serverurl url] [--no-rpm-va] [--debug]"
+                 " [--restart] [--disable-colors] [-y]")
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
                                      add_help_option=False)
 
     def _register_options(self):
         """Prescribe what command line options the tool accepts."""
-        self._parser.add_option("-h", "--help", action="help", help="Show help message and exit.")
-        self._parser.add_option("--debug", action="store_true", help="Print traceback in case of an abnormal exit and"
-                                                                     " messages that could help find an issue.")
+        self._parser.add_option("-h", "--help", action="help", help="Show "
+                                " help message and exit.")
+        self._parser.add_option("--debug", action="store_true", help="Print"
+                                " traceback in case of an abnormal exit and"
+                                " messages that could help find an issue.")
+        self._parser.add_option("--disable-colors", action="store_true", help="Disable color output")
         # Importing here instead of on top of the file to avoid cyclic dependency
         from convert2rhel.systeminfo import PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME
         self._parser.add_option("--no-rpm-va", action="store_true", help="Skip gathering changed rpm files using"
@@ -166,6 +171,9 @@ class CLI(object):
         global tool_opts  # pylint: disable=C0103
         if parsed_opts.debug:
             tool_opts.debug = True
+
+        if parsed_opts.disable_colors:
+            tool_opts.disable_colors = True
 
         if parsed_opts.no_rpm_va:
             tool_opts.no_rpm_va = True

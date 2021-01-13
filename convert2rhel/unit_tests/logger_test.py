@@ -81,9 +81,12 @@ class TestLogger(unittest.TestCase):
             logging.DEBUG, tempstr)
         self.check_formatter_result(
             logging.INFO, self.test_msg)
+        tempstr = "\033[93mWARNING - %s\033[0m" % self.test_msg
+        self.check_formatter_result(logging.WARNING, tempstr)
+
+        custom_formatter.disable_colors(True)
         tempstr = "WARNING - %s" % self.test_msg
-        self.check_formatter_result(
-            logging.WARNING, tempstr)
+        self.check_formatter_result(logging.WARNING, tempstr)
 
     def check_formatter_result(self, log_level, expected_result):
         rec = logging.LogRecord("", log_level, "", 0, self.test_msg, (), None)
