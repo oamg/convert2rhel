@@ -287,10 +287,7 @@ def list_third_party_pkgs():
 
 
 def print_pkg_info(pkgs):
-    """Print package information.
-    We print a packager instead of a vendor because the dnf python API does not provide the information about vendor
-    (https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
-    """
+    """Print package information."""
     max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
     max_packager_length = max(
         max(map(len, [get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg) for pkg in pkgs])),
@@ -360,7 +357,10 @@ def get_pkg_nevra(pkg_obj):
 
 
 def get_packager(pkg_obj):
-    # The packager may not be set for all packages
+    """Get the package packager from the yum/dnf package object.
+
+    The packager may not be set for all packages. E.g. Oracle Linux packages have the packager info empty.
+    """
     packager = pkg_obj.packager if pkg_obj.packager else "N/A"
     # Typical packager format:
     #  Red Hat, Inc. <http://bugzilla.redhat.com/bugzilla>
@@ -370,7 +370,11 @@ def get_packager(pkg_obj):
 
 
 def get_vendor(pkg_obj):
-    # The vendor may not be set for all packages
+    """Get the package vendor from the yum/dnf package object.
+    
+    The vendor information is provided by the yum/dnf python API on all systems except systems derived from
+    RHEL 8.0-8.3 (see bug https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
+    """
     if hasattr(pkg_obj, "vendor") and pkg_obj.vendor:
         return pkg_obj.vendor
     else:
