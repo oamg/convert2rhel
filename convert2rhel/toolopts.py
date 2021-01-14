@@ -131,8 +131,10 @@ class CLI(object):
                                         " subscriptions is possible to obtain by running"
                                         " 'subscription-manager list --available'.")
         if '--variant' in sys.argv[1:]:
-            group.add_option("-v", "--variant", help="The RHEL variant params is not used anymore."
-                                                     " Convert2RHEL will user Server variant as default.")
+            group.add_option("-v", "--variant", help="The RHEL variant option is not processed anymore. In case of"
+                                                     " using subscription-manager, the system is converted to a Server"
+                                                     " variant. In case of using custom repositories, the system is"
+                                                     " converted to the variant provided by these repositories.")
         group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
                                              " Manager server URL to register the system with. If"
                                              " not provided, the subscription-manager defaults will be"
@@ -208,8 +210,12 @@ class CLI(object):
             tool_opts.pool = parsed_opts.pool
 
         if '--variant' in sys.argv[1:]:
-            loggerinst.warning("Variant option is not supported anymore."
-                               "Convert2RHEL will always use Server variant from now.")
+            loggerinst.warning("The --variant option is not supported anymore.")
+            if parsed_opts.disable_submgr:
+                loggerinst.warning("The system will be converted to the RHEL variant provided by the repositories you"
+                                   " have enabled through the --enablerepo option.")
+            else:
+                loggerinst.warning("The system will be converted to the Server variant of RHEL.")
             utils.ask_to_continue()
 
         if parsed_opts.serverurl:
