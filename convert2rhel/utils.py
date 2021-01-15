@@ -538,8 +538,9 @@ def require_single_user_mode():
     """
     loggerinst = logging.getLogger(__name__)
 
-    output, ret_code = run_cmd_in_pty("runlevel", print_cmd=False)
-    runlevel = output.replace("\r\n", "")[-1]
+    runlevel_path = pexpect.which("runlevel")
+    output, ret_code = run_subprocess(cmd=runlevel_path, print_cmd=True, print_output=False)
+    runlevel = output.split()[-1]
 
     if ret_code != 0:
         loggerinst.critical("Unable to determine if the system runs in single-user mode.")
