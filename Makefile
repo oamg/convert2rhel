@@ -12,9 +12,9 @@ clean:
 
 .PHONY: images
 images:
-	@docker build -f Dockerfiles/centos6 -t $(IMAGE)/centos6 .
-	@docker build -f Dockerfiles/centos7 -t $(IMAGE)/centos7 .
-	@docker build -f Dockerfiles/centos8 -t $(IMAGE)/centos8 .
+	@docker build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)/centos6 .
+	@docker build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
+	@docker build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
 
 .PHONY: tests
 tests:
