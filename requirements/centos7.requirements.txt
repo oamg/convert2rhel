@@ -1,3 +1,4 @@
-pylint==1.1.0
-astroid==1.2
-pytest==3.2.5
+pylint==1.9.5
+astroid==1.6.6
+pytest==4.6.11
+pytest-cov==2.11.0

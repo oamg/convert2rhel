@@ -19,11 +19,11 @@ images:
 .PHONY: tests
 tests:
 	@echo 'CentOS 6 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 ./run_unit_tests.sh
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
 	@echo 'CentOS 7 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 ./run_unit_tests.sh
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
 	@echo 'CentOS 8 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 ./run_unit_tests.sh
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
 
 lint:
 	@pylint --rcfile=.pylintrc convert2rhel/
@@ -33,4 +33,4 @@ lint-errors:
 
 .PHONY: tests8
 tests8:
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 ./run_unit_tests.sh
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
