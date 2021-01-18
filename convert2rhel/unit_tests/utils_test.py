@@ -242,13 +242,13 @@ class TestUtils(unittest.TestCase):
         def debug(self, msg):
             pass
 
-    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0, output='0\r\n 1\r\n'))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(ret_code=0, output='0\r\n 1\r\n'))
     @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
     def test_when_single_user_mode_check_is_true(self):
         utils.require_single_user_mode()
         self.assertEqual(len(utils.logging.getLogger.critical_msgs), 0)
 
-    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0, output='0\r\n 3\r\n'))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(ret_code=0, output='0\r\n 3\r\n'))
     @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
     def test_when_single_user_mode_check_is_false(self):
         self.assertRaises(SystemExit, utils.require_single_user_mode)
@@ -256,7 +256,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(
             "Convert2RHEL requires the system to run in single-user mode" in utils.logging.getLogger.critical_msgs[0])
 
-    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1, output='0\r\n 3\r\n'))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(ret_code=1, output='0\r\n 3\r\n'))
     @unit_tests.mock(utils.logging, "getLogger", GetLoggerMocked())
     def test_when_single_user_mode_check_fails(self):
         self.assertRaises(SystemExit, utils.require_single_user_mode)
