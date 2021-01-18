@@ -533,8 +533,10 @@ class RestorablePackage(object):
 
 
 def require_single_user_mode():
-    """
-    Make sure that the system is running in single-user mode and exit if it is not.
+    """Make sure that the system is running in single-user mode and exit if it is not.
+
+    If booted into multi-user mode, a different logged in user than the one executing the conversion may be interfering
+    with the system during the conversion, potentially leaving the system in an undefined state.
     """
     loggerinst = logging.getLogger(__name__)
 
