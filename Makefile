@@ -25,11 +25,13 @@ tests:
 	@echo 'CentOS 8 tests'
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
 
+.PHONY: lint
 lint:
-	@pylint --rcfile=.pylintrc convert2rhel/
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"
 
+.PHONY: lint-errors
 lint-errors:
-	@pylint --rcfile=.pylintrc convert2rhel/ --errors-only
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
 .PHONY: tests8
 tests8:

@@ -1,79 +1,72 @@
 name: pylint
 
-env:
-  interpreted_pylint: |
-    function fail_on_fatal_or_error_only() {
-      # We care about fatal (1) and error (2) messages only.
-      # The exit code is a sum of numbers corresponding to the message severity level.
-      # E.g. if there are both error (2) and warning (4) messages, the exit code is 6.
-      local exit_code=0
-      pylint --rcfile=.pylintrc convert2rhel/ || exit_code=$?
-      if ! [ $((exit_code & 3)) -eq 0 ]; then
-        return $exit_code;
-      fi;
-      return 0;
-    }
-    fail_on_fatal_or_error_only
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
-jobs:        
-  pylint_check_2_6:
-    name: py2.6 check
-    runs-on: ubuntu-latest
-    container: centos:centos6
-
+jobs:
+  linting_centos6:
+    name: centos6 linting
+    runs-on: ubuntu-20.04
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v1
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Fix unavailable CentOS 6 repos
-      run: |
-        sed -i 's/^mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Base.repo
-        sed -i 's/^#baseurl.*$/baseurl=http:\/\/vault.centos.org\/6.10\/os\/x86_64/g' /etc/yum.repos.d/CentOS-Base.repo
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Install Requirements
-      run: |
-        yum install -y python-six pexpect
-        curl https://bootstrap.pypa.io/2.6/get-pip.py -o get-pip.py
-        python get-pip.py
-        pip install pylint==1.1.0
-        pip install astroid==1.2
-    - name: Run Pylint Checks
-      run: ${{ env.interpreted_pylint }}
-
-  pylint_check_2_7:
-    name: py2.7 check
-    runs-on: ubuntu-latest
-    container: centos:centos7
-
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          load: true
+          context: .
+          file: ./Dockerfiles/centos6.Dockerfile
+          tags: centos6
+      - name: Run linting
+        run: |
+          docker run centos6 bash -c "scripts/run_lint.sh"
+  linting_centos7:
+    name: centos7 linting
+    runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Install Requirements
-      run: |
-        yum --enablerepo=extras install -y epel-release  # to get pylint
-        yum install -y python-six pylint pexpect
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Run Pylint Checks
-      run: ${{ env.interpreted_pylint }}
-
-  pylint_check_3:
-    name: py3 check
-    runs-on: ubuntu-latest
-    container: centos:centos8
-
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          load: true
+          context: .
+          file: ./Dockerfiles/centos7.Dockerfile
+          tags: centos7
+      - name: Run linting
+        run: |
+          docker run centos7 bash -c "scripts/run_lint.sh"
+  linting_centos8:
+    name: centos8 linting
+    runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Install Requirements
-      run: |
-        yum --enablerepo=extras install -y epel-release  # to get pylint
-        yum install -y pylint python3-pexpect
-        
-    - name: Run Pylint Checks
-      run: ${{ env.interpreted_pylint }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          load: true
+          context: .
+          file: ./Dockerfiles/centos8.Dockerfile
+          tags: centos8
+      - name: Run linting
+        run: |
+          docker run centos8 bash -c "scripts/run_lint.sh"
