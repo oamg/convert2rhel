@@ -27,8 +27,7 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import logger, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import skipIf
-from convert2rhel.utils import is_rpm_based_os
+from convert2rhel.unit_tests import skipIf, is_rpm_based_os
 
 
 class TestSysteminfo(unittest.TestCase):

@@ -22,7 +22,7 @@ import unittest
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
-from convert2rhel.utils import is_rpm_based_os
+from convert2rhel.unit_tests import is_rpm_based_os
 
 
 class TestUtils(unittest.TestCase):

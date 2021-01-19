@@ -21,6 +21,8 @@ import unittest
 from functools import wraps
 from warnings import warn
 
+from convert2rhel.utils import run_subprocess
+
 TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
 NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
@@ -167,6 +169,16 @@ class CountableMockObject(MockFunction):
     def __call__(self, *args, **kwargs):
         self.called += 1
         return
+
+
+def is_rpm_based_os():
+    """Check if the OS is rpm based."""
+    try:
+        run_subprocess("rpm")
+    except EnvironmentError:
+        return False
+    else:
+        return True
 
 
 def skipIf(condition, reason):

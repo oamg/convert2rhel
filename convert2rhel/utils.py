@@ -553,11 +553,3 @@ def require_single_user_mode():
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
 
 
-def is_rpm_based_os():
-    """Check if the OS is rpm based."""
-    try:
-        run_subprocess("rpm")
-    except EnvironmentError:
-        return False
-    else:
-        return True
