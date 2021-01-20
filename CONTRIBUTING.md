@@ -4,6 +4,47 @@
 1. All python code must be python 2.6/2.7/3.6 compatible
 1. The code should follow linting from pylint
 
+## Prerequisites
+
+### Install pre-commit
+
+We use `pre-commit` to run code formatting/linting tools on each commit. `pre-commit` operates only on **staged** files, and will only run checks that are applicable to files that have changes staged.
+
+```console
+# Ubuntu/Fedora
+# (installs pre-commit to $HOME/bin - make sure this is in your PATH)
+$ curl https://pre-commit.com/install-local.py | python -
+
+# macOS
+$ brew install pre-commit
+```
+
+If you want to format and verify your code passes on `git commit`, you can install pre-commit hooks using:
+
+```console
+$ pre-commit install
+```
+
+At anytime if you need to disable pre-commit hooks, run:
+
+```console
+$ pre-commit uninstall
+```
+
+> **Note:** You can also run these hooks manually at any time by running the following inside the repository:
+>
+> ```console
+> $ pre-commit run
+> ```
+
+> **Note:** It's usually a good idea to run the hooks against all of the files when adding new hooks (usually `pre-commit` will only run on the changed files during git hooks)
+>
+> ```console
+> $ pre-commit run --all-files
+> ```
+
+
+
 ## Unit tests
 Our unit tests are run within containers. To first create the container images, run:
 
