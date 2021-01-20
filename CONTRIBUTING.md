@@ -4,8 +4,33 @@
 1. All python code must be python 2.6/2.7/3.6 compatible
 1. The code should follow linting from pylint
 
-## Unit tests
-Our unit tests are run within containers. To first create the container images, run:
+## Developing locally
+
+The command bellow creates a virtual environment and installs needed dependencies.
+```bash
+# for CentOS8-like system
+make install  # for CentOS 8-like system
+# for CentOS7-like system
+# CENTOS_VER=7 make install
+# for CentOS6-like system
+#. .venv2.7/bin/activate
+# CENTOS_VER=6 make install
+#. .venv2.6/bin/activate
+```
+
+and you're ready to run tests with:
+```bash
+pytest
+```
+
+After that, you can deactivate the environment:
+```bash
+deactivate
+```
+
+## Unit tests (inside the container)
+You can run unit tests also within containers. To first create the container 
+images, run:
 
 ```bash
 $ make images
@@ -18,16 +43,15 @@ $ make tests
 ```
 
 ## Linting
-Linting can be done locally using `virtualenv`.
 
 ```bash
-# Setup a virtual environment
-$ pip install virtualenv
-$ virtualenv .venv --python=python2
-$ source .venv/bin/activate
-
-# Run pylint
-$ pylint --rcfile=.pylintrc convert2rhel/
+make lint   # inside the centos8 container
+```
+Or locally
+```bash
+make install
+. .venv3/bin/activate
+./scripts/run_lint.sh
 ```
 
 ## Releasing a new version to EPEL
