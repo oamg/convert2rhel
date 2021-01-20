@@ -1,7 +1,34 @@
 IMAGE = convert2rhel
+CENTOS_VER ?= 8
+
+ifeq ($(CENTOS_VER), 8)
+PYTHON=python3
+PIP=pip3
+VENV=.venv3
+endif
+
+ifeq ($(CENTOS_VER), 7)
+PYTHON=python2.7
+PIP=pip2.7
+VENV=.venv2.7
+endif
+
+ifeq ($(CENTOS_VER), 6)
+PYTHON=python2.6
+PIP=pip2.6
+VENV=.venv2.6
+endif
 
 .PHONY: all
 all: clean images tests
+
+.PHONY: install
+install:
+	virtualenv --python $(PYTHON) $(VENV); \
+	. $(VENV)/bin/activate; \
+	$(PIP) install --upgrade -r ./requirements/"centos$(CENTOS_VER).requirements.txt"
+
+
 
 .PHONY: clean
 clean:
