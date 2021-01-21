@@ -63,11 +63,12 @@ def main():
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
 
-        # We check for the single-user mode only after the resolve_system_info() call because that function stops
-        # the conversion in case the system vendor/major version is not supported and we don't want users to go
-        # through booting into single-user mode to just find this out.
-        loggerinst.task("Prepare: Require single-user mode")
-        utils.require_single_user_mode()
+        if not os.environ.get("SKIP_SINGLE_USER_MODE", None):
+            # We check for the single-user mode only after the resolve_system_info() call because that function stops
+            # the conversion in case the system vendor/major version is not supported and we don't want users to go
+            # through booting into single-user mode to just find this out.
+            loggerinst.task("Prepare: Require single-user mode")
+            utils.require_single_user_mode()
         
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
