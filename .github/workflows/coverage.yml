@@ -7,8 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  test_coverage_centos8:
-    name: centos8 test_coverage
+  coverage:
+    name: coverage-centos${{ matrix.centos_ver }}
+    strategy:
+      matrix:
+        centos_ver: [8]
+
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -23,8 +27,8 @@ jobs:
           push: false
           load: true
           context: .
-          file: ./Dockerfiles/centos8.Dockerfile
-          tags: centos8
-      - name: Run coverage
+          file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
+          tags: centos${{ matrix.centos_ver }}
+      - name: Run command
         run: |
-          docker run centos8 pytest --cov=convert2rhel
+          docker run centos${{ matrix.centos_ver }} pytest --cov=convert2rhel

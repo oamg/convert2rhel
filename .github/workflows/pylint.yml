@@ -7,8 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  linting_centos6:
-    name: centos6 linting
+  linting:
+    name: linting-centos${{ matrix.centos_ver }}
+    strategy:
+      matrix:
+        centos_ver: [6, 7, 8]
+
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -23,50 +27,8 @@ jobs:
           push: false
           load: true
           context: .
-          file: ./Dockerfiles/centos6.Dockerfile
-          tags: centos6
-      - name: Run linting
+          file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
+          tags: centos${{ matrix.centos_ver }}
+      - name: Run command
         run: |
-          docker run centos6 bash -c "scripts/run_lint.sh"
-  linting_centos7:
-    name: centos7 linting
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build image
-        uses: docker/build-push-action@v2
-        with:
-          push: false
-          load: true
-          context: .
-          file: ./Dockerfiles/centos7.Dockerfile
-          tags: centos7
-      - name: Run linting
-        run: |
-          docker run centos7 bash -c "scripts/run_lint.sh"
-  linting_centos8:
-    name: centos8 linting
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build image
-        uses: docker/build-push-action@v2
-        with:
-          push: false
-          load: true
-          context: .
-          file: ./Dockerfiles/centos8.Dockerfile
-          tags: centos8
-      - name: Run linting
-        run: |
-          docker run centos8 bash -c "scripts/run_lint.sh"
+          docker run centos${{ matrix.centos_ver }} bash -c "scripts/run_lint.sh"
