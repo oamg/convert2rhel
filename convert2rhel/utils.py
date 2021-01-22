@@ -532,24 +532,4 @@ class RestorablePackage(object):
             loggerinst.warning("Can't access %s" % TMP_DIR)
 
 
-def require_single_user_mode():
-    """Make sure that the system is running in single-user mode and exit if it is not.
-
-    If booted into multi-user mode, a different logged in user than the one executing the conversion may be interfering
-    with the system during the conversion, potentially leaving the system in an undefined state.
-    """
-    loggerinst = logging.getLogger(__name__)
-
-    runlevel_path = pexpect.which("runlevel")
-    output, ret_code = run_subprocess(cmd=runlevel_path, print_cmd=True, print_output=False)
-    runlevel = output.split()[-1]
-
-    if ret_code != 0:
-        loggerinst.critical("Unable to determine if the system runs in single-user mode.")
-    elif runlevel != '1':
-        loggerinst.critical("Convert2RHEL requires the system to run in single-user mode.")
-
-
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
-
-
