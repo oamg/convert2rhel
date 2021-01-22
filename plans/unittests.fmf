@@ -3,7 +3,7 @@ summary:
     Unit tests
 execute:
     script:
-    - pwd; cd ~/git-source && pwd && ./run_unit_tests.sh
+    - pwd; cd ~/git-source && pwd && nosetests || nosetests-3
 prepare:
     how: shell
     script:
