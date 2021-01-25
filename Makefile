@@ -24,9 +24,10 @@ all: clean images tests
 
 .PHONY: install
 install:
-	virtualenv --python $(PYTHON) $(VENV); \
+	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
-	$(PIP) install --upgrade -r ./requirements/"centos$(CENTOS_VER).requirements.txt"
+	$(PIP) install --upgrade -r ./requirements/"local.centos$(CENTOS_VER).requirements.txt"; \
+	$(PIP) install -e .
 
 
 
