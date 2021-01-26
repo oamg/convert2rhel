@@ -1,3 +1,0 @@
-six==1.9.0
-pexpect==2.4
--r centos7.requirements.txt

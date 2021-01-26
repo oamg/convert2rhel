@@ -6,26 +6,15 @@
 
 ## Developing locally
 
-The command bellow creates a virtual environment and installs needed dependencies.
+The commands below installs a python3 virtual environment
+with all the necessary dependencies installed:
 ```bash
-# for CentOS8-like system
-make install  # for CentOS 8-like system
-# for CentOS7-like system
-# CENTOS_VER=7 make install
-# for CentOS6-like system
-#. .venv2.7/bin/activate
-# CENTOS_VER=6 make install
-#. .venv2.6/bin/activate
+make install
 ```
 
 and you're ready to run tests with:
 ```bash
-pytest
-```
-
-After that, you can deactivate the environment:
-```bash
-deactivate
+make tests-locally
 ```
 
 ## Unit tests (inside the container)

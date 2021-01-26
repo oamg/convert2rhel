@@ -1,23 +1,8 @@
-IMAGE = convert2rhel
-CENTOS_VER ?= 8
-
-ifeq ($(CENTOS_VER), 8)
-PYTHON=python3
-PIP=pip3
-VENV=.venv3
-endif
-
-ifeq ($(CENTOS_VER), 7)
-PYTHON=python2.7
-PIP=pip2.7
-VENV=.venv2.7
-endif
-
-ifeq ($(CENTOS_VER), 6)
-PYTHON=python2.6
-PIP=pip2.6
-VENV=.venv2.6
-endif
+# Project constants
+IMAGE ?= convert2rhel
+PYTHON ?= python3
+PIP ?= pip3
+VENV ?= .venv3
 
 .PHONY: all
 all: clean images tests
@@ -26,9 +11,12 @@ all: clean images tests
 install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
-	$(PIP) install --upgrade -r ./requirements/"local.centos$(CENTOS_VER).requirements.txt"; \
+	$(PIP) install --upgrade -r ./requirements/local.centos8.requirements.txt; \
 	$(PIP) install -e .
 
+.PHONY: tests-locally
+tests-locally:
+	. $(VENV)/bin/activate; pytest
 
 
 .PHONY: clean
