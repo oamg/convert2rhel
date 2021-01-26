@@ -18,6 +18,10 @@ install:
 tests-locally:
 	. $(VENV)/bin/activate; pytest
 
+.PHONY: lint-locally
+lint-locally:
+	. $(VENV)/bin/activate; ./scripts/run_lint.sh
+
 
 .PHONY: clean
 clean:

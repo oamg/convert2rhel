@@ -38,9 +38,7 @@ make lint   # inside the centos8 container
 ```
 Or locally
 ```bash
-make install
-. .venv3/bin/activate
-./scripts/run_lint.sh
+make lint-locally
 ```
 
 ## Releasing a new version to EPEL
