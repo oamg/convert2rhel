@@ -1,4 +1,4 @@
-name: pylint
+name: unit_tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  linting:
-    name: linting-centos${{ matrix.centos_ver }}
+  testing:
+    name: testing-centos${{ matrix.centos_ver }}
     strategy:
       matrix:
         centos_ver: [6, 7, 8]
@@ -31,4 +31,4 @@ jobs:
           tags: centos${{ matrix.centos_ver }}
       - name: Run command
         run: |
-          docker run centos${{ matrix.centos_ver }} bash -c "scripts/run_lint.sh"
+          docker run centos${{ matrix.centos_ver }} pytest

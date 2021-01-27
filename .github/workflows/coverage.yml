@@ -6,18 +6,29 @@ on:
   pull_request:
     branches: [ main ]
 
-jobs:        
-  test_coverage:
-    runs-on: ubuntu-latest
-    container: centos:centos7
+jobs:
+  coverage:
+    name: coverage-centos${{ matrix.centos_ver }}
+    strategy:
+      matrix:
+        centos_ver: [8]
 
+    runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Install Requirements
-      run: |
-        yum install -y python-coverage python-nose python-six pexpect
-        
-    - name: Check test coverage
-      run: |
-        nosetests --with-coverage convert2rhel/
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          load: true
+          context: .
+          file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
+          tags: centos${{ matrix.centos_ver }}
+      - name: Run command
+        run: |
+          docker run centos${{ matrix.centos_ver }} pytest --cov=convert2rhel
