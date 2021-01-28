@@ -179,21 +179,3 @@ def is_rpm_based_os():
         return False
     else:
         return True
-
-
-def skipIf(condition, reason):
-    """Simple unittest.skipIf wrapper to make it compatible with py26."""
-    try:
-        return unittest.skipIf(condition, reason)
-    except AttributeError:
-        def skip(reason):
-            def decorator(test_item):
-                if not isinstance(test_item, type):
-                    @wraps(test_item)
-                    def skip_wrapper(*args, **kwargs):
-                        warn("Test %r skipped. Reason: %s" % (test_item, reason))
-
-                    test_item = skip_wrapper
-                return test_item
-            return decorator
-        return skip(reason)

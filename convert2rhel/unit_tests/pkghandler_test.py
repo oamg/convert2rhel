@@ -19,6 +19,8 @@ import glob
 import os
 import re
 import sys
+
+import pytest
 import rpm
 
 from convert2rhel import logger
@@ -28,7 +30,7 @@ from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import skipIf, is_rpm_based_os
+from convert2rhel.unit_tests import is_rpm_based_os
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -155,7 +157,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
 
-    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
+    @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -376,7 +378,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
-    @skipIf(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
+    @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_get_rpm_header(self):
         pkg = TestPkgHandler.create_pkg_obj(name="pkg1", version="1", release="2")
         hdr = pkghandler.get_rpm_header(pkg)
