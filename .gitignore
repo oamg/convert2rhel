@@ -9,3 +9,5 @@ system_tests/vmdefs/centos*/.vagrant/
 *.copr.conf
 .vscode/*
 .venv/*
+.install
+.images
