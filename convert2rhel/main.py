@@ -150,6 +150,10 @@ def pre_ponr_conversion():
     # check if user pass some repo to both disablerepo and enablerepo options
     pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
 
+    # package analysis
+    loggerinst.task("Convert: List third-party packages")
+    pkghandler.list_third_party_pkgs()
+
     # remove excluded packages
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
@@ -157,26 +161,9 @@ def pre_ponr_conversion():
     if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Replace")
         subscription.replace_subscription_manager()
-
-    # remove non-RHEL release packages
-    loggerinst.task("Convert: Remove existing OS-release packages")
-    pkghandler.remove_non_rhel_release_pkgs()
-
-    # install RHEL certificates depending on variant and arch
-    # this allows us to skip installing redhat-release pkg to get certs as 
-    # they're needed for RHSM repos
-    loggerinst.task("Convert: Install Red Hat Enterprise Linux certificates")
-    system_cert = cert.SystemCert()
-    system_cert.install()
-
-    # comment out the distroverpkg variable in yum.conf
-    loggerinst.task("Convert: Patch yum configuration file")
-    redhatrelease.YumConf().patch()
-
-    # package analysis
-    loggerinst.task("Convert: List third-party packages")
-    pkghandler.list_third_party_pkgs()
-    if not toolopts.tool_opts.disable_submgr:
+        loggerinst.task("Convert: Install RHEL certificates for RHSM")
+        system_cert = cert.SystemCert()
+        system_cert.install()
         loggerinst.task("Convert: Subscription Manager - Subscribe system")
         subscription.subscribe_system()
         loggerinst.task("Convert: Get RHEL repository IDs")
@@ -187,6 +174,14 @@ def pre_ponr_conversion():
         subscription.disable_repos()
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
         subscription.enable_repos(rhel_repoids)
+
+    # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
+    loggerinst.task("Convert: Remove packages containing repofiles")
+    pkghandler.remove_repofile_pkgs()
+
+    # comment out the distroverpkg variable in yum.conf
+    loggerinst.task("Convert: Patch yum configuration file")
+    redhatrelease.YumConf().patch()
 
 
 def post_ponr_conversion():

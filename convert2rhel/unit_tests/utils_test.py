@@ -138,14 +138,14 @@ class TestUtils(unittest.TestCase):
                      "track_installed_pkg",
                      DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_pkgs_with_replace_and_force(self):
+    def test_install_pkgs_with_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
-        utils.install_pkgs(pkgs, replace=True, force=True)
+        utils.install_pkgs(pkgs, replace=True)
         self.assertEqual(
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual("rpm -i --replacepkgs --force pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
 
     def test_run_subprocess(self):
         output, code = utils.run_subprocess("echo foobar")

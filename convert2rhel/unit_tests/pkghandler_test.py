@@ -169,6 +169,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, "yum install -y --releasever=8 --setopt=module_platform_id=platform:el8")
 
+    @unit_tests.mock(system_info, "version", "7")
+    @unit_tests.mock(system_info, "releasever", "7Server")
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_call_yum_cmd_not_setting_releasever(self):
+        pkghandler.call_yum_cmd("install", set_releasever=False)
+
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
+
     @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
@@ -198,6 +206,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y --enablerepo=rhel-7-extras-rpm")
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ['not-to-be-used-in-the-yum-call'])
     @unit_tests.mock(tool_opts, "enablerepo", ['not-to-be-used-in-the-yum-call'])
@@ -353,6 +362,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             pkg_obj = TestPkgHandler.create_pkg_obj(name="installed_pkg", version="0.1", release="1",
                                                     arch="x86_64", packager="Oracle", from_repo="repoid")
             return [pkg_obj]
+
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
     @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
@@ -607,20 +617,33 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
         self.assertEqual(pkghandler.remove_pkgs_with_confirm.command, system_info.excluded_pkgs)
 
-    @unit_tests.mock(system_info, "release_pkgs", ["installed_pkg",
+    @unit_tests.mock(system_info, "repofile_pkgs", ["installed_pkg",
                                                     "not_installed_pkg"])
     @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_non_rhel_release_pkgs(self):
-        pkghandler.remove_non_rhel_release_pkgs()
+    def test_remove_repofile_pkgs(self):
+        pkghandler.remove_repofile_pkgs()
 
         self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.command, system_info.release_pkgs)
+        self.assertEqual(pkghandler.remove_pkgs_with_confirm.command, system_info.repofile_pkgs)
+
+    class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
+        def __call__(self, fingerprints, name=""):
+            if name and name != "installed_pkg":
+                return []
+            if "rhel_fingerprint" in fingerprints:
+                pkg_obj = TestPkgHandler.create_pkg_obj(name="installed_pkg", version="0.1", release="1",
+                                                        arch="x86_64", packager="Oracle", from_repo="repoid")
+            else:
+                pkg_obj = TestPkgHandler.create_pkg_obj(name="installed_pkg", version="0.1", release="1",
+                                                        arch="x86_64", packager="Red Hat", from_repo="repoid")
+            return [pkg_obj]
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
+    @unit_tests.mock(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
-                     GetInstalledPkgObjectsMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
+                     GetInstalledPkgObjectsWDiffFingerprintMocked())
     def test_remove_pkgs_with_confirm(self):
         pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
 

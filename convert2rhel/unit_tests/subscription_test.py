@@ -332,6 +332,6 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: ["filename"])
-    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos: (None, 1))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos, set_releasever: (None, 1))
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)

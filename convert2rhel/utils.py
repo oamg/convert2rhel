@@ -364,7 +364,7 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
                 loggerinst.warning("Couldn't remove %s." % nvra)
 
 
-def install_pkgs(pkgs_to_install, replace=False, critical=True, force=False):
+def install_pkgs(pkgs_to_install, replace=False, critical=True):
     """Install packages locally available."""
     loggerinst = logging.getLogger(__name__)
 
@@ -375,8 +375,6 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True, force=False):
     cmd_param = ["rpm", "-i"]
     if replace:
         cmd_param.append("--replacepkgs")
-    if force:
-        cmd_param.append("--force")
 
     cmd = " ".join(cmd_param)
     pkgs = " ".join(pkgs_to_install)

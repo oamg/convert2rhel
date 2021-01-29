@@ -59,7 +59,7 @@ class SystemInfo(object):
         # Packages to be removed before the system conversion
         self.excluded_pkgs = []
         # Release packages to be removed before the system conversion
-        self.release_pkgs = []
+        self.repofile_pkgs = []
         self.cfg_filename = None
         self.cfg_content = None
         self.system_release_file_content = None
@@ -81,7 +81,7 @@ class SystemInfo(object):
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
         self.excluded_pkgs = self._get_excluded_pkgs()
-        self.release_pkgs = self._get_release_pkgs()
+        self.repofile_pkgs = self._get_repofile_pkgs()
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
@@ -155,8 +155,8 @@ class SystemInfo(object):
     def _get_excluded_pkgs(self):
         return self._get_cfg_opt("excluded_pkgs").split()
 
-    def _get_release_pkgs(self):
-        return self._get_cfg_opt("release_pkgs").split()
+    def _get_repofile_pkgs(self):
+        return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
         return self._get_cfg_opt("releasever")

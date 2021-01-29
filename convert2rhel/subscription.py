@@ -190,7 +190,9 @@ def install_rhel_subscription_manager():
         # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
         # the repos that are available on the system
         enable_repos=[],
-        disable_repos=[]
+        disable_repos=[],
+        # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
+        set_releasever=False
     )
     if ret_code:
         loggerinst.critical("Failed to install subscription-manager packages."
