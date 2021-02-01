@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from convert2rhel.utils import run_subprocess
 
 from collections import namedtuple
 try:
@@ -211,6 +212,13 @@ class SystemInfo(object):
         if modified_rpm_files_diff:
             self.logger.info(
                 "Comparison of modified rpm files from before and after the conversion:\n%s" % modified_rpm_files_diff)
+
+    @staticmethod
+    def is_rpm_installed(name):
+        _, return_code = run_subprocess(
+            "rpm -q '%s'" % name, print_cmd=False, print_output=False
+        )
+        return return_code == 0
 
 
 # Code to be executed upon module import

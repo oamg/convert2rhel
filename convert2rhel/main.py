@@ -20,7 +20,7 @@ import os
 import sys
 
 from convert2rhel import cert
-from convert2rhel import logger
+from convert2rhel import logger, special_cases
 from convert2rhel import pkghandler
 from convert2rhel import redhatrelease
 from convert2rhel import repo
@@ -157,6 +157,11 @@ def pre_ponr_conversion():
     # remove excluded packages
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
+
+
+    # handle special cases
+    loggerinst.task("Convert: resolve possible edge cases")
+    special_cases.check_and_resolve()
 
     if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Download packages")
