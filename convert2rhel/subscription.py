@@ -68,8 +68,7 @@ def register_system():
                                 " subscription-manager using the provided"
                                 " credentials.")
         else:
-            loggerinst.info("Trying again - please provide correct username"
-                            " and password.")
+            loggerinst.info("Trying again - provide username and password.")
             tool_opts.username = None
             tool_opts.password = None
     return
