@@ -515,6 +515,7 @@ def preserve_only_rhel_kernel():
 
     kernel_pkgs_to_install = remove_non_rhel_kernels()
     fix_invalid_grub2_entries()
+    fix_default_kernel()
 
     if kernel_pkgs_to_install:
         install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
@@ -660,6 +661,31 @@ def remove_non_rhel_kernels():
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels
+
+
+def fix_default_kernel():
+    """
+    Systems converted from Oracle Linux or CentOS Plus may have leftover kernel-uek or kernel-plus in
+    /etc/sysconfig/kernel as DEFAULTKERNEL.
+    This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for RHEL 6,7 and kernel-core for RHEL 8
+    """
+    loggerinst = logging.getLogger(__name__)
+
+    loggerinst.info("Checking for incorrect boot kernel")
+    kernel_sys_cfg = utils.get_file_content("/etc/sysconfig/kernel")
+
+    possible_kernels = ["kernel-uek", "kernel-plus"]
+    kernel_to_change = next(iter(kernel for kernel in possible_kernels if kernel in kernel_sys_cfg), None)
+    if kernel_to_change:
+        loggerinst.warning("Detected leftover boot kernel, changing to RHEL kernel")
+        # need to change to "kernel" in rhel6, 7 and "kernel-core" in rhel8
+        new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major in [6, 7] else "kernel-core")
+
+        kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
+        utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)
+        loggerinst.info("Boot kernel %s was changed to %s" % (kernel_to_change, new_kernel_str))
+    else:
+        loggerinst.debug("Boot kernel validated.")
 
 
 def fix_invalid_grub2_entries():

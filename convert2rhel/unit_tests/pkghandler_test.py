@@ -31,7 +31,7 @@ from convert2rhel import utils
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import is_rpm_based_os
+from convert2rhel.unit_tests import is_rpm_based_os, GetLoggerMocked
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -115,25 +115,16 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def __call__(self, *args, **kwargs):
             return self.file_size
 
-    class GetLoggerMocked(unit_tests.MockFunction):
+    class StoreContentToFileMocked(unit_tests.MockFunction):
         def __init__(self):
-            self.info_msgs = []
-            self.warning_msgs = []
+            self.content = ""
+            self.filename = ""
+            self.called = 0
 
-        def __call__(self, msg):
-            return self
-
-        def info(self, msg):
-            self.info_msgs.append(msg)
-
-        def warn(self, msg, *args):
-            self.warning_msgs.append(msg)
-
-        def warning(self, msg, *args):
-            self.warn(msg, *args)
-
-        def debug(self, msg):
-            pass
+        def __call__(self, filename, content):
+            self.content = content
+            self.filename = filename
+            self.called += 1
 
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
@@ -168,7 +159,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_call_yum_cmd(self):
         pkghandler.call_yum_cmd("install")
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y --releasever=8 --setopt=module_platform_id=platform:el8")
+        self.assertEqual(utils.run_subprocess.cmd,
+                         "yum install -y --releasever=8 --setopt=module_platform_id=platform:el8")
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", "7Server")
@@ -364,7 +356,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                                     arch="x86_64", packager="Oracle", from_repo="repoid")
             return [pkg_obj]
 
-
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
     @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
     def test_get_installed_pkgs_w_fingerprints(self):
@@ -386,15 +377,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(fingerprint, "73bde98381b46521")
 
-    class LogMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.msg = ""
-            self.called = 0
-
-        def __call__(self, msg):
-            self.msg += "%s\n" % msg
-            self.called += 1
-
     class TransactionSetMocked(unit_tests.MockFunction):
         def __call__(self):
             return self
@@ -415,7 +397,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             else:
                 return [db_entry for db_entry in db if db_entry[rpm.RPMTAG_NAME] == value]
 
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(logger.CustomLogger, "warning", GetLoggerMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
     @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_get_rpm_header(self):
@@ -425,7 +407,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                rpm.RPMTAG_VERSION: "1",
                                rpm.RPMTAG_RELEASE: "2",
                                rpm.RPMTAG_EVR: "1-2"})
-
         unknown_pkg = TestPkgHandler.create_pkg_obj(name="unknown", version="1", release="1")
         self.assertRaises(SystemExit, pkghandler.get_rpm_header, unknown_pkg)
 
@@ -677,6 +658,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsWithFingerprintMocked(data=['kernel']))
+    @unit_tests.mock(system_info, "name", "CentOS7")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentToFileMocked())
     def test_preserve_only_rhel_kernel(self):
         pkghandler.preserve_only_rhel_kernel()
 
@@ -930,15 +914,15 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "arch", "x86_64")
-    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     def test_fix_invalid_grub2_entries_not_applicable(self):
         pkghandler.fix_invalid_grub2_entries()
-        self.assertFalse(logger.CustomLogger.info.called)
+        self.assertFalse(len(pkghandler.logging.getLogger.info_msgs), 1)
 
         system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
         system_info.arch = "s390x"
         pkghandler.fix_invalid_grub2_entries()
-        self.assertFalse(logger.CustomLogger.info.called)
+        self.assertFalse(len(pkghandler.logging.getLogger.info_msgs), 1)
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
     @unit_tests.mock(system_info, "arch", "x86_64")
@@ -979,35 +963,88 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
 
     @unit_tests.mock(pkghandler, "get_third_party_pkgs", lambda: [])
-    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     def test_list_third_party_pkgs_no_pkgs(self):
         pkghandler.list_third_party_pkgs()
 
-        self.assertEqual(logger.CustomLogger.info.msg, "No third party packages installed.\n")
+        self.assertTrue("No third party packages installed" in pkghandler.logging.getLogger.info_msgs[0])
 
     @unit_tests.mock(pkghandler, "get_third_party_pkgs", GetInstalledPkgsWFingerprintsMocked())
     @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     def test_list_third_party_pkgs(self):
         pkghandler.list_third_party_pkgs()
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
-        self.assertTrue("Only packages signed by" in logger.CustomLogger.warning.msg)
+        self.assertTrue("Only packages signed by" in pkghandler.logging.getLogger.warning_msgs[0])
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*', 'rhel-7-extras-rpm'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     def test_is_disable_and_enable_repos_has_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertTrue("Duplicate repositories were found" in logger.CustomLogger.warning.msg)
+        self.assertTrue("Duplicate repositories were found" in pkghandler.logging.getLogger.warning_msgs[0])
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     def test_is_disable_and_enable_repos_doesnt_thas_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertEqual(logger.CustomLogger.warning.called, 0)
+        self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
+
+    @unit_tests.mock(system_info, "name", "Oracle Linux Server release 7.9")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "get_file_content", lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=kernel-uek\n")
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentToFileMocked())
+    def test_fix_default_kernel_converting_oracle(self):
+        pkghandler.fix_default_kernel()
+        self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
+        self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
+        self.assertTrue(
+            "Detected leftover boot kernel, changing to RHEL kernel" in pkghandler.logging.getLogger.warning_msgs[0])
+        self.assertTrue("/etc/sysconfig/kernel", utils.store_content_to_file.filename)
+        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
+        self.assertFalse("DEFAULTKERNEL=kernel-uek" in utils.store_content_to_file.content)
+        self.assertFalse("DEFAULTKERNEL=kernel-core" in utils.store_content_to_file.content)
+
+        system_info.name = "Oracle Linux Server release 8.1"
+        system_info.version = namedtuple("Version", ["major", "minor"])(8, 1)
+        pkghandler.fix_default_kernel()
+        self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
+        self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
+        self.assertTrue(
+            "Detected leftover boot kernel, changing to RHEL kernel" in pkghandler.logging.getLogger.warning_msgs[0])
+        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
+        self.assertFalse("DEFAULTKERNEL=kernel-uek" in utils.store_content_to_file.content)
+
+    @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "get_file_content", lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=kernel-plus\n")
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentToFileMocked())
+    def test_fix_default_kernel_converting_centos_plus(self):
+        pkghandler.fix_default_kernel()
+        self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
+        self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
+        self.assertTrue("/etc/sysconfig/kernel", utils.store_content_to_file.filename)
+        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
+        self.assertFalse("DEFAULTKERNEL=kernel-plus" in utils.store_content_to_file.content)
+
+    @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
+    @unit_tests.mock(system_info, "arch", "x86_64")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(utils, "get_file_content", lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=kernel\n")
+    @unit_tests.mock(utils, "store_content_to_file", StoreContentToFileMocked())
+    def test_fix_default_kernel_with_no_incorrect_kernel(self):
+        pkghandler.fix_default_kernel()
+        self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
+        self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
+        self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
 
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
