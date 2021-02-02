@@ -47,49 +47,41 @@ class TestRedHatRelease(unittest.TestCase):
             self.cmd = cmd
             return "Test output", 0
 
-    @unit_tests.mock(utils.RestorableFile, "remove", DumbMocked())
-    @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(system_info, "version", "to_be_changed")
-    @unit_tests.mock(glob, "glob", GlobMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_release_pkg(self):
-        for version in self.supported_rhel_versions:
-            system_info.version = version
-
-            redhatrelease.install_release_pkg()
-
-            self.assertEqual(utils.run_subprocess.cmd, "rpm -i" +
-                             " /tmp/convert2rhel_test/redhat-release/pkg1.rpm" +
-                             " /tmp/convert2rhel_test/redhat-release/pkg2.rpm" +
-                             " Server/redhat-release-7/pkg1.rpm" +
-                             " Server/redhat-release-7/pkg2.rpm")
-
     @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     def test_get_yum_conf_content(self):
         yum_conf = redhatrelease.YumConf()
 
         self.assertTrue("Dummy file to read" in yum_conf._yum_conf_content)
 
-    def test_patch_yum_conf_missing_distroverpkg(self):
-        self.patch_yum_conf(YUM_CONF_WITHOUT_DISTROVERPKG)
-
-    def test_patch_yum_conf_existing_distroverpkg(self):
-        self.patch_yum_conf(YUM_CONF_WITH_DISTROVERPKG)
-
     @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
     @unit_tests.mock(system_info, "version", "to_be_changed")
-    def patch_yum_conf(self, yum_conf_content):
+    def test_patch_yum_conf_missing_distroverpkg(self):
         yum_conf = redhatrelease.YumConf()
-        yum_conf._yum_conf_content = yum_conf_content
+        yum_conf._yum_conf_content = YUM_CONF_WITHOUT_DISTROVERPKG
 
         for version in self.supported_rhel_versions:
             system_info.version = version
 
             # Call just this function to avoid unmockable built-in write func
-            yum_conf._insert_distroverpkg_tag()
+            yum_conf._comment_out_distroverpkg_tag()
 
-            self.assertTrue("\ndistroverpkg=redhat-release" in yum_conf._yum_conf_content)
-            self.assertEqual(yum_conf._yum_conf_content.count("\ndistroverpkg="), 1)
+            self.assertFalse("distroverpkg=" in yum_conf._yum_conf_content)
+            self.assertEqual(yum_conf._yum_conf_content.count("distroverpkg="), 0)
+
+    @unit_tests.mock(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
+    @unit_tests.mock(system_info, "version", "to_be_changed")
+    def test_patch_yum_conf_existing_distroverpkg(self):
+        yum_conf = redhatrelease.YumConf()
+        yum_conf._yum_conf_content = YUM_CONF_WITH_DISTROVERPKG
+
+        for version in self.supported_rhel_versions:
+            system_info.version = version
+
+            # Call just this function to avoid unmockable built-in write func
+            yum_conf._comment_out_distroverpkg_tag()
+
+            self.assertTrue("#distroverpkg=" in yum_conf._yum_conf_content)
+            self.assertEqual(yum_conf._yum_conf_content.count("#distroverpkg="), 1)
 
 
 YUM_CONF_WITHOUT_DISTROVERPKG = """[main]

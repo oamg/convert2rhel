@@ -66,6 +66,7 @@ class SystemInfo(object):
         self.default_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
+        self.releasever = None
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
@@ -81,6 +82,7 @@ class SystemInfo(object):
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
+        self.releasever = self._get_releasever()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -149,6 +151,9 @@ class SystemInfo(object):
 
     def _get_excluded_pkgs(self):
         return self._get_cfg_opt("excluded_pkgs").split()
+
+    def _get_releasever(self):
+        return self._get_cfg_opt("releasever")
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
         """RPM is able to detect if any file installed as part of a package has been changed in any way after the

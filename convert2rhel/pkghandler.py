@@ -80,6 +80,16 @@ def call_yum_cmd(command, args="", print_output=True):
     for repo in tool_opts.disablerepo:
         cmd += " --disablerepo=%s" % repo
 
+    # Since the release package is not installed in the early stages of the conversion,
+    # yum/dnf is unable to expand the $releasever variable.
+    # We instead provide it to each yum call manually.
+    if system_info.releasever:
+        cmd += " --releasever=%s" % system_info.releasever
+
+    # Without the release package installed, dnf can't determine the modularity platform ID.
+    if int(system_info.version) == 8:
+        cmd += " --setopt=module_platform_id=platform:el8"
+
     # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
     # through subscription-manager
     repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
@@ -233,6 +243,8 @@ def _get_installed_pkg_objects_yum(name):
 
 def _get_installed_pkg_objects_dnf(name):
     dnf_base = pkgmanager.Base()
+    conf = dnf_base.conf
+    conf.module_platform_id = "platform:el8"
     dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
     query = dnf_base.sack.query()
     installed = query.installed()

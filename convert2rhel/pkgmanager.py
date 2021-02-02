@@ -16,8 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 try:
-    from dnf import *  # pylint: disable=import-error
-    TYPE = 'dnf'
-except ImportError:
     from yum import *
     TYPE = 'yum'
+except ImportError:
+    from dnf import *  # pylint: disable=import-error
+    TYPE = 'dnf'

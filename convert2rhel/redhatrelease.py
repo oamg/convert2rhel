@@ -18,43 +18,17 @@
 import glob
 import logging
 import os
-from re import sub
+import re
 
 from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.systeminfo import system_info
 
 
-def install_release_pkg():
-    """Install RHEL release package, e.g. redhat-release-server."""
-    loggerinst = logging.getLogger(__name__)
-    loggerinst.info("Installing %s package" % get_release_pkg_name())
-
-    system_release_file.remove()
-    pkg_path = os.path.join(utils.DATA_DIR, "redhat-release", "Server", "redhat-release-*")
-
-    success = utils.install_pkgs(glob.glob(pkg_path))
-    if success:
-        loggerinst.info("Release package successfully installed.")
-
-    # installing rhel6.x release package also installs
-    # /etc/yum.repos.d/rhel-source.repo which may cause user issue when running
-    # tool with --disable-submgr and custom repos therefore it is recommended
-    # to remove this file so it does not impact the next steps this is only
-    # done when user selects to disable submgr
-    repofile = "/etc/yum.repos.d/rhel-source.repo"
-    if tool_opts.disable_submgr and os.path.isfile(repofile):
-        loggerinst.info("Removing /etc/yum.repos.d/rhel-source.repo "
-                        "that was installed by the package ...")
-        os.remove(repofile)
-    return
-
-
 def get_release_pkg_name():
-    """For RHEL 6 and 7 the release package name follows this schema: redhat-release-<lowercase variant>, e.g.
-    redhat-release-server.
+    """For RHEL 6 and 7 the release package name is redhat-release-server.
 
-    For RHEL 8, the name is just redhat-release.
+    For RHEL 8, the name is redhat-release.
     """
     if system_info.version in ["6", "7"]:
         return "redhat-release-server"
@@ -92,25 +66,20 @@ class YumConf(object):
         self.loggerinst = logging.getLogger(__name__)
 
     def patch(self):
-        """Replace distroverpkg variable in yum.conf so yum can determine
+        """Comment out the distroverpkg variable in yum.conf so yum can determine
         release version ($releasever) based on the installed redhat-release
         package.
         """
-        self._insert_distroverpkg_tag()
+        self._comment_out_distroverpkg_tag()
         self._write_altered_yum_conf()
         self.loggerinst.debug("%s patched." % self._yum_conf_path)
         return
 
-    def _insert_distroverpkg_tag(self):
-        if "distroverpkg=" not in self._yum_conf_content:
-            self._yum_conf_content = sub(
-                r"(\[main\].*)", r"\1\ndistroverpkg=%s" %
-                                 get_release_pkg_name(),
-                self._yum_conf_content)
-        else:
-            self._yum_conf_content = sub(
-                r"(distroverpkg=).*",
-                r"\1%s" % get_release_pkg_name(),
+    def _comment_out_distroverpkg_tag(self):
+        if re.search(r'^distroverpkg=', self._yum_conf_content, re.MULTILINE):
+            self._yum_conf_content = re.sub(
+                r"\n(distroverpkg=).*",
+                r"\n#\1",
                 self._yum_conf_content)
 
     def _write_altered_yum_conf(self):
