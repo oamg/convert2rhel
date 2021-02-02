@@ -161,7 +161,7 @@ def pre_ponr_conversion():
     system_cert = cert.SystemCert()
     system_cert.install()
 
-    # replace distroverpkg variable in yum.conf
+    # comment out the distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
 

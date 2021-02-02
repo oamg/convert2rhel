@@ -66,7 +66,7 @@ class YumConf(object):
         self.loggerinst = logging.getLogger(__name__)
 
     def patch(self):
-        """Replace distroverpkg variable in yum.conf so yum can determine
+        """Comment out the distroverpkg variable in yum.conf so yum can determine
         release version ($releasever) based on the installed redhat-release
         package.
         """

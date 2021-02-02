@@ -86,6 +86,10 @@ def call_yum_cmd(command, args="", print_output=True):
     if system_info.releasever:
         cmd += " --releasever=%s" % system_info.releasever
 
+    # Without the release package installed, dnf can't determine the modularity platform ID.
+    if int(system_info.version) == 8:
+        cmd += " --setopt=module_platform_id=platform:el8"
+
     # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
     # through subscription-manager
     repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo

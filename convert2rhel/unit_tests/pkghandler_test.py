@@ -151,11 +151,13 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertRaises(SystemExit, pkghandler.clear_versionlock)
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
+    @unit_tests.mock(system_info, "version", "8")
+    @unit_tests.mock(system_info, "releasever", "8")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd(self):
         pkghandler.call_yum_cmd("install")
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
+        self.assertEqual(utils.run_subprocess.cmd, "yum install -y --releasever=8 --setopt=module_platform_id=platform:el8")
 
     @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
@@ -165,6 +167,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["fingerprint"])
         self.assertEqual(pkghandler.call_yum_cmd.called, pkghandler.MAX_YUM_CMD_CALLS)
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", True)
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
@@ -175,6 +178,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y --disablerepo=* --enablerepo=rhel-7-extras-rpm")
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ['rhel-7-extras-rpm'])
     @unit_tests.mock(tool_opts, "enablerepo", ['not-to-be-used-in-the-yum-call'])
@@ -184,6 +188,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd,
                          "yum install -y --enablerepo=rhel-7-extras-rpm")
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
                      GetInstalledPkgsByFingerprintMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -601,6 +606,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
                         output)
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(pkghandler, "install_rhel_kernel", lambda: True)
     @unit_tests.mock(pkghandler, "fix_invalid_grub2_entries", lambda: None)
     @unit_tests.mock(pkghandler, "remove_non_rhel_kernels", DumbCallableObject())
@@ -658,6 +664,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                                                   arch="x86_64", packager="Oracle", from_repo="repoid")
                 ]
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "handle_no_newer_rhel_kernel_available",
                      DumbCallableObject())
@@ -687,6 +694,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertFalse(update_kernel)
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
                      GetInstalledPkgsWDifferentFingerprintMocked())
@@ -705,6 +713,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.get_installed_pkgs_w_different_fingerprint.called, 2)
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_get_kernel_availability(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
@@ -722,6 +731,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(installed, ['4.7.2-201.fc24', '4.7.4-200.fc24'])
         self.assertEqual(available, ['4.7.4-200.fc24'])
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_handle_older_rhel_kernel_available(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
@@ -739,6 +749,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.called += 1
             self.version = version
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler,
                      "replace_non_rhel_installed_kernel",
@@ -750,6 +761,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.replace_non_rhel_installed_kernel.called, 1)
 
+    @unit_tests.mock(system_info, "version", "7")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):

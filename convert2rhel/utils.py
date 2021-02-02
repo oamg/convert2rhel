@@ -421,6 +421,9 @@ def download_pkg(pkg, dest=TMP_DIR, disablerepo=None, enablerepo=None):
     if system_info.releasever:
         cmd += " --releasever=%s" % system_info.releasever
 
+    if int(system_info.version) == 8:
+        cmd += " --setopt=module_platform_id=platform:el8"
+
     cmd += ' --destdir="%s"' % dest
     cmd += " %s" % pkg
 
