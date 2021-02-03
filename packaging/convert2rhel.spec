@@ -46,34 +46,6 @@ Requires:       yum-utils
 Requires:       pexpect
 %endif
 
-### subscription-manager dependencies ###
-Requires:       usermode
-Requires:       virt-what
-Requires:       python%{python_pkgversion}-decorator
-Requires:       python%{python_pkgversion}-dateutil
-Requires:       python%{python_pkgversion}-dmidecode
-Requires:       python%{python_pkgversion}-iniparse
-Requires:       python%{python_pkgversion}-ethtool
-%if 0%{?el6} && 0%{?rhel}
-Requires:       pygobject2
-%endif
-%if 0%{?el7} && 0%{?rhel}
-Requires:       pygobject3-base
-%endif
-%if 0%{?el8} && 0%{?rhel}
-Requires:       python3-gobject-base
-Requires:       python3-dbus
-%endif
-%if 0%{?rhel} && 0%{?rhel} <= 7
-Requires:       dbus-python
-Requires:       m2crypto
-%endif
-%if 0%{?rhel} && 0%{?rhel} >= 7
-Requires:       gobject-introspection
-Requires:       python%{python_pkgversion}-inotify
-%endif
-### end of subscription-manager dependencies ###
-
 
 %description
 The purpose of the convert2rhel tool is to provide an automated way of

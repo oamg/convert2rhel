@@ -140,7 +140,7 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_pkgs_with_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
-        utils.install_pkgs(pkgs, True)
+        utils.install_pkgs(pkgs, replace=True)
         self.assertEqual(
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 

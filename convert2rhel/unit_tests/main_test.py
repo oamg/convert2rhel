@@ -127,10 +127,11 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
+    @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "install_subscription_manager", CallOrderMocked)
     @mock_calls(subscription, "subscribe_system", CallOrderMocked)
     @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
@@ -141,16 +142,17 @@ class TestMain(unittest.TestCase):
         main.pre_ponr_conversion()
 
         intended_call_order = OrderedDict()
-        intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["install"] = 1
-        intended_call_order["patch"] = 1
         intended_call_order["list_third_party_pkgs"] = 1
-        intended_call_order["install_subscription_manager"] = 1
+        intended_call_order["remove_excluded_pkgs"] = 1
+        intended_call_order["replace_subscription_manager"] = 1
+        intended_call_order["install"] = 1
         intended_call_order["subscribe_system"] = 1
         intended_call_order["get_rhel_repoids"] = 1
         intended_call_order["check_needed_repos_availability"] = 1
         intended_call_order["disable_repos"] = 1
         intended_call_order["enable_repos"] = 1
+        intended_call_order["remove_repofile_pkgs"] = 1
+        intended_call_order["patch"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
@@ -164,10 +166,11 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
+    @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
+    @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "install_subscription_manager", CallOrderMocked)
     @mock_calls(subscription, "subscribe_system", CallOrderMocked)
     @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
     @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
@@ -178,18 +181,21 @@ class TestMain(unittest.TestCase):
         main.pre_ponr_conversion()
 
         intended_call_order = OrderedDict()
-        intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["install"] = 1
-        intended_call_order["patch"] = 1
-        intended_call_order["list_third_party_pkgs"] = 1
 
-        # Do not expect these to be called - related to RHSM
-        intended_call_order["install_subscription_manager"] = 0
+        intended_call_order["list_third_party_pkgs"] = 1
+        intended_call_order["remove_excluded_pkgs"] = 1
+
+        # Do not expect this one to be called - related to RHSM
+        intended_call_order["replace_subscription_manager"] = 0
+        intended_call_order["install"] = 1
         intended_call_order["subscribe_system"] = 0
         intended_call_order["get_rhel_repoids"] = 0
         intended_call_order["check_needed_repos_availability"] = 0
         intended_call_order["disable_repos"] = 0
         intended_call_order["enable_repos"] = 0
+
+        intended_call_order["remove_repofile_pkgs"] = 1
+        intended_call_order["patch"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())

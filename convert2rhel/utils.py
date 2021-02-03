@@ -300,7 +300,7 @@ class ChangedRPMPackagesController(object):
         """For each package installed during conversion remove it."""
         loggerinst = logging.getLogger(__name__)
         loggerinst.task("Rollback: Removing installed packages")
-        remove_pkgs(self.installed_pkgs, should_backup=False, critical=False)
+        remove_pkgs(self.installed_pkgs, backup=False, critical=False)
 
     def _install_removed_pkgs(self):
         """For each package removed during conversion install it."""
@@ -314,7 +314,7 @@ class ChangedRPMPackagesController(object):
                 continue
             pkgs_to_install.append(restorable_pkg.path)
 
-        install_pkgs(pkgs_to_install, critical=False)
+        install_pkgs(pkgs_to_install, replace=True, critical=False)
 
     def restore_pkgs(self):
         """Restore system to the original state."""
@@ -339,10 +339,11 @@ def remove_orphan_folders():
             os.rmdir(path)
 
 
-def remove_pkgs(pkgs_to_remove, should_backup=True, critical=True):
+def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
     """Remove packages not heeding to their dependencies."""
     loggerinst = logging.getLogger(__name__)
-    if should_backup:
+
+    if backup:
         # Some packages, when removed, will also remove repo files, making it
         # impossible to access the repositories to download a backup. For this
         # reason we first backup all packages and only after that we remove

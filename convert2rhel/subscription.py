@@ -23,7 +23,10 @@ import logging
 
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from convert2rhel import pkghandler
 from convert2rhel import utils
+
+SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 
 
 def subscribe_system():
@@ -138,26 +141,75 @@ def hide_password(cmd):
     return re.sub("--password=\".*?\"", "--password=\"*****\"", cmd)
 
 
-def install_subscription_manager():
-    """Install subscription-manager RPM and its dependencies."""
+def replace_subscription_manager():
+    """Remove the original and install the RHEL subscription-manager packages."""
     loggerinst = logging.getLogger(__name__)
-    sm_dir = os.path.join(utils.DATA_DIR, "subscription-manager")
-    if not os.path.isdir(sm_dir) or not os.listdir(sm_dir):
+    if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
         loggerinst.critical("The %s directory does not exist or is empty."
                             " Using the subscription-manager is not documented"
                             " yet. Please use the --disable-submgr option."
                             " Read more about the tool usage in the article"
                             " https://access.redhat.com/articles/2360841."
-                            % sm_dir)
+                            % SUBMGR_RPMS_DIR)
         return
-    rpms_to_install = [os.path.join(sm_dir, x) for x in os.listdir(sm_dir)]
-    if rpms_to_install:
-        utils.install_pkgs(rpms_to_install, True)
-        loggerinst.info("RPMs installed:\n%s" % "\n".join(rpms_to_install))
-    else:
-        loggerinst.info("No RPM to be installed.")
-    return
 
+    remove_original_subscription_manager()
+    install_rhel_subscription_manager()
+
+
+def remove_original_subscription_manager():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Removing non-RHEL subscription-manager packages.")
+    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
+    submgr_pkgs = pkghandler.get_installed_pkgs_w_different_fingerprint(
+        system_info.fingerprints_rhel, "*subscription-manager*")
+    if not submgr_pkgs:
+        loggerinst.info("No packages related to subscription-manager installed.")
+        return
+    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager pkgs:\n")
+    pkghandler.print_pkg_info(submgr_pkgs)
+    utils.ask_to_continue()
+    submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
+    utils.remove_pkgs(submgr_pkg_names, critical=False)
+
+
+def install_rhel_subscription_manager():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Installing subscription-manager RPMs.")
+    rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
+
+    if not rpms_to_install:
+        loggerinst.warn("No RPMs found in %s." % SUBMGR_RPMS_DIR)
+        return
+
+    _, ret_code = pkghandler.call_yum_cmd(
+        # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
+        # and we need these packages to be replaced with the provided RPMs from RHEL.
+        "install",
+        " ".join(rpms_to_install),
+        # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
+        # the repos that are available on the system
+        enable_repos=[],
+        disable_repos=[],
+        # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
+        set_releasever=False
+    )
+    if ret_code:
+        loggerinst.critical("Failed to install subscription-manager packages."
+                            " See the above yum output for details.")
+    else:
+        loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
+
+
+def remove_subscription_manager():
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Removing RHEL subscription-manager packages.")
+    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
+    submgr_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, "*subscription-manager*")
+    if not submgr_pkgs:
+        loggerinst.info("No packages related to subscription-manager installed.")
+        return
+    pkghandler.call_yum_cmd("remove", " ".join(submgr_pkgs), print_output=False)
 
 def attach_subscription():
     """Attach a specific subscription to the registered OS. If no
@@ -330,6 +382,7 @@ def rollback():
     loggerinst = logging.getLogger(__name__)
     try:
         unregister_system()
+        remove_subscription_manager()
     except OSError:
         loggerinst.warn("subscription-manager not installed, skipping")
 

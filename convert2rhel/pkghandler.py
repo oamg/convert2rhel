@@ -69,30 +69,49 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     return
 
 
-def call_yum_cmd(command, args="", print_output=True):
-    """Call yum command and optionally print its output."""
+def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable_repos=None, set_releasever=True):
+    """Call yum command and optionally print its output.
+
+    The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
+    which is:
+    * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
+    * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
+      file for the particular system OR passed through a CLI option by the user
+
+    YUM/DNF typically expands the $releasever variable used in repofiles. However it fails to do so after we remove the
+    release packages (centos-release, oraclelinux-release, etc.) and before the redhat-release package is installed.
+    By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
+    release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
+    """
     loggerinst = logging.getLogger(__name__)
 
     cmd = "yum %s -y" % command
 
     # The --disablerepo yum option must be added before --enablerepo,
     #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
-    for repo in tool_opts.disablerepo:
+    repos_to_disable = []
+    if isinstance(disable_repos, list):
+        repos_to_disable = disable_repos
+    else:
+        repos_to_disable = tool_opts.disablerepo
+
+    for repo in repos_to_disable:
         cmd += " --disablerepo=%s" % repo
 
-    # Since the release package is not installed in the early stages of the conversion,
-    # yum/dnf is unable to expand the $releasever variable.
-    # We instead provide it to each yum call manually.
-    if system_info.releasever:
+    if set_releasever and system_info.releasever:
         cmd += " --releasever=%s" % system_info.releasever
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if int(system_info.version) == 8:
         cmd += " --setopt=module_platform_id=platform:el8"
 
-    # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
-    # through subscription-manager
-    repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+    repos_to_enable = []
+    if isinstance(enable_repos, list):
+        repos_to_enable = enable_repos
+    else:
+        # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
+        # through subscription-manager
+        repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
 
     for repo in repos_to_enable:
         cmd += " --enablerepo=%s" % repo
@@ -187,7 +206,6 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 def get_pkg_fingerprint(pkg_obj):
     """Get fingerprint of the key used to sign a package"""
-    loggerinst = logging.getLogger(__name__)
     if pkgmanager.TYPE == 'yum':
         hdr = pkg_obj.hdr
     elif pkgmanager.TYPE == 'dnf':
@@ -410,28 +428,49 @@ def list_non_red_hat_pkgs_left():
 
 def remove_excluded_pkgs():
     """Certain packages need to be removed before the system conversion,
-    depending on the system to be converted. At least removing <os>-release
-    package is a must.
+    depending on the system to be converted.
     """
     loggerinst = logging.getLogger(__name__)
-    installed_excluded_pkgs = []
     loggerinst.info("Searching for the following excluded packages:\n")
-    for excluded_pkg in system_info.excluded_pkgs:
-        temp = '.' * (50 - len(excluded_pkg) - 2)
-        pkg_objects = get_installed_pkg_objects(excluded_pkg)
-        installed_excluded_pkgs.extend(pkg_objects)
-        loggerinst.info("%s %s %s" %
-                        (excluded_pkg, temp, str(len(pkg_objects))))
+    remove_pkgs_with_confirm(system_info.excluded_pkgs)
 
-    if not installed_excluded_pkgs:
+
+def remove_repofile_pkgs():
+    """Remove those non-RHEL packages that contain YUM/DNF repofiles (/etc/yum.repos.d/*.repo) or affect variables
+    in the repofiles (e.g. $releasever)
+
+    We can't be removing them together with the other excluded packages - it wouldn't
+    be possible to access and install subscription-manager dependencies. At the same time
+    we can't install subscription-manager before removing the excluded packages
+    as there would be a conflict with one of the excluded packages (rhn-client-tools).
+    """
+    loggerinst = logging.getLogger(__name__)
+    loggerinst.info("Searching for packages containing repofiles or affecting variables in the repofiles:\n")
+    remove_pkgs_with_confirm(system_info.repofile_pkgs)
+
+
+def remove_pkgs_with_confirm(pkgs, backup=True):
+    """
+    Remove selected packages with a breakdown and user confirmation prompt.
+    """
+    pkgs_to_remove = []
+    loggerinst = logging.getLogger(__name__)
+    for pkg in pkgs:
+        temp = '.' * (50 - len(pkg) - 2)
+        pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
+        pkgs_to_remove.extend(pkg_objects)
+        loggerinst.info("%s %s %s" %
+                        (pkg, temp, str(len(pkg_objects))))
+
+    if not pkgs_to_remove:
         loggerinst.info("\nNothing to do.")
         return
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
-    print_pkg_info(installed_excluded_pkgs)
+    print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in installed_excluded_pkgs])
-    loggerinst.debug("Successfully removed %s packages" % str(len(installed_excluded_pkgs)))
+    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
 def replace_non_red_hat_packages():
@@ -530,7 +569,7 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], should_backup=False)
+            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
             call_yum_cmd(command="install", args="kernel-%s" % older)
         else:
             replace_non_rhel_installed_kernel(installed[0])
@@ -614,7 +653,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], should_backup=False)
+        utils.remove_pkgs(pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels], backup=False)
     else:
         loggerinst.info("None found.")
     return non_rhel_kernels
