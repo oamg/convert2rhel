@@ -2,6 +2,7 @@ FROM centos:8 as base
 
 ENV PYTHON python3
 ENV PIP pip3
+ENV PYTHONDONTWRITEBYTECODE 1
 
 ENV URL_GET_PIP "https://bootstrap.pypa.io/get-pip.py"
 ENV APP_DEV_DEPS "requirements/centos8.requirements.txt"
