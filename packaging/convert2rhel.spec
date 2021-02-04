@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.15
+Version:        0.16
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -102,6 +102,20 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu Feb 4 2021 Michal Bocek <mbocek@redhat.com> 0.16-1
+- Not requiring users to download redhat-release and subscription-manager with
+  its dependencies prior the conversion when using RHSM.
+- Remove subscription-manager dependencies from the convert2rhel spec file by
+  installing subscription-manager through yum/dnf instead of rpm.
+- The --variant option for choosing RHEL variant was broken. Instead of fixing
+  it we remove all the related code. The system is always converted to RHEL
+  Server variant in case of RHEL 6 and 7. RHEL 8 has no variants. Using the
+  --variant option now prints a warning.
+- Update Red Hat EULA to the 2019 version.
+- Messages of importance are printed in color in the terminal.
+- When printing a list of packages, we print the package vendor by default, or
+  the packager when the vendor information is not available.
+
 * Fri Jan 8 2021 Michal Bocek <mbocek@redhat.com> 0.15-1
 - add missing CentOS 8 packages to be removed prior the conversion
 
