@@ -1,0 +1,4 @@
+[run]
+omit=
+    convert2rhel/unit_tests/*
+source=convert2rhel
