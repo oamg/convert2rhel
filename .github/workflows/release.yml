@@ -3,7 +3,7 @@ name: Build release RPMs
 
 on:
   release:
-    types: [created]
+    types: [published, edited]
   
 jobs:
   build_el6_rpm:
