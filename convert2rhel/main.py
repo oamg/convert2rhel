@@ -159,6 +159,8 @@ def pre_ponr_conversion():
     pkghandler.remove_excluded_pkgs()
 
     if not toolopts.tool_opts.disable_submgr:
+        loggerinst.task("Convert: Subscription Manager - Download packages")
+        subscription.download_rhsm_pkgs()
         loggerinst.task("Convert: Subscription Manager - Replace")
         subscription.replace_subscription_manager()
         loggerinst.task("Convert: Install RHEL certificates for RHSM")

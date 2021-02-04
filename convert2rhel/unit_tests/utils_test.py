@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+from collections import namedtuple
 import os
 import re
 import unittest
@@ -170,30 +170,39 @@ class TestUtils(unittest.TestCase):
         "[SKIPPED] %s: Already downloaded" % DOWNLOADED_RPM_FILENAME
     ]
 
-    @unit_tests.mock(system_info, "version", "8")
+    @unit_tests.mock(utils, "download_pkg", lambda pkg, dest, reposdir, enable_repos, disable_repos: "/filepath/")
+    def test_download_pkgs(self):
+        paths = utils.download_pkgs(["pkg1", "pkg2"], "/dest/", "/reposdir/", ["repo1"], ["repo2"])
+
+        self.assertEqual(paths, ["/filepath/", "/filepath/"])
+
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
     @unit_tests.mock(system_info, "releasever", "8")
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
     @unit_tests.mock(utils, "get_rpm_path_from_yumdownloader_output", lambda x, y, z: "/path/test.rpm")
     def test_download_pkg_success_with_all_params(self):
         dest = "/test dir/"
-        disablerepo = "x"
-        enablerepo = "y"
-        path = utils.download_pkg("kernel", dest=dest, disablerepo=disablerepo, enablerepo=enablerepo)
+        reposdir = "/my repofiles/"
+        enable_repos = ["repo1", "repo2"]
+        disable_repos = ["*"]
+        
+        path = utils.download_pkg(
+            "kernel", dest=dest, reposdir=reposdir, enable_repos=enable_repos, disable_repos=disable_repos)
 
-        self.assertEqual('yumdownloader -v --disablerepo=%s --enablerepo=%s --releasever=8'
-                         ' --setopt=module_platform_id=platform:el8 --destdir="%s" kernel'
-                         % (disablerepo, enablerepo, dest),
+        self.assertEqual('yumdownloader -v --destdir="%s" --setopt=reposdir="%s" --disablerepo="*" --enablerepo="repo1"'
+                         ' --enablerepo="repo2" --releasever=8 --setopt=module_platform_id=platform:el8 kernel'
+                         % (dest, reposdir),
                          utils.run_cmd_in_pty.cmd)
         self.assertTrue(path)  # path is not None (which is the case of unsuccessful download)
 
-    @unit_tests.mock(system_info, "version", "7")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
     def test_download_pkg_failed_download(self):
         path = utils.download_pkg("kernel")
 
         self.assertEqual(path, None)
 
-    @unit_tests.mock(system_info, "version", "7")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
     def test_download_pkg_incorrect_output(self):
         utils.run_cmd_in_pty.output = "bogus"

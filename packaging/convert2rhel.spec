@@ -71,15 +71,20 @@ rm -rf build/lib/man
 
 rm -rf %{buildroot}%{python_sitelib}/%{name}/data
 
-# Move system version and architecture specific tool data to /usr/share/convert2rhel
-install -d %{buildroot}%{_datadir}/%{name}
+# Create the /usr/share/convert2rhel/ directory for storing data like GPG keys and config files
+install -d %{buildroot}%{_datadir}/%{name}/
 cp -a build/lib/%{name}/data/version-independent/. \
       %{buildroot}%{_datadir}/%{name}
 cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
       %{buildroot}%{_datadir}/%{name}
 
-# Temporary directory used mainly for backing up files during the conversion
-install -d %{buildroot}%{_sharedstatedir}/%{name}
+# Create a directory into which convert2rhel downloads RHSM-related packages
+install -d %{buildroot}%{_datadir}/%{name}/subscription-manager/
+
+# Create a temporary directory /var/lib/convert2rhel/ - used mainly for backing up files during the conversion
+install -d %{buildroot}%{_sharedstatedir}/%{name}/
+install -d %{buildroot}%{_sharedstatedir}/%{name}/backup/
+install -d %{buildroot}%{_sharedstatedir}/%{name}/rhsm/
 
 install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
@@ -92,8 +97,8 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %endif
 
 %{_bindir}/%{name}
-%{_datadir}/%{name}
-%{_sharedstatedir}/%{name}
+%{_datadir}/%{name}/
+%{_sharedstatedir}/%{name}/
 %{python_sitelib}/%{name}*
 
 %{!?_licensedir:%global license %%doc}

@@ -19,14 +19,41 @@ from collections import namedtuple
 import os
 import re
 import shutil
+import sys
 import logging
+import subprocess
 
-from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel import pkghandler
 from convert2rhel import utils
+from convert2rhel import pkghandler
+from convert2rhel.systeminfo import system_info
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
+_RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
+_CENTOS_6_REPO_CONTENT = \
+        '[centos-6-contrib-convert2rhel]\n' \
+        'name=CentOS 6 - Contrib added by Convert2RHEL\n' \
+        'baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n' \
+        'gpgcheck=0\n' \
+        'enabled=1\n'
+_CENTOS_6_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "centos_6.repo")
+_CENTOS_7_REPO_CONTENT = \
+        '[centos-7-convert2rhel]\n' \
+        'name=CentOS 7 added by Convert2RHEL\n' \
+        'mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os\n' \
+        'gpgcheck=0\n' \
+        'enabled=1\n'
+_CENTOS_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "centos_7.repo")
+# We are using UBI 8 instead of CentOS 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS 8
+# https://bugs.centos.org/view.php?id=17907
+_UBI_8_REPO_CONTENT = \
+        '[ubi-8-baseos-convert2rhel]\n' \
+        'name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n' \
+        'baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n' \
+        'gpgcheck=0\n' \
+        'enabled=1\n'
+_UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
 
 
 def subscribe_system():
@@ -408,3 +435,71 @@ def check_needed_repos_availability(repo_ids_needed):
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed RHEL repos are available.")
+
+
+def download_rhsm_pkgs():
+    """Download all the packages necessary for a successful registration to the Red Hat Subscription Management.
+
+    The packages are available in non-standard repositories, so additional repofiles need to be used. The downloaded
+    RPMs are to be installed in a later stage of the conversion.
+    """
+    utils.mkdir_p(_RHSM_TMP_DIR)
+    pkgs_to_download = ["subscription-manager",
+                        "subscription-manager-rhsm-certificates"]
+
+    if system_info.version.major == 6:
+        pkgs_to_download.append("subscription-manager-rhsm")
+        _download_rhsm_pkgs(pkgs_to_download, _CENTOS_6_REPO_PATH, _CENTOS_6_REPO_CONTENT)
+
+    elif system_info.version.major == 7:
+        pkgs_to_download += ["subscription-manager-rhsm", "python-syspurpose"]
+        _download_rhsm_pkgs(pkgs_to_download, _CENTOS_7_REPO_PATH, _CENTOS_7_REPO_CONTENT)
+        _get_rhsm_cert_on_centos_7()
+
+    elif system_info.version.major == 8:
+        pkgs_to_download += ["python3-subscription-manager-rhsm", "dnf-plugin-subscription-manager",
+                             "python3-syspurpose"]
+        _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
+
+
+def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
+    downloaddir = os.path.join(utils.DATA_DIR, "subscription-manager")
+    utils.store_content_to_file(filename=repo_path, content=repo_content)
+    paths = utils.download_pkgs(pkgs_to_download, dest=downloaddir, reposdir=_RHSM_TMP_DIR)
+    exit_on_failed_download(paths)
+
+
+def exit_on_failed_download(paths):
+    loggerinst = logging.getLogger(__name__)
+    if None in paths:
+        loggerinst.critical("Unable to download the subscription-manager package or its dependencies. See details of"
+                            " the failed yumdownloader call above. These packages are necessary for the conversion"
+                            " unless you use the --disable-submgr option.")
+
+
+def _get_rhsm_cert_on_centos_7():
+    """There's a RHSM-related bug on CentOS 7: https://bugs.centos.org/view.php?id=14785
+    - The subscription-manager-rhsm-certificates is missing the necessary /etc/rhsm/ca/redhat-uep.pem.
+    - This cert is still available in the python-rhsm-certificates package which is not possible to install
+      (because it is obsoleted by the subscription-manager-rhsm-certificates).
+    The workaround is to download the python-rhsm-certificates and extract the certificate from it.
+    """
+    loggerinst = logging.getLogger(__name__)
+    cert_pkg_path = utils.download_pkg(pkg="python-rhsm-certificates", dest=_RHSM_TMP_DIR, reposdir=_RHSM_TMP_DIR)
+    exit_on_failed_download([cert_pkg_path])
+
+    output, ret_code = utils.run_subprocess("rpm2cpio %s" % cert_pkg_path, print_output=False)
+    if ret_code != 0:
+        loggerinst.critical("Failed to extract cpio archive from the %s package." % cert_pkg_path)
+
+    cpio_filepath = cert_pkg_path + ".cpio"
+    utils.store_content_to_file(filename=cpio_filepath, content=output)
+
+    cert_path = "/etc/rhsm/ca/redhat-uep.pem"
+    utils.mkdir_p("/etc/rhsm/ca/")
+    output, ret_code = utils.run_subprocess("cpio --quiet -F %s -iv --to-stdout .%s" % (cpio_filepath, cert_path),
+                                            print_output=False)
+    # cpio return code 0 even if the requested file is not in the archive - but then the output is 0 chars
+    if ret_code != 0 or not output:
+        loggerinst.critical("Failed to extract the %s certificate from the %s archive." % (cert_path, cpio_filepath))
+    utils.store_content_to_file(cert_path, output)

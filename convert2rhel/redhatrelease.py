@@ -30,9 +30,9 @@ def get_release_pkg_name():
 
     For RHEL 8, the name is redhat-release.
     """
-    if system_info.version in ["6", "7"]:
+    if system_info.version.major in [6, 7]:
         return "redhat-release-server"
-    elif system_info.version == "8":
+    elif system_info.version.major == 8:
         return "redhat-release"
 
 

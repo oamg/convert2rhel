@@ -102,7 +102,7 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
         cmd += " --releasever=%s" % system_info.releasever
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
-    if int(system_info.version) == 8:
+    if system_info.version.major == 8:
         cmd += " --setopt=module_platform_id=platform:el8"
 
     repos_to_enable = []
@@ -598,9 +598,7 @@ def get_kernel(kernels_raw):
 
 
 def replace_non_rhel_installed_kernel(version):
-    """Replace the installed non-RHEL kernel with RHEL kernel with same
-    version.
-    """
+    """Replace the installed non-RHEL kernel with RHEL kernel with same version."""
     loggerinst = logging.getLogger(__name__)
     loggerinst.warning("The convert2rhel is going to force-replace the only"
                        " kernel installed, which has the same NEVRA as the"
@@ -615,8 +613,8 @@ def replace_non_rhel_installed_kernel(version):
     pkg = "kernel-%s" % version
 
     path = utils.download_pkg(
-        pkg=pkg, dest=utils.TMP_DIR, disablerepo=tool_opts.disablerepo,
-        enablerepo=tool_opts.enablerepo)
+        pkg=pkg, dest=utils.TMP_DIR, disable_repos=tool_opts.disablerepo,
+        enable_repos=tool_opts.enablerepo)
     if not path:
         loggerinst.critical("Unable to download the RHEL kernel package.")
 
@@ -625,7 +623,7 @@ def replace_non_rhel_installed_kernel(version):
         'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Unable to replace kernel package: %s" % output)
+        loggerinst.critical("Unable to replace the kernel package: %s" % output)
 
     loggerinst.info("\nRHEL %s installed.\n" % pkg)
 
@@ -672,7 +670,7 @@ def fix_invalid_grub2_entries():
     The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
     OS kernels, and setting the RHEL kernel as default.
     """
-    if int(system_info.version) < 8 or system_info.arch == "s390x":
+    if system_info.version.major < 8 or system_info.arch == "s390x":
         # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
         return
 

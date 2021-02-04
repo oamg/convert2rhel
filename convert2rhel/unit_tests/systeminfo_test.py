@@ -24,6 +24,7 @@ import shutil
 import unittest
 
 import pytest
+from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import logger, utils
@@ -154,3 +155,18 @@ class TestSysteminfo(unittest.TestCase):
 
         self.assertEqual(utils.run_subprocess.called, 0)
         self.assertFalse(os.path.exists(self.rpmva_output_file))
+
+    def test_get_system_version(self):
+        Version = namedtuple("Version", ["major", "minor"])
+        versions = {"Oracle Linux Server release 6.10": Version(6, 10),
+                    "Oracle Linux Server release 7.8": Version(7, 8),
+                    "CentOS release 6.10 (Final)": Version(6, 10),
+                    "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
+                    "CentOS Linux release 8.1.1911 (Core)": Version(8, 1)}
+        for system_release in versions:
+            system_info.system_release_file_content = system_release
+            version = system_info._get_system_version()
+            self.assertEqual(version, versions[system_release])
+
+        system_info.system_release_file_content = "not containing the release"
+        self.assertRaises(SystemExit, system_info._get_system_version)
