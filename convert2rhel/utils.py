@@ -407,12 +407,12 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
     return True
 
 
-def download_pkgs(pkgs, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None):
+def download_pkgs(pkgs, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
-    return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos) for pkg in pkgs]
+    return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
     
 
-def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None):
+def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
     """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
 
     The enable_repos and disable_repos function parameters accept lists. If used, the repos are passed to the
@@ -437,7 +437,7 @@ def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_re
         for repo in enable_repos:
             cmd += ' --enablerepo="%s"' % repo
 
-    if system_info.releasever:
+    if set_releasever and system_info.releasever:
         cmd += " --releasever=%s" % system_info.releasever
 
     if system_info.version.major == 8:
@@ -553,7 +553,9 @@ class RestorablePackage(object):
         loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
-            self.path = download_pkg(self.name, dest=BACKUP_DIR)
+            # When backing up the packages, the original system repofiles are still available and for them we can't
+            # use the releasever for RHEL repositories
+            self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
 
