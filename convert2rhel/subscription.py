@@ -250,6 +250,7 @@ def attach_subscription():
     loggerinst = logging.getLogger(__name__)
 
     if tool_opts.activation_key:
+        loggerinst.info("Using the activation key provided through the command line...")
         return True
 
     if tool_opts.auto_attach:
