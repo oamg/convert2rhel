@@ -44,10 +44,11 @@ class LogLevelFile(object):
     label = "FILE"
 
 
-def initialize_logger(log_name):
+def initialize_logger(log_name, log_dir=LOG_DIR):
     """Initialize custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
         log_name = the name for the log file
+        log_dir = path to the dir where log file will be presented
     """
     # check if already initialized with custom class
     if logging.getLoggerClass() == CustomLogger:
@@ -62,7 +63,7 @@ def initialize_logger(log_name):
     # get root logger
     logger = logging.getLogger("convert2rhel")
     # propagate
-    logger.propagate = False
+    logger.propagate = True
     # set default logging level
     logger.setLevel(LogLevelFile.level)
 
@@ -75,9 +76,9 @@ def initialize_logger(log_name):
     logger.addHandler(stdout_handler)
 
     # create file handler
-    if not os.path.isdir(LOG_DIR):
-        os.makedirs(LOG_DIR)
-    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "a")
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)    # pragma: no cover
+    handler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
     formatter = CustomFormatter("%(message)s")
     formatter.disable_colors(True)
     handler.setFormatter(formatter)
