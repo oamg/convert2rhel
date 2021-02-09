@@ -17,108 +17,67 @@
 
 import logging
 import os
-import shutil
-import unittest
 
-from datetime import datetime
+import pytest
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import logger
+from convert2rhel import logger as logger_module
+from convert2rhel.logger import CustomLogger
 from convert2rhel.toolopts import tool_opts
 
 
-class TestLogger(unittest.TestCase):
+def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
+    """Test if the logger handlers emmits the events to the file and stdout."""
+    # initializing the logger first
+    log_fname = "convert2rhel.log"
+    tool_opts.debug = True  # debug entries > stdout if True
+    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger = logging.getLogger(__name__)
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    def setUp(self):
-        # initialize class variables
-        self.log_dir = logger.LOG_DIR
-        self.log_file = "convert2rhel.log"
-        self.test_msg = "testmsg"
+    # emitting some log entries
+    logger.info("Test info")
+    logger.debug("Test debug")
 
-        # remove the directory to ensure the content is clean
-        if os.path.exists(logger.LOG_DIR):
-            shutil.rmtree(logger.LOG_DIR)
-        # initialize logger
-        logger.initialize_logger(self.log_file)
+    # Test if logs were emmited to the file
+    with open(os.path.join(tmpdir, log_fname)) as log_f:
+        assert "Test info" in log_f.readline().rstrip()
+        assert "Test debug" in log_f.readline().rstrip()
 
-    def test_set_logger(self):
-        loggerinst = logging.getLogger("convert2rhel.unittests")
-        handlers = loggerinst.handlers
+    # Test if logs were emmited to the stdout
+    stdouterr_out, stdouterr_err = read_std()
+    assert "Test info" in stdouterr_out
+    assert "Test debug" in stdouterr_out
 
-        # find parent logger instances where our handlers exist
-        while len(handlers) == 0:
-            loggerinst = loggerinst.parent
-            handlers = loggerinst.handlers
 
-        # verify both StreamHandler and FileHandler have been created
-        has_stream_handler_instance = False
-        has_file_handler_instance = False
-        for handler in handlers:
-            if isinstance(handler, logging.StreamHandler):
-                has_stream_handler_instance = True
-            if isinstance(handler, logging.FileHandler):
-                has_file_handler_instance = True
+def test_tools_opts_debug(tmpdir, read_std, is_py2):
+    log_fname = "convert2rhel.log"
+    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger = logging.getLogger(__name__)
+    tool_opts.debug = True
+    logger.debug("debug entry 1")
+    stdouterr_out, stdouterr_err = read_std()
+    # TODO should be in stdout, but this only works when running this test
+    #   alone (see https://github.com/pytest-dev/pytest/issues/5502)
+    try:
+        assert "debug entry 1" in stdouterr_out
+    except AssertionError:
+        if not is_py2:
+            assert "debug entry 1" in stdouterr_err
+        else:
+            # this workaround is not working for py2 - passing
+            pass
+    tool_opts.debug = False
+    logger.debug("debug entry 2")
+    stdouterr_out, stdouterr_err = read_std()
+    assert "debug entry 2" not in stdouterr_out
 
-        self.assertTrue(has_stream_handler_instance)
-        self.assertTrue(has_file_handler_instance)
 
-        # verify log file name
-        for handler in handlers:
-            if type(handler) is logging.FileHandler:
-                log_path = os.path.join(self.log_dir, self.log_file)
-                self.assertEqual(log_path, handler.baseFilename)
-
-    def test_log_format(self):
-        self.dummy_handler = logging.StreamHandler()
-
-        custom_formatter = logger.CustomFormatter("%(message)s")
-
-        self.dummy_handler.setFormatter(custom_formatter)
-        dt_strformat = '[%m/%d/%Y %H:%M:%S] DEBUG - '
-        tempstr = datetime.now().strftime(dt_strformat) + self.test_msg
-        self.check_formatter_result(
-            logging.DEBUG, tempstr)
-        self.check_formatter_result(
-            logging.INFO, self.test_msg)
-        tempstr = "\033[93mWARNING - %s\033[0m" % self.test_msg
-        self.check_formatter_result(logging.WARNING, tempstr)
-
-        custom_formatter.disable_colors(True)
-        tempstr = "WARNING - %s" % self.test_msg
-        self.check_formatter_result(logging.WARNING, tempstr)
-
-    def check_formatter_result(self, log_level, expected_result):
-        rec = logging.LogRecord("", log_level, "", 0, self.test_msg, (), None)
-        formatted_msg = self.dummy_handler.format(rec)
-        self.assertEqual(formatted_msg, expected_result)
-
-    class HandlerHandleMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-
-        def __call__(self, rec):
-            self.called += 1
-
-    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
-    def test_log_to_file(self):
-        loggerinst = logging.getLogger(__name__)
-        loggerinst.file(self.test_msg)
-
-        # Handler is a base class for all log handlers (incl. FileHandler)
-        self.assertEqual(logging.Handler.handle.called, 1)
-
-    @unit_tests.mock(logging.Handler, "handle", HandlerHandleMocked())
-    @unit_tests.mock(tool_opts, "debug", True)
-    def test_log(self):
-        loggerinst = logging.getLogger(__name__)
-        loggerinst.debug("debugmsg1")
-        loggerinst.info("infomsg")
-        loggerinst.warning("warningmsg")
-
-        # generic handler called (2 handlers called for each function above)
-        # except debug level which is logged only with --debug option
-        self.assertEqual(logging.Handler.handle.called, 6)
-        tool_opts.debug = False
-        loggerinst.debug("debugmsg2")
-        self.assertEqual(logging.Handler.handle.called, 7)
+def test_logger_custom_logger(tmpdir, caplog):
+    """Test CustomLogger."""
+    log_fname = "convert2rhel.log"
+    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger = logging.getLogger(__name__)
+    assert isinstance(logger, CustomLogger)
+    logger.task("Some task")
+    logger.file("Some task write to file")
+    with pytest.raises(SystemExit):
+        logger.critical("Critical error")
