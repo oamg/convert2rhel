@@ -754,7 +754,7 @@ def has_duplicate_repos_across_disablerepo_enablerepo_options():
 
     duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
     if duplicate_repos:
-        message = "Duplicate repositories was found across disablerepo and enablerepo options:"
+        message = "Duplicate repositories were found across disablerepo and enablerepo options:"
         for repo in duplicate_repos:
             message += "\n%s" % repo
         message += "\nThis ambiguity may have unintended consequences."
