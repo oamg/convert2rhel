@@ -170,9 +170,10 @@ class TestUtils(unittest.TestCase):
         "[SKIPPED] %s: Already downloaded" % DOWNLOADED_RPM_FILENAME
     ]
 
-    @unit_tests.mock(utils, "download_pkg", lambda pkg, dest, reposdir, enable_repos, disable_repos: "/filepath/")
+    @unit_tests.mock(utils, "download_pkg",
+                     lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/")
     def test_download_pkgs(self):
-        paths = utils.download_pkgs(["pkg1", "pkg2"], "/dest/", "/reposdir/", ["repo1"], ["repo2"])
+        paths = utils.download_pkgs(["pkg1", "pkg2"], "/dest/", "/reposdir/", ["repo1"], ["repo2"], False)
 
         self.assertEqual(paths, ["/filepath/", "/filepath/"])
 
@@ -187,7 +188,8 @@ class TestUtils(unittest.TestCase):
         disable_repos = ["*"]
         
         path = utils.download_pkg(
-            "kernel", dest=dest, reposdir=reposdir, enable_repos=enable_repos, disable_repos=disable_repos)
+            "kernel", dest=dest, reposdir=reposdir, enable_repos=enable_repos,
+            disable_repos=disable_repos, set_releasever=True)
 
         self.assertEqual('yumdownloader -v --destdir="%s" --setopt=reposdir="%s" --disablerepo="*" --enablerepo="repo1"'
                          ' --enablerepo="repo2" --releasever=8 --setopt=module_platform_id=platform:el8 kernel'
