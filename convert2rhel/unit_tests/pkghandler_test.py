@@ -988,7 +988,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
     def test_is_disable_and_enable_repos_has_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertTrue("Duplicate repositories was found" in logger.CustomLogger.warning.msg)
+        self.assertTrue("Duplicate repositories were found" in logger.CustomLogger.warning.msg)
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
