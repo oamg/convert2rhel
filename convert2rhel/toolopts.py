@@ -66,7 +66,10 @@ class CLI(object):
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
                  " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
                  " variant] [--serverurl url] [--no-rpm-va] [--debug]"
-                 " [--restart] [--disable-colors] [-y]")
+                 " [--restart] [--disable-colors] [-y]"
+                 "\n\n"
+                 "WARNING: The tool needs to be run under the root user"
+                 )
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
                                      add_help_option=False,
