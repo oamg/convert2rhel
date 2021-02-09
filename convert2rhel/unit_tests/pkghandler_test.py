@@ -862,7 +862,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.download_pkg.called, 1)
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
         self.assertEqual(utils.run_subprocess.cmd,
-                         "rpm -i --force --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR)
+                         "rpm -i --force --nodeps --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR)
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
