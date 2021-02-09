@@ -620,7 +620,9 @@ def replace_non_rhel_installed_kernel(version):
 
     loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
-        'rpm -i --force --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
+        # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
+        # is not installed at this stage.
+        'rpm -i --force --nodeps --replacepkgs %s*' % os.path.join(utils.TMP_DIR, pkg),
         print_output=False)
     if ret_code != 0:
         loggerinst.critical("Unable to replace the kernel package: %s" % output)
