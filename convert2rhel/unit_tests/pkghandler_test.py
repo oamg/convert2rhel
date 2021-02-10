@@ -853,16 +853,28 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.disable_repos = disable_repos
             return self.to_return
 
+    @unit_tests.mock(system_info, "submgr_enabled_repos", ["enabled_rhsm_repo"])
+    @unit_tests.mock(tool_opts, "enablerepo", [])  # to be changed later in the test
+    @unit_tests.mock(tool_opts, "disable_submgr", False)  # to be changed later in the test
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_replace_non_rhel_installed_kernel(self):
+        # test the use case where RHSM is used for the conversion
         version = '4.7.4-200.fc24'
         pkghandler.replace_non_rhel_installed_kernel(version)
         self.assertEqual(utils.download_pkg.called, 1)
         self.assertEqual(utils.download_pkg.pkg, "kernel-4.7.4-200.fc24")
+        self.assertEqual(utils.download_pkg.enable_repos, ["enabled_rhsm_repo"])
         self.assertEqual(utils.run_subprocess.cmd,
                          "rpm -i --force --nodeps --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR)
+
+        # test the use case where custom repos are used for the conversion
+        system_info.submgr_enabled_repos = []
+        tool_opts.disable_submgr = True
+        tool_opts.enablerepo = ["custom_repo"]
+        pkghandler.replace_non_rhel_installed_kernel(version)
+        self.assertEqual(utils.download_pkg.enable_repos, ["custom_repo"])
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())

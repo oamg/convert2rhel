@@ -612,9 +612,12 @@ def replace_non_rhel_installed_kernel(version):
 
     pkg = "kernel-%s" % version
 
+    # For downloading the RHEL kernel we need to use the RHEL repositories. Those are available either through the
+    # attached subscription (submgr_enabled_repos) or through custom repositories (tool_opts.enablerepo).
+    repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
     path = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disable_repos=tool_opts.disablerepo,
-        enable_repos=tool_opts.enablerepo)
+        enable_repos=repos_to_enable)
     if not path:
         loggerinst.critical("Unable to download the RHEL kernel package.")
 
