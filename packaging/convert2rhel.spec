@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.16
+Version:        0.17
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -107,6 +107,11 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu Feb 10 2021 Michal Bocek <mbocek@redhat.com> 0.17-1
+- Fix broken package backup causing an incomplete rollback
+- Fix dependency issue when force replacing same-version kernel
+- Allow using RHSM repos when downloading same-version kernel
+
 * Thu Feb 4 2021 Michal Bocek <mbocek@redhat.com> 0.16-1
 - Not requiring users to download redhat-release and subscription-manager with
   its dependencies prior the conversion when using RHSM.
