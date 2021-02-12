@@ -51,3 +51,13 @@ def read_std(capsys, is_py2):
             return stdouterr.out, stdouterr.err
 
     return factory
+
+
+@pytest.fixture()
+def pkg_root(is_py2):
+    """Return the pathlib.Path of the convert2rhel package root."""
+    if is_py2:
+        import pathlib2 as pathlib  # pylint: disable=import-error
+    else:
+        import pathlib    # pylint: disable=import-error
+    return pathlib.Path(__file__).parents[2]
