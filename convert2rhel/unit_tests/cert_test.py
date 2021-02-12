@@ -33,7 +33,16 @@ from convert2rhel import utils
 class TestCert(unittest.TestCase):
 
     # Certificates for all the supported RHEL variants
-    certs = {"6": "69.pem", "7": "69.pem", "8": "479.pem"}
+    certs = {
+        "x86_64": {
+            "6": "69.pem",
+            "7": "69.pem",
+            "8": "479.pem"
+        },
+        "ppc64": {
+            "7": "74.pem",
+        }
+    }
 
     # Directory with all the tool data
     base_data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
@@ -42,14 +51,13 @@ class TestCert(unittest.TestCase):
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
     def test_get_cert_path(self):
         # Check there are certificates for all the supported RHEL variants
-        for rhel_version in "6", "7", "8":
-            utils.DATA_DIR = os.path.join(
-                self.base_data_dir, rhel_version, "x86_64")
-            print(utils.DATA_DIR)
-            cert_path = cert.SystemCert._get_cert_path()
-            pem = self.certs[rhel_version]
-            self.assertEqual(cert_path, "{0}/rhel-certs/{1}"
-                                .format(utils.DATA_DIR, pem))
+        for arch, rhel_versions in self.certs.items():
+            for rhel_version, pem in rhel_versions.items():
+                utils.DATA_DIR = os.path.join(
+                    self.base_data_dir, rhel_version, arch)
+                cert_path = cert.SystemCert._get_cert_path()
+                self.assertEqual(cert_path, "{0}/rhel-certs/{1}"
+                                    .format(utils.DATA_DIR, pem))
 
     @unit_tests.mock(cert.logging, "getLogger", unit_tests.GetLoggerMocked())
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
