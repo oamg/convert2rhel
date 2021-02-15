@@ -26,6 +26,7 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import logger, pkghandler, subscription, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from . import GetLoggerMocked
 
 
 class TestSubscription(unittest.TestCase):
@@ -89,39 +90,6 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, *args, **kwargs):
             self.called += 1
 
-    class GetLoggerMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.task_msgs = []
-            self.info_msgs = []
-            self.warning_msgs = []
-            self.critical_msgs = []
-            self.error_msgs = []
-
-        def __call__(self, msg):
-            return self
-
-        def critical(self, msg):
-            self.critical_msgs.append(msg)
-            raise SystemExit(1)
-
-        def error(self, msg):
-            self.error_msgs.append(msg)
-
-        def task(self, msg):
-            self.task_msgs.append(msg)
-
-        def info(self, msg):
-            self.info_msgs.append(msg)
-
-        def warn(self, msg, *args):
-            self.warning_msgs.append(msg)
-
-        def warning(self, msg, *args):
-            self.warn(msg, *args)
-
-        def debug(self, msg):
-            pass
-
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
             self.is_file = is_file
@@ -182,8 +150,10 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "activation_key", "dummy_activate_key")
+    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     def test_attach_subscription_available_with_activation_key(self):
         self.assertEqual(subscription.attach_subscription(), True)
+        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsMocked())
     def test_attach_subscription_none_available(self):
@@ -353,7 +323,6 @@ class TestSubscription(unittest.TestCase):
 
         self.assertEqual(utils.remove_pkgs.called, 1)
 
-
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: ["filename"])
     @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos, set_releasever: (None, 1))
@@ -369,14 +338,14 @@ class TestSubscription(unittest.TestCase):
             self.pkgs_to_download = pkgs_to_download
             self.repo_path = repo_path
             self.repo_content = repo_content
-    
+
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
     @unit_tests.mock(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
     @unit_tests.mock(subscription, "_get_rhsm_cert_on_centos_7", DumbCallable())
     @unit_tests.mock(utils, "mkdir_p", DumbCallable())
     def test_download_rhsm_pkgs(self):
         subscription.download_rhsm_pkgs()
-        
+
         self.assertEqual(subscription._download_rhsm_pkgs.called, 1)
         self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
                          ["subscription-manager",
@@ -442,7 +411,6 @@ class TestSubscription(unittest.TestCase):
         utils.download_pkgs.to_return.append(None)
 
         self.assertRaises(SystemExit, subscription._download_rhsm_pkgs, ["testpkg"], "/path/to.repo", "content")
-        
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -470,7 +438,7 @@ class TestSubscription(unittest.TestCase):
         # test the case when getting the cpio archive out of the python-rhsm-certificates rpm is failing
         utils.run_subprocess.tuples = [("output", 1)]
         self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
-        
+
         # test the case when extracting the certificate out of the cpio archive fails
         utils.run_subprocess.tuples = [("output", 0), ("output", 1)]
         self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)

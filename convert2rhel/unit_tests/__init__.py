@@ -57,6 +57,7 @@ def mock(class_or_module, orig_obj, mock_obj):
     -- replaces the gpgkey module-scoped variable gpg_key_system_dir with the
        "/nonexisting_dir/" string
     """
+
     def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
@@ -86,7 +87,9 @@ def mock(class_or_module, orig_obj, mock_obj):
                 # Remove the temporary attribute holding the original object
                 delattr(class_or_module, orig_obj_attr)
             return return_value
+
         return wrapped_fn
+
     return wrap
 
 
@@ -110,6 +113,7 @@ class ExtendedTestCase(unittest.TestCase):
     Most of these functions are taken from newer versions of Nose
     test and can be removed when we upgrade Nose test.
     """
+
     def assertIn(self, member, container, msg=None):
         """
         Taken from newer nose test version.
@@ -117,7 +121,7 @@ class ExtendedTestCase(unittest.TestCase):
         """
         if member not in container:
             standard_msg = '%s not found in %s' % (safe_repr(member),
-                                                  safe_repr(container))
+                                                   safe_repr(container))
             self.fail(self._formatMessage(msg, standard_msg))
 
     def _formatMessage(self, msg, standard_msg):
@@ -181,24 +185,36 @@ def is_rpm_based_os():
         return True
 
 
-
 class GetLoggerMocked(MockFunction):
     def __init__(self):
+        self.task_msgs = []
         self.info_msgs = []
+        self.warning_msgs = []
         self.critical_msgs = []
+        self.error_msgs = []
+        self.debug_msgs = []
 
     def __call__(self, msg):
         return self
-
-    def task(self, msg):
-        pass
 
     def critical(self, msg):
         self.critical_msgs.append(msg)
         raise SystemExit(1)
 
+    def error(self, msg):
+        self.error_msgs.append(msg)
+
+    def task(self, msg):
+        self.task_msgs.append(msg)
+
     def info(self, msg):
-        pass
+        self.info_msgs.append(msg)
+
+    def warn(self, msg, *args):
+        self.warning_msgs.append(msg)
+
+    def warning(self, msg, *args):
+        self.warn(msg, *args)
 
     def debug(self, msg):
-        pass
+        self.debug_msgs.append(msg)
