@@ -33,7 +33,7 @@ def get_version():
         try:
             return re.findall(
                 r'^__version__ = "([^"]+)"$',
-                f.readline(),
+                f.read(),
                 re.M,
             )[0]
         except IndexError:
