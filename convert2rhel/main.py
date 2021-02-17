@@ -68,6 +68,7 @@ def main():
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
         redhatrelease.yum_conf.backup()
+        repo.backup_yum_repos()
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")
         pkghandler.clear_versionlock()
@@ -223,6 +224,7 @@ def rollback_changes():
     loggerinst.warn("Abnormal exit! Performing rollback ...")
     subscription.rollback()
     utils.changed_pkgs_control.restore_pkgs()
+    repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.yum_conf.restore()
     pkghandler.versionlock_file.restore()
