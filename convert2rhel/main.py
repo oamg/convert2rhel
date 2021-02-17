@@ -217,6 +217,13 @@ def post_ponr_conversion():
     pkghandler.replace_non_red_hat_packages()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
+    
+    # if user modified /etc/yum.conf, then comment out the distroverpkg variable in yum.conf
+    output, return_code = utils.run_subprocess("rpm -V yum", False, False)
+    if return_code != 0:
+        loggerinst.task("Convert: Patch yum configuration file")
+        redhatrelease.YumConf().patch()
+
     return
 
 
