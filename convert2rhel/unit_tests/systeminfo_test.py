@@ -21,16 +21,28 @@
 import logging
 import os
 import shutil
+import sys
 import unittest
 
-import pytest
 from collections import namedtuple
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import logger, utils
+import pytest
+
+from convert2rhel import (  # Imports unit_tests/__init__.py
+    logger,
+    systeminfo,
+    unit_tests,
+    utils,
+)
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
 
 
 class TestSysteminfo(unittest.TestCase):
@@ -170,3 +182,23 @@ class TestSysteminfo(unittest.TestCase):
 
         system_info.system_release_file_content = "not containing the release"
         self.assertRaises(SystemExit, system_info._get_system_version)
+
+
+@pytest.mark.parametrize(
+    ("pkg_name", "present_on_system", "expected_return"), [
+        ("package A", True, True),
+        ("package A", False, False),
+        ("", None, False),
+    ]
+)
+def test_system_info_has_rpm(
+        pkg_name, present_on_system, expected_return, monkeypatch
+):
+    run_subprocess_mocked = mock.Mock(
+        return_value=("", 0) if present_on_system else ("", 1)
+    )
+    monkeypatch.setattr(
+        systeminfo, "run_subprocess", value=run_subprocess_mocked
+    )
+    assert system_info.is_rpm_installed(pkg_name) == expected_return
+    assert run_subprocess_mocked

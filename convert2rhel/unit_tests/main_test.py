@@ -146,6 +146,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
+    @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
@@ -165,6 +166,7 @@ class TestMain(unittest.TestCase):
         intended_call_order = OrderedDict()
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
+        intended_call_order["check_and_resolve"] = 1
         intended_call_order["download_rhsm_pkgs"] = 1
         intended_call_order["replace_subscription_manager"] = 1
         intended_call_order["install"] = 1
@@ -185,6 +187,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
+    @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
@@ -205,6 +208,7 @@ class TestMain(unittest.TestCase):
 
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
+        intended_call_order["check_and_resolve"] = 1
 
         # Do not expect this one to be called - related to RHSM
         intended_call_order["download_rhsm_pkgs"] = 0
