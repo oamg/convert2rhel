@@ -19,7 +19,7 @@ import logging
 import optparse
 import sys
 
-from convert2rhel import utils
+from convert2rhel import utils, __version__
 
 
 class ToolOpts(object):
@@ -56,6 +56,7 @@ class CLI(object):
     def _get_argparser():
         usage = ("\n"
                  "  convert2rhel [-h]\n"
+                 "  convert2rhel [--version]\n"
                  "  convert2rhel [-u username] [-p password | -f pswd_file]"
                  " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
                  " repoid] [--serverurl url] [--no-rpm-va]"
@@ -65,15 +66,20 @@ class CLI(object):
                  "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
                  " -a] [--disablerepo repoid] [--enablerepo repoid] [-v"
                  " variant] [--serverurl url] [--no-rpm-va] [--debug]"
-                 " [--restart] [--disable-colors] [-y]")
+                 " [--restart] [--disable-colors] [-y]"
+                 "\n\n"
+                 "WARNING: The tool needs to be run under the root user"
+                 )
         return optparse.OptionParser(conflict_handler='resolve',
                                      usage=usage,
-                                     add_help_option=False)
+                                     add_help_option=False,
+                                     version=__version__)
 
     def _register_options(self):
         """Prescribe what command line options the tool accepts."""
         self._parser.add_option("-h", "--help", action="help", help="Show "
                                 " help message and exit.")
+        self._parser.add_option('--version', action='version', help="Show convert2rhel version and exit.")
         self._parser.add_option("--debug", action="store_true", help="Print"
                                 " traceback in case of an abnormal exit and"
                                 " messages that could help find an issue.")

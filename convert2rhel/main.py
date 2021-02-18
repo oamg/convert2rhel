@@ -41,6 +41,9 @@ class ConversionPhase(object):
 def main():
     """Perform all steps for the entire conversion process."""
 
+    # handle command line arguments
+    toolopts.CLI()
+
     # the tool will not run if not executed under the root user
     utils.require_root()
 
@@ -51,9 +54,6 @@ def main():
     loggerinst = logging.getLogger(__name__)
 
     try:
-        # handle command line arguments
-        toolopts.CLI()
-
         process_phase = ConversionPhase.POST_CLI
 
         # license agreement

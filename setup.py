@@ -16,7 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from setuptools import setup, find_packages
+import re
+
+from setuptools import setup
 
 from man.build_manpage import build_manpage
 
@@ -25,10 +27,29 @@ from man.build_manpage import build_manpage
 def read(fname):
     return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
 
+def get_version():
+    version_source = "convert2rhel/__init__.py"
+    with open(version_source) as f:
+        try:
+            return re.findall(
+                r'^__version__ = "([^"]+)"$',
+                f.read(),
+                re.M,
+            )[0]
+        except IndexError:
+            raise ValueError(
+                (
+                    "Unable to extract the version from %s file. Make sure the "
+                    "first line has the following form: `__version__ = "
+                    '"some.version.here"`'
+                )
+                % version_source
+            )
+
 
 setup(
     name='convert2rhel',
-    version='0.17',
+    version=get_version(),
     description='Automates the conversion of Red Hat Enterprise Linux'
                 ' derivative distributions to Red Hat Enterprise Linux.',
     long_description=read('README.md'),
