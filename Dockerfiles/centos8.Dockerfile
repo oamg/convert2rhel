@@ -11,8 +11,6 @@ ENV APP_MAIN_DEPS \
     python3-six \
     python3-pexpect
 
-VOLUME /data
-
 WORKDIR /data
 
 FROM base as install_main_deps
@@ -24,4 +22,7 @@ COPY $APP_DEV_DEPS $APP_DEV_DEPS
 RUN $PIP install -r $APP_DEV_DEPS
 
 FROM install_dev_deps as install_application
+RUN useradd -u 5000 app
+RUN chown -R app:app .
 COPY . .
+USER app:app
