@@ -23,11 +23,13 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR
 
 
+loggerinst = logging.getLogger(__name__)
+
+
 def get_rhel_repoids():
     """Get IDs of the Red Hat CDN repositories that correspond to the current system."""
     repos_needed = system_info.default_rhsm_repoids
 
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("RHEL repository IDs to enable: %s" % ', '.join(repos_needed))
 
     return repos_needed
@@ -36,7 +38,6 @@ def backup_yum_repos():
     """Backup .repo files in /etc/yum.repos.d/ so the repositories
     can be restored on rollback.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Backing up repositories")
     repo_files_backed_up = False
     for repo in os.listdir("/etc/yum.repos.d/"):
@@ -53,7 +54,6 @@ def restore_yum_repos():
     """Rollback all .repo files in /etc/yum.repos.d/ that were
     backed up.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.task("Rollback: Restore .repo files to /etc/yum.repos.d/")
     repo_has_restored = False
     for repo in os.listdir(BACKUP_DIR):

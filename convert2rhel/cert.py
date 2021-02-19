@@ -18,11 +18,11 @@
 import logging
 import os
 import shutil
-import sys
 
-from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel import utils
+
+
+loggerinst = logging.getLogger(__name__)
 
 
 class SystemCert(object):
@@ -33,7 +33,6 @@ class SystemCert(object):
 
     @staticmethod
     def _get_cert_path():
-        loggerinst = logging.getLogger(__name__)
         cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs")
         if not os.access(cert_dir, os.R_OK | os.W_OK):
             loggerinst.critical("Error: Could not access %s." % cert_dir)
@@ -50,7 +49,6 @@ class SystemCert(object):
         """RHEL certificate (.pem) is used by subscription-manager to
         determine the running system type/version.
         """
-        loggerinst = logging.getLogger(__name__)
         loggerinst.info("Installing RHEL certificate to the system.")
 
         try:

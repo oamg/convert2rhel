@@ -19,15 +19,21 @@ import logging
 import os
 import sys
 
-from convert2rhel import cert
-from convert2rhel import logger, special_cases
-from convert2rhel import pkghandler
-from convert2rhel import redhatrelease
-from convert2rhel import repo
-from convert2rhel import subscription
-from convert2rhel import systeminfo
-from convert2rhel import toolopts
-from convert2rhel import utils
+from convert2rhel import (
+    cert,
+    logger,
+    pkghandler,
+    redhatrelease,
+    repo,
+    special_cases,
+    subscription,
+    systeminfo,
+    toolopts,
+    utils,
+)
+
+
+loggerinst = logging.getLogger(__name__)
 
 
 class ConversionPhase(object):
@@ -51,7 +57,6 @@ def main():
     # initialize logging
     logger.initialize_logger("convert2rhel.log")
     # get module level logger (inherits from root logger)
-    loggerinst = logging.getLogger(__name__)
 
     try:
         process_phase = ConversionPhase.POST_CLI
@@ -130,7 +135,6 @@ def user_to_accept_eula():
     """Request user to accept EULA license agreement. This is required
     otherwise the conversion process stops and fails with error.
     """
-    loggerinst = logging.getLogger(__name__)
 
     eula_filename = "GLOBAL_EULA_RHEL"
     eula_filepath = os.path.join(utils.DATA_DIR, eula_filename)
@@ -146,7 +150,6 @@ def user_to_accept_eula():
 
 def pre_ponr_conversion():
     """Perform steps and checks to guarantee system is ready for conversion."""
-    loggerinst = logging.getLogger(__name__)
 
     # check if user pass some repo to both disablerepo and enablerepo options
     pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
@@ -194,7 +197,6 @@ def pre_ponr_conversion():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    loggerinst = logging.getLogger(__name__)
 
     loggerinst.task("Convert: Import Red Hat GPG keys")
     pkghandler.install_gpg_keys()
@@ -219,7 +221,6 @@ def is_help_msg_exit(process_phase, err):
 
 def rollback_changes():
     """Perform a rollback of changes made during conversion."""
-    loggerinst = logging.getLogger(__name__)
 
     loggerinst.warn("Abnormal exit! Performing rollback ...")
     subscription.rollback()

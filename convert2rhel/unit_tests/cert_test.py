@@ -59,7 +59,7 @@ class TestCert(unittest.TestCase):
                 self.assertEqual(cert_path, "{0}/rhel-certs/{1}"
                                     .format(utils.DATA_DIR, pem))
 
-    @unit_tests.mock(cert.logging, "getLogger", unit_tests.GetLoggerMocked())
+    @unit_tests.mock(cert, "loggerinst", unit_tests.GetLoggerMocked())
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(system_info, "arch", "arch")
     def test_get_cert_path_missing_cert(self):
@@ -69,16 +69,16 @@ class TestCert(unittest.TestCase):
         utils.mkdir_p(cert_dir)
         # Check response for the non-existing certificate in the temporary dir
         self.assertRaises(SystemExit, cert.SystemCert._get_cert_path)
-        self.assertEqual(len(cert.logging.getLogger.critical_msgs), 1)
+        self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
         # Remove the temporary directory tree
         shutil.rmtree(os.path.join(utils.DATA_DIR, "rhel-certs"))
 
-    @unit_tests.mock(cert.logging, "getLogger", unit_tests.GetLoggerMocked())
+    @unit_tests.mock(cert, "loggerinst", unit_tests.GetLoggerMocked())
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.NONEXISTING_DIR)
     @unit_tests.mock(system_info, "arch", "nonexisting_arch")
     def test_get_cert_path_nonexisting_dir(self):
         self.assertRaises(SystemExit, cert.SystemCert._get_cert_path)
-        self.assertEqual(len(cert.logging.getLogger.critical_msgs), 1)
+        self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(cert.SystemCert, "_system_cert_dir", unit_tests.TMP_DIR)
     @unit_tests.mock(tool_opts, "arch", "x86_64")

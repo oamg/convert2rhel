@@ -149,10 +149,10 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "activation_key", "dummy_activate_key")
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     def test_attach_subscription_available_with_activation_key(self):
         self.assertEqual(subscription.attach_subscription(), True)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 1)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsMocked())
     def test_attach_subscription_none_available(self):
@@ -178,7 +178,7 @@ class TestSubscription(unittest.TestCase):
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 2)
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([("nope", 1)]))
     def test_register_system_fail_non_interactive(self):
         # Check the critical severity is logged when the credentials are given
@@ -187,7 +187,7 @@ class TestSubscription(unittest.TestCase):
         tool_opts.password = 'pass'
         tool_opts.credentials_thru_cli = True
         self.assertRaises(SystemExit, subscription.register_system)
-        self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(utils,
                      "run_subprocess",
@@ -249,27 +249,27 @@ class TestSubscription(unittest.TestCase):
         "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
     )
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_unregister_system_successfully(self):
         unregistration_cmd = "subscription-manager unregister"
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 0)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.warning_msgs), 0)
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([('output', 1)]))
     def test_unregister_system_fails(self):
         unregistration_cmd = "subscription-manager unregister"
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
-        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 0)
+        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.warning_msgs), 1)
 
     @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "remove_subscription_manager", unit_tests.CountableMockObject())

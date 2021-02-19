@@ -24,6 +24,8 @@ from convert2rhel import utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.systeminfo import system_info
 
+loggerinst = logging.getLogger(__name__)
+
 
 def get_release_pkg_name():
     """For RHEL 6 and 7 the release package name is redhat-release-server.
@@ -41,7 +43,6 @@ def get_system_release_filepath():
     release_filepath = "/etc/system-release"  # RHEL 6/7/8 based OSes
     if os.path.isfile(release_filepath):
         return release_filepath
-    loggerinst = logging.getLogger(__name__)
     loggerinst.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
 
 
@@ -49,7 +50,6 @@ def get_system_release_content():
     """Return content of the file containing name of the operating
     system and its version.
     """
-    loggerinst = logging.getLogger(__name__)
     filepath = get_system_release_filepath()
     try:
         return utils.get_file_content(filepath)
@@ -63,7 +63,6 @@ class YumConf(object):
 
     def __init__(self):
         self._yum_conf_content = utils.get_file_content(self._yum_conf_path)
-        self.loggerinst = logging.getLogger(__name__)
 
     def patch(self):
         """Comment out the distroverpkg variable in yum.conf so yum can determine
@@ -72,7 +71,7 @@ class YumConf(object):
         """
         self._comment_out_distroverpkg_tag()
         self._write_altered_yum_conf()
-        self.loggerinst.debug("%s patched." % self._yum_conf_path)
+        loggerinst.debug("%s patched." % self._yum_conf_path)
         return
 
     def _comment_out_distroverpkg_tag(self):

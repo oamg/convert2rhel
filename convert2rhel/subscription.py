@@ -15,19 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from collections import namedtuple
+import logging
 import os
 import re
-import shutil
-import sys
-import logging
-import subprocess
 
-from convert2rhel.toolopts import tool_opts
-from convert2rhel import pkghandler
-from convert2rhel import utils
-from convert2rhel import pkghandler
+from collections import namedtuple
+
+from convert2rhel import pkghandler, utils
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
+
+
+loggerinst = logging.getLogger(__name__)
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 _RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
@@ -69,7 +68,6 @@ def subscribe_system():
 
 def unregister_system():
     """Unregister the system from RHSM"""
-    loggerinst = logging.getLogger(__name__)
     unregistration_cmd = "subscription-manager unregister"
     loggerinst.task("Rollback: Unregistering the system from RHSM")
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
@@ -81,7 +79,6 @@ def unregister_system():
 
 def register_system():
     """Register OS using subscription-manager."""
-    loggerinst = logging.getLogger(__name__)
 
     # Loop the registration process until successful registration
     while True:
@@ -106,7 +103,6 @@ def register_system():
 
 def get_registration_cmd():
     """Build a command for subscription-manager for registering the system."""
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Building subscription-manager command ... ")
     registration_cmd = "subscription-manager register --force"
     if tool_opts.activation_key:
@@ -157,7 +153,6 @@ def get_registration_cmd():
 
 def call_registration_cmd(registration_cmd):
     """Wrapper for run_subprocess that avoids leaking password in the log."""
-    loggerinst = logging.getLogger(__name__)
     loggerinst.debug("Calling command '%s'" % hide_password(registration_cmd))
     _, ret_code = utils.run_subprocess(registration_cmd, print_cmd=False)
     return ret_code
@@ -170,7 +165,6 @@ def hide_password(cmd):
 
 def replace_subscription_manager():
     """Remove the original and install the RHEL subscription-manager packages."""
-    loggerinst = logging.getLogger(__name__)
     if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
         loggerinst.critical("The %s directory does not exist or is empty."
                             " Using the subscription-manager is not documented"
@@ -185,7 +179,6 @@ def replace_subscription_manager():
 
 
 def remove_original_subscription_manager():
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Removing non-RHEL subscription-manager packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkgs_w_different_fingerprint(
@@ -201,7 +194,6 @@ def remove_original_subscription_manager():
 
 
 def install_rhel_subscription_manager():
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Installing subscription-manager RPMs.")
     rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
 
@@ -229,7 +221,6 @@ def install_rhel_subscription_manager():
 
 
 def remove_subscription_manager():
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Removing RHEL subscription-manager packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, "*subscription-manager*")
@@ -246,8 +237,6 @@ def attach_subscription():
     # TODO: Support attaching multiple pool IDs.
     # TODO: Support the scenario when the passed activation key attaches
     #       all the appropriate subscriptions during registration already.
-
-    loggerinst = logging.getLogger(__name__)
 
     if tool_opts.activation_key:
         loggerinst.info("Using the activation key provided through the command line...")
@@ -291,7 +280,6 @@ def get_avail_subs():
     """Get list of all the subscriptions available to the user so they are
     accessible by index once the user chooses one.
     """
-    loggerinst = logging.getLogger(__name__)
     # Get multiline string holding all the subscriptions available to the
     # logged-in user
     subs_raw, ret_code = utils.run_subprocess("subscription-manager list"
@@ -318,7 +306,6 @@ def get_sub(subs_raw):
 def get_pool_id(sub_raw_attrs):
     """Parse the input multiline string holding subscription attributes to distill the pool ID.
     """
-    loggerinst = logging.getLogger(__name__)
     pool_id = re.search(r"^Pool ID:\s+(.*?)$",
                         sub_raw_attrs,
                         re.MULTILINE | re.DOTALL)
@@ -331,7 +318,6 @@ def get_pool_id(sub_raw_attrs):
 def print_avail_subs(subs):
     """Print the subscriptions available to the user so they can choose one.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Choose one of your subscriptions that is to be used"
                     " for converting this system to RHEL:")
     for index, sub in enumerate(subs):
@@ -364,7 +350,6 @@ def disable_repos():
     """Before enabling specific repositories, all repositories should be
     disabled. This can be overriden by the --disablerepo option.
     """
-    loggerinst = logging.getLogger(__name__)
 
     disable_cmd = ""
     for repo in tool_opts.disablerepo:
@@ -386,7 +371,6 @@ def enable_repos(rhel_repoids):
     """By default, enable the standard Red Hat CDN RHEL repository IDs using subscription-manager.
     This can be overriden by the --enablerepo option.
     """
-    loggerinst = logging.getLogger(__name__)
     if tool_opts.enablerepo:
         repos_to_enable = tool_opts.enablerepo
     else:
@@ -407,7 +391,6 @@ def enable_repos(rhel_repoids):
 
 def rollback():
     """Rollback all subscription related changes"""
-    loggerinst = logging.getLogger(__name__)
     try:
         unregister_system()
         remove_subscription_manager()
@@ -419,7 +402,6 @@ def check_needed_repos_availability(repo_ids_needed):
     """Check whether all the RHEL repositories needed for the system
     conversion are available through subscription-manager.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Verifying needed RHEL repositories are available ... ")
     avail_repos = get_avail_repos()
     loggerinst.info("Repositories available through RHSM:\n%s" %
@@ -471,7 +453,6 @@ def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
 
 
 def exit_on_failed_download(paths):
-    loggerinst = logging.getLogger(__name__)
     if None in paths:
         loggerinst.critical("Unable to download the subscription-manager package or its dependencies. See details of"
                             " the failed yumdownloader call above. These packages are necessary for the conversion"
@@ -485,7 +466,6 @@ def _get_rhsm_cert_on_centos_7():
       (because it is obsoleted by the subscription-manager-rhsm-certificates).
     The workaround is to download the python-rhsm-certificates and extract the certificate from it.
     """
-    loggerinst = logging.getLogger(__name__)
     cert_pkg_path = utils.download_pkg(pkg="python-rhsm-certificates", dest=_RHSM_TMP_DIR, reposdir=_RHSM_TMP_DIR)
     exit_on_failed_download([cert_pkg_path])
 

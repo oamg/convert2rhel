@@ -123,12 +123,12 @@ class TestMain(unittest.TestCase):
             self.args = args
             return self.return_string, self.return_code
 
-    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(main, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "get_file_content", GetFileContentMocked())
     def test_user_to_accept_eula_nonexisting_file(self):
         self.assertRaises(SystemExit, main.user_to_accept_eula)
-        self.assertEqual(len(main.logging.getLogger.critical_msgs), 1)
+        self.assertEqual(len(main.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(utils.changed_pkgs_control, "restore_pkgs", unit_tests.CountableMockObject())
     @unit_tests.mock(redhatrelease.system_release_file, "restore", unit_tests.CountableMockObject())

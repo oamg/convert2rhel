@@ -19,7 +19,10 @@ import logging
 import optparse
 import sys
 
-from convert2rhel import utils, __version__
+from convert2rhel import __version__, utils
+
+
+loggerinst = logging.getLogger(__name__)
 
 
 class ToolOpts(object):
@@ -85,7 +88,10 @@ class CLI(object):
                                 " messages that could help find an issue.")
         self._parser.add_option("--disable-colors", action="store_true", help="Disable color output")
         # Importing here instead of on top of the file to avoid cyclic dependency
-        from convert2rhel.systeminfo import PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME
+        from convert2rhel.systeminfo import (
+            POST_RPM_VA_LOG_FILENAME,
+            PRE_RPM_VA_LOG_FILENAME,
+        )
         self._parser.add_option("--no-rpm-va", action="store_true", help="Skip gathering changed rpm files using"
                                                                          " 'rpm -Va'. By default it's performed before and after the conversion with the output"
                                                                          " stored in log files %s and %s. At the end of the conversion, these logs are compared"
@@ -173,7 +179,6 @@ class CLI(object):
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
-        loggerinst = logging.getLogger(__name__)
         parsed_opts, _ = self._parser.parse_args()
 
         global tool_opts  # pylint: disable=C0103
@@ -248,7 +253,6 @@ def print_non_interactive_opts():
     """Print command line options to be used for the next run of the tool
     to avoid the need of any interactive input during the system conversion.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("For the non-interactive use of the tool, run the"
                     " following command:")
     global tool_opts  # pylint: disable=C0103
