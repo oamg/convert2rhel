@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # Required imports:
-
-
+import logging
 import os
 import unittest
 
@@ -286,23 +285,23 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, msg):
             self.msg += "%s\n" % msg
 
-    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(logging.Logger, "info", LogMocked())
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
     def test_check_needed_repos_availability(self):
         subscription.check_needed_repos_availability(["rhel_x"])
-        self.assertTrue("Needed RHEL repos are available" in logger.CustomLogger.info.msg)
+        self.assertTrue("Needed RHEL repos are available" in logging.Logger.info.msg)
 
         subscription.check_needed_repos_availability(["rhel_z"])
-        self.assertTrue("rhel_z repository is not available" in logger.CustomLogger.warning.msg)
+        self.assertTrue("rhel_z repository is not available" in logging.Logger.warning.msg)
 
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
-        self.assertTrue("rhel repository is not available" in logger.CustomLogger.warning.msg)
+        self.assertTrue("rhel repository is not available" in logging.Logger.warning.msg)
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: [])

@@ -21,7 +21,6 @@ import os
 import pytest
 
 from convert2rhel import logger as logger_module
-from convert2rhel.logger import CustomLogger
 from convert2rhel.toolopts import tool_opts
 
 
@@ -76,7 +75,6 @@ def test_logger_custom_logger(tmpdir, caplog):
     log_fname = "convert2rhel.log"
     logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
     logger = logging.getLogger(__name__)
-    assert isinstance(logger, CustomLogger)
     logger.task("Some task")
     logger.file("Some task write to file")
     with pytest.raises(SystemExit):

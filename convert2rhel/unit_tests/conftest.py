@@ -2,6 +2,8 @@ import sys
 
 import pytest
 
+from convert2rhel.logger import initialize_logger
+
 
 @pytest.fixture(scope="session")
 def is_py26():
@@ -59,5 +61,10 @@ def pkg_root(is_py2):
     if is_py2:
         import pathlib2 as pathlib  # pylint: disable=import-error
     else:
-        import pathlib    # pylint: disable=import-error
+        import pathlib  # pylint: disable=import-error
     return pathlib.Path(__file__).parents[2]
+
+
+@pytest.fixture(autouse=True)
+def setup_logger(tmpdir):
+    initialize_logger(log_name="convert2rhel", log_dir=tmpdir)
