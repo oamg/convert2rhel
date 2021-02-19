@@ -178,6 +178,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called, pkghandler.MAX_YUM_CMD_CALLS)
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "disable_submgr", True)
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
@@ -189,6 +190,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                          "yum install -y --disablerepo=* --enablerepo=rhel-7-extras-rpm")
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ['rhel-7-extras-rpm'])
     @unit_tests.mock(tool_opts, "enablerepo", ['not-to-be-used-in-the-yum-call'])
@@ -199,6 +201,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                          "yum install -y --enablerepo=rhel-7-extras-rpm")
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ['not-to-be-used-in-the-yum-call'])
     @unit_tests.mock(tool_opts, "enablerepo", ['not-to-be-used-in-the-yum-call'])
@@ -213,6 +216,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                          "yum install -y --disablerepo=disable-repo --enablerepo=enable-repo pkg")
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd_w_downgrades_correct_cmd(self):
         pkghandler.call_yum_cmd_w_downgrades("update", ["pkg1 pkg2"])
@@ -662,6 +666,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.assertEqual(["pkg", "subscription-manager*"], pkghandler.call_yum_cmd_w_downgrades.pkgs[i])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(pkghandler, "install_rhel_kernel", lambda: True)
     @unit_tests.mock(pkghandler, "fix_invalid_grub2_entries", lambda: None)
     @unit_tests.mock(pkghandler, "remove_non_rhel_kernels", DumbCallableObject())
@@ -790,6 +795,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(available, ['4.7.4-200.fc24'])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_handle_older_rhel_kernel_available(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
@@ -820,6 +826,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.replace_non_rhel_installed_kernel.called, 1)
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):
