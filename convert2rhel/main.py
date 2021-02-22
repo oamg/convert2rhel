@@ -149,6 +149,10 @@ def pre_ponr_conversion():
     # check if user pass some repo to both disablerepo and enablerepo options
     pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
 
+    # checking if /mnt and /sys are read-write
+    loggerinst.task("Convert: Checking /mnt and /sys are read-write")
+    utils.check_readonly_mounts()
+
     # package analysis
     loggerinst.task("Convert: List third-party packages")
     pkghandler.list_third_party_pkgs()

@@ -31,6 +31,8 @@ import traceback
 from six import moves
 
 
+loggerinst = logging.getLogger(__name__)
+
 class Color(object):
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
@@ -110,7 +112,6 @@ def store_content_to_file(filename, content):
 
 
 def restart_system():
-    loggerinst = logging.getLogger(__name__)
     from convert2rhel.toolopts import tool_opts
     if tool_opts.restart:
         run_subprocess("reboot")
@@ -124,7 +125,6 @@ def run_subprocess(cmd="", print_cmd=True, print_output=True):
     output (print_output=True). Switching off printing the command can be useful in case it contains
     a password in plain text.
     """
-    loggerinst = logging.getLogger(__name__)
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
 
@@ -170,7 +170,6 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
     :return: The output (combined stdout and stderr) and the return code of the executed command
     :rtype: tuple
     """
-    loggerinst = logging.getLogger(__name__)
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % cmd)
 
@@ -178,7 +177,7 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
         # https://github.com/pexpect/pexpect/issues/134
         def setwinsize(self, rows, cols):
             super(PexpectSizedWindowSpawn, self).setwinsize(0, columns)
-    
+
     process = PexpectSizedWindowSpawn(cmd, env={'LC_ALL': 'C'}, timeout=None)
 
     # The setting of window size is super unreliable
@@ -198,7 +197,6 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
 
 def let_user_choose_item(num_of_options, item_to_choose):
     """Ask user to enter a number corresponding to the item they choose."""
-    loggerinst = logging.getLogger(__name__)
     while True:  # Loop until user enters a valid number
         opt_num = prompt_user("Enter number of the chosen %s: "
                               % item_to_choose)
@@ -232,7 +230,6 @@ def ask_to_continue():
     """Ask user whether to continue with the system conversion. If no,
     execution of the tool is stopped.
     """
-    loggerinst = logging.getLogger(__name__)
     from convert2rhel.toolopts import tool_opts
     if tool_opts.autoaccept:
         return
@@ -245,7 +242,6 @@ def ask_to_continue():
 
 
 def prompt_user(question, password=False):
-    loggerinst = logging.getLogger(__name__)
     color_question = Color.BOLD + question + Color.END
     if password:
         response = getpass.getpass(color_question)
@@ -259,7 +255,6 @@ def log_traceback(debug):
     """Log a traceback either to both a file and stdout, or just file, based
     on the debug parameter.
     """
-    loggerinst = logging.getLogger(__name__)
     traceback_str = get_traceback_str()
     if debug:
         # Print the traceback to the user when debug option used
@@ -305,13 +300,11 @@ class ChangedRPMPackagesController(object):
 
     def _remove_installed_pkgs(self):
         """For each package installed during conversion remove it."""
-        loggerinst = logging.getLogger(__name__)
         loggerinst.task("Rollback: Removing installed packages")
         remove_pkgs(self.installed_pkgs, backup=False, critical=False)
 
     def _install_removed_pkgs(self):
         """For each package removed during conversion install it."""
-        loggerinst = logging.getLogger(__name__)
         loggerinst.task("Rollback: Installing removed packages")
         pkgs_to_install = []
         for restorable_pkg in self.removed_pkgs:
@@ -348,7 +341,6 @@ def remove_orphan_folders():
 
 def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
     """Remove packages not heeding to their dependencies."""
-    loggerinst = logging.getLogger(__name__)
 
     if backup:
         # Some packages, when removed, will also remove repo files, making it
@@ -373,7 +365,6 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
 
 def install_pkgs(pkgs_to_install, replace=False, critical=True):
     """Install packages locally available."""
-    loggerinst = logging.getLogger(__name__)
 
     if not pkgs_to_install:
         loggerinst.info("No package to install")
@@ -410,7 +401,7 @@ def install_pkgs(pkgs_to_install, replace=False, critical=True):
 def download_pkgs(pkgs, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
     return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
-    
+
 
 def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
     """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
@@ -421,7 +412,6 @@ def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_re
     Pass just a single rpm name as a string to the pkg parameter.
     """
     from convert2rhel.systeminfo import system_info
-    loggerinst = logging.getLogger(__name__)
     loggerinst.debug("Downloading the %s package." % pkg)
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
@@ -468,7 +458,6 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
       RHEL 7: "using local copy of 7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
       RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
     """
-    loggerinst = logging.getLogger(__name__)
     if output:
         last_output_line = output.splitlines()[-1]
     else:
@@ -497,7 +486,6 @@ class RestorableFile(object):
 
     def backup(self):
         """ Save current version of a file """
-        loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.filepath)
         if os.path.isfile(self.filepath):
             try:
@@ -511,7 +499,6 @@ class RestorableFile(object):
 
     def restore(self):
         """ Restore a previously backed up file """
-        loggerinst = logging.getLogger(__name__)
         backup_filepath = os.path.join(BACKUP_DIR,
                                        os.path.basename(self.filepath))
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
@@ -531,7 +518,6 @@ class RestorableFile(object):
 
     def remove(self):
         """ Remove a previously backed up file """
-        loggerinst = logging.getLogger(__name__)
         if os.path.isfile(self.filepath):
             loggerinst.warning("Removing %s saved during previous run of"
                                " convert2rhel" % self.filepath)
@@ -550,7 +536,6 @@ class RestorablePackage(object):
 
     def backup(self):
         """ Save version of RPM package """
-        loggerinst = logging.getLogger(__name__)
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
             # When backing up the packages, the original system repofiles are still available and for them we can't
@@ -558,6 +543,28 @@ class RestorablePackage(object):
             self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
+
+
+def check_readonly_mounts():
+    """
+    Mounting directly to /mnt/ is not in line with Unix FS (https://en.wikipedia.org/wiki/Unix_filesystem).
+    Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
+    fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
+    """
+    mounts = get_file_content('/proc/mounts', as_list=True)
+    for line in mounts:
+        _, mount_point, _, flags, _, _ = line.split()
+        flags = flags.split(',')
+        if mount_point not in ('/mnt', '/sys'):
+            continue
+        if 'ro' in flags:
+            if mount_point == '/mnt':
+                loggerinst.critical("Stopping conversion due to read-only mount to /mnt directory.\n"
+                                    "Mount at a subdirectory of /mnt to have /mnt writeable.")
+            else:  # /sys
+                loggerinst.critical("Stopping conversion due to read-only mount to /sys directory.\n"
+                                    "Ensure mount point is writable before executing convert2rhel.")
+        loggerinst.debug("%s mount point is not read-only." % mount_point)
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

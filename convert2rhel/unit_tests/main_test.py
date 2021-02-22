@@ -19,7 +19,6 @@
 import os
 import unittest
 
-
 try:
     from collections import OrderedDict
 except ImportError:
@@ -35,7 +34,6 @@ from convert2rhel import (
     subscription,
     utils,
 )
-from convert2rhel.systeminfo import SystemInfo
 from convert2rhel.toolopts import tool_opts
 
 
@@ -54,6 +52,10 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(utils, "DATA_DIR", eula_dir)
     def test_show_eula(self):
         main.show_eula()
+
+    class GetFakeFunctionMocked(unit_tests.MockFunction):
+        def __call__(self, filename):
+            pass
 
     class GetFileContentMocked(unit_tests.MockFunction):
         def __call__(self, filename):
@@ -100,8 +102,6 @@ class TestMain(unittest.TestCase):
         @classmethod
         def reset(cls):
             cls.calls = OrderedDict()
-
-
 
     class CallYumCmdMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -159,6 +159,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @unit_tests.mock(utils, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -200,6 +201,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @unit_tests.mock(utils, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
