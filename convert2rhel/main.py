@@ -236,6 +236,8 @@ def rollback_changes():
     redhatrelease.system_release_file.restore()
     redhatrelease.yum_conf.restore()
     pkghandler.versionlock_file.restore()
+    system_cert = cert.SystemCert()
+    system_cert.remove()
 
     return
 

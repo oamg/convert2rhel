@@ -25,6 +25,15 @@ except ImportError:
 
 import os
 import shutil
+import sys
+
+import pytest
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
 
 from convert2rhel import cert, utils
 from convert2rhel.systeminfo import system_info
@@ -50,7 +59,8 @@ class TestCert(unittest.TestCase):
         for arch, rhel_versions in self.certs.items():
             for rhel_version, pem in rhel_versions.items():
                 utils.DATA_DIR = os.path.join(self.base_data_dir, rhel_version, arch)
-                cert_path = cert.SystemCert._get_cert_path()
+                system_cert = cert.SystemCert()
+                cert_path = system_cert._source_cert_path
                 self.assertEqual(cert_path, "{0}/rhel-certs/{1}".format(utils.DATA_DIR, pem))
 
     @unit_tests.mock(cert, "loggerinst", unit_tests.GetLoggerMocked())
@@ -61,7 +71,7 @@ class TestCert(unittest.TestCase):
         cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs", system_info.arch)
         utils.mkdir_p(cert_dir)
         # Check response for the non-existing certificate in the temporary dir
-        self.assertRaises(SystemExit, cert.SystemCert._get_cert_path)
+        self.assertRaises(SystemExit, cert.SystemCert._get_cert)
         self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
         # Remove the temporary directory tree
         shutil.rmtree(os.path.join(utils.DATA_DIR, "rhel-certs"))
@@ -70,20 +80,46 @@ class TestCert(unittest.TestCase):
     @unit_tests.mock(utils, "DATA_DIR", unit_tests.NONEXISTING_DIR)
     @unit_tests.mock(system_info, "arch", "nonexisting_arch")
     def test_get_cert_path_nonexisting_dir(self):
-        self.assertRaises(SystemExit, cert.SystemCert._get_cert_path)
+        self.assertRaises(SystemExit, cert.SystemCert._get_cert)
         self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
 
-    @unit_tests.mock(cert.SystemCert, "_system_cert_dir", unit_tests.TMP_DIR)
     @unit_tests.mock(tool_opts, "arch", "x86_64")
     @unit_tests.mock(utils, "DATA_DIR", os.path.join(base_data_dir, "6", "x86_64"))
     def test_install_cert(self):
         # By initializing the cert object we get a path to an existing
         # certificate based on the mocked parameters above
         system_cert = cert.SystemCert()
+        system_cert._target_cert_dir = unit_tests.TMP_DIR
 
         system_cert.install()
 
-        cert_filename = os.path.basename(system_cert._cert_path)
-        installed_cert_path = os.path.join(system_cert._system_cert_dir, cert_filename)
+        installed_cert_path = os.path.join(system_cert._target_cert_dir, system_cert._cert_filename)
         self.assertTrue(os.path.exists(installed_cert_path))
         shutil.rmtree(unit_tests.TMP_DIR)
+
+
+@pytest.mark.parametrize(
+    ("filename"),
+    ("existing.file", "nonexisting.file"),
+)
+def test_remove_cert(monkeypatch, filename, caplog):
+    try:
+        utils.mkdir_p(unit_tests.TMP_DIR)
+        path = os.path.join(unit_tests.TMP_DIR, filename)
+        if filename == "existing.file":
+            os.mknod(path)
+    except FileExistsError:
+        pass
+
+    monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
+    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=path))
+
+    sys_cert = cert.SystemCert()
+    sys_cert.remove()
+
+    shutil.rmtree(unit_tests.TMP_DIR)
+
+    if filename == "existing.file":
+        assert "Certificate " + path + " removed" in caplog.text
+    else:
+        assert "OSError" in caplog.text

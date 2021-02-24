@@ -26,13 +26,15 @@ loggerinst = logging.getLogger(__name__)
 
 
 class SystemCert(object):
-    _system_cert_dir = "/etc/pki/product-default/"
-
     def __init__(self):
-        self._cert_path = self._get_cert_path()
+        self._target_cert_dir = "/etc/pki/product-default/"
+        self._cert_filename, self._source_cert_dir = self._get_cert()
+        self._source_cert_path = self._get_source_cert_path()
+        self._target_cert_path = self._get_target_cert_path()
 
     @staticmethod
-    def _get_cert_path():
+    def _get_cert():
+        """Return name of certificate and his directory."""
         cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs")
         if not os.access(cert_dir, os.R_OK | os.W_OK):
             loggerinst.critical("Error: Could not access %s." % cert_dir)
@@ -43,7 +45,13 @@ class SystemCert(object):
                 break
         if not pem_filename:
             loggerinst.critical("Error: System certificate (.pem) not found in %s." % cert_dir)
-        return os.path.join(cert_dir, pem_filename)
+        return pem_filename, cert_dir
+
+    def _get_source_cert_path(self):
+        return os.path.join(self._source_cert_dir, self._cert_filename)
+
+    def _get_target_cert_path(self):
+        return os.path.join(self._target_cert_dir, self._cert_filename)
 
     def install(self):
         """RHEL certificate (.pem) is used by subscription-manager to
@@ -52,9 +60,19 @@ class SystemCert(object):
         loggerinst.info("Installing RHEL certificate to the system.")
 
         try:
-            utils.mkdir_p(self._system_cert_dir)
-            shutil.copy(self._cert_path, self._system_cert_dir)
+            utils.mkdir_p(self._target_cert_dir)
+            shutil.copy(self._source_cert_path, self._target_cert_dir)
         except OSError as err:
             loggerinst.critical("OSError({0}): {1}".format(err.errno, err.strerror))
 
-        loggerinst.debug("Certificate copied to %s." % self._system_cert_dir)
+        loggerinst.debug("Certificate copied to %s." % self._target_cert_dir)
+
+    def remove(self):
+        """Remove certificate (.pem), which was copied to system's cert dir."""
+        loggerinst.task("Rollback: Removing installed RHSM certificate")
+
+        try:
+            os.remove(self._target_cert_path)
+            loggerinst.info("Certificate %s removed" % self._target_cert_path)
+        except OSError as err:
+            loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))
