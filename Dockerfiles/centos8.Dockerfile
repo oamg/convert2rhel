@@ -22,7 +22,8 @@ COPY $APP_DEV_DEPS $APP_DEV_DEPS
 RUN $PIP install -r $APP_DEV_DEPS
 
 FROM install_dev_deps as install_application
-RUN useradd -u 5000 app
+RUN groupadd --gid=1000 -r app && \
+    useradd -r --uid=1000 --gid=1000 app
 RUN chown -R app:app .
-COPY . .
+COPY --chown=app:app . .
 USER app:app

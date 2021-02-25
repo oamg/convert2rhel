@@ -19,12 +19,15 @@ import glob
 import logging
 import os
 import re
+
 import rpm
 
+from convert2rhel import pkgmanager, utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel import utils
-from convert2rhel import pkgmanager
 from convert2rhel.toolopts import tool_opts
+
+
+loggerinst = logging.getLogger(__name__)
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
@@ -48,7 +51,6 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
     tries to resolve the dependency errors where yum is not able to.
     """
 
-    loggerinst = logging.getLogger(__name__)
     for _ in range(MAX_YUM_CMD_CALLS):
         output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(
             get_installed_pkgs_by_fingerprint(fingerprints))))
@@ -83,7 +85,6 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
     By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
     release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
     """
-    loggerinst = logging.getLogger(__name__)
 
     cmd = "yum %s -y" % command
 
@@ -132,7 +133,6 @@ def get_problematic_pkgs(output, known_problematic_pkgs):
     new_problematic_pkgs = []
     package_nevr_re = "[0-9]*:?([a-z-][a-z0-9-]*?)-[0-9]"
 
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("\n\n")
     protected = re.findall("Error.*?\"(.*?)\".*?protected",
                            output, re.MULTILINE)
@@ -159,7 +159,6 @@ def resolve_dep_errors(output, pkgs):
     """Recursive function. If there are dependency errors in the yum output,
     try to resolve them by yum downgrades.
     """
-    loggerinst = logging.getLogger(__name__)
 
     prev_pkgs = pkgs
     pkgs = get_problematic_pkgs(output, pkgs)
@@ -235,7 +234,6 @@ def get_rpm_header(pkg_obj):
             return rpm_hdr
     else:
         # Package not found in the rpm db
-        loggerinst = logging.getLogger(__name__)
         loggerinst.critical(
             "Unable to find package '%s' in the rpm database." % pkg_obj.name)
 
@@ -303,7 +301,6 @@ def list_third_party_pkgs():
     """List packages not packaged by the original OS vendor or Red Hat and warn that these are not going
     to be converted.
     """
-    loggerinst = logging.getLogger(__name__)
     third_party_pkgs = get_third_party_pkgs()
     if third_party_pkgs:
         loggerinst.warning("Only packages signed by %s are to be"
@@ -349,7 +346,6 @@ def print_pkg_info(pkgs):
                                         from_repo) + "\n"
 
     pkg_table = header + header_underline + pkg_list
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info(pkg_table)
     return pkg_table
 
@@ -415,7 +411,6 @@ def list_non_red_hat_pkgs_left():
     """List all the packages that have not been replaced by the
     Red Hat-signed ones during the conversion.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Listing packages not signed by Red Hat")
     non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_rhel)
@@ -430,7 +425,6 @@ def remove_excluded_pkgs():
     """Certain packages need to be removed before the system conversion,
     depending on the system to be converted.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Searching for the following excluded packages:\n")
     remove_pkgs_with_confirm(system_info.excluded_pkgs)
 
@@ -444,7 +438,6 @@ def remove_repofile_pkgs():
     we can't install subscription-manager before removing the excluded packages
     as there would be a conflict with one of the excluded packages (rhn-client-tools).
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Searching for packages containing repofiles or affecting variables in the repofiles:\n")
     remove_pkgs_with_confirm(system_info.repofile_pkgs)
 
@@ -454,7 +447,6 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     Remove selected packages with a breakdown and user confirmation prompt.
     """
     pkgs_to_remove = []
-    loggerinst = logging.getLogger(__name__)
     for pkg in pkgs:
         temp = '.' * (50 - len(pkg) - 2)
         pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
@@ -477,7 +469,6 @@ def replace_non_red_hat_packages():
     """Wrapper for yum commands that replace the non-Red Hat packages with
     the Red Hat ones.
     """
-    loggerinst = logging.getLogger(__name__)
 
     # TODO: run yum commands with --assumeno first and show the user what will
     # be done and then ask if we should continue the operation
@@ -498,7 +489,6 @@ def replace_non_red_hat_packages():
 
 
 def install_gpg_keys():
-    loggerinst = logging.getLogger(__name__)
     gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
@@ -527,7 +517,6 @@ def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
     later on.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Installing RHEL kernel ...")
     output, ret_code = call_yum_cmd(command="install", args="kernel")
 
@@ -600,7 +589,6 @@ def get_kernel(kernels_raw):
 
 def replace_non_rhel_installed_kernel(version):
     """Replace the installed non-RHEL kernel with RHEL kernel with same version."""
-    loggerinst = logging.getLogger(__name__)
     loggerinst.warning("The convert2rhel is going to force-replace the only"
                        " kernel installed, which has the same NEVRA as the"
                        " only available RHEL kernel. If anything goes wrong"
@@ -635,7 +623,6 @@ def replace_non_rhel_installed_kernel(version):
 
 
 def verify_rhel_kernel_installed():
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Verifying that RHEL kernel has been installed")
     if not is_rhel_kernel_installed():
         loggerinst.critical(
@@ -650,7 +637,6 @@ def is_rhel_kernel_installed():
 
 
 def remove_non_rhel_kernels():
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Searching for non-RHEL kernels ...")
     non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_rhel, "kernel*")
@@ -705,7 +691,6 @@ def fix_invalid_grub2_entries():
         # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
         return
 
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Fixing GRUB boot loader entries.")
 
     machine_id = utils.get_file_content("/etc/machine-id")
@@ -734,7 +719,6 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
     tries to install back all of these from RHEL repositories.
     """
-    loggerinst = logging.getLogger(__name__)
     # OL renames some of the kernel packages by adding "-uek" (Unbreakable
     # Enterprise Kernel), e.g. kernel-uek-devel instead of kernel-devel. Such
     # package names need to be mapped to the RHEL kernel package names to have
@@ -752,7 +736,6 @@ def update_rhel_kernel():
     convert2rhel needs to install older RHEL kernel version first. In this function, RHEL kernel is updated to the
     latest available version.
     """
-    loggerinst = logging.getLogger(__name__)
     loggerinst.info("Updating RHEL kernel.")
     call_yum_cmd(command="update", args="kernel")
 
@@ -765,7 +748,6 @@ def clear_versionlock():
     DNF has been designed to be backwards compatible with YUM. So the file in which the version locks are defined for
     YUM works correctly even with DNF thanks to symlinks created by DNF.
     """
-    loggerinst = logging.getLogger(__name__)
 
     if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
         loggerinst.warn("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
@@ -781,7 +763,6 @@ def clear_versionlock():
 
 
 def has_duplicate_repos_across_disablerepo_enablerepo_options():
-    loggerinst = logging.getLogger(__name__)
 
     duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
     if duplicate_repos:

@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # Required imports:
-
-
+import logging
 import os
 import unittest
 
@@ -150,10 +149,10 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "activation_key", "dummy_activate_key")
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     def test_attach_subscription_available_with_activation_key(self):
         self.assertEqual(subscription.attach_subscription(), True)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 1)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetNoAvailSubsMocked())
     def test_attach_subscription_none_available(self):
@@ -179,7 +178,7 @@ class TestSubscription(unittest.TestCase):
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 2)
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([("nope", 1)]))
     def test_register_system_fail_non_interactive(self):
         # Check the critical severity is logged when the credentials are given
@@ -188,7 +187,7 @@ class TestSubscription(unittest.TestCase):
         tool_opts.password = 'pass'
         tool_opts.credentials_thru_cli = True
         self.assertRaises(SystemExit, subscription.register_system)
-        self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(utils,
                      "run_subprocess",
@@ -250,27 +249,27 @@ class TestSubscription(unittest.TestCase):
         "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
     )
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_unregister_system_successfully(self):
         unregistration_cmd = "subscription-manager unregister"
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 0)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.warning_msgs), 0)
 
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([('output', 1)]))
     def test_unregister_system_fails(self):
         unregistration_cmd = "subscription-manager unregister"
         subscription.unregister_system()
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.logging.getLogger.info_msgs), 0)
-        self.assertEqual(len(subscription.logging.getLogger.task_msgs), 1)
-        self.assertEqual(len(subscription.logging.getLogger.warning_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 0)
+        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
+        self.assertEqual(len(subscription.loggerinst.warning_msgs), 1)
 
     @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "remove_subscription_manager", unit_tests.CountableMockObject())
@@ -286,23 +285,23 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, msg):
             self.msg += "%s\n" % msg
 
-    @unit_tests.mock(logger.CustomLogger, "info", LogMocked())
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(logging.Logger, "info", LogMocked())
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
     def test_check_needed_repos_availability(self):
         subscription.check_needed_repos_availability(["rhel_x"])
-        self.assertTrue("Needed RHEL repos are available" in logger.CustomLogger.info.msg)
+        self.assertTrue("Needed RHEL repos are available" in logging.Logger.info.msg)
 
         subscription.check_needed_repos_availability(["rhel_z"])
-        self.assertTrue("rhel_z repository is not available" in logger.CustomLogger.warning.msg)
+        self.assertTrue("rhel_z repository is not available" in logging.Logger.warning.msg)
 
-    @unit_tests.mock(logger.CustomLogger, "warning", LogMocked())
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
-        self.assertTrue("rhel repository is not available" in logger.CustomLogger.warning.msg)
+        self.assertTrue("rhel repository is not available" in logging.Logger.warning.msg)
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: [])

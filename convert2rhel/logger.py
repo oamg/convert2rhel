@@ -25,10 +25,11 @@ TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
 FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
 """
-from convert2rhel.toolopts import tool_opts
 import logging
 import os
 import sys
+
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import format_msg_with_datetime
 
 LOG_DIR = "/var/log/convert2rhel"
@@ -50,14 +51,14 @@ def initialize_logger(log_name, log_dir=LOG_DIR):
         log_name = the name for the log file
         log_dir = path to the dir where log file will be presented
     """
-    # check if already initialized with custom class
-    if logging.getLoggerClass() == CustomLogger:
-        return
-    # set custom class
-    logging.setLoggerClass(CustomLogger)
     # set custom labels
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
+    logging.Logger.task = _task
+    logging.Logger.file = _file
+    logging.Logger.debug = _debug
+    logging.Logger.critical = _critical
+
     # enable raising exceptions
     logging.raiseExceptions = True
     # get root logger
@@ -86,37 +87,35 @@ def initialize_logger(log_name, log_dir=LOG_DIR):
     logger.addHandler(handler)
 
 
-class CustomLogger(logging.Logger, object):
-    """Customized Logger class
+def _task(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelTask.level):
+        self._log(LogLevelTask.level, msg, args, **kwargs)
 
-    Python 2.6 workaround - logging.Formatter class does not use new-style
-        class and causes 'TypeError: super() argument 1 must be type, not
-        classobj' so we use multiple inheritance to get around the problem.
-    """
 
-    def task(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelTask.level, msg, *args,
-                                      **kwargs)
+def _file(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelFile.level):
+        self._log(LogLevelFile.level, msg, args, **kwargs)
 
-    def file(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelFile.level, msg, *args,
-                                      **kwargs)
 
-    def critical(self, msg, *args, **kwargs):
-        super(CustomLogger, self).critical(msg, *args, **kwargs)
+def _critical(self, msg, *args, **kwargs):
+    if self.isEnabledFor(logging.CRITICAL):
+        self._log(logging.CRITICAL, msg, args, **kwargs)
         sys.exit(msg)
 
-    def debug(self, msg, *args, **kwargs):
-        from convert2rhel.toolopts import tool_opts
-        if tool_opts.debug:
-            super(CustomLogger, self).debug(msg, *args, **kwargs)
-        else:
-            super(CustomLogger, self).log(LogLevelFile.level,
-                                          format_msg_with_datetime(msg, "debug"),
-                                          *args, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
-        super(CustomLogger, self).info(msg, *args, **kwargs)
+def _debug(self, msg, *args, **kwargs):
+    if self.isEnabledFor(logging.DEBUG):
+        from convert2rhel.toolopts import tool_opts
+
+        if tool_opts.debug:
+            self._log(logging.DEBUG, msg, args, **kwargs)
+        else:
+            self._log(
+                LogLevelFile.level,
+                format_msg_with_datetime(msg, "debug"),
+                args,
+                **kwargs
+            )
 
 
 class bcolors:

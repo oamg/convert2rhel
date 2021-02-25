@@ -49,11 +49,11 @@ images: .images
 
 tests: images
 	@echo 'CentOS 6 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
+	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
 	@echo 'CentOS 7 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
+	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
 	@echo 'CentOS 8 tests'
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
+	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
 
 lint: images
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"

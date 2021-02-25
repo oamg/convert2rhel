@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import logging
 from collections import namedtuple
 import glob
 import os
@@ -24,7 +24,6 @@ import sys
 import pytest
 import rpm
 
-from convert2rhel import logger
 from convert2rhel import pkghandler
 from convert2rhel import pkgmanager
 from convert2rhel import utils
@@ -126,13 +125,13 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.filename = filename
             self.called += 1
 
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
     def test_clear_versionlock_plugin_not_enabled(self):
         self.assertFalse(pkghandler.clear_versionlock())
-        self.assertEqual(len(pkghandler.logging.getLogger.info_msgs), 1)
-        self.assertEqual(pkghandler.logging.getLogger.info_msgs, ['Usage of YUM/DNF versionlock plugin not detected.'])
+        self.assertEqual(len(pkghandler.loggerinst.info_msgs), 1)
+        self.assertEqual(pkghandler.loggerinst.info_msgs, ['Usage of YUM/DNF versionlock plugin not detected.'])
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
@@ -397,7 +396,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             else:
                 return [db_entry for db_entry in db if db_entry[rpm.RPMTAG_NAME] == value]
 
-    @unit_tests.mock(logger.CustomLogger, "warning", GetLoggerMocked())
+    @unit_tests.mock(logging.Logger, "warning", GetLoggerMocked())
     @unit_tests.mock(rpm, "TransactionSet", TransactionSetMocked())
     @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
     def test_get_rpm_header(self):
@@ -963,28 +962,31 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
 
     @unit_tests.mock(pkghandler, "get_third_party_pkgs", lambda: [])
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     def test_list_third_party_pkgs_no_pkgs(self):
         pkghandler.list_third_party_pkgs()
 
-        self.assertTrue("No third party packages installed" in pkghandler.logging.getLogger.info_msgs[0])
+        self.assertTrue("No third party packages installed" in pkghandler.loggerinst.info_msgs[0])
 
     @unit_tests.mock(pkghandler, "get_third_party_pkgs", GetInstalledPkgsWFingerprintsMocked())
     @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     def test_list_third_party_pkgs(self):
         pkghandler.list_third_party_pkgs()
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
-        self.assertTrue("Only packages signed by" in pkghandler.logging.getLogger.warning_msgs[0])
+        self.assertTrue("Only packages signed by" in pkghandler.loggerinst.warning_msgs[0])
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*', 'rhel-7-extras-rpm'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
+    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     def test_is_disable_and_enable_repos_has_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertTrue("Duplicate repositories were found" in pkghandler.logging.getLogger.warning_msgs[0])
+        self.assertTrue(
+            "Duplicate repositories were found" in
+            pkghandler.loggerinst.warning_msgs[0]
+        )
 
     @unit_tests.mock(tool_opts, "disablerepo", ['*'])
     @unit_tests.mock(tool_opts, "enablerepo", ['rhel-7-extras-rpm'])
