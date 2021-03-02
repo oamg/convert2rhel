@@ -1,0 +1,9 @@
+summary: kmods tests
+# TODO Add prepare with running ansible playbooks
+# TODO why prepare step is ignored?
+prepare:
+  how: shell
+  script: |
+    echo "some preparation script here"
+test: |
+  pytest

@@ -1,0 +1,4 @@
+summary: kmods tests
+# TODO Add prepare with running ansible playbooks
+test: |
+  pytest .

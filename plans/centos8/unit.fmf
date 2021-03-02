@@ -1,0 +1,3 @@
+discover:
+  how: fmf
+#  filter: 'tag: unit & tag: centos8'
