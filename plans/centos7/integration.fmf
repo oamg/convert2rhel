@@ -2,7 +2,7 @@ discover:
     how: fmf
     filter:
         - 'tag: integration'
-        - 'tag: centos8'
+        - 'tag: centos7'
 prepare:
     how: shell
     # TODO Add scripts to build an rpm

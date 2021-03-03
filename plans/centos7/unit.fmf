@@ -2,4 +2,4 @@ discover:
   how: fmf
   filter:
     - 'tag: unit'
-    - 'tag: centos8'
+    - 'tag: centos7'

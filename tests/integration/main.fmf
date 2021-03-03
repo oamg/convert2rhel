@@ -1,5 +1,5 @@
 summary: Integration tests
-tags: [integration, centos8]
+tag: [integration]
 prepare:
   how: shell
   # TODO install rpm script

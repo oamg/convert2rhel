@@ -1,4 +1,4 @@
 summary: kmods tests
-# TODO Add prepare with running ansible playbooks
+tag: [unit, centos6, centos7, centos8]
 test: |
   pytest .
