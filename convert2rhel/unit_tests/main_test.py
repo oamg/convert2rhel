@@ -130,7 +130,6 @@ class TestMain(unittest.TestCase):
         unit_tests.CountableMockObject(),
     )
     @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
-    @unit_tests.mock(redhatrelease.yum_conf, "restore", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
     @unit_tests.mock(
         pkghandler.versionlock_file,
@@ -144,7 +143,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
         self.assertEqual(repo.restore_yum_repos.called, 1)
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
-        self.assertEqual(redhatrelease.yum_conf.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)
@@ -160,7 +158,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
-    @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
     @mock_calls(subscription, "subscribe_system", CallOrderMocked)
     @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
@@ -187,7 +184,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["disable_repos"] = 1
         intended_call_order["remove_repofile_pkgs"] = 1
         intended_call_order["enable_repos"] = 1
-        intended_call_order["patch"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
         intended_call_order["perform_pre_checks"] = 1
 
@@ -208,7 +204,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
-    @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
     @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
     @mock_calls(subscription, "subscribe_system", CallOrderMocked)
     @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
@@ -241,7 +236,6 @@ class TestMain(unittest.TestCase):
 
         intended_call_order["enable_repos"] = 0
 
-        intended_call_order["patch"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
