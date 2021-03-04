@@ -340,7 +340,6 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
     @unit_tests.mock(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
-    @unit_tests.mock(subscription, "_get_rhsm_cert_on_centos_7", DumbCallable())
     @unit_tests.mock(utils, "mkdir_p", DumbCallable())
     def test_download_rhsm_pkgs(self):
         subscription.download_rhsm_pkgs()
@@ -361,7 +360,6 @@ class TestSubscription(unittest.TestCase):
                           "subscription-manager-rhsm-certificates",
                           "subscription-manager-rhsm",
                           "python-syspurpose"])
-        self.assertEqual(subscription._get_rhsm_cert_on_centos_7.called, 1)
 
         system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
 
@@ -422,28 +420,3 @@ class TestSubscription(unittest.TestCase):
             self.dest = dest
             self.reposdir = reposdir
             return self.to_return
-
-    @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
-    @unit_tests.mock(utils, "mkdir_p", DumbCallable())
-    def test_get_rhsm_cert_on_centos_7(self):
-        # test the case of python-rhsm-certificates download failing
-        utils.download_pkg.to_return = None
-        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
-        # return back some sane output
-        utils.download_pkg.to_return = "/path/to.rpm"
-
-        # test the case when getting the cpio archive out of the python-rhsm-certificates rpm is failing
-        utils.run_subprocess.tuples = [("output", 1)]
-        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
-
-        # test the case when extracting the certificate out of the cpio archive fails
-        utils.run_subprocess.tuples = [("output", 0), ("output", 1)]
-        self.assertRaises(SystemExit, subscription._get_rhsm_cert_on_centos_7)
-        # reset the called counter
-        utils.store_content_to_file.called = 0
-
-        # test the case when everything passes and two files are stored - the cpio archive and the extracted cert file
-        subscription._get_rhsm_cert_on_centos_7()
-        self.assertEqual(utils.store_content_to_file.called, 2)
