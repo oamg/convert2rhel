@@ -51,10 +51,9 @@ class TestMain(unittest.TestCase):
     eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                              "..", "data", "version-independent"))
 
-    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "DATA_DIR", eula_dir)
-    def test_user_to_accept_eula(self):
-        main.user_to_accept_eula()
+    def test_show_eula(self):
+        main.show_eula()
 
     class GetFileContentMocked(unit_tests.MockFunction):
         def __call__(self, filename):
@@ -124,10 +123,9 @@ class TestMain(unittest.TestCase):
             return self.return_string, self.return_code
 
     @unit_tests.mock(main, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "ask_to_continue", AskToContinueMocked())
     @unit_tests.mock(utils, "get_file_content", GetFileContentMocked())
-    def test_user_to_accept_eula_nonexisting_file(self):
-        self.assertRaises(SystemExit, main.user_to_accept_eula)
+    def test_show_eula_nonexisting_file(self):
+        self.assertRaises(SystemExit, main.show_eula)
         self.assertEqual(len(main.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(utils.changed_pkgs_control, "restore_pkgs", unit_tests.CountableMockObject())

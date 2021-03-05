@@ -62,8 +62,8 @@ def main():
         process_phase = ConversionPhase.POST_CLI
 
         # license agreement
-        loggerinst.task("Prepare: End user license agreement")
-        user_to_accept_eula()
+        loggerinst.task("Prepare: Show Red Hat software EULA")
+        show_eula()
 
         # gather system information
         loggerinst.task("Prepare: Gather system information")
@@ -131,18 +131,13 @@ def main():
     return 0
 
 
-def user_to_accept_eula():
-    """Request user to accept EULA license agreement. This is required
-    otherwise the conversion process stops and fails with error.
-    """
+def show_eula():
+    """Print out the content of the Red Hat End User License Agreement."""
 
-    eula_filename = "GLOBAL_EULA_RHEL"
-    eula_filepath = os.path.join(utils.DATA_DIR, eula_filename)
+    eula_filepath = os.path.join(utils.DATA_DIR, "GLOBAL_EULA_RHEL")
     eula_text = utils.get_file_content(eula_filepath)
     if eula_text:
         loggerinst.info(eula_text)
-        loggerinst.warning("By continuing you accept this EULA.")
-        utils.ask_to_continue()
     else:
         loggerinst.critical('EULA file not found.')
     return
