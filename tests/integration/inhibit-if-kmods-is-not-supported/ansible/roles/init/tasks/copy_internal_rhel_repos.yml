@@ -1,0 +1,4 @@
+- name: Copy repofile with internal RHEL 8 repositories
+  copy:
+    src: 'rhel-8-internal.repo'
+    dest: /etc/yum.repos.d

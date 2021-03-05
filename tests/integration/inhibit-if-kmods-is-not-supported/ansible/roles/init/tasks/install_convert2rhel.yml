@@ -1,0 +1,13 @@
+- name: Download convert2rhel COPR repository for conversions to RHEL 8
+  get_url:
+    url: https://copr.fedorainfracloud.org/coprs/g/oamg/convert2rhel/repo/epel-8/group_oamg-convert2rhel-epel-8.repo
+    dest: /etc/yum.repos.d/c2r_copr.repo
+
+- name: Install the convert2rhel package ({{ c2r_pkg }})
+  yum:
+    name: "{{ c2r_pkg }}"
+  register: yum_res
+
+- name: Show output of the previous yum call
+  debug:
+    msg: "{{ yum_res.results[0].split('\n') }}"

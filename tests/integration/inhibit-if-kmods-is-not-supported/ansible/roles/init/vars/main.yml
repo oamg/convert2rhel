@@ -1,0 +1,4 @@
+c2r_pkg: "{{ 'convert2rhel*main*' }}"
+# There's no need for python-virtualenv on CentOS/OL 6 as many pip packages are not py2.6 compatible anymore
+devel_pkgs_sysversion_8: ["vim", "python3-devel", "git", "python3-virtualenv", "rpmlint", "rpm-build", "python3-six", "python3-nose"]
+user: root

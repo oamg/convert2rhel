@@ -24,6 +24,7 @@ def tmpdir(tmpdir, is_py2):
     Origin LocalPath object is not supported in python26 for os.path.isdir.
     We're using this method when do a logger setup.
     """
+    # TODO maybe with pathlib2 this going to work. Check
     if is_py2:
         return str(tmpdir)
     else:

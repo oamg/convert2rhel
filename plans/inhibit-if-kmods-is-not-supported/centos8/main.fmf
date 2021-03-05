@@ -1,0 +1,14 @@
+discover:
+    how: fmf
+    # TODO filter inheritance doesn't work
+    filter:
+        - 'tag: centos8'
+        - 'tag: inhibit-if-kmods-is-not-supported'
+provision:
+    how: container
+    image: convert2rhel/centos8
+    pull: false
+prepare:
+    how: ansible
+    playbook:
+        - tests/integration/inhibit-if-kmods-is-not-supported/ansible/setup.yml
