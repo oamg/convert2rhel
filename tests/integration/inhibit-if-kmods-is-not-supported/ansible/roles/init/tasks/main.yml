@@ -1,4 +1,0 @@
----
-- include: devel.yml
-- include: copy_internal_rhel_repos.yml
-- include: install_convert2rhel.yml

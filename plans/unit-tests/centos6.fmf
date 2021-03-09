@@ -1,0 +1,5 @@
+discover+:
+    filter+:
+        - 'tag: centos6'
+provision+:
+    image: convert2rhel/centos6:latest

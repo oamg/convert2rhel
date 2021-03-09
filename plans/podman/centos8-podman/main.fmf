@@ -4,10 +4,10 @@ discover:
         - 'tag: centos8'
         - 'tag: inhibit-if-kmods-is-not-supported'
 provision:
-    how: docker
+    how: container
     image: convert2rhel_centos8:latest
     pull: false
 prepare:
     how: ansible
     playbook:
-        - tests/integration/inhibit-if-kmods-is-not-supported/ansible/kmods.yml
+        - tests/integration/inhibit-if-kmods-is-not-supported/ansible/kmods.podman.yml

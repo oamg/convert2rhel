@@ -1,0 +1,7 @@
+discover:
+    how: fmf
+    filter:
+        - 'tag: unit'
+provision:
+    how: container
+    pull: false

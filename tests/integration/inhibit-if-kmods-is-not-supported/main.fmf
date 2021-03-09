@@ -1,5 +1,4 @@
 summary: kmods tests
-# TODO Add prepare with running ansible playbooks
 tag: [centos6, centos7, centos8, inhibit-if-kmods-is-not-supported]
 test: |
   pytest

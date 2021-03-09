@@ -1,0 +1,5 @@
+discover+:
+    filter+:
+        - 'tag: centos8'
+provision+:
+    image: convert2rhel/centos8:latest

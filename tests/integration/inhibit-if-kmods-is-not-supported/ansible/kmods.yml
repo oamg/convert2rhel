@@ -1,0 +1,49 @@
+- hosts: all
+  vars:
+    container: "dc5b26f773c6f4b51987daf0bac9b2fa3e62e8a3aa797f5d82af2a29acbda66f"
+  tasks:
+    - name: add container to inventory
+      add_host:
+        name: "{{ container }}"
+        ansible_connection: docker
+      changed_when: false
+
+    - name: run command in container
+      delegate_to: "{{ container }}"
+      raw: bash
+
+    - name: Install CentOS/OL 8 packages for development
+      delegate_to: "{{ container }}"
+      yum:
+        name: ["vim", "python3-devel", "git", "python3-virtualenv", "rpmlint", "rpm-build", "python3-six", "python3-nose"]
+        state: present
+      register: yum_res
+#
+#    - name: Copy repofile with internal RHEL 8 repositories
+#      copy:
+#        src: 'rhel-8-internal.repo'
+#        dest: /etc/yum.repos.d
+#
+#    - name: Download convert2rhel COPR repository for conversions to RHEL 8
+#      get_url:
+#        url: https://copr.fedorainfracloud.org/coprs/g/oamg/convert2rhel/repo/epel-8/group_oamg-convert2rhel-epel-8.repo
+#        dest: /etc/yum.repos.d/c2r_copr.repo
+#
+#    - name: Report
+#      find:
+#        paths: /etc/yum.repos.d
+#      register: files
+#
+#    - debug:
+#        msg: " {{ [item.path] }} "
+#
+#
+#    - name: Install the convert2rhel package
+#      yum:
+#        name: "https://github.com/oamg/convert2rhel/releases/download/v0.17/convert2rhel-0.17-1.el8.noarch.rpm"
+#      register: yum_res
+#
+#    - name: Show output of the previous yum call
+#      debug:
+#        msg: "{{ yum_res.results[0].split('\n') }}"
+#
