@@ -1,7 +1,2 @@
 summary: Integration tests
 tag: [integration]
-prepare:
-  how: shell
-  # TODO install rpm script
-  script: |
-    echo "Installing rpm here"

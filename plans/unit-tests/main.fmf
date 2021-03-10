@@ -3,5 +3,5 @@ discover:
     filter:
         - 'tag: unit'
 provision:
-    how: container
+    how: docker
     pull: false

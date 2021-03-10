@@ -1,16 +1,12 @@
-- hosts: all
+- hosts: localhost
   vars:
     container: "dc5b26f773c6f4b51987daf0bac9b2fa3e62e8a3aa797f5d82af2a29acbda66f"
   tasks:
-    - name: add container to inventory
+    - name: Add container to inventory
       add_host:
         name: "{{ container }}"
         ansible_connection: docker
       changed_when: false
-
-    - name: run command in container
-      delegate_to: "{{ container }}"
-      raw: bash
 
     - name: Install CentOS/OL 8 packages for development
       delegate_to: "{{ container }}"
@@ -18,7 +14,7 @@
         name: ["vim", "python3-devel", "git", "python3-virtualenv", "rpmlint", "rpm-build", "python3-six", "python3-nose"]
         state: present
       register: yum_res
-#
+
 #    - name: Copy repofile with internal RHEL 8 repositories
 #      copy:
 #        src: 'rhel-8-internal.repo'
@@ -39,6 +35,7 @@
 #
 #
 #    - name: Install the convert2rhel package
+#      delegate_to: "{{ container }}"
 #      yum:
 #        name: "https://github.com/oamg/convert2rhel/releases/download/v0.17/convert2rhel-0.17-1.el8.noarch.rpm"
 #      register: yum_res
