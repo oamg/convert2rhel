@@ -1,3 +1,46 @@
+variables:
+  TMT_VERSION: "1.3.1.1"
+  RUNNER_PY_VERSION: "py39"
+  UPSTREAM_REPO_URL: "https://github.com/ZhukovGreen/convert2rhel.git"
+  SSH_KNOWN_HOSTS: |
+    gitlab.cee.redhat.com,10.74.132.63 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNJJ7oW5YthSOORuIael9+pvEwkGc0VZxLlqvufzjYk09JV82f+UZRcsjud2cPUSogvgmGGtLKqmwLLeKhe6xgc=
+    github.com,192.30.252.130 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+
+
+stages:
+  - backport
+  - unit-tests
+  - build
+  - integration
+
+.default_runner:
+  image: playpauseandstop/docker-python:4.1.0-$RUNNER_PY_VERSION
+  tags: [docker]
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[allow-failure\]/
+      allow_failure: true
+
+.tmt_runner:
+  extends: .default_runner
+  before_script:
+    - pip install tmt==$TMT_VERSION
+
+.git_write_access:
+  extends: .default_runner
+  before_script:
+    - curl https://password.corp.redhat.com/RH-IT-Root-CA.crt > /etc/pki/ca-trust/source/anchors/RH-IT-Root-CA.crt
+    - update-ca-trust
+    - export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+    - mkdir -p ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - chmod 600 ~/.ssh/id_rsa
+
 sync_upstream:on-schedule:
+  extends: .git_write_access
+  stage: backport
   script:
-    - git
+    - git clone $UPSTREAM_REPO_URL
+    - git remote add downstream git@gitlab.cee.redhat.com:oamg/convert2rhel/convert2rhel.git
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"
