@@ -9,13 +9,13 @@ variables:
 
 stages:
   - backport
-  - unit-tests
   - build
-  - integration
+  - integration-tests
 
 .default_runner:
   image: playpauseandstop/docker-python:4.1.0-$RUNNER_PY_VERSION
-  tags: [docker]
+  tags:
+    - docker
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[allow-failure\]/
       allow_failure: true
@@ -26,6 +26,7 @@ stages:
     - pip install tmt==$TMT_VERSION
 
 .git_write_access:
+  stage: backport
   extends: .default_runner
   before_script:
     - curl https://password.corp.redhat.com/RH-IT-Root-CA.crt > /etc/pki/ca-trust/source/anchors/RH-IT-Root-CA.crt
@@ -36,11 +37,12 @@ stages:
     - ssh-add <(echo "$SSH_PRIVATE_KEY")
     - chmod 600 ~/.ssh/id_rsa
 
-sync_upstream:on-schedule:
+backport:sync_upstream:
   extends: .git_write_access
   stage: backport
   script:
     - git clone $UPSTREAM_REPO_URL
+    - ssh git@gitlab.cee.redhat.com
     - git remote add downstream git@gitlab.cee.redhat.com:oamg/convert2rhel/convert2rhel.git
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == "schedule"
