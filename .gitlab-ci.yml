@@ -43,4 +43,4 @@ sync_upstream:on-schedule:
     - git clone $UPSTREAM_REPO_URL
     - git remote add downstream git@gitlab.cee.redhat.com:oamg/convert2rhel/convert2rhel.git
   rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
