@@ -45,15 +45,14 @@ class PkgWFingerprint(object):
         self.fingerprint = fingerprint
 
 
-def call_yum_cmd_w_downgrades(cmd, fingerprints):
+def call_yum_cmd_w_downgrades(cmd, pkgs):
     """Calling yum command is prone to end up with an error due to unresolved
     dependencies, especially when it tries to downgrade pkgs. This function
     tries to resolve the dependency errors where yum is not able to.
     """
 
     for _ in range(MAX_YUM_CMD_CALLS):
-        output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(
-            get_installed_pkgs_by_fingerprint(fingerprints))))
+        output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(pkgs)))
         loggerinst.info("Received return code: %s\n" % str(ret_code))
         # handle success condition #1
         if ret_code == 0:
@@ -470,22 +469,33 @@ def replace_non_red_hat_packages():
     the Red Hat ones.
     """
 
+    # The subscription-manager packages on Oracle Linux 6 are installed from CentOS Linux 6 repositories. They are
+    # not replaced during the system conversion with the RHEL ones because convert2rhel replaces only packages
+    # signed by the original system vendor (Oracle).
+
+    submgr_pkgs = []
+    if system_info.id == "oracle" and system_info.version.major == 6:
+        submgr_pkgs += ["subscription-manager*"]
+
     # TODO: run yum commands with --assumeno first and show the user what will
     # be done and then ask if we should continue the operation
 
     loggerinst.info(
         "Performing update of the %s packages ..." % system_info.name)
-    call_yum_cmd_w_downgrades("update", system_info.fingerprints_orig_os)
+    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
+    call_yum_cmd_w_downgrades("update", orig_os_pkgs + submgr_pkgs)
 
     loggerinst.info(
         "Performing reinstallation of the %s packages ..." % system_info.name)
-    call_yum_cmd_w_downgrades("reinstall", system_info.fingerprints_orig_os)
+    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
+    call_yum_cmd_w_downgrades("reinstall", orig_os_pkgs + submgr_pkgs)
 
     # distro-sync (downgrade) the packages that had the following:
     #  'Installed package <package> not available.'
     cmd = "distro-sync"
     loggerinst.info("Performing %s of the packages left ..." % cmd)
-    call_yum_cmd_w_downgrades(cmd, system_info.fingerprints_orig_os)
+    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
+    call_yum_cmd_w_downgrades(cmd, orig_os_pkgs + submgr_pkgs)
 
 
 def install_gpg_keys():

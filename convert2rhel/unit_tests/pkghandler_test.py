@@ -174,7 +174,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_call_yum_cmd_w_downgrades_continuous_fail(self):
         pkghandler.call_yum_cmd.return_code = 1
 
-        self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["fingerprint"])
+        self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["pkg"])
         self.assertEqual(pkghandler.call_yum_cmd.called, pkghandler.MAX_YUM_CMD_CALLS)
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -213,20 +213,17 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                          "yum install -y --disablerepo=disable-repo --enablerepo=enable-repo pkg")
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint",
-                     GetInstalledPkgsByFingerprintMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd_w_downgrades_correct_cmd(self):
-        pkghandler.call_yum_cmd_w_downgrades("update", ["fingerprint"])
+        pkghandler.call_yum_cmd_w_downgrades("update", ["pkg1 pkg2"])
 
         self.assertEqual(utils.run_subprocess.cmd, "yum update -y pkg1 pkg2")
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
     def test_call_yum_cmd_w_downgrades_one_fail(self):
         pkghandler.call_yum_cmd.fail_once = True
 
-        pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["fingerprint"])
+        pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["pkg"])
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
@@ -634,20 +631,35 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     class CallYumCmdWDowngradesMocked(unit_tests.MockFunction):
         def __init__(self):
             self.cmd = ""
+            self.pkgs = []
 
-        def __call__(self, cmd, fingerprints):
+        def __call__(self, cmd, pkgs):
             self.cmd += "%s\n" % cmd
+            self.pkgs += [pkgs]
 
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(system_info, "fingerprints_orig_os", ["24c6a8a7f4a80eb5"])
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
                      CallYumCmdWDowngradesMocked())
-    def test_replace_non_red_hat_packages_distrosync(self):
+    def test_replace_non_red_hat_packages_distrosync_execution_order(self):
         pkghandler.replace_non_red_hat_packages()
 
         output = "update\nreinstall\ndistro-sync\n"
         self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd ==
                         output)
+
+    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
+    @unit_tests.mock(system_info, "id", "oracle")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
+    @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades",
+                     CallYumCmdWDowngradesMocked())
+    def test_replace_non_red_hat_packages_distrosync_on_ol6(self):
+        pkghandler.replace_non_red_hat_packages()
+
+        for i in range(0, 3):
+            self.assertEqual(["pkg", "subscription-manager*"], pkghandler.call_yum_cmd_w_downgrades.pkgs[i])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(pkghandler, "install_rhel_kernel", lambda: True)
