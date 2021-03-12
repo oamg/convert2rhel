@@ -48,11 +48,11 @@ images: .images
 	touch $@
 
 tests: images
-	@echo 'CentOS 6 tests'
+	@echo 'CentOS Linux 6 tests'
 	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
-	@echo 'CentOS 7 tests'
+	@echo 'CentOS Linux 7 tests'
 	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
-	@echo 'CentOS 8 tests'
+	@echo 'CentOS Linux 8 tests'
 	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
 
 lint: images

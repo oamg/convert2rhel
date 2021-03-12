@@ -32,7 +32,7 @@ SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 _RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
 _CENTOS_6_REPO_CONTENT = \
         '[centos-6-contrib-convert2rhel]\n' \
-        'name=CentOS 6 - Contrib added by Convert2RHEL\n' \
+        'name=CentOS Linux 6 - Contrib added by Convert2RHEL\n' \
         'baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n' \
         'gpgcheck=0\n' \
         'enabled=1\n'
@@ -44,7 +44,7 @@ _UBI_7_REPO_CONTENT = \
         'gpgcheck=0\n' \
         'enabled=1\n'
 _UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
-# We are using UBI 8 instead of CentOS 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS 8
+# We are using UBI 8 instead of CentOS Linux 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS Linux 8
 # https://bugs.centos.org/view.php?id=17907
 _UBI_8_REPO_CONTENT = \
         '[ubi-8-baseos-convert2rhel]\n' \
