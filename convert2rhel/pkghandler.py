@@ -129,30 +129,43 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
     return stdout, returncode
 
 
-def get_problematic_pkgs(output, known_problematic_pkgs):
-    new_problematic_pkgs = []
+def get_problematic_pkgs(output, excluded_pkgs):
+    loggerinst.info("Checking for problematic packages")
+    problematic_pkgs = {
+        "all": [],
+        "protected": [],
+        "errors": [],
+        "multilib": [],
+        "required": [],
+    }
+    excluded_pkgs_set = set(excluded_pkgs)
     package_nevr_re = "[0-9]*:?([a-z-][a-z0-9-]*?)-[0-9]"
-
     loggerinst.info("\n\n")
-    protected = re.findall("Error.*?\"(.*?)\".*?protected",
-                           output, re.MULTILINE)
-    loggerinst.info("Found protected packages: %s" % protected)
-    deps = re.findall("Error: Package: %s" % package_nevr_re,
-                      output, re.MULTILINE)
-    loggerinst.info("Found deps packages: %s" % deps)
-    multilib = re.findall("multilib versions: %s" % package_nevr_re,
-                          output, re.MULTILINE)
-    loggerinst.info("Found multilib packages: %s" % multilib)
+
+    protected = re.findall("Error.*?\"(.*?)\".*?protected", output, re.MULTILINE)
+    if protected:
+        loggerinst.info("Found protected packages: %s" % protected)
+        problematic_pkgs['protected'].extend(list(set(protected) - excluded_pkgs_set))
+
+    deps = re.findall("Error: Package: %s" % package_nevr_re, output, re.MULTILINE)
+    if deps:
+        loggerinst.info("Found deps packages: %s" % deps)
+        problematic_pkgs['errors'].extend(list(set(deps) - excluded_pkgs_set))
+
+    multilib = re.findall("multilib versions: %s" % package_nevr_re, output, re.MULTILINE)
+    if multilib:
+        loggerinst.info("Found multilib packages: %s" % multilib)
+        problematic_pkgs['multilib'].extend(list(set(multilib) - excluded_pkgs_set))
+
     req = re.findall("Requires: ([a-z-]*)", output, re.MULTILINE)
-    loggerinst.info("Found req packages: %s" % req)
+    if req:
+        loggerinst.info("Found req packages: %s" % req)
+        problematic_pkgs['required'].extend(list(set(req) - excluded_pkgs_set))
 
     if protected + deps + multilib + req:
-        newpkg = list(set(protected + deps + multilib + req) -
-                      set(known_problematic_pkgs))
-        loggerinst.info("Adding packages to yum command: %s" % newpkg)
-        new_problematic_pkgs.extend(list(set(protected + deps + multilib + req)
-                                         - set(known_problematic_pkgs)))
-    return known_problematic_pkgs + new_problematic_pkgs
+        newpkgs = list(set(protected + deps + multilib + req) - excluded_pkgs_set)
+        problematic_pkgs['all'].extend(newpkgs)
+    return problematic_pkgs
 
 
 def resolve_dep_errors(output, pkgs):
@@ -160,21 +173,20 @@ def resolve_dep_errors(output, pkgs):
     try to resolve them by yum downgrades.
     """
 
-    prev_pkgs = pkgs
-    pkgs = get_problematic_pkgs(output, pkgs)
-    if set(prev_pkgs) == set(pkgs):
+    problematic_pkgs = get_problematic_pkgs(output, excluded_pkgs=pkgs)
+    if not problematic_pkgs['all']:
         # No package has been added to the list of packages to be downgraded.
         # There's no point in calling the yum downgrade command again.
         loggerinst.info("No other package to try to downgrade in order to"
                         " resolve yum dependency errors.")
         return
-
+    problematic_pkgs['all'] += pkgs
     cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
-                    % ", ".join(pkgs))
-    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs))
+                    % ", ".join(problematic_pkgs['all']))
+    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs['all']))
     if ret_code != 0:
-        resolve_dep_errors(output, pkgs)
+        resolve_dep_errors(output, problematic_pkgs['all'])
     return
 
 
