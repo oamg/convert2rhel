@@ -125,6 +125,17 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.filename = filename
             self.called += 1
 
+    class RemovePkgsMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.pkgs = None
+            self.should_bkp = False
+            self.critical = False
+
+        def __call__(self, pkgs_to_remove, backup=False, critical=False):
+            self.pkgs = pkgs_to_remove
+            self.should_bkp = backup
+            self.critical = critical
+
     @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
@@ -229,6 +240,22 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["fingerprint"])
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
+
+    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
+    @unit_tests.mock(pkghandler, "resolve_dep_errors", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg, _: {"errors": pkg})
+    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
+        pkghandler.call_yum_cmd.return_code = 1
+        pkghandler.MAX_YUM_CMD_CALLS = 1
+
+        self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["fingerprint"])
+
+        self.assertEqual(pkghandler.resolve_dep_errors.called, 1)
+
+        self.assertEqual(utils.remove_pkgs.pkgs, pkghandler.call_yum_cmd.return_string)
+        self.assertEqual(utils.remove_pkgs.critical, False)
 
     def test_get_problematic_pkgs(self):
         error_pkgs = pkghandler.get_problematic_pkgs("", [])
@@ -592,15 +619,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 1)
         self.assertEqual(pkghandler.print_pkg_info.pkgs[0].name, "pkg2")
-
-    class RemovePkgsMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.pkgs = None
-            self.should_bkp = False
-
-        def __call__(self, pkgs_to_remove, backup=False):
-            self.pkgs = pkgs_to_remove
-            self.should_bkp = backup
 
     @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg",
                                                     "not_installed_pkg"])

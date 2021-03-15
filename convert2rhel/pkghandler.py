@@ -66,6 +66,14 @@ def call_yum_cmd_w_downgrades(cmd, fingerprints):
         # handle error condition
         loggerinst.info("Resolving dependency errors ... ")
         resolve_dep_errors(output, [])
+        # if we have problematic packages, remove them
+        problematic_pkgs = get_problematic_pkgs(output, [])
+        if problematic_pkgs["errors"]:
+            loggerinst.warning(
+                "Removing problematic packages to continue with conversion:\n%s" %
+                "\n".join(problematic_pkgs["errors"])
+            )
+            utils.remove_pkgs(problematic_pkgs['errors'], critical=False)
     else:
         loggerinst.critical("Could not resolve yum errors.")
     return
