@@ -73,13 +73,17 @@ def subscribe_system():
 
 def unregister_system():
     """Unregister the system from RHSM."""
+    loggerinst.info("Unregistering the system.")
+    submgr_installed = pkghandler.get_installed_pkg_objects("subscription-manager")
+    if not submgr_installed:
+        loggerinst.info("The subscription-manager package is not installed.")
+        return
     unregistration_cmd = "subscription-manager unregister"
-    loggerinst.task("Rollback: Unregistering the system from RHSM")
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warn("System unregistration failed with return code %d and message:\n%s", ret_code, output)
+        loggerinst.warning("System unregistration failed with return code %d and message:\n%s", ret_code, output)
     else:
-        loggerinst.info("System unregistered successfully")
+        loggerinst.info("System unregistered successfully.")
 
 
 def register_system():
@@ -179,29 +183,29 @@ def hide_password(cmd):
 
 
 def replace_subscription_manager():
-    """Remove the original and install the RHEL subscription-manager packages."""
-    if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
-        loggerinst.critical("The %s directory does not exist or is empty."
-                            " Using the subscription-manager is not documented"
-                            " yet. Please use the --disable-submgr option."
-                            " Read more about the tool usage in the article"
-                            " https://access.redhat.com/articles/2360841."
-                            % SUBMGR_RPMS_DIR)
-        return
+    """Remove any previously installed subscription-manager packages and install the RHEL ones.
 
+    Make sure the system is unregistered before removing the subscription-manager as not doing so would leave the
+    system to be still registered on the server side, making it dificult for an admin to unregister it afterwards.
+    """
+    if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
+        loggerinst.critical("The %s directory does not exist or is empty." % SUBMGR_RPMS_DIR)
+
+    unregister_system()
     remove_original_subscription_manager()
     install_rhel_subscription_manager()
 
 
 def remove_original_subscription_manager():
-    loggerinst.info("Removing non-RHEL subscription-manager packages.")
+    loggerinst.info("Removing installed subscription-manager/katello packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
-    submgr_pkgs = pkghandler.get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_rhel, "*subscription-manager*")
+    submgr_pkgs = pkghandler.get_installed_pkg_objects("*subscription-manager*")
+    # Satellite-server related package
+    submgr_pkgs += pkghandler.get_installed_pkg_objects("katello*")
     if not submgr_pkgs:
         loggerinst.info("No packages related to subscription-manager installed.")
         return
-    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager pkgs:\n")
+    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager/katello pkgs:\n")
     pkghandler.print_pkg_info(submgr_pkgs)
     utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
@@ -407,6 +411,7 @@ def enable_repos(rhel_repoids):
 def rollback():
     """Rollback subscription related changes"""
     try:
+        loggerinst.task("Rollback: RHSM-related actions")
         unregister_system()
     except OSError:
         loggerinst.warn("subscription-manager not installed, skipping")
