@@ -4,6 +4,7 @@ import pytest
 
 from convert2rhel import redhatrelease, utils
 from convert2rhel.logger import initialize_logger
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
@@ -73,8 +74,7 @@ def setup_logger(tmpdir):
 
 
 @pytest.fixture()
-def replace_data_dir_for_centos8(monkeypatch, pkg_root):
-    """Use our """
+def _replace_data_dir_for_centos8(monkeypatch, pkg_root):
     monkeypatch.setattr(
         utils,
         "DATA_DIR",
@@ -83,7 +83,7 @@ def replace_data_dir_for_centos8(monkeypatch, pkg_root):
 
 
 @pytest.fixture()
-def pretend_centos8(monkeypatch, replace_data_dir_for_centos8):
+def pretend_centos8(monkeypatch, _replace_data_dir_for_centos8):
     # TODO create similar for rest systems and document its usage
     monkeypatch.setattr(
         redhatrelease,
@@ -96,3 +96,4 @@ def pretend_centos8(monkeypatch, replace_data_dir_for_centos8):
         value=lambda _: "CentOS Linux release 8.3.2011",
     )
     tool_opts.no_rpm_va = True
+    system_info.resolve_system_info()
