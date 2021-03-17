@@ -29,8 +29,14 @@ HOST_MODULES_STUB_BAD = (
     b"/lib/modules/5.8.0-7642-generic/kernel/lib/e.ko.xz\n"
     b"/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko.xz\n"
 )
-REPOQUERY_F_STUB = (
+REPOQUERY_F_STUB_GOOD = (
     b"kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
+    b"kernel-core-0:4.18.0-240.15.1.el8_3.x86_64\n"
+    b"kernel-debug-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
+    b"kernel-debug-core-0:4.18.0-240.15.1.el8_3.x86_64\n"
+)
+REPOQUERY_F_STUB_BAD = (
+    b"idontexpectyou-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
     b"kernel-core-0:4.18.0-240.15.1.el8_3.x86_64\n"
     b"kernel-debug-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
     b"kernel-debug-core-0:4.18.0-240.15.1.el8_3.x86_64\n"
@@ -73,7 +79,11 @@ def test_ensure_compatibility_of_kmods(
     monkeypatch, pretend_centos8, caplog, host_kmods
 ):
     check_output_mock = mock.Mock(return_value=host_kmods)
-    run_subprocess_mock = mock.Mock(side_effect=_run_subprocess_side_effect)
+    run_subprocess_mock = mock.Mock(
+        side_effect=_run_subprocess_side_effect(
+            REPOQUERY_F_STUB_GOOD, REPOQUERY_L_STUB_GOOD
+        )
+    )
     monkeypatch.setattr(checks, "check_output", value=check_output_mock)
     monkeypatch.setattr(
         checks,
@@ -98,7 +108,13 @@ def test_ensure_compatibility_of_kmods(
     (
         (
             mock.Mock(return_value=HOST_MODULES_STUB_GOOD),
-            set(("a.ko.xz", "b.ko.xz", "c.ko.xz")),
+            set(
+                (
+                    "kernel/lib/a.ko.xz",
+                    "kernel/lib/b.ko.xz",
+                    "kernel/lib/c.ko.xz",
+                )
+            ),
         ),
         (
             mock.Mock(side_effect=AssertionError()),
@@ -121,7 +137,7 @@ def test_get_host_kmods(
         value=check_output_mock,
     )
     if exp_res:
-        assert get_host_kmods() == exp_res
+        assert exp_res == get_host_kmods()
     else:
         with pytest.raises(SystemExit):
             get_host_kmods()
@@ -130,20 +146,53 @@ def test_get_host_kmods(
         )
 
 
-def _run_subprocess_side_effect(*args, **kwargs):
-    if "repoquery" in args[0] and " -f " in args[0]:
-        return REPOQUERY_F_STUB
-    if "repoquery" in args[0] and " -l " in args[0]:
-        return REPOQUERY_L_STUB_GOOD
-    else:
-        return run_subprocess(*args, **kwargs)
+def _run_subprocess_side_effect(*repoquery_stubs):
+    f_stub, l_stub = repoquery_stubs
+
+    def factory(*args, **kwargs):
+        if "repoquery" in args[0] and " -f " in args[0]:
+            return f_stub
+        if "repoquery" in args[0] and " -l " in args[0]:
+            return l_stub
+        else:
+            return run_subprocess(*args, **kwargs)
+
+    return factory
 
 
-def test_get_rhel_supported_kmods(monkeypatch, pretend_centos8):
-    run_subprocess_mock = mock.Mock(side_effect=_run_subprocess_side_effect)
+@pytest.mark.parametrize(
+    ("repoquery_f_stub", "repoquery_l_stub", "exception"),
+    (
+        (REPOQUERY_F_STUB_GOOD, REPOQUERY_L_STUB_GOOD, None),
+        (REPOQUERY_F_STUB_BAD, REPOQUERY_L_STUB_GOOD, NotImplementedError),
+    ),
+)
+def test_get_rhel_supported_kmods(
+    monkeypatch,
+    pretend_centos8,
+    repoquery_f_stub,
+    repoquery_l_stub,
+    exception,
+):
+    run_subprocess_mock = mock.Mock(
+        side_effect=_run_subprocess_side_effect(
+            repoquery_f_stub, repoquery_l_stub
+        )
+    )
     monkeypatch.setattr(
         checks,
         "run_subprocess",
         value=run_subprocess_mock,
     )
-    assert get_rhel_supported_kmods() == set(("a.ko.xz", "b.ko.xz", "c.ko.xz"))
+    if exception:
+        with pytest.raises(exception):
+            get_rhel_supported_kmods()
+    else:
+        res = get_rhel_supported_kmods()
+        assert res == set(
+            (
+                "kernel/lib/a.ko.xz",
+                "kernel/lib/b.ko.xz",
+                "kernel/lib/c.ko.xz",
+            )
+        )

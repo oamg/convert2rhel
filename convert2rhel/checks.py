@@ -1,5 +1,5 @@
+import itertools
 import logging
-import os
 import re
 import subprocess
 
@@ -21,13 +21,25 @@ from convert2rhel.utils import run_subprocess
 
 logger = logging.getLogger(__name__)
 
-_KEY_KERNEL_CORE = "kernel-core"
-_KEY_KERNEL_DEBUG_CORE = "kernel-debug-core"
-
 KERNEL_REPO_RE = re.compile(
-    "kernel-(?:debug-)?core-0:(?P<version>(\d+\.)*(\d+)-(\d+\.)*(\d+)).el.+"
+    "kernel-.+:(?P<version>(\d+\.)*(\d+)-(\d+\.)*(\d+)).el.+"
 )
 KERNEL_REPO_VER_SPLIT_RE = re.compile("\D+")
+
+
+def _get_kmod_comparison_key(path):
+    """Create a comparison key from the kernel module abs path.
+
+    Converts /lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz ->
+    kernel/lib/a.ko.xz
+
+    Why:
+        all kernel modules lives in /lib/modules/{some kernel release}
+        if we want to make sure that the kernel package is really presented
+        on RHEL, we need to compare the full path, but because kernel release
+        might be different, we compare the relative paths after kernel release.
+    """
+    return "/".join(path.split("/")[4:])
 
 
 def get_host_kmods():
@@ -42,7 +54,8 @@ def get_host_kmods():
         logger.critical("Can't get list of kernel modules.")
     else:
         return set(
-            os.path.split(path)[-1] for path in kmod_str.rstrip("\n").split()
+            _get_kmod_comparison_key(path)
+            for path in kmod_str.rstrip("\n").split()
         )
 
 
@@ -59,7 +72,7 @@ def _repos_version_key(pkg_name):
 
 
 def get_most_recent_unique_kernel_pkgs(pkgs):
-    """Return the most recent versions of kernel packages.
+    """Return the most recent versions of all kernel packages.
 
     When we do scanning of kernel modules provided by kernel packages,
     it is expensive to check each kernel pkg. Considering the fact,
@@ -68,16 +81,13 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
 
     :type pkgs: Iterable[str]
     """
-    kernel_core_pkgs = filter(
-        lambda pkg_name: pkg_name.startswith(_KEY_KERNEL_CORE), pkgs
-    )
-    kernel_debug_core_pkgs = filter(
-        lambda pkg_name: pkg_name.startswith(_KEY_KERNEL_DEBUG_CORE), pkgs
-    )
 
+    pkgs_groups = itertools.groupby(
+        pkgs, lambda pkg_name: pkg_name.split(":")[0]
+    )
     return (
-        max(kernel_core_pkgs, key=_repos_version_key),
-        max(kernel_debug_core_pkgs, key=_repos_version_key),
+        max(distinct_kernel_pkgs[1], key=_repos_version_key)
+        for distinct_kernel_pkgs in pkgs_groups
     )
 
 
@@ -114,7 +124,7 @@ def get_rhel_supported_kmods():
         ).decode()  # type: str
         rhel_kmods.update(
             set(
-                os.path.split(kmod_path)[-1]
+                _get_kmod_comparison_key(kmod_path)
                 for kmod_path in filter(
                     lambda path: path.endswith("ko.xz"),
                     rhel_kmods_str.rstrip("\n").split(),
