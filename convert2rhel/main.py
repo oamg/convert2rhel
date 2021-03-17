@@ -71,7 +71,7 @@ def main():
         systeminfo.system_info.resolve_system_info()
 
         # check the system prior the conversion (possible inhibit)
-        loggerinst.task("Prepare: Running pre-conversion checks")
+        loggerinst.task("Prepare: Initial system checks before conversion")
         checks.perform_pre_checks()
 
         # backup system release file before starting conversion process
@@ -197,6 +197,10 @@ def pre_ponr_conversion():
     # comment out the distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
+
+    # perform final checks before the conversion
+    loggerinst.task("Convert: Final system checks before main conversion")
+    checks.perform_pre_ponr_checks()
 
 
 def post_ponr_conversion():

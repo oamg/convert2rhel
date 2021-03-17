@@ -147,6 +147,8 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
+    @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
@@ -178,6 +180,8 @@ class TestMain(unittest.TestCase):
         intended_call_order["enable_repos"] = 1
         intended_call_order["remove_repofile_pkgs"] = 1
         intended_call_order["patch"] = 1
+        intended_call_order["perform_pre_ponr_checks"] = 1
+        intended_call_order["perform_pre_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
@@ -189,6 +193,8 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "disable_submgr", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
+    @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
@@ -224,6 +230,7 @@ class TestMain(unittest.TestCase):
 
         intended_call_order["remove_repofile_pkgs"] = 1
         intended_call_order["patch"] = 1
+        intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
         zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
