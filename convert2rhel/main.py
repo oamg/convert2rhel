@@ -21,6 +21,7 @@ import sys
 
 from convert2rhel import (
     cert,
+    checks,
     logger,
     pkghandler,
     redhatrelease,
@@ -192,6 +193,10 @@ def pre_ponr_conversion():
     # comment out the distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
+
+    # perform final checks before the conversion
+    loggerinst.task("Convert: Perform final system checks before conversion")
+    checks.pre_ponr()
 
 
 def post_ponr_conversion():
