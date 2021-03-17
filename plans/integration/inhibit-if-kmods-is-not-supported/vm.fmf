@@ -1,0 +1,3 @@
+provision:
+    how: libvirt
+    origin_vm_name: c2r_centos8_template

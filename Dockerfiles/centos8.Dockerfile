@@ -26,4 +26,4 @@ RUN groupadd --gid=1000 -r app && \
     useradd -r --uid=1000 --gid=1000 app
 RUN chown -R app:app .
 COPY --chown=app:app . .
-USER app:app
+#USER app:app

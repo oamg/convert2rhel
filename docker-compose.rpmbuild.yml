@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  centos7rpmbuild:
+    user: root
+    build:
+      context: .
+      dockerfile: Dockerfiles/rpmbuild.centos7.Dockerfile
+    volumes:
+    - ./.rpms:/data/.rpms
+  centos8rpmbuild:
+    extends:
+      service: centos7rpmbuild
+    build:
+      dockerfile: Dockerfiles/rpmbuild.centos8.Dockerfile
+  centos6rpmbuild:
+    extends:
+      service: centos7rpmbuild
+    build:
+      dockerfile: Dockerfiles/rpmbuild.centos6.Dockerfile

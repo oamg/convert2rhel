@@ -1,0 +1,4 @@
+provision:
+    how: docker
+    image: convert2rhel_centos8:latest
+    pull: false
