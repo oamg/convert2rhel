@@ -21,6 +21,7 @@ import sys
 
 from convert2rhel import (
     cert,
+    checks,
     logger,
     pkghandler,
     redhatrelease,
@@ -68,6 +69,10 @@ def main():
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
+
+        # check the system prior the conversion (possible inhibit)
+        loggerinst.task("Prepare: Running pre-conversion checks")
+        checks.perform_pre_checks()
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
