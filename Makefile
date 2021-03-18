@@ -9,6 +9,7 @@
 	lint \
 	lint-errors \
 	tests8 \
+	rpms \
 
 # Project constants
 IMAGE ?= convert2rhel
@@ -45,6 +46,8 @@ images: .images
 	@docker build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)/centos6 .
 	@docker build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
 	@docker build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
+	@docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
+	@docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
 	touch $@
 
 tests: images
@@ -63,3 +66,15 @@ lint-errors: images
 
 tests8: images
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
+
+rpms: images
+	mkdir -p .rpms
+	rm -frv .rpms/*
+	docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
+	docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
+	$(eval centos8_id := $(shell docker create $(IMAGE)/centos8rpmbuild))
+	docker cp $(centos8_id):/data/.rpms .
+	docker rm $(centos8_id)
+	$(eval centos7_id := $(shell docker create $(IMAGE)/centos7rpmbuild))
+	docker cp $(centos7_id):/data/.rpms .
+	docker rm $(centos7_id)

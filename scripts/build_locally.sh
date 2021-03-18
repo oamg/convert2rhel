@@ -1,7 +1,8 @@
 #!/bin/bash
-# Run this script on CentOS Linux/OL/RHEL 6/7/8
-pushd $(dirname "$0")/../
 
+set -e
+
+# Run this script on CentOS Linux/OL/RHEL 6/7/8
 echo "Creating a tarball for building the RPM ..."
 if [ -x "$(command -v python3)" ]; then
   python3 setup.py sdist
@@ -12,15 +13,12 @@ else
   exit 1
 fi
 mkdir -p ~/rpmbuild/SOURCES
-cp dist/* ~/rpmbuild/SOURCES
-
-echo "Linting the spec file ..."
-rpmlint packaging/convert2rhel.spec
-
+cp -v dist/* ~/rpmbuild/SOURCES
 echo "Building the RPM ..."
 rpmbuild -ba packaging/convert2rhel.spec --define "debug_package %{nil}"
-
-echo "Linting the built RPM ..."
-rpmlint ~/rpmbuild/RPMS/noarch/convert2rhel*.rpm
-
-popd
+echo "RPM was built successfully"
+echo "Cleaning up the target directory..."
+mkdir -p .rpms
+rm -frv .rpms/*
+mv -vf ~/rpmbuild/RPMS/noarch/* .rpms/
+echo "RPM was moved to the target directory."
