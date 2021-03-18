@@ -54,4 +54,4 @@ backport:sync_upstream:
   script:
     - git clone $UPSTREAM_REPO_URL upstream && cd upstream
     - git remote add downstream git@gitlab.cee.redhat.com:oamg/convert2rhel/convert2rhel.git
-    - git push downstream --mirror
+    - git push -f -u downstream main
