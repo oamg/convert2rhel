@@ -138,6 +138,7 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
 
 
 def get_problematic_pkgs(output, excluded_pkgs):
+    """Parse the YUM/DNF output to find what packages are causing a transaction failure."""
     loggerinst.info("Checking for problematic packages")
     problematic_pkgs = {
         "all": [],
