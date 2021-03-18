@@ -9,6 +9,7 @@
 	lint \
 	lint-errors \
 	tests8 \
+	rpms \
 
 # Project constants
 IMAGE ?= convert2rhel
@@ -63,3 +64,6 @@ lint-errors: images
 
 tests8: images
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
+
+rpms:
+	@docker-compose -f docker-compose.rpmbuild.yml up --build
