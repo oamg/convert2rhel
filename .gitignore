@@ -11,3 +11,5 @@ system_tests/vmdefs/centos*/.vagrant/
 .venv/*
 .install
 .images
+.env
+.rpms/convert2rhel-*
