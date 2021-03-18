@@ -11,14 +11,23 @@ stages:
   - build
   - integration-tests
 
-workflow:
+.default_runner:
+  image: playpauseandstop/docker-python:4.1.0-$RUNNER_PY_VERSION
+  except:
+    - schedules
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[allow-failure\]/
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "push"'
+  tags:
+    - docker
 
-.default_runner:
+.default_runner_schedules:
   image: playpauseandstop/docker-python:4.1.0-$RUNNER_PY_VERSION
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[allow-failure\]/
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
   tags:
     - docker
 
@@ -29,22 +38,20 @@ workflow:
 
 .git_write_access:
   stage: backport
-  extends: .default_runner
+  extends: .default_runner_schedules
   before_script:
     - curl https://password.corp.redhat.com/RH-IT-Root-CA.crt > /usr/local/share/ca-certificates/RH-IT-Root-CA.crt
     - update-ca-certificates
     - export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
     - mkdir -p ~/.ssh
     - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - eval $(ssh-agent)
     - ssh-add <(echo "$SSH_PRIVATE_KEY")
-    - chmod 600 ~/.ssh/id_rsa
 
 backport:sync_upstream:
   extends: .git_write_access
   stage: backport
   script:
-    - git clone $UPSTREAM_REPO_URL
-    - ssh git@gitlab.cee.redhat.com
+    - git clone $UPSTREAM_REPO_URL upstream && cd upstream
     - git remote add downstream git@gitlab.cee.redhat.com:oamg/convert2rhel/convert2rhel.git
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - git push downstream --mirror
