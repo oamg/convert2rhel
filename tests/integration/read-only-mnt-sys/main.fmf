@@ -1,0 +1,17 @@
+summary: read-only-sys-mnt in container
+tag:
+  - centos7
+  - centos8
+  - read-only-mnt-sys
+
+/mnt_ro:
+  tag+:
+    - mnt_ro
+  test: |
+    pytest -svv --tb=no -m mnt_ro
+
+/sys_ro:
+  tag+:
+    - sys_ro
+  test: |
+    pytest -svv --tb=no -m sys_ro

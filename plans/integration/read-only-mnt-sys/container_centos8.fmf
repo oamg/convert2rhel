@@ -1,0 +1,20 @@
+discover+:
+  filter+:
+    - 'tag: centos8'
+provision:
+    how: docker
+    image: convert2rhel_centos8int:latest
+    pull: false
+    develop: true
+
+/mnt:
+  discover+:
+    filter+:
+      - 'tag: mnt_ro'
+  provision+:
+    run_args: "-v /mnt:/mnt:ro -v /sys:/sys"
+
+/sys:
+  discover+:
+    filter+:
+      - 'tag: sys_ro'
