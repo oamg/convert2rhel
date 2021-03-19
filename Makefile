@@ -19,14 +19,16 @@ VENV ?= .venv3
 
 all: clean images tests
 
-install: .install
+install: .install .images .env
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
 	$(PIP) install --upgrade -r ./requirements/local.centos8.requirements.txt; \
-	$(PIP) install -e .
 	touch $@
+
+.env:
+	cp .env.example .env
 
 tests-locally: install
 	. $(VENV)/bin/activate; pytest

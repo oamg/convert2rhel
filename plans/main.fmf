@@ -1,0 +1,8 @@
+execute:
+    how: tmt
+discover:
+    how: fmf
+prepare:
+    how: ansible
+    playbook:
+        - tests/ansible_collections/basic_setup.yml
