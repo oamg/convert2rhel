@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  centos7int:
+    user: root
+    build:
+      context: .
+      dockerfile: Dockerfiles/integration.centos7.Dockerfile
+    volumes:
+    - ./.rpms:/data/.rpms
+  centos8int:
+    extends:
+      service: centos7int
+    build:
+      dockerfile: Dockerfiles/integration.centos8.Dockerfile

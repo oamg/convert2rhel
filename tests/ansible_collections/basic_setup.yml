@@ -1,0 +1,62 @@
+- hosts: all
+  vars:
+    # to be overridden by the tmt
+    repo_root:
+  tasks:
+#    - name: Print all available facts
+#      ansible.builtin.debug:
+#        var: ansible_facts
+
+    - name: Building rpms
+      delegate_to: localhost
+      shell: make rpms
+      args:
+        chdir: ../..
+
+    - name: Copying rpms to docker remote
+      delegate_to: localhost
+      shell: "docker cp .rpms {{ inventory_hostname }}:/data/"
+      args:
+        chdir: ../..
+      when: ansible_facts['virtualization_type'] == "docker"
+
+    - name: Copying rpms to kvm remote
+      copy:
+        dest: "{{ repo_root }}/.rpms"
+        src: ../../.rpms/
+      when: ansible_facts['virtualization_type'] == "kvm"
+
+    - name: Install el8 convert2rhel package
+      yum:
+        # TODO make the rpm version get automatically
+        name: "{{ repo_root }}/.rpms/convert2rhel-0.20-1.el8.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+      when: (ansible_facts['distribution'] == "CentOS") and
+            (ansible_facts['distribution_major_version'] == "8")
+
+    - name: Install el7 convert2rhel package
+      yum:
+        # TODO make the rpm version get automatically
+        name: "{{ repo_root }}/.rpms/convert2rhel-0.20-1.el7.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+      when: (ansible_facts['distribution'] == "CentOS") and
+        (ansible_facts['distribution_major_version'] == "7")
+
+    - name: Install pip on Centos 7
+      shell: curl https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
+      when: (ansible_facts['distribution'] == "CentOS") and
+        (ansible_facts['distribution_major_version'] == "7")
+
+    - name: Install pytest framework dependencies
+      pip:
+        name: ["pytest", "pytest-cov", "envparse", "click"]
+
+    - name: Install pdbpp on CentOS8
+      pip:
+        name: ["pdbpp"]
+      when: (ansible_facts['distribution'] == "CentOS") and
+        (ansible_facts['distribution_major_version'] == "8")
+
+
