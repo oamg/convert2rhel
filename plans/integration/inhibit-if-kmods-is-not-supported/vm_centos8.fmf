@@ -1,0 +1,20 @@
+discover+:
+    filter+:
+        - 'tag: centos8'
+provision:
+    how: libvirt
+    origin_vm_name: c2r_centos8_template
+    develop: true
+
+/good:
+    discover+:
+        filter+:
+            - 'tag: good_test'
+/bad:
+    discover+:
+        filter+:
+            - 'tag: bad_test'
+/skip_check:
+    discover+:
+        filter+:
+            - 'tag: skip_check'

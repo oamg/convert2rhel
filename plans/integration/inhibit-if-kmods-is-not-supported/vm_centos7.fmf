@@ -1,0 +1,20 @@
+discover+:
+    filter+:
+        - 'tag: centos7'
+provision:
+    how: libvirt
+    origin_vm_name: c2r_centos7_template
+    develop: true
+
+/good:
+    discover+:
+        filter+:
+            - 'tag: good_test'
+/bad:
+    discover+:
+        filter+:
+            - 'tag: bad_test'
+/skip_check:
+    discover+:
+        filter+:
+            - 'tag: ckip_check'

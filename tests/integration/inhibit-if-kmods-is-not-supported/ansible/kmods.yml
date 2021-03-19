@@ -1,0 +1,5 @@
+- hosts: all
+#  tasks:
+#    - name: Install convert2rhel deps
+#      pip:
+#        name: ["pytest", "pytest-cov"]

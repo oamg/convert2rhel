@@ -1,0 +1,6 @@
+discover+:
+    filter:
+        - 'tag: inhibit-if-kmods-is-not-supported'
+prepare+:
+    playbook+:
+        - tests/integration/inhibit-if-kmods-is-not-supported/ansible/kmods.yml

@@ -1,0 +1,23 @@
+summary: kmods tests
+tag+:
+  - centos7
+  - centos8
+  - inhibit-if-kmods-is-not-supported
+
+/good:
+  tag+:
+    - good_test
+  test: |
+    pytest -svv --tb=no -m good_tests
+
+/bad:
+  tag+:
+    - bad_test
+  test: |
+    pytest -svv --tb=no -m bad_tests
+
+/skip_check:
+  tag+:
+    - skip_check
+  test: |
+    pytest -svv --tb=no -m skip_check
