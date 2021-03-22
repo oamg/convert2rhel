@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.17
+Version:        0.18
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -107,6 +107,16 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon Mar 22 2021 Michal Bocek <mbocek@redhat.com> 0.18-1
+- Prevent conversion failure by requiring writable /sys and /mnt
+- Fix the subscription-manager packages being signed by CentOS instead of Red Hat
+- Remove packages causing dependency errors
+- Inhibit the conversion for UEFI firmware
+- Added --version option
+- Implement a backup of repofiles under /etc/yum.repos.d/
+- Fix conversion failure on CentOS Linux/OL 6 caused by java-1.7.0-openjdk
+- Remove settings not compatible with RHEL from /etc/sysconfig/kernel
+
 * Thu Feb 10 2021 Michal Bocek <mbocek@redhat.com> 0.17-1
 - Fix broken package backup causing an incomplete rollback
 - Fix dependency issue when force replacing same-version kernel
