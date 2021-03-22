@@ -1,0 +1,7 @@
+discover+:
+    filter+:
+        - 'tag: centos7'
+provision:
+    how: libvirt
+    origin_vm_name: c2r_centos7_template
+    develop: true

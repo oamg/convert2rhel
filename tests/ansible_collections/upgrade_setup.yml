@@ -1,0 +1,25 @@
+- hosts: all
+  vars:
+    # to be overridden by the tmt
+    repo_root:
+  tasks:
+#    - name: Print all available facts
+#      ansible.builtin.debug:
+#        var: ansible_facts
+
+    - name: Run convert2rhel for Centos8
+      shell: python3 -m scripts.run_convert2rhel_command
+      args:
+        chdir: "{{ repo_root }}/tests/ansible_collections"
+      when: (ansible_facts['distribution'] == "CentOS") and
+        (ansible_facts['distribution_major_version'] == "8")
+
+    - name: Run convert2rhel for Centos7
+      shell: python run_convert2rhel_command.py
+      args:
+        chdir: "{{ repo_root }}/tests/ansible_collections/scripts"
+      when: (ansible_facts['distribution'] == "CentOS") and
+        (ansible_facts['distribution_major_version'] == "7")
+
+    - name: Reboot the system
+      reboot:

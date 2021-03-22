@@ -1,0 +1,6 @@
+discover+:
+    filter:
+        - 'tag: upgrade'
+prepare+:
+    playbook+:
+        - tests/ansible_collections/upgrade_setup.yml

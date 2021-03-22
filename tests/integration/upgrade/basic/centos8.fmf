@@ -1,0 +1,5 @@
+summary: Basic upgrade test
+tag+:
+  - centos8
+test: |
+  pytest -svv --tb=no
