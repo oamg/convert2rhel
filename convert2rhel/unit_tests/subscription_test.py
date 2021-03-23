@@ -17,15 +17,22 @@
 # Required imports:
 import logging
 import os
+import sys
 import unittest
 
 from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import logger, pkghandler, subscription, utils
+from convert2rhel import pkghandler, subscription, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from . import GetLoggerMocked
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
+
 
 
 class TestSubscription(unittest.TestCase):
@@ -179,7 +186,9 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(subscription.register_system.called, 2)
 
     @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
+    @unit_tests.mock(subscription, "MAX_NUM_OF_TRIALS_TO_SUBSCRIBE", 1)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([("nope", 1)]))
+    @unit_tests.mock(subscription, "sleep", mock.Mock())
     def test_register_system_fail_non_interactive(self):
         # Check the critical severity is logged when the credentials are given
         # on the cmdline but registration fails
@@ -194,6 +203,7 @@ class TestSubscription(unittest.TestCase):
                      RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(subscription, "get_registration_cmd", GetRegistrationCmdMocked())
+    @unit_tests.mock(subscription, "sleep", mock.Mock())
     def test_register_system_fail_interactive(self):
         # Check the function tries to register multiple times without
         # critical log.

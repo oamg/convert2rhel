@@ -197,17 +197,17 @@ class GetLoggerMocked(MockFunction):
     def __call__(self, msg):
         return self
 
-    def critical(self, msg):
+    def critical(self, msg, *args):
         self.critical_msgs.append(msg)
         raise SystemExit(1)
 
-    def error(self, msg):
+    def error(self, msg, *args):
         self.error_msgs.append(msg)
 
-    def task(self, msg):
+    def task(self, msg, *args):
         self.task_msgs.append(msg)
 
-    def info(self, msg):
+    def info(self, msg, *args):
         self.info_msgs.append(msg)
 
     def warn(self, msg, *args):
@@ -216,7 +216,7 @@ class GetLoggerMocked(MockFunction):
     def warning(self, msg, *args):
         self.warn(msg, *args)
 
-    def debug(self, msg):
+    def debug(self, msg, *args):
         self.debug_msgs.append(msg)
 
 
