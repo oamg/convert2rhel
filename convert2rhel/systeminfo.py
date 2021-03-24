@@ -17,6 +17,7 @@
 from convert2rhel.utils import run_subprocess
 
 from collections import namedtuple
+
 try:
     import ConfigParser as configparser
 except ImportError:
@@ -102,7 +103,7 @@ class SystemInfo(object):
 
     def _get_system_version(self):
         """Return a namedtuple with major and minor elements, both of an int type.
-        
+
         Examples:
         Oracle Linux Server release 6.10
         Oracle Linux Server release 7.8
@@ -219,6 +220,25 @@ class SystemInfo(object):
             "rpm -q '%s'" % name, print_cmd=False, print_output=False
         )
         return return_code == 0
+
+    # TODO write unit tests
+    def get_enabled_rhel_repos(self):
+        """Return a tuple of repoids containing RHEL packages.
+
+        These are either the repos enabled through RHSM or the custom
+        repositories passed though CLI.
+        """
+        # TODO:
+        # if not self.submgr_enabled_repos:
+        #     raise ValueError(
+        #         "system_info.get_enabled_rhel_repos is not "
+        #          "to be consumed before registering the system with RHSM."
+        #     )
+        return (
+            self.submgr_enabled_repos
+            if not tool_opts.disable_submgr
+            else tool_opts.enablerepo
+        )
 
 
 # Code to be executed upon module import

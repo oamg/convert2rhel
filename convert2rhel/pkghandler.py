@@ -119,7 +119,7 @@ def call_yum_cmd(command, args="", print_output=True, enable_repos=None, disable
     else:
         # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
         # through subscription-manager
-        repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+        repos_to_enable = system_info.get_enabled_rhel_repos()
 
     for repo in repos_to_enable:
         cmd += " --enablerepo=%s" % repo
@@ -632,9 +632,8 @@ def replace_non_rhel_installed_kernel(version):
 
     pkg = "kernel-%s" % version
 
-    # For downloading the RHEL kernel we need to use the RHEL repositories. Those are available either through the
-    # attached subscription (submgr_enabled_repos) or through custom repositories (tool_opts.enablerepo).
-    repos_to_enable = system_info.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+    # For downloading the RHEL kernel we need to use the RHEL repositories.
+    repos_to_enable = system_info.get_enabled_rhel_repos()
     path = utils.download_pkg(
         pkg=pkg, dest=utils.TMP_DIR, disable_repos=tool_opts.disablerepo,
         enable_repos=repos_to_enable)
