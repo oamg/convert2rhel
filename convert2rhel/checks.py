@@ -101,8 +101,10 @@ def ensure_compatibility_of_kmods():
         #  doesn't work. We have `%s` as output instead. Make it work
         logger.critical(
             (
-                "The following kernel module(s) are not "
-                "supported in RHEL:\n{kmods}"
+                "The following kernel modules are not "
+                "supported in RHEL:\n{kmods}\n"
+                "Uninstall or disable them and run convert2rhel "
+                "again to continue with the conversion."
             ).format(kmods=not_supported_kmods)
         )
     else:
