@@ -54,7 +54,10 @@ _UBI_8_REPO_CONTENT = \
         'gpgcheck=0\n' \
         'enabled=1\n'
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
-MAX_NUM_OF_TRIALS_TO_SUBSCRIBE = 3
+MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
+# Using a delay that could help when the RHSM/Satellite server is overloaded.
+# The delay in seconds is a prime number that roughly doubles with each attempt.
+REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 
 
 def subscribe_system():
@@ -83,11 +86,11 @@ def register_system():
     """Register OS using subscription-manager."""
 
     # Loop the registration process until successful registration
-    trials = 1
-    while True and not trials > MAX_NUM_OF_TRIALS_TO_SUBSCRIBE:
+    attempt = 0
+    while True and attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
         registration_cmd = get_registration_cmd()
-        loggerinst.info("Trial %s of %s: Registering system by running subscription-manager"
-                        " command ... ", trials, MAX_NUM_OF_TRIALS_TO_SUBSCRIBE)
+        loggerinst.info("Attempt %s of %s: Registering system by running subscription-manager"
+                        " command ... ", attempt+1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
         ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
             return
@@ -101,9 +104,9 @@ def register_system():
             loggerinst.info("Trying again - provide username and password.")
             tool_opts.username = None
             tool_opts.password = None
-        trials += 1
-        sleep(3)
-    loggerinst.critical("Unable to subscribe the system.")
+        sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
+        attempt += 1
+    loggerinst.critical("Unable to register the system through subscription-manager.")
 
 
 def get_registration_cmd():

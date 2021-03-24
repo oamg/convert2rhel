@@ -186,7 +186,7 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(subscription.register_system.called, 2)
 
     @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(subscription, "MAX_NUM_OF_TRIALS_TO_SUBSCRIBE", 1)
+    @unit_tests.mock(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 1)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([("nope", 1)]))
     @unit_tests.mock(subscription, "sleep", mock.Mock())
     def test_register_system_fail_non_interactive(self):
