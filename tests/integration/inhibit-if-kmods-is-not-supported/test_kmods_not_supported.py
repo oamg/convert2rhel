@@ -78,6 +78,7 @@ def test_bad_convertion(shell, insert_custom_kmod):
 
 
 @pytest.mark.skip_check
+@pytest.mark.skip   # feature is not yet added - skipping
 def test_skip_kmod_check(shell, insert_custom_kmod):
     insert_custom_kmod()
     convertion = shell(
