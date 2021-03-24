@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.18
+Version:        0.19
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -107,6 +107,10 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed Mar 24 2021 Michal Bocek <mbocek@redhat.com> 0.19-1
+- Inhibit the conversion on detection of unsupported or tainted kernel modules
+- Remove mod_ldap and mod_proxy_html on CentOS 7 to prevent conversion failure
+
 * Mon Mar 22 2021 Michal Bocek <mbocek@redhat.com> 0.18-1
 - Prevent conversion failure by requiring writable /sys and /mnt
 - Fix the subscription-manager packages being signed by CentOS instead of Red Hat
