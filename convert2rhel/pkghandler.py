@@ -682,7 +682,7 @@ def remove_non_rhel_kernels():
 
 def fix_default_kernel():
     """
-    Systems converted from Oracle Linux or CentOS Plus may have leftover kernel-uek or kernel-plus in
+    Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus in
     /etc/sysconfig/kernel as DEFAULTKERNEL.
     This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for RHEL 6,7 and kernel-core for RHEL 8
     """

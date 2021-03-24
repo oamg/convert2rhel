@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run this script on CentOS/OL/RHEL 6/7/8
+# Run this script on CentOS Linux/OL/RHEL 6/7/8
 pushd $(dirname "$0")/../
 
 echo "Creating a tarball for building the RPM ..."

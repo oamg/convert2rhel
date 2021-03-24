@@ -50,7 +50,7 @@ If you want to become a member of that group, [let us know](https://github.com/o
 
 Q: When are we supposed to do that?
 
-A: Whenever we decide that users of CentOS and Oracle Linux should be able to take advantage of the new fixes and features we introduce in upstream/GitHub.
+A: Whenever we decide that users of CentOS Linux and Oracle Linux should be able to take advantage of the new fixes and features we introduce in upstream/GitHub.
 
 
 The procedure below expects that [a new upstream GitHub release](https://github.com/oamg/convert2rhel/releases) has been created already.
