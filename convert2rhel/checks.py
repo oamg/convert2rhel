@@ -123,7 +123,7 @@ def get_installed_kmods():
         kernel_version, exit_code = run_subprocess("uname -r")
         assert exit_code == 0
         kmod_str, exit_code = run_subprocess(
-            'find /lib/modules/{kver} -name "*.ko*"'.format(
+            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(
                 kver=kernel_version.rstrip("\n")
             ),
             print_output=False
