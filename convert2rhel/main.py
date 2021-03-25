@@ -171,6 +171,7 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: resolve possible edge cases")
     special_cases.check_and_resolve()
 
+    rhel_repoids = []
     if not toolopts.tool_opts.disable_submgr:
         loggerinst.task("Convert: Subscription Manager - Download packages")
         subscription.download_rhsm_pkgs()
@@ -187,12 +188,16 @@ def pre_ponr_conversion():
         subscription.check_needed_repos_availability(rhel_repoids)
         loggerinst.task("Convert: Subscription Manager - Disable all repositories")
         subscription.disable_repos()
-        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
-        subscription.enable_repos(rhel_repoids)
 
     # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
     loggerinst.task("Convert: Remove packages containing repofiles")
     pkghandler.remove_repofile_pkgs()
+
+    # we need to enable repos after removing repofile pkgs, otherwise we don't get backups
+    # to restore from on a rollback
+    if not toolopts.tool_opts.disable_submgr:
+        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
+        subscription.enable_repos(rhel_repoids)
 
     # comment out the distroverpkg variable in yum.conf
     loggerinst.task("Convert: Patch yum configuration file")

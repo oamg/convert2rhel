@@ -175,8 +175,8 @@ class TestMain(unittest.TestCase):
         intended_call_order["get_rhel_repoids"] = 1
         intended_call_order["check_needed_repos_availability"] = 1
         intended_call_order["disable_repos"] = 1
-        intended_call_order["enable_repos"] = 1
         intended_call_order["remove_repofile_pkgs"] = 1
+        intended_call_order["enable_repos"] = 1
         intended_call_order["patch"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
@@ -220,9 +220,11 @@ class TestMain(unittest.TestCase):
         intended_call_order["get_rhel_repoids"] = 0
         intended_call_order["check_needed_repos_availability"] = 0
         intended_call_order["disable_repos"] = 0
-        intended_call_order["enable_repos"] = 0
 
         intended_call_order["remove_repofile_pkgs"] = 1
+        
+        intended_call_order["enable_repos"] = 0
+        
         intended_call_order["patch"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
