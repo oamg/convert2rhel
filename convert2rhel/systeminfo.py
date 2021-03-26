@@ -180,7 +180,7 @@ class SystemInfo(object):
         return self._get_cfg_opt("releasever")
     
     def _get_kmods_to_ignore(self):
-        return self._get_cfg_opt("kmods_to_ignore")
+        return self._get_cfg_opt("kmods_to_ignore").split()
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
         """RPM is able to detect if any file installed as part of a package has been changed in any way after the

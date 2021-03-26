@@ -287,7 +287,11 @@ def get_rhel_kmods_keys(rhel_kmods_str):
 
 def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
     """Return a set of those installed kernel modules that are not available in RHEL repositories.
-    
+
     Ignore certain kmods mentioned in the system configs. These kernel modules moved to kernel core, meaning that the
-    functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL. """
-    return host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL."""
+    return (
+        host_kmods
+        - rhel_supported_kmods
+        - set(system_info.kmods_to_ignore)
+    )
