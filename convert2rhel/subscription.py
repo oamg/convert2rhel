@@ -20,6 +20,7 @@ import os
 import re
 
 from collections import namedtuple
+from time import sleep
 
 from convert2rhel import pkghandler, utils
 from convert2rhel.systeminfo import system_info
@@ -53,6 +54,10 @@ _UBI_8_REPO_CONTENT = \
         'gpgcheck=0\n' \
         'enabled=1\n'
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
+MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
+# Using a delay that could help when the RHSM/Satellite server is overloaded.
+# The delay in seconds is a prime number that roughly doubles with each attempt.
+REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 
 
 def subscribe_system():
@@ -81,24 +86,27 @@ def register_system():
     """Register OS using subscription-manager."""
 
     # Loop the registration process until successful registration
-    while True:
+    attempt = 0
+    while True and attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
         registration_cmd = get_registration_cmd()
-        loggerinst.info("Registering system by running subscription-manager"
-                        " command ... ")
+        loggerinst.info("Attempt %s of %s: Registering system by running subscription-manager"
+                        " command ... ", attempt+1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
         ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
-            break
+            return
         loggerinst.info("System registration failed with return code = %s"
                         % str(ret_code))
         if tool_opts.credentials_thru_cli:
-            loggerinst.critical("Error: Unable to register your system with"
+            loggerinst.warning("Error: Unable to register your system with"
                                 " subscription-manager using the provided"
                                 " credentials.")
         else:
             loggerinst.info("Trying again - provide username and password.")
             tool_opts.username = None
             tool_opts.password = None
-    return
+        sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
+        attempt += 1
+    loggerinst.critical("Unable to register the system through subscription-manager.")
 
 
 def get_registration_cmd():
