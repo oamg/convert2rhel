@@ -72,6 +72,8 @@ class SystemInfo(object):
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
         self.releasever = None
+        # List of kmods to not inhbit the conversion upon when detected as not available in RHEL
+        self.kmods_to_ignore = []
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
@@ -89,6 +91,7 @@ class SystemInfo(object):
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
+        self.kmods_to_ignore = self._get_kmods_to_ignore()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -175,6 +178,9 @@ class SystemInfo(object):
 
     def _get_releasever(self):
         return self._get_cfg_opt("releasever")
+    
+    def _get_kmods_to_ignore(self):
+        return self._get_cfg_opt("kmods_to_ignore")
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
         """RPM is able to detect if any file installed as part of a package has been changed in any way after the
