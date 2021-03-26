@@ -31,7 +31,7 @@ loggerinst = logging.getLogger(__name__)
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
-MAX_YUM_CMD_CALLS = 2
+MAX_YUM_CMD_CALLS = 3
 
 _VERSIONLOCK_FILE_PATH = '/etc/yum/pluginconf.d/versionlock.list'  # This file is used by the dnf plugin as well
 versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
