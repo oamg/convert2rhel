@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.19
+Version:        0.20
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -107,6 +107,15 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Mar 26 2021 Michal Bocek <mbocek@redhat.com> 0.20-1
+- Fix backing up centos-release and others
+- Fix checking for kernel modules using symlinks
+- Remove cockpit-subscriptions to prevent conversion failure
+- Remove anaconda-dracut to prevent conversion failure
+- Limit the number of RHSM registration attempts
+- Fix resolving yum dependency errors
+- Add ignore list for kmods that moved to kernel core
+
 * Wed Mar 24 2021 Michal Bocek <mbocek@redhat.com> 0.19-1
 - Inhibit the conversion on detection of unsupported or tainted kernel modules
 - Remove mod_ldap and mod_proxy_html on CentOS 7 to prevent conversion failure
@@ -121,7 +130,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 - Fix conversion failure on CentOS Linux/OL 6 caused by java-1.7.0-openjdk
 - Remove settings not compatible with RHEL from /etc/sysconfig/kernel
 
-* Thu Feb 10 2021 Michal Bocek <mbocek@redhat.com> 0.17-1
+* Wed Feb 10 2021 Michal Bocek <mbocek@redhat.com> 0.17-1
 - Fix broken package backup causing an incomplete rollback
 - Fix dependency issue when force replacing same-version kernel
 - Allow using RHSM repos when downloading same-version kernel
