@@ -286,8 +286,8 @@ def test_get_rhel_supported_kmods(
         (
             (
                 "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64",
-                "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
                 "kernel-debug-core-0:4.18.0-240.10.1.el8_3.x86_64",
+                "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
                 "kernel-debug-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             (
