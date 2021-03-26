@@ -64,7 +64,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs):
             break
         # handle error condition
         loggerinst.info("Resolving dependency errors ... ")
-        resolve_dep_errors(output, [])
+        output = resolve_dep_errors(output, [])
         # if we have problematic packages, remove them
         problematic_pkgs = get_problematic_pkgs(output, [])
         if problematic_pkgs["errors"]:
@@ -187,15 +187,15 @@ def resolve_dep_errors(output, pkgs):
         # There's no point in calling the yum downgrade command again.
         loggerinst.info("No other package to try to downgrade in order to"
                         " resolve yum dependency errors.")
-        return
+        return output
     problematic_pkgs['all'] += pkgs
     cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
                     % ", ".join(problematic_pkgs['all']))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs['all']))
     if ret_code != 0:
-        resolve_dep_errors(output, problematic_pkgs['all'])
-    return
+        return resolve_dep_errors(output, problematic_pkgs['all'])
+    return output
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
