@@ -151,7 +151,7 @@ def test_pre_ponr_checks(monkeypatch):
         ),
         (
             HOST_MODULES_STUB_BAD,
-            None,
+            SystemExit,
             None,
             "Kernel modules are compatible",
         ),
@@ -197,17 +197,20 @@ def test_ensure_compatibility_of_kmods(
         "unsupported_pkg",
         "msg_in_logs",
         "msg_not_in_logs",
+        "exception",
     ),
     (
         (
             "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/ff-memless.ko.xz\n",
             "Kernel modules are compatible",
             "The following kernel modules are not supported in RHEL",
+            None,
         ),
         (
             "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/other.ko.xz\n",
             "The following kernel modules are not supported in RHEL",
             None,
+            SystemExit,
         ),
     ),
 )
@@ -218,6 +221,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     unsupported_pkg,
     msg_in_logs,
     msg_not_in_logs,
+    exception,
 ):
     get_unsupported_kmods_mocked = mock.Mock(
         wraps=checks.get_unsupported_kmods
@@ -240,7 +244,11 @@ def test_ensure_compatibility_of_kmods_excluded(
         "get_unsupported_kmods",
         value=get_unsupported_kmods_mocked,
     )
-    ensure_compatibility_of_kmods()
+    if exception:
+        with pytest.raises(exception):
+            ensure_compatibility_of_kmods()
+    else:
+        ensure_compatibility_of_kmods()
     get_unsupported_kmods_mocked.assert_called_with(
         # host kmods
         set(

@@ -100,10 +100,12 @@ def ensure_compatibility_of_kmods():
         )
         # TODO logger.critical("message %s, %s", "what should be under s")
         #  doesn't work. We have `%s` as output instead. Make it work
-        logger.warning(
+        logger.critical(
             (
                 "The following kernel modules are not "
-                "supported in RHEL:\n{kmods}"
+                "supported in RHEL:\n{kmods}\n"
+                "Uninstall or disable them and run convert2rhel "
+                "again to continue with the conversion."
             ).format(kmods=not_supported_kmods)
         )
     else:
