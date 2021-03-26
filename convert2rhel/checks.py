@@ -87,14 +87,15 @@ def ensure_compatibility_of_kmods():
     """Ensure if the host kernel modules are compatible with RHEL."""
     host_kmods = get_installed_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
-    if is_unsupported_kmod_installed(host_kmods, rhel_supported_kmods):
+    unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
+    if unsupported_kmods:
         kernel_version = run_subprocess("uname -r")[0].rstrip("\n")
         not_supported_kmods = "\n".join(
             map(
                 lambda kmod: "/lib/modules/{kver}/{kmod}".format(
                     kver=kernel_version, kmod=kmod
                 ),
-                host_kmods - rhel_supported_kmods,
+                unsupported_kmods,
             )
         )
         # TODO logger.critical("message %s, %s", "what should be under s")
@@ -284,6 +285,13 @@ def get_rhel_kmods_keys(rhel_kmods_str):
     )
 
 
-def is_unsupported_kmod_installed(host_kmods, rhel_supported_kmods):
-    """Return True if any of the installed kernel modules is not available in RHEL repositories."""
-    return not host_kmods.issubset(rhel_supported_kmods)
+def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
+    """Return a set of those installed kernel modules that are not available in RHEL repositories.
+
+    Ignore certain kmods mentioned in the system configs. These kernel modules moved to kernel core, meaning that the
+    functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL."""
+    return (
+        host_kmods
+        - rhel_supported_kmods
+        - set(system_info.kmods_to_ignore)
+    )
