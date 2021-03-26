@@ -27,7 +27,7 @@ class TestOther(unittest.TestCase):
         # Prevents unintentional change of constants
         self.assertEqual(utils.TMP_DIR, "/var/lib/convert2rhel/")
         self.assertEqual(utils.DATA_DIR, "/usr/share/convert2rhel/")
-        self.assertEqual(pkghandler.MAX_YUM_CMD_CALLS, 2)
+        self.assertEqual(pkghandler.MAX_YUM_CMD_CALLS, 3)
         self.assertEqual(logger.LOG_DIR, "/var/log/convert2rhel")
 
 

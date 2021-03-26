@@ -243,8 +243,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
-    @unit_tests.mock(pkghandler, "resolve_dep_errors", DumbCallableObject())
+    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda _: ["pkg"])
+    @unit_tests.mock(pkghandler, "resolve_dep_errors", lambda output, __: output)
     @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg, _: {"errors": pkg})
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
@@ -252,8 +252,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.MAX_YUM_CMD_CALLS = 1
 
         self.assertRaises(SystemExit, pkghandler.call_yum_cmd_w_downgrades, "test_cmd", ["fingerprint"])
-
-        self.assertEqual(pkghandler.resolve_dep_errors.called, 1)
 
         self.assertEqual(utils.remove_pkgs.pkgs, pkghandler.call_yum_cmd.return_string)
         self.assertEqual(utils.remove_pkgs.critical, False)
