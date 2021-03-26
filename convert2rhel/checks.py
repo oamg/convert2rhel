@@ -126,7 +126,7 @@ def get_installed_kmods():
             'find /lib/modules/{kver} -name "*.ko*" -type f'.format(
                 kver=kernel_version.rstrip("\n")
             ),
-            print_output=False
+            print_output=False,
         )
         assert exit_code == 0
         assert kmod_str
@@ -243,7 +243,7 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     """
 
     pkgs_groups = itertools.groupby(
-        pkgs, lambda pkg_name: pkg_name.split(":")[0]
+        sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0]
     )
     return (
         max(distinct_kernel_pkgs[1], key=_repos_version_key)
