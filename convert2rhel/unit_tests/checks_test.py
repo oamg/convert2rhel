@@ -151,7 +151,7 @@ def test_pre_ponr_checks(monkeypatch):
         ),
         (
             HOST_MODULES_STUB_BAD,
-            None,
+            SystemExit,
             None,
             "Kernel modules are compatible",
         ),
