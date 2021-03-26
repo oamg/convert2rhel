@@ -23,11 +23,13 @@ import pytest
 
 from convert2rhel import checks, unit_tests
 from convert2rhel.checks import (
+    _get_kmod_comparison_key,
     check_tainted_kmods,
     ensure_compatibility_of_kmods,
     get_installed_kmods,
     get_most_recent_unique_kernel_pkgs,
     get_rhel_supported_kmods,
+    get_unsupported_kmods,
     perform_pre_checks,
     perform_pre_ponr_checks,
 )
@@ -188,6 +190,84 @@ def test_ensure_compatibility_of_kmods(
         assert should_be_in_logs in caplog.records[-1].message
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    (
+        "unsupported_pkg",
+        "msg_in_logs",
+        "msg_not_in_logs",
+    ),
+    (
+        (
+            "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/ff-memless.ko.xz\n",
+            "Kernel modules are compatible",
+            "The following kernel modules are not supported in RHEL",
+        ),
+        (
+            "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/other.ko.xz\n",
+            "The following kernel modules are not supported in RHEL",
+            None,
+        ),
+    ),
+)
+def test_ensure_compatibility_of_kmods_excluded(
+    monkeypatch,
+    pretend_centos7,
+    caplog,
+    unsupported_pkg,
+    msg_in_logs,
+    msg_not_in_logs,
+):
+    get_unsupported_kmods_mocked = mock.Mock(
+        wraps=checks.get_unsupported_kmods
+    )
+    run_subprocess_mock = mock.Mock(
+        side_effect=_run_subprocess_side_effect(
+            (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("find",), (HOST_MODULES_STUB_GOOD + unsupported_pkg, 0)),
+            (("repoquery", " -f "), (REPOQUERY_F_STUB_GOOD, 0)),
+            (("repoquery", " -l "), (REPOQUERY_L_STUB_GOOD, 0)),
+        )
+    )
+    monkeypatch.setattr(
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(
+        checks,
+        "get_unsupported_kmods",
+        value=get_unsupported_kmods_mocked,
+    )
+    ensure_compatibility_of_kmods()
+    get_unsupported_kmods_mocked.assert_called_with(
+        # host kmods
+        set(
+            (
+                _get_kmod_comparison_key(unsupported_pkg.rstrip()),
+                "kernel/lib/c.ko.xz",
+                "kernel/lib/a.ko.xz",
+                "kernel/lib/b.ko.xz",
+            )
+        ),
+        # rhel supported kmods
+        set(
+            (
+                "kernel/lib/c.ko",
+                "kernel/lib/b.ko.xz",
+                "kernel/lib/c.ko.xz",
+                "kernel/lib/a.ko.xz",
+                "kernel/lib/a.ko",
+            )
+        ),
+    )
+    if msg_in_logs:
+        assert msg_in_logs in caplog.records[0].message
+    if msg_not_in_logs:
+        assert all(
+            msg_not_in_logs not in record.message for record in caplog.records
+        )
 
 
 @pytest.mark.parametrize(
@@ -376,9 +456,7 @@ def test_get_most_recent_unique_kernel_pkgs(pkgs, exp_res, exception):
         ),
     ),
 )
-def test_check_tainted_kmods(
-    monkeypatch, command_return, expected_exception
-):
+def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
     run_subprocess_mock = mock.Mock(return_value=command_return)
     monkeypatch.setattr(
         checks,
