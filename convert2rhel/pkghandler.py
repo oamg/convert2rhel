@@ -189,7 +189,7 @@ def resolve_dep_errors(output, pkgs):
                         " resolve yum dependency errors.")
         return output
     problematic_pkgs['all'] += pkgs
-    cmd = "distro-sync"
+    cmd = "downgrade"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
                     % ", ".join(problematic_pkgs['all']))
     output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs['all']))
