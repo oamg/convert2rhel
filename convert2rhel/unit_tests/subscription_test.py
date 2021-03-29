@@ -17,6 +17,7 @@
 # Required imports:
 import logging
 import os
+import pytest
 import sys
 import unittest
 
@@ -430,3 +431,19 @@ class TestSubscription(unittest.TestCase):
             self.dest = dest
             self.reposdir = reposdir
             return self.to_return
+
+
+@pytest.mark.parametrize(
+    ("installed_pkgs", "info_log"), (
+        (["sub-man"], None),
+        ([], "No packages related to subscription-manager signed by Red Hat installed"),
+    )
+)
+def test_remove_subscription_manager(installed_pkgs, info_log, monkeypatch, caplog):
+    monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, y: installed_pkgs)
+    monkeypatch.setattr(pkghandler, "call_yum_cmd", mock.Mock())
+    subscription.remove_subscription_manager()
+    if info_log:
+        assert info_log in caplog.text
+    if installed_pkgs:
+        pkghandler.call_yum_cmd.assert_called_once_with("remove", "--noautoremove sub-man")

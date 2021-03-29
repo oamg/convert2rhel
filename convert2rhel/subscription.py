@@ -236,13 +236,17 @@ def install_rhel_subscription_manager():
 
 
 def remove_subscription_manager():
+    """Remove subscription-manager related packages signed by Red Hat during the rollback."""
     loggerinst.info("Removing RHEL subscription-manager packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, "*subscription-manager*")
     if not submgr_pkgs:
-        loggerinst.info("No packages related to subscription-manager installed.")
+        loggerinst.info("No packages related to subscription-manager signed by Red Hat installed.")
         return
-    pkghandler.call_yum_cmd("remove", " ".join(submgr_pkgs), print_output=False)
+    # Without the --noautoremove yum may remove unused dependencies and that may cause a package installation failure
+    # later during the rollback when installing back packages that were removed during the conversion.
+    pkghandler.call_yum_cmd("remove", "--noautoremove " + " ".join(submgr_pkgs))
+
 
 def attach_subscription():
     """Attach a specific subscription to the registered OS. If no
