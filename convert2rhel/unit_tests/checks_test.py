@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import namedtuple
 import os
 import sys
 
@@ -22,7 +23,8 @@ from collections import namedtuple
 
 import pytest
 
-from convert2rhel import checks, unit_tests
+from convert2rhel import checks, grub, unit_tests
+from convert2rhel.unit_tests import GetLoggerMocked
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
@@ -42,12 +44,6 @@ from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 from convert2rhel.utils import run_subprocess
-
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
 
 
 try:
@@ -109,14 +105,14 @@ REPOQUERY_L_STUB_BAD = (
 
 def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
-    check_uefi_mock = mock.Mock()
+    check_efi_mock = mock.Mock()
     check_readonly_mounts_mock = mock.Mock()
     check_custom_repos_are_valid_mock = mock.Mock()
     check_rhel_compatible_kernel_is_used_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
-        "check_uefi",
-        value=check_uefi_mock,
+        "check_efi",
+        value=check_efi_mock,
     )
     monkeypatch.setattr(
         checks,
@@ -139,10 +135,10 @@ def test_perform_pre_checks(monkeypatch):
         value=check_custom_repos_are_valid_mock,
     )
 
-    perform_pre_checks()
+    checks.perform_pre_checks()
 
     check_thirdparty_kmods_mock.assert_called_once()
-    check_uefi_mock.assert_called_once()
+    check_efi_mock.assert_called_once()
     check_readonly_mounts_mock.assert_called_once()
     check_rhel_compatible_kernel_is_used_mock.assert_called_once()
 
@@ -154,7 +150,7 @@ def test_pre_ponr_checks(monkeypatch):
         "ensure_compatibility_of_kmods",
         value=ensure_compatibility_of_kmods_mock,
     )
-    perform_pre_ponr_checks()
+    checks.perform_pre_ponr_checks()
     ensure_compatibility_of_kmods_mock.assert_called_once()
 
 
@@ -206,9 +202,9 @@ def test_ensure_compatibility_of_kmods(
 
     if exception:
         with pytest.raises(exception):
-            ensure_compatibility_of_kmods()
+            checks.ensure_compatibility_of_kmods()
     else:
-        ensure_compatibility_of_kmods()
+        checks.ensure_compatibility_of_kmods()
 
     if should_be_in_logs:
         assert should_be_in_logs in caplog.records[-1].message
@@ -274,9 +270,30 @@ def test_ensure_compatibility_of_kmods_excluded(
     )
     if exception:
         with pytest.raises(exception):
-            ensure_compatibility_of_kmods()
+            checks.ensure_compatibility_of_kmods()
     else:
-        ensure_compatibility_of_kmods()
+        checks.ensure_compatibility_of_kmods()
+    get_unsupported_kmods_mocked.assert_called_with(
+        # host kmods
+        set(
+            (
+                checks._get_kmod_comparison_key(unsupported_pkg.rstrip()),
+                "kernel/lib/c.ko.xz",
+                "kernel/lib/a.ko.xz",
+                "kernel/lib/b.ko.xz",
+            )
+        ),
+        # rhel supported kmods
+        set(
+            (
+                "kernel/lib/c.ko",
+                "kernel/lib/b.ko.xz",
+                "kernel/lib/c.ko.xz",
+                "kernel/lib/a.ko.xz",
+                "kernel/lib/a.ko",
+            )
+        ),
+    )
     if msg_in_logs:
         assert any(msg_in_logs in record.message for record in caplog.records)
     if msg_not_in_logs:
@@ -307,7 +324,14 @@ def test_get_installed_kmods(monkeypatch):
         "run_subprocess",
         value=run_subprocess_mocked,
     )
-    assert get_loaded_kmods() == {"kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"}
+    if exp_res:
+        assert exp_res == checks.get_installed_kmods()
+    else:
+        with pytest.raises(SystemExit):
+            checks.get_installed_kmods()
+        assert (
+            "Can't get list of kernel modules." in caplog.records[-1].message
+        )
 
 
 @pytest.mark.parametrize(
@@ -344,9 +368,9 @@ def test_get_rhel_supported_kmods(
     )
     if exception:
         with pytest.raises(exception):
-            get_rhel_supported_kmods()
+            checks.get_rhel_supported_kmods()
     else:
-        res = get_rhel_supported_kmods()
+        res = checks.get_rhel_supported_kmods()
         assert res == set(
             (
                 "kernel/lib/a.ko",
@@ -428,11 +452,11 @@ def test_get_rhel_supported_kmods(
 )
 def test_get_most_recent_unique_kernel_pkgs(pkgs, exp_res, exception):
     if not exception:
-        most_recent_pkgs = tuple(get_most_recent_unique_kernel_pkgs(pkgs))
+        most_recent_pkgs = tuple(checks.get_most_recent_unique_kernel_pkgs(pkgs))
         assert exp_res == most_recent_pkgs
     else:
         with pytest.raises(exception):
-            tuple(get_most_recent_unique_kernel_pkgs(pkgs))
+            tuple(checks.get_most_recent_unique_kernel_pkgs(pkgs))
 
 
 @pytest.mark.parametrize(
@@ -463,9 +487,9 @@ def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
     )
     if expected_exception:
         with pytest.raises(expected_exception):
-            check_tainted_kmods()
+            checks.check_tainted_kmods()
     else:
-        check_tainted_kmods()
+        checks.check_tainted_kmods()
 
 
 @pytest.mark.parametrize(
@@ -574,24 +598,6 @@ def test_bad_kernel_fingerprint(
     assert _bad_kernel_package_signature(kernel_release) == exp_return
 
 
-class TestUEFIChecks(unittest.TestCase):
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/sys/firmware/efi")
-    @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    def test_check_uefi_efi_detected(self):
-        self.assertRaises(SystemExit, checks.check_uefi)
-        self.assertEqual(len(checks.logger.critical_msgs), 1)
-        self.assertTrue("Conversion of UEFI systems is currently not supported" in checks.logger.critical_msgs[0])
-        if checks.logger.debug_msgs:
-            self.assertFalse("BIOS system detected." in checks.logger.info_msgs[0])
-
-    @unit_tests.mock(os.path, "exists", lambda x: not x == "/sys/firmware/efi")
-    @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    def test_check_uefi_bios_detected(self):
-        checks.check_uefi()
-        self.assertFalse(checks.logger.critical_msgs)
-        self.assertTrue("BIOS system detected." in checks.logger.info_msgs[0])
-
-
 class TestReadOnlyMountsChecks(unittest.TestCase):
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(
@@ -673,3 +679,151 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertEqual(len(checks.logger.info_msgs), 0)
         self.assertTrue("Unable to access the repositories passed through " in checks.logger.critical_msgs[0])
+
+
+class EFIBootInfoMocked():
+
+    _ENTRIES = {
+        "0001": grub.EFIBootLoader(
+                    boot_number="0001",
+                    label="Centos Linux",
+                    active=True,
+                    efi_bin_source="HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\\EFI\\centos\\shimx64.efi)",
+        ),
+        "0002": grub.EFIBootLoader(
+                    boot_number="0002",
+                    label="Foo label",
+                    active=True,
+                    efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
+        ),
+    }
+
+    def __init__(self,
+                 current_boot="0001",
+                 next_boot=None,
+                 boot_order=("0001", "0002"),
+                 entries=_ENTRIES,
+                 exception=None
+    ):
+        self.current_boot = current_boot
+        self.next_boot = next_boot
+        self.boot_order = boot_order
+        self.entries = entries
+        self._exception = exception
+
+    def __call__(self):
+        """Tested functions call existing object instead of creating one.
+
+        The object is expected to be instantiated already when mocking
+        so tested functions are not creating new object but are calling already
+        the created one. From the point of the tested code, the behaviour is
+        same now.
+        """
+        if not self._exception:
+            return self
+        raise self._exception
+
+
+class TestEFIChecks(unittest.TestCase):
+
+    def _gen_version(major, minor):
+        return namedtuple("Version", ["major", "minor"])(major, minor)
+
+    def _check_efi_detection_log(self, efi_detected=True):
+        if efi_detected:
+            self.assertFalse("BIOS detected." in checks.logger.debug_msgs)
+            self.assertTrue("EFI detected." in checks.logger.debug_msgs)
+        else:
+            self.assertTrue("BIOS detected." in checks.logger.debug_msgs)
+            self.assertFalse("EFI detected." in checks.logger.debug_msgs)
+
+    @unit_tests.mock(grub, "is_efi", lambda: False)
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(checks.system_info, "version", _gen_version(6, 10))
+    def test_check_efi_bios_detected(self):
+        checks.check_efi()
+        self.assertFalse(checks.logger.critical_msgs)
+        self._check_efi_detection_log(False)
+
+    def _check_efi_critical(self, critical_msg):
+        self.assertRaises(SystemExit, checks.check_efi)
+        self.assertEqual(len(checks.logger.critical_msgs), 1)
+        self.assertTrue(critical_msg in checks.logger.critical_msgs)
+        self._check_efi_detection_log(True)
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(6, 10))
+    def test_check_efi_old_sys(self):
+        self._check_efi_critical("The conversion with EFI is supported only for systems from major version 7.")
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: not x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    def test_check_efi_efi_detected_without_efibootmgr(self):
+        self._check_efi_critical("Install efibootmgr to continue converting EFI system.")
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
+    @unit_tests.mock(checks.system_info, "arch", "aarch64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    def test_check_efi_efi_detected_non_intel(self):
+        self._check_efi_critical("Only x86_64 systems are supported for EFI conversions.")
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: True)
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    def test_check_efi_efi_detected_secure_boot(self):
+        self._check_efi_critical("The conversion with secure boot is currently not supported.")
+        self.assertTrue("Secure boot detected." in checks.logger.debug_msgs)
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    def test_check_efi_efi_detected_bootloader_error(self):
+        self._check_efi_critical("errmsg")
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(current_boot="0002"))
+    def test_check_efi_efi_detected_nofile_entry(self):
+        checks.check_efi()
+        self._check_efi_detection_log()
+        warn_msg = (
+            "The current EFI bootloader '0002' is not referring to any"
+            " binary EFI file located on ESP."
+        )
+        self.assertTrue(warn_msg in checks.logger.warning_msgs)
+
+    @unit_tests.mock(grub, "is_efi", lambda: True)
+    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
+    @unit_tests.mock(checks.system_info, "arch", "x86_64")
+    @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked())
+    def test_check_efi_efi_detected_ok(self):
+        checks.check_efi()
+        self._check_efi_detection_log()
+        self.assertEqual(len(checks.logger.warning_msgs), 0)
+

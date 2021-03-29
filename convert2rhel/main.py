@@ -23,6 +23,7 @@ from convert2rhel import (
     breadcrumbs,
     cert,
     checks,
+    grub,
     logger,
     pkghandler,
     redhatrelease,

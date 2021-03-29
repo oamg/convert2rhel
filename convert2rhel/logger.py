@@ -149,7 +149,7 @@ class CustomFormatter(logging.Formatter, object):
             new_fmt = fmt_orig if self.color_disabled else bcolors.WARNING + fmt_orig + bcolors.ENDC
             self._fmt = new_fmt
             self.datefmt = ""
-        elif record.levelno in [logging.CRITICAL]:
+        elif record.levelno in [logging.CRITICAL, logging.ERROR]:
             fmt_orig = "%(levelname)s - %(message)s"
             new_fmt = fmt_orig if self.color_disabled else bcolors.FAIL + fmt_orig + bcolors.ENDC
             self._fmt = new_fmt
