@@ -192,9 +192,9 @@ def resolve_dep_errors(output, pkgs):
     cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s"
                     % ", ".join(problematic_pkgs['all']))
-    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs['all']))
+    output_yum, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs['all']))
     if ret_code != 0:
-        return resolve_dep_errors(output, problematic_pkgs['all'])
+        return resolve_dep_errors(output_yum, problematic_pkgs['all'])
     return output
 
 
