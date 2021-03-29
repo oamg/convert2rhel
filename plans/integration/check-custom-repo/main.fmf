@@ -1,0 +1,7 @@
+discover+:
+    filter:
+        - 'tag: check-custom-repo'
+
+provision:
+    how: libvirt
+    develop: true

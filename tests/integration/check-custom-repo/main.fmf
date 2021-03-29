@@ -1,0 +1,19 @@
+summary: check-custom-repo
+tag+:
+  - centos7
+  - centos8
+  - oracle7
+  - oracle8
+  - check-custom-repo
+
+/good:
+  tag+:
+    - good_test
+  test: |
+    pytest -svv --tb=no -m good_tests
+
+/bad:
+  tag+:
+    - bad_test
+  test: |
+    pytest -svv --tb=no -m bad_tests
