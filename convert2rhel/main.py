@@ -101,10 +101,6 @@ def main():
         loggerinst.task("Final: rpm files modified by the conversion")
         systeminfo.system_info.modified_rpm_files_diff()
 
-        # recommend non-interactive command
-        loggerinst.task("Final: Non-interactive mode")
-        toolopts.print_non_interactive_opts()
-
         # restart system if required
         utils.restart_system()
 

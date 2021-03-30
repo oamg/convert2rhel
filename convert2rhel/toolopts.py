@@ -249,37 +249,5 @@ class CLI(object):
             tool_opts.credentials_thru_cli = True
 
 
-def print_non_interactive_opts():
-    """Print command line options to be used for the next run of the tool
-    to avoid the need of any interactive input during the system conversion.
-    """
-    loggerinst.info("For the non-interactive use of the tool, run the"
-                    " following command:")
-    global tool_opts  # pylint: disable=C0103
-    cmd = utils.get_executable_name()
-
-    if tool_opts.disable_submgr:
-        cmd += " --disable-submgr "
-        for repo in tool_opts.disablerepo:
-            cmd += " --disablerepo=%s " % repo
-        for repo in tool_opts.enablerepo:
-            cmd += " --enablerepo=%s " % repo
-    else:
-        if tool_opts.username:
-            cmd += " -u %s" % tool_opts.username
-            if tool_opts.password_file:
-                pswd_opt = " -f %s" % tool_opts.password_file
-            else:
-                pswd_opt = " -p *****"
-            cmd += pswd_opt
-        if tool_opts.activation_key:
-            cmd += " -k %s" % tool_opts.activation_key
-        if tool_opts.org:
-            cmd += " -o %s" % tool_opts.org
-        cmd += " %s" % tool_opts.pool
-    cmd += " -y"
-    loggerinst.info(cmd + "\n\n")
-
-
 # Code to be executed upon module import
 tool_opts = ToolOpts()  # pylint: disable=C0103
