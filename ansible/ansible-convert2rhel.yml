@@ -22,7 +22,7 @@
         url: "{{ GPGKEY }}"
         dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
-    - name: Define Convert2RHEL {{ ansible_distribution_major_version }} Repo
+    - name: Add Convert2RHEL repofile
       yum_repository:
         name: convert2rhel
         description: Convert2RHEL for OS {{ ansible_distribution_major_version }} 
@@ -31,13 +31,13 @@
         gpgcheck: yes 
         gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
-    - name: Install convert2rhel for RHEL "{{ ansible_distribution_major_version }}" from yum repo
+    - name: Install convert2rhel for RHEL {{ ansible_distribution_major_version }} from yum repo
       yum:
         name: "convert2rhel"
         state: latest
 
 
-     ## Only use for testing upstream releases from Github
+## Only use for testing upstream releases from Github
 #    - name: Install convert2rhel for RHEL "{{ ansible_distribution_major_version }}"
 #      yum:
 #        name: 'https://github.com/oamg/convert2rhel/releases/download/v{{ LATESTVER }}/convert2rhel-{{ LATESTVER }}-{{ LATESTBUILD }}.el{{ ansible_distribution_major_version }}.noarch.rpm'
