@@ -142,7 +142,7 @@ class CLI(object):
                                         " subscriptions. A list of the available"
                                         " subscriptions is possible to obtain by running"
                                         " 'subscription-manager list --available'.")
-        if '--variant' in sys.argv[1:]:
+        if any(x in sys.argv[1:] for x in ['--variant', '-v']):
             group.add_option("-v", "--variant", help="The RHEL variant option is not processed anymore. In case of"
                                                      " using subscription-manager, the system is converted to a Server"
                                                      " variant. In case of using custom repositories, the system is"
@@ -220,7 +220,7 @@ class CLI(object):
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool
 
-        if '--variant' in sys.argv[1:]:
+        if any(x in sys.argv[1:] for x in ['--variant', '-v']):
             loggerinst.warning("The --variant option is not supported anymore.")
             if parsed_opts.disable_submgr:
                 loggerinst.warning("The system will be converted to the RHEL variant provided by the repositories you"
