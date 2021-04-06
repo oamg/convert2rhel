@@ -1,0 +1,62 @@
+- hosts: all
+  become: true
+  remote_user: root
+
+  vars:
+    LATESTVER: "0.20"
+    LATESTBUILD: "1"
+    GPGKEY: "https://www.redhat.com/security/data/fd431d51.txt"
+
+  tasks:
+
+    - name: Validate distribution (CentOS or Oracle Linux)
+      meta: end_host
+      when: ansible_distribution != 'CentOS' and ansible_distribution != 'OracleLinux'
+
+    - name: Validate Release Version (6.10, 7.9, 8.3)
+      meta: end_host
+      when: ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9' and ansible_distribution_version != '8.3'
+
+    - name: Download Red Hat GPG key
+      get_url:
+        url: "{{ GPGKEY }}"
+        dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+
+    - name: Add Convert2RHEL repofile
+      yum_repository:
+        name: convert2rhel
+        description: Convert2RHEL for OS {{ ansible_distribution_major_version }} 
+        baseurl: "http://ftp.redhat.com/pub/redhat/convert2rhel/{{ ansible_distribution_major_version }}/os/"
+        enabled: yes  
+        gpgcheck: yes 
+        gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+
+    - name: Install convert2rhel for RHEL {{ ansible_distribution_major_version }} from yum repo
+      yum:
+        name: "convert2rhel"
+        state: latest
+
+
+## Only use for testing upstream releases from Github
+#    - name: Install convert2rhel for RHEL "{{ ansible_distribution_major_version }}"
+#      yum:
+#        name: 'https://github.com/oamg/convert2rhel/releases/download/v{{ LATESTVER }}/convert2rhel-{{ LATESTVER }}-{{ LATESTBUILD }}.el{{ ansible_distribution_major_version }}.noarch.rpm'
+#        state: latest
+#        disable_gpg_check: yes
+
+
+## NOTE 1: use the -y option to answer yes to all yes/no questions the 
+## tool asks carefully and only after you have tested interactively to 
+## ensure that there are not surprises within your environment.  Also 
+## take care to read and follow all prerequisites and backup guidance documented at 
+## https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index
+
+## NOTE 2: the following command may take 20-40 minutes on average to 
+## complete, depending on quantity of packages installed and speed of 
+## network and storage.  This will need to be run in parallel from the 
+## control node or Tower to effectively run against many systems.
+
+#    - include_vars: demo_vault.yml
+#    - name: Convert the system to RHEL
+#      shell: convert2rhel -k "{{ rhsm_key }}" -o "{{ rhsm_org }}" --debug -y
+
