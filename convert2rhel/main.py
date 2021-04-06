@@ -164,7 +164,7 @@ def pre_ponr_conversion():
 
 
     # handle special cases
-    loggerinst.task("Convert: resolve possible edge cases")
+    loggerinst.task("Convert: Resolve possible edge cases")
     special_cases.check_and_resolve()
 
     rhel_repoids = []

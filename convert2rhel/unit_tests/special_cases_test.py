@@ -31,14 +31,14 @@ else:
             True,
             None,
             "openjdk workaround applied successfully.",
-            "Can't create %s" % OPENJDK_RPM_STATE_DIR,
+            "Unable to create the %s" % OPENJDK_RPM_STATE_DIR,
         ),
         # openjdk presented, but OSError when trying to apply workaround
         (
             True,
             False,
             OSError,
-            "Can't create %s" % OPENJDK_RPM_STATE_DIR,
+            "Unable to create the %s" % OPENJDK_RPM_STATE_DIR,
             "openjdk workaround applied successfully.",
         ),
         # No openjdk
