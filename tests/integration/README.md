@@ -9,6 +9,11 @@ sudo dnf -y install bridge-utils libvirt virt-install qemu-kvm python3-libvirt
 
 # Create clean centos7 and centos8 qemu kvm VMs
 # TODO describe how to do this
+curl -o CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2 https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2
+virt-customize -a CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2 --ssh-inject root:file:/home/azhukov/.ssh/id_rsa.pub --uninstall cloud-init --selinux-relabel
+cp CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2 CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64_.qcow2
+virt-install --import --name c2r-centos8-template --memory 1536 --vcpus 1 --os-variant=centos8 --graphics none --disk /var/lib/libvirt/images/CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64_.qcow2,bus=virtio,size=5 --noautoconsole
+
 virsh list --all
 # the domain (vms) names should match (used in the tests declaration)
 # you have to have the following output
@@ -68,6 +73,9 @@ eval "$(_TMT_COMPLETE=source_bash tmt)"
 # Running integration tests
 
 ```bash
+# set secrets
+cp .env.example .env
+# set real secrets 
 # show available plans and tests
 tmt 
 # Found 2 tests: /tests/integration/read-only-mnt-sys/mnt_ro and /tests/integration/read-only-mnt-sys/sys_ro.
