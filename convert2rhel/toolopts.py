@@ -222,11 +222,6 @@ class CLI(object):
 
         if any(x in sys.argv[1:] for x in ['--variant', '-v']):
             loggerinst.warning("The --variant option is not supported anymore.")
-            if parsed_opts.disable_submgr:
-                loggerinst.warning("The system will be converted to the RHEL variant provided by the repositories you"
-                                   " have enabled through the --enablerepo option.")
-            else:
-                loggerinst.warning("The system will be converted to the Server variant of RHEL.")
             utils.ask_to_continue()
 
         if parsed_opts.serverurl:
