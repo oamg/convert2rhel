@@ -48,6 +48,12 @@ vim /etc/sysconfig/qemu-ga
 systemctl enable qemu-guest-agent
 systemctl status qemu-guest-agent
 # you should see that service is active(running)
+# install rsync
+yum install rsync
+
+# set selinux into permissive mode
+vi /etc/selinux/config
+# edit the config by setting permissive mode to selinux and save
 # now shutdown the vm
 shutdown now
 # do not forget to do it for the second VM
