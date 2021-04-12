@@ -39,20 +39,23 @@ ssh-copy-id root@{CENTOS_8_VM_IP} # you'll be asked for a password
 #     </channel>
 ssh root@{CENTOS{7 or 8}_VM_IP}
     # install qemu agent
-dnf install yum install qemu-guest-agent
+    yum install qemu-guest-agent
     # unblock needed modules
-vim /etc/sysconfig/qemu-ga
+    vim /etc/sysconfig/qemu-ga
     # comment BLACKLIST_RPC and save (:wa)
     # 
-# ensure qemu agent is running
-systemctl enable qemu-guest-agent
-systemctl status qemu-guest-agent
-# you should see that service is active(running)
-# install rsync
-yum install rsync
+    # ensure qemu agent is running
+    systemctl enable qemu-guest-agent
+    systemctl status qemu-guest-agent
+    # you should see that service is active(running)
+    # install rsync
+    yum install rsync
 
-# set selinux into permissive mode
-vi /etc/selinux/config
+    # set selinux into permissive mode
+    vi /etc/selinux/config
+    
+    # for centos6 fix can't shutdown bug when eth0 interface can't up
+    rm /etc/udev/rules.d/70-persistent-net.rules
 
 # ensure python pip installed
 yum install python-pip
