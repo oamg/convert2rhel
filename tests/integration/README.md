@@ -53,6 +53,11 @@ yum install rsync
 
 # set selinux into permissive mode
 vi /etc/selinux/config
+
+# ensure python pip installed
+yum install python-pip
+# for centos/oracle8
+dnf install python3-pip
 # edit the config by setting permissive mode to selinux and save
 # now shutdown the vm
 shutdown now
