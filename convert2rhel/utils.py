@@ -114,7 +114,7 @@ def store_content_to_file(filename, content):
 def restart_system():
     from convert2rhel.toolopts import tool_opts
     if tool_opts.restart:
-        run_subprocess("reboot")
+        run_subprocess("shutdown -r now")
     else:
         loggerinst.warning("In order to boot the RHEL kernel,"
                            " restart of the system is needed.")
