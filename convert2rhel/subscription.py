@@ -89,8 +89,12 @@ def register_system():
     attempt = 0
     while True and attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
         registration_cmd = get_registration_cmd()
-        loggerinst.info("Attempt %s of %s: Registering system by running subscription-manager"
-                        " command ... ", attempt+1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
+
+        attempt_msg = ""
+        if attempt > 0:
+            attempt_msg = "Attempt %d of %d: " % (attempt + 1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
+        loggerinst.info("%sRegistering the system using subscription-manager ...", attempt_msg)
+
         ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
             return
@@ -122,8 +126,11 @@ def get_registration_cmd():
         registration_cmd += " --activationkey=%s" % tool_opts.activation_key
     else:
         # No activation key -> username/password required
-        loggerinst.info("    ... activation key not found, username and"
-                        " password required")
+        if tool_opts.username and tool_opts.password:
+            loggerinst.info("    ... activation key not found, using given username and password")
+        else:
+            loggerinst.info("    ... activation key not found, username and password required")
+
         if tool_opts.username:
             loggerinst.info("    ... username detected")
             username = tool_opts.username
