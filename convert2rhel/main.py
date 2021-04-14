@@ -48,16 +48,15 @@ class ConversionPhase(object):
 def main():
     """Perform all steps for the entire conversion process."""
 
-    # handle command line arguments
-    toolopts.CLI()
-
     # the tool will not run if not executed under the root user
     utils.require_root()
 
     process_phase = ConversionPhase.INIT
     # initialize logging
     logger.initialize_logger("convert2rhel.log")
-    # get module level logger (inherits from root logger)
+
+    # handle command line arguments
+    toolopts.CLI()
 
     try:
         process_phase = ConversionPhase.POST_CLI
