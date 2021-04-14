@@ -142,11 +142,11 @@ class CLI(object):
                                         " subscriptions. A list of the available"
                                         " subscriptions is possible to obtain by running"
                                         " 'subscription-manager list --available'.")
-        if any(x in sys.argv[1:] for x in ['--variant', '-v']):
-            group.add_option("-v", "--variant", help="The RHEL variant option is not processed anymore. In case of"
-                                                     " using subscription-manager, the system is converted to a Server"
-                                                     " variant. In case of using custom repositories, the system is"
-                                                     " converted to the variant provided by these repositories.")
+        group.add_option("-v", "--variant", help="This option is not supported anymore and has no effect. When"
+                                                 " converting a system to RHEL 6 or 7 using subscription-manager,"
+                                                 " the system is now always converted to the Server variant. In case"
+                                                 " of using custom repositories, the system is converted to the variant"
+                                                 " provided by these repositories.")
         group.add_option("--serverurl", help="Use a custom Red Hat Subscription"
                                              " Manager server URL to register the system with. If"
                                              " not provided, the subscription-manager defaults will be"
@@ -179,6 +179,8 @@ class CLI(object):
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
+        warn_on_unsupported_options()
+
         parsed_opts, _ = self._parser.parse_args()
 
         global tool_opts  # pylint: disable=C0103
@@ -220,10 +222,6 @@ class CLI(object):
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool
 
-        if any(x in sys.argv[1:] for x in ['--variant', '-v']):
-            loggerinst.warning("The --variant option is not supported anymore.")
-            utils.ask_to_continue()
-
         if parsed_opts.serverurl:
             if parsed_opts.disable_submgr:
                 loggerinst.warn("Ignoring the --serverurl option. It has no effect when --disable-submgr is used.")
@@ -242,6 +240,13 @@ class CLI(object):
 
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True
+
+
+def warn_on_unsupported_options():
+    if any(x in sys.argv[1:] for x in ['--variant', '-v']):
+        loggerinst.warning("The -v|--variant option is not supported anymore and has no effect.\n"
+                            "See help (convert2rhel -h) for more information.")
+        utils.ask_to_continue()
 
 
 # Code to be executed upon module import
