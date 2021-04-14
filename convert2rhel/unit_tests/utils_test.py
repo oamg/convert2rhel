@@ -23,7 +23,7 @@ import unittest
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests import is_rpm_based_os, GetLoggerMocked, GetFileContentMocked
+from convert2rhel.unit_tests import is_rpm_based_os
 
 
 class TestUtils(unittest.TestCase):
@@ -229,28 +229,3 @@ class TestUtils(unittest.TestCase):
 
     def test_is_rpm_based_os(self):
         assert is_rpm_based_os() in (True, False)
-
-    @unit_tests.mock(utils, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "get_file_content",
-                     GetFileContentMocked(data=['sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0',
-                                                'mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0',
-                                                'cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0']))
-    def test_mounted_are_readwrite(self):
-        utils.check_readonly_mounts()
-        self.assertEqual(len(utils.loggerinst.critical_msgs), 0)
-        self.assertEqual(len(utils.loggerinst.debug_msgs), 2)
-        self.assertTrue("/mnt mount point is not read-only." in utils.loggerinst.debug_msgs)
-        self.assertTrue("/sys mount point is not read-only." in utils.loggerinst.debug_msgs)
-
-    @unit_tests.mock(utils, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "get_file_content",
-                     GetFileContentMocked(data=['sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0',
-                                                'mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0',
-                                                'cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0']))
-    def test_mounted_are_readonly(self):
-        self.assertRaises(SystemExit, utils.check_readonly_mounts)
-        self.assertEqual(len(utils.loggerinst.critical_msgs), 1)
-        self.assertTrue(
-            "Stopping conversion due to read-only mount to /mnt directory" in utils.loggerinst.critical_msgs[0])
-        self.assertTrue(
-            "Stopping conversion due to read-only mount to /sys directory" not in utils.loggerinst.critical_msgs[0])

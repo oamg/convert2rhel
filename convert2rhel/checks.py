@@ -23,8 +23,7 @@ import re
 import subprocess
 
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import run_subprocess
-
+from convert2rhel.utils import run_subprocess, get_file_content
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +36,7 @@ def perform_pre_checks():
     """Early checks after system facts should be added here."""
     check_uefi()
     check_tainted_kmods()
+    check_readonly_mounts()
 
 
 def check_uefi():
@@ -76,6 +76,34 @@ def check_tainted_kmods():
             LINK_KMODS_RH_POLICY,
             module_names,
         )
+
+
+def check_readonly_mounts():
+    """
+    Mounting directly to /mnt/ is not in line with Unix FS (https://en.wikipedia.org/wiki/Unix_filesystem).
+    Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
+    fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
+    """
+    logger.task("Convert: Checking /mnt and /sys are read-write")
+
+    mounts = get_file_content("/proc/mounts", as_list=True)
+    for line in mounts:
+        _, mount_point, _, flags, _, _ = line.split()
+        flags = flags.split(",")
+        if mount_point not in ("/mnt", "/sys"):
+            continue
+        if "ro" in flags:
+            if mount_point == "/mnt":
+                logger.critical(
+                    "Stopping conversion due to read-only mount to /mnt directory.\n"
+                    "Mount at a subdirectory of /mnt to have /mnt writeable."
+                )
+            else:  # /sys
+                logger.critical(
+                    "Stopping conversion due to read-only mount to /sys directory.\n"
+                    "Ensure mount point is writable before executing convert2rhel."
+                )
+        logger.debug("%s mount point is not read-only." % mount_point)
 
 
 def perform_pre_ponr_checks():
@@ -135,8 +163,7 @@ def get_installed_kmods():
         logger.critical("Can't get list of kernel modules.")
     else:
         return set(
-            _get_kmod_comparison_key(path)
-            for path in kmod_str.rstrip("\n").split()
+            _get_kmod_comparison_key(path) for path in kmod_str.rstrip("\n").split()
         )
 
 
@@ -185,9 +212,7 @@ def get_rhel_supported_kmods():
         print_output=False,
     )
     # from these packages we select only the latest one
-    kmod_pkgs = get_most_recent_unique_kernel_pkgs(
-        kmod_pkgs_str.rstrip("\n").split()
-    )
+    kmod_pkgs = get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
     # querying obtained packages for files they produces
     rhel_kmods_str, _ = run_subprocess(
         (
@@ -292,8 +317,4 @@ def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
 
     Ignore certain kmods mentioned in the system configs. These kernel modules moved to kernel core, meaning that the
     functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL."""
-    return (
-        host_kmods
-        - rhel_supported_kmods
-        - set(system_info.kmods_to_ignore)
-    )
+    return host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)

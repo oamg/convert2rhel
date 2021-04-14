@@ -267,8 +267,7 @@ def log_traceback(debug):
 def get_traceback_str():
     """Get a traceback of an exception as a string."""
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    return "".join(traceback.format_exception(exc_type, exc_value,
-                                              exc_traceback))
+    return "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
 
 class DictWListValues(dict):
@@ -480,7 +479,6 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
 
 
 class RestorableFile(object):
-
     def __init__(self, filepath):
         self.filepath = filepath
 
@@ -529,7 +527,6 @@ class RestorableFile(object):
 
 
 class RestorablePackage(object):
-
     def __init__(self, pkgname):
         self.name = pkgname
         self.path = None
@@ -543,28 +540,6 @@ class RestorablePackage(object):
             self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
-
-
-def check_readonly_mounts():
-    """
-    Mounting directly to /mnt/ is not in line with Unix FS (https://en.wikipedia.org/wiki/Unix_filesystem).
-    Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
-    fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
-    """
-    mounts = get_file_content('/proc/mounts', as_list=True)
-    for line in mounts:
-        _, mount_point, _, flags, _, _ = line.split()
-        flags = flags.split(',')
-        if mount_point not in ('/mnt', '/sys'):
-            continue
-        if 'ro' in flags:
-            if mount_point == '/mnt':
-                loggerinst.critical("Stopping conversion due to read-only mount to /mnt directory.\n"
-                                    "Mount at a subdirectory of /mnt to have /mnt writeable.")
-            else:  # /sys
-                loggerinst.critical("Stopping conversion due to read-only mount to /sys directory.\n"
-                                    "Ensure mount point is writable before executing convert2rhel.")
-        loggerinst.debug("%s mount point is not read-only." % mount_point)
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
