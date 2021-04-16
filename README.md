@@ -1,10 +1,10 @@
-# convert2rhel
+# Convert2RHEL
 
 ## Usage
-For details about this tool, consult one of the following sources:
+For details about the utility and its usage, consult one of the following sources:
 
-1. [Red Hat Knowledgebase article](https://access.redhat.com/articles/2360841)
-1. Run `man convert2rhel` once the tool is installed on your system
+1. [Converting from an RPM-based Linux distribution to RHEL](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index)
+1. Run `man convert2rhel` once the utility is installed on your system
 
 ## Contributing
 Contributions are welcome. Take a look at [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to get started.
@@ -14,4 +14,4 @@ Contributions are welcome. Take a look at [CONTRIBUTING.md](CONTRIBUTING.md) for
 For questions, troubleshooting, bug reports and feature requests:
 
 * create [an issue](https://github.com/oamg/convert2rhel/issues/new) here on GitHub,
-* file a bugzilla: [Fedora EPEL product - convert2rhel component](https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora%20EPEL&component=convert2rhel)
+* ask a question through [GitHub Discussions](https://github.com/oamg/convert2rhel/discussions)
