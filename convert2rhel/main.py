@@ -103,6 +103,9 @@ def main():
         loggerinst.task("Final: rpm files modified by the conversion")
         systeminfo.system_info.modified_rpm_files_diff()
 
+        loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
+        utils.remove_tmp_dir()
+
         loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
