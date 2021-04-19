@@ -24,7 +24,7 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import unit_tests, checks  # Imports unit_tests/__init__.py
 from convert2rhel import (
     cert,
     main,
@@ -161,7 +161,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    @unit_tests.mock(utils, "check_readonly_mounts", GetFakeFunctionMocked)
+    @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -207,7 +207,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    @unit_tests.mock(utils, "check_readonly_mounts", GetFakeFunctionMocked)
+    @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
