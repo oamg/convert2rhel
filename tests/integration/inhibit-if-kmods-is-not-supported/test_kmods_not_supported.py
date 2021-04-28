@@ -26,6 +26,7 @@ def test_good_convertion(shell):
             )
         ]
     )
+    shell("subscription-manager unregister")
     assert convertion.returncode == 0
 
 
@@ -74,6 +75,7 @@ def test_bad_convertion(shell, insert_custom_kmod):
             )
         ]
     )
+    shell("subscription-manager unregister")
     assert convertion.returncode == 1
 
 
@@ -97,4 +99,5 @@ def test_skip_kmod_check(shell, insert_custom_kmod):
             )
         ]
     )
+    shell("subscription-manager unregister")
     assert convertion.returncode == 0
