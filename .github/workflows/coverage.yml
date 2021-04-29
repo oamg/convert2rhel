@@ -31,4 +31,4 @@ jobs:
           tags: centos${{ matrix.centos_ver }}
       - name: Run command
         run: |
-          docker run centos${{ matrix.centos_ver }} pytest --cov=convert2rhel
+          docker run centos${{ matrix.centos_ver }} pytest --cov

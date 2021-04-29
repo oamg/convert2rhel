@@ -21,8 +21,9 @@ import os
 import re
 
 from convert2rhel import utils
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
+
 
 loggerinst = logging.getLogger(__name__)
 
@@ -54,8 +55,7 @@ def get_system_release_content():
     try:
         return utils.get_file_content(filepath)
     except EnvironmentError as err:
-        loggerinst.critical("%s\n%s file is essential for running this tool."
-                            % (err, filepath))
+        loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
 class YumConf(object):
@@ -75,14 +75,11 @@ class YumConf(object):
         return
 
     def _comment_out_distroverpkg_tag(self):
-        if re.search(r'^distroverpkg=', self._yum_conf_content, re.MULTILINE):
-            self._yum_conf_content = re.sub(
-                r"\n(distroverpkg=).*",
-                r"\n#\1",
-                self._yum_conf_content)
+        if re.search(r"^distroverpkg=", self._yum_conf_content, re.MULTILINE):
+            self._yum_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._yum_conf_content)
 
     def _write_altered_yum_conf(self):
-        file_to_write = open(self._yum_conf_path, 'w')
+        file_to_write = open(self._yum_conf_path, "w")
         try:
             file_to_write.write(self._yum_conf_content)
         finally:

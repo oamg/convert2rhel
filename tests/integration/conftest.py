@@ -30,13 +30,12 @@ def shell(tmp_path):
             color="green",
         )
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = ''
-        for line in iter(process.stdout.readline, b''):
+        output = ""
+        for line in iter(process.stdout.readline, b""):
             output += line.decode()
-            click.echo(line.decode().rstrip('\n'))
+            click.echo(line.decode().rstrip("\n"))
         returncode = process.wait()
-        return namedtuple('Result', ['returncode', 'output'])(returncode, output)
-
+        return namedtuple("Result", ["returncode", "output"])(returncode, output)
 
     return factory
 

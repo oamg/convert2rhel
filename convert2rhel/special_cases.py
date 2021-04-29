@@ -34,9 +34,7 @@ def perform_java_openjdk_workaround():
         try:
             mkdir_p(OPENJDK_RPM_STATE_DIR)
         except OSError:
-            logger.warning(
-                "Unable to create the %s directory." % OPENJDK_RPM_STATE_DIR
-            )
+            logger.warning("Unable to create the %s directory." % OPENJDK_RPM_STATE_DIR)
         else:
             logger.info("openjdk workaround applied successfully.")
     else:

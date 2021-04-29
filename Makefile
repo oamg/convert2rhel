@@ -16,15 +16,20 @@ IMAGE ?= convert2rhel
 PYTHON ?= python3
 PIP ?= pip3
 VENV ?= .venv3
+PRE_COMMIT ?= pre-commit
 
 all: clean images tests
 
-install: .install .images .env .ansible
+install: .install .images .env .ansible .pre-commit
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
 	$(PIP) install --upgrade -r ./requirements/local.centos8.requirements.txt; \
+	touch $@
+
+.pre-commit:
+	$(PRE_COMMIT) install --install-hooks
 	touch $@
 
 .env:

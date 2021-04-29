@@ -3,11 +3,7 @@ import sys
 import pytest
 
 from convert2rhel import special_cases
-from convert2rhel.special_cases import (
-    OPENJDK_RPM_STATE_DIR,
-    check_and_resolve,
-    perform_java_openjdk_workaround,
-)
+from convert2rhel.special_cases import OPENJDK_RPM_STATE_DIR, check_and_resolve, perform_java_openjdk_workaround
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -54,11 +50,7 @@ def test_perform_java_openjdk_workaround(
     monkeypatch,
     caplog,
 ):
-    mkdir_p_mocked = (
-        mock.Mock(side_effect=mkdir_p_should_raise())
-        if mkdir_p_should_raise
-        else mock.Mock()
-    )
+    mkdir_p_mocked = mock.Mock(side_effect=mkdir_p_should_raise()) if mkdir_p_should_raise else mock.Mock()
     has_rpm_mocked = mock.Mock(return_value=has_openjdk)
 
     monkeypatch.setattr(

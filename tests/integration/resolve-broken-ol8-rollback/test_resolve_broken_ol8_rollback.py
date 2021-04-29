@@ -13,14 +13,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
     # run c2r until subscribing the system and then emulate pressing Ctrl + C
     with convert2rhel(
-        (
-            "--serverurl {} "
-            "--username {} "
-            "--password {} "
-            "--pool {} "
-            "--debug "
-            "--no-rpm-va"
-        ).format(
+        ("--serverurl {} " "--username {} " "--password {} " "--pool {} " "--debug " "--no-rpm-va").format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

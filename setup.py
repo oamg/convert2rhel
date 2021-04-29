@@ -27,6 +27,7 @@ from man.build_manpage import build_manpage
 def read(fname):
     return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
 
+
 def get_version():
     version_source = "convert2rhel/__init__.py"
     with open(version_source) as f:
@@ -48,21 +49,21 @@ def get_version():
 
 
 setup(
-    name='convert2rhel',
+    name="convert2rhel",
     version=get_version(),
-    description='Automates the conversion of Red Hat Enterprise Linux'
-                ' derivative distributions to Red Hat Enterprise Linux.',
-    long_description=read('README.md'),
-    author='Michal Bocek',
-    author_email='mbocek@redhat.com',
-    url='www.redhat.com',
-    license='GNU General Public License v3 or later (GPLv3+)',
-    packages=['convert2rhel'],
+    description="Automates the conversion of Red Hat Enterprise Linux"
+    " derivative distributions to Red Hat Enterprise Linux.",
+    long_description=read("README.md"),
+    author="Michal Bocek",
+    author_email="mbocek@redhat.com",
+    url="www.redhat.com",
+    license="GNU General Public License v3 or later (GPLv3+)",
+    packages=["convert2rhel"],
     entry_points={
-        'console_scripts': [
-            'convert2rhel = convert2rhel.main:main',
+        "console_scripts": [
+            "convert2rhel = convert2rhel.main:main",
         ]
     },
-    cmdclass={'build_manpage': build_manpage},
-    include_package_data=True
+    cmdclass={"build_manpage": build_manpage},
+    include_package_data=True,
 )

@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from collections import namedtuple
 import glob
 import unittest
+
+from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import redhatrelease, utils
@@ -35,10 +36,12 @@ class TestRedHatRelease(unittest.TestCase):
 
     class GlobMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
-                    unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
-                    "Server/redhat-release-7/pkg1.rpm",
-                    "Server/redhat-release-7/pkg2.rpm"]
+            return [
+                unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
+                unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
+                "Server/redhat-release-7/pkg1.rpm",
+                "Server/redhat-release-7/pkg2.rpm",
+            ]
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self):

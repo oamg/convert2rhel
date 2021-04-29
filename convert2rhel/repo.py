@@ -30,9 +30,10 @@ def get_rhel_repoids():
     """Get IDs of the Red Hat CDN repositories that correspond to the current system."""
     repos_needed = system_info.default_rhsm_repoids
 
-    loggerinst.info("RHEL repository IDs to enable: %s" % ', '.join(repos_needed))
+    loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
     return repos_needed
+
 
 def backup_yum_repos():
     """Backup .repo files in /etc/yum.repos.d/ so the repositories
@@ -49,6 +50,7 @@ def backup_yum_repos():
     if not repo_files_backed_up:
         loggerinst.info("No .repo files backed up.")
     return
+
 
 def restore_yum_repos():
     """Rollback all .repo files in /etc/yum.repos.d/ that were

@@ -27,7 +27,6 @@ from convert2rhel import utils
 
 
 class TestExample(unittest.TestCase):
-
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             """

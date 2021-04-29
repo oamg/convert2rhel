@@ -21,30 +21,33 @@ import getpass
 import inspect
 import logging
 import os
-import pexpect
 import re
-import rpm
 import shlex
 import shutil
 import subprocess
 import sys
 import traceback
+
+import pexpect
+import rpm
+
 from six import moves
 
 
 loggerinst = logging.getLogger(__name__)
 
+
 class Color(object):
-    PURPLE = '\033[95m'
-    CYAN = '\033[96m'
-    DARKCYAN = '\033[36m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    END = '\033[0m'
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    DARKCYAN = "\033[36m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    END = "\033[0m"
 
 
 # Absolute path of a directory holding data for this tool
@@ -114,11 +117,11 @@ def store_content_to_file(filename, content):
 
 def restart_system():
     from convert2rhel.toolopts import tool_opts
+
     if tool_opts.restart:
         run_subprocess("reboot")
     else:
-        loggerinst.warning("In order to boot the RHEL kernel,"
-                           " restart of the system is needed.")
+        loggerinst.warning("In order to boot the RHEL kernel," " restart of the system is needed.")
 
 
 def run_subprocess(cmd="", print_cmd=True, print_output=True):
@@ -134,16 +137,18 @@ def run_subprocess(cmd="", print_cmd=True, print_output=True):
     if sys.version_info[0] == 2 and sys.version_info[1] == 6:
         cmd = cmd.encode("ascii")
     cmd = shlex.split(cmd, False)
-    process = subprocess.Popen(cmd,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               bufsize=1,
-                               env={'LC_ALL': 'C'})
-    output = ''
-    for line in iter(process.stdout.readline, b''):
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+        env={"LC_ALL": "C"},
+    )
+    output = ""
+    for line in iter(process.stdout.readline, b""):
         output += line.decode()
         if print_output:
-            loggerinst.info(line.decode().rstrip('\n'))
+            loggerinst.info(line.decode().rstrip("\n"))
 
     # Call communicate() to wait for the process to terminate so that we can get the return code by poll().
     # It's just for py2.6, py2.7+/3 doesn't need this.
@@ -179,7 +184,7 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
         def setwinsize(self, rows, cols):
             super(PexpectSizedWindowSpawn, self).setwinsize(0, columns)
 
-    process = PexpectSizedWindowSpawn(cmd, env={'LC_ALL': 'C'}, timeout=None)
+    process = PexpectSizedWindowSpawn(cmd, env={"LC_ALL": "C"}, timeout=None)
 
     # The setting of window size is super unreliable
     process.setwinsize(0, columns)
@@ -188,7 +193,7 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
     process.expect(pexpect.EOF)
     output = process.before.decode()
     if print_output:
-        loggerinst.info(output.rstrip('\n'))
+        loggerinst.info(output.rstrip("\n"))
 
     process.close()  # Per the pexpect API, this is necessary in order to get the return code
     return_code = process.exitstatus
@@ -199,8 +204,7 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
 def let_user_choose_item(num_of_options, item_to_choose):
     """Ask user to enter a number corresponding to the item they choose."""
     while True:  # Loop until user enters a valid number
-        opt_num = prompt_user("Enter number of the chosen %s: "
-                              % item_to_choose)
+        opt_num = prompt_user("Enter number of the chosen %s: " % item_to_choose)
         try:
             opt_num = int(opt_num)
         except ValueError:
@@ -209,8 +213,7 @@ def let_user_choose_item(num_of_options, item_to_choose):
         if 0 < opt_num <= num_of_options:
             break
         else:
-            loggerinst.warning("The entered number is not in range"
-                               " 1 - %s." % num_of_options)
+            loggerinst.warning("The entered number is not in range" " 1 - %s." % num_of_options)
     return opt_num - 1  # Get zero-based list index
 
 
@@ -232,6 +235,7 @@ def ask_to_continue():
     execution of the tool is stopped.
     """
     from convert2rhel.toolopts import tool_opts
+
     if tool_opts.autoaccept:
         return
     while True:
@@ -313,8 +317,7 @@ class ChangedRPMPackagesController(object):
         pkgs_to_install = []
         for restorable_pkg in self.removed_pkgs:
             if restorable_pkg.path is None:
-                loggerinst.warning("Couldn't find a backup for %s package."
-                                   % restorable_pkg.name)
+                loggerinst.warning("Couldn't find a backup for %s package." % restorable_pkg.name)
                 continue
             pkgs_to_install.append(restorable_pkg.path)
 
@@ -332,8 +335,10 @@ def remove_orphan_folders():
     still present, are empty, and that blocks us from installing centos-release
     pkg back. So, by now, we are removing them manually.
     """
-    rh_release_paths = ['/usr/share/redhat-release',
-                        '/usr/share/doc/redhat-release']
+    rh_release_paths = [
+        "/usr/share/redhat-release",
+        "/usr/share/doc/redhat-release",
+    ]
 
     def is_dir_empty(path):
         return not os.listdir(path)
@@ -402,12 +407,26 @@ def install_local_rpms(pkgs_to_install, replace=False, critical=True):
     return True
 
 
-def download_pkgs(pkgs, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
+def download_pkgs(
+    pkgs,
+    dest=TMP_DIR,
+    reposdir=None,
+    enable_repos=None,
+    disable_repos=None,
+    set_releasever=True,
+):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
     return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
 
 
-def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_repos=None, set_releasever=True):
+def download_pkg(
+    pkg,
+    dest=TMP_DIR,
+    reposdir=None,
+    enable_repos=None,
+    disable_repos=None,
+    set_releasever=True,
+):
     """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
 
     The enable_repos and disable_repos function parameters accept lists. If used, the repos are passed to the
@@ -416,6 +435,7 @@ def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_re
     Pass just a single rpm name as a string to the pkg parameter.
     """
     from convert2rhel.systeminfo import system_info
+
     loggerinst.debug("Downloading the %s package." % pkg)
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
@@ -441,8 +461,10 @@ def download_pkg(pkg, dest=TMP_DIR, reposdir=None, enable_repos=None, disable_re
 
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning("Couldn't download the %s package using yumdownloader.\n"
-                           "Output from the yumdownloader call:\n%s" % (pkg, output))
+        loggerinst.warning(
+            "Couldn't download the %s package using yumdownloader.\n"
+            "Output from the yumdownloader call:\n%s" % (pkg, output)
+        )
         return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
@@ -476,8 +498,10 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
     elif pkg_nevra_match:
         path = os.path.join(dest, pkg_nevra_match.group(1) + ".rpm")
     else:
-        loggerinst.warning("Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
-                           "Command:\n%s\nOutput:\n%s" % (cmd, output))
+        loggerinst.warning(
+            "Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
+            "Command:\n%s\nOutput:\n%s" % (cmd, output)
+        )
         return None
 
     return path
@@ -488,22 +512,20 @@ class RestorableFile(object):
         self.filepath = filepath
 
     def backup(self):
-        """ Save current version of a file """
+        """Save current version of a file"""
         loggerinst.info("Backing up %s" % self.filepath)
         if os.path.isfile(self.filepath):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, BACKUP_DIR))
                 shutil.copy2(self.filepath, BACKUP_DIR)
             except IOError as err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno,
-                                                           err.strerror))
+                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
         else:
             loggerinst.info("Can't find %s", self.filepath)
 
     def restore(self):
-        """ Restore a previously backed up file """
-        backup_filepath = os.path.join(BACKUP_DIR,
-                                       os.path.basename(self.filepath))
+        """Restore a previously backed up file"""
+        backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
 
         if not os.path.isfile(backup_filepath):
@@ -514,21 +536,18 @@ class RestorableFile(object):
         except IOError as err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
-            loggerinst.warning("I/O error(%s): %s" % (err.errno,
-                                                      err.strerror))
+            loggerinst.warning("I/O error(%s): %s" % (err.errno, err.strerror))
             return
         loggerinst.info("File %s restored" % self.filepath)
 
     def remove(self):
-        """ Remove a previously backed up file """
+        """Remove a previously backed up file"""
         if os.path.isfile(self.filepath):
-            loggerinst.warning("Removing %s saved during previous run of"
-                               " convert2rhel" % self.filepath)
+            loggerinst.warning("Removing %s saved during previous run of" " convert2rhel" % self.filepath)
             try:
                 os.remove(self.filepath)
             except IOError as err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno,
-                                                           err.strerror))
+                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
 
 
 class RestorablePackage(object):
@@ -537,7 +556,7 @@ class RestorablePackage(object):
         self.path = None
 
     def backup(self):
-        """ Save version of RPM package """
+        """Save version of RPM package"""
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
             # When backing up the packages, the original system repofiles are still available and for them we can't

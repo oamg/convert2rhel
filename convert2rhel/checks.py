@@ -22,10 +22,7 @@ import os
 import re
 import subprocess
 
-from convert2rhel.pkghandler import (
-    get_installed_pkg_objects,
-    get_pkg_fingerprint,
-)
+from convert2rhel.pkghandler import get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import get_file_content, run_subprocess
 
@@ -77,9 +74,7 @@ def check_tainted_kmods():
         system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<< Tainted
     """
     unsigned_modules, _ = run_subprocess("grep '(' /proc/modules")
-    module_names = "\n  ".join(
-        [mod.split(" ")[0] for mod in unsigned_modules.splitlines()]
-    )
+    module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
         logger.critical(
             "Tainted kernel module(s) detected. "
@@ -134,9 +129,7 @@ def ensure_compatibility_of_kmods():
         kernel_version = run_subprocess("uname -r")[0].rstrip("\n")
         not_supported_kmods = "\n".join(
             map(
-                lambda kmod: "/lib/modules/{kver}/{kmod}".format(
-                    kver=kernel_version, kmod=kmod
-                ),
+                lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=kernel_version, kmod=kmod),
                 unsupported_kmods,
             )
         )
@@ -166,9 +159,7 @@ def get_installed_kmods():
         kernel_version, exit_code = run_subprocess("uname -r")
         assert exit_code == 0
         kmod_str, exit_code = run_subprocess(
-            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(
-                kver=kernel_version.rstrip("\n")
-            ),
+            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(kver=kernel_version.rstrip("\n")),
             print_output=False,
         )
         assert exit_code == 0
@@ -176,10 +167,7 @@ def get_installed_kmods():
     except (subprocess.CalledProcessError, AssertionError):
         logger.critical("Can't get list of kernel modules.")
     else:
-        return set(
-            _get_kmod_comparison_key(path)
-            for path in kmod_str.rstrip("\n").split()
-        )
+        return set(_get_kmod_comparison_key(path) for path in kmod_str.rstrip("\n").split())
 
 
 def _get_kmod_comparison_key(path):
@@ -200,26 +188,14 @@ def _get_kmod_comparison_key(path):
 
 def get_rhel_supported_kmods():
     """Return set of target RHEL supported kernel modules."""
-    repoquery_repoids_args = " ".join(
-        "--repoid " + repoid for repoid in system_info.get_enabled_rhel_repos()
-    )
+    repoquery_repoids_args = " ".join("--repoid " + repoid for repoid in system_info.get_enabled_rhel_repos())
     # Without the release package installed, dnf can't determine the modularity
     #   platform ID.
-    setopt_arg = (
-        "--setopt=module_platform_id=platform:el8"
-        if system_info.version.major == 8
-        else ""
-    )
+    setopt_arg = "--setopt=module_platform_id=platform:el8" if system_info.version.major == 8 else ""
     # get output of a command to get all packages which are the source
     # of kmods
     kmod_pkgs_str, _ = run_subprocess(
-        (
-            "repoquery "
-            "--releasever={releasever} "
-            "{setopt_arg} "
-            "{repoids_args} "
-            "-f /lib/modules/*.ko*"
-        ).format(
+        ("repoquery " "--releasever={releasever} " "{setopt_arg} " "{repoids_args} " "-f /lib/modules/*.ko*").format(
             releasever=system_info.releasever,
             setopt_arg=setopt_arg,
             repoids_args=repoquery_repoids_args,
@@ -227,18 +203,10 @@ def get_rhel_supported_kmods():
         print_output=False,
     )
     # from these packages we select only the latest one
-    kmod_pkgs = get_most_recent_unique_kernel_pkgs(
-        kmod_pkgs_str.rstrip("\n").split()
-    )
+    kmod_pkgs = get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
     # querying obtained packages for files they produces
     rhel_kmods_str, _ = run_subprocess(
-        (
-            "repoquery "
-            "--releasever={releasever} "
-            "{setopt_arg} "
-            "{repoids_args} "
-            "-l {pkgs}"
-        ).format(
+        ("repoquery " "--releasever={releasever} " "{setopt_arg} " "{repoids_args} " "-l {pkgs}").format(
             releasever=system_info.releasever,
             setopt_arg=setopt_arg,
             repoids_args=repoquery_repoids_args,
@@ -285,9 +253,7 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
         ]
     """
 
-    pkgs_groups = itertools.groupby(
-        sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0]
-    )
+    pkgs_groups = itertools.groupby(sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0])
     return (
         max(distinct_kernel_pkgs[1], key=_repos_version_key)
         for distinct_kernel_pkgs in pkgs_groups
@@ -345,11 +311,7 @@ def check_rhel_compatible_kernel_is_used():
     """
     logger.task("Prepare: Check kernel compatibility with RHEL")
     kernel_release = run_subprocess("uname -r", print_output=False)[0].rstrip()
-    logger.debug(
-        "Booted kernel VRA (version, release, architecture): {0}".format(
-            kernel_release
-        )
-    )
+    logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_release))
     if any(
         (
             _bad_kernel_version(kernel_release),
@@ -366,9 +328,7 @@ def check_rhel_compatible_kernel_is_used():
             "3. (optional) Run: grubby --set-default "
             '/boot/vmlinuz-`rpm -q --qf "%{{EVR}}.%{{ARCH}}\\n" kernel | sort -r | head -n 1`\n'
             "4. Reboot the machine and if step 3 was not applied choose the kernel"
-            " installed in step 2 manually".format(
-                system_info.name, system_info.version.major
-            )
+            " installed in step 2 manually".format(system_info.name, system_info.version.major)
         )
     else:
         logger.debug("Kernel is compatible with RHEL")
@@ -378,10 +338,7 @@ def _bad_kernel_version(kernel_release):
     """Return True if the booted kernel version does not correspond to the kernel version available in RHEL."""
     kernel_version = kernel_release.split("-")[0]
     try:
-        incompatible_version = (
-            COMPATIBLE_KERNELS_VERS[system_info.version.major]
-            != kernel_version
-        )
+        incompatible_version = COMPATIBLE_KERNELS_VERS[system_info.version.major] != kernel_version
         if incompatible_version:
             logger.warning(
                 "Booted kernel version '%s' does not correspond to the version "
@@ -399,35 +356,24 @@ def _bad_kernel_version(kernel_release):
             )
         return incompatible_version
     except KeyError:
-        logger.debug(
-            "Unexpected OS major version. Expected: %r"
-            % COMPATIBLE_KERNELS_VERS.keys()
-        )
+        logger.debug("Unexpected OS major version. Expected: %r" % COMPATIBLE_KERNELS_VERS.keys())
         return True
 
 
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     kernel_pkg = run_subprocess(
-        'rpm -qf --qf "%{{NAME}}" /boot/vmlinuz-{kernel_release}'.format(
-            kernel_release=kernel_release
-        ),
+        'rpm -qf --qf "%{{NAME}}" /boot/vmlinuz-{kernel_release}'.format(kernel_release=kernel_release),
         print_output=False,
     )[0]
     logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
     kernel_pkg_obj = get_installed_pkg_objects(kernel_pkg)[0]
     kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
-    bad_signature = (
-        system_info.cfg_content["gpg_fingerprints"]
-        != kernel_pkg_gpg_fingerprint
-    )
+    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
     # e.g. Oracle Linux Server -> Oracle
     os_vendor = system_info.name.split()[0]
     if bad_signature:
-        logger.warning(
-            "Custom kernel detected. "
-            "The booted kernel needs to be signed by %s." % os_vendor
-        )
+        logger.warning("Custom kernel detected. " "The booted kernel needs to be signed by %s." % os_vendor)
         return True
     logger.debug("The booted kernel is signed by %s." % os_vendor)
     return False
@@ -435,16 +381,11 @@ def _bad_kernel_package_signature(kernel_release):
 
 def _bad_kernel_substring(kernel_release):
     """Return True if the booted kernel release contains one of the strings that identify it as non-standard kernel."""
-    bad_substring = any(
-        bad_substring in kernel_release
-        for bad_substring in BAD_KERNEL_RELEASE_SUBSTRINGS
-    )
+    bad_substring = any(bad_substring in kernel_release for bad_substring in BAD_KERNEL_RELEASE_SUBSTRINGS)
     if bad_substring:
         logger.debug(
             "The booted kernel '{0}' contains one of the disallowed "
-            "substrings: {1}".format(
-                kernel_release, BAD_KERNEL_RELEASE_SUBSTRINGS
-            )
+            "substrings: {1}".format(kernel_release, BAD_KERNEL_RELEASE_SUBSTRINGS)
         )
         return True
     return False

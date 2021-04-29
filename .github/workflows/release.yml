@@ -4,7 +4,7 @@ name: Build release RPMs
 on:
   release:
     types: [published]
-  
+
 jobs:
   build_el6_rpm:
     name: Build EL6 RPM
@@ -66,7 +66,7 @@ jobs:
         uses: bocekm/rpmbuild@el8
         with:
           spec_path: "packaging/convert2rhel.spec"
-        
+
       - name: Upload EL8 RPM as release asset
         id: upload_release_asset_el8
         uses: actions/upload-release-asset@v1

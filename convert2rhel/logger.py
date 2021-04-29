@@ -32,6 +32,7 @@ import sys
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import format_msg_with_datetime
 
+
 LOG_DIR = "/var/log/convert2rhel"
 
 
@@ -78,7 +79,7 @@ def initialize_logger(log_name, log_dir=LOG_DIR):
 
     # create file handler
     if not os.path.isdir(log_dir):
-        os.makedirs(log_dir)    # pragma: no cover
+        os.makedirs(log_dir)  # pragma: no cover
     handler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
     formatter = CustomFormatter("%(message)s")
     formatter.disable_colors(True)
@@ -110,19 +111,14 @@ def _debug(self, msg, *args, **kwargs):
         if tool_opts.debug:
             self._log(logging.DEBUG, msg, args, **kwargs)
         else:
-            self._log(
-                LogLevelFile.level,
-                format_msg_with_datetime(msg, "debug"),
-                args,
-                **kwargs
-            )
+            self._log(LogLevelFile.level, format_msg_with_datetime(msg, "debug"), args, **kwargs)
 
 
 class bcolors:
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
 
 
 class CustomFormatter(logging.Formatter, object):
@@ -132,6 +128,7 @@ class CustomFormatter(logging.Formatter, object):
         class and causes 'TypeError: super() argument 1 must be type, not
         classobj' so we use multiple inheritance to get around the problem.
     """
+
     color_disabled = False
 
     def disable_colors(self, value):
@@ -139,7 +136,7 @@ class CustomFormatter(logging.Formatter, object):
 
     def format(self, record):
         if record.levelno == LogLevelTask.level:
-            temp = '*' * (90 - len(record.msg) - 25)
+            temp = "*" * (90 - len(record.msg) - 25)
             fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
             new_fmt = fmt_orig if self.color_disabled else bcolors.OKGREEN + fmt_orig + bcolors.ENDC
             self._fmt = new_fmt
@@ -161,7 +158,7 @@ class CustomFormatter(logging.Formatter, object):
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
             self.datefmt = "%m/%d/%Y %H:%M:%S"
 
-        if hasattr(self, '_style'):
+        if hasattr(self, "_style"):
             # Python 3 has _style for formatter
             # Overwriting the style _fmt gets the result we want
             self._style._fmt = self._fmt
