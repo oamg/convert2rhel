@@ -45,7 +45,6 @@ clean:
 images: .images
 
 .images:
-	@docker build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)/centos6 .
 	@docker build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
 	@docker build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
 	@docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
@@ -53,8 +52,6 @@ images: .images
 	touch $@
 
 tests: images
-	@echo 'CentOS Linux 6 tests'
-	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
 	@echo 'CentOS Linux 7 tests'
 	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
 	@echo 'CentOS Linux 8 tests'
