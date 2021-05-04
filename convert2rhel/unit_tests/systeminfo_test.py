@@ -188,6 +188,7 @@ class TestSysteminfo(unittest.TestCase):
             "CentOS release 6.10 (Final)": Version(6, 10),
             "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
             "CentOS Linux release 8.1.1911 (Core)": Version(8, 1),
+            "CentOS Stream release 8": Version(8, systeminfo.MINOR_VERSION_UNAVAILABLE),
         }
         for system_release in versions:
             system_info.system_release_file_content = system_release

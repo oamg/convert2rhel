@@ -53,6 +53,8 @@ POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 EUS_MINOR_VERSIONS = ["8.4"]
 
 Version = namedtuple("Version", ["major", "minor"])
+# To indicate there's nothing like a minor version of a system, e.g. CentOS Stream 8
+MINOR_VERSION_UNAVAILABLE = -1
 
 
 class SystemInfo(object):
@@ -139,15 +141,20 @@ class SystemInfo(object):
         CentOS release 6.10 (Final)
         CentOS Linux release 7.6.1810 (Core)
         CentOS Linux release 8.1.1911 (Core)
+        CentOS Stream release 8
         """
-        match = re.search(r".+?(\d+)\.(\d+)\D?", self.system_release_file_content)
+        match = re.search(r".+?(\d+)\.?(\d+)?\D?", self.system_release_file_content)
         if not match:
             from convert2rhel import redhatrelease
 
             self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
-        version = Version(int(match.group(1)), int(match.group(2)))
+        minor_version = int(match.group(2)) if match.group(2) else MINOR_VERSION_UNAVAILABLE
+        version = Version(int(match.group(1)), minor_version)
 
-        self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
+        version_to_log = ("%d.%d" % (version.major, version.minor)
+                          if version.minor is not MINOR_VERSION_UNAVAILABLE
+                          else str(version.major))
+        self.logger.info("%-20s %s" % ("OS version:", version_to_log))
         return version
 
     def _get_architecture(self):

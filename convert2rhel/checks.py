@@ -283,7 +283,7 @@ def ensure_compatibility_of_kmods():
                 unsupported_kmods,
             )
         )
-        logger.critical(
+        logger.warning(
             (
                 "The following kernel modules are not supported in RHEL:\n{kmods}\n"
                 "Make sure you have updated the kernel to the latest available version and rebooted the system. "
