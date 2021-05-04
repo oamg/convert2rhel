@@ -250,8 +250,6 @@ def attach_subscription():
     interactively choose one.
     """
     # TODO: Support attaching multiple pool IDs.
-    # TODO: Support the scenario when the passed activation key attaches
-    #       all the appropriate subscriptions during registration already.
 
     if tool_opts.activation_key:
         loggerinst.info("Using the activation key provided through the command line...")
