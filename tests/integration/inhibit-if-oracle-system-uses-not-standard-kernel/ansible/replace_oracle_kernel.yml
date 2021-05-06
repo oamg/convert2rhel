@@ -1,0 +1,19 @@
+- hosts: all
+  vars:
+    # to be overridden by the tmt
+    repo_root:
+  tasks:
+    - name: Install standard kernel
+      yum:
+        name: kernel
+        state: present
+
+    - name: Get installed kernel version
+      shell: rpm -q --last kernel | head -1 |  gawk 'match($0, /kernel-(.+) \s+.+/, s) {print s[1]}'
+      register: kernel_ver
+
+    - name: Set default kernel to Red Hat compatible kernel
+      shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
+
+    - name: Reboot
+      reboot:

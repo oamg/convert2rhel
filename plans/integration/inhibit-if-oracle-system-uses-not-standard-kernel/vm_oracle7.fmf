@@ -1,0 +1,19 @@
+discover+:
+    filter+:
+        - 'tag: oracle7'
+provision:
+    how: libvirt
+    origin_vm_name: c2r_oracle7_template
+    develop: true
+
+/good:
+    discover+:
+        filter+:
+            - 'tag: good_test'
+    prepare+:
+        playbook+:
+            - tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/replace_oracle_kernel.yml
+/bad:
+    discover+:
+        filter+:
+            - 'tag: bad_test'
