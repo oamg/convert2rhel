@@ -94,14 +94,9 @@ ssh root@$(virsh domifaddr --domain c2r-vagrant_default | gawk 'match($0, /(192.
     # enable qemu-ga
     systemctl enable qemu-guest-agent
     
-    # install python pip
-    # for centos8 and ol8
+    # install python pip and rsync
+    yum install -y python3 rsync
     curl https://bootstrap.pypa.io/pip/get-pip.py | python3
-    # for centos7 and ol7
-    # curl https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
-    
-    # install rsync
-    yum install -y rsync
     
     # Remove installed version of convert2rhel
     yum remove convert2rhel -y
