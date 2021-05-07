@@ -48,5 +48,5 @@
 
     - name: Install pytest framework dependencies
       pip:
-        name: ["pytest", "pytest-cov", "envparse", "click"]
+        name: ["pytest", "pytest-cov", "envparse", "click", "pexpect"]
         executable: "/usr/local/bin/pip"

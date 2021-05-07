@@ -1,0 +1,8 @@
+summary: remove-excluded-pkgs
+tag+:
+  - centos8
+  - remove-excluded-pkgs
+
+/good:
+  test: |
+    pytest -svv
