@@ -23,9 +23,12 @@ BuildRequires:  python%{python_pkgversion}-setuptools
 BuildRequires:  python%{python_pkgversion}-six
 %if 0%{?rhel} && 0%{?el8}
 BuildRequires:  python3-pexpect
+# rpm is being imported through utils.py
+BuildRequires:  python3-rpm
 %endif
 %if 0%{?rhel} && 0%{?rhel} <= 7
 BuildRequires:  pexpect
+BuildRequires:  rpm-python
 %endif
 
 Requires:       rpm
