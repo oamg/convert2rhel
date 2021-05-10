@@ -1,6 +1,5 @@
 import subprocess
 import click
-import sys
 
 import pytest
 

@@ -19,21 +19,27 @@ import os
 import subprocess
 import sys
 
+from collections import namedtuple
+
 import pytest
 
 from convert2rhel import checks, unit_tests
 from convert2rhel.checks import (
+    _bad_kernel_package_signature,
+    _bad_kernel_substring,
+    _bad_kernel_version,
     _get_kmod_comparison_key,
+    check_rhel_compatible_kernel_is_used,
     check_tainted_kmods,
     ensure_compatibility_of_kmods,
     get_installed_kmods,
     get_most_recent_unique_kernel_pkgs,
     get_rhel_supported_kmods,
-    get_unsupported_kmods,
     perform_pre_checks,
     perform_pre_ponr_checks,
 )
-from convert2rhel.unit_tests import GetLoggerMocked, GetFileContentMocked
+from convert2rhel.pkghandler import get_pkg_fingerprint
+from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
 from convert2rhel.utils import run_subprocess
 
 
@@ -108,6 +114,7 @@ def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
     check_uefi_mock = mock.Mock()
     check_readonly_mounts_mock = mock.Mock()
+    check_rhel_compatible_kernel_is_used_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
         "check_uefi",
@@ -123,11 +130,18 @@ def test_perform_pre_checks(monkeypatch):
         "check_readonly_mounts",
         value=check_readonly_mounts_mock,
     )
+    monkeypatch.setattr(
+        checks,
+        "check_rhel_compatible_kernel_is_used",
+        value=check_rhel_compatible_kernel_is_used_mock,
+    )
 
     perform_pre_checks()
 
     check_thirdparty_kmods_mock.assert_called_once()
     check_uefi_mock.assert_called_once()
+    check_readonly_mounts_mock.assert_called_once()
+    check_rhel_compatible_kernel_is_used_mock.assert_called_once()
 
 
 def test_pre_ponr_checks(monkeypatch):
@@ -229,7 +243,9 @@ def test_ensure_compatibility_of_kmods_excluded(
     msg_not_in_logs,
     exception,
 ):
-    get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
+    get_unsupported_kmods_mocked = mock.Mock(
+        wraps=checks.get_unsupported_kmods
+    )
     run_subprocess_mock = mock.Mock(
         side_effect=_run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
@@ -277,7 +293,9 @@ def test_ensure_compatibility_of_kmods_excluded(
     if msg_in_logs:
         assert msg_in_logs in caplog.records[0].message
     if msg_not_in_logs:
-        assert all(msg_not_in_logs not in record.message for record in caplog.records)
+        assert all(
+            msg_not_in_logs not in record.message for record in caplog.records
+        )
 
 
 @pytest.mark.parametrize(
@@ -298,12 +316,16 @@ def test_ensure_compatibility_of_kmods_excluded(
             None,
         ),
         (
-            mock.Mock(side_effect=subprocess.CalledProcessError(returncode=1, cmd="")),
+            mock.Mock(
+                side_effect=subprocess.CalledProcessError(returncode=1, cmd="")
+            ),
             None,
         ),
     ),
 )
-def test_get_installed_kmods(tmpdir, monkeypatch, caplog, run_subprocess_mock, exp_res):
+def test_get_installed_kmods(
+    tmpdir, monkeypatch, caplog, run_subprocess_mock, exp_res
+):
     monkeypatch.setattr(
         checks,
         "run_subprocess",
@@ -314,7 +336,9 @@ def test_get_installed_kmods(tmpdir, monkeypatch, caplog, run_subprocess_mock, e
     else:
         with pytest.raises(SystemExit):
             get_installed_kmods()
-        assert "Can't get list of kernel modules." in caplog.records[-1].message
+        assert (
+            "Can't get list of kernel modules." in caplog.records[-1].message
+        )
 
 
 @pytest.mark.parametrize(
@@ -474,6 +498,119 @@ def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
         check_tainted_kmods()
 
 
+@pytest.mark.parametrize(
+    # i.e. _bad_kernel_version...
+    ("any_of_the_subchecks_is_true",),
+    (
+        (True,),
+        (False,),
+    ),
+)
+def test_check_rhel_compatible_kernel_is_used(
+    any_of_the_subchecks_is_true,
+    monkeypatch,
+    caplog,
+):
+    monkeypatch.setattr(
+        checks,
+        "_bad_kernel_version",
+        value=mock.Mock(return_value=any_of_the_subchecks_is_true),
+    )
+    monkeypatch.setattr(
+        checks,
+        "_bad_kernel_substring",
+        value=mock.Mock(return_value=False),
+    )
+    monkeypatch.setattr(
+        checks,
+        "_bad_kernel_package_signature",
+        value=mock.Mock(return_value=False),
+    )
+    if any_of_the_subchecks_is_true:
+        with pytest.raises(SystemExit):
+            check_rhel_compatible_kernel_is_used()
+    else:
+        check_rhel_compatible_kernel_is_used()
+        assert "Kernel is compatible" in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("kernel_release", "major_ver", "exp_return"),
+    (
+        ("5.11.0-7614-generic", None, True),
+        ("3.10.0-1160.24.1.el7.x86_64", 7, False),
+        ("3.10.0-1160.24.1.el7.x86_64", 6, True),
+        ("5.4.17-2102.200.13.el8uek.x86_64", 8, True),
+        ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
+    ),
+)
+def test_bad_kernel_version(
+    kernel_release, major_ver, exp_return, monkeypatch
+):
+    Version = namedtuple("Version", ("major", "minor"))
+    monkeypatch.setattr(
+        checks.system_info,
+        "version",
+        value=Version(major=major_ver, minor=0),
+    )
+    assert _bad_kernel_version(kernel_release) == exp_return
+
+
+@pytest.mark.parametrize(
+    ("kernel_release", "exp_return"),
+    (
+        ("3.10.0-1160.24.1.el7.x86_64", False),
+        ("5.4.17-2102.200.13.el8uek.x86_64", True),
+        ("3.10.0-514.2.2.rt56.424.el7.x86_64", True),
+    ),
+)
+def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
+    assert _bad_kernel_substring(kernel_release) == exp_return
+
+
+@pytest.mark.parametrize(
+    ("kernel_release", "kernel_pkg", "kernel_pkg_fingerprint", "exp_return"),
+    (
+        (
+            "4.18.0-240.22.1.el8_3.x86_64",
+            "kernel-core",
+            "05b555b38483c65d",
+            False,
+        ),
+        (
+            "4.18.0-240.22.1.el8_3.x86_64",
+            "kernel-core",
+            "somebadsig",
+            True,
+        ),
+    ),
+)
+def test_bad_kernel_fingerprint(
+    kernel_release,
+    kernel_pkg,
+    kernel_pkg_fingerprint,
+    exp_return,
+    monkeypatch,
+    pretend_centos8,
+):
+    run_subprocess_mocked = mock.Mock(
+        spec=run_subprocess, return_value=(kernel_pkg, "")
+    )
+    get_pkg_fingerprint_mocked = mock.Mock(
+        spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint
+    )
+    monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
+    monkeypatch.setattr(
+        checks,
+        "get_installed_pkg_objects",
+        mock.Mock(return_value=[kernel_pkg]),
+    )
+    monkeypatch.setattr(
+        checks, "get_pkg_fingerprint", get_pkg_fingerprint_mocked
+    )
+    assert _bad_kernel_package_signature(kernel_release) == exp_return
+
+
 class TestUEFIChecks(unittest.TestCase):
     @unit_tests.mock(os.path, "exists", lambda x: x == "/sys/firmware/efi")
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
@@ -485,14 +622,18 @@ class TestUEFIChecks(unittest.TestCase):
             in checks.logger.critical_msgs[0]
         )
         if checks.logger.debug_msgs:
-            self.assertFalse("Converting BIOS system" in checks.logger.debug_msgs[0])
+            self.assertFalse(
+                "Converting BIOS system" in checks.logger.debug_msgs[0]
+            )
 
     @unit_tests.mock(os.path, "exists", lambda x: not x == "/sys/firmware/efi")
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     def test_check_uefi_bios_detected(self):
         checks.check_uefi()
         self.assertFalse(checks.logger.critical_msgs)
-        self.assertTrue("Converting BIOS system" in checks.logger.debug_msgs[0])
+        self.assertTrue(
+            "Converting BIOS system" in checks.logger.debug_msgs[0]
+        )
 
 
 class TestReadOnlyMountsChecks(unittest.TestCase):
