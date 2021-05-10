@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.20
+Version:        0.21
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -110,6 +110,15 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon May 10 2021 Eric Gustavsson <egustavs@redhat.com> 0.21-1
+- Inhibit systems with non-standard RHEL kernel
+- Unregister the system before removing subscription-manager
+- Fix broken rollback with Red Hat Subscription Manager on Oracle Linux 6 & 8, and CentOS 6
+- Fix confusing logging message when registering the system
+- Fix incorrect RegExp parsing of yum output
+- Fix logger not being initialized early enough
+- Remove non-interactive command suggestion
+
 * Fri Mar 26 2021 Michal Bocek <mbocek@redhat.com> 0.20-1
 - Fix backing up centos-release and others
 - Fix checking for kernel modules using symlinks

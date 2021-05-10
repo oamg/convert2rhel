@@ -3,7 +3,7 @@
   remote_user: root
 
   vars:
-    LATESTVER: "0.20"
+    LATESTVER: "0.21"
     LATESTBUILD: "1"
     GPGKEY: "https://www.redhat.com/security/data/fd431d51.txt"
 
