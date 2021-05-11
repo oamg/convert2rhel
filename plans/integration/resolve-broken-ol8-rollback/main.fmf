@@ -25,9 +25,6 @@ provision:
       - 'tag: oracle8'
   provision+:
     origin_vm_name: c2r_oracle8_template
-  prepare+:
-    playbook+:
-      - tests/ansible_collections/boot_standard_kernel.yml
 
 /oracle7:
   discover+:
@@ -35,6 +32,3 @@ provision:
       - 'tag: oracle7'
   provision+:
     origin_vm_name: c2r_oracle7_template
-  prepare+:
-    playbook+:
-      - tests/ansible_collections/boot_standard_kernel.yml
