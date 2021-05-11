@@ -14,14 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from collections import namedtuple
 import os
-import pytest
 import re
-import rpm
 import sys
 import unittest
+
+from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
@@ -240,14 +238,13 @@ class TestUtils(unittest.TestCase):
         assert is_rpm_based_os() in (True, False)
 
 
-RPM_HEADER = {rpm.RPMTAG_NAME: "pkg1",
-              rpm.RPMTAG_VERSION: "1",
-              rpm.RPMTAG_RELEASE: "2",
-              rpm.RPMTAG_EVR: "1-2"}
 
 
 def test_get_package_name_from_rpm(monkeypatch):
-    monkeypatch.setattr(utils, "get_rpm_header", lambda _: RPM_HEADER)
+    monkeypatch.setattr(utils, "rpm", get_rpm_mocked())
+    monkeypatch.setattr(
+        utils, "get_rpm_header", lambda _: get_rpm_header_mocked()
+    )
     assert utils.get_package_name_from_rpm("/path/to.rpm") == "pkg1"
 
 
@@ -259,9 +256,43 @@ class TransactionSetMocked(unit_tests.MockFunction):
         return
 
     def hdrFromFdno(self, rpmfile):
-        return RPM_HEADER
+        return get_rpm_header_mocked()
+
+
+class ObjectFromDictSpec(dict):
+    def __getattr__(self, item):
+        return self.__getitem__(item)
+
+
+def get_rpm_mocked():
+    return ObjectFromDictSpec(
+        {
+            "RPMTAG_NAME": "RPMTAG_NAME",
+            "RPMTAG_VERSION": "RPMTAG_VERSION",
+            "RPMTAG_RELEASE": "RPMTAG_RELEASE",
+            "RPMTAG_EVR": "RPMTAG_EVR",
+            "TransactionSet": TransactionSetMocked,
+            "_RPMVSF_NOSIGNATURES": mock.Mock(),
+        }
+    )
+
+
+def get_rpm_header_mocked():
+    rpm = get_rpm_mocked()
+    return {
+        rpm.RPMTAG_NAME: "pkg1",
+        rpm.RPMTAG_VERSION: "1",
+        rpm.RPMTAG_RELEASE: "2",
+        rpm.RPMTAG_EVR: "1-2",
+    }
+
 
 def test_get_rpm_header(monkeypatch):
-    monkeypatch.setattr(rpm, "TransactionSet", TransactionSetMocked)
-    #monkeypatch.setattr(builtins, 'open', mock.mock_open())
-    assert utils.get_rpm_header("/path/to.rpm")[rpm.RPMTAG_NAME] == "pkg1"
+    rpm = get_rpm_mocked()
+    monkeypatch.setattr(utils, "rpm", rpm)
+    assert (
+        utils.get_rpm_header("/path/to.rpm", _open=mock.mock_open())[
+            rpm.RPMTAG_NAME
+        ]
+        == "pkg1"
+    )

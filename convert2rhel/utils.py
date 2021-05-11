@@ -553,12 +553,12 @@ def get_package_name_from_rpm(rpm_path):
     return hdr[rpm.RPMTAG_NAME]
 
 
-def get_rpm_header(rpm_path):
+def get_rpm_header(rpm_path, _open=open):
     """Return an rpm header from a locally stored rpm package."""
     ts = rpm.TransactionSet()
     # disable signature checking
     ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
-    with open(rpm_path) as rpmfile:
+    with _open(rpm_path) as rpmfile:
         rpmhdr = ts.hdrFromFdno(rpmfile)
     return rpmhdr
 
