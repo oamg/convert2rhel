@@ -1,8 +1,9 @@
-import subprocess
 import click
+import subprocess
 
 import pytest
 
+from collections import namedtuple
 from envparse import env
 
 
@@ -23,10 +24,13 @@ def shell(tmp_path):
             "\nExecuting a command:\n{}\n\n".format(command),
             color="green",
         )
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-        for line in process.stdout:
-            click.echo(line.decode())
-        process.wait()
-        return process
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = ''
+        for line in iter(process.stdout.readline, b''):
+            output += line.decode()
+            click.echo(line.decode().rstrip('\n'))
+        returncode = process.wait()
+        return namedtuple('Result', ['returncode', 'output'])(returncode, output)
+
 
     return factory

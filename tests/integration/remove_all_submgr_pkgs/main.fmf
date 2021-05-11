@@ -1,0 +1,9 @@
+summary: Remove all subscription-manager pkgs first
+tag+:
+  - oracle7
+  - oracle8
+  - centos7
+  - centos8
+  - remove_all_submgr_pkgs
+
+test: pytest -svv

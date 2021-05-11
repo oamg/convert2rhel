@@ -14,9 +14,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# Required imports:
+
 import logging
 import os
+import pytest
 import sys
 import unittest
 
@@ -259,28 +260,6 @@ class TestSubscription(unittest.TestCase):
         "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
     )
 
-    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_unregister_system_successfully(self):
-        unregistration_cmd = "subscription-manager unregister"
-        subscription.unregister_system()
-        self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.loggerinst.info_msgs), 1)
-        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
-        self.assertEqual(len(subscription.loggerinst.warning_msgs), 0)
-
-    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked([('output', 1)]))
-    def test_unregister_system_fails(self):
-        unregistration_cmd = "subscription-manager unregister"
-        subscription.unregister_system()
-        self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual(utils.run_subprocess.cmd, unregistration_cmd)
-        self.assertEqual(len(subscription.loggerinst.info_msgs), 0)
-        self.assertEqual(len(subscription.loggerinst.task_msgs), 1)
-        self.assertEqual(len(subscription.loggerinst.warning_msgs), 1)
-
     @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
     def test_rollback(self):
         subscription.rollback()
@@ -320,8 +299,8 @@ class TestSubscription(unittest.TestCase):
         os.listdir = lambda x: ["filename"]
         self.assertRaises(SystemExit, subscription.replace_subscription_manager)
 
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_w_different_fingerprint",
-                     lambda x, y: [namedtuple('Pkg', ['name'])("submgr")])
+    @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
+                     lambda _: [namedtuple('Pkg', ['name'])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
@@ -428,3 +407,37 @@ class TestSubscription(unittest.TestCase):
             self.dest = dest
             self.reposdir = reposdir
             return self.to_return
+
+
+@pytest.mark.parametrize(
+    ("submgr_installed", "unregistration_failure"), (
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    )
+)
+def test_unregister_system_successfully(submgr_installed, unregistration_failure, monkeypatch, caplog):
+    if unregistration_failure:
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=('output', 1)))
+    else:
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=('output', 0)))
+
+    if submgr_installed:
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects",
+                            lambda _: [namedtuple('Pkg', ['name'])("subscription-manager")])
+    else:
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda _: None)
+
+    subscription.unregister_system()
+
+    if submgr_installed:
+        utils.run_subprocess.assert_called_once()
+
+    if submgr_installed:
+        if unregistration_failure:
+            assert "System unregistration failed" in caplog.text
+        else:
+            assert "System unregistered successfully." in caplog.text
+    else:
+        assert "The subscription-manager package is not installed." in caplog.text
