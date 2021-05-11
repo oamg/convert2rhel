@@ -23,6 +23,7 @@ import logging
 import os
 import pexpect
 import re
+import rpm
 import shlex
 import shutil
 import subprocess
@@ -291,6 +292,10 @@ class ChangedRPMPackagesController(object):
         """Add a installed RPM pkg to the list of installed pkgs."""
         self.installed_pkgs.append(pkg)
 
+    def track_installed_pkgs(self, pkgs):
+        """Track packages installed  before the PONR to be able to remove them later (roll them back) if needed."""
+        self.installed_pkgs += pkgs
+
     def backup_and_track_removed_pkg(self, pkg):
         """Add a removed RPM pkg to the list of removed pkgs."""
         restorable_pkg = RestorablePackage(pkg)
@@ -313,7 +318,7 @@ class ChangedRPMPackagesController(object):
                 continue
             pkgs_to_install.append(restorable_pkg.path)
 
-        install_pkgs(pkgs_to_install, replace=True, critical=False)
+        install_local_rpms(pkgs_to_install, replace=True, critical=False)
 
     def restore_pkgs(self):
         """Restore system to the original state."""
@@ -362,7 +367,7 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
                 loggerinst.warning("Couldn't remove %s." % nvra)
 
 
-def install_pkgs(pkgs_to_install, replace=False, critical=True):
+def install_local_rpms(pkgs_to_install, replace=False, critical=True):
     """Install packages locally available."""
 
     if not pkgs_to_install:
@@ -540,6 +545,22 @@ class RestorablePackage(object):
             self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
+
+
+def get_package_name_from_rpm(rpm_path):
+    """Return name of a package that is represented by a locally stored rpm file."""
+    hdr = get_rpm_header(rpm_path)
+    return hdr[rpm.RPMTAG_NAME]
+
+
+def get_rpm_header(rpm_path, _open=open):
+    """Return an rpm header from a locally stored rpm package."""
+    ts = rpm.TransactionSet()
+    # disable signature checking
+    ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
+    with _open(rpm_path) as rpmfile:
+        rpmhdr = ts.hdrFromFdno(rpmfile)
+    return rpmhdr
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

@@ -3,33 +3,31 @@
     # to be overridden by the tmt
     repo_root:
   tasks:
-    - include: boot_standard_kernel.yml
-      when: ansible_facts['distribution'] == "OracleLinux"
 
     - name: Building rpms
       delegate_to: localhost
       shell: make rpms
       args:
-        chdir: ../..
+        chdir: ../../../..
 
     - name: Get convert2rhel version
       delegate_to: localhost
       shell: cat packaging/convert2rhel.spec | awk '/Version.+/ {print $2}'
       args:
-        chdir: ../..
+        chdir: ../../../..
       register: pkg_version
 
     - name: Copying rpms to docker remote
       delegate_to: localhost
       shell: "docker cp .rpms {{ inventory_hostname }}:/data/"
       args:
-        chdir: ../..
+        chdir: ../../../..
       when: ansible_facts['virtualization_type'] == "docker"
 
     - name: Copying rpms to kvm remote
       copy:
         dest: "{{ repo_root }}/.rpms"
-        src: ../../.rpms/
+        src: ../../../../.rpms/
       when: ansible_facts['virtualization_type'] == "kvm"
 
     - name: Install el8 convert2rhel package

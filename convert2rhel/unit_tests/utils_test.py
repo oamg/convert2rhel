@@ -14,16 +14,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from collections import namedtuple
 import os
 import re
+import sys
 import unittest
+
+from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
 
 
 class TestUtils(unittest.TestCase):
@@ -117,17 +124,17 @@ class TestUtils(unittest.TestCase):
                                   utils.run_subprocess.cmds, re.MULTILINE))
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_pkgs_with_empty_list(self):
-        utils.install_pkgs([])
+    def test_install_local_rpms_with_empty_list(self):
+        utils.install_local_rpms([])
         self.assertEqual(utils.run_subprocess.called, 0)
 
     @unit_tests.mock(utils.ChangedRPMPackagesController,
                      "track_installed_pkg",
                      DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_pkgs_without_replace(self):
+    def test_install_local_rpms_without_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
-        utils.install_pkgs(pkgs)
+        utils.install_local_rpms(pkgs)
         self.assertEqual(
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
@@ -138,9 +145,9 @@ class TestUtils(unittest.TestCase):
                      "track_installed_pkg",
                      DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_pkgs_with_replace(self):
+    def test_install_local_rpms_with_replace(self):
         pkgs = ['pkg1', 'pkg2', 'pkg3']
-        utils.install_pkgs(pkgs, replace=True)
+        utils.install_local_rpms(pkgs, replace=True)
         self.assertEqual(
             utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
@@ -229,3 +236,63 @@ class TestUtils(unittest.TestCase):
 
     def test_is_rpm_based_os(self):
         assert is_rpm_based_os() in (True, False)
+
+
+
+
+def test_get_package_name_from_rpm(monkeypatch):
+    monkeypatch.setattr(utils, "rpm", get_rpm_mocked())
+    monkeypatch.setattr(
+        utils, "get_rpm_header", lambda _: get_rpm_header_mocked()
+    )
+    assert utils.get_package_name_from_rpm("/path/to.rpm") == "pkg1"
+
+
+class TransactionSetMocked(unit_tests.MockFunction):
+    def __call__(self):
+        return self
+
+    def setVSFlags(self, flags):
+        return
+
+    def hdrFromFdno(self, rpmfile):
+        return get_rpm_header_mocked()
+
+
+class ObjectFromDictSpec(dict):
+    def __getattr__(self, item):
+        return self.__getitem__(item)
+
+
+def get_rpm_mocked():
+    return ObjectFromDictSpec(
+        {
+            "RPMTAG_NAME": "RPMTAG_NAME",
+            "RPMTAG_VERSION": "RPMTAG_VERSION",
+            "RPMTAG_RELEASE": "RPMTAG_RELEASE",
+            "RPMTAG_EVR": "RPMTAG_EVR",
+            "TransactionSet": TransactionSetMocked,
+            "_RPMVSF_NOSIGNATURES": mock.Mock(),
+        }
+    )
+
+
+def get_rpm_header_mocked():
+    rpm = get_rpm_mocked()
+    return {
+        rpm.RPMTAG_NAME: "pkg1",
+        rpm.RPMTAG_VERSION: "1",
+        rpm.RPMTAG_RELEASE: "2",
+        rpm.RPMTAG_EVR: "1-2",
+    }
+
+
+def test_get_rpm_header(monkeypatch):
+    rpm = get_rpm_mocked()
+    monkeypatch.setattr(utils, "rpm", rpm)
+    assert (
+        utils.get_rpm_header("/path/to.rpm", _open=mock.mock_open())[
+            rpm.RPMTAG_NAME
+        ]
+        == "pkg1"
+    )

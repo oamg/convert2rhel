@@ -72,7 +72,7 @@ def subscribe_system():
 
 
 def unregister_system():
-    """Unregister the system from RHSM"""
+    """Unregister the system from RHSM."""
     unregistration_cmd = "subscription-manager unregister"
     loggerinst.task("Rollback: Unregistering the system from RHSM")
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
@@ -233,16 +233,18 @@ def install_rhel_subscription_manager():
                             " See the above yum output for details.")
     else:
         loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
+        pkg_names = get_installed_submgr_pkg_names(rpms_to_install)
+        utils.changed_pkgs_control.track_installed_pkgs(pkg_names)
+        loggerinst.debug("Tracking installed packages: %r" % pkg_names)
 
 
-def remove_subscription_manager():
-    loggerinst.info("Removing RHEL subscription-manager packages.")
-    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
-    submgr_pkgs = pkghandler.get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, "*subscription-manager*")
-    if not submgr_pkgs:
-        loggerinst.info("No packages related to subscription-manager installed.")
-        return
-    pkghandler.call_yum_cmd("remove", " ".join(submgr_pkgs), print_output=False)
+def get_installed_submgr_pkg_names(rpm_paths):
+    """Return names of packages represented by locally stored rpm packages."""
+    pkg_names = []
+    for rpm_path in rpm_paths:
+        pkg_names.append(utils.get_package_name_from_rpm(rpm_path))
+    return pkg_names
+
 
 def attach_subscription():
     """Attach a specific subscription to the registered OS. If no
@@ -403,10 +405,9 @@ def enable_repos(rhel_repoids):
 
 
 def rollback():
-    """Rollback all subscription related changes"""
+    """Rollback subscription related changes"""
     try:
         unregister_system()
-        remove_subscription_manager()
     except OSError:
         loggerinst.warn("subscription-manager not installed, skipping")
 
