@@ -1,0 +1,15 @@
+discover+:
+    filter+:
+        - 'tag: oracle8'
+
+provision+:
+    origin_vm_name: c2r_oracle8_template
+
+/good:
+    discover+:
+        filter+:
+            - 'tag: good_test'
+/bad:
+    discover+:
+        filter+:
+            - 'tag: bad_test'

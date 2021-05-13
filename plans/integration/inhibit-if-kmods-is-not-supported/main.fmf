@@ -1,0 +1,8 @@
+discover+:
+    filter:
+        - 'tag: inhibit-if-kmods-is-not-supported'
+
+provision:
+    how: libvirt
+    develop: true
+

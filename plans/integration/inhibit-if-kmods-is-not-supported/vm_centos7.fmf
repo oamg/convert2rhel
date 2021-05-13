@@ -1,0 +1,15 @@
+discover+:
+    filter+:
+        - 'tag: centos7'
+
+provision+:
+    origin_vm_name: c2r_centos7_template
+
+/good:
+    discover+:
+        filter+:
+            - 'tag: good_test'
+/bad:
+    discover+:
+        filter+:
+            - 'tag: bad_test'
