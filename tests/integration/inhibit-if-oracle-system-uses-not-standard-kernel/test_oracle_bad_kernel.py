@@ -10,51 +10,40 @@ from envparse import env
 
 
 @pytest.mark.good_tests
-def test_good_conversion(shell, capsys):
-    convertion = shell(
-        command=[
-            (
-                "convert2rhel -y "
-                "--serverurl {} --username {} "
-                "--password {} --pool {} "
-                "--debug"
-            ).format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
-            )
-        ]
-    )
-    # TODO make unregistering automatically, i.e. create a yield fixture to run
-    #   convert2rhel with the rhsm
-    shell("subscription-manager unregister")
-    assert convertion.returncode == 0
-    stdout, _ = capsys.readouterr()
-    assert "Kernel is compatible with RHEL" in stdout
+def test_good_conversion(convert2rhel):
+    with convert2rhel(
+        (
+            "-y "
+            "--no-rpm-va "
+            "--serverurl {} --username {} "
+            "--password {} --pool {} "
+            "--debug"
+        ).format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        c2r.expect("Kernel is compatible with RHEL")
+    assert c2r.exitstatus == 0
 
 
 @pytest.mark.bad_tests
-def test_bad_conversion(shell, capsys):
-    convertion = shell(
-        command=[
-            (
-                "convert2rhel -y "
-                "--serverurl {} --username {} "
-                "--password {} --pool {} "
-                "--debug"
-            ).format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
-            )
-        ]
-    )
-    shell("subscription-manager unregister")
-    assert convertion.returncode == 1
-    stdout, _ = capsys.readouterr()
-    assert (
-        "The booted kernel version is incompatible"
-        in stdout
-    )
+def test_bad_conversion(convert2rhel):
+    with convert2rhel(
+        (
+            "-y "
+            "--no-rpm-va "
+            "--serverurl {} --username {} "
+            "--password {} --pool {} "
+            "--debug"
+        ).format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        c2r.expect("The booted kernel version is incompatible")
+    assert c2r.exitstatus == 1
