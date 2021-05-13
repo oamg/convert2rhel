@@ -1,0 +1,16 @@
+---
+- name: Install el8 convert2rhel package from url
+  yum:
+    name: "{{ rpm_url_el8 }}"
+    state: present
+    disable_gpg_check: true
+  when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8") or
+        (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "8")
+
+- name: Install el7 convert2rhel package from url
+  yum:
+    name: "{{ rpm_url_el7 }}"
+    state: present
+    disable_gpg_check: true
+  when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7") or
+        (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "7")

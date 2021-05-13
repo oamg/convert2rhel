@@ -19,7 +19,7 @@ VENV ?= .venv3
 
 all: clean images tests
 
-install: .install .images .env
+install: .install .images .env .ansible
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
@@ -29,6 +29,10 @@ install: .install .images .env
 
 .env:
 	cp .env.example .env
+
+.ansible:
+	cp tests/ansible_collections/group_vars/all.yml.example tests/ansible_collections/group_vars/all.yml
+	touch $@
 
 tests-locally: install
 	. $(VENV)/bin/activate; pytest

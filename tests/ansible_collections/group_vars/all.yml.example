@@ -1,0 +1,19 @@
+---
+# options are true|false. if true, then the rpm will
+# be built locally using make rpms command
+build_rpm: true
+
+# where to build rpms (available options: local, url)
+# local provider - copies the rpms, which were built
+#   locally (build_rpm = true)
+# url provider - installs rpm from the provided urls
+#   (see rpm_url_el7 and rpm_url_el8 vars)
+rpm_provider: local
+
+# rpm urls in case rpm_build_provider is url
+rpm_url_el7: ""
+rpm_url_el8: ""
+
+# remote host repo root in case the playbook is running manually.
+#   otherwise tmt is setting this var
+repo_root: ""

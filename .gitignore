@@ -13,3 +13,6 @@ system_tests/vmdefs/centos*/.vagrant/
 .images
 .env
 .rpms/*
+.idea/
+.cache/
+tests/ansible_collections/group_vars/all.yml

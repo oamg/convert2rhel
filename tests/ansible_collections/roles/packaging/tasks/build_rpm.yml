@@ -1,0 +1,6 @@
+---
+- name: Building rpms
+  delegate_to: localhost
+  shell: make rpms
+  args:
+    chdir: ../..
