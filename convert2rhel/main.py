@@ -100,6 +100,8 @@ def main():
         loggerinst.task("Final: rpm files modified by the conversion")
         systeminfo.system_info.modified_rpm_files_diff()
 
+        loggerinst.info("\nConversion successful!\n")
+
         # restart system if required
         utils.restart_system()
 
