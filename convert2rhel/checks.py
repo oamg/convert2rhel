@@ -195,7 +195,7 @@ def get_rhel_supported_kmods():
     # get output of a command to get all packages which are the source
     # of kmods
     kmod_pkgs_str, _ = run_subprocess(
-        ("repoquery " "--releasever={releasever} " "{setopt_arg} " "{repoids_args} " "-f /lib/modules/*.ko*").format(
+        ("repoquery --releasever={releasever} {setopt_arg} {repoids_args} -f /lib/modules/*.ko*").format(
             releasever=system_info.releasever,
             setopt_arg=setopt_arg,
             repoids_args=repoquery_repoids_args,
@@ -206,7 +206,7 @@ def get_rhel_supported_kmods():
     kmod_pkgs = get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
     # querying obtained packages for files they produces
     rhel_kmods_str, _ = run_subprocess(
-        ("repoquery " "--releasever={releasever} " "{setopt_arg} " "{repoids_args} " "-l {pkgs}").format(
+        ("repoquery --releasever={releasever} {setopt_arg} {repoids_args} -l {pkgs}").format(
             releasever=system_info.releasever,
             setopt_arg=setopt_arg,
             repoids_args=repoquery_repoids_args,
@@ -373,7 +373,7 @@ def _bad_kernel_package_signature(kernel_release):
     # e.g. Oracle Linux Server -> Oracle
     os_vendor = system_info.name.split()[0]
     if bad_signature:
-        logger.warning("Custom kernel detected. " "The booted kernel needs to be signed by %s." % os_vendor)
+        logger.warning("Custom kernel detected. The booted kernel needs to be signed by %s." % os_vendor)
         return True
     logger.debug("The booted kernel is signed by %s." % os_vendor)
     return False

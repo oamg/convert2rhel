@@ -108,7 +108,7 @@ def register_system():
         loggerinst.info("System registration failed with return code = %s" % str(ret_code))
         if tool_opts.credentials_thru_cli:
             loggerinst.warning(
-                "Error: Unable to register your system with" " subscription-manager using the provided" " credentials."
+                "Error: Unable to register your system with subscription-manager using the provided credentials."
             )
         else:
             loggerinst.info("Trying again - provide username and password.")
@@ -233,7 +233,7 @@ def install_rhel_subscription_manager():
         set_releasever=False,
     )
     if ret_code:
-        loggerinst.critical("Failed to install subscription-manager packages." " See the above yum output for details.")
+        loggerinst.critical("Failed to install subscription-manager packages. See the above yum output for details.")
     else:
         loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
         pkg_names = get_installed_submgr_pkg_names(rpms_to_install)
@@ -269,7 +269,7 @@ def attach_subscription():
         # option
         pool = "--pool %s" % tool_opts.pool
         tool_opts.pool = pool
-        loggerinst.info("Attaching provided subscription pool ID to the" " system ...")
+        loggerinst.info("Attaching provided subscription pool ID to the system ...")
     else:
         # Let the user choose the subscription appropriate for the conversion
         loggerinst.info("Manually select subscription appropriate for the conversion")
@@ -298,9 +298,9 @@ def get_avail_subs():
     """
     # Get multiline string holding all the subscriptions available to the
     # logged-in user
-    subs_raw, ret_code = utils.run_subprocess("subscription-manager list" " --available", print_output=False)
+    subs_raw, ret_code = utils.run_subprocess("subscription-manager list --available", print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Unable to get list of available subscriptions:" "\n%s" % subs_raw)
+        loggerinst.critical("Unable to get list of available subscriptions:\n%s" % subs_raw)
     return list(get_sub(subs_raw))
 
 
@@ -323,7 +323,7 @@ def get_pool_id(sub_raw_attrs):
 
 def print_avail_subs(subs):
     """Print the subscriptions available to the user so they can choose one."""
-    loggerinst.info("Choose one of your subscriptions that is to be used" " for converting this system to RHEL:")
+    loggerinst.info("Choose one of your subscriptions that is to be used for converting this system to RHEL:")
     for index, sub in enumerate(subs):
         index += 1
         loggerinst.info("\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
@@ -359,7 +359,7 @@ def disable_repos():
         disable_cmd = " --disable='*'"
     output, ret_code = utils.run_subprocess("subscription-manager repos%s" % disable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to disable through" " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to disable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories disabled.")
     return
 
@@ -378,7 +378,7 @@ def enable_repos(rhel_repoids):
         enable_cmd += " --enable=%s" % repo
     output, ret_code = utils.run_subprocess("subscription-manager repos%s" % enable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to enable through" " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
 
     system_info.submgr_enabled_repos = repos_to_enable

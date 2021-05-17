@@ -353,7 +353,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     class TestPkgObj(object):
         class PkgObjHdr(object):
             def sprintf(self, *args, **kwargs):
-                return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID" " 73bde98381b46521"
+                return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
 
         hdr = PkgObjHdr()
 

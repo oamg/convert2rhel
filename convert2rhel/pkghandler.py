@@ -191,7 +191,7 @@ def resolve_dep_errors(output, pkgs=set()):
     if not problematic_pkgs["all"]:
         # No package has been added to the list of packages to be downgraded.
         # There's no point in calling the yum downgrade command again.
-        loggerinst.info("No other package to try to downgrade in order to" " resolve yum dependency errors.")
+        loggerinst.info("No other package to try to downgrade in order to resolve yum dependency errors.")
         return output
     problematic_pkgs["all"] = problematic_pkgs["all"].union(pkgs)
     cmd = "distro-sync"
@@ -590,7 +590,7 @@ def install_rhel_kernel():
     output, ret_code = call_yum_cmd(command="install", args="kernel")
 
     if ret_code != 0:
-        loggerinst.critical("Error occured while attempting to install the" " RHEL kernel")
+        loggerinst.critical("Error occured while attempting to install the RHEL kernel")
 
     # Check if kernel with same version is already installed.
     # Example output from yum and dnf:

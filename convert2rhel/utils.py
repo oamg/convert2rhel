@@ -121,7 +121,7 @@ def restart_system():
     if tool_opts.restart:
         run_subprocess("reboot")
     else:
-        loggerinst.warning("In order to boot the RHEL kernel," " restart of the system is needed.")
+        loggerinst.warning("In order to boot the RHEL kernel, restart of the system is needed.")
 
 
 def run_subprocess(cmd="", print_cmd=True, print_output=True):
@@ -213,7 +213,7 @@ def let_user_choose_item(num_of_options, item_to_choose):
         if 0 < opt_num <= num_of_options:
             break
         else:
-            loggerinst.warning("The entered number is not in range" " 1 - %s." % num_of_options)
+            loggerinst.warning("The entered number is not in range 1 - %s." % num_of_options)
     return opt_num - 1  # Get zero-based list index
 
 
@@ -543,7 +543,7 @@ class RestorableFile(object):
     def remove(self):
         """Remove a previously backed up file"""
         if os.path.isfile(self.filepath):
-            loggerinst.warning("Removing %s saved during previous run of" " convert2rhel" % self.filepath)
+            loggerinst.warning("Removing %s saved during previous run of convert2rhel" % self.filepath)
             try:
                 os.remove(self.filepath)
             except IOError as err:

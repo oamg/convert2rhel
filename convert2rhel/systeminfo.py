@@ -174,7 +174,7 @@ class SystemInfo(object):
             return self.cfg_content[option_name]
         else:
             self.logger.error(
-                "Internal error: %s option not found in %s" " config file." % (option_name, self.cfg_filename)
+                "Internal error: %s option not found in %s config file." % (option_name, self.cfg_filename)
             )
 
     def _get_gpg_key_fingerprints(self):

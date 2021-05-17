@@ -87,7 +87,7 @@ class CLI(object):
             "-h",
             "--help",
             action="help",
-            help="Show " " help message and exit.",
+            help="Show help message and exit.",
         )
         self._parser.add_option(
             "--version",
@@ -97,7 +97,7 @@ class CLI(object):
         self._parser.add_option(
             "--debug",
             action="store_true",
-            help="Print" " traceback in case of an abnormal exit and" " messages that could help find an issue.",
+            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
         )
         self._parser.add_option(
             "--disable-colors",
@@ -137,7 +137,7 @@ class CLI(object):
         group = optparse.OptionGroup(
             self._parser,
             "Subscription Manager Options",
-            "The following options are specific to" "using subscription-manager.",
+            "The following options are specific to using subscription-manager.",
         )
         group.add_option(
             "-u",
@@ -184,7 +184,7 @@ class CLI(object):
         group.add_option(
             "-a",
             "--auto-attach",
-            help="Automatically attach" " compatible subscriptions to the system.",
+            help="Automatically attach compatible subscriptions to the system.",
             action="store_true",
         )
         group.add_option(
@@ -216,7 +216,7 @@ class CLI(object):
         group = optparse.OptionGroup(
             self._parser,
             "Alternative Installation Options",
-            "The following options are required if" " you do not intend on using" " subscription-manager",
+            "The following options are required if you do not intend on using subscription-manager",
         )
         group.add_option(
             "--disable-submgr",
@@ -233,17 +233,17 @@ class CLI(object):
         group = optparse.OptionGroup(
             self._parser,
             "Automation Options",
-            "The following options are used to" " automate the installation",
+            "The following options are used to automate the installation",
         )
         group.add_option(
             "-r",
             "--restart",
-            help="Restart the system" " when it is successfully converted to RHEL to boot" " the new RHEL kernel.",
+            help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
             action="store_true",
         )
         group.add_option(
             "-y",
-            help="Answer yes to all yes/no questions the" " tool asks.",
+            help="Answer yes to all yes/no questions the tool asks.",
             action="store_true",
         )
         self._parser.add_option_group(group)
