@@ -88,9 +88,11 @@ def main():
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
-        loggerinst.warning("By continuing all further changes on the system"
-                           " will need to be reverted manually by the user,"
-                           " if necessary.")
+        loggerinst.warning(
+            "By continuing all further changes on the system"
+            " will need to be reverted manually by the user,"
+            " if necessary."
+        )
         loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
@@ -141,7 +143,7 @@ def show_eula():
     if eula_text:
         loggerinst.info(eula_text)
     else:
-        loggerinst.critical('EULA file not found.')
+        loggerinst.critical("EULA file not found.")
     return
 
 
@@ -158,7 +160,6 @@ def pre_ponr_conversion():
     # remove excluded packages
     loggerinst.task("Convert: Remove excluded packages")
     pkghandler.remove_excluded_pkgs()
-
 
     # handle special cases
     loggerinst.task("Convert: Resolve possible edge cases")
@@ -219,8 +220,7 @@ def is_help_msg_exit(process_phase, err):
     """After printing the help message, optparse within the toolopts.CLI()
     call terminates the process with sys.exit(0).
     """
-    if process_phase == ConversionPhase.INIT and \
-            isinstance(err, SystemExit) and err.args[0] == 0:
+    if process_phase == ConversionPhase.INIT and isinstance(err, SystemExit) and err.args[0] == 0:
         return True
     return False
 

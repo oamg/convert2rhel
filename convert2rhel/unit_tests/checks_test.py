@@ -243,9 +243,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     msg_not_in_logs,
     exception,
 ):
-    get_unsupported_kmods_mocked = mock.Mock(
-        wraps=checks.get_unsupported_kmods
-    )
+    get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
     run_subprocess_mock = mock.Mock(
         side_effect=_run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
@@ -293,9 +291,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     if msg_in_logs:
         assert msg_in_logs in caplog.records[0].message
     if msg_not_in_logs:
-        assert all(
-            msg_not_in_logs not in record.message for record in caplog.records
-        )
+        assert all(msg_not_in_logs not in record.message for record in caplog.records)
 
 
 @pytest.mark.parametrize(
@@ -316,16 +312,12 @@ def test_ensure_compatibility_of_kmods_excluded(
             None,
         ),
         (
-            mock.Mock(
-                side_effect=subprocess.CalledProcessError(returncode=1, cmd="")
-            ),
+            mock.Mock(side_effect=subprocess.CalledProcessError(returncode=1, cmd="")),
             None,
         ),
     ),
 )
-def test_get_installed_kmods(
-    tmpdir, monkeypatch, caplog, run_subprocess_mock, exp_res
-):
+def test_get_installed_kmods(tmpdir, monkeypatch, caplog, run_subprocess_mock, exp_res):
     monkeypatch.setattr(
         checks,
         "run_subprocess",
@@ -336,9 +328,7 @@ def test_get_installed_kmods(
     else:
         with pytest.raises(SystemExit):
             get_installed_kmods()
-        assert (
-            "Can't get list of kernel modules." in caplog.records[-1].message
-        )
+        assert "Can't get list of kernel modules." in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
@@ -544,9 +534,7 @@ def test_check_rhel_compatible_kernel_is_used(
         ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
     ),
 )
-def test_bad_kernel_version(
-    kernel_release, major_ver, exp_return, monkeypatch
-):
+def test_bad_kernel_version(kernel_release, major_ver, exp_return, monkeypatch):
     Version = namedtuple("Version", ("major", "minor"))
     monkeypatch.setattr(
         checks.system_info,
@@ -593,21 +581,15 @@ def test_bad_kernel_fingerprint(
     monkeypatch,
     pretend_centos8,
 ):
-    run_subprocess_mocked = mock.Mock(
-        spec=run_subprocess, return_value=(kernel_pkg, "")
-    )
-    get_pkg_fingerprint_mocked = mock.Mock(
-        spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint
-    )
+    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, ""))
+    get_pkg_fingerprint_mocked = mock.Mock(spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint)
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
     monkeypatch.setattr(
         checks,
         "get_installed_pkg_objects",
         mock.Mock(return_value=[kernel_pkg]),
     )
-    monkeypatch.setattr(
-        checks, "get_pkg_fingerprint", get_pkg_fingerprint_mocked
-    )
+    monkeypatch.setattr(checks, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
     assert _bad_kernel_package_signature(kernel_release) == exp_return
 
 
@@ -617,23 +599,16 @@ class TestUEFIChecks(unittest.TestCase):
     def test_check_uefi_efi_detected(self):
         self.assertRaises(SystemExit, checks.check_uefi)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
-        self.assertTrue(
-            "Conversion of UEFI systems is currently not supported"
-            in checks.logger.critical_msgs[0]
-        )
+        self.assertTrue("Conversion of UEFI systems is currently not supported" in checks.logger.critical_msgs[0])
         if checks.logger.debug_msgs:
-            self.assertFalse(
-                "Converting BIOS system" in checks.logger.debug_msgs[0]
-            )
+            self.assertFalse("Converting BIOS system" in checks.logger.debug_msgs[0])
 
     @unit_tests.mock(os.path, "exists", lambda x: not x == "/sys/firmware/efi")
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     def test_check_uefi_bios_detected(self):
         checks.check_uefi()
         self.assertFalse(checks.logger.critical_msgs)
-        self.assertTrue(
-            "Converting BIOS system" in checks.logger.debug_msgs[0]
-        )
+        self.assertTrue("Converting BIOS system" in checks.logger.debug_msgs[0])
 
 
 class TestReadOnlyMountsChecks(unittest.TestCase):
@@ -653,12 +628,8 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         checks.check_readonly_mounts()
         self.assertEqual(len(checks.logger.critical_msgs), 0)
         self.assertEqual(len(checks.logger.debug_msgs), 2)
-        self.assertTrue(
-            "/mnt mount point is not read-only." in checks.logger.debug_msgs
-        )
-        self.assertTrue(
-            "/sys mount point is not read-only." in checks.logger.debug_msgs
-        )
+        self.assertTrue("/mnt mount point is not read-only." in checks.logger.debug_msgs)
+        self.assertTrue("/sys mount point is not read-only." in checks.logger.debug_msgs)
 
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(
@@ -676,10 +647,8 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertRaises(SystemExit, checks.check_readonly_mounts)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertTrue(
-            "Stopping conversion due to read-only mount to /mnt directory"
-            in checks.logger.critical_msgs[0]
+            "Stopping conversion due to read-only mount to /mnt directory" in checks.logger.critical_msgs[0]
         )
         self.assertTrue(
-            "Stopping conversion due to read-only mount to /sys directory"
-            not in checks.logger.critical_msgs[0]
+            "Stopping conversion due to read-only mount to /sys directory" not in checks.logger.critical_msgs[0]
         )

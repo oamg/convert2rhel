@@ -80,10 +80,7 @@ def _replace_data_dir_base(system_version_num):
         monkeypatch.setattr(
             utils,
             "DATA_DIR",
-            value=str(
-                pkg_root
-                / ("convert2rhel/data/%s/x86_64/" % system_version_num)
-            ),
+            value=str(pkg_root / ("convert2rhel/data/%s/x86_64/" % system_version_num)),
         )
 
     return fixture
@@ -112,6 +109,7 @@ def _pretend_fixture_base(monkeypatch, system_release_version):
 
 def _pretend_centos_base(system_release_version):
     """Factory function serves as a base to pretend_{os} fixtures."""
+
     def fixture_centos7(monkeypatch, _replace_data_dir_for_centos7):
         _pretend_fixture_base(monkeypatch, system_release_version)
 
@@ -128,8 +126,7 @@ def _pretend_centos_base(system_release_version):
     except KeyError:
         raise KeyError(
             "Unknown system release version %s.\n"
-            "Available are: %s"
-            % (system_release_version, " ".join(release2data_dir_relations)),
+            "Available are: %s" % (system_release_version, " ".join(release2data_dir_relations)),
         )
 
 

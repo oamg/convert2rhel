@@ -31,28 +31,31 @@ loggerinst = logging.getLogger(__name__)
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 _RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
-_CENTOS_6_REPO_CONTENT = \
-        '[centos-6-contrib-convert2rhel]\n' \
-        'name=CentOS Linux 6 - Contrib added by Convert2RHEL\n' \
-        'baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n' \
-        'gpgcheck=0\n' \
-        'enabled=1\n'
+_CENTOS_6_REPO_CONTENT = (
+    "[centos-6-contrib-convert2rhel]\n"
+    "name=CentOS Linux 6 - Contrib added by Convert2RHEL\n"
+    "baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n"
+    "gpgcheck=0\n"
+    "enabled=1\n"
+)
 _CENTOS_6_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "centos_6.repo")
-_UBI_7_REPO_CONTENT = \
-        '[ubi-7-convert2rhel]\n' \
-        'name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n' \
-        'baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n' \
-        'gpgcheck=0\n' \
-        'enabled=1\n'
+_UBI_7_REPO_CONTENT = (
+    "[ubi-7-convert2rhel]\n"
+    "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
+    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
+    "gpgcheck=0\n"
+    "enabled=1\n"
+)
 _UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
 # We are using UBI 8 instead of CentOS Linux 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS Linux 8
 # https://bugs.centos.org/view.php?id=17907
-_UBI_8_REPO_CONTENT = \
-        '[ubi-8-baseos-convert2rhel]\n' \
-        'name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n' \
-        'baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n' \
-        'gpgcheck=0\n' \
-        'enabled=1\n'
+_UBI_8_REPO_CONTENT = (
+    "[ubi-8-baseos-convert2rhel]\n"
+    "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
+    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
+    "gpgcheck=0\n"
+    "enabled=1\n"
+)
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
 MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
 # Using a delay that could help when the RHSM/Satellite server is overloaded.
@@ -102,12 +105,11 @@ def register_system():
         ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
             return
-        loggerinst.info("System registration failed with return code = %s"
-                        % str(ret_code))
+        loggerinst.info("System registration failed with return code = %s" % str(ret_code))
         if tool_opts.credentials_thru_cli:
-            loggerinst.warning("Error: Unable to register your system with"
-                                " subscription-manager using the provided"
-                                " credentials.")
+            loggerinst.warning(
+                "Error: Unable to register your system with subscription-manager using the provided credentials."
+            )
         else:
             loggerinst.info("Trying again - provide username and password.")
             tool_opts.username = None
@@ -125,8 +127,7 @@ def get_registration_cmd():
         # Activation key has been passed
         # -> username/password not required
         # -> organization required
-        loggerinst.info("    ... activation key detected: %s"
-                        % tool_opts.activation_key)
+        loggerinst.info("    ... activation key detected: %s" % tool_opts.activation_key)
         registration_cmd += " --activationkey=%s" % tool_opts.activation_key
     else:
         # No activation key -> username/password required
@@ -148,8 +149,7 @@ def get_registration_cmd():
                 # Hint user for which username they need to enter pswd
                 loggerinst.info("Username: " + username)
             password = utils.prompt_user("Password: ", password=True)
-        registration_cmd += ' --username=%s --password="%s"' % (username,
-                                                                password)
+        registration_cmd += ' --username=%s --password="%s"' % (username, password)
         tool_opts.username = username
     if tool_opts.org:
         loggerinst.info("    ... organization detected")
@@ -161,7 +161,7 @@ def get_registration_cmd():
         # user choose from the available organizations. If there's just one,
         # pick it automatically.
         org = utils.prompt_user("Organization: ")
-    if 'org' in locals():
+    if "org" in locals():
         # TODO: test how this option works with org name with spaces
         registration_cmd += " --org=%s" % org
     if tool_opts.serverurl:
@@ -179,7 +179,7 @@ def call_registration_cmd(registration_cmd):
 
 def hide_password(cmd):
     """Replace plaintext password with asterisks."""
-    return re.sub("--password=\".*?\"", "--password=\"*****\"", cmd)
+    return re.sub('--password=".*?"', '--password="*****"', cmd)
 
 
 def replace_subscription_manager():
@@ -230,11 +230,10 @@ def install_rhel_subscription_manager():
         enable_repos=[],
         disable_repos=[],
         # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
-        set_releasever=False
+        set_releasever=False,
     )
     if ret_code:
-        loggerinst.critical("Failed to install subscription-manager packages."
-                            " See the above yum output for details.")
+        loggerinst.critical("Failed to install subscription-manager packages. See the above yum output for details.")
     else:
         loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
         pkg_names = get_installed_submgr_pkg_names(rpms_to_install)
@@ -270,8 +269,7 @@ def attach_subscription():
         # option
         pool = "--pool %s" % tool_opts.pool
         tool_opts.pool = pool
-        loggerinst.info("Attaching provided subscription pool ID to the"
-                        " system ...")
+        loggerinst.info("Attaching provided subscription pool ID to the system ...")
     else:
         # Let the user choose the subscription appropriate for the conversion
         loggerinst.info("Manually select subscription appropriate for the conversion")
@@ -284,8 +282,7 @@ def attach_subscription():
         sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
         pool = "--pool " + subs_list[sub_num].pool_id
         tool_opts.pool = pool
-        loggerinst.info("Attaching subscription with pool ID %s to the system ..."
-                        % subs_list[sub_num].pool_id)
+        loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
 
     _, ret_code = utils.run_subprocess("subscription-manager attach %s" % pool)
     if ret_code != 0:
@@ -301,33 +298,23 @@ def get_avail_subs():
     """
     # Get multiline string holding all the subscriptions available to the
     # logged-in user
-    subs_raw, ret_code = utils.run_subprocess("subscription-manager list"
-                                              " --available",
-                                              print_output=False)
+    subs_raw, ret_code = utils.run_subprocess("subscription-manager list --available", print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Unable to get list of available subscriptions:"
-                            "\n%s" % subs_raw)
+        loggerinst.critical("Unable to get list of available subscriptions:\n%s" % subs_raw)
     return list(get_sub(subs_raw))
 
 
 def get_sub(subs_raw):
-    """Generator that provides subscriptions available to a logged-in user.
-    """
+    """Generator that provides subscriptions available to a logged-in user."""
     # Split all the available subscriptions per one subscription
-    for sub_raw in re.findall(
-            r"Subscription Name.*?Type:\s+\w+\n\n",
-            subs_raw,
-            re.DOTALL | re.MULTILINE):
+    for sub_raw in re.findall(r"Subscription Name.*?Type:\s+\w+\n\n", subs_raw, re.DOTALL | re.MULTILINE):
         pool_id = get_pool_id(sub_raw)
-        yield namedtuple('Sub', ['pool_id', 'sub_raw'])(pool_id, sub_raw)
+        yield namedtuple("Sub", ["pool_id", "sub_raw"])(pool_id, sub_raw)
 
 
 def get_pool_id(sub_raw_attrs):
-    """Parse the input multiline string holding subscription attributes to distill the pool ID.
-    """
-    pool_id = re.search(r"^Pool ID:\s+(.*?)$",
-                        sub_raw_attrs,
-                        re.MULTILINE | re.DOTALL)
+    """Parse the input multiline string holding subscription attributes to distill the pool ID."""
+    pool_id = re.search(r"^Pool ID:\s+(.*?)$", sub_raw_attrs, re.MULTILINE | re.DOTALL)
     if pool_id:
         return pool_id.group(1)
 
@@ -335,22 +322,18 @@ def get_pool_id(sub_raw_attrs):
 
 
 def print_avail_subs(subs):
-    """Print the subscriptions available to the user so they can choose one.
-    """
-    loggerinst.info("Choose one of your subscriptions that is to be used"
-                    " for converting this system to RHEL:")
+    """Print the subscriptions available to the user so they can choose one."""
+    loggerinst.info("Choose one of your subscriptions that is to be used for converting this system to RHEL:")
     for index, sub in enumerate(subs):
         index += 1
-        loggerinst.info(
-            "\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
+        loggerinst.info("\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
 
 
 def get_avail_repos():
     """Get list of all the repositories (their IDs) currently available for
     the registered system through subscription-manager.
     """
-    repos_raw, _ = utils.run_subprocess("subscription-manager repos",
-                                        print_output=False)
+    repos_raw, _ = utils.run_subprocess("subscription-manager repos", print_output=False)
     return list(get_repo(repos_raw))
 
 
@@ -358,10 +341,7 @@ def get_repo(repos_raw):
     """Generator that parses the raw string of available repositores and
     provides the repository IDs, one at a time.
     """
-    for repo_id in re.findall(
-            r"Repo ID:\s+(.*?)\n",
-            repos_raw,
-            re.DOTALL | re.MULTILINE):
+    for repo_id in re.findall(r"Repo ID:\s+(.*?)\n", repos_raw, re.DOTALL | re.MULTILINE):
         yield repo_id
 
 
@@ -377,11 +357,9 @@ def disable_repos():
         # Default is to disable all repos to make clean environment for
         # enabling repos later
         disable_cmd = " --disable='*'"
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s"
-                                            % disable_cmd, print_output=False)
+    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % disable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to disable through"
-                            " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to disable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories disabled.")
     return
 
@@ -398,11 +376,9 @@ def enable_repos(rhel_repoids):
     enable_cmd = ""
     for repo in repos_to_enable:
         enable_cmd += " --enable=%s" % repo
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s"
-                                            % enable_cmd, print_output=False)
+    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % enable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to enable through"
-                            " subscription-manager:\n%s" % output)
+        loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
 
     system_info.submgr_enabled_repos = repos_to_enable
@@ -423,16 +399,16 @@ def check_needed_repos_availability(repo_ids_needed):
     """
     loggerinst.info("Verifying needed RHEL repositories are available ... ")
     avail_repos = get_avail_repos()
-    loggerinst.info("Repositories available through RHSM:\n%s" %
-                    "\n".join(avail_repos) + "\n")
+    loggerinst.info("Repositories available through RHSM:\n%s" % "\n".join(avail_repos) + "\n")
 
     all_repos_avail = True
     for repo_id in repo_ids_needed:
         if repo_id not in avail_repos:
             # TODO: List the packages that would be left untouched
-            loggerinst.warning("%s repository is not available - some packages"
-                               " may not be replaced and thus not supported."
-                               % repo_id)
+            loggerinst.warning(
+                "%s repository is not available - some packages"
+                " may not be replaced and thus not supported." % repo_id
+            )
             utils.ask_to_continue()
             all_repos_avail = False
     if all_repos_avail:
@@ -446,8 +422,7 @@ def download_rhsm_pkgs():
     RPMs are to be installed in a later stage of the conversion.
     """
     utils.mkdir_p(_RHSM_TMP_DIR)
-    pkgs_to_download = ["subscription-manager",
-                        "subscription-manager-rhsm-certificates"]
+    pkgs_to_download = ["subscription-manager", "subscription-manager-rhsm-certificates"]
 
     if system_info.version.major == 6:
         pkgs_to_download.append("subscription-manager-rhsm")
@@ -458,8 +433,11 @@ def download_rhsm_pkgs():
         _download_rhsm_pkgs(pkgs_to_download, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
 
     elif system_info.version.major == 8:
-        pkgs_to_download += ["python3-subscription-manager-rhsm", "dnf-plugin-subscription-manager",
-                             "python3-syspurpose"]
+        pkgs_to_download += [
+            "python3-subscription-manager-rhsm",
+            "dnf-plugin-subscription-manager",
+            "python3-syspurpose",
+        ]
         _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 
 
@@ -472,7 +450,8 @@ def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
 
 def exit_on_failed_download(paths):
     if None in paths:
-        loggerinst.critical("Unable to download the subscription-manager package or its dependencies. See details of"
-                            " the failed yumdownloader call above. These packages are necessary for the conversion"
-                            " unless you use the --disable-submgr option.")
-
+        loggerinst.critical(
+            "Unable to download the subscription-manager package or its dependencies. See details of"
+            " the failed yumdownloader call above. These packages are necessary for the conversion"
+            " unless you use the --disable-submgr option."
+        )

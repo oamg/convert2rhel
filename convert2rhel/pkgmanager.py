@@ -17,7 +17,9 @@
 
 try:
     from yum import *
-    TYPE = 'yum'
+
+    TYPE = "yum"
 except ImportError:
     from dnf import *  # pylint: disable=import-error
-    TYPE = 'dnf'
+
+    TYPE = "dnf"

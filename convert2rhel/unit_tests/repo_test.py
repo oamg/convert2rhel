@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import repo
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import repo
 from convert2rhel.systeminfo import system_info
 
 

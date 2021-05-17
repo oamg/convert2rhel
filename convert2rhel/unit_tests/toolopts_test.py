@@ -20,6 +20,7 @@
 
 import sys
 import unittest
+
 import pytest
 
 import convert2rhel.toolopts
@@ -56,8 +57,11 @@ class TestToolopts(unittest.TestCase):
         self.assertEqual(tool_opts.password, "passwd")
         self.assertFalse(tool_opts.credentials_thru_cli)
 
-    @unit_tests.mock(sys, "argv", mock_cli_arguments(["--username", "uname",
-                                           "--password", "passwd"]))
+    @unit_tests.mock(
+        sys,
+        "argv",
+        mock_cli_arguments(["--username", "uname", "--password", "passwd"]),
+    )
     def test_cmdline_non_ineractive_with_credentials(self):
         convert2rhel.toolopts.CLI()
         self.assertEqual(tool_opts.username, "uname")
@@ -81,14 +85,15 @@ class TestToolopts(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    ("argv", "warn", "ask_to_continue"), (
+    ("argv", "warn", "ask_to_continue"),
+    (
         (mock_cli_arguments(["-v", "Server"]), True, True),
         (mock_cli_arguments(["--variant", "Client"]), True, True),
         (mock_cli_arguments(["-v"]), True, True),
         (mock_cli_arguments(["--variant"]), True, True),
         (mock_cli_arguments(["--version"]), False, False),
         (mock_cli_arguments([]), False, False),
-    )
+    ),
 )
 def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatch, caplog):
     monkeypatch.setattr(sys, "argv", argv)

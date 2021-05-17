@@ -19,6 +19,7 @@ import unittest
 
 from convert2rhel import __version__, logger, pkghandler, utils
 
+
 RPM_SPEC_VERSION_RE = re.compile(r"^Version: +(.+)$")
 
 

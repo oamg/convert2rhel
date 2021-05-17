@@ -17,17 +17,20 @@
 
 import logging
 import os
-import pytest
 import sys
 import unittest
 
 from collections import namedtuple
 
+import pytest
+
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkghandler, subscription, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+
 from . import GetLoggerMocked
+
 
 if sys.version_info[:2] <= (2, 7):
     import mock  # pylint: disable=import-error
@@ -35,14 +38,10 @@ else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
 
-
 class TestSubscription(unittest.TestCase):
     class GetAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
-            return [namedtuple('Sub', ['pool_id', 'sub_raw'])(
-                'samplepool',
-                'Subscription description'
-            )]
+            return [namedtuple("Sub", ["pool_id", "sub_raw"])("samplepool", "Subscription description")]
 
     class GetNoAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -58,10 +57,7 @@ class TestSubscription(unittest.TestCase):
                 return []
 
             self.empty_last_call = False
-            return [namedtuple('Sub', ['pool_id', 'sub_raw'])(
-                'samplepool',
-                'Subscription description'
-            )]
+            return [namedtuple("Sub", ["pool_id", "sub_raw"])("samplepool", "Subscription description")]
 
     class LetUserChooseItemMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -78,7 +74,7 @@ class TestSubscription(unittest.TestCase):
             # call; when the list is consumed or it is empty, the default
             # tuple is returned
             self.tuples = tuples
-            self.default_tuple = ('output', 0)
+            self.default_tuple = ("output", 0)
             self.called = 0
             self.cmd = ""
 
@@ -105,7 +101,6 @@ class TestSubscription(unittest.TestCase):
             return self.is_file
 
     class PromptUserMocked(unit_tests.MockFunction):
-
         def __call__(self, *args, **kwargs):
             return True
 
@@ -141,10 +136,9 @@ class TestSubscription(unittest.TestCase):
         tool_opts.__init__()
 
     def test_get_registration_cmd(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass with space'
-        expected = \
-            'subscription-manager register --force --username=user --password="pass with space"'
+        tool_opts.username = "user"
+        tool_opts.password = "pass with space"
+        expected = 'subscription-manager register --force --username=user --password="pass with space"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
@@ -171,8 +165,8 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_subscribe_system(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 1)
 
@@ -181,8 +175,8 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_subscribe_system_fail_once(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         subscription.subscribe_system()
         self.assertEqual(subscription.register_system.called, 2)
 
@@ -193,15 +187,13 @@ class TestSubscription(unittest.TestCase):
     def test_register_system_fail_non_interactive(self):
         # Check the critical severity is logged when the credentials are given
         # on the cmdline but registration fails
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
         tool_opts.credentials_thru_cli = True
         self.assertRaises(SystemExit, subscription.register_system)
         self.assertEqual(len(subscription.loggerinst.critical_msgs), 1)
 
-    @unit_tests.mock(utils,
-                     "run_subprocess",
-                     RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(tuples=[("nope", 1), ("nope", 2), ("Success", 0)]))
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(subscription, "get_registration_cmd", GetRegistrationCmdMocked())
     @unit_tests.mock(subscription, "sleep", mock.Mock())
@@ -214,27 +206,19 @@ class TestSubscription(unittest.TestCase):
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
 
     def test_hiding_password(self):
-        test_cmd = 'subscription-manager register --force ' \
-                   '--username=jdoe --password="%s" --org=0123'
-        pswds_to_test = [
-            "my favourite password",
-            "\\)(*&^%f %##@^%&*&^(",
-            " ",
-            ""
-        ]
+        test_cmd = "subscription-manager register --force " '--username=jdoe --password="%s" --org=0123'
+        pswds_to_test = ["my favourite password", "\\)(*&^%f %##@^%&*&^(", " ", ""]
         for pswd in pswds_to_test:
             sanitized_cmd = subscription.hide_password(test_cmd % pswd)
             self.assertEqual(
-                sanitized_cmd,
-                'subscription-manager register --force '
-                '--username=jdoe --password="*****" --org=0123')
+                sanitized_cmd, "subscription-manager register --force " '--username=jdoe --password="*****" --org=0123'
+            )
 
     def test_rhsm_serverurl(self):
-        tool_opts.username = 'user'
-        tool_opts.password = 'pass'
-        tool_opts.serverurl = 'url'
-        expected = \
-            'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
+        tool_opts.serverurl = "url"
+        expected = 'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
@@ -299,8 +283,7 @@ class TestSubscription(unittest.TestCase):
         os.listdir = lambda x: ["filename"]
         self.assertRaises(SystemExit, subscription.replace_subscription_manager)
 
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects",
-                     lambda _: [namedtuple('Pkg', ['name'])("submgr")])
+    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
@@ -332,33 +315,41 @@ class TestSubscription(unittest.TestCase):
         subscription.download_rhsm_pkgs()
 
         self.assertEqual(subscription._download_rhsm_pkgs.called, 1)
-        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
-                         ["subscription-manager",
-                          "subscription-manager-rhsm-certificates",
-                          "subscription-manager-rhsm"])
+        self.assertEqual(
+            subscription._download_rhsm_pkgs.pkgs_to_download,
+            ["subscription-manager", "subscription-manager-rhsm-certificates", "subscription-manager-rhsm"],
+        )
 
         system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
 
         subscription.download_rhsm_pkgs()
 
         self.assertEqual(subscription._download_rhsm_pkgs.called, 2)
-        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
-                         ["subscription-manager",
-                          "subscription-manager-rhsm-certificates",
-                          "subscription-manager-rhsm",
-                          "python-syspurpose"])
+        self.assertEqual(
+            subscription._download_rhsm_pkgs.pkgs_to_download,
+            [
+                "subscription-manager",
+                "subscription-manager-rhsm-certificates",
+                "subscription-manager-rhsm",
+                "python-syspurpose",
+            ],
+        )
 
         system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
 
         subscription.download_rhsm_pkgs()
 
         self.assertEqual(subscription._download_rhsm_pkgs.called, 3)
-        self.assertEqual(subscription._download_rhsm_pkgs.pkgs_to_download,
-                         ["subscription-manager",
-                          "subscription-manager-rhsm-certificates",
-                          "python3-subscription-manager-rhsm",
-                          "dnf-plugin-subscription-manager",
-                          "python3-syspurpose"])
+        self.assertEqual(
+            subscription._download_rhsm_pkgs.pkgs_to_download,
+            [
+                "subscription-manager",
+                "subscription-manager-rhsm-certificates",
+                "python3-subscription-manager-rhsm",
+                "dnf-plugin-subscription-manager",
+                "python3-syspurpose",
+            ],
+        )
 
     class StoreContentMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -410,22 +401,24 @@ class TestSubscription(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    ("submgr_installed", "unregistration_failure"), (
+    ("submgr_installed", "unregistration_failure"),
+    (
         (True, True),
         (True, False),
         (False, True),
         (False, False),
-    )
+    ),
 )
 def test_unregister_system_successfully(submgr_installed, unregistration_failure, monkeypatch, caplog):
     if unregistration_failure:
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=('output', 1)))
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("output", 1)))
     else:
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=('output', 0)))
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("output", 0)))
 
     if submgr_installed:
-        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects",
-                            lambda _: [namedtuple('Pkg', ['name'])("subscription-manager")])
+        monkeypatch.setattr(
+            pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")]
+        )
     else:
         monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda _: None)
 

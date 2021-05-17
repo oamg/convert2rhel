@@ -19,19 +19,21 @@
 import os
 import unittest
 
+
 try:
     from collections import OrderedDict
 except ImportError:
     from ordereddict import OrderedDict
 
-from convert2rhel import unit_tests, checks  # Imports unit_tests/__init__.py
-from convert2rhel import (
+from convert2rhel import (  # Imports unit_tests/__init__.py
     cert,
+    checks,
     main,
     pkghandler,
     redhatrelease,
     repo,
     subscription,
+    unit_tests,
     utils,
 )
 from convert2rhel.toolopts import tool_opts
@@ -46,8 +48,7 @@ class TestMain(unittest.TestCase):
         def __call__(self, *args, **kwargs):
             return
 
-    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                             "..", "data", "version-independent"))
+    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
 
     @unit_tests.mock(utils, "DATA_DIR", eula_dir)
     def test_show_eula(self):
@@ -128,12 +129,24 @@ class TestMain(unittest.TestCase):
         self.assertRaises(SystemExit, main.show_eula)
         self.assertEqual(len(main.loggerinst.critical_msgs), 1)
 
-    @unit_tests.mock(utils.changed_pkgs_control, "restore_pkgs", unit_tests.CountableMockObject())
-    @unit_tests.mock(redhatrelease.system_release_file, "restore", unit_tests.CountableMockObject())
+    @unit_tests.mock(
+        utils.changed_pkgs_control,
+        "restore_pkgs",
+        unit_tests.CountableMockObject(),
+    )
+    @unit_tests.mock(
+        redhatrelease.system_release_file,
+        "restore",
+        unit_tests.CountableMockObject(),
+    )
     @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
     @unit_tests.mock(redhatrelease.yum_conf, "restore", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
-    @unit_tests.mock(pkghandler.versionlock_file, "restore", unit_tests.CountableMockObject())
+    @unit_tests.mock(
+        pkghandler.versionlock_file,
+        "restore",
+        unit_tests.CountableMockObject(),
+    )
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
@@ -228,9 +241,9 @@ class TestMain(unittest.TestCase):
         intended_call_order["disable_repos"] = 0
 
         intended_call_order["remove_repofile_pkgs"] = 1
-        
+
         intended_call_order["enable_repos"] = 0
-        
+
         intended_call_order["patch"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
 

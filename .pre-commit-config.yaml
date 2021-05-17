@@ -1,0 +1,25 @@
+minimum_pre_commit_version: "2.9.0"
+repos:
+  - repo: "https://github.com/psf/black"
+    rev: "21.5b1"
+    hooks:
+      - id: "black"
+        name: "Format code (black)"
+        language_version: "python3"
+
+  - repo: "https://github.com/timothycrosley/isort"
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        language_version: "python3"
+        additional_dependencies: [toml]
+
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: "v4.0.1"
+    hooks:
+      - id: "end-of-file-fixer"
+      - id: "trailing-whitespace"
+      - id: "check-json"
+      - id: "check-toml"
+      - id: "check-yaml"
+      - id: "check-merge-conflict"

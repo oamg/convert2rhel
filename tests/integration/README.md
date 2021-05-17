@@ -1,6 +1,6 @@
 # Integration tests
 
-## Prepare testing environment (tested on Fedora 33) 
+## Prepare testing environment (tested on Fedora 33)
 
 ## Step 1 - prepare libvirt provisioning environment
 
@@ -22,7 +22,7 @@ virsh qemu-agent-command --domain c2r_centos8_template '{"execute":"guest-ping"}
 # {"return":{}}
 
 # Possibility to ssh to each VM with your key (no password)
-ssh root@{VM_IP_ADDR} 
+ssh root@{VM_IP_ADDR}
 ```
 
 1. Install necessary dependencies
@@ -84,23 +84,23 @@ ssh-copy-id root@$(virsh domifaddr --domain c2r-vagrant_default | gawk 'match($0
 ssh root@$(virsh domifaddr --domain c2r-vagrant_default | gawk 'match($0, /(192.+)\/.+/, ary) {print ary[1]}')
     # update packages
     yum update -y
-    
+
     # Disable blacklisted rpc in qemu config
     sed -i "s/BLACKLIST_RPC/\# BLACKLIST_RPC/" /etc/sysconfig/qemu-ga
-    
+
     # Switch selinux into permissive mode
     sed -i "s/SELINUX=enforcing/SELINUX=permissive/" /etc/selinux/config
-    
+
     # enable qemu-ga
     systemctl enable qemu-guest-agent
-    
+
     # install python pip and rsync
     yum install -y python3 rsync
     curl https://bootstrap.pypa.io/pip/get-pip.py | python3
-    
+
     # Remove installed version of convert2rhel
     yum remove convert2rhel -y
-    
+
     # exit the VM Ctrl+D
 
 # shutdown the vagrant VM
@@ -122,8 +122,8 @@ vagrant destroy -f
 # Now do the same for SYSTEM={centos7,ol8,ol7}
 ```
 
-3. Perform post setup for each VM 
-   
+3. Perform post setup for each VM
+
 3.1. In Virtual Machine Manager go to Edit -> Preferences and set enable
 xml editing
 
@@ -168,7 +168,7 @@ within this environment (filtering tests based on tags).
 
 Tests themselves are written using python pytest framework.
 
-Examples of plans and tests can be found in `plans/integration` and 
+Examples of plans and tests can be found in `plans/integration` and
 `tests/integration` directories.
 
 
@@ -178,7 +178,7 @@ Examples of plans and tests can be found in `plans/integration` and
 # activate venv that was setup through `make install`
 . .venv3/bin/activate
 # show available plans and tests
-tmt 
+tmt
 # Found 2 tests: /tests/integration/read-only-mnt-sys/mnt_ro and /tests/integration/read-only-mnt-sys/sys_ro.
 # Found 4 plans: /plans/integration/read-only-mnt-sys/container_centos7_bad_mnt, /plans/integration/read-only-mnt-sys/container_centos7_bad_sys, /plans/integration/read-only-mnt-sys/container_centos8_bad_mnt and /plans/integration/read-only-mnt-sys/container_centos8_bad_sys.
 # Found 0 stories.
@@ -221,7 +221,7 @@ tmt run plans --name /plans/integration/inhibit-if-oracle-system-uses-not-standa
 `plans/main.fmf` defines the root of all tmt plans. It has a preparation step
 that is applied to all tmt plans. In this preparation step the tmt
 runs the ansible roles defined by `tests/ansible_collections/main.yml`. It is
-possible to configure this process by adjusting variables, defined in 
+possible to configure this process by adjusting variables, defined in
 `tests/ansible_collections/group_vars/all.yml`. Each variable is documented
 inside the template file `tests/ansible_collections/group_vars/all.yml.example`
 which is coppied during `make install`

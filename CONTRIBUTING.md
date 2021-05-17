@@ -6,8 +6,10 @@
 
 ## Developing locally
 
-The commands below installs a python3 virtual environment
-with all the necessary dependencies installed:
+The commands below create a python3 virtual environment with all the necessary dependencies installed,
+build needed images,
+create .env file, and
+setup pre-commit hooks
 ```bash
 make install
 ```
@@ -18,14 +20,7 @@ make tests-locally
 ```
 
 ## Unit tests (inside the container)
-You can run unit tests also within containers. To first create the container 
-images, run:
-
-```bash
-$ make images
-```
-
-Once images have been setup, you can now run unit tests within the containers using:
+You can run unit tests also within containers.
 
 ```bash
 $ make tests

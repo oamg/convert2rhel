@@ -28,12 +28,7 @@ from collections import namedtuple
 
 import pytest
 
-from convert2rhel import (  # Imports unit_tests/__init__.py
-    logger,
-    systeminfo,
-    unit_tests,
-    utils,
-)
+from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
@@ -47,7 +42,7 @@ else:
 
 class TestSysteminfo(unittest.TestCase):
     class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self, output_tuple=('output', 0)):
+        def __init__(self, output_tuple=("output", 0)):
             self.output_tuple = output_tuple
             self.called = 0
             self.used_args = []
@@ -108,7 +103,7 @@ class TestSysteminfo(unittest.TestCase):
 
         def __call__(self, filename, as_list):
             self.called += 1
-            return self.data[self.called -1]
+            return self.data[self.called - 1]
 
     ##########################################################################
 
@@ -129,23 +124,40 @@ class TestSysteminfo(unittest.TestCase):
         self.assertEqual(system_info.modified_rpm_files_diff(), None)
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(utils, "get_file_content", GetFileContentMocked(data=[['rpm1', 'rpm2'],
-                                                                           ['rpm1', 'rpm2']]))
-    def test_modified_rpm_files_diff_without_differences_after_conversion(self):
+    @unit_tests.mock(
+        utils,
+        "get_file_content",
+        GetFileContentMocked(data=[["rpm1", "rpm2"], ["rpm1", "rpm2"]]),
+    )
+    def test_modified_rpm_files_diff_without_differences_after_conversion(
+        self,
+    ):
         self.assertEqual(system_info.modified_rpm_files_diff(), None)
 
     @unit_tests.mock(os.path, "exists", PathExistsMocked(True))
     @unit_tests.mock(tool_opts, "no_rpm_va", False)
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(system_info, "logger", GetLoggerMocked())
-    @unit_tests.mock(utils, "get_file_content", GetFileContentMocked(
-        data=[['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts'],
-              ['.M.......  g /etc/pki/ca-trust/extracted/java/cacerts',
-               'S.5....T.  c /etc/yum.conf']]))
-    @pytest.mark.skipif(not is_rpm_based_os(), reason="Current test runs only on rpm based systems.")
+    @unit_tests.mock(
+        utils,
+        "get_file_content",
+        GetFileContentMocked(
+            data=[
+                [".M.......  g /etc/pki/ca-trust/extracted/java/cacerts"],
+                [
+                    ".M.......  g /etc/pki/ca-trust/extracted/java/cacerts",
+                    "S.5....T.  c /etc/yum.conf",
+                ],
+            ]
+        ),
+    )
+    @pytest.mark.skipif(
+        not is_rpm_based_os(),
+        reason="Current test runs only on rpm based systems.",
+    )
     def test_modified_rpm_files_diff_with_differences_after_conversion(self):
         system_info.modified_rpm_files_diff()
-        self.assertTrue(any('S.5....T.  c /etc/yum.conf' in elem for elem in system_info.logger.info_msgs))
+        self.assertTrue(any("S.5....T.  c /etc/yum.conf" in elem for elem in system_info.logger.info_msgs))
 
     @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
@@ -170,11 +182,13 @@ class TestSysteminfo(unittest.TestCase):
 
     def test_get_system_version(self):
         Version = namedtuple("Version", ["major", "minor"])
-        versions = {"Oracle Linux Server release 6.10": Version(6, 10),
-                    "Oracle Linux Server release 7.8": Version(7, 8),
-                    "CentOS release 6.10 (Final)": Version(6, 10),
-                    "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
-                    "CentOS Linux release 8.1.1911 (Core)": Version(8, 1)}
+        versions = {
+            "Oracle Linux Server release 6.10": Version(6, 10),
+            "Oracle Linux Server release 7.8": Version(7, 8),
+            "CentOS release 6.10 (Final)": Version(6, 10),
+            "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
+            "CentOS Linux release 8.1.1911 (Core)": Version(8, 1),
+        }
         for system_release in versions:
             system_info.system_release_file_content = system_release
             version = system_info._get_system_version()
@@ -185,20 +199,15 @@ class TestSysteminfo(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    ("pkg_name", "present_on_system", "expected_return"), [
+    ("pkg_name", "present_on_system", "expected_return"),
+    [
         ("package A", True, True),
         ("package A", False, False),
         ("", None, False),
-    ]
+    ],
 )
-def test_system_info_has_rpm(
-        pkg_name, present_on_system, expected_return, monkeypatch
-):
-    run_subprocess_mocked = mock.Mock(
-        return_value=("", 0) if present_on_system else ("", 1)
-    )
-    monkeypatch.setattr(
-        systeminfo, "run_subprocess", value=run_subprocess_mocked
-    )
+def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monkeypatch):
+    run_subprocess_mocked = mock.Mock(return_value=("", 0) if present_on_system else ("", 1))
+    monkeypatch.setattr(systeminfo, "run_subprocess", value=run_subprocess_mocked)
     assert system_info.is_rpm_installed(pkg_name) == expected_return
     assert run_subprocess_mocked
