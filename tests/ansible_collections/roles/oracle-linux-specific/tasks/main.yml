@@ -1,0 +1,3 @@
+---
+- include: boot_standard_kernel.yml
+

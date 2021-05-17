@@ -1,3 +1,4 @@
+---
 - name: Install standard kernel
   yum:
     name: kernel

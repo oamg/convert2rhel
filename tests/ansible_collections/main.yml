@@ -1,0 +1,10 @@
+---
+- hosts: all
+  roles:
+
+    - role: oracle-linux-specific
+      when: ansible_facts['distribution'] == "OracleLinux"
+
+    - role: packaging
+
+    - role: install-testing-deps

@@ -151,6 +151,9 @@ make install
 
 # set secrets for running integration tests
 vim .env
+
+# set secrets for the preparation ansible roles
+vim tests/ansible_collections/group_vars/all.yml
 ```
 
 # Creating integration tests
@@ -160,188 +163,13 @@ integration tests lifecycle (https://tmt.readthedocs.io/en/stable/index.html).
 It uses FMF format (https://fmf.readthedocs.io/en/stable/index.html) to declare
 testing plans and tests.
 
-Basic structure of the feature integration test is as follows:
-```bash
-# feature plan is stored as a directory in plans/integration dir
-#     in our case this is - inhibit-if-oracle-system-uses-not-standard-kernel
-$ tree plans
-plans/
-├── integration
-│   └── inhibit-if-oracle-system-uses-not-standard-kernel
-│       ├── main.fmf
-│       ├── vm_oracle7.fmf
-│       └── vm_oracle8.fmf
-└── main.fmf
-# primary (root) plan
-$ cat plans/main.fmf
-execute:
-    how: tmt
-discover:
-    how: fmf
-prepare:
-    how: ansible
-    playbook:
-        - tests/ansible_collections/basic_setup.yml      
-# root feature plan, it extends the root plan by adding filtering tag to mach only
-# the given feature tests
-$ cat plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/main.fmf 
- discover+:
-     filter:
-         - 'tag: inhibit-if-oracle-system-uses-not-standard-kernel'
-# vm type specific plans. They are included subplans /good and /bad
-$ cat plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/vm_oracle8.fmf 
-discover+:
-    filter+:
-        - 'tag: oracle8'
-provision:
-    how: libvirt
-    origin_vm_name: c2r_oracle8_template
-    develop: true
+Plans define the testing environment, how to prepare it and which tests to run
+within this environment (filtering tests based on tags).
 
-/good:
-    discover+:
-        filter+:
-            - 'tag: good_test'
-    prepare+:
-        playbook+:
-            - tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/replace_oracle_kernel.yml
-/bad:
-    discover+:
-        filter+:
-            - 'tag: bad_test'
-```
-As the result we have the following set of 4 plans:
-```bash
-$ tmt plans show
-/plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/vm_oracle7/bad
-    discover 
-         how fmf
-      filter tag: inhibit-if-oracle-system-uses-not-standard-kernel
-             tag: oracle7
-             tag: bad_test
-   provision 
-         how libvirt
-origin_vm_name c2r_oracle7_template
-     develop yes
-     prepare 
-         how ansible
-    playbook tests/ansible_collections/basic_setup.yml
+Tests themselves are written using python pytest framework.
 
-/plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/vm_oracle7/good
-    discover 
-         how fmf
-      filter tag: inhibit-if-oracle-system-uses-not-standard-kernel
-             tag: oracle7
-             tag: good_test
-   provision 
-         how libvirt
-origin_vm_name c2r_oracle7_template
-     develop yes
-     prepare 
-         how ansible
-    playbook tests/ansible_collections/basic_setup.yml
-             tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/replace_oracle_kernel.yml
-
-/plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/vm_oracle8/bad
-    discover 
-         how fmf
-      filter tag: inhibit-if-oracle-system-uses-not-standard-kernel
-             tag: oracle8
-             tag: bad_test
-   provision 
-         how libvirt
-origin_vm_name c2r_oracle8_template
-     develop yes
-     prepare 
-         how ansible
-    playbook tests/ansible_collections/basic_setup.yml
-
-/plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/vm_oracle8/good
-    discover 
-         how fmf
-      filter tag: inhibit-if-oracle-system-uses-not-standard-kernel
-             tag: oracle8
-             tag: good_test
-   provision 
-         how libvirt
-origin_vm_name c2r_oracle8_template
-     develop yes
-     prepare 
-         how ansible
-    playbook tests/ansible_collections/basic_setup.yml
-             tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/replace_oracle_kernel.yml
-```
-
-Plans defines the testing environment, how to prepare it and which tests to run
-within this environment (select tests based on tags).
-Now let's look how to define tests. For this feature we need to have only two
-tests (good and bad), which will be running in oracle 7 and oracle 8 environments.
-Goal is to have the following fmf configs for tests:
-```bash
-$  tmt tests show
-/tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/bad
-     summary inhibit-if-oracle-system-uses-not-standard-kernel
-        test pytest -svv --tb=no -m bad_tests
-        path /tests/integration/inhibit-if-oracle-system-uses-not-
-             standard-kernel
-      manual no
-    duration 5m
-     enabled yes
-      result respect
-         tag oracle7
-             oracle8
-             inhibit-if-oracle-system-uses-not-standard-kernel
-             bad_test
-
-/tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/good
-     summary inhibit-if-oracle-system-uses-not-standard-kernel
-        test pytest -svv --tb=no -m good_tests
-        path /tests/integration/inhibit-if-oracle-system-uses-not-
-             standard-kernel
-      manual no
-    duration 5m
-     enabled yes
-      result respect
-         tag oracle7
-             oracle8
-             inhibit-if-oracle-system-uses-not-standard-kernel
-             good_test
-```
-The corresponding files context:
-```bash
-$ tree tests
-tests
-├── ansible_collections       # for storing general playbooks to reuse in different plans
-│   ├── basic_setup.yml       # this one is use in the very root tmt plan
-│   └── scripts       # place for storing scripts to call in ansible
-└── integration
-    ├── conftest.py       # place for pytest fixtures
-    ├── inhibit-if-oracle-system-uses-not-standard-kernel     # place for tmt tests for the given feature
-    │   ├── ansible       # feature related playbooks
-    │   │   └── replace_oracle_kernel.yml
-    │   ├── main.fmf
-    │   └── test_oracle_bad_kernel.py       # definition of pytest tests 
-    ├── main.fmf      # root tmt tests definition
-    └── README.md
-$  cat tests/integration/inhibit-if-oracle-system-uses-not-standard-kernel/main.fmf
-summary: inhibit-if-oracle-system-uses-not-standard-kernel
-tag+:
-  - oracle7
-  - oracle8
-  - inhibit-if-oracle-system-uses-not-standard-kernel
-
-/good:
-  tag+:
-    - good_test
-  test: |
-    pytest -svv --tb=no -m good_tests       # tmt has the test fmf file parent dir as a cwd
-
-/bad:
-  tag+:
-    - bad_test
-  test: |
-    pytest -svv --tb=no -m bad_tests
-```
+Examples of plans and tests can be found in `plans/integration` and 
+`tests/integration` directories.
 
 
 # Running integration tests
@@ -358,6 +186,9 @@ tmt
 # show tmt plans and tests
 tmt plans show -vvv
 tmt tests show -vvv
+
+# list all plans
+tmt plans ls
 
 # run all integration tests
 tmt run
@@ -380,4 +211,17 @@ tmt run plans --name /plans/integration/read-only-mnt-sys/container_centos8_bad_
 #        Write file '/var/tmp/tmt/run-531/plans/integration/read-only-mnt-sys/container_centos8_bad_mnt/finish/step.yaml'.
 #
 #total: 1 test passed
+
+# run one integration test with plans matching the regex (in example all goo tests)
+tmt run plans --name /plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/.+/good -vvvddd
 ```
+
+# Configuration of root ansible role for all testing environments
+
+`plans/main.fmf` defines the root of all tmt plans. It has a preparation step
+that is applied to all tmt plans. In this preparation step the tmt
+runs the ansible roles defined by `tests/ansible_collections/main.yml`. It is
+possible to configure this process by adjusting variables, defined in 
+`tests/ansible_collections/group_vars/all.yml`. Each variable is documented
+inside the template file `tests/ansible_collections/group_vars/all.yml.example`
+which is coppied during `make install`
