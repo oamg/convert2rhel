@@ -29,6 +29,7 @@ from convert2rhel.checks import (
     _bad_kernel_substring,
     _bad_kernel_version,
     _get_kmod_comparison_key,
+    check_environment,
     check_rhel_compatible_kernel_is_used,
     check_tainted_kmods,
     ensure_compatibility_of_kmods,
@@ -652,3 +653,11 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertTrue(
             "Stopping conversion due to read-only mount to /sys directory" not in checks.logger.critical_msgs[0]
         )
+
+
+def test_check_environment(monkeypatch, caplog):
+    monkeypatch.setenv("CONVERT2RHEL_NOT_SUPPORTED", "1")
+    monkeypatch.setattr(checks, "ask_to_continue", mock.Mock())
+    check_environment()
+    checks.ask_to_continue.assert_called_once()
+    assert "Variable CONVERT2RHEL_UNSUPPORTED has been detected" in caplog.text

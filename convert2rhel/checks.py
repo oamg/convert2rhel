@@ -24,7 +24,7 @@ import subprocess
 
 from convert2rhel.pkghandler import get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import get_file_content, run_subprocess
+from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ COMPATIBLE_KERNELS_VERS = {
 
 def perform_pre_checks():
     """Early checks after system facts should be added here."""
+    check_environment()
     check_uefi()
     check_tainted_kmods()
     check_readonly_mounts()
@@ -393,3 +394,9 @@ def _bad_kernel_substring(kernel_release):
         )
         return True
     return False
+
+
+def check_environment():
+    if "CONVERT2RHEL_NOT_SUPPORTED" in os.environ:
+        logger.warning("Variable CONVERT2RHEL_UNSUPPORTED has been detected. Proceed at your own risk.")
+        ask_to_continue()
