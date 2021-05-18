@@ -152,8 +152,6 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         "multilib": set(),
         "required": set(),
     }
-    package_nevr_re = r"[0-9]*:?([a-z][a-z0-9-]*?)-[0-9]"
-    package_name_re = r"([a-z][a-z0-9-]*?)\s"
     loggerinst.info("\n\n")
 
     protected = re.findall('Error.*?"(.*?)".*?protected', output, re.MULTILINE)
@@ -161,6 +159,7 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Found protected packages: %s" % set(protected))
         problematic_pkgs["protected"] = set(protected) - excluded_pkgs
 
+    package_nevr_re = r"[0-9]*:?([a-z][a-z0-9-]*?)-[0-9]"
     deps = re.findall("Error: Package: %s" % package_nevr_re, output, re.MULTILINE)
     if deps:
         loggerinst.info("Found packages causing dependency errors: %s" % set(deps))
@@ -171,6 +170,12 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Found multilib packages: %s" % set(multilib))
         problematic_pkgs["multilib"] = set(multilib) - excluded_pkgs
 
+    # What yum prints in the Requires is a capability, not a package name. And capability can be an arbitrary string,
+    # e.g. perl(Carp) or redhat-lsb-core(x86-64).
+    # Yet, passing a capability to yum distro-sync does not yield the expected result - the packages that provide the
+    # capability are not getting downgraded. So here we're getting only the part of a capability that consists of
+    # package name characters only. It will work in most cases but not in all (e.g. "perl(Carp)").
+    package_name_re = r"([a-z][a-z0-9-]*)"
     req = re.findall("Requires: %s" % package_name_re, output, re.MULTILINE)
     if req:
         loggerinst.info("Unavailable packages required by others: %s" % set(req))

@@ -312,6 +312,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertIn("libreport-plugin-rhtsupport", error_pkgs["required"])
         self.assertIn("python2-hawkey", error_pkgs["all"])
         self.assertIn("python2-hawkey", error_pkgs["required"])
+        self.assertIn("redhat-lsb-trialuse", error_pkgs["all"])
+        self.assertIn("redhat-lsb-trialuse", error_pkgs["errors"])
+        self.assertIn("redhat-lsb-core", error_pkgs["all"])
+        self.assertIn("redhat-lsb-core", error_pkgs["required"])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, set())
         self.assertIn("openldap", error_pkgs["all"])
@@ -1386,7 +1390,15 @@ Error: Package: abrt-cli-2.1.11-34.el7.x86_64 (rhel-7-server-rpms)
            Removing: python2-hawkey-0.22.5-2.el7_9.x86_64 (@extras/7)
                python2-hawkey = 0.22.5-2.el7_9
            Downgraded By: python2-hawkey-0.6.3-4.el7.x86_64 (rhel-7-server-rpms)
-               python2-hawkey = 0.6.3-4.el7"""
+               python2-hawkey = 0.6.3-4.el7
+Error: Package: redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64 (@base/7)
+           Requires: redhat-lsb-core(x86-64) = 4.1-27.el7.centos.1
+           Removing: redhat-lsb-core-4.1-27.el7.centos.1.x86_64 (@base/7)
+               redhat-lsb-core(x86-64) = 4.1-27.el7.centos.1
+           Downgraded By: redhat-lsb-core-4.1-27.el7.x86_64 (rhel-7-server-rpms)
+               redhat-lsb-core(x86-64) = 4.1-27.el7
+           Available: redhat-lsb-core-4.1-24.el7.x86_64 (rhel-7-server-rpms)
+               redhat-lsb-core(x86-64) = 4.1-24.el7"""
 
 YUM_MULTILIB_ERROR = """
 Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
