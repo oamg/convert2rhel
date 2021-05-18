@@ -17,6 +17,7 @@
 
 import datetime
 import errno
+import functools
 import getpass
 import inspect
 import logging
@@ -583,3 +584,44 @@ def get_rpm_header(rpm_path, _open=open):
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
+
+
+def available_for_skipping(aliases=(), return_value=None):
+    """Decorator, that allows to skip the execution of any function.
+
+    In order to use this feature the variable CONVERT2RHEL_UNSUPPORTED should be set.
+    The names of function names or their aliases to be skipped should be specified
+    with help of CONVERT2RHEL_DEVEL_SKIP variable. For example:
+        CONVERT2RHEL_DEVEL_SKIP=some_func_name
+        CONVERT2RHEL_DEVEL_SKIP=foo_name,bar_name
+        CONVERT2RHEL_DEVEL_SKIP=foo_name_alias
+
+    Usage example:
+
+    >>> @available_for_skipping(
+    >>>     aliases=("alias name for this foo (optional)",),
+    >>>     return_value=None
+    >>> )
+    >>> def some_foo():
+    >>>     pass
+    """
+
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            if ("CONVERT2RHEL_UNSUPPORTED" in os.environ) and _skip_this_function((f.__name__,) + aliases):
+                loggerinst.warning(
+                    "Function %r (alias names %r) specified to be skipped by "
+                    "CONVERT2RHEL_DEVEL_SKIP environment variable." % (f.__name__, aliases)
+                )
+                return return_value
+            else:
+                return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _skip_this_function(f_names):
+    return any(f_to_skip in f_names for f_to_skip in os.getenv("CONVERT2RHEL_DEVEL_SKIP", "").split(","))

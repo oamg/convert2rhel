@@ -24,7 +24,7 @@ import subprocess
 
 from convert2rhel.pkghandler import get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess
+from convert2rhel.utils import ask_to_continue, available_for_skipping, get_file_content, run_subprocess
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ def check_uefi():
     logger.debug("Converting BIOS system")
 
 
+@available_for_skipping(aliases=("tainted", "tainted_kernel", "tainted_kmods"))
 def check_tainted_kmods():
     """Stop the conversion when a loaded tainted kernel module is detected.
 
@@ -88,6 +89,7 @@ def check_tainted_kmods():
         )
 
 
+@available_for_skipping(aliases=("readonly", "readonly_mounts"))
 def check_readonly_mounts():
     """
     Mounting directly to /mnt/ is not in line with Unix FS (https://en.wikipedia.org/wiki/Unix_filesystem).
@@ -121,6 +123,7 @@ def perform_pre_ponr_checks():
     ensure_compatibility_of_kmods()
 
 
+@available_for_skipping(aliases=("kmods_check", "supported_kmods"))
 def ensure_compatibility_of_kmods():
     """Ensure if the host kernel modules are compatible with RHEL."""
     host_kmods = get_installed_kmods()
@@ -397,6 +400,6 @@ def _bad_kernel_substring(kernel_release):
 
 
 def check_environment():
-    if "CONVERT2RHEL_NOT_SUPPORTED" in os.environ:
+    if "CONVERT2RHEL_UNSUPPORTED" in os.environ:
         logger.warning("Variable CONVERT2RHEL_UNSUPPORTED has been detected. Proceed at your own risk.")
         ask_to_continue()

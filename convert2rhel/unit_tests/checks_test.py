@@ -656,7 +656,7 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
 
 
 def test_check_environment(monkeypatch, caplog):
-    monkeypatch.setenv("CONVERT2RHEL_NOT_SUPPORTED", "1")
+    monkeypatch.setenv("CONVERT2RHEL_UNSUPPORTED", "1")
     monkeypatch.setattr(checks, "ask_to_continue", mock.Mock())
     check_environment()
     checks.ask_to_continue.assert_called_once()

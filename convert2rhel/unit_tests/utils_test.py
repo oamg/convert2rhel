@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 import os
 import re
 import sys
@@ -21,16 +22,22 @@ import unittest
 
 from collections import namedtuple
 
+import pytest
+
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
+from convert2rhel.utils import available_for_skipping
 
 
 if sys.version_info[:2] <= (2, 7):
     import mock  # pylint: disable=import-error
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestUtils(unittest.TestCase):
@@ -280,3 +287,37 @@ def test_get_rpm_header(monkeypatch):
     rpm = get_rpm_mocked()
     monkeypatch.setattr(utils, "rpm", rpm)
     assert utils.get_rpm_header("/path/to.rpm", _open=mock.mock_open())[rpm.RPMTAG_NAME] == "pkg1"
+
+
+@pytest.mark.parametrize(
+    ("not_supported_var_set", "f_name_aliases", "skip_var_value", "f_skipped"),
+    (
+        # tests when not supported env var is enabled
+        (True, (), "some_foo,", True),
+        (True, (), "some_foo_alias,", False),
+        (True, ("some_foo_alias",), "some_foo_alias,", True),
+        # the same tests, but without not supported var
+        (False, (), "some_foo,", False),
+        (False, (), "", False),
+        (False, (), "some_foo_alias,", False),
+        (False, ("some_foo_alias",), "some_foo_alias,", False),
+        # special cases when skip var is set with one value or not set
+        (True, ("some_foo_alias",), "some_foo_alias", True),
+        (True, (), "", False),
+    ),
+)
+def test_skip_func(caplog, monkeypatch, not_supported_var_set, f_name_aliases, skip_var_value, f_skipped):
+    if not_supported_var_set:
+        monkeypatch.setenv("CONVERT2RHEL_UNSUPPORTED", "1")
+    if skip_var_value:
+        monkeypatch.setenv("CONVERT2RHEL_DEVEL_SKIP", skip_var_value)
+
+    @available_for_skipping(aliases=f_name_aliases, return_value=None)
+    def some_foo():
+        logger.info("some_foo was called")
+
+    some_foo()
+    if not f_skipped:
+        assert "was called" in caplog.text
+    else:
+        assert "was called" not in caplog.text
