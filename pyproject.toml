@@ -3,14 +3,12 @@ line-length=120
 target-version=["py38"]
 
 [tool.isort]
+profile = "black"
 atomic=true
 line_length = 120
 lines_after_imports=2
 lines_between_types=1
 use_parentheses = true
-balanced_wrapping = true
-include_trailing_comma = true
-multi_line_output = 3
 known_third_party=[
     "pytest",
 ]
