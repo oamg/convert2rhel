@@ -1,0 +1,11 @@
+---
+- name: Update system
+  yum:
+    name: "*"
+    state: latest
+  register: update
+
+- name: Reboot
+  reboot:
+  when: (ansible_facts['distribution'] == "CentOS") and
+        (update.msg != "Nothing to do")

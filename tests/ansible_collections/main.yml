@@ -2,6 +2,8 @@
 - hosts: all
   roles:
 
+    - role: update-system
+
     - role: oracle-linux-specific
       when: ansible_facts['distribution'] == "OracleLinux"
 
