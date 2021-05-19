@@ -1,0 +1,6 @@
+summary: add-possibility-to-skip-functions
+tag+:
+  - centos8
+  - add-possibility-to-skip-functions
+test: |
+  pytest -svv

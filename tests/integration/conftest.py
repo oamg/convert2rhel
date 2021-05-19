@@ -97,3 +97,17 @@ def convert2rhel(shell):
             shell("subscription-manager unregister")
 
     return factory
+
+
+@pytest.fixture()
+def insert_custom_kmod(shell):
+    """Insert a custom kernel module.
+
+    Fixture is used for testing scenarious with custom kmods.
+    """
+    origin_kmod_loc = Path("/lib/modules/$(uname -r)/kernel/drivers/net/bonding/bonding.ko.xz")
+    new_kmod_dir = origin_kmod_loc.parent / "custom_module_location"
+
+    shell(f"mkdir {new_kmod_dir.as_posix()}")
+    shell(f"mv {origin_kmod_loc.as_posix()} {new_kmod_dir.as_posix()}")
+    shell(f"insmod {(new_kmod_dir / origin_kmod_loc.name).as_posix()}")
