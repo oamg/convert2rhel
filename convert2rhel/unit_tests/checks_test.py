@@ -289,7 +289,7 @@ def test_ensure_compatibility_of_kmods_excluded(
         ),
     )
     if msg_in_logs:
-        assert msg_in_logs in caplog.records[0].message
+        assert any(msg_in_logs in record.message for record in caplog.records)
     if msg_not_in_logs:
         assert all(msg_not_in_logs not in record.message for record in caplog.records)
 
