@@ -25,8 +25,7 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 
-from convert2rhel import main  # Imports unit_tests/__init__.py
-from convert2rhel import cert, checks, pkghandler, redhatrelease, repo, subscription, unit_tests, utils
+from convert2rhel import cert, checks, main, pkghandler, redhatrelease, repo, subscription, unit_tests, utils
 from convert2rhel.toolopts import tool_opts
 
 
