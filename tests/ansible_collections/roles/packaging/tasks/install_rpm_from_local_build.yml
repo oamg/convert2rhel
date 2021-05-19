@@ -1,7 +1,7 @@
 ---
 - name: Get convert2rhel version
   delegate_to: localhost
-  shell: cat packaging/convert2rhel.spec | awk '/Version.+/ {print $2}'
+  shell: python scripts/extract_version_from_rpm_spec.py packaging/convert2rhel.spec
   args:
     chdir: ../..
   register: pkg_version
@@ -21,7 +21,7 @@
 
 - name: Install el8 convert2rhel package
   yum:
-    name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}-1.el8.noarch.rpm"
+    name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}.el8.noarch.rpm"
     state: present
     disable_gpg_check: true
   when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8") or
@@ -29,7 +29,7 @@
 
 - name: Install el7 convert2rhel package
   yum:
-    name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}-1.el7.noarch.rpm"
+    name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}.el7.noarch.rpm"
     state: present
     disable_gpg_check: true
   when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7") or
