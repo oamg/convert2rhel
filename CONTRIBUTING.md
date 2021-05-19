@@ -6,6 +6,10 @@
 
 ## Developing locally
 
+Required dependencies:
+- virtualenv
+- pre-commit
+
 The commands below create a python3 virtual environment with all the necessary dependencies installed,
 build needed images,
 create .env file, and
@@ -34,4 +38,23 @@ make lint   # inside the centos8 container
 Or locally
 ```bash
 make lint-locally
+```
+
+## Work with pre-commit hooks
+
+```bash
+# installs pre-commit hooks into the repo (included into make install)
+pre-commit install --install-hooks
+
+# run pre-commit hooks for staged files
+pre-commit run
+
+# run pre-commit hooks for all files in repo
+pre-commit run --all-files
+
+# bump versions of the pre-commit hooks automatically
+pre-commit autoupdate
+
+# bypass pre-commit check
+git commit --no-verify
 ```
