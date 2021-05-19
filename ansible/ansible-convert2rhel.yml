@@ -13,9 +13,9 @@
       meta: end_host
       when: ansible_distribution != 'CentOS' and ansible_distribution != 'OracleLinux'
 
-    - name: Validate Release Version (6.10, 7.9, 8.3)
+    - name: Validate Release Version (6.10, 7.9, 8.4)
       meta: end_host
-      when: ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9' and ansible_distribution_version != '8.3'
+      when: ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9' and ansible_distribution_version != '8.4'
 
     - name: Download Red Hat GPG key
       get_url:
