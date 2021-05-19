@@ -10,6 +10,7 @@ lines_after_imports=2
 lines_between_types=1
 known_third_party=[
     "pytest",
+    "click",
 ]
 known_first_party=["convert2rhel"]
 
