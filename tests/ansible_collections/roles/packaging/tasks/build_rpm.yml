@@ -2,5 +2,6 @@
 - name: Building rpms
   delegate_to: localhost
   shell: make rpms
+  no_log: True
   args:
     chdir: ../..

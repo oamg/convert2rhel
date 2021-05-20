@@ -1,0 +1,13 @@
+---
+- name: Update system
+  yum:
+    name: "*"
+    state: latest
+  register: update
+
+- name: Reboot
+  reboot:
+  # we need reboot only CentOS, because OL will be
+  #   rebooted in later steps (booting into standard kernel)
+  when: (ansible_facts['distribution'] == "CentOS") and
+        (update.changed)
