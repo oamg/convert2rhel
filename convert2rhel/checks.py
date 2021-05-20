@@ -126,22 +126,18 @@ def ensure_compatibility_of_kmods():
     rhel_supported_kmods = get_rhel_supported_kmods()
     unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
     if unsupported_kmods:
-        kernel_version = run_subprocess("uname -r")[0].rstrip("\n")
         not_supported_kmods = "\n".join(
             map(
-                lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=kernel_version, kmod=kmod),
+                lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod),
                 unsupported_kmods,
             )
         )
-        # TODO logger.critical("message %s, %s", "what should be under s")
-        #  doesn't work. We have `%s` as output instead. Make it work
         logger.critical(
             (
-                "The following kernel modules are not "
-                "supported in RHEL:\n{kmods}\n"
-                "Uninstall or disable them and run convert2rhel "
-                "again to continue with the conversion."
-            ).format(kmods=not_supported_kmods)
+                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
+                "Make sure you have updated the kernel to the latest available and rebooted the system. "
+                "Remove the unsupported modules and run convert2rhel again to continue with the conversion."
+            ).format(kmods=not_supported_kmods, system=system_info.name)
         )
     else:
         logger.debug("Kernel modules are compatible.")
@@ -156,10 +152,8 @@ def get_installed_kmods():
     kernel modules in case of different kernel release
     """
     try:
-        kernel_version, exit_code = run_subprocess("uname -r")
-        assert exit_code == 0
         kmod_str, exit_code = run_subprocess(
-            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(kver=kernel_version.rstrip("\n")),
+            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(kver=system_info.booted_kernel),
             print_output=False,
         )
         assert exit_code == 0
@@ -204,6 +198,18 @@ def get_rhel_supported_kmods():
     )
     # from these packages we select only the latest one
     kmod_pkgs = get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
+    if not kmod_pkgs:
+        logger.debug("Output of the previous repoquery command:\n{0}".format(kmod_pkgs_str))
+        logger.critical(
+            "No packages containing kernel modules available in the enabled repositories ({0}).".format(
+                ", ".join(system_info.get_enabled_rhel_repos())
+            )
+        )
+    else:
+        logger.info(
+            "Comparing the installed kernel modules with the modules available in the following RHEL"
+            " kernel packages available in the enabled repositories:\n {0}".format("\n ".join(kmod_pkgs))
+        )
     # querying obtained packages for files they produces
     rhel_kmods_str, _ = run_subprocess(
         ("repoquery --releasever={releasever} {setopt_arg} {repoids_args} -l {pkgs}").format(
@@ -310,13 +316,11 @@ def check_rhel_compatible_kernel_is_used():
     original system.
     """
     logger.task("Prepare: Check kernel compatibility with RHEL")
-    kernel_release = run_subprocess("uname -r", print_output=False)[0].rstrip()
-    logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_release))
     if any(
         (
-            _bad_kernel_version(kernel_release),
-            _bad_kernel_package_signature(kernel_release),
-            _bad_kernel_substring(kernel_release),
+            _bad_kernel_version(system_info.booted_kernel),
+            _bad_kernel_package_signature(system_info.booted_kernel),
+            _bad_kernel_substring(system_info.booted_kernel),
         )
     ):
         logger.critical(

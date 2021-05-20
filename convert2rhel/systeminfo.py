@@ -76,6 +76,8 @@ class SystemInfo(object):
         self.releasever = None
         # List of kmods to not inhbit the conversion upon when detected as not available in RHEL
         self.kmods_to_ignore = []
+        # Booted kernel VRA (version, release, architecture), e.g. "4.18.0-240.22.1.el8_3.x86_64"
+        self.booted_kernel = ""
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
@@ -94,6 +96,7 @@ class SystemInfo(object):
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
+        self.booted_kernel = self._get_booted_kernel()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -191,6 +194,11 @@ class SystemInfo(object):
 
     def _get_kmods_to_ignore(self):
         return self._get_cfg_opt("kmods_to_ignore").split()
+
+    def _get_booted_kernel(self):
+        kernel_vra = run_subprocess("uname -r", print_output=False)[0].rstrip()
+        self.logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_vra))
+        return kernel_vra
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
         """RPM is able to detect if any file installed as part of a package has been changed in any way after the
