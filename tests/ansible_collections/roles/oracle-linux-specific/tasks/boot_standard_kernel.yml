@@ -1,8 +1,8 @@
 ---
 - name: Install standard kernel
   yum:
-    name: kernel
-    state: present
+    name: "kernel.*"
+    state: latest
 
 - name: Get installed kernel version
   shell: rpm -q --last kernel | head -1 |  gawk 'match($0, /kernel-(.+) \s+.+/, s) {print s[1]}'
