@@ -7,5 +7,7 @@
 
 - name: Reboot
   reboot:
+  # we need reboot only CentOS, because OL will be
+  #   rebooted in later steps (booting into standard kernel)
   when: (ansible_facts['distribution'] == "CentOS") and
-        (update.msg != "Nothing to do")
+        (update.changed)
