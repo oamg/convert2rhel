@@ -260,7 +260,7 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     """
 
     pkgs_groups = itertools.groupby(sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0])
-    return (
+    return tuple(
         max(distinct_kernel_pkgs[1], key=_repos_version_key)
         for distinct_kernel_pkgs in pkgs_groups
         if distinct_kernel_pkgs[0].startswith(("kernel", "kmod"))
