@@ -1,0 +1,7 @@
+summary: resolve-dependency
+tag+:
+  - centos7
+  - oracle7
+  - resolve-dependency
+
+test: pytest -svv
