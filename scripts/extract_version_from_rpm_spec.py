@@ -4,16 +4,13 @@ import click
 
 
 @click.command()
-@click.argument("spec_path")
+@click.argument("spec_path", type=click.Path(exists=True))
 def get_convert2rhel_version(spec_path: str) -> None:
-    """Parse rpm spec file and returns its name-version-release part.
+    """Parse rpm spec file and returns its version-release part.
 
-    Example:
-    ```bash
-    python scripts/extract_version_from_rpm_spec.py packaging/convert2rhel.spec
-    # 0.21-1
-    ```
-
+    Example:\n
+    $ python scripts/extract_version_from_rpm_spec.py packaging/convert2rhel.spec\n
+    $ 0.21-1
     """
     with open(spec_path) as rpm_f:
         try:
