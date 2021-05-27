@@ -293,7 +293,7 @@ class SystemInfo(object):
         #         "system_info.get_enabled_rhel_repos is not "
         #          "to be consumed before registering the system with RHSM."
         #     )
-        return self.submgr_enabled_repos if not tool_opts.disable_submgr else tool_opts.enablerepo
+        return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
 
 # Code to be executed upon module import

@@ -133,7 +133,7 @@ def check_custom_repos_are_valid():
     """
     logger.task("Prepare: Checking if --enablerepo repositories are accessible")
 
-    if not tool_opts.disable_submgr:
+    if not tool_opts.no_rhsm:
         logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
         return
 

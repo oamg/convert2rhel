@@ -165,7 +165,7 @@ def pre_ponr_conversion():
     special_cases.check_and_resolve()
 
     rhel_repoids = []
-    if not toolopts.tool_opts.disable_submgr:
+    if not toolopts.tool_opts.no_rhsm:
         loggerinst.task("Convert: Subscription Manager - Download packages")
         subscription.download_rhsm_pkgs()
         loggerinst.task("Convert: Subscription Manager - Replace")
@@ -188,7 +188,7 @@ def pre_ponr_conversion():
 
     # we need to enable repos after removing repofile pkgs, otherwise we don't get backups
     # to restore from on a rollback
-    if not toolopts.tool_opts.disable_submgr:
+    if not toolopts.tool_opts.no_rhsm:
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
         subscription.enable_repos(rhel_repoids)
 

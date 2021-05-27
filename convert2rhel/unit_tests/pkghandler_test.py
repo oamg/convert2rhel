@@ -203,7 +203,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(tool_opts, "disable_submgr", True)
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
     @unit_tests.mock(tool_opts, "disablerepo", ["*"])
     @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
     def test_call_yum_cmd_with_disablerepo_and_enablerepo(self):
@@ -1120,7 +1120,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "submgr_enabled_repos", ["enabled_rhsm_repo"])
     @unit_tests.mock(tool_opts, "enablerepo", [])  # to be changed later in the test
-    @unit_tests.mock(tool_opts, "disable_submgr", False)  # to be changed later in the test
+    @unit_tests.mock(tool_opts, "no_rhsm", False)  # to be changed later in the test
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(utils, "download_pkg", DownloadPkgMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -1138,7 +1138,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         # test the use case where custom repos are used for the conversion
         system_info.submgr_enabled_repos = []
-        tool_opts.disable_submgr = True
+        tool_opts.no_rhsm = True
         tool_opts.enablerepo = ["custom_repo"]
         pkghandler.replace_non_rhel_installed_kernel(version)
         self.assertEqual(utils.download_pkg.enable_repos, ["custom_repo"])
