@@ -205,7 +205,9 @@ def remove_original_subscription_manager():
     if not submgr_pkgs:
         loggerinst.info("No packages related to subscription-manager installed.")
         return
-    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n")
+    loggerinst.info(
+        "Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n"
+    )
     pkghandler.print_pkg_info(submgr_pkgs)
     utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
