@@ -94,6 +94,6 @@ def convert2rhel(shell):
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
         finally:
-            shell("subscription-manager unsubscribe")
+            shell("subscription-manager unregister")
 
     return factory
