@@ -77,6 +77,10 @@ def subscribe_system():
 def unregister_system():
     """Unregister the system from RHSM."""
     loggerinst.info("Unregistering the system.")
+    if tool_opts.keep_rhsm:
+        loggerinst.info("Skipping due to the use of --keep-rhsm.")
+        return
+
     submgr_installed = pkghandler.get_installed_pkg_objects("subscription-manager")
     if not submgr_installed:
         loggerinst.info("The subscription-manager package is not installed.")
@@ -188,6 +192,10 @@ def replace_subscription_manager():
     Make sure the system is unregistered before removing the subscription-manager as not doing so would leave the
     system to be still registered on the server side, making it dificult for an admin to unregister it afterwards.
     """
+    if tool_opts.keep_rhsm:
+        loggerinst.info("Skipping due to the use of --keep-rhsm.")
+        return
+
     if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
         loggerinst.critical("The %s directory does not exist or is empty." % SUBMGR_RPMS_DIR)
 
@@ -347,11 +355,26 @@ def get_repo(repos_raw):
         yield repo_id
 
 
+def verify_rhsm_installed():
+    """Make sure that subscription-manager has been installed."""
+    if not pkghandler.get_installed_pkg_objects("subscription-manager"):
+        if tool_opts.keep_rhsm:
+            loggerinst.critical(
+                "When using the --keep-rhsm option, the subscription-manager needs to be installed before"
+                " executing convert2rhel."
+            )
+        else:
+            # Most probably this condition will not be hit. If the installation of subscription-manager fails, the
+            # conversion stops already at that point.
+            loggerinst.critical("The subscription-manager package is not installed correctly.")
+    else:
+        loggerinst.info("subscription-manager installed correctly.")
+
+
 def disable_repos():
     """Before enabling specific repositories, all repositories should be
     disabled. This can be overriden by the --disablerepo option.
     """
-
     disable_cmd = ""
     for repo in tool_opts.disablerepo:
         disable_cmd += " --disable=%s" % repo
@@ -423,6 +446,9 @@ def download_rhsm_pkgs():
     The packages are available in non-standard repositories, so additional repofiles need to be used. The downloaded
     RPMs are to be installed in a later stage of the conversion.
     """
+    if tool_opts.keep_rhsm:
+        loggerinst.info("Skipping due to the use of --keep-rhsm.")
+        return
     utils.mkdir_p(_RHSM_TMP_DIR)
     pkgs_to_download = ["subscription-manager", "subscription-manager-rhsm-certificates"]
 

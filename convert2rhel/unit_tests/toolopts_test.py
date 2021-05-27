@@ -81,6 +81,24 @@ class TestToolopts(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
+    ("argv", "warn", "keep_rhsm_value"),
+    (
+        (mock_cli_arguments(["--keep-rhsm"]), False, True),
+        (mock_cli_arguments(["--keep-rhsm", "--disable-submgr", "--enablerepo", "test_repo"]), True, False),
+    ),
+)
+@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", False)
+def test_keep_rhsm(argv, warn, keep_rhsm_value, monkeypatch, caplog):
+    monkeypatch.setattr(sys, "argv", argv)
+    convert2rhel.toolopts.CLI()
+    if warn:
+        assert "Ignoring the --keep-rhsm option" in caplog.text
+    else:
+        assert "Ignoring the --keep-rhsm option" not in caplog.text
+    assert convert2rhel.toolopts.tool_opts.keep_rhsm == keep_rhsm_value
+
+
+@pytest.mark.parametrize(
     ("argv", "warn", "ask_to_continue"),
     (
         (mock_cli_arguments(["-v", "Server"]), True, True),
@@ -109,19 +127,20 @@ def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatc
     ("argv", "raise_exception", "no_rhsm_value"),
     (
         (mock_cli_arguments(["--disable-submgr"]), True, True),
+        (mock_cli_arguments(["--no-rhsm"]), True, True),
         (mock_cli_arguments(["--disable-submgr", "--enablerepo", "test_repo"]), False, True),
         (mock_cli_arguments(["--no-rhsm", "--disable-submgr", "--enablerepo", "test_repo"]), False, True),
-        (mock_cli_arguments(["--no-rhsm"]), False, True),
     ),
 )
 @mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
+@mock.patch("convert2rhel.toolopts.tool_opts.enablerepo", [])
 def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_rhsm_value, monkeypatch, caplog):
     monkeypatch.setattr(sys, "argv", argv)
 
     if raise_exception:
         with pytest.raises(SystemExit):
             convert2rhel.toolopts.CLI()
-            assert "The --enablerepo option is required if --disable-submgr or --no-rhsm is passed." in caplog.text
+            assert "The --enablerepo option is required when --disable-submgr or --no-rhsm is used." in caplog.text
     else:
         convert2rhel.toolopts.CLI()
 

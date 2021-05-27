@@ -409,7 +409,7 @@ class TestSubscription(unittest.TestCase):
         (False, False),
     ),
 )
-def test_unregister_system_successfully(submgr_installed, unregistration_failure, monkeypatch, caplog):
+def test_unregister_system(submgr_installed, unregistration_failure, monkeypatch, caplog):
     if unregistration_failure:
         monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("output", 1)))
     else:
@@ -426,11 +426,63 @@ def test_unregister_system_successfully(submgr_installed, unregistration_failure
 
     if submgr_installed:
         utils.run_subprocess.assert_called_once()
-
-    if submgr_installed:
         if unregistration_failure:
             assert "System unregistration failed" in caplog.text
         else:
             assert "System unregistered successfully." in caplog.text
     else:
         assert "The subscription-manager package is not installed." in caplog.text
+
+
+@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
+def test_unregister_system_skipped(monkeypatch, caplog):
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", mock.Mock())
+    subscription.unregister_system()
+    assert "Skipping due to the use of --keep-rhsm." in caplog.text
+    pkghandler.get_installed_pkg_objects.assert_not_called()
+
+
+@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
+def test_replace_subscription_manager_skipped(monkeypatch, caplog):
+    monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+    subscription.replace_subscription_manager()
+    assert "Skipping due to the use of --keep-rhsm." in caplog.text
+    subscription.unregister_system.assert_not_called()
+
+
+@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
+def test_download_rhsm_pkgs_skipped(monkeypatch, caplog):
+    monkeypatch.setattr(subscription, "_download_rhsm_pkgs", mock.Mock())
+    subscription.download_rhsm_pkgs()
+    assert "Skipping due to the use of --keep-rhsm." in caplog.text
+    subscription._download_rhsm_pkgs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("submgr_installed", "keep_rhsm", "critical_string"),
+    (
+        (True, None, None),
+        (False, True, "the subscription-manager needs to be installed"),
+        (False, False, "The subscription-manager package is not installed correctly."),
+    ),
+)
+def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, monkeypatch, caplog):
+    if keep_rhsm:
+        monkeypatch.setattr(tool_opts, "keep_rhsm", keep_rhsm)
+
+    if submgr_installed:
+        monkeypatch.setattr(
+            pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")]
+        )
+
+        subscription.verify_rhsm_installed()
+
+        assert "subscription-manager installed correctly." in caplog.text
+
+    else:
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda _: None)
+
+        with pytest.raises(SystemExit):
+            subscription.verify_rhsm_installed()
+
+        assert critical_string in caplog.text
