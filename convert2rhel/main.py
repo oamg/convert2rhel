@@ -228,7 +228,7 @@ def is_help_msg_exit(process_phase, err):
 def rollback_changes():
     """Perform a rollback of changes made during conversion."""
 
-    loggerinst.warn("Abnormal exit! Performing rollback ...")
+    loggerinst.warning("Abnormal exit! Performing rollback ...")
     subscription.rollback()
     utils.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()

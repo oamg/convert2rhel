@@ -832,7 +832,7 @@ def clear_versionlock():
     """
 
     if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
-        loggerinst.warn("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        loggerinst.warning("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
