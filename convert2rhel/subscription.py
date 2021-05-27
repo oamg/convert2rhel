@@ -197,15 +197,15 @@ def replace_subscription_manager():
 
 
 def remove_original_subscription_manager():
-    loggerinst.info("Removing installed subscription-manager/katello packages.")
+    loggerinst.info("Removing installed subscription-manager/katello-ca-consumer packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkg_objects("*subscription-manager*")
     # Satellite-server related package
-    submgr_pkgs += pkghandler.get_installed_pkg_objects("katello*")
+    submgr_pkgs += pkghandler.get_installed_pkg_objects("katello-ca-consumer*")
     if not submgr_pkgs:
         loggerinst.info("No packages related to subscription-manager installed.")
         return
-    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager/katello pkgs:\n")
+    loggerinst.info("Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n")
     pkghandler.print_pkg_info(submgr_pkgs)
     utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
