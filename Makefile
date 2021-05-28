@@ -82,3 +82,4 @@ rpms: images
 	docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
 	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.rpms .
 	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.rpms .
+	docker rm $$(docker ps -aq) -f
