@@ -80,9 +80,6 @@ rpms: images
 	rm -frv .rpms/*
 	docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
 	docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
-	$(eval centos8_id := $(shell docker create $(IMAGE)/centos8rpmbuild))
-	docker cp $(centos8_id):/data/.rpms .
-	docker rm $(centos8_id)
-	$(eval centos7_id := $(shell docker create $(IMAGE)/centos7rpmbuild))
-	docker cp $(centos7_id):/data/.rpms .
-	docker rm $(centos7_id)
+	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.rpms .
+	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.rpms .
+	docker rm $$(docker ps -aq) -f
