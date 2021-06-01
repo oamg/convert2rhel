@@ -1,0 +1,10 @@
+---
+build_rpm: "{{ lookup('env', 'ANSIBLE_BUILD_RPM') }}"
+rpm_provider: "{{ lookup('env', 'ANSIBLE_RPM_PROVIDER') }}"
+rpm_url_el7: "{{ lookup('env', 'ANSIBLE_RPM_URL_EL7') }}"
+rpm_url_el8: "{{ lookup('env', 'ANSIBLE_RPM_URL_EL8') }}"
+repo_root: "{{ lookup('env', 'ANSIBLE_REPO_ROOT') }}"
+rhsm_pool: "{{ lookup('env', 'RHSM_POOL') }}"
+rhsm_password: "{{ lookup('env', 'RHSM_PASSWORD') }}"
+rhsm_username: "{{ lookup('env', 'RHSM_USERNAME') }}"
+rhsm_server_url: "{{ lookup('env', 'RHSM_SERVER_URL') }}"
