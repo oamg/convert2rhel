@@ -75,6 +75,61 @@ def setup_logger(tmpdir):
 
 @pytest.fixture()
 def pretend_os(request, pkg_root, monkeypatch):
+    """Parametric fixture to pretend to be one of available OS for convertion.
+
+    See https://docs.pytest.org/en/6.2.x/example/parametrize.html#indirect-parametrization
+    for more information.
+
+    Fixture parameters are:
+        system_version - i.e. "7.9.9"
+        system_name - i.e. "CentOS Linux"
+
+    Examples:
+
+    >>> # low level mode
+    >>> @pytest.mark.parametrize(
+    >>>     "pretend_os",
+    >>>     (
+    >>>         ("7.9.1111", "CentOS Linux"),
+    >>>         ("7.9.1111", "Oracle Linux Server"),
+    >>>         ("8.4.1111", "CentOS Linux"),
+    >>>         ("8.4.1111", "Oracle Linux Server"),
+    >>>     ),
+    >>>     indirect=True,
+    >>> )
+    >>> def example_test(pretend_os):
+    >>>     # Will run 4 tests for each of specified systems.
+    >>>     pass
+
+
+    >>> # using the shortcut
+    >>> @all_systems
+    >>> def example_test(pretend_os):
+    >>>     # Will do the same.
+    >>>     pass
+
+
+    >>> @centos8
+    >>> def example_test(pretend_os):
+    >>>     # Will pretend CentOS 8.
+    >>>     pass
+
+
+    >>> @pytest.mark.parametrize(
+    >>>     "param",
+    >>>     (
+    >>>         ("param_value1",),
+    >>>         ("param_value2",),
+    >>>     ),
+    >>> )
+    >>> @all_systems
+    >>> def example_test(pretend_os):
+    >>>     # Will run 8 tests.
+
+    >>>     # for each of 4 systems it will run the test with each param value.
+    >>>     pass
+
+    """
     system_version, system_name = request.param
     system_version_major, system_version_minor, _ = system_version.split(".")
 
