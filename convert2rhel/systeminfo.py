@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import pprint
+
 from collections import namedtuple
 
 from convert2rhel.utils import run_subprocess
@@ -33,10 +35,25 @@ from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
 
 
+# Supported conversion path to RHEL
+RELEASE_VER_MAPPING = {
+    "CentOS Linux": {
+        "8.4": "8.4",
+        "8.3": "8.3",
+        "7.9": "7.9Server",
+    },
+    "Oracle Linux Server": {
+        "8.4": "8.4",
+        "8.3": "8.3",
+        "7.9": "7.9Server",
+    },
+}
 # For a list of modified rpm files before the conversion starts
 PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
+
+Version = namedtuple("Version", ["major", "minor"])
 
 
 class SystemInfo(object):
@@ -124,7 +141,7 @@ class SystemInfo(object):
             from convert2rhel import redhatrelease
 
             self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
-        version = namedtuple("Version", ["major", "minor"])(int(match.group(1)), int(match.group(2)))
+        version = Version(int(match.group(1)), int(match.group(2)))
 
         self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
         return version
@@ -190,7 +207,15 @@ class SystemInfo(object):
         return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
-        return self._get_cfg_opt("releasever")
+        might_be_config = self._get_cfg_opt("releasever")
+        try:
+            # return config value or corresponding releasever from the RELEASE_VER_MAPPING
+            return might_be_config or RELEASE_VER_MAPPING[self.name][".".join(map(str, self.version))]
+        except KeyError:
+            self.logger.critical(
+                "Unsupported system name/version met: %s - %s.\n"
+                "Supported paths are:\n%s" % (self.name, self.version, pprint.pformat(RELEASE_VER_MAPPING, width=54))
+            )
 
     def _get_kmods_to_ignore(self):
         return self._get_cfg_opt("kmods_to_ignore").split()
