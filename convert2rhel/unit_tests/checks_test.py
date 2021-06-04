@@ -42,6 +42,7 @@ from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
+from convert2rhel.unit_tests.conftest import centos7, centos8
 from convert2rhel.utils import run_subprocess
 
 
@@ -185,9 +186,10 @@ def test_pre_ponr_checks(monkeypatch):
         ),
     ),
 )
+@centos8
 def test_ensure_compatibility_of_kmods(
     monkeypatch,
-    pretend_centos8,
+    pretend_os,
     caplog,
     host_kmods,
     exception,
@@ -242,9 +244,10 @@ def test_ensure_compatibility_of_kmods(
         ),
     ),
 )
+@centos7
 def test_ensure_compatibility_of_kmods_excluded(
     monkeypatch,
-    pretend_centos7,
+    pretend_os,
     caplog,
     unsupported_pkg,
     msg_in_logs,
@@ -346,9 +349,10 @@ def test_get_installed_kmods(tmpdir, monkeypatch, caplog, run_subprocess_mock, e
         (REPOQUERY_F_STUB_BAD, REPOQUERY_L_STUB_GOOD, SystemExit),
     ),
 )
+@centos8
 def test_get_rhel_supported_kmods(
     monkeypatch,
-    pretend_centos8,
+    pretend_os,
     repoquery_f_stub,
     repoquery_l_stub,
     exception,
@@ -581,13 +585,14 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
         ),
     ),
 )
+@centos8
 def test_bad_kernel_fingerprint(
     kernel_release,
     kernel_pkg,
     kernel_pkg_fingerprint,
     exp_return,
     monkeypatch,
-    pretend_centos8,
+    pretend_os,
 ):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, ""))
     get_pkg_fingerprint_mocked = mock.Mock(spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint)
