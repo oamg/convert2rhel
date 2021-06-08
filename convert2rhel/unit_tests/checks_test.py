@@ -39,6 +39,8 @@ from convert2rhel.checks import (
     perform_pre_ponr_checks,
 )
 from convert2rhel.pkghandler import get_pkg_fingerprint
+from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
 from convert2rhel.utils import run_subprocess
 
@@ -114,6 +116,7 @@ def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
     check_uefi_mock = mock.Mock()
     check_readonly_mounts_mock = mock.Mock()
+    check_custom_repos_are_valid_mock = mock.Mock()
     check_rhel_compatible_kernel_is_used_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
@@ -134,6 +137,11 @@ def test_perform_pre_checks(monkeypatch):
         checks,
         "check_rhel_compatible_kernel_is_used",
         value=check_rhel_compatible_kernel_is_used_mock,
+    )
+    monkeypatch.setattr(
+        checks,
+        "check_custom_repos_are_valid",
+        value=check_custom_repos_are_valid_mock,
     )
 
     perform_pre_checks()
@@ -652,3 +660,42 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertTrue(
             "Stopping conversion due to read-only mount to /sys directory" not in checks.logger.critical_msgs[0]
         )
+        self.assertTrue("/sys mount point is not read-only." in checks.logger.debug_msgs[0])
+
+    class CallYumCmdMocked(unit_tests.MockFunction):
+        def __init__(self, ret_code, ret_string):
+            self.called = 0
+            self.return_code = ret_code
+            self.return_string = ret_string
+            self.fail_once = False
+            self.command = None
+
+        def __call__(self, command, *args, **kwargs):
+            if self.fail_once and self.called == 0:
+                self.return_code = 1
+            if self.fail_once and self.called > 0:
+                self.return_code = 0
+            self.called += 1
+            self.command = command
+            return self.return_string, self.return_code
+
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=0, ret_string="Abcdef"))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "disable_submgr", True)
+    def test_custom_repos_are_valid(self):
+        checks.check_custom_repos_are_valid()
+        self.assertEqual(len(checks.logger.info_msgs), 1)
+        self.assertTrue(
+            "The repositories passed through the --enablerepo option are all accessible." in checks.logger.info_msgs
+        )
+
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=1, ret_string="Abcdef"))
+    @unit_tests.mock(checks, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "disable_submgr", True)
+    def test_custom_repos_are_invalid(self):
+        self.assertRaises(SystemExit, checks.check_custom_repos_are_valid)
+        self.assertEqual(len(checks.logger.critical_msgs), 1)
+        self.assertEqual(len(checks.logger.info_msgs), 0)
+        self.assertTrue("Unable to access the repositories passed through " in checks.logger.critical_msgs[0])

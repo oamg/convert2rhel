@@ -22,8 +22,9 @@ import os
 import re
 import subprocess
 
-from convert2rhel.pkghandler import get_installed_pkg_objects, get_pkg_fingerprint
+from convert2rhel.pkghandler import call_yum_cmd, get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import get_file_content, run_subprocess
 
 
@@ -48,6 +49,7 @@ def perform_pre_checks():
     check_tainted_kmods()
     check_readonly_mounts()
     check_rhel_compatible_kernel_is_used()
+    check_custom_repos_are_valid()
 
 
 def check_uefi():
@@ -118,6 +120,34 @@ def check_readonly_mounts():
 def perform_pre_ponr_checks():
     """Late checks before ponr should be added here."""
     ensure_compatibility_of_kmods()
+
+
+def check_custom_repos_are_valid():
+    """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
+
+    What is meant by valid:
+    - YUM/DNF is able to find the repoids (to rule out a typo)
+    - the repository "baseurl" is accessible and contains repository metadata
+    """
+    logger.task("Prepare: Checking if --enablerepo repositories are accessible")
+
+    if not tool_opts.disable_submgr:
+        logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
+        return
+
+    # Without clearing the metadata cache, the `yum makecache` command may return 0 (everything's ok) even when
+    # the baseurl of a repository is not accessible. That would happen when the repository baseurl is changed but yum
+    # still uses the previous baseurl stored in its cache.
+    call_yum_cmd(command="clean", args="metadata")
+
+    output, ret_code = call_yum_cmd(command="makecache", args="-v --setopt=*.skip_if_unavailable=False")
+    if ret_code != 0:
+        logger.critical(
+            "Unable to access the repositories passed through the --enablerepo option. "
+            "See the above YUM/DNF output for more details."
+        )
+
+    logger.info("The repositories passed through the --enablerepo option are all accessible.")
 
 
 def ensure_compatibility_of_kmods():
