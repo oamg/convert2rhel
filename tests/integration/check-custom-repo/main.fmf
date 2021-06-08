@@ -10,10 +10,10 @@ tag+:
   tag+:
     - good_test
   test: |
-    pytest -svv --tb=no -m good_tests
+    pytest -svv -m good_tests
 
 /bad:
   tag+:
     - bad_test
   test: |
-    pytest -svv --tb=no -m bad_tests
+    pytest -svv -m bad_tests
