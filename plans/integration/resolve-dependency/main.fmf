@@ -1,0 +1,20 @@
+discover+:
+  filter:
+    - 'tag: resolve-dependency'
+provision:
+  how: libvirt
+  develop: true
+
+/centos7:
+  discover+:
+    filter+:
+      - 'tag: centos7'
+  provision+:
+    origin_vm_name: c2r_centos7_template
+
+/oracle7:
+  discover+:
+    filter+:
+      - 'tag: oracle7'
+  provision+:
+    origin_vm_name: c2r_oracle7_template
