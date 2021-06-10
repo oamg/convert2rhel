@@ -128,7 +128,7 @@ def get_registration_cmd():
         # -> username/password not required
         # -> organization required
         loggerinst.info("    ... activation key detected: %s" % tool_opts.activation_key)
-        registration_cmd += " --activationkey=%s" % tool_opts.activation_key
+        registration_cmd += ' --activationkey="%s"' % tool_opts.activation_key
     else:
         # No activation key -> username/password required
         if tool_opts.username and tool_opts.password:
