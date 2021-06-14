@@ -10,7 +10,7 @@ build_rpm: true
 #   (see rpm_url_el7 and rpm_url_el8 vars)
 rpm_provider: local
 
-# rpm urls in case rpm_build_provider is url
+# set rpm urls if rpm_provider is url
 rpm_url_el7: ""
 rpm_url_el8: ""
 
