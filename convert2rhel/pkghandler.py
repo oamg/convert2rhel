@@ -571,6 +571,7 @@ def install_gpg_keys():
         )
         if ret_code != 0:
             loggerinst.critical("Unable to import GPG key: %s", output)
+        loggerinst.info("GPG keys imported.")
 
 
 def preserve_only_rhel_kernel():

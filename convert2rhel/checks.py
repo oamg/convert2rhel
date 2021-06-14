@@ -54,7 +54,7 @@ def perform_pre_checks():
 
 def check_uefi():
     """Inhibit the conversion when UEFI detected."""
-    logger.task("Prepare: Checking the firmware interface type")
+    logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
     if os.path.exists("/sys/firmware/efi"):
         # NOTE(pstodulk): the check doesn't have to be valid for hybrid boot
         # (e.g. AWS, Azure, OSP, ..)
@@ -63,7 +63,8 @@ def check_uefi():
             " https://bugzilla.redhat.com/show_bug.cgi?id=1898314"
             " for more information."
         )
-    logger.debug("Converting BIOS system")
+    else:
+        logger.info("BIOS system detected.")
 
 
 def check_tainted_kmods():
@@ -95,7 +96,7 @@ def check_readonly_mounts():
     Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
     fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
     """
-    logger.task("Convert: Checking /mnt and /sys are read-write")
+    logger.task("Prepare: Checking /mnt and /sys are read-write")
 
     mounts = get_file_content("/proc/mounts", as_list=True)
     for line in mounts:
@@ -115,6 +116,7 @@ def check_readonly_mounts():
                     "Ensure mount point is writable before executing convert2rhel."
                 )
         logger.debug("%s mount point is not read-only." % mount_point)
+    logger.info("Read-only /mnt or /sys mount points not detected.")
 
 
 def perform_pre_ponr_checks():
@@ -138,14 +140,18 @@ def check_custom_repos_are_valid():
     # Without clearing the metadata cache, the `yum makecache` command may return 0 (everything's ok) even when
     # the baseurl of a repository is not accessible. That would happen when the repository baseurl is changed but yum
     # still uses the previous baseurl stored in its cache.
-    call_yum_cmd(command="clean", args="metadata")
+    call_yum_cmd(command="clean", args="metadata", print_output=False)
 
-    output, ret_code = call_yum_cmd(command="makecache", args="-v --setopt=*.skip_if_unavailable=False")
+    output, ret_code = call_yum_cmd(
+        command="makecache", args="-v --setopt=*.skip_if_unavailable=False", print_output=False
+    )
     if ret_code != 0:
         logger.critical(
             "Unable to access the repositories passed through the --enablerepo option. "
-            "See the above YUM/DNF output for more details."
+            "For more details, see YUM/DNF output:\n{0}".format(output)
         )
+    else:
+        logger.debug("Output of the previous yum command:\n{0}".format(output))
 
     logger.info("The repositories passed through the --enablerepo option are all accessible.")
 
@@ -365,7 +371,7 @@ def check_rhel_compatible_kernel_is_used():
             " installed in step 2 manually".format(system_info.name, system_info.version.major)
         )
     else:
-        logger.debug("Kernel is compatible with RHEL")
+        logger.info("Kernel is compatible with RHEL")
 
 
 def _bad_kernel_version(kernel_release):
