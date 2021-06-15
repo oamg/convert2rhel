@@ -216,9 +216,7 @@ def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monke
 @all_systems
 def test_get_release_ver(pretend_os):
     """Test if all pretended OSes presented in theh RELEASE_VER_MAPPING."""
-    assert system_info.releasever in set(
-        itertools.chain(*map(lambda dict_: dict_.values(), RELEASE_VER_MAPPING.values()))
-    )
+    assert system_info.releasever in RELEASE_VER_MAPPING.values()
 
 
 @pytest.mark.parametrize(

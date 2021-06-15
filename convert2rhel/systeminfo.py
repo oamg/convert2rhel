@@ -38,21 +38,15 @@ from convert2rhel.toolopts import tool_opts
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 #   version update at the same time.
 RELEASE_VER_MAPPING = {
-    "CentOS Linux": {
-        "8.5": "8.5",
-        "8.4": "8.4",
-        "7.9": "7Server",
-        "6.10": "6Server",
-    },
-    "Oracle Linux Server": {
-        "8.5": "8.5",
-        "8.4": "8.4",
-        "7.9": "7Server",
-        "6.10": "6Server",
-    },
+    "8.5": "8.5",
+    "8.4": "8.4",
+    "7.9": "7Server",
+    "6.10": "6Server",
 }
+
 # For a list of modified rpm files before the conversion starts
 PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
+
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
@@ -218,7 +212,7 @@ class SystemInfo(object):
         releasever_cfg = self._get_cfg_opt("releasever")
         try:
             # return config value or corresponding releasever from the RELEASE_VER_MAPPING
-            return releasever_cfg or RELEASE_VER_MAPPING[self.name][".".join(map(str, self.version))]
+            return releasever_cfg or RELEASE_VER_MAPPING[".".join(map(str, self.version))]
         except KeyError:
             self.logger.critical(
                 "%s of version %d.%d is not allowed for conversion.\n"
