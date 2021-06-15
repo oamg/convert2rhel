@@ -191,8 +191,15 @@ def c2r_config(os_release):
 
 
 @pytest.fixture()
-def config_at_path():
-    """Provide a possibility to"""
+def config_at():
+    """Factory of the Config object.
+
+    Example:
+    >>> with config_at(Path("/etc/system-release")).replace_line(
+    >>>     "release .+",
+    >>>     f"release {os_release.version[0]}.1.1111",
+    >>> ):
+    """
 
     def factory(path: Path) -> Config:
         return Config(path)
