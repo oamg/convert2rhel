@@ -217,7 +217,7 @@ class SystemInfo(object):
             self.logger.critical(
                 "%s of version %d.%d is not allowed for conversion.\n"
                 "Allowed versions are: %s"
-                % (self.name, self.version.major, self.version.minor, RELEASE_VER_MAPPING.keys())
+                % (self.name, self.version.major, self.version.minor, list(RELEASE_VER_MAPPING.keys()))
             )
 
     def _get_kmods_to_ignore(self):
