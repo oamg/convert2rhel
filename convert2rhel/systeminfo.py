@@ -35,17 +35,20 @@ from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
 
 
-# Supported conversion path to RHEL
+# Allowed conversion paths to RHEL. We want to prevent a conversion and minor
+#   version update at the same time.
 RELEASE_VER_MAPPING = {
     "CentOS Linux": {
+        "8.5": "8.5",
         "8.4": "8.4",
-        "8.3": "8.3",
-        "7.9": "7.9Server",
+        "7.9": "7Server",
+        "6.10": "6Server",
     },
     "Oracle Linux Server": {
+        "8.5": "8.5",
         "8.4": "8.4",
-        "8.3": "8.3",
-        "7.9": "7.9Server",
+        "7.9": "7Server",
+        "6.10": "6Server",
     },
 }
 # For a list of modified rpm files before the conversion starts
@@ -207,14 +210,20 @@ class SystemInfo(object):
         return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
-        might_be_config = self._get_cfg_opt("releasever")
+        """Get the release version to be passed to yum through --releasever.
+
+        The default value is hardcoded in the RELEASE_VER_MAPPING but it can be
+        overridden by the user by specifying it in the config file.
+        """
+        releasever_cfg = self._get_cfg_opt("releasever")
         try:
             # return config value or corresponding releasever from the RELEASE_VER_MAPPING
-            return might_be_config or RELEASE_VER_MAPPING[self.name][".".join(map(str, self.version))]
+            return releasever_cfg or RELEASE_VER_MAPPING[self.name][".".join(map(str, self.version))]
         except KeyError:
             self.logger.critical(
-                "Unsupported system name/version met: %s - %s.\n"
-                "Supported paths are:\n%s" % (self.name, self.version, pprint.pformat(RELEASE_VER_MAPPING, width=54))
+                "%s of version %d.%d is not allowed for conversion.\n"
+                "Allowed versions are: %s"
+                % (self.name, self.version.major, self.version.minor, RELEASE_VER_MAPPING.keys())
             )
 
     def _get_kmods_to_ignore(self):
