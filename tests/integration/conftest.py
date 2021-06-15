@@ -1,9 +1,13 @@
+import dataclasses
+import logging
+import re
 import subprocess
 import sys
 
 from collections import namedtuple
 from contextlib import contextmanager
-from typing import ContextManager
+from fileinput import FileInput
+from typing import ContextManager, Optional
 
 import click
 import pexpect
@@ -18,6 +22,9 @@ except ImportError:
     from pathlib2 import Path
 
 env.read_envfile(str(Path(__file__).parents[2] / ".env"))
+
+logging.basicConfig(level="DEBUG" if env.str("DEBUG") else "INFO", stream=sys.stderr)
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -95,5 +102,99 @@ def convert2rhel(shell):
             c2r_runtime.close()
         finally:
             shell("subscription-manager unregister")
+
+    return factory
+
+
+@dataclasses.dataclass
+class OsRelease:
+    """Dataclass representing the content of /etc/os-release."""
+
+    name: str
+    version: str
+    id: str
+    id_like: str
+    version_id: str
+    pretty_name: str
+    home_url: str
+    bug_report_url: str
+    ansi_color: Optional[str] = None
+    cpe_name: Optional[str] = None
+    platform_id: Optional[str] = None
+
+    @classmethod
+    def create_from_file(cls, file: Path):
+        assert file.exists(), "File not exists."
+        res = {}
+        with open(file) as os_release_f:
+            for line in os_release_f:
+                try:
+                    param, value = line.strip().split("=")
+                except ValueError:
+                    # we're skipping lines which can't be splitted based on =
+                    pass
+                else:
+                    if param.lower() in cls.__annotations__:
+                        res[param.lower()] = value.strip('"')
+        return cls(**res)
+
+
+@pytest.fixture()
+def os_release():
+    return OsRelease.create_from_file(Path("/etc/os-release"))
+
+
+class Config:
+    def __init__(self, config_path: Path):
+        self.config_path = config_path
+
+    @contextmanager
+    def replace_line(self, pattern: str, repl: str):
+        """Iterates over config file lines and do re.sub for each line.
+
+        Parameters are the same as in re.sub
+        (https://docs.python.org/3/library/re.html#re.sub)
+
+        Example:
+        >>> with c2r_config.replace_line(pattern="releasever=.*", repl=f"releasever=9"):
+        >>>     # do something here (the config is changed)
+        >>>     pass
+        >>> # config is restored at this point
+        """
+        logger.info(f"Scanning {str(self.config_path)} for {repr(pattern)} and replace with {repr(repl)}")
+        search = re.compile(pattern)
+        backup_suffix = ".bak"
+        try:
+            with FileInput(files=[str(self.config_path)], inplace=True, backup=backup_suffix) as f:
+                for line in f:
+                    new_line = search.sub(repl, line)
+                    if line != new_line:
+                        logger.debug(f"{repr(line.strip())} replaced with\n{repr(new_line.strip())}")
+                    # need to write to stdout to write the line to the file
+                    print(new_line, end="")
+            yield
+        finally:
+            backup_config = self.config_path.with_suffix(self.config_path.suffix + backup_suffix)
+            backup_config.replace(self.config_path)
+            logger.debug("Config file was restored to the origin state")
+
+
+@pytest.fixture()
+def c2r_config(os_release):
+    release_id2conf = {"centos": "centos", "ol": "oracle"}
+    config_path = (
+        Path("/usr/share/convert2rhel/configs/")
+        / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
+    )
+    assert config_path.exists(), f"Can't find Convert2RHEL config file.\n{str(config_path)} - does not exist."
+    return Config(config_path)
+
+
+@pytest.fixture()
+def config_at_path():
+    """Provide a possibility to"""
+
+    def factory(path: Path) -> Config:
+        return Config(path)
 
     return factory

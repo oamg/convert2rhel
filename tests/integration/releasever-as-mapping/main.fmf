@@ -1,0 +1,9 @@
+summary: releasever-as-mapping
+tag+:
+  - centos7
+  - centos8
+  - oracle7
+  - oracle8
+  - releasever-as-mapping
+test: |
+  pytest -svv
