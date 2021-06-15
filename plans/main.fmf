@@ -6,3 +6,4 @@ prepare:
     how: ansible
     playbook:
         - tests/ansible_collections/main.yml
+environment_from: .env

@@ -149,17 +149,15 @@ cd ~/Documents/convert2rhel/
 rm .images .install
 make install
 
-# set secrets for running integration tests
+# configure the integration tests by setting environment variables in .env
 vim .env
-
-# set secrets for the preparation ansible roles
-vim tests/ansible_collections/group_vars/all.yml
 ```
 
 # Creating integration tests
 
 We use TMT testing framework as a meta testing platform which manages
 integration tests lifecycle (https://tmt.readthedocs.io/en/stable/index.html).
+
 It uses FMF format (https://fmf.readthedocs.io/en/stable/index.html) to declare
 testing plans and tests.
 
@@ -215,13 +213,3 @@ tmt run plans --name /plans/integration/read-only-mnt-sys/container_centos8_bad_
 # run one integration test with plans matching the regex (in example all goo tests)
 tmt run plans --name /plans/integration/inhibit-if-oracle-system-uses-not-standard-kernel/.+/good -vvvddd
 ```
-
-# Configuration of root ansible role for all testing environments
-
-`plans/main.fmf` defines the root of all tmt plans. It has a preparation step
-that is applied to all tmt plans. In this preparation step the tmt
-runs the ansible roles defined by `tests/ansible_collections/main.yml`. It is
-possible to configure this process by adjusting variables, defined in
-`tests/ansible_collections/group_vars/all.yml`. Each variable is documented
-inside the template file `tests/ansible_collections/group_vars/all.yml.example`
-which is coppied during `make install`
