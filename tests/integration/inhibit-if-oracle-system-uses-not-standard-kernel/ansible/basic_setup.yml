@@ -1,7 +1,4 @@
 - hosts: all
-  vars:
-    # to be overridden by the tmt
-    repo_root:
   tasks:
 
     - name: Building rpms
@@ -17,22 +14,15 @@
         chdir: ../../../..
       register: pkg_version
 
-    - name: Copying rpms to docker remote
-      delegate_to: localhost
-      shell: "docker cp .rpms {{ inventory_hostname }}:/data/"
-      args:
-        chdir: ../../../..
-      when: ansible_facts['virtualization_type'] == "docker"
-
     - name: Copying rpms to kvm remote
       copy:
-        dest: "{{ repo_root }}/.rpms"
+        dest: ".rpms"
         src: ../../../../.rpms/
       when: ansible_facts['virtualization_type'] == "kvm"
 
     - name: Install el8 convert2rhel package
       yum:
-        name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}-1.el8.noarch.rpm"
+        name: ".rpms/convert2rhel-{{ pkg_version.stdout }}-1.el8.noarch.rpm"
         state: present
         disable_gpg_check: true
       when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8") or
@@ -40,7 +30,7 @@
 
     - name: Install el7 convert2rhel package
       yum:
-        name: "{{ repo_root }}/.rpms/convert2rhel-{{ pkg_version.stdout }}-1.el7.noarch.rpm"
+        name: ".rpms/convert2rhel-{{ pkg_version.stdout }}-1.el7.noarch.rpm"
         state: present
         disable_gpg_check: true
       when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7") or
