@@ -124,7 +124,7 @@ class OsRelease:
 
     @classmethod
     def create_from_file(cls, file: Path):
-        assert file.exists(), "File not exists."
+        assert file.exists(), f"File doesn't exist: {str(file)}"
         res = {}
         with open(file) as os_release_f:
             for line in os_release_f:
@@ -144,7 +144,13 @@ def os_release():
     return OsRelease.create_from_file(Path("/etc/os-release"))
 
 
-class Config:
+class ConfigUtils:
+    """Convenient features to work with configs (or any other text files).
+
+    Created specifically to simplify writing integration tests, which requires
+    adusting some configs.
+    """
+
     def __init__(self, config_path: Path):
         self.config_path = config_path
 
@@ -176,23 +182,26 @@ class Config:
         finally:
             backup_config = self.config_path.with_suffix(self.config_path.suffix + backup_suffix)
             backup_config.replace(self.config_path)
-            logger.debug("Config file was restored to the origin state")
+            logger.debug("ConfigUtils file was restored to the origin state")
 
 
 @pytest.fixture()
 def c2r_config(os_release):
+    """ConfigUtils object with already loaded convert2rhel config."""
     release_id2conf = {"centos": "centos", "ol": "oracle"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")
         / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
     )
     assert config_path.exists(), f"Can't find Convert2RHEL config file.\n{str(config_path)} - does not exist."
-    return Config(config_path)
+    return ConfigUtils(config_path)
 
 
 @pytest.fixture()
 def config_at():
-    """Factory of the Config object.
+    """Factory of the ConfigUtils object.
+
+    Created for simplicity injecting it into your testing unit (no need to import).
 
     Example:
     >>> with config_at(Path("/etc/system-release")).replace_line(
@@ -201,7 +210,7 @@ def config_at():
     >>> ):
     """
 
-    def factory(path: Path) -> Config:
-        return Config(path)
+    def factory(path: Path) -> ConfigUtils:
+        return ConfigUtils(path)
 
     return factory
