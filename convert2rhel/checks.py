@@ -52,6 +52,11 @@ def perform_pre_checks():
     check_custom_repos_are_valid()
 
 
+def perform_pre_ponr_checks():
+    """Late checks before ponr should be added here."""
+    ensure_compatibility_of_kmods()
+
+
 def check_uefi():
     """Inhibit the conversion when UEFI detected."""
     logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
@@ -117,11 +122,6 @@ def check_readonly_mounts():
                 )
         logger.debug("%s mount point is not read-only." % mount_point)
     logger.info("Read-only /mnt or /sys mount points not detected.")
-
-
-def perform_pre_ponr_checks():
-    """Late checks before ponr should be added here."""
-    ensure_compatibility_of_kmods()
 
 
 def check_custom_repos_are_valid():
