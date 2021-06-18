@@ -180,24 +180,19 @@ def ensure_compatibility_of_kmods():
 
 
 def get_installed_kmods():
-    """Get a set of kernel modules.
+    """Get a set of kernel modules loaded on host.
 
     Each module we cut part of the path until the kernel release
     (i.e. /lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz ->
     kernel/lib/a.ko.xz) in order to be able to compare with RHEL
     kernel modules in case of different kernel release
     """
-    try:
-        kmod_str, exit_code = run_subprocess(
-            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(kver=system_info.booted_kernel),
-            print_output=False,
-        )
-        assert exit_code == 0
-        assert kmod_str
-    except (subprocess.CalledProcessError, AssertionError):
-        logger.critical("Can't get list of kernel modules.")
-    else:
-        return set(_get_kmod_comparison_key(path) for path in kmod_str.rstrip("\n").split())
+    lsmod_output, _ = run_subprocess("lsmod", print_output=False)
+    modules = re.findall("^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
+    return set(
+        _get_kmod_comparison_key(run_subprocess("modinfo -F filename %s" % module, print_output=False)[0])
+        for module in modules
+    )
 
 
 def _get_kmod_comparison_key(path):
@@ -213,7 +208,7 @@ def _get_kmod_comparison_key(path):
         on RHEL, we need to compare the full path, but because kernel release
         might be different, we compare the relative paths after kernel release.
     """
-    return "/".join(path.split("/")[4:])
+    return "/".join(path.strip().split("/")[4:])
 
 
 def get_rhel_supported_kmods():
