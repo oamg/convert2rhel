@@ -39,7 +39,7 @@ from convert2rhel.checks import (
 from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
+from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 from convert2rhel.utils import run_subprocess
 
@@ -105,17 +105,6 @@ REPOQUERY_L_STUB_BAD = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko.xz\n"
     "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko\n"
 )
-
-
-def _run_subprocess_side_effect(*stubs):
-    def factory(*args, **kwargs):
-        for kws, result in stubs:
-            if all(kw in args[0].split() for kw in kws):
-                return result
-        else:
-            return run_subprocess(*args, **kwargs)
-
-    return factory
 
 
 def test_perform_pre_checks(monkeypatch):
@@ -203,7 +192,7 @@ def test_ensure_compatibility_of_kmods(
 ):
     monkeypatch.setattr(checks, "get_installed_kmods", mock.Mock(return_value=host_kmods))
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
             (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
@@ -267,7 +256,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     )
     get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
             (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
@@ -297,7 +286,7 @@ def test_ensure_compatibility_of_kmods_excluded(
 def test_get_installed_kmods(monkeypatch):
     run_subprocess_mocked = mock.Mock(
         spec=run_subprocess,
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (
                 ("lsmod",),
                 (
@@ -337,7 +326,7 @@ def test_get_rhel_supported_kmods(
     exception,
 ):
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (
                 ("repoquery", "-f"),
                 (repoquery_f_stub, 0),
