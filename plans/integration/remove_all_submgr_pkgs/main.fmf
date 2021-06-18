@@ -12,8 +12,10 @@ provision:
   provision+:
     origin_vm_name: c2r_centos7_template
   prepare+:
-    playbook+:
-      - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_7.yml
+    - name: install rhsm
+      how: ansible
+      playbook:
+        - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_7.yml
 
 /centos8:
   discover+:
@@ -22,8 +24,10 @@ provision:
   provision+:
     origin_vm_name: c2r_centos8_template
   prepare+:
-    playbook+:
-      - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_8.yml
+    - name: install rhsm
+      how: ansible
+      playbook:
+        - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_8.yml
 
 # intentionally not installing subscription-manager to test the scenario where it's not pre-installed
 /oracle7:
@@ -40,5 +44,7 @@ provision:
   provision+:
     origin_vm_name: c2r_oracle8_template
   prepare+:
-    playbook+:
-      - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_8.yml
+    - name: install rhsm
+      how: ansible
+      playbook:
+        - tests/integration/remove_all_submgr_pkgs/ansible/install_submgr_8.yml

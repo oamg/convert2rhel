@@ -3,7 +3,7 @@ execute:
 discover:
     how: fmf
 prepare:
-    how: ansible
-    playbook:
-        - tests/ansible_collections/main.yml
+    - name: main preparation step
+      how: ansible
+      playbook: tests/ansible_collections/main.yml
 environment_from: .env
