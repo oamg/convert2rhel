@@ -55,6 +55,9 @@ def main():
     # initialize logging
     logger.initialize_logger("convert2rhel.log")
 
+    # prepare environment
+    utils.set_locale()
+
     # handle command line arguments
     toolopts.CLI()
 
