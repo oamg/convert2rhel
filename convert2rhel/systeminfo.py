@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import pprint
+
 from collections import namedtuple
 
 from convert2rhel.utils import run_subprocess
@@ -33,10 +35,22 @@ from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
 
 
+# Allowed conversion paths to RHEL. We want to prevent a conversion and minor
+#   version update at the same time.
+RELEASE_VER_MAPPING = {
+    "8.5": "8.5",
+    "8.4": "8.4",
+    "7.9": "7Server",
+    "6.10": "6Server",
+}
+
 # For a list of modified rpm files before the conversion starts
 PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
+
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
+
+Version = namedtuple("Version", ["major", "minor"])
 
 
 class SystemInfo(object):
@@ -124,7 +138,7 @@ class SystemInfo(object):
             from convert2rhel import redhatrelease
 
             self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
-        version = namedtuple("Version", ["major", "minor"])(int(match.group(1)), int(match.group(2)))
+        version = Version(int(match.group(1)), int(match.group(2)))
 
         self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
         return version
@@ -190,7 +204,21 @@ class SystemInfo(object):
         return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
-        return self._get_cfg_opt("releasever")
+        """Get the release version to be passed to yum through --releasever.
+
+        The default value is hardcoded in the RELEASE_VER_MAPPING but it can be
+        overridden by the user by specifying it in the config file.
+        """
+        releasever_cfg = self._get_cfg_opt("releasever")
+        try:
+            # return config value or corresponding releasever from the RELEASE_VER_MAPPING
+            return releasever_cfg or RELEASE_VER_MAPPING[".".join(map(str, self.version))]
+        except KeyError:
+            self.logger.critical(
+                "%s of version %d.%d is not allowed for conversion.\n"
+                "Allowed versions are: %s"
+                % (self.name, self.version.major, self.version.minor, list(RELEASE_VER_MAPPING.keys()))
+            )
 
     def _get_kmods_to_ignore(self):
         return self._get_cfg_opt("kmods_to_ignore").split()

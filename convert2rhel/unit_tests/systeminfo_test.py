@@ -16,8 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
-
-
+import itertools
 import logging
 import os
 import shutil
@@ -29,9 +28,10 @@ from collections import namedtuple
 import pytest
 
 from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import RELEASE_VER_MAPPING, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -211,3 +211,46 @@ def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monke
     monkeypatch.setattr(systeminfo, "run_subprocess", value=run_subprocess_mocked)
     assert system_info.is_rpm_installed(pkg_name) == expected_return
     assert run_subprocess_mocked
+
+
+@all_systems
+def test_get_release_ver(pretend_os):
+    """Test if all pretended OSes presented in theh RELEASE_VER_MAPPING."""
+    assert system_info.releasever in RELEASE_VER_MAPPING.values()
+
+
+@pytest.mark.parametrize(
+    (
+        "releasever_val",
+        "self_name",
+        "self_version",
+        "exception",
+    ),
+    (
+        # good cases
+        # if releasever set in config - it takes precedence
+        ("not_existing_release_ver_set_in_config", None, None, None),
+        # Good cases which matches supported pathes
+        ("", "CentOS Linux", systeminfo.Version(8, 4), None),
+        ("", "Oracle Linux Server", systeminfo.Version(8, 4), None),
+        # bad cases
+        ("", "NextCool Linux", systeminfo.Version(8, 4), SystemExit),
+        ("", "CentOS Linux", systeminfo.Version(8, 10000), SystemExit),
+    ),
+)
+# need to pretend centos8 in order to system info were resolved at module init
+@centos8
+def test_get_release_ver_other(pretend_os, monkeypatch, releasever_val, self_name, self_version, exception):
+    monkeypatch.setattr(systeminfo.SystemInfo, "_get_cfg_opt", mock.Mock(return_value=releasever_val))
+    if self_name:
+        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_name", mock.Mock(return_value=self_name))
+    if self_version:
+        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_version", mock.Mock(return_value=self_version))
+    # calling resolve_system_info one more time to enable our monkeypatches
+    if exception:
+        with pytest.raises(exception):
+            system_info.resolve_system_info()
+    else:
+        system_info.resolve_system_info()
+    if releasever_val:
+        assert system_info.releasever == releasever_val
