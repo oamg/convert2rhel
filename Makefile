@@ -79,3 +79,15 @@ rpms: images
 	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.rpms .
 	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.rpms .
 	docker rm $$(docker ps -aq) -f
+
+update-vms:
+	virsh start c2r_centos8_template
+	virsh start c2r_centos7_template
+	virsh start c2r_oracle8_template
+	virsh start c2r_oracle7_template
+	sleep 10
+	ansible-playbook -v -c community.libvirt.libvirt_qemu -i c2r_centos8_template,c2r_centos7_template,c2r_oracle8_template,c2r_oracle7_template tests/ansible_collections/update_templates.yml
+	virsh shutdown c2r_centos8_template
+	virsh shutdown c2r_centos7_template
+	virsh shutdown c2r_oracle8_template
+	virsh shutdown c2r_oracle7_template
