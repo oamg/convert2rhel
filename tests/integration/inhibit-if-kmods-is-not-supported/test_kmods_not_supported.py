@@ -27,7 +27,8 @@ def insert_custom_kmod(shell):
 
         shell(f"mkdir {new_kmod_dir.as_posix()}")
         shell(f"mv {origin_kmod_loc.as_posix()} {new_kmod_dir.as_posix()}")
-        shell(f"insmod {(new_kmod_dir / origin_kmod_loc.name).as_posix()}")
+        shell("depmod")
+        shell(f"modprobe bonding -v")
 
     return factory
 
