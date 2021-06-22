@@ -614,14 +614,14 @@ class TestUEFIChecks(unittest.TestCase):
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertTrue("Conversion of UEFI systems is currently not supported" in checks.logger.critical_msgs[0])
         if checks.logger.debug_msgs:
-            self.assertFalse("Converting BIOS system" in checks.logger.debug_msgs[0])
+            self.assertFalse("BIOS system detected." in checks.logger.info_msgs[0])
 
     @unit_tests.mock(os.path, "exists", lambda x: not x == "/sys/firmware/efi")
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     def test_check_uefi_bios_detected(self):
         checks.check_uefi()
         self.assertFalse(checks.logger.critical_msgs)
-        self.assertTrue("Converting BIOS system" in checks.logger.debug_msgs[0])
+        self.assertTrue("BIOS system detected." in checks.logger.info_msgs[0])
 
 
 class TestReadOnlyMountsChecks(unittest.TestCase):
@@ -691,6 +691,7 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     def test_custom_repos_are_valid(self):
         checks.check_custom_repos_are_valid()
         self.assertEqual(len(checks.logger.info_msgs), 1)
+        self.assertEqual(len(checks.logger.debug_msgs), 1)
         self.assertTrue(
             "The repositories passed through the --enablerepo option are all accessible." in checks.logger.info_msgs
         )

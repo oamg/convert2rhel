@@ -71,7 +71,7 @@ class YumConf(object):
         """
         self._comment_out_distroverpkg_tag()
         self._write_altered_yum_conf()
-        loggerinst.debug("%s patched." % self._yum_conf_path)
+        loggerinst.info("%s patched." % self._yum_conf_path)
         return
 
     def _comment_out_distroverpkg_tag(self):

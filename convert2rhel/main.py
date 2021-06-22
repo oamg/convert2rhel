@@ -70,7 +70,6 @@ def main():
         systeminfo.system_info.resolve_system_info()
 
         # check the system prior the conversion (possible inhibit)
-        loggerinst.task("Prepare: Initial system checks before conversion")
         checks.perform_pre_checks()
 
         # backup system release file before starting conversion process
