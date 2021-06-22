@@ -5,20 +5,6 @@ import pytest
 from envparse import env
 
 
-@pytest.mark.good_tests
-def test_good_convertion(convert2rhel):
-    with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
-        )
-    ) as c2r:
-        c2r.expect("Kernel modules are compatible.")
-    assert c2r.exitstatus == 0
-
-
 @pytest.fixture()
 def insert_custom_kmod(shell):
     def factory():
@@ -33,8 +19,7 @@ def insert_custom_kmod(shell):
     return factory
 
 
-@pytest.mark.bad_tests
-def test_bad_convertion(shell, insert_custom_kmod, convert2rhel):
+def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
     insert_custom_kmod()
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -45,4 +30,19 @@ def test_bad_convertion(shell, insert_custom_kmod, convert2rhel):
         )
     ) as c2r:
         c2r.expect("The following kernel modules are not supported in RHEL")
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0
+
+
+def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
+    assert shell("modprobe -r -v bonding").output == "rmmod bonding\n"
+    with convert2rhel(
+        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        c2r.expect("Kernel modules are compatible.")
+        c2r.send(chr(3))
+    assert c2r.exitstatus != 0
