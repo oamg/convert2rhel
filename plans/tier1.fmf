@@ -80,8 +80,7 @@ discover+:
   prepare+:
   - name: install subscription manager
     how: ansible
-    # change to generic installation playbook
-    playbook: tests/integration/tier1/remove-all-submgr-pkgs/ansible/main.yml
+    playbook: tests/ansible_collections/roles/install-submgr/main.yml
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_remove_all_submgr_pkgs.py
@@ -173,15 +172,32 @@ discover+:
   discover+:
     test: checks-after-conversion
   prepare+:
-    - name: enable extras repo for Oracle Linux
-      how: ansible
-      playbook: tests/integration/tier1/yum-distro-sync/add-extras-repo/main.yml
-    - name: install problematic package
-      how: shell
-      script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
-    - name: main conversion preparation
-      how: shell
-      script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
-    - name: reboot after conversion
-      how: ansible
-      playbook: tests/ansible_collections/roles/reboot/main.yml
+  - name: enable extras repo for Oracle Linux
+    how: ansible
+    playbook: tests/integration/tier1/yum-distro-sync/add-extras-repo/main.yml
+  - name: install problematic package
+    how: shell
+    script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/convert_offline_systems:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: install subscription manager
+    how: ansible
+    playbook: tests/ansible_collections/roles/install-submgr/main.yml
+  - name: allow access to Satellite only
+    how: shell
+    script: pytest -svv tests/integration/tier1/convert-offline-systems/prepare_system.py
+  - name: run offline conversion
+    how: shell
+    script: pytest -svv tests/integration/tier1/convert-offline-systems/run_conversion.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
