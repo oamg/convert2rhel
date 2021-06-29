@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.21
+Version:        0.22
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -110,6 +110,17 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Tue Jun 29 2021 Eric Gustavsson <egustavs@redhat.com> 0.22-1
+- Add support for future minor releases
+- Add custom repo validation
+- Add support for offline Satellite-managed systems
+- Rename --disable-submgr parameter to --no-rhsm
+- Fix faulty dependency error resolution with yum packages
+- Fix accidental removals of all katello packages
+- Fix activation keys with whitespace now supported
+- Fix python-requests failing conversions
+- Improve logging with tasks and kernel modules
+
 * Mon May 10 2021 Eric Gustavsson <egustavs@redhat.com> 0.21-1
 - Inhibit systems with non-standard RHEL kernel
 - Unregister the system before removing subscription-manager
