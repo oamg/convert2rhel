@@ -147,7 +147,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "disable_submgr", False)
+    @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
@@ -193,7 +193,7 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(expected, actual)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "disable_submgr", False)
+    @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)

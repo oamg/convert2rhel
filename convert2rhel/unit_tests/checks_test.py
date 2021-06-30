@@ -687,7 +687,7 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=0, ret_string="Abcdef"))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "disable_submgr", True)
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
     def test_custom_repos_are_valid(self):
         checks.check_custom_repos_are_valid()
         self.assertEqual(len(checks.logger.info_msgs), 1)
@@ -699,7 +699,7 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=1, ret_string="Abcdef"))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "disable_submgr", True)
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
     def test_custom_repos_are_invalid(self):
         self.assertRaises(SystemExit, checks.check_custom_repos_are_valid)
         self.assertEqual(len(checks.logger.critical_msgs), 1)

@@ -455,5 +455,5 @@ def exit_on_failed_download(paths):
         loggerinst.critical(
             "Unable to download the subscription-manager package or its dependencies. See details of"
             " the failed yumdownloader call above. These packages are necessary for the conversion"
-            " unless you use the --disable-submgr option."
+            " unless you use the --no-rhsm option."
         )

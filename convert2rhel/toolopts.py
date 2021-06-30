@@ -31,7 +31,7 @@ class ToolOpts(object):
         self.username = None
         self.password_file = None
         self.password = None
-        self.disable_submgr = False
+        self.no_rhsm = False
         self.enablerepo = []
         self.disablerepo = []
         self.pool = None
@@ -65,7 +65,7 @@ class CLI(object):
             " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--no-rpm-va]"
             " [--debug] [--restart] [-y]\n"
-            "  convert2rhel [--disable-submgr] [--disablerepo repoid]"
+            "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
             " -a] [--disablerepo repoid] [--enablerepo repoid]"
@@ -122,8 +122,8 @@ class CLI(object):
             action="append",
             help="Enable specific"
             " repositories by ID or glob. For more repositories to enable, use this option"
-            " multiple times. If you don't use the --disable-submgr option, you can use this option"
-            " to override the default RHEL CDN repoids that convert2rhel enables through"
+            " multiple times. If you don't use the --no-rhsm option, you can use this option"
+            " to override the default RHEL repoids that convert2rhel enables through"
             " subscription-manager.",
         )
         self._parser.add_option(
@@ -206,10 +206,9 @@ class CLI(object):
         )
         group.add_option(
             "--serverurl",
-            help="Use a custom Red Hat Subscription"
-            " Manager server URL to register the system with. If"
-            " not provided, the subscription-manager defaults will be"
-            " used.",
+            help="Hostname of the subscription service with which to register the system through subscription-manager."
+            " The default is the Customer Portal Subscription Management service. It is not to be used to specify a"
+            " Satellite server. For that, read the product documentation at https://access.redhat.com/.",
         )
         self._parser.add_option_group(group)
 
@@ -221,12 +220,14 @@ class CLI(object):
         group.add_option(
             "--disable-submgr",
             action="store_true",
-            help="Do not use the subscription-manager, use"
-            " custom repositories instead. See"
-            " --enablerepo/--disablerepo options. Without this"
-            " option, the subscription-manager is used to access"
-            " RHEL repositories by default. It requires to have"
-            " the --enablerepo specified.",
+            help="Replaced by --no-rhsm. Both options have the same effect.",
+        )
+        group.add_option(
+            "--no-rhsm",
+            action="store_true",
+            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
+            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
+            " Using this option requires to have the --enablerepo specified.",
         )
         self._parser.add_option_group(group)
 
@@ -278,10 +279,10 @@ class CLI(object):
             tool_opts.enablerepo = parsed_opts.enablerepo
         if parsed_opts.disablerepo:
             tool_opts.disablerepo = parsed_opts.disablerepo
-        if parsed_opts.disable_submgr:
-            tool_opts.disable_submgr = True
+        if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
+            tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("Error: --enablerepo is required if --disable-submgr is passed ")
+                loggerinst.critical("The --enablerepo option is required if --disable-submgr or --no-rhsm is passed.")
         if not tool_opts.disablerepo:
             # Default to disable every repo except:
             # - the ones passed through --enablerepo
@@ -292,8 +293,10 @@ class CLI(object):
             tool_opts.pool = parsed_opts.pool
 
         if parsed_opts.serverurl:
-            if parsed_opts.disable_submgr:
-                loggerinst.warn("Ignoring the --serverurl option. It has no effect when --disable-submgr is used.")
+            if parsed_opts.no_rhsm:
+                loggerinst.warning(
+                    "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
+                )
             else:
                 tool_opts.serverurl = parsed_opts.serverurl
 
