@@ -44,6 +44,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.disable_colors = False
+        self.keep_rhsm = False
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -61,16 +62,13 @@ class CLI(object):
             "\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
-            "  convert2rhel [-u username] [-p password | -f pswd_file]"
-            " [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--no-rpm-va]"
-            " [--debug] [--restart] [-y]\n"
+            "  convert2rhel [-u username] [-p password | -f pswd_file] [--pool pool_id | -a] [--disablerepo repoid]"
+            " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
+            " [--disable-colors] [-y]\n"
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            "  convert2rhel [-k key] [-o organization] [--pool pool_id |"
-            " -a] [--disablerepo repoid] [--enablerepo repoid]"
-            " [--serverurl url] [--no-rpm-va] [--debug]"
-            " [--restart] [--disable-colors] [-y]"
+            " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]\n"
+            "  convert2rhel [-k key] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
+            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]"
             "\n\n"
             "WARNING: The tool needs to be run under the root user"
         )
@@ -210,6 +208,15 @@ class CLI(object):
             " The default is the Customer Portal Subscription Management service. It is not to be used to specify a"
             " Satellite server. For that, read the product documentation at https://access.redhat.com/.",
         )
+        group.add_option(
+            "--keep-rhsm",
+            action="store_true",
+            help="Keep the already installed Red Hat Subscription Management-related packages. By default,"
+            " during the conversion, these packages are removed, downloaded from verified sources and re-installed."
+            " This option is suitable for environments with no connection to the Internet, or for systems managed by"
+            " Red Hat Satellite. Warning: The system is being re-registered during the conversion and when the"
+            " re-registration fails, there's no automated rollback to the original registration.",
+        )
         self._parser.add_option_group(group)
 
         group = optparse.OptionGroup(
@@ -282,7 +289,7 @@ class CLI(object):
         if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("The --enablerepo option is required if --disable-submgr or --no-rhsm is passed.")
+                loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
         if not tool_opts.disablerepo:
             # Default to disable every repo except:
             # - the ones passed through --enablerepo
@@ -293,12 +300,20 @@ class CLI(object):
             tool_opts.pool = parsed_opts.pool
 
         if parsed_opts.serverurl:
-            if parsed_opts.no_rhsm:
+            if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
                 )
             else:
                 tool_opts.serverurl = parsed_opts.serverurl
+
+        if parsed_opts.keep_rhsm:
+            if tool_opts.no_rhsm:
+                loggerinst.warning(
+                    "Ignoring the --keep-rhsm option. It has no effect when --disable-submgr or --no-rhsm is used."
+                )
+            else:
+                tool_opts.keep_rhsm = parsed_opts.keep_rhsm
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach

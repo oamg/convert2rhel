@@ -154,6 +154,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
+    @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
@@ -175,6 +176,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["check_and_resolve"] = 1
         intended_call_order["download_rhsm_pkgs"] = 1
         intended_call_order["replace_subscription_manager"] = 1
+        intended_call_order["verify_rhsm_installed"] = 1
         intended_call_order["install"] = 1
         intended_call_order["subscribe_system"] = 1
         intended_call_order["get_rhel_repoids"] = 1
@@ -200,6 +202,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
     @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
+    @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
     @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
     @mock_calls(cert.SystemCert, "install", CallOrderMocked)
     @mock_calls(redhatrelease.YumConf, "patch", CallOrderMocked)
@@ -224,6 +227,7 @@ class TestMain(unittest.TestCase):
         # Do not expect this one to be called - related to RHSM
         intended_call_order["download_rhsm_pkgs"] = 0
         intended_call_order["replace_subscription_manager"] = 0
+        intended_call_order["verify_rhsm_installed"] = 0
         intended_call_order["install"] = 0
         intended_call_order["subscribe_system"] = 0
         intended_call_order["get_rhel_repoids"] = 0

@@ -170,6 +170,8 @@ def pre_ponr_conversion():
         subscription.download_rhsm_pkgs()
         loggerinst.task("Convert: Subscription Manager - Replace")
         subscription.replace_subscription_manager()
+        loggerinst.task("Convert: Subscription Manager - Verify installation")
+        subscription.verify_rhsm_installed()
         loggerinst.task("Convert: Install RHEL certificates for RHSM")
         system_cert = cert.SystemCert()
         system_cert.install()
