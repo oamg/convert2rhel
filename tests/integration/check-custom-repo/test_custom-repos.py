@@ -56,8 +56,8 @@ def test_bad_convertion_without_rhsm(shell, convert2rhel):
     """
     with convert2rhel("-y --no-rpm-va --disable-submgr --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug") as c2r:
         c2r.expect(
-            "CRITICAL - Unable to access the repositories passed through the --enablerepo option. See the above "
-            "YUM/DNF output for more details."
+            "CRITICAL - Unable to access the repositories passed through the --enablerepo option. "
+            "For more details, see YUM/DNF output"
         )
 
     assert c2r.exitstatus == 1
