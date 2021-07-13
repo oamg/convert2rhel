@@ -108,7 +108,7 @@ def test_remove_cert(monkeypatch, filename, caplog):
         path = os.path.join(unit_tests.TMP_DIR, filename)
         if filename == "existing.file":
             os.mknod(path)
-    except FileExistsError:
+    except OSError:
         pass
 
     monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
