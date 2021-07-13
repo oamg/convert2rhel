@@ -137,6 +137,8 @@ class TestMain(unittest.TestCase):
         "restore",
         unit_tests.CountableMockObject(),
     )
+    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
+    @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
@@ -145,10 +147,11 @@ class TestMain(unittest.TestCase):
         self.assertEqual(redhatrelease.yum_conf.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
+        self.assertEqual(cert.SystemCert.remove.called, 1)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", False)
-    @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
+    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
@@ -196,7 +199,7 @@ class TestMain(unittest.TestCase):
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", False)
-    @unit_tests.mock(cert.SystemCert, "_get_cert_path", unit_tests.MockFunction)
+    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
