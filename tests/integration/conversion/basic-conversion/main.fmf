@@ -1,0 +1,9 @@
+summary: basic-conversion
+tag+:
+  - centos7
+  - centos8
+  - oracle7
+  - oracle8
+  - basic-conversion
+test: |
+  pytest -svv
