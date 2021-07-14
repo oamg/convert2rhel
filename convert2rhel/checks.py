@@ -158,7 +158,7 @@ def check_custom_repos_are_valid():
 
 def ensure_compatibility_of_kmods():
     """Ensure if the host kernel modules are compatible with RHEL."""
-    host_kmods = get_installed_kmods()
+    host_kmods = get_loaded_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
     unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
     if unsupported_kmods:
@@ -179,7 +179,7 @@ def ensure_compatibility_of_kmods():
         logger.debug("Kernel modules are compatible.")
 
 
-def get_installed_kmods():
+def get_loaded_kmods():
     """Get a set of kernel modules loaded on host.
 
     Each module we cut part of the path until the kernel release
@@ -187,6 +187,7 @@ def get_installed_kmods():
     kernel/lib/a.ko.xz) in order to be able to compare with RHEL
     kernel modules in case of different kernel release
     """
+    logger.debug("Getting a list of loaded kernel modules.")
     lsmod_output, _ = run_subprocess("lsmod", print_output=False)
     modules = re.findall("^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
     return set(
@@ -238,7 +239,7 @@ def get_rhel_supported_kmods():
         )
     else:
         logger.info(
-            "Comparing the installed kernel modules with the modules available in the following RHEL"
+            "Comparing the loaded kernel modules with the modules available in the following RHEL"
             " kernel packages available in the enabled repositories:\n {0}".format("\n ".join(kmod_pkgs))
         )
     # querying obtained packages for files they produces

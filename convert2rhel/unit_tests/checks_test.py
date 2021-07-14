@@ -30,7 +30,7 @@ from convert2rhel.checks import (
     check_rhel_compatible_kernel_is_used,
     check_tainted_kmods,
     ensure_compatibility_of_kmods,
-    get_installed_kmods,
+    get_loaded_kmods,
     get_most_recent_unique_kernel_pkgs,
     get_rhel_supported_kmods,
     perform_pre_checks,
@@ -190,7 +190,7 @@ def test_ensure_compatibility_of_kmods(
     should_be_in_logs,
     shouldnt_be_in_logs,
 ):
-    monkeypatch.setattr(checks, "get_installed_kmods", mock.Mock(return_value=host_kmods))
+    monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=host_kmods))
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
@@ -251,7 +251,7 @@ def test_ensure_compatibility_of_kmods_excluded(
 ):
     monkeypatch.setattr(
         checks,
-        "get_installed_kmods",
+        "get_loaded_kmods",
         mock.Mock(return_value=HOST_MODULES_STUB_GOOD | {unsupported_pkg}),
     )
     get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
@@ -307,7 +307,7 @@ def test_get_installed_kmods(monkeypatch):
         "run_subprocess",
         value=run_subprocess_mocked,
     )
-    assert get_installed_kmods() == {"kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"}
+    assert get_loaded_kmods() == {"kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"}
 
 
 @pytest.mark.parametrize(
