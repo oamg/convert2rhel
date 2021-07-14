@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import subprocess
 import sys
 
 from collections import namedtuple
@@ -28,11 +27,10 @@ from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
     _bad_kernel_version,
-    _get_kmod_comparison_key,
     check_rhel_compatible_kernel_is_used,
     check_tainted_kmods,
     ensure_compatibility_of_kmods,
-    get_installed_kmods,
+    get_loaded_kmods,
     get_most_recent_unique_kernel_pkgs,
     get_rhel_supported_kmods,
     perform_pre_checks,
@@ -41,7 +39,7 @@ from convert2rhel.checks import (
 from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
+from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 from convert2rhel.utils import run_subprocess
 
@@ -64,16 +62,23 @@ else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
 
-HOST_MODULES_STUB_GOOD = (
+MODINFO_STUB = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz\n"
     "/lib/modules/5.8.0-7642-generic/kernel/lib/b.ko.xz\n"
     "/lib/modules/5.8.0-7642-generic/kernel/lib/c.ko.xz\n"
 )
-HOST_MODULES_STUB_BAD = (
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/d.ko.xz\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/e.ko.xz\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko.xz\n"
-)
+
+HOST_MODULES_STUB_GOOD = {
+    "kernel/lib/a.ko.xz",
+    "kernel/lib/b.ko.xz",
+    "kernel/lib/c.ko.xz",
+}
+HOST_MODULES_STUB_BAD = {
+    "kernel/lib/d.ko.xz",
+    "kernel/lib/e.ko.xz",
+    "kernel/lib/f.ko.xz",
+}
+
 REPOQUERY_F_STUB_GOOD = (
     "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
     "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64\n"
@@ -100,17 +105,6 @@ REPOQUERY_L_STUB_BAD = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko.xz\n"
     "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko\n"
 )
-
-
-def _run_subprocess_side_effect(*stubs):
-    def factory(*args, **kwargs):
-        for kws, result in stubs:
-            if all(kw in args[0] for kw in kws):
-                return result
-        else:
-            return run_subprocess(*args, **kwargs)
-
-    return factory
 
 
 def test_perform_pre_checks(monkeypatch):
@@ -196,12 +190,12 @@ def test_ensure_compatibility_of_kmods(
     should_be_in_logs,
     shouldnt_be_in_logs,
 ):
+    monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=host_kmods))
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
-            (("find",), (host_kmods, 0)),
-            (("repoquery", " -f "), (REPOQUERY_F_STUB_GOOD, 0)),
-            (("repoquery", " -l "), (REPOQUERY_L_STUB_GOOD, 0)),
+            (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+            (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
     )
     monkeypatch.setattr(
@@ -230,14 +224,15 @@ def test_ensure_compatibility_of_kmods(
         "exception",
     ),
     (
+        # ff-memless specified to be ignored in the config, so no exception raised
         (
-            "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/ff-memless.ko.xz\n",
+            "kernel/drivers/input/ff-memless.ko.xz",
             "Kernel modules are compatible",
             "The following kernel modules are not supported in RHEL",
             None,
         ),
         (
-            "/lib/modules/3.10.0-1160.6.1/kernel/drivers/input/other.ko.xz\n",
+            "kernel/drivers/input/other.ko.xz",
             "The following kernel modules are not supported in RHEL",
             None,
             SystemExit,
@@ -254,13 +249,17 @@ def test_ensure_compatibility_of_kmods_excluded(
     msg_not_in_logs,
     exception,
 ):
+    monkeypatch.setattr(
+        checks,
+        "get_loaded_kmods",
+        mock.Mock(return_value=HOST_MODULES_STUB_GOOD | {unsupported_pkg}),
+    )
     get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
-            (("find",), (HOST_MODULES_STUB_GOOD + unsupported_pkg, 0)),
-            (("repoquery", " -f "), (REPOQUERY_F_STUB_GOOD, 0)),
-            (("repoquery", " -l "), (REPOQUERY_L_STUB_GOOD, 0)),
+            (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+            (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
     )
     monkeypatch.setattr(
@@ -278,68 +277,37 @@ def test_ensure_compatibility_of_kmods_excluded(
             ensure_compatibility_of_kmods()
     else:
         ensure_compatibility_of_kmods()
-    get_unsupported_kmods_mocked.assert_called_with(
-        # host kmods
-        set(
-            (
-                _get_kmod_comparison_key(unsupported_pkg.rstrip()),
-                "kernel/lib/c.ko.xz",
-                "kernel/lib/a.ko.xz",
-                "kernel/lib/b.ko.xz",
-            )
-        ),
-        # rhel supported kmods
-        set(
-            (
-                "kernel/lib/c.ko",
-                "kernel/lib/b.ko.xz",
-                "kernel/lib/c.ko.xz",
-                "kernel/lib/a.ko.xz",
-                "kernel/lib/a.ko",
-            )
-        ),
-    )
     if msg_in_logs:
         assert any(msg_in_logs in record.message for record in caplog.records)
     if msg_not_in_logs:
         assert all(msg_not_in_logs not in record.message for record in caplog.records)
 
 
-@pytest.mark.parametrize(
-    ("run_subprocess_mock", "exp_res"),
-    (
-        (
-            mock.Mock(return_value=(HOST_MODULES_STUB_GOOD, 0)),
-            set(
+def test_get_installed_kmods(monkeypatch):
+    run_subprocess_mocked = mock.Mock(
+        spec=run_subprocess,
+        side_effect=run_subprocess_side_effect(
+            (
+                ("lsmod",),
                 (
-                    "kernel/lib/a.ko.xz",
-                    "kernel/lib/b.ko.xz",
-                    "kernel/lib/c.ko.xz",
-                )
+                    "Module                  Size  Used by\n"
+                    "a                 81920  4\n"
+                    "b    49152  0\n"
+                    "c              40960  1\n",
+                    0,
+                ),
             ),
+            (("modinfo", "-F", "filename", "a"), (MODINFO_STUB.split()[0] + "\n", 0)),
+            (("modinfo", "-F", "filename", "b"), (MODINFO_STUB.split()[1] + "\n", 0)),
+            (("modinfo", "-F", "filename", "c"), (MODINFO_STUB.split()[2] + "\n", 0)),
         ),
-        (
-            mock.Mock(return_value=("", 1)),
-            None,
-        ),
-        (
-            mock.Mock(side_effect=subprocess.CalledProcessError(returncode=1, cmd="")),
-            None,
-        ),
-    ),
-)
-def test_get_installed_kmods(tmpdir, monkeypatch, caplog, run_subprocess_mock, exp_res):
+    )
     monkeypatch.setattr(
         checks,
         "run_subprocess",
-        value=run_subprocess_mock,
+        value=run_subprocess_mocked,
     )
-    if exp_res:
-        assert exp_res == get_installed_kmods()
-    else:
-        with pytest.raises(SystemExit):
-            get_installed_kmods()
-        assert "Can't get list of kernel modules." in caplog.records[-1].message
+    assert get_loaded_kmods() == {"kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"}
 
 
 @pytest.mark.parametrize(
@@ -358,13 +326,13 @@ def test_get_rhel_supported_kmods(
     exception,
 ):
     run_subprocess_mock = mock.Mock(
-        side_effect=_run_subprocess_side_effect(
+        side_effect=run_subprocess_side_effect(
             (
-                ("repoquery", " -f "),
+                ("repoquery", "-f"),
                 (repoquery_f_stub, 0),
             ),
             (
-                ("repoquery", " -l "),
+                ("repoquery", "-l"),
                 (repoquery_l_stub, 0),
             ),
         )

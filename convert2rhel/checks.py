@@ -52,6 +52,11 @@ def perform_pre_checks():
     check_custom_repos_are_valid()
 
 
+def perform_pre_ponr_checks():
+    """Late checks before ponr should be added here."""
+    ensure_compatibility_of_kmods()
+
+
 def check_uefi():
     """Inhibit the conversion when UEFI detected."""
     logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
@@ -119,11 +124,6 @@ def check_readonly_mounts():
     logger.info("Read-only /mnt or /sys mount points not detected.")
 
 
-def perform_pre_ponr_checks():
-    """Late checks before ponr should be added here."""
-    ensure_compatibility_of_kmods()
-
-
 def check_custom_repos_are_valid():
     """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
 
@@ -158,7 +158,7 @@ def check_custom_repos_are_valid():
 
 def ensure_compatibility_of_kmods():
     """Ensure if the host kernel modules are compatible with RHEL."""
-    host_kmods = get_installed_kmods()
+    host_kmods = get_loaded_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
     unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
     if unsupported_kmods:
@@ -179,25 +179,21 @@ def ensure_compatibility_of_kmods():
         logger.debug("Kernel modules are compatible.")
 
 
-def get_installed_kmods():
-    """Get a set of kernel modules.
+def get_loaded_kmods():
+    """Get a set of kernel modules loaded on host.
 
     Each module we cut part of the path until the kernel release
     (i.e. /lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz ->
     kernel/lib/a.ko.xz) in order to be able to compare with RHEL
     kernel modules in case of different kernel release
     """
-    try:
-        kmod_str, exit_code = run_subprocess(
-            'find /lib/modules/{kver} -name "*.ko*" -type f'.format(kver=system_info.booted_kernel),
-            print_output=False,
-        )
-        assert exit_code == 0
-        assert kmod_str
-    except (subprocess.CalledProcessError, AssertionError):
-        logger.critical("Can't get list of kernel modules.")
-    else:
-        return set(_get_kmod_comparison_key(path) for path in kmod_str.rstrip("\n").split())
+    logger.debug("Getting a list of loaded kernel modules.")
+    lsmod_output, _ = run_subprocess("lsmod", print_output=False)
+    modules = re.findall("^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
+    return set(
+        _get_kmod_comparison_key(run_subprocess("modinfo -F filename %s" % module, print_output=False)[0])
+        for module in modules
+    )
 
 
 def _get_kmod_comparison_key(path):
@@ -213,7 +209,7 @@ def _get_kmod_comparison_key(path):
         on RHEL, we need to compare the full path, but because kernel release
         might be different, we compare the relative paths after kernel release.
     """
-    return "/".join(path.split("/")[4:])
+    return "/".join(path.strip().split("/")[4:])
 
 
 def get_rhel_supported_kmods():
@@ -243,7 +239,7 @@ def get_rhel_supported_kmods():
         )
     else:
         logger.info(
-            "Comparing the installed kernel modules with the modules available in the following RHEL"
+            "Comparing the loaded kernel modules with the modules available in the following RHEL"
             " kernel packages available in the enabled repositories:\n {0}".format("\n ".join(kmod_pkgs))
         )
     # querying obtained packages for files they produces

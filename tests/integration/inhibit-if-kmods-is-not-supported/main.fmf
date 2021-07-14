@@ -5,15 +5,5 @@ tag+:
   - oracle7
   - oracle8
   - inhibit-if-kmods-is-not-supported
-
-/good:
-  tag+:
-    - good_test
-  test: |
-    pytest -svv -m good_tests
-
-/bad:
-  tag+:
-    - bad_test
-  test: |
-    pytest -svv -m bad_tests
+test: |
+  pytest -svv

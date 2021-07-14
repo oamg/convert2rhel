@@ -142,7 +142,6 @@ def run_subprocess(cmd="", print_cmd=True, print_output=True):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         bufsize=1,
-        env={"LC_ALL": "C"},
     )
     output = ""
     for line in iter(process.stdout.readline, b""):
@@ -580,6 +579,14 @@ def get_rpm_header(rpm_path, _open=open):
     with _open(rpm_path) as rpmfile:
         rpmhdr = ts.hdrFromFdno(rpmfile)
     return rpmhdr
+
+
+def set_locale():
+    """Set the POSIX default locale for the main process as well as the child processes.
+
+    The reason is to get predictable output from the executables we call, not influenced by non-default locale.
+    """
+    os.environ.update({"LC_ALL": "C"})
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
