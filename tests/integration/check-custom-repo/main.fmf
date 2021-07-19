@@ -5,6 +5,13 @@ tag+:
   - oracle7
   - oracle8
   - check-custom-repo
+adjust:
+  enabled: false
+  when: >
+    distro!=centos-7 and
+    distro!=centos-8 and
+    distro!=oracle-7 and
+    distro!=oracle-8
 
 /good:
   tag+:

@@ -2,6 +2,10 @@ summary: remove-excluded-pkgs
 tag+:
   - centos8
   - remove-excluded-pkgs
+adjust:
+  enabled: false
+  when: >
+    distro != centos-8
 
 /good:
   test: |
