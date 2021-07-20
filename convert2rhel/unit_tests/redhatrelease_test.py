@@ -16,12 +16,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import glob
+import sys
 import unittest
+
+import pytest
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
 
 from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import redhatrelease, utils
+from convert2rhel import pkgmanager, redhatrelease, utils
+from convert2rhel.redhatrelease import YumConf
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -86,6 +96,50 @@ class TestRedHatRelease(unittest.TestCase):
 
             self.assertTrue("#distroverpkg=" in yum_conf._yum_conf_content)
             self.assertEqual(yum_conf._yum_conf_content.count("#distroverpkg="), 1)
+
+
+@pytest.mark.parametrize(
+    ("pkg_type, subprocess_ret, expected_result"),
+    (
+        ("dnf", "S.5....T.  c /etc/dnf/dnf.conf", True),
+        ("dnf", ".......T.  c /etc/dnf/dnf.conf", False),
+        ("dnf", ".M.......  g /var/lib/dnf", False),
+        ("yum", "S.5....T.  c /etc/yum.conf", True),
+        ("yum", "", False),
+        ("yum", ".......T.  c /etc/yum.conf", False),
+        ("unknown", "anything", False),
+    ),
+)
+def test_yum_is_modified(monkeypatch, pkg_type, subprocess_ret, expected_result):
+    monkeypatch.setattr(pkgmanager, "TYPE", value=pkg_type)
+
+    run_subprocess = mock.Mock(return_value=(subprocess_ret, "anything"))
+    monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess)
+
+    assert YumConf.is_modified() == expected_result
+
+
+@pytest.mark.parametrize("modified", (True, False))
+def test_yum_patch(monkeypatch, modified, caplog):
+    is_modified = mock.Mock(return_value=modified)
+    monkeypatch.setattr(YumConf, "is_modified", value=is_modified)
+    _comment_out_distroverpkg_tag = mock.Mock()
+    monkeypatch.setattr(
+        YumConf,
+        "_comment_out_distroverpkg_tag",
+        value=_comment_out_distroverpkg_tag,
+    )
+    _write_altered_yum_conf = mock.Mock()
+    monkeypatch.setattr(YumConf, "_write_altered_yum_conf", value=_write_altered_yum_conf)
+
+    YumConf().patch()
+
+    if modified:
+        _comment_out_distroverpkg_tag.assert_called_once()
+        assert "patched" in caplog.text
+    else:
+        _comment_out_distroverpkg_tag.assert_not_called()
+        assert "Skipping patching, yum configuration file not modified" in caplog.text
 
 
 YUM_CONF_WITHOUT_DISTROVERPKG = """[main]

@@ -20,7 +20,7 @@ import logging
 import os
 import re
 
-from convert2rhel import utils
+from convert2rhel import pkgmanager, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -69,9 +69,15 @@ class YumConf(object):
         release version ($releasever) based on the installed redhat-release
         package.
         """
-        self._comment_out_distroverpkg_tag()
-        self._write_altered_yum_conf()
-        loggerinst.info("%s patched." % self._yum_conf_path)
+        if YumConf.is_modified():
+            # When the user touches the yum.conf before executing the conversion, then during the conversion yum as a
+            # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
+            self._comment_out_distroverpkg_tag()
+            self._write_altered_yum_conf()
+            loggerinst.info("%s patched." % self._yum_conf_path)
+        else:
+            loggerinst.info("Skipping patching, yum configuration file not modified")
+
         return
 
     def _comment_out_distroverpkg_tag(self):
@@ -89,7 +95,16 @@ class YumConf(object):
     def get_yum_conf_filepath():
         return YumConf._yum_conf_path
 
+    @staticmethod
+    def is_modified():
+        """Return true if the YUM/DNF configuration file has been modified by the user."""
+        conf = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
+
+        output, _ = utils.run_subprocess("rpm -Vf %s" % conf, print_output=False)
+        # rpm -Vf does not return information about the queried file but about all files owned by the rpm
+        # that owns the queried file. Character '5' on position 3 means that the file was modified.
+        return True if re.search(r"^.{2}5.*? %s$" % conf, output, re.MULTILINE) else False
+
 
 # Code to be executed upon module import
 system_release_file = utils.RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
-yum_conf = utils.RestorableFile(YumConf.get_yum_conf_filepath())  # pylint: disable=C0103

@@ -78,7 +78,6 @@ def main():
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
-        redhatrelease.yum_conf.backup()
         repo.backup_yum_repos()
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")
@@ -197,10 +196,6 @@ def pre_ponr_conversion():
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
         subscription.enable_repos(rhel_repoids)
 
-    # comment out the distroverpkg variable in yum.conf
-    loggerinst.task("Convert: Patch yum configuration file")
-    redhatrelease.YumConf().patch()
-
     # perform final checks before the conversion
     loggerinst.task("Convert: Final system checks before main conversion")
     checks.perform_pre_ponr_checks()
@@ -217,6 +212,10 @@ def post_ponr_conversion():
     pkghandler.replace_non_red_hat_packages()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
+
+    loggerinst.task("Convert: Patch yum configuration file")
+    redhatrelease.YumConf().patch()
+
     return
 
 
@@ -237,7 +236,6 @@ def rollback_changes():
     utils.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
-    redhatrelease.yum_conf.restore()
     pkghandler.versionlock_file.restore()
     system_cert = cert.SystemCert()
     system_cert.remove()
