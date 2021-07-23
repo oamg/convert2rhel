@@ -1,6 +1,7 @@
 six==1.15.0
 pexpect==4.3.1
 click==7.1.2
+copr-cli==1.94
 git+https://github.com/ZhukovGreen/tmt.git@poc/tmt-adoption-for-convert2rhel
 -r centos8.requirements.txt
 -e .
