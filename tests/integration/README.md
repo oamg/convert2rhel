@@ -1,6 +1,6 @@
 # Integration tests
 
-## Prepare testing environment (tested on Fedora 33)
+## Prepare testing environment for local tests run via libvirt (tested on Fedora 33)
 
 ## Step 1 - prepare libvirt provisioning environment
 

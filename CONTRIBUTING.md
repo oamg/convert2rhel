@@ -58,3 +58,26 @@ pre-commit autoupdate
 # bypass pre-commit check
 git commit --no-verify
 ```
+
+# Building rpms locally
+
+You need podman or docker installed
+
+```bash
+make rpms
+```
+
+# Building copr builds
+
+You need:
+- podman or docker installed
+- have an account at https://copr.fedorainfracloud.org/api/, copy copr config
+  and paste it to the repo root as .copr.conf
+- request build permissions at https://copr.fedorainfracloud.org/coprs/g/oamg/convert2rhel/permissions/
+
+```bash
+make copr-build
+```
+
+Warning: Do not bump the Release in packaging/convert2rhel.spec.
+Otherwise, this version will be automatically installed during yum install
