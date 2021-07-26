@@ -29,7 +29,7 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
     # initializing the logger first
     log_fname = "convert2rhel.log"
     tool_opts.debug = True  # debug entries > stdout if True
-    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
 
     # emitting some log entries
@@ -37,7 +37,7 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
     logger.debug("Test debug")
 
     # Test if logs were emmited to the file
-    with open(os.path.join(tmpdir, log_fname)) as log_f:
+    with open(str(tmpdir.join(log_fname))) as log_f:
         assert "Test info" in log_f.readline().rstrip()
         assert "Test debug" in log_f.readline().rstrip()
 
@@ -49,7 +49,7 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
 
 def test_tools_opts_debug(tmpdir, read_std, is_py2):
     log_fname = "convert2rhel.log"
-    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     tool_opts.debug = True
     logger.debug("debug entry 1")
@@ -73,7 +73,7 @@ def test_tools_opts_debug(tmpdir, read_std, is_py2):
 def test_logger_custom_logger(tmpdir, caplog):
     """Test CustomLogger."""
     log_fname = "convert2rhel.log"
-    logger_module.initialize_logger(log_name=log_fname, log_dir=tmpdir)
+    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     logger.task("Some task")
     logger.file("Some task write to file")
