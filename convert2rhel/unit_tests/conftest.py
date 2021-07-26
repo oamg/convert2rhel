@@ -19,19 +19,6 @@ def is_py2():
 
 
 @pytest.fixture()
-def tmpdir(tmpdir, is_py2):
-    """Make tmpdir type str for py26.
-
-    Origin LocalPath object is not supported in python26 for os.path.isdir.
-    We're using this method when do a logger setup.
-    """
-    if is_py2:
-        return str(tmpdir)
-    else:
-        return tmpdir
-
-
-@pytest.fixture()
 def read_std(capsys, is_py2):
     """Multipython compatible, modified version of capsys.
 
@@ -70,7 +57,7 @@ def pkg_root(is_py2):
 
 @pytest.fixture(autouse=True)
 def setup_logger(tmpdir):
-    initialize_logger(log_name="convert2rhel", log_dir=tmpdir)
+    initialize_logger(log_name="convert2rhel", log_dir=str(tmpdir))
 
 
 @pytest.fixture()
