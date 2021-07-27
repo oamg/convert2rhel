@@ -6,4 +6,5 @@ prepare:
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml
-environment_from: .env
+environment-file:
+  - .env
