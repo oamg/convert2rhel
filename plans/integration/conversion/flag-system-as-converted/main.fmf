@@ -1,0 +1,21 @@
+discover+:
+    filter:
+        - 'tag: flagging-system-as-converted'
+
+provision:
+    how: libvirt
+    develop: true
+
+/centos8:
+    discover+:
+        filter+:
+            - 'tag: centos8'
+    provision+:
+        origin_vm_name: c2r_centos8_template
+
+/oracle7:
+    discover+:
+        filter+:
+            - 'tag: oracle7'
+    provision+:
+        origin_vm_name: c2r_oracle7_template
