@@ -1,6 +1,6 @@
 ---
 - include: build_rpm.yml
-  when: build_rpm
+  when: build_rpm == true
 - include: install_rpm_from_local_build.yml
   when: (rpm_provider == "local") and
         (build_rpm == true)
