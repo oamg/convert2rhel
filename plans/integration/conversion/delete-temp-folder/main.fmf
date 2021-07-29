@@ -1,8 +1,13 @@
 discover+:
     filter+:
         - 'tag: delete-temp-folder'
-        - 'tag: centos7'
 provision:
     how: libvirt
     develop: true
-    origin_vm_name: c2r_centos7_template
+
+/centos7:
+    discover+:
+        filter+:
+            - 'tag: centos7'
+    provision+:
+        origin_vm_name: c2r_centos7_template
