@@ -274,6 +274,17 @@ def get_traceback_str():
     return "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
 
+def remove_tmp_dir():
+    """Remove temporary folder (TMP_DIR), not needed post-conversion."""
+    try:
+        shutil.rmtree(TMP_DIR)
+        loggerinst.info("Temporary folder %s removed" % TMP_DIR)
+    except OSError as err:
+        loggerinst.warn("Failed removing temporary folder %s\nError (%s): %s" % (TMP_DIR, err.errno, err.strerror))
+    except TypeError:
+        loggerinst.warn("TypeError error while removing temporary folder %s" % TMP_DIR)
+
+
 class DictWListValues(dict):
     """Python 2.4 replacement for Python 2.5+ collections.defaultdict(list)."""
 

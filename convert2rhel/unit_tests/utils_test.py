@@ -19,6 +19,14 @@ import re
 import sys
 import unittest
 
+import pytest
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
+
 from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
@@ -280,3 +288,22 @@ def test_get_rpm_header(monkeypatch):
     rpm = get_rpm_mocked()
     monkeypatch.setattr(utils, "rpm", rpm)
     assert utils.get_rpm_header("/path/to.rpm", _open=mock.mock_open())[rpm.RPMTAG_NAME] == "pkg1"
+
+
+@pytest.mark.parametrize("dir_name", ("/existing", "/nonexisting", None))
+# TODO change to tmpdir fixture
+def test_remove_tmp_dir(monkeypatch, dir_name, caplog, tmpdir):
+    if dir_name == "/existing":
+        path = str(tmpdir.mkdir(dir_name))
+    else:
+        path = dir_name
+    monkeypatch.setattr(utils, "TMP_DIR", value=path)
+
+    utils.remove_tmp_dir()
+
+    if dir_name == "/existing":
+        assert "Temporary folder " + str(path) + " removed" in caplog.text
+    elif dir_name == "/nonexisting":
+        assert "Failed removing temporary folder " + dir_name in caplog.text
+    else:
+        assert "TypeError error while removing temporary folder " in caplog.text
