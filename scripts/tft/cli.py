@@ -66,13 +66,16 @@ async def cli(
     Ensure the content of .env.
 
     Example commands:
-    ```
+
+    -------------------
+
     # Submit only given plan to tft and use existing copr rpm builds
-    python scripts/tft -v -p /plans/integration/inhibit-if-kmods-is-not-supported/centos8 --copr-build-id 2353320 --copr-build-id 2353321
+
+        python scripts/tft -v -p /plans/integration/inhibit-if-kmods-is-not-supported/centos8 --copr-build-id 2353320 --copr-build-id 2353321
 
     # Run all plans for some-atypical-remote-name git remote with debug mode (-v)
-    python scripts/tft -v -r some-atypical-remote-name
-    ```
+
+        python scripts/tft -v -r some-atypical-remote-name
     """
     # some housekeeping
     logger.remove()
