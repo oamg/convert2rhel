@@ -99,3 +99,15 @@ update-vms:
 	virsh shutdown c2r_centos7_template
 	virsh shutdown c2r_oracle8_template
 	virsh shutdown c2r_oracle7_template
+
+.switch-env:
+	ln -sf $(env_source) .env
+
+switch-env-tft: env_source = .env.tft
+switch-env-tft: .switch-env
+
+switch-env-local: env_source = .env.local
+switch-env-local: .switch-env
+
+switch-env-brew-build: env_source = .env.brewbuild
+switch-env-tft: .switch-env
