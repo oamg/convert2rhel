@@ -8,3 +8,7 @@ prepare:
       playbook: tests/ansible_collections/main.yml
 environment-file:
   - .env
+adjust:
+  - environment-file:
+      - {"url": "https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env", "cert_path": "https://raw.githubusercontent.com/oamg/convert2rhel/main/plans/ca_certs/ca.crt"}
+    when: trigger == commit
