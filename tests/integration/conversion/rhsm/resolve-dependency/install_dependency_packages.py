@@ -26,7 +26,7 @@ def get_system_version(system_release_content=None):
     return version
 
 
-def test_good_convertion(shell, convert2rhel):
+def test_install_dependency_packages(shell):
 
     with open("/etc/system-release", "r") as file:
         system_release = file.read()
@@ -49,15 +49,3 @@ def test_good_convertion(shell, convert2rhel):
 
     # installing dependency packages
     assert shell("yum install -y {}".format(" ".join(dependency_pkgs))).returncode == 0
-
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
-        )
-    ) as c2r:
-        c2r.expect("Conversion successful!")
-
-    assert c2r.exitstatus == 0
