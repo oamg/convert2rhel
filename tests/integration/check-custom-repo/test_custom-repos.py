@@ -52,7 +52,7 @@ def test_good_convertion_without_rhsm(shell, convert2rhel):
 def test_bad_convertion_without_rhsm(shell, convert2rhel):
     """
     Test if --enablerepo are not skipped when  subscription-manager are disabled and test the convertion will stop
-    with non-valid repo
+    with non-valid repo. Make sure that after failed repo check there is a kernel installed.
     """
     with convert2rhel("-y --no-rpm-va --disable-submgr --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug") as c2r:
         c2r.expect(
@@ -61,3 +61,5 @@ def test_bad_convertion_without_rhsm(shell, convert2rhel):
         )
 
     assert c2r.exitstatus == 1
+
+    assert shell("rpm -qi kernel").returncode == 0
