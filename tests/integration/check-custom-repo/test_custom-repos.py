@@ -38,7 +38,7 @@ def test_good_convertion_without_rhsm(shell, convert2rhel):
         system_release = file.read()
         system_version = get_system_version(system_release_content=system_release)
         if system_version.major == 7:
-            enable_repo_opt = "--enablerepo rhel-7-server-rpms"
+            enable_repo_opt = "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms --enablerepo rhel-7-server-extras-rpms"
         elif system_version.major == 8:
             enable_repo_opt = "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
 
