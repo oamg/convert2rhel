@@ -18,6 +18,8 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
 - job: copr_build
   trigger: commit
   metadata:
@@ -28,6 +30,8 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
@@ -36,8 +40,9 @@ jobs:
 - job: tests
   metadata:
     targets:
-    - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
     use_internal_tf: True
   trigger: pull_request
