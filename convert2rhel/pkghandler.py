@@ -45,36 +45,38 @@ class PkgWFingerprint(object):
         self.fingerprint = fingerprint
 
 
-def call_yum_cmd_w_downgrades(cmd, pkgs):
+def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     """Calling yum command is prone to end up with an error due to unresolved
     dependencies, especially when it tries to downgrade pkgs. This function
     tries to resolve the dependency errors where yum is not able to.
     """
 
-    for _ in range(MAX_YUM_CMD_CALLS):
-        output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(pkgs)))
-        loggerinst.info("Received return code: %s\n" % str(ret_code))
-        # handle success condition #1
-        if ret_code == 0:
-            break
-        # handle success condition #2
-        # false positive: yum returns non-zero code when there is nothing to do
-        nothing_to_do_error_exists = output.endswith("Error: Nothing to do\n")
-        if ret_code == 1 and nothing_to_do_error_exists:
-            break
-        # handle error condition
-        loggerinst.info("Resolving dependency errors ... ")
-        output = resolve_dep_errors(output)
-        # if we have problematic packages, remove them
-        problematic_pkgs = get_problematic_pkgs(output)
-        if problematic_pkgs["errors"]:
-            loggerinst.warning(
-                "Removing problematic packages to continue with conversion:\n%s" % "\n".join(problematic_pkgs["errors"])
-            )
-            utils.remove_pkgs(problematic_pkgs["errors"], backup=False, critical=False)
-    else:
+    if retries <= 0:
         loggerinst.critical("Could not resolve yum errors.")
-    return
+
+    output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(pkgs)))
+    loggerinst.info("Received return code: %s\n" % str(ret_code))
+    # handle success condition #1
+    if ret_code == 0:
+        return
+
+    # handle success condition #2
+    # false positive: yum returns non-zero code when there is nothing to do
+    nothing_to_do_error_exists = output.endswith("Error: Nothing to do\n")
+    if ret_code == 1 and nothing_to_do_error_exists:
+        return
+
+    # handle error condition
+    loggerinst.info("Resolving dependency errors ... ")
+    output = resolve_dep_errors(output)
+
+    # if we have problematic packages, remove them
+    problematic_pkgs = get_problematic_pkgs(output)
+    to_remove = problematic_pkgs["errors"] | problematic_pkgs["mismatches"]
+    if to_remove:
+        loggerinst.warning("Removing problematic packages to continue with conversion:\n%s" % "\n".join(to_remove))
+        utils.remove_pkgs(to_remove, backup=False, critical=False)
+    return call_yum_cmd_w_downgrades(cmd, pkgs, retries - 1)
 
 
 def call_yum_cmd(
@@ -146,11 +148,11 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
     """Parse the YUM/DNF output to find what packages are causing a transaction failure."""
     loggerinst.info("Checking for problematic packages")
     problematic_pkgs = {
-        "all": set(),
         "protected": set(),
         "errors": set(),
         "multilib": set(),
         "required": set(),
+        "mismatches": set(),
     }
     loggerinst.info("\n\n")
 
@@ -170,6 +172,11 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Found multilib packages: %s" % set(multilib))
         problematic_pkgs["multilib"] = set(multilib) - excluded_pkgs
 
+    mismatches = re.findall("problem with installed package %s" % package_nevr_re, output, re.MULTILINE)
+    if mismatches:
+        loggerinst.info("Found mismatched packages: %s" % set(mismatches))
+        problematic_pkgs["mismatches"] = set(mismatches) - excluded_pkgs
+
     # What yum prints in the Requires is a capability, not a package name. And capability can be an arbitrary string,
     # e.g. perl(Carp) or redhat-lsb-core(x86-64).
     # Yet, passing a capability to yum distro-sync does not yield the expected result - the packages that provide the
@@ -181,10 +188,17 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Unavailable packages required by others: %s" % set(req))
         problematic_pkgs["required"] = set(req) - excluded_pkgs
 
-    if protected + deps + multilib + req:
-        problematic_pkgs["all"] = set(protected + deps + multilib + req) - excluded_pkgs
-
     return problematic_pkgs
+
+
+def get_pkgs_to_distro_sync(problematic_pkgs):
+    """Consolidate all the different problematic packages to one list."""
+    return (
+        problematic_pkgs["errors"]
+        | problematic_pkgs["protected"]
+        | problematic_pkgs["multilib"]
+        | problematic_pkgs["required"]
+    )
 
 
 def resolve_dep_errors(output, pkgs=set()):
@@ -193,17 +207,18 @@ def resolve_dep_errors(output, pkgs=set()):
     """
 
     problematic_pkgs = get_problematic_pkgs(output, excluded_pkgs=pkgs)
-    if not problematic_pkgs["all"]:
+    pkgs_to_distro_sync = get_pkgs_to_distro_sync(problematic_pkgs)
+    if not pkgs_to_distro_sync:
         # No package has been added to the list of packages to be downgraded.
         # There's no point in calling the yum downgrade command again.
         loggerinst.info("No other package to try to downgrade in order to resolve yum dependency errors.")
         return output
-    problematic_pkgs["all"] = problematic_pkgs["all"].union(pkgs)
+    pkgs_to_distro_sync = pkgs_to_distro_sync.union(pkgs)
     cmd = "distro-sync"
-    loggerinst.info("\n\nTrying to resolve the following packages: %s" % ", ".join(problematic_pkgs["all"]))
-    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(problematic_pkgs["all"]))
+    loggerinst.info("\n\nTrying to resolve the following packages: %s" % ", ".join(pkgs_to_distro_sync))
+    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs_to_distro_sync))
     if ret_code != 0:
-        return resolve_dep_errors(output, problematic_pkgs["all"])
+        return resolve_dep_errors(output, pkgs_to_distro_sync)
     return output
 
 

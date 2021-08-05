@@ -268,7 +268,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda _: ["pkg"])
     @unit_tests.mock(pkghandler, "resolve_dep_errors", lambda output: output)
-    @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg: {"errors": pkg})
+    @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg: {"errors": set([pkg]), "mismatches": set()})
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -281,7 +281,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ["fingerprint"],
         )
 
-        self.assertEqual(utils.remove_pkgs.pkgs, pkghandler.call_yum_cmd.return_string)
+        self.assertIn(pkghandler.call_yum_cmd.return_string, utils.remove_pkgs.pkgs)
         self.assertEqual(utils.remove_pkgs.critical, False)
 
     def test_get_problematic_pkgs(self):
@@ -289,41 +289,50 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(
             error_pkgs,
             {
-                "all": set(),
                 "protected": set(),
                 "errors": set(),
                 "multilib": set(),
                 "required": set(),
+                "mismatches": set(),
             },
         )
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_PROTECTED_ERROR, set())
-        self.assertIn("systemd", error_pkgs["all"])
         self.assertIn("systemd", error_pkgs["protected"])
-        self.assertIn("yum", error_pkgs["all"])
         self.assertIn("yum", error_pkgs["protected"])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
-        self.assertIn("libreport-anaconda", error_pkgs["all"])
         self.assertIn("libreport-anaconda", error_pkgs["errors"])
-        self.assertIn("abrt-cli", error_pkgs["all"])
         self.assertIn("abrt-cli", error_pkgs["errors"])
-        self.assertIn("libreport-plugin-rhtsupport", error_pkgs["all"])
         self.assertIn("libreport-plugin-rhtsupport", error_pkgs["required"])
-        self.assertIn("python2-hawkey", error_pkgs["all"])
         self.assertIn("python2-hawkey", error_pkgs["required"])
-        self.assertIn("mod_ldap", error_pkgs["all"])
         self.assertIn("mod_ldap", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-trialuse", error_pkgs["all"])
         self.assertIn("redhat-lsb-trialuse", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-core", error_pkgs["all"])
         self.assertIn("redhat-lsb-core", error_pkgs["required"])
 
         error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, set())
-        self.assertIn("openldap", error_pkgs["all"])
         self.assertIn("openldap", error_pkgs["multilib"])
-        self.assertIn("p11-kit", error_pkgs["all"])
         self.assertIn("p11-kit", error_pkgs["multilib"])
+
+        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MISMATCHED_PKGS_ERROR, set())
+        self.assertIn("python39-psycopg2-debug", error_pkgs["mismatches"])
+
+    def test_get_pkgs_to_distro_sync(self):
+        problematic_pkgs = {
+            "protected": set(["a"]),
+            "errors": set(["b"]),
+            "multilib": set(["c", "a"]),
+            "required": set(["d", "a"]),
+            "mismatches": set(["e", "a"]),
+        }
+        all_pkgs = pkghandler.get_pkgs_to_distro_sync(problematic_pkgs)
+        self.assertEqual(
+            all_pkgs,
+            problematic_pkgs["errors"]
+            | problematic_pkgs["protected"]
+            | problematic_pkgs["multilib"]
+            | problematic_pkgs["required"],
+        )
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
@@ -1411,6 +1420,13 @@ Error: Package: mod_ldap-2.1.11-34.el7.x86_64 (rhel-7-server-rpms)
 YUM_MULTILIB_ERROR = """
 Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
 Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.35-4.fc19.x86_64"""
+
+YUM_MISMATCHED_PKGS_ERROR = """
+Problem: cannot install both python39-psycopg2-2.8.6-2.module+el8.4.0+9822+20bf1249.x86_64 and python39-psycopg2-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64
+   - package python39-psycopg2-debug-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64 requires python39-psycopg2 = 2.8.6-2.module_el8.4.0+680+7b309a77, but none of the providers can be installed
+   - cannot install the best update candidate for package python39-psycopg2-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64
+   - problem with installed package python39-psycopg2-debug-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64"""
+
 
 # The following yum error is currently not being handled by the tool. The
 # tool would somehow need to decide, which of the two packages to remove and

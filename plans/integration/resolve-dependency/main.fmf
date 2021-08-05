@@ -12,6 +12,13 @@ provision:
   provision+:
     origin_vm_name: c2r_centos7_template
 
+/centos8:
+  discover+:
+    filter+:
+      - 'tag: centos8'
+  provision+:
+    origin_vm_name: c2r_centos8_template
+
 /oracle7:
   discover+:
     filter+:

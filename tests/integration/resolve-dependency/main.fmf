@@ -1,12 +1,14 @@
 summary: resolve-dependency
 tag+:
-  - centos7
   - oracle7
+  - centos7
+  - centos8
   - resolve-dependency
 adjust:
   enabled: false
   when: >
     distro != centos-7 and
+    distro != centos-8 and
     distro != oracle-7
 
 test: pytest -svv
