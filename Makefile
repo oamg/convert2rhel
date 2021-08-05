@@ -17,6 +17,7 @@ PYTHON ?= python3
 PIP ?= pip3
 VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
+SHOW_CAPTURE ?= no
 
 all: clean images tests
 
@@ -58,9 +59,9 @@ images: .images
 
 tests: images
 	@echo 'CentOS Linux 7 tests'
-	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest
+	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
 	@echo 'CentOS Linux 8 tests'
-	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
+	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
 
 lint: images
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"
@@ -69,7 +70,7 @@ lint-errors: images
 	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
 tests8: images
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest
+	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
 
 rpms: images
 	mkdir -p .rpms
