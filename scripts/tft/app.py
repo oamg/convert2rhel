@@ -73,7 +73,7 @@ def get_vm_name(data: List[dict]) -> str:
 
 
 async def run_in_shell(cmd: str) -> Tuple[str, str]:
-    """Simple async interfact to subprocess shell."""
+    """Simple async interface to subprocess shell."""
     proc = await asyncio.create_subprocess_shell(
         cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -81,7 +81,7 @@ async def run_in_shell(cmd: str) -> Tuple[str, str]:
     )
 
     stdout, stderr = await proc.communicate()
-    return stdout.decode().strip(), stderr.decode().strip()
+    return stdout.decode().strip(), stderr.decode().strip(), proc.returncode
 
 
 async def succeeded_copr_build(
@@ -89,13 +89,13 @@ async def succeeded_copr_build(
     interval: int = WATCH_COPR_BUILD_STATE_INTERVAL,
 ) -> None:
     """Wait for copr build id to be built."""
-    state, err = await run_in_shell(f"copr-cli status {copr_id}")
+    state, err, _ = await run_in_shell(f"copr-cli status {copr_id}")
     while state != "succeeded":
         if err:
             raise ValueError(err)
         logger.debug(f"Copr job {copr_id} state is {state}. Waiting {interval}s...")
         await asyncio.sleep(interval)
-        state, err = await run_in_shell(f"copr-cli status {copr_id}")
+        state, err, _ = await run_in_shell(f"copr-cli status {copr_id}")
     logger.info(f"Copr job {copr_id} was finished successfully")
 
 
@@ -104,7 +104,7 @@ async def validate_copr_ids(*copr_ids: str) -> None:
     logger.info("Copr ids validation started started")
 
     async def check_build_state(copr_id):
-        state, err = await run_in_shell(f"copr-cli status {copr_id}")
+        state, err, _ = await run_in_shell(f"copr-cli status {copr_id}")
         if state != "succeeded":
             raise ValueError(f"Job id {copr_id} is not succeeded. Can't use this rpm build.")
         if err:
@@ -172,9 +172,9 @@ async def repo_health_check(repo: git.Repo, remote: str) -> None:
 async def create_copr_builds():
     """Build rpms in copr using `make copr-build` command."""
     logger.info("Submitting job to copr...")
-    stdout, stderr = await run_in_shell("make copr-build")
-    if stderr:
-        raise RuntimeError(f"{stderr}")
+    stdout, stderr, rc = await run_in_shell("make copr-build")
+    if rc:
+        raise RuntimeError(f"`make copr-build` exited with {rc}. STDERR:\n{stderr}")
     build_urls = "\n".join(re.findall(r"Build was added to convert2rhel:\n  (.+)\n", stdout))
     build_ids = re.findall(r"Created builds: (.+)", stdout)
     logger.info(f"Builds are submitted to the copr under:\n{build_urls}\n" "Waiting the process to finish.")

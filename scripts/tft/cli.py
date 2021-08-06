@@ -41,8 +41,8 @@ def coro(f):
     default="origin",
     show_default=True,
     help=(
-        "Git remote name from which the content of the repo will be cloned at "
-        "current commit. Warning: changes should be pushed to the remote "
+        "Name of a git remote repo from which will be cloned at the"
+        "current commit. Warning: changes should be pushed to the remote branch"
         "before running this script."
     ),
 )
@@ -63,7 +63,7 @@ async def cli(
 ) -> None:
     """Script to interact with testing farm service.
 
-    Ensure the content of .env.
+    Ensure the .env file includes TFT secrets.
 
     Example commands:
 
@@ -73,9 +73,9 @@ async def cli(
 
         python scripts/tft -v -p /plans/integration/inhibit-if-kmods-is-not-supported/centos8 --copr-build-id 2353320 --copr-build-id 2353321
 
-    # Run all plans for some-atypical-remote-name git remote with debug mode (-v)
+    # Run all plans for git-remote-name git remote with debug mode (-v)
 
-        python scripts/tft -v -r some-atypical-remote-name
+        python scripts/tft -v -r git-remote-name
     """
     # some housekeeping
     logger.remove()

@@ -86,7 +86,7 @@ copr-build: rpms
 	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.srpms .
 	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.srpms .
 	docker rm $$(docker ps -aq) -f
-	copr-cli --config .copr.conf build --nowait @oamg/convert2rhel .srpms/*
+	copr-cli build --nowait @oamg/convert2rhel .srpms/*
 
 update-vms:
 	virsh start c2r_centos8_template

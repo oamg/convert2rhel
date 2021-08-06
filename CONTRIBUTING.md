@@ -71,8 +71,7 @@ make rpms
 
 You need:
 - podman or docker installed
-- have an account at https://copr.fedorainfracloud.org/api/, copy copr config
-  and paste it to the repo root as .copr.conf
+- the copr config from https://copr.fedorainfracloud.org/api/ copied into ~/.config/copr
 - request build permissions at https://copr.fedorainfracloud.org/coprs/g/oamg/convert2rhel/permissions/
 
 ```bash
