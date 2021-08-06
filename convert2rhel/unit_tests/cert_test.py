@@ -99,27 +99,29 @@ class TestCert(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    ("filename"),
-    ("existing.file", "nonexisting.file"),
+    (
+        "create_file",
+        "expected_text_in_logs",
+    ),
+    (
+        (True, "/filename removed"),
+        (False, "No such file or directory"),
+    ),
 )
-def test_remove_cert(monkeypatch, filename, caplog):
-    try:
-        utils.mkdir_p(unit_tests.TMP_DIR)
-        path = os.path.join(unit_tests.TMP_DIR, filename)
-        if filename == "existing.file":
-            os.mknod(path)
-    except OSError:
-        pass
+def test_remove_cert(
+    monkeypatch,
+    create_file,
+    expected_text_in_logs,
+    caplog,
+    tmpdir,
+):
+    tmp_file = tmpdir / "filename"
+    if create_file:
+        tmp_file.write(b"some content")
 
     monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
-    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=path))
+    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=str(tmp_file)))
 
     sys_cert = cert.SystemCert()
     sys_cert.remove()
-
-    shutil.rmtree(unit_tests.TMP_DIR)
-
-    if filename == "existing.file":
-        assert "Certificate " + path + " removed" in caplog.text
-    else:
-        assert "OSError" in caplog.text
+    assert expected_text_in_logs in caplog.messages[-1]
