@@ -159,7 +159,7 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Found protected packages: %s" % set(protected))
         problematic_pkgs["protected"] = set(protected) - excluded_pkgs
 
-    package_nevr_re = r"[0-9]*:?([a-z][a-z0-9-]*?)-[0-9]"
+    package_nevr_re = r"[0-9]*:?([a-z][a-z0-9-_]*?)-[0-9]"
     deps = re.findall("Error: Package: %s" % package_nevr_re, output, re.MULTILINE)
     if deps:
         loggerinst.info("Found packages causing dependency errors: %s" % set(deps))
