@@ -135,6 +135,11 @@ def pretend_os(request, pkg_root, monkeypatch):
         "get_file_content",
         value=lambda _: "%s release %s" % (system_name, system_version),
     )
+    monkeypatch.setattr(
+        system_info,
+        "_get_architecture",
+        value=lambda: "x86_64",
+    )
     tool_opts.no_rpm_va = True
     system_info.resolve_system_info()
 
