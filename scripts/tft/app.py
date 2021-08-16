@@ -28,7 +28,7 @@ VM2COMPOSES = {
     "c2r_centos7_template": "CentOS-7",
     "c2r_centos8_template": "CentOS-8",
     "c2r_oracle7_template": "Oracle-Linux-7.9",
-    "c2r_oracle8_template": "Oracle-Linux-8.3",
+    "c2r_oracle8_template": "Oracle-Linux-8.4",
 }
 
 VM2COPR_CHROOT = {
@@ -254,16 +254,16 @@ async def watch_request_id(
                 logger.info(f"Plan {plan_name} successfully completed.")
                 logger.debug(
                     f"Results available at:\n"
-                    f"http://artifacts.dev.testing-farm.io/{test_id}/\n"
-                    f"http://artifacts.dev.testing-farm.io/{test_id}/pipeline.log\n"
+                    f"http://artifacts.osci.redhat.com/{test_id}/\n"
+                    f"http://artifacts.osci.redhat.com/{test_id}/pipeline.log\n"
                 )
                 return
             if data["state"] == "error":
                 raise aiohttp.ClientError(
                     f"Plan finished with error. Error details:"
                     f"{resp}.\n"
-                    f"http://artifacts.dev.testing-farm.io/{test_id}/\n"
-                    f"http://artifacts.dev.testing-farm.io/{test_id}/pipeline.log\n"
+                    f"http://artifacts.osci.redhat.com/{test_id}/\n"
+                    f"http://artifacts.osci.redhat.com/{test_id}/pipeline.log\n"
                 )
         await asyncio.sleep(WATCH_TEST_INTERVAL)
 
