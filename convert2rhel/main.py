@@ -72,7 +72,7 @@ def main():
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
-        breadcrumbs.breadcrumbs.set_data_before()
+        breadcrumbs.breadcrumbs.collect_early_data()
 
         # check the system prior the conversion (possible inhibit)
         checks.perform_pre_checks()
@@ -121,7 +121,6 @@ def main():
         no_changes_msg = "No changes were made to the system."
 
         if is_help_msg_exit(process_phase, err):
-            breadcrumbs.breadcrumbs.finish_successfull()
             return 0
         elif process_phase == ConversionPhase.INIT:
             print(no_changes_msg)
@@ -224,8 +223,7 @@ def post_ponr_conversion():
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
 
-    breadcrumbs.breadcrumbs.set_data_after()
-    breadcrumbs.breadcrumbs.finish_successfull()
+    breadcrumbs.breadcrumbs.finish_success()
 
     return
 

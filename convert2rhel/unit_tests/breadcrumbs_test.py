@@ -37,8 +37,8 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import breadcrumbs
 
 
-def test_sanitize_argv():
-    arguments_to_sanitize = {"--password", "-p", "--activationkey", "-k"}
+def test_sanitize_cli_options():
+    options_to_sanitize = {"--password", "-p", "--activationkey", "-k"}
 
     io = [
         (
@@ -59,7 +59,7 @@ def test_sanitize_argv():
     ]
 
     for (inp, outp) in io:
-        assert breadcrumbs.sanitize_argv_to_str(inp, arguments_to_sanitize) == outp
+        assert breadcrumbs.sanitize_cli_options(inp, options_to_sanitize) == outp
 
 
 def test_set_env(monkeypatch):

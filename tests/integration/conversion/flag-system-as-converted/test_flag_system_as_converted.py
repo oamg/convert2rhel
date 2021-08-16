@@ -11,7 +11,7 @@ DATA = "/etc/migration-results"
 
 
 def test_flag_system_as_converted():
-    """Testing if was created breadcrumbs file and corresponds with schema."""
+    """Test if the breadcrumbs file was created and corresponds to the JSON schema."""
 
     assert os.path.exists(DATA)
 

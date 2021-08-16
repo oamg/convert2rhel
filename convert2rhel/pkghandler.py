@@ -232,8 +232,7 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 
 def get_pkg_fingerprint(pkg_obj):
-    """Get fingerprint of the key used to sign a package"""
-    # TODO maybe will be needed unit test fix
+    """Get fingerprint of the key used to sign a package."""
     pkg_sig = get_pkg_signature(pkg_obj)
     fingerprint_match = re.search("Key ID (.*)", pkg_sig)
     if fingerprint_match:
@@ -243,8 +242,7 @@ def get_pkg_fingerprint(pkg_obj):
 
 
 def get_pkg_signature(pkg_obj):
-    """Get signature of package"""
-    # TODO unit test
+    """Get information about a package signature from the RPM database."""
     if pkgmanager.TYPE == "yum":
         hdr = pkg_obj.hdr
     elif pkgmanager.TYPE == "dnf":
