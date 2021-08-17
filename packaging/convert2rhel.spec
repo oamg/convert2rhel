@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.22
+Version:        0.23
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -110,6 +110,24 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Tue Aug 17 2021 Michal Bocek <mbocek@redhat.com> 0.23-1
+- Create /etc/migration-results with a basic information about convert2rhel being executed
+- Handle yum conflicts where pkg A depends on pkg B, B is being replaced but replacement for A is not available
+- Inhibit the conversion only if loaded (not installed) kernel modules are not available in RHEL
+- Remove temporary data from /var/lib/convert2rhel/ after successful conversion
+- Allow converting Scientific Linux 7
+- Roll back the installation of an RHSM certificate
+- Add LC=ALL to existing environment variables when calling shell commands instead of overriding them
+- Improve handling yum transaction errors by expecting underscore in a pkg name
+- Improve patching yum.conf so that it's not necessary to back up
+- Introduce a new make `copr-build` command to create builds in Fedora Copr
+- Integration tests: Do not capture and print all stdout/err when a test fails
+- Integration tests: Abstract away from processor architecture of the system on which tests are executed
+- Integration tests: Increase reboot time limit to 600 seconds due to slower test systems in the cloud
+- Integration tests: Use new TMT 'environment-file' option
+- Integration tests: Limit the tests to run on relevant test systems only
+- Integration tests: Set the timeout for tests from the default 5 min to 30 min
+
 * Tue Jun 29 2021 Eric Gustavsson <egustavs@redhat.com> 0.22-1
 - Add support for future minor releases
 - Add custom repo validation
