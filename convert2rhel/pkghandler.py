@@ -232,18 +232,24 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 
 def get_pkg_fingerprint(pkg_obj):
-    """Get fingerprint of the key used to sign a package"""
+    """Get fingerprint of the key used to sign a package."""
+    pkg_sig = get_pkg_signature(pkg_obj)
+    fingerprint_match = re.search("Key ID (.*)", pkg_sig)
+    if fingerprint_match:
+        return fingerprint_match.group(1)
+    else:
+        return "none"
+
+
+def get_pkg_signature(pkg_obj):
+    """Get information about a package signature from the RPM database."""
     if pkgmanager.TYPE == "yum":
         hdr = pkg_obj.hdr
     elif pkgmanager.TYPE == "dnf":
         hdr = get_rpm_header(pkg_obj)
 
     pkg_sig = hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|")
-    fingerprint_match = re.search("Key ID (.*)", pkg_sig)
-    if fingerprint_match:
-        return fingerprint_match.group(1)
-    else:
-        return "none"
+    return pkg_sig
 
 
 def get_rpm_header(pkg_obj):

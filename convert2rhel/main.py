@@ -20,6 +20,7 @@ import os
 import sys
 
 from convert2rhel import (
+    breadcrumbs,
     cert,
     checks,
     logger,
@@ -71,6 +72,7 @@ def main():
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
+        breadcrumbs.breadcrumbs.collect_early_data()
 
         # check the system prior the conversion (possible inhibit)
         checks.perform_pre_checks()
@@ -133,6 +135,8 @@ def main():
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
             loggerinst.warning("Conversion process interrupted and manual user intervention will be necessary.")
+
+        breadcrumbs.breadcrumbs.finish_fail()
 
         return 1
 
@@ -218,6 +222,8 @@ def post_ponr_conversion():
 
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
+
+    breadcrumbs.breadcrumbs.finish_success()
 
     return
 
