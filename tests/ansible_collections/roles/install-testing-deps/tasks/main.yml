@@ -1,4 +1,18 @@
 ---
+- name: Ensure python3
+  yum:
+    name: python3
+    state: present
+
+- name: Check if pip present
+  shell: pip
+  ignore_errors: True
+  register: pip_command
+
+- name: Install pip if not present
+  shell: curl https://bootstrap.pypa.io/pip/get-pip.py | python3
+  when: pip_command.stderr
+
 - name: Install pytest framework dependencies
   pip:
     name: ["pytest", "pytest-cov", "envparse", "click", "pexpect", "dataclasses", "jsonschema"]
