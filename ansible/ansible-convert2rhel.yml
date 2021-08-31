@@ -7,6 +7,11 @@
     rhsm_password: redhat-users-password
     skip_os_version_check: false
 
+    # Temp solution for RHELDST-7822
+    SSLCACERT: "https://raw.githubusercontent.com/candlepin/subscription-manager/main/etc-conf/redhat-uep.pem"
+    # Final solution for RHELDST-7822
+    #SSLCACERT: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
+
   tasks:
 
     - name: Validate Distribution (CentOS or Oracle Linux) and version
@@ -25,14 +30,31 @@
         url:  https://www.redhat.com/security/data/fd431d51.txt
         dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
+    # added for RHELDST-7822
+    - name: Create rhsm/ca directory
+      file:
+        path: "/etc/rhsm/ca"
+        state: directory
+        owner: "root"
+        group: "root"
+        mode: '755'
+        setype: "rhsmcertd_config_t"
+
+    # added for RHELDST-7822
+    - name: Download Red Hat SSL CA Cert
+      get_url:
+        url: "{{ SSLCACERT }}"
+        dest: "/etc/rhsm/ca/redhat-uep.pem"
+
     - name: Add Convert2RHEL yum repository from Red Hat
       yum_repository:
         name: convert2rhel
         description: Convert2RHEL for OS {{ ansible_distribution_major_version }}
-        baseurl: "http://ftp.redhat.com/pub/redhat/convert2rhel/{{ ansible_distribution_major_version }}/os/"
+        baseurl: "https://cdn.redhat.com/content/public/convert2rhel/{{ ansible_distribution_major_version }}/x86_64/os/"
         enabled: yes
         gpgcheck: yes
         gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+        sslcacert: "/etc/rhsm/ca/redhat-uep.pem"
 
     - name: Install Convert2RHEL
       yum:
