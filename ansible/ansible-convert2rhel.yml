@@ -1,28 +1,31 @@
 - hosts: all
-  become: true
-  remote_user: root
+  become: yes
+  strategy: free
 
   vars:
-    LATESTVER: "0.21"
-    LATESTBUILD: "1"
-    GPGKEY: "https://www.redhat.com/security/data/fd431d51.txt"
+    rhsm_username: redhat-user-name
+    rhsm_password: redhat-users-password
+    skip_os_version_check: false
 
   tasks:
 
-    - name: Validate distribution (CentOS or Oracle Linux)
-      meta: end_host
+    - name: Validate Distribution (CentOS or Oracle Linux) and version
+      fail:
+        msg: "Distribution must be CentOS or Oracle Linux"
       when: ansible_distribution != 'CentOS' and ansible_distribution != 'OracleLinux'
 
     - name: Validate Release Version (6.10, 7.9, 8.4)
-      meta: end_host
-      when: ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9' and ansible_distribution_version != '8.4'
+      fail:
+        msg: "Distribution version must be 6.10, 7.9, or 8.4"
+      when: (ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9'
+             and ansible_distribution_version != '8.4') or skip_os_version_check|bool
 
     - name: Download Red Hat GPG key
       get_url:
-        url: "{{ GPGKEY }}"
+        url:  https://www.redhat.com/security/data/fd431d51.txt
         dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
-    - name: Add Convert2RHEL repofile
+    - name: Add Convert2RHEL yum repository from Red Hat
       yum_repository:
         name: convert2rhel
         description: Convert2RHEL for OS {{ ansible_distribution_major_version }}
@@ -31,31 +34,38 @@
         gpgcheck: yes
         gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 
-    - name: Install convert2rhel for RHEL {{ ansible_distribution_major_version }} from yum repo
+    - name: Install Convert2RHEL
       yum:
-        name: "convert2rhel"
-        state: latest
+        name: convert2rhel
 
+    # NOTE 1: use the -y option to answer yes to all yes/no questions the
+    # tool asks carefully and only after you have tested interactively to
+    # ensure that there are not surprises within your environment.  Also
+    # take care to read and follow all prerequisites and backup guidance documented at
+    # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index
 
-## Only use for testing upstream releases from Github
-#    - name: Install convert2rhel for RHEL "{{ ansible_distribution_major_version }}"
-#      yum:
-#        name: 'https://github.com/oamg/convert2rhel/releases/download/v{{ LATESTVER }}/convert2rhel-{{ LATESTVER }}-{{ LATESTBUILD }}.el{{ ansible_distribution_major_version }}.noarch.rpm'
-#        state: latest
-#        disable_gpg_check: yes
+    # NOTE 2: the following command may take 20-40 minutes on average to
+    # complete, depending on quantity of packages installed and speed of
+    # network and storage.  This will need to be run in parallel from the
+    # control node or Tower to effectively run against many systems.
 
+    - name: Run Convert2RHEL
+      command: >
+        convert2rhel
+        -u "{{ rhsm_username }}"
+        -p "{{ rhsm_password }}"
+        --auto-attach
+        --debug
+        -y
 
-## NOTE 1: use the -y option to answer yes to all yes/no questions the
-## tool asks carefully and only after you have tested interactively to
-## ensure that there are not surprises within your environment.  Also
-## take care to read and follow all prerequisites and backup guidance documented at
-## https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index
+    - name: reboot
+      reboot:
 
-## NOTE 2: the following command may take 20-40 minutes on average to
-## complete, depending on quantity of packages installed and speed of
-## network and storage.  This will need to be run in parallel from the
-## control node or Tower to effectively run against many systems.
+    - name: recollect ansible facts on running distribution on system
+      setup:
+        gather_subset: 'distribution'
 
-#    - include_vars: demo_vault.yml
-#    - name: Convert the system to RHEL
-#      shell: convert2rhel -k "{{ rhsm_key }}" -o "{{ rhsm_org }}" --debug -y
+    - name: Verify system is converted to Red Hat Enterprise Linux (RHEL)
+      assert:
+        that: ansible_distribution == 'RedHat'
+        msg: "OS conversion failed. OS is NOT Red Hat"
