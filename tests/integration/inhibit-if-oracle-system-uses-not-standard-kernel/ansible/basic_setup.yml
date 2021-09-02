@@ -1,6 +1,16 @@
 - hosts: all
   tasks:
 
+    - name: Update system
+      yum:
+        name: "*"
+        state: latest
+      register: update
+
+    - name: Reboot
+      reboot:
+        reboot_timeout: 600
+
     - name: Building rpms
       delegate_to: localhost
       shell: make rpms
