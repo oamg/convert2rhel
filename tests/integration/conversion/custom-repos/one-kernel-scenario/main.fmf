@@ -1,0 +1,12 @@
+summary: one-kernel-scenario
+tag+:
+  - centos7
+  - oracle7
+  - one-kernel-scenario
+adjust:
+  enabled: false
+  when: >
+    distro != centos-7 and
+    distro != oracle-7
+test: |
+  pytest -svv
