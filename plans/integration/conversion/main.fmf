@@ -1,11 +1,3 @@
 discover+:
     filter:
         - 'tag: conversion'
-
-prepare+:
-    - name: main conversion preparation
-      how: shell
-      script: pytest -svv tests/integration/conversion/run_conversion.py
-    - name: reboot machine
-      how: ansible
-      playbook: tests/ansible_collections/reboot.yml
