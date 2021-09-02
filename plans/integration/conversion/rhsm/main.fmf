@@ -6,6 +6,8 @@ prepare+:
     - name: main conversion preparation
       how: shell
       script: pytest -svv tests/integration/conversion/rhsm/run_conversion.py
+      order: 70
     - name: reboot machine
       how: ansible
       playbook: tests/ansible_collections/reboot.yml
+      order: 80
