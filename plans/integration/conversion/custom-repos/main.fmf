@@ -3,6 +3,10 @@ discover+:
         - 'tag: custom-repos-conversion'
 
 prepare+:
+    - name: add custom repos
+      how: ansible
+      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+      order: 69
     - name: main conversion preparation
       how: shell
       script: pytest -svv tests/integration/conversion/custom-repos/run_conversion.py
