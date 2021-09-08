@@ -2,6 +2,11 @@ discover+:
     filter:
         - 'tag: check-custom-repo'
 
+prepare+:
+    - name: add custom repos
+      how: ansible
+      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+
 provision:
     how: libvirt
     develop: true
