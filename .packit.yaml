@@ -42,7 +42,8 @@ jobs:
     targets:
     - epel-7-x86_64
     - epel-8-x86_64
-    - oraclelinux-7-x86_64
-    - oraclelinux-8-x86_64
+    # TODO enable when OL7/8 images are working in artemis
+    #- oraclelinux-7-x86_64
+    #- oraclelinux-8-x86_64
     use_internal_tf: True
   trigger: pull_request

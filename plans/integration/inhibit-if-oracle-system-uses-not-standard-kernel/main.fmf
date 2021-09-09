@@ -1,3 +1,0 @@
-discover+:
-    filter:
-        - 'tag: inhibit-if-oracle-system-uses-not-standard-kernel'

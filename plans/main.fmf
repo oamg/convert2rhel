@@ -1,10 +1,19 @@
 execute:
-    how: tmt
+  how: tmt
 discover:
-    how: fmf
+  how: fmf
+provision:
+  how: minute
+  image: 1MT-CentOS-8
 prepare:
-    - name: main preparation step
-      how: ansible
-      playbook: tests/ansible_collections/main.yml
+  - name: main preparation step
+    how: ansible
+    playbook: tests/ansible_collections/main.yml
+  - name: install latest copr build
+    how: install
+    copr: '@oamg/convert2rhel'
+    package: convert2rhel
+    missing: fail
 environment-file:
-  - .env
+  - workaround.yaml
+  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/test-env-file/.workaround.yaml

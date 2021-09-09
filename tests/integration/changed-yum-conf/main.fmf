@@ -1,5 +1,0 @@
-summary: changed-yum-conf
-
-tag+:
-    - changed-yum-conf
-test: pytest -svv

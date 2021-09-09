@@ -1,0 +1,8 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: false
+- include: install_submgr_7.yml
+  when: ansible_facts['distribution_major_version'] == "7"
+- include: install_submgr_8.yml
+  when: ansible_facts['distribution_major_version'] == "8"
