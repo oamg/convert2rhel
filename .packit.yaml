@@ -3,6 +3,11 @@ upstream_package_name: convert2rhel
 downstream_package_name: convert2rhel
 upstream_project_url: https://github.com/oamg/convert2rhel
 
+actions:
+  # do not get the version from a tag (git describe) but from the spec file
+  get-current-version:
+  - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+
 jobs:
 - job: copr_build
   trigger: pull_request
@@ -13,10 +18,8 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
-  actions:
-    # do not get the version from a tag (git describe) but from the spec file
-    get-current-version:
-    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
 - job: copr_build
   trigger: commit
   metadata:
@@ -27,18 +30,19 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
     post-upstream-clone:
     - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
-    # do not get the version from a tag (git describe) but from the spec file
-    get-current-version:
-    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 - job: tests
   metadata:
     targets:
-    - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
+    - oraclelinux-7-x86_64
+    - oraclelinux-8-x86_64
+    use_internal_tf: True
   trigger: pull_request
