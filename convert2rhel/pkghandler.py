@@ -86,6 +86,14 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     if ret_code == 1 and nothing_to_do_error_exists:
         return
 
+    # handle success condition #3
+    # false positive: yum distro-sync returns non-zero code when got package, which isn't in rhel repos
+    # on older (original yum) returns 0, but on newer dnf 1
+    # just in case if all packages given aren't in rhel repos. If one of them is, ret code is 0 and finishes successfully
+    no_packages_marked_error_exists = output.endswith("Error: No packages marked for distribution synchronization.\n")
+    if ret_code == 1 and no_packages_marked_error_exists:
+        return
+
     # handle error condition
     loggerinst.info("Resolving dependency errors ... ")
     output = resolve_dep_errors(output)

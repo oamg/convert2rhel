@@ -25,6 +25,12 @@ from collections import namedtuple
 import pytest
 import rpm
 
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
+
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkghandler, pkgmanager, utils
 from convert2rhel.systeminfo import system_info
@@ -1352,6 +1358,38 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
         self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
+
+
+@pytest.mark.parametrize(
+    ("retcode", "output"),
+    (
+        (
+            1,
+            "Updating Subscription Management repositories.\n"
+            "Repository rhel-8-for-x86_64-baseos-rpms is listed more than once in the configuration\n"
+            "Repository rhel-8-for-x86_64-appstream-rpms is listed more than once in the configuration\n"
+            "Last metadata expiration check: 0:12:45 ago on Wed 01 Sep 2021 01:57:50 PM UTC.\n"
+            "No package vlc installed.\nError: No packages marked for distribution synchronization.\n",
+        ),
+        (
+            0,
+            "Updating Subscription Management repositories.\n"
+            "Repository rhel-8-for-x86_64-baseos-rpms is listed more than once in the configuration\n"
+            "Repository rhel-8-for-x86_64-appstream-rpms is listed more than once in the configuration\n"
+            "Last metadata expiration check: 0:15:23 ago on Mon 06 Sep 2021 08:27:13 AM UTC.\n"
+            "No package cpaste installed.\nDependencies resolved.\nNothing to do.\nComplete!\n",
+        ),
+    ),
+)
+def test_call_yum_cmd_w_downgrades(monkeypatch, retcode, output):
+    monkeypatch.setattr(pkghandler, "call_yum_cmd", value=mock.Mock(return_value=(output, retcode)))
+    resolve_dep_errors = mock.Mock()
+    monkeypatch.setattr(pkghandler, "resolve_dep_errors", value=resolve_dep_errors)
+    monkeypatch.setattr(pkghandler, "get_problematic_pkgs", value=mock.Mock())
+
+    pkghandler.call_yum_cmd_w_downgrades("anything", ["anything"])
+
+    resolve_dep_errors.assert_not_called()
 
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
