@@ -161,3 +161,14 @@ discover+:
   - name: reboot machine
     how: ansible
     playbook: tests/ansible_collections/reboot.yml
+
+/yum_distro_sync:
+  discover+:
+    test: yum-distro-sync
+  prepare+:
+    - name: install problematic package
+      how: shell
+      script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
+    - name: reboot machine
+      how: ansible
+      playbook: tests/ansible_collections/reboot.yml

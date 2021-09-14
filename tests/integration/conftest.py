@@ -79,12 +79,15 @@ def convert2rhel(shell):
     >>>     c2r.expect("Kernel is compatible with RHEL")
     >>> assert c2r.exitstatus == 0
 
+    Unregister means that system wouldn't be unregistered
+    from subscription-manager after conversion.
     """
 
     @contextmanager
     def factory(
         options: str,
         timeout: int = 60 * 60,
+        unregister: bool = True,
     ) -> ContextManager[pexpect.spawn]:
         c2r_runtime = pexpect.spawn(
             f"convert2rhel {options}",
@@ -101,7 +104,8 @@ def convert2rhel(shell):
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
         finally:
-            shell("subscription-manager unregister")
+            if unregister:
+                shell("subscription-manager unregister")
 
     return factory
 
