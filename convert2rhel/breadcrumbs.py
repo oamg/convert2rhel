@@ -89,7 +89,7 @@ class Breadcrumbs(object):
 
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
-        cli_options_to_sanitize = {"--password", "-p", "--activationkey", "-k"}
+        cli_options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
         self.executed = sanitize_cli_options(sys.argv, cli_options_to_sanitize)
 
     def _set_nevra(self):
