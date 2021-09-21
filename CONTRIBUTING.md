@@ -18,22 +18,15 @@ setup pre-commit hooks
 make install
 ```
 
-and you're ready to run tests with:
+and you're ready to run tests inside the containers with:
 ```bash
-make tests-locally
-```
-
-## Unit tests (inside the container)
-You can run unit tests also within containers.
-
-```bash
-$ make tests
+make tests
 ```
 
 ## Linting
 
 ```bash
-make lint   # inside the centos8 container
+make lint   # runs inside a centos8 container
 ```
 Or locally
 ```bash
@@ -67,7 +60,7 @@ You need podman or docker installed
 make rpms
 ```
 
-# Building copr builds
+# Building copr builds locally
 
 You need:
 - podman or docker installed
