@@ -220,7 +220,8 @@ def post_ponr_conversion():
     pkghandler.replace_non_red_hat_packages()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
-
+    loggerinst.task("Convert: Configure the bootloader")
+    grub.post_ponr_set_efi_configuration()
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
 
@@ -246,6 +247,7 @@ def rollback_changes():
     utils.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
+    special_cases.shim_x64_pkg_protection_file.restore()
     pkghandler.versionlock_file.restore()
     system_cert = cert.SystemCert()
     system_cert.remove()

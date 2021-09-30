@@ -60,49 +60,42 @@ def perform_pre_ponr_checks():
 
 
 def check_efi():
-    """Inhibit the conversion when we are not able to handle EFI."""
+    """Inhibit the conversion when we are not able to handle UEFI."""
     logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
     if not grub.is_efi():
-        # NOTE(pstodulk): the check doesn't have to be valid for hybrid boot
-        # (e.g. AWS, Azure, ..)
-        logger.debug("BIOS detected.")
+        logger.info("BIOS detected.")
         return
-    logger.debug("EFI detected.")
+    logger.info("UEFI detected.")
     if system_info.version.major == 6:
-        logger.critical("The conversion with EFI is supported only for systems from major version 7.")
+        logger.critical("The conversion with UEFI is possible only for systems of major version 7 and newer.")
     if not os.path.exists("/usr/sbin/efibootmgr"):
-        logger.critical("Install efibootmgr to continue converting EFI system.")
+        logger.critical("Install efibootmgr to continue converting the UEFI-based system.")
     if system_info.arch != "x86_64":
-        logger.critical("Only x86_64 systems are supported for EFI conversions.")
+        logger.critical("Only x86_64 systems are supported for UEFI conversions.")
     if grub.is_secure_boot():
-        # NOTE: need to be tested yet. So let's inhibit the conversion for now
-        # until we are sure it's safe...
-        logger.debug("Secure boot detected.")
-        logger.critical("The conversion with secure boot is currently not supported.")
+        logger.info("Secure boot detected.")
+        logger.critical("The conversion with secure boot is currently not possible.")
 
-    # Load the data about the bootloader. Currently data is not used, but it's
-    # good check we can obtain all required data after the PONR. Better to
-    # stop now than later.
+    # Get information about the bootloader. Currently the data is not used, but it's
+    # good to check that we can obtain all the required data before the PONR. Better to
+    # stop now than after the PONR.
     try:
         efiboot_info = grub.EFIBootInfo()
     except grub.BootloaderError as e:
         logger.critical(e.message)
 
-    if not efiboot_info.entries[efiboot_info.current_boot].is_referring_to_file():
-        # NOTE(pstodulk): Or critical? I am not sure how much this is even valid
-        # and not sure what could be consequences after the conversion, as the
-        # new EFI bootloader entry is created referring to a RHEL efi bin.
-        # So keeping warning for now.
+    if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
+        # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
+        # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
         logger.warning(
-            "The current EFI bootloader '%s' is not referring to any binary EFI"
-            " file located on ESP."
-            % efiboot_info.current_boot
+            "The current UEFI bootloader '%s' is not referring to any binary UEFI"
+            " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
         )
-    # TODO(pstodulk): print warning when multiple orig. EFI entries points
-    # to the original system (e.g. into the centos directory..). The point is
-    # that only the current efi bootloader entry is handled.
+    # TODO(pstodulk): print warning when multiple orig. UEFI entries point
+    # to the original system (e.g. into the centos/ directory..). The point is
+    # that only the current UEFI bootloader entry is handled.
     # If e.g. on CentOS Linux, other entries with CentOS labels could be
-    # invalid (or at least missleading) as the OS will be replaced by RHEL
+    # invalid (or at least misleading) as the OS will be replaced by RHEL
 
 
 def check_tainted_kmods():

@@ -528,8 +528,9 @@ class RestorableFile(object):
             try:
                 loggerinst.info("Copying %s to %s" % (self.filepath, BACKUP_DIR))
                 shutil.copy2(self.filepath, BACKUP_DIR)
-            except IOError as err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
+            except (OSError, IOError) as err:
+                # IOError for py2 and OSError for py3
+                loggerinst.critical("Error(%s): %s" % (err.errno, err.strerror))
         else:
             loggerinst.info("Can't find %s", self.filepath)
 
@@ -543,21 +544,13 @@ class RestorableFile(object):
             return
         try:
             shutil.copy2(backup_filepath, self.filepath)
-        except IOError as err:
+        except (OSError, IOError) as err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
-            loggerinst.warning("I/O error(%s): %s" % (err.errno, err.strerror))
+            # IOError for py2 and OSError for py3
+            loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
             return
         loggerinst.info("File %s restored" % self.filepath)
-
-    def remove(self):
-        """Remove a previously backed up file"""
-        if os.path.isfile(self.filepath):
-            loggerinst.warning("Removing %s saved during previous run of convert2rhel" % self.filepath)
-            try:
-                os.remove(self.filepath)
-            except IOError as err:
-                loggerinst.critical("I/O error(%s): %s" % (err.errno, err.strerror))
 
 
 class RestorablePackage(object):
