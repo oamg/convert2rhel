@@ -401,7 +401,69 @@ def test_post_ponr_set_efi_configuration(
         mock_replace_boot_entry.assert_called_once()
 
 
+EFIBOOTMGR_VERBOSE_OUTPUT = """
+BootCurrent: 0004
+Timeout: 0 seconds
+BootOrder: 0004,0002,0000,0003
+Boot0000* UiApp	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)
+Boot0002* UEFI Misc Device	PciRoot(0x0)/Pci(0x2,0x3)/Pci(0x0,0x0)N.....YM....R,Y.
+Boot0003* EFI Internal Shell	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(7c04a583-9e3e-4f1c-ad65-e05268d0b4d1)
+Boot0004* CentOS Linux	HD(1,GPT,714e014a-5636-47b0-a8a7-b5109bfe895c,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)
+"""
+EFIBOOTMGR_VERBOSE_MISSING_BOOT_ORDER_OUTPUT = """
+BootCurrent: 0004
+Timeout: 0 seconds
+Boot0000* UiApp	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)
+Boot0002* UEFI Misc Device	PciRoot(0x0)/Pci(0x2,0x3)/Pci(0x0,0x0)N.....YM....R,Y.
+Boot0003* EFI Internal Shell	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(7c04a583-9e3e-4f1c-ad65-e05268d0b4d1)
+Boot0004* CentOS Linux	HD(1,GPT,714e014a-5636-47b0-a8a7-b5109bfe895c,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)
+"""
+EFIBOOTMGR_VERBOSE_MISSING_CURRENT_BOOT_OUTPUT = """
+Timeout: 0 seconds
+BootOrder: 0004,0002,0000,0003
+Boot0000* UiApp	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)
+Boot0002* UEFI Misc Device	PciRoot(0x0)/Pci(0x2,0x3)/Pci(0x0,0x0)N.....YM....R,Y.
+Boot0003* EFI Internal Shell	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(7c04a583-9e3e-4f1c-ad65-e05268d0b4d1)
+Boot0004* CentOS Linux	HD(1,GPT,714e014a-5636-47b0-a8a7-b5109bfe895c,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)
+"""
+EFIBOOTMGR_VERBOSE_MISSING_ENTRIES_OUTPUT = """
+BootCurrent: 0004
+Timeout: 0 seconds
+BootOrder: 0004,0002,0000,0003
+"""
+
+
+@pytest.mark.parametrize(
+    ("is_efi", "subproc_called", "subproc", "exception"),
+    (
+        (False, False, (EFIBOOTMGR_VERBOSE_OUTPUT, 0), grub.EFINotUsed),
+        (True, True, (EFIBOOTMGR_VERBOSE_OUTPUT, 1), grub.BootloaderError),
+        (True, True, (EFIBOOTMGR_VERBOSE_OUTPUT, 0), False),
+        (True, True, (EFIBOOTMGR_VERBOSE_MISSING_BOOT_ORDER_OUTPUT, 0), grub.BootloaderError),
+        (True, True, (EFIBOOTMGR_VERBOSE_MISSING_CURRENT_BOOT_OUTPUT, 0), grub.BootloaderError),
+        (True, True, (EFIBOOTMGR_VERBOSE_MISSING_ENTRIES_OUTPUT, 0), grub.BootloaderError),
+    ),
+)
+def test_efibootinfo(monkeypatch, is_efi, subproc_called, subproc, exception):
+    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
+
+    efibootinfo_obj = None
+    if exception:
+        with pytest.raises(exception):
+            grub.EFIBootInfo()
+    else:
+        efibootinfo_obj = grub.EFIBootInfo()
+        assert len(efibootinfo_obj.entries) == 4
+        assert efibootinfo_obj.current_bootnum == "0004"
+        assert efibootinfo_obj.boot_order == ("0004", "0002", "0000", "0003")
+
+    if subproc_called:
+        utils.run_subprocess.assert_called_once_with("/usr/sbin/efibootmgr -v", print_output=False)
+    else:
+        utils.run_subprocess.assert_not_called()
+
+
 # TODO(egustavs): _is_rhel_in_boot_entries
 # TODO(pstodulk): _add_rhel_boot_entry
 # TODO(pstodulk): _remove_orig_boot_entry
-# TODO(pstodulk): EFIBootInfo
