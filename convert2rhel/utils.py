@@ -523,10 +523,10 @@ class RestorableFile(object):
 
     def backup(self):
         """Save current version of a file"""
-        loggerinst.info("Backing up %s" % self.filepath)
+        loggerinst.info("Backing up %s." % self.filepath)
         if os.path.isfile(self.filepath):
             try:
-                loggerinst.info("Copying %s to %s" % (self.filepath, BACKUP_DIR))
+                loggerinst.debug("Copying %s to %s." % (self.filepath, BACKUP_DIR))
                 shutil.copy2(self.filepath, BACKUP_DIR)
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
