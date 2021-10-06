@@ -25,7 +25,18 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 
-from convert2rhel import cert, checks, main, pkghandler, redhatrelease, repo, subscription, unit_tests, utils
+from convert2rhel import (
+    cert,
+    checks,
+    main,
+    pkghandler,
+    redhatrelease,
+    repo,
+    special_cases,
+    subscription,
+    unit_tests,
+    utils,
+)
 from convert2rhel.toolopts import tool_opts
 
 
@@ -129,6 +140,11 @@ class TestMain(unittest.TestCase):
         "restore",
         unit_tests.CountableMockObject(),
     )
+    @unit_tests.mock(
+        special_cases.shim_x64_pkg_protection_file,
+        "restore",
+        unit_tests.CountableMockObject(),
+    )
     @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
     @unit_tests.mock(
@@ -143,6 +159,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
         self.assertEqual(repo.restore_yum_repos.called, 1)
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
+        self.assertEqual(special_cases.shim_x64_pkg_protection_file.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)

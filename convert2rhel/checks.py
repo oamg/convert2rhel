@@ -20,8 +20,8 @@ import itertools
 import logging
 import os
 import re
-import subprocess
 
+from convert2rhel import grub
 from convert2rhel.pkghandler import call_yum_cmd, get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -45,7 +45,7 @@ COMPATIBLE_KERNELS_VERS = {
 
 def perform_pre_checks():
     """Early checks after system facts should be added here."""
-    check_uefi()
+    check_efi()
     check_tainted_kmods()
     check_readonly_mounts()
     check_rhel_compatible_kernel_is_used()
@@ -57,19 +57,43 @@ def perform_pre_ponr_checks():
     ensure_compatibility_of_kmods()
 
 
-def check_uefi():
-    """Inhibit the conversion when UEFI detected."""
+def check_efi():
+    """Inhibit the conversion when we are not able to handle UEFI."""
     logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
-    if os.path.exists("/sys/firmware/efi"):
-        # NOTE(pstodulk): the check doesn't have to be valid for hybrid boot
-        # (e.g. AWS, Azure, OSP, ..)
-        logger.critical(
-            "Conversion of UEFI systems is currently not supported, see"
-            " https://bugzilla.redhat.com/show_bug.cgi?id=1898314"
-            " for more information."
+    if not grub.is_efi():
+        logger.info("BIOS detected.")
+        return
+    logger.info("UEFI detected.")
+    if system_info.version.major == 6:
+        logger.critical("The conversion with UEFI is possible only for systems of major version 7 and newer.")
+    if not os.path.exists("/usr/sbin/efibootmgr"):
+        logger.critical("Install efibootmgr to continue converting the UEFI-based system.")
+    if system_info.arch != "x86_64":
+        logger.critical("Only x86_64 systems are supported for UEFI conversions.")
+    if grub.is_secure_boot():
+        logger.info("Secure boot detected.")
+        logger.critical("The conversion with secure boot is currently not possible.")
+
+    # Get information about the bootloader. Currently the data is not used, but it's
+    # good to check that we can obtain all the required data before the PONR. Better to
+    # stop now than after the PONR.
+    try:
+        efiboot_info = grub.EFIBootInfo()
+    except grub.BootloaderError as e:
+        logger.critical(e.message)
+
+    if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
+        # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
+        # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
+        logger.warning(
+            "The current UEFI bootloader '%s' is not referring to any binary UEFI"
+            " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
         )
-    else:
-        logger.info("BIOS system detected.")
+    # TODO(pstodulk): print warning when multiple orig. UEFI entries point
+    # to the original system (e.g. into the centos/ directory..). The point is
+    # that only the current UEFI bootloader entry is handled.
+    # If e.g. on CentOS Linux, other entries with CentOS labels could be
+    # invalid (or at least misleading) as the OS will be replaced by RHEL
 
 
 def check_tainted_kmods():
@@ -189,7 +213,7 @@ def get_loaded_kmods():
     """
     logger.debug("Getting a list of loaded kernel modules.")
     lsmod_output, _ = run_subprocess("lsmod", print_output=False)
-    modules = re.findall("^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
+    modules = re.findall(r"^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
     return set(
         _get_kmod_comparison_key(run_subprocess("modinfo -F filename %s" % module, print_output=False)[0])
         for module in modules
