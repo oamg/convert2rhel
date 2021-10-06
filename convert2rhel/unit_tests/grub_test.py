@@ -22,7 +22,7 @@ import sys
 import pytest
 
 from convert2rhel import grub, utils
-from convert2rhel.systeminfo import system_info
+from convert2rhel.unit_tests.checks_test import EFIBootInfoMocked
 
 
 try:
@@ -69,26 +69,10 @@ def test_is_secure_boot(monkeypatch, expected_res, is_efi, subproc):
             raise OSError("dummy error msg")
         return subproc
 
-    monkeypatch.setattr(grub, "is_efi", lambda: is_efi)
-    monkeypatch.setattr(utils, "run_subprocess", mocked_subproc)
+    monkeypatch.setattr("convert2rhel.grub.is_efi", lambda: is_efi)
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mocked_subproc)
     res = grub.is_secure_boot()
     assert res == expected_res
-
-
-@pytest.mark.parametrize(
-    "canonical_path",
-    (
-        "",
-        "/boot/efii/EFI/something.efi",
-        "/boot/grub/something.efi",
-        "EFI/path/grubx.efi",
-        "/boot/EFI/EFI/something.efi",
-        "/boot/efi",
-    ),
-)
-def test_canonical_path_to_efi_format_err(canonical_path):
-    with pytest.raises(ValueError):
-        grub.canonical_path_to_efi_format(canonical_path)
 
 
 @pytest.mark.parametrize(
@@ -115,7 +99,7 @@ def test_canonical_path_to_efi_format(canonical_path, efi_path):
     ),
 )
 def test__get_partition(monkeypatch, caplog, expected_res, directory, exception, subproc):
-    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
 
     if exception:
         with pytest.raises(exception):
@@ -134,11 +118,10 @@ def test__get_partition(monkeypatch, caplog, expected_res, directory, exception,
     (
         ("/dev/sda", "/dev/sda", False, True, (LSBLK_NAME_OUTPUT, 0)),
         (None, "/dev/sda", grub.BootloaderError, True, (LSBLK_NAME_OUTPUT, 1)),
-        (None, None, ValueError, False, (None, 0)),
     ),
 )
 def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, subproc_called, subproc):
-    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
 
     if exception:
         # Device not passed to the _get_blk_device function, or
@@ -161,14 +144,12 @@ def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, s
     (
         ({"major": 123, "minor": 1}, "/dev/sda", False, True, (LSBLK_NUMBER_OUTPUT, 0)),
         (None, "/dev/sda", grub.BootloaderError, True, (LSBLK_NUMBER_OUTPUT, 1)),
-        (None, None, ValueError, False, (None, 0)),
     ),
 )
 def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subproc_called, subproc):
-    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
 
     if exc:
-        # Device not passed to the _get_device_number function, or
         # The lsblk call returns non-0 exit code
         with pytest.raises(exc):
             grub._get_device_number(device)
@@ -183,7 +164,7 @@ def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subp
 
 
 def test_get_boot_partition(monkeypatch):
-    monkeypatch.setattr(grub, "_get_partition", mock.Mock(return_value="foobar"))
+    monkeypatch.setattr("convert2rhel.grub._get_partition", mock.Mock(return_value="foobar"))
     assert grub.get_boot_partition() == "foobar"
     grub._get_partition.assert_called_once_with("/boot")
 
@@ -196,10 +177,10 @@ def test_get_boot_partition(monkeypatch):
     ),
 )
 def test_get_grub_device(monkeypatch, expected_res, partition_res, is_efi):
-    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
-    monkeypatch.setattr(grub, "get_efi_partition", mock.Mock(return_value=partition_res))
-    monkeypatch.setattr(grub, "get_boot_partition", mock.Mock(return_value=partition_res))
-    monkeypatch.setattr(grub, "_get_blk_device", mock.Mock(return_value=expected_res))
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr("convert2rhel.grub.get_efi_partition", mock.Mock(return_value=partition_res))
+    monkeypatch.setattr("convert2rhel.grub.get_boot_partition", mock.Mock(return_value=partition_res))
+    monkeypatch.setattr("convert2rhel.grub._get_blk_device", mock.Mock(return_value=expected_res))
 
     assert grub.get_grub_device() == expected_res
 
@@ -223,10 +204,10 @@ def test_get_grub_device(monkeypatch, expected_res, partition_res, is_efi):
     ),
 )
 def test_get_efi_partition(monkeypatch, expected_res, exception, path_exists, path_ismount, is_efi):
-    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
-    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=path_exists))
-    monkeypatch.setattr(os.path, "ismount", mock.Mock(return_value=path_ismount))
-    monkeypatch.setattr(grub, "_get_partition", mock.Mock(return_value=expected_res))
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=path_exists))
+    monkeypatch.setattr("os.path.ismount", mock.Mock(return_value=path_ismount))
+    monkeypatch.setattr("convert2rhel.grub._get_partition", mock.Mock(return_value=expected_res))
 
     if exception:
         with pytest.raises(exception):
@@ -314,7 +295,7 @@ def test__copy_grub_files(
         return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
 
     mock_path_exists.side_effect = path_exists
-    monkeypatch.setattr(system_info, "id", sys_id)
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
 
     successful = grub._copy_grub_files(["grubenv", "grub.cfg"], ["user.cfg"])
 
@@ -336,57 +317,45 @@ def test__copy_grub_files(
         ("centos", True, False),
     ),
 )
-@mock.patch("os.rmdir")
-def test__remove_efi_centos(mock_rmdir, sys_id, remove_dir, empty_dir, monkeypatch, caplog):
-    monkeypatch.setattr(system_info, "id", sys_id)
+def test__remove_efi_centos(sys_id, remove_dir, empty_dir, monkeypatch, caplog):
+    monkeypatch.setattr("os.rmdir", mock.Mock())
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
     if not empty_dir:
-        mock_rmdir.side_effect = OSError()
+        os.rmdir.side_effect = OSError()
 
     grub._remove_efi_centos()
 
     if remove_dir:
-        mock_rmdir.assert_called_once()
+        os.rmdir.assert_called_once()
     else:
-        mock_rmdir.assert_not_called()
+        os.rmdir.assert_not_called()
 
     if not empty_dir:
         assert "left untouched" in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
-    ("is_efi", "efi_file_exists", "copy_files_ok", "replace_entry_ok", "raise_exc", "log_msg"),
+    ("is_efi", "efi_file_exists", "copy_files_ok", "replace_entry_exc", "raise_exc", "log_msg"),
     (
         (False, None, None, None, False, "BIOS detected"),
         (True, False, None, None, True, "None of the expected"),
         (True, True, False, None, True, "not been copied"),
-        (True, True, True, True, False, "UEFI binary found"),
-        (True, True, True, False, True, "not successful"),
+        (True, True, True, None, False, "UEFI binary found"),
+        (True, True, True, grub.EFINotUsed("No ESP."), True, "No ESP.\nThe migration"),
+        (True, True, True, grub.UnsupportedEFIConfiguration("Not mounted."), True, "Not mounted.\nThe migration"),
+        (True, True, True, grub.BootloaderError("No device."), True, "No device.\nThe migration"),
     ),
 )
-@mock.patch("convert2rhel.grub.is_efi")
-@mock.patch("convert2rhel.grub._copy_grub_files")
-@mock.patch("convert2rhel.grub._remove_efi_centos")
-@mock.patch("convert2rhel.grub._replace_efi_boot_entry")
-@mock.patch("os.path.exists")
 def test_post_ponr_set_efi_configuration(
-    mock_path_exists,
-    mock_replace_boot_entry,
-    mock_remove_folder,
-    mock_copy_files,
-    mock_is_efi,
-    is_efi,
-    efi_file_exists,
-    copy_files_ok,
-    replace_entry_ok,
-    raise_exc,
-    log_msg,
-    caplog,
+    is_efi, efi_file_exists, copy_files_ok, replace_entry_exc, raise_exc, log_msg, caplog, monkeypatch
 ):
-    mock_is_efi.return_value = is_efi
-    mock_path_exists.return_value = efi_file_exists
-    mock_copy_files.return_value = copy_files_ok
-    if not replace_entry_ok:
-        mock_replace_boot_entry.side_effect = grub.BootloaderError("err")
+    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_file_exists))
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr("convert2rhel.grub._copy_grub_files", mock.Mock(return_value=copy_files_ok))
+    monkeypatch.setattr("convert2rhel.grub._remove_efi_centos", mock.Mock())
+    monkeypatch.setattr("convert2rhel.grub._replace_efi_boot_entry", mock.Mock())
+    if replace_entry_exc:
+        grub._replace_efi_boot_entry.side_effect = replace_entry_exc
 
     if raise_exc:
         with pytest.raises(SystemExit):
@@ -396,12 +365,12 @@ def test_post_ponr_set_efi_configuration(
 
     assert log_msg in caplog.records[-1].message
 
-    if is_efi and efi_file_exists and copy_files_ok and replace_entry_ok:
-        mock_remove_folder.assert_called_once()
-        mock_replace_boot_entry.assert_called_once()
+    if is_efi and efi_file_exists and copy_files_ok and not replace_entry_exc:
+        grub._remove_efi_centos.assert_called_once()
+        grub._replace_efi_boot_entry.assert_called_once()
 
 
-EFIBOOTMGR_VERBOSE_OUTPUT = """
+EFIBOOTMGR_VERBOSE_OUTPUT = r"""
 BootCurrent: 0004
 Timeout: 0 seconds
 BootOrder: 0004,0002,0000,0003
@@ -410,7 +379,7 @@ Boot0002* UEFI Misc Device	PciRoot(0x0)/Pci(0x2,0x3)/Pci(0x0,0x0)N.....YM....R,Y
 Boot0003* EFI Internal Shell	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(7c04a583-9e3e-4f1c-ad65-e05268d0b4d1)
 Boot0004* CentOS Linux	HD(1,GPT,714e014a-5636-47b0-a8a7-b5109bfe895c,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)
 """
-EFIBOOTMGR_VERBOSE_MISSING_BOOT_ORDER_OUTPUT = """
+EFIBOOTMGR_VERBOSE_MISSING_BOOT_ORDER_OUTPUT = r"""
 BootCurrent: 0004
 Timeout: 0 seconds
 Boot0000* UiApp	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)
@@ -418,7 +387,7 @@ Boot0002* UEFI Misc Device	PciRoot(0x0)/Pci(0x2,0x3)/Pci(0x0,0x0)N.....YM....R,Y
 Boot0003* EFI Internal Shell	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(7c04a583-9e3e-4f1c-ad65-e05268d0b4d1)
 Boot0004* CentOS Linux	HD(1,GPT,714e014a-5636-47b0-a8a7-b5109bfe895c,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)
 """
-EFIBOOTMGR_VERBOSE_MISSING_CURRENT_BOOT_OUTPUT = """
+EFIBOOTMGR_VERBOSE_MISSING_CURRENT_BOOT_OUTPUT = r"""
 Timeout: 0 seconds
 BootOrder: 0004,0002,0000,0003
 Boot0000* UiApp	FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)
@@ -445,10 +414,9 @@ BootOrder: 0004,0002,0000,0003
     ),
 )
 def test_efibootinfo(monkeypatch, is_efi, subproc_called, subproc, exception):
-    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=subproc))
-    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
 
-    efibootinfo_obj = None
     if exception:
         with pytest.raises(exception):
             grub.EFIBootInfo()
@@ -464,6 +432,91 @@ def test_efibootinfo(monkeypatch, is_efi, subproc_called, subproc, exception):
         utils.run_subprocess.assert_not_called()
 
 
-# TODO(egustavs): _is_rhel_in_boot_entries
-# TODO(pstodulk): _add_rhel_boot_entry
-# TODO(pstodulk): _remove_orig_boot_entry
+@pytest.mark.parametrize(
+    ("efi_bin_path", "label", "expected_ret_val"),
+    (
+        (r"\EFI\centos\shimx64.efi", "Centos Linux", True),
+        (r"\EFI\redhat\shimx64.efi", "Centos Linux", False),
+    ),
+)
+def test__is_rhel_in_boot_entries(efi_bin_path, label, expected_ret_val):
+    efibootinfo = EFIBootInfoMocked()
+
+    ret_val = grub._is_rhel_in_boot_entries(efibootinfo, efi_bin_path, label)
+
+    assert ret_val == expected_ret_val
+
+
+@pytest.mark.parametrize(
+    ("efi_file_exists", "exc", "exc_msg", "rhel_entry_exists", "subproc", "log_msg"),
+    (
+        (True, None, None, True, ("out", 0), "UEFI bootloader entry is already"),
+        (True, grub.BootloaderError, "Unable to add a new", False, ("out", 1), None),
+        (True, grub.BootloaderError, "Unable to find the new", False, ("out", 0), None),
+        (False, grub.BootloaderError, "Unable to detect any", False, ("out", 0), None),
+    ),
+)
+def test__add_rhel_boot_entry(efi_file_exists, exc, exc_msg, rhel_entry_exists, subproc, log_msg, monkeypatch, caplog):
+    monkeypatch.setattr("convert2rhel.grub._get_device_number", mock.Mock(return_value={"major": 252, "minor": 1}))
+    monkeypatch.setattr("convert2rhel.grub.get_efi_partition", mock.Mock(return_value="/dev/sda"))
+    monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
+    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_file_exists))
+    monkeypatch.setattr("convert2rhel.grub._is_rhel_in_boot_entries", mock.Mock(return_value=rhel_entry_exists))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.grub.EFIBootInfo", EFIBootInfoMocked())
+
+    if exc:
+        with pytest.raises(exc) as exc_info:
+            grub._add_rhel_boot_entry("test_arg")
+        assert exc_msg in str(exc_info.value)
+    else:
+        grub._add_rhel_boot_entry("test_arg")
+        assert log_msg in caplog.records[-1].message
+    if efi_file_exists and not rhel_entry_exists:
+        utils.run_subprocess.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("orig_removed", "curr_boot_label", "pxe_orig_efi_bin", "efi_bin_exists", "subproc", "log_msg"),
+    (
+        (True, None, False, False, ("out", 0), "removed already"),
+        (False, "Foo Linux", False, False, ("out", 0), "has been modified"),
+        (False, None, True, False, ("out", 0), "Unable to get path"),
+        (False, None, False, True, ("out", 0), "binary file still exists"),
+        (False, None, False, False, ("out", 1), "has failed"),
+        (False, None, False, False, ("out", 0), "has been successful"),
+    ),
+)
+def test__remove_orig_boot_entry(
+    orig_removed, curr_boot_label, pxe_orig_efi_bin, efi_bin_exists, subproc, log_msg, caplog, monkeypatch
+):
+    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_bin_exists))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    bootinfo_orig = EFIBootInfoMocked()
+    bootinfo_new = EFIBootInfoMocked()
+
+    # Create a new boot entry as a copy of the original boot entry. We need a deep copy (not just a pointer), otherwise
+    # the changes to the new entry would be reflected in the orig one as well.
+    bootinfo_new.entries["0003"] = copy.deepcopy(bootinfo_orig.entries["0001"])
+    bootinfo_new.entries["0003"].boot_number = "0003"
+    bootinfo_new.boot_order = ("0003", "0002")
+
+    if orig_removed:
+        del bootinfo_new.entries["0001"]
+
+    if curr_boot_label:
+        # change label of the original current boot entry
+        bootinfo_orig.entries["0001"].label = curr_boot_label
+
+    if pxe_orig_efi_bin:
+        monkeypatch.setattr("convert2rhel.grub.EFIBootLoader.get_canonical_path", mock.Mock(return_value=None))
+
+    if efi_bin_exists:
+        # make sure the new entry efi bin path is different from the original entry one
+        bootinfo_new.entries["0003"].efi_bin_source = r"File(\random\bin\path.efi)"
+
+    grub._remove_orig_boot_entry(bootinfo_orig, bootinfo_new)
+
+    assert log_msg in caplog.records[-1].message
+    if not orig_removed and not curr_boot_label and not pxe_orig_efi_bin and not efi_bin_exists:
+        utils.run_subprocess.assert_called_once()

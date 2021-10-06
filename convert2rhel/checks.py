@@ -20,15 +20,13 @@ import itertools
 import logging
 import os
 import re
-import subprocess
 
+from convert2rhel import grub
 from convert2rhel.pkghandler import call_yum_cmd, get_installed_pkg_objects, get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import get_file_content, run_subprocess
-from convert2rhel.pkghandler import call_yum_cmd
-from convert2rhel import utils
-from convert2rhel import grub
+
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +213,7 @@ def get_loaded_kmods():
     """
     logger.debug("Getting a list of loaded kernel modules.")
     lsmod_output, _ = run_subprocess("lsmod", print_output=False)
-    modules = re.findall("^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
+    modules = re.findall(r"^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
     return set(
         _get_kmod_comparison_key(run_subprocess("modinfo -F filename %s" % module, print_output=False)[0])
         for module in modules

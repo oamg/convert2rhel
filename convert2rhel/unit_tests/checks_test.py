@@ -28,13 +28,7 @@ from convert2rhel.checks import (
     _bad_kernel_substring,
     _bad_kernel_version,
     check_rhel_compatible_kernel_is_used,
-    check_tainted_kmods,
-    ensure_compatibility_of_kmods,
     get_loaded_kmods,
-    get_most_recent_unique_kernel_pkgs,
-    get_rhel_supported_kmods,
-    perform_pre_checks,
-    perform_pre_ponr_checks,
 )
 from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
@@ -484,29 +478,19 @@ def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
 
 
 class EFIBootInfoMocked:
-
-    _ENTRIES = {
-        "0001": grub.EFIBootLoader(
-            boot_number="0001",
-            label="Centos Linux",
-            active=True,
-            efi_bin_source="HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\\EFI\\centos\\shimx64.efi)",
-        ),
-        "0002": grub.EFIBootLoader(
-            boot_number="0002",
-            label="Foo label",
-            active=True,
-            efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
-        ),
-    }
-
     def __init__(
-        self, current_bootnum="0001", next_boot=None, boot_order=("0001", "0002"), entries=_ENTRIES, exception=None
+        self,
+        current_bootnum="0001",
+        next_boot=None,
+        boot_order=("0001", "0002"),
+        entries=None,
+        exception=None,
     ):
         self.current_bootnum = current_bootnum
         self.next_boot = next_boot
         self.boot_order = boot_order
         self.entries = entries
+        self.set_default_efi_entries()
         self._exception = exception
 
     def __call__(self):
@@ -519,6 +503,23 @@ class EFIBootInfoMocked:
         if not self._exception:
             return self
         raise self._exception  # pylint: disable=raising-bad-type
+
+    def set_default_efi_entries(self):
+        if not self.entries:
+            self.entries = {
+                "0001": grub.EFIBootLoader(
+                    boot_number="0001",
+                    label="Centos Linux",
+                    active=True,
+                    efi_bin_source=r"HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)",
+                ),
+                "0002": grub.EFIBootLoader(
+                    boot_number="0002",
+                    label="Foo label",
+                    active=True,
+                    efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
+                ),
+            }
 
 
 def _gen_version(major, minor):
