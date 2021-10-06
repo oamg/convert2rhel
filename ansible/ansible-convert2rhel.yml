@@ -6,11 +6,8 @@
     rhsm_username: redhat-user-name
     rhsm_password: redhat-users-password
     skip_os_version_check: false
-
-    # Temp solution for RHELDST-7822
-    SSLCACERT: "https://raw.githubusercontent.com/candlepin/subscription-manager/main/etc-conf/redhat-uep.pem"
-    # Final solution for RHELDST-7822
-    #SSLCACERT: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
+    # added for RHELDST-7822
+    SSLCACERT: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
 
   tasks:
 
