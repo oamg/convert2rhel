@@ -384,7 +384,7 @@ def check_rhel_compatible_kernel_is_used():
             "1. Ensure that the {0} {1} base repository is enabled\n"
             "2. Run: yum install kernel\n"
             "3. (optional) Run: grubby --set-default "
-            '/boot/vmlinuz-`rpm -q --qf "%{{EVR}}.%{{ARCH}}\\n" kernel | sort -r | head -n 1`\n'
+            '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
             "4. Reboot the machine and if step 3 was not applied choose the kernel"
             " installed in step 2 manually".format(system_info.name, system_info.version.major)
         )
