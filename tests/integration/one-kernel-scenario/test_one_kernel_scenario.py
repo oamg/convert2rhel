@@ -3,5 +3,5 @@ def test_one_kernel_scenario(shell):
     assert "Red Hat Enterprise Linux" in os_release
 
     # Check if kernel is RHEL one
-    kernel = shell("rpm -q --qf '%{NAME} %{VERSION}-%{RELEASE} %{VENDOR}\n' kernel")
+    kernel = shell("rpm -q --qf '%{NAME} %{VERSION}-%{RELEASE} %{VENDOR}\n' kernel").output
     assert "Red Hat" in kernel

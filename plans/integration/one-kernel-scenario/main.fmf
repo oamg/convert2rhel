@@ -1,27 +1,41 @@
 discover+:
     filter+:
         - 'tag: one-kernel-scenario'
+
 provision:
     how: libvirt
     develop: true
 
 prepare+:
+    - name: add custom repos
+      how: ansible
+      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+      order: 60
     - name: install one kernel
       how: shell
-      script: pytest -svv tests/integration/conversion/custom-repos/one-kernel-scenario/install_one_kernel.py
-      order: 60
+      script: pytest -svv tests/integration/one-kernel-scenario/install_one_kernel.py
+      order: 61
     - name: reboot machine
       how: ansible
       playbook: tests/ansible_collections/reboot.yml
-      order: 61
+      order: 62
     - name: remove other kernels
       how: shell
-      script: pytest -svv tests/integration/conversion/custom-repos/one-kernel-scenario/remove_other_kernels.py
-      order: 62
+      script: pytest -svv tests/integration/one-kernel-scenario/remove_other_kernels.py
+      order: 63
     - name: reboot machine
       how: ansible
       playbook: tests/ansible_collections/reboot.yml
-      order: 63
+      order: 64
+    - name: run conversion
+      how: shell
+      script: pytest -svv tests/integration/one-kernel-scenario/run_conversion.py
+      order: 70
+    - name: reboot machine
+      how: ansible
+      playbook: tests/ansible_collections/reboot.yml
+      order: 80
+
 
 /centos7:
     discover+:

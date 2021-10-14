@@ -13,6 +13,6 @@ def test_install_one_kernel(shell):
         assert shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'").returncode == 0
 
     # replace url in yum.repos.d rhel repo
-    original_url = "baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7Server/x86_64/os/"
-    new_url = "baseurl=http://download.englab.brq.redhat.com/released/rhel-7/RHEL-7/7.9/Server/x86_64/os/"
-    shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel-7-internal.repo'.format(original_url, new_url))
+    original_url = "baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
+    new_url = "baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"
+    shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel7.repo'.format(original_url, new_url))
