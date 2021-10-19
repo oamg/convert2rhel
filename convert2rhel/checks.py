@@ -111,11 +111,9 @@ def check_tainted_kmods():
         logger.critical(
             "Tainted kernel module(s) detected. "
             "Third-party components are not supported per our "
-            "software support policy\n%s\n\n"
+            "software support policy\n{0}\n\n"
             "Uninstall or disable the following module(s) and run convert2rhel "
-            "again to continue with the conversion:\n  %s",
-            LINK_KMODS_RH_POLICY,
-            module_names,
+            "again to continue with the conversion:\n  {1}".format(LINK_KMODS_RH_POLICY, module_names)
         )
 
 
