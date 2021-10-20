@@ -292,7 +292,7 @@ def test_ensure_compatibility_of_kmods_excluded(
         assert all(msg_not_in_logs not in record.message for record in caplog.records)
 
 
-def test_get_installed_kmods(monkeypatch):
+def test_get_loaded_kmods(monkeypatch):
     run_subprocess_mocked = mock.Mock(
         spec=run_subprocess,
         side_effect=run_subprocess_side_effect(
