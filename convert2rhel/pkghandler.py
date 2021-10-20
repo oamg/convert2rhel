@@ -19,6 +19,7 @@ import glob
 import logging
 import os
 import re
+import sys
 
 import rpm
 
@@ -968,3 +969,102 @@ def get_pkg_names_from_rpm_paths(rpm_paths):
     for rpm_path in rpm_paths:
         pkg_names.append(utils.get_package_name_from_rpm(rpm_path))
     return pkg_names
+
+
+def compare_package_versions(version1, version2):
+    """Compare two EVR versions against each other.
+
+
+    :param version1: The version to be compared.
+    :type version1: str
+    :param version2: The version to compare against.
+    :type version2: str
+
+    :example:
+
+        >>> match = compare_package_versions("5.14.10-300.fc35", "5.14.15-300.fc35")
+        >>> match # -1
+
+    .. note::
+
+        Since the return type is a int, this could be difficult to understand
+        the meaning of each number, so here is a quick list of the meaning from
+        every possible number:
+            * -1 if the evr1 is less then evr2 version
+            * 0 if the evr1 is equal evr2 version
+            * 1 if the evr1 is greater than evr2 version
+
+    :return: Return a number indicating if the versions match, are less or greater then.
+    :rtype: int
+    """
+
+    evr1 = utils.string_to_version(version1)
+    evr2 = utils.string_to_version(version2)
+
+    return rpm.labelCompare(evr1, evr2)
+
+
+def get_total_packages_to_update():
+    """Return the total number of packages to update in the system
+
+    It uses both yum/dnf depending on weather they are installed on the system,
+    if it's Oracle/CentOS Linux 7 or 6, it will use `yum`, otherwise it should use `dnf`.
+
+    :return: The packages that need to be updated.
+    :rtype: List[str]
+    """
+    packages = []
+
+    if pkgmanager.TYPE == "yum":
+        packages = _get_packages_to_update_yum()
+    elif pkgmanager.TYPE == "dnf":
+        packages = _get_packages_to_update_dnf()
+
+    return packages
+
+
+def _get_packages_to_update_yum():
+    """Query all the packages with yum that has an update pending on the
+    system."""
+    # Check first if this path is not in the `sys.path`
+    if "/usr/share/yum-cli" not in sys.path:
+        # Yum's installation path for the CLI code
+        # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/bin/yum#L26
+        sys.path.insert(0, "/usr/share/yum-cli")
+
+    from cli import YumBaseCli  # pylint: disable=E0401
+
+    base = YumBaseCli()
+    packages = base.returnPkgLists(["updates"], None)
+    all_packages = []
+    for package in packages.updates:
+        all_packages.append(package.name)
+
+    return all_packages
+
+
+def _get_packages_to_update_dnf():
+    """Query all the packages with dnf that has an update pending on the
+    system."""
+    from dnf import Base  # pylint: disable=E0401
+
+    packages = []
+    base = Base()
+    # Fix the case when we are trying to query packages in Oracle Linux 8
+    # when the DNF API gets called, those variables are not populated by default.
+    if system_info.id == "oracle":
+        base.conf.substitutions["ocidomain"] = "oracle.com"
+        base.conf.substitutions["ociregion"] = ""
+    base.read_all_repos()
+    base.fill_sack()
+
+    # Get a list of all packages to upgrade in the system
+    base.upgrade_all()
+    base.resolve()
+
+    # Iterate over each and every one of them and append to
+    # the packages list
+    for package in base.transaction:
+        packages.append(package.name)
+
+    return packages

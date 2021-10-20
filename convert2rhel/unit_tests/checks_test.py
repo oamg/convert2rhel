@@ -22,13 +22,15 @@ from collections import namedtuple
 
 import pytest
 
-from convert2rhel import checks, grub, unit_tests
+from convert2rhel import checks, grub, systeminfo, unit_tests
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
     _bad_kernel_version,
+    check_package_updates,
     check_rhel_compatible_kernel_is_used,
     get_loaded_kmods,
+    is_loaded_kernel_latest,
 )
 from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
@@ -43,12 +45,10 @@ try:
 except ImportError:
     import unittest
 
-
 if sys.version_info[:2] <= (2, 7):
     import mock  # pylint: disable=import-error
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
-
 
 MODINFO_STUB = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz\n"
@@ -101,6 +101,9 @@ def test_perform_pre_checks(monkeypatch):
     check_readonly_mounts_mock = mock.Mock()
     check_custom_repos_are_valid_mock = mock.Mock()
     check_rhel_compatible_kernel_is_used_mock = mock.Mock()
+    check_package_updates_mock = mock.Mock()
+    is_loaded_kernel_latest_mock = mock.Mock()
+
     monkeypatch.setattr(
         checks,
         "check_efi",
@@ -126,6 +129,13 @@ def test_perform_pre_checks(monkeypatch):
         "check_custom_repos_are_valid",
         value=check_custom_repos_are_valid_mock,
     )
+    monkeypatch.setattr(
+        checks,
+        "check_custom_repos_are_valid",
+        value=check_custom_repos_are_valid_mock,
+    )
+    monkeypatch.setattr(checks, "check_package_updates", value=check_package_updates_mock)
+    monkeypatch.setattr(checks, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
 
     checks.perform_pre_checks()
 
@@ -133,6 +143,8 @@ def test_perform_pre_checks(monkeypatch):
     check_efi_mock.assert_called_once()
     check_readonly_mounts_mock.assert_called_once()
     check_rhel_compatible_kernel_is_used_mock.assert_called_once()
+    check_package_updates_mock.assert_called_once()
+    is_loaded_kernel_latest_mock.assert_called_once()
 
 
 def test_pre_ponr_checks(monkeypatch):
@@ -816,3 +828,135 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertEqual(len(checks.logger.info_msgs), 0)
         self.assertTrue("Unable to access the repositories passed through " in checks.logger.critical_msgs[0])
+
+
+@pytest.mark.parametrize(
+    ("packages", "exception", "expected"),
+    (
+        (["package-1", "package-2"], True, "The system has {} packages not updated."),
+        ([], False, "System is up-to-date."),
+    ),
+)
+def test_check_package_updates(packages, exception, expected, monkeypatch, caplog):
+    monkeypatch.setattr(checks, "get_total_packages_to_update", value=lambda: packages)
+
+    check_package_updates()
+    if exception:
+        expected = expected.format(len(packages))
+
+    assert expected in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("repoquery_version", "uname_version", "return_code", "major_ver", "package_name", "raise_system_exit"),
+    (
+        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.42.2.el7.x86_64", 0, 8, "kernel-core", True),
+        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, 7, "kernel", False),
+        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, 6, "kernel", False),
+    ),
+)
+def test_is_loaded_kernel_latest(
+    repoquery_version, uname_version, return_code, major_ver, package_name, raise_system_exit, monkeypatch, caplog
+):
+    Version = namedtuple("Version", ("major", "minor"))
+    monkeypatch.setattr(
+        checks.system_info,
+        "version",
+        value=Version(major=major_ver, minor=0),
+    )
+
+    run_subprocess_mocked = mock.Mock(
+        spec=run_subprocess,
+        side_effect=run_subprocess_side_effect(
+            (
+                (
+                    "repoquery",
+                    "--quiet",
+                    "--qf",
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    package_name,
+                ),
+                (
+                    repoquery_version,
+                    return_code,
+                ),
+            ),
+            (("uname", "-r"), (uname_version, return_code)),
+        ),
+    )
+    monkeypatch.setattr(
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mocked,
+    )
+
+    if raise_system_exit:
+        with pytest.raises(SystemExit):
+            is_loaded_kernel_latest()
+
+        repoquery_kernel_version = repoquery_version.split("\t", 1)[1]
+        uname_kernel_version = uname_version.rsplit(".", 1)[0]
+        assert "Latest kernel version: %s\n" % repoquery_kernel_version in caplog.records[-1].message
+        assert "Current loaded kernel: %s\n" % uname_kernel_version in caplog.records[-1].message
+    else:
+        is_loaded_kernel_latest()
+        assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("repoquery_version", "return_code", "major_ver", "package_name", "unsupported_skip", "expected"),
+    (
+        (
+            "",
+            0,
+            8,
+            "kernel-core",
+            "1",
+            "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+        ),
+        ("", 0, 8, "kernel-core", "0", "Could not find any {} from repositories"),
+        ("", 0, 7, "kernel", "0", "Could not find any {} from repositories"),
+        ("", 0, 6, "kernel", "0", "Could not find any {} from repositories"),
+    ),
+)
+def test_is_loaded_kernel_latest_unsupported_skip(
+    repoquery_version, return_code, major_ver, package_name, unsupported_skip, expected, monkeypatch, caplog
+):
+    run_subprocess_mocked = mock.Mock(
+        spec=run_subprocess,
+        side_effect=run_subprocess_side_effect(
+            (
+                (
+                    "repoquery",
+                    "--quiet",
+                    "--qf",
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    package_name,
+                ),
+                (
+                    repoquery_version,
+                    return_code,
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        checks.system_info,
+        "version",
+        value=systeminfo.Version(major=major_ver, minor=0),
+    )
+    monkeypatch.setattr(
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mocked,
+    )
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip})
+
+    if unsupported_skip == "0":
+        with pytest.raises(SystemExit):
+            is_loaded_kernel_latest()
+        expected = expected.format(package_name)
+    else:
+        is_loaded_kernel_latest()
+
+    assert expected in caplog.records[-1].message
