@@ -620,4 +620,25 @@ def set_locale():
     os.environ.update({"LC_ALL": "C", "LANG": "C"})
 
 
+def string_to_version(verstring):
+    """Return a tuple of (epoch, version, release) from a version string
+    This function was taken from softwarefactory-project/rdopkg
+    (https://github.com/softwarefactory-project/rdopkg/blob/1.4.0/rdopkg/utils/specfile.py)
+    """
+
+    # is there an epoch?
+    components = verstring.split(":")
+    if len(components) > 1:
+        epoch = components[0]
+        components.pop(0)
+    else:
+        epoch = "0"
+
+    remaining = components[:2][0].split("-")
+    version = remaining[0]
+    release = remaining[1]
+
+    return (epoch, version, release)
+
+
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

@@ -85,6 +85,9 @@ def main():
         systeminfo.system_info.resolve_system_info()
         breadcrumbs.breadcrumbs.collect_early_data()
 
+        loggerinst.task("Prepare: Clear YUM/DNF version locks")
+        pkghandler.clear_versionlock()
+
         # check the system prior the conversion (possible inhibit)
         checks.perform_pre_checks()
 
@@ -93,9 +96,6 @@ def main():
         redhatrelease.system_release_file.backup()
         redhatrelease.os_release_file.backup()
         repo.backup_yum_repos()
-
-        loggerinst.task("Prepare: Clear YUM/DNF version locks")
-        pkghandler.clear_versionlock()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES

@@ -33,9 +33,20 @@ else:
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkghandler, pkgmanager, utils
+from convert2rhel.pkghandler import (
+    _get_packages_to_update_dnf,
+    _get_packages_to_update_yum,
+    get_total_packages_to_update,
+)
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -1391,6 +1402,84 @@ def test_call_yum_cmd_w_downgrades(monkeypatch, retcode, output):
     resolve_dep_errors.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    ("version1", "version2", "expected"),
+    (
+        ("123-4.fc35", "123-4.fc35", 0),
+        ("123-5.fc35", "123-4.fc35", 1),
+        ("123-3.fc35", "123-4.fc35", -1),
+        ("4.6~pre16262021g84ef6bd9-3.fc35", "4.6~pre16262021g84ef6bd9-3.fc35", 0),
+        ("2:8.2.3568-1.fc35", "2:8.2.3568-1.fc35", 0),
+    ),
+)
+def test_compare_package_versions(version1, version2, expected):
+    assert pkghandler.compare_package_versions(version1, version2) == expected
+
+
+@pytest.mark.parametrize(
+    ("package_manager_type", "packages"),
+    (
+        (
+            "yum",
+            [
+                "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+                "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+            ],
+        ),
+        (
+            "dnf",
+            [
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            ],
+        ),
+    ),
+)
+def test_get_total_packages_to_update(package_manager_type, packages, monkeypatch):
+    monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
+    monkeypatch.setattr(pkghandler, "_get_packages_to_update_%s" % package_manager_type, value=lambda: packages)
+
+    assert get_total_packages_to_update() == packages
+
+
+@pytest.mark.skipif(pkgmanager.TYPE != "yum", reason="No yum module detected on the system, skipping it.")
+@pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
+def test_get_packages_to_update_yum(packages, monkeypatch):
+    sys.path.insert(0, "/usr/share/yum-cli")
+    from cli import YumBaseCli  # pylint: disable=E0401
+
+    PkgName = namedtuple("PkgNames", ["name"])
+    PkgUpdates = namedtuple("PkgUpdates", ["updates"])
+    transaction_pkgs = []
+    for package in packages:
+        transaction_pkgs.append(PkgName(package))
+
+    pkg_lists_mock = mock.Mock(return_value=PkgUpdates(transaction_pkgs))
+
+    monkeypatch.setattr(YumBaseCli, "returnPkgLists", value=pkg_lists_mock)
+
+    assert _get_packages_to_update_yum() == packages
+
+
+@pytest.mark.skipif(pkgmanager.TYPE != "dnf", reason="No dnf module detected on the system, skipping it.")
+@pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
+def test_get_packages_to_update_dnf(packages, monkeypatch):
+    from dnf import Base  # pylint: disable=E0401
+
+    dummy_mock = mock.Mock()
+    PkgName = namedtuple("PkgNames", ["name"])
+    transaction_pkgs = [PkgName(package) for package in packages]
+
+    monkeypatch.setattr(Base, "read_all_repos", value=dummy_mock)
+    monkeypatch.setattr(Base, "fill_sack", value=dummy_mock)
+    monkeypatch.setattr(Base, "upgrade_all", value=dummy_mock)
+    monkeypatch.setattr(Base, "resolve", value=dummy_mock)
+    monkeypatch.setattr(Base, "transaction", value=transaction_pkgs)
+
+    assert _get_packages_to_update_dnf() == packages
+
+
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
 Error: Trying to remove "yum", which is protected"""
 
@@ -1460,7 +1549,6 @@ Problem: cannot install both python39-psycopg2-2.8.6-2.module+el8.4.0+9822+20bf1
    - package python39-psycopg2-debug-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64 requires python39-psycopg2 = 2.8.6-2.module_el8.4.0+680+7b309a77, but none of the providers can be installed
    - cannot install the best update candidate for package python39-psycopg2-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64
    - problem with installed package python39-psycopg2-debug-2.8.6-2.module_el8.4.0+680+7b309a77.x86_64"""
-
 
 # The following yum error is currently not being handled by the tool. The
 # tool would somehow need to decide, which of the two packages to remove and

@@ -22,7 +22,13 @@ import os
 import re
 
 from convert2rhel import grub
-from convert2rhel.pkghandler import call_yum_cmd, get_installed_pkg_objects, get_pkg_fingerprint
+from convert2rhel.pkghandler import (
+    call_yum_cmd,
+    compare_package_versions,
+    get_installed_pkg_objects,
+    get_pkg_fingerprint,
+    get_total_packages_to_update,
+)
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import get_file_content, run_subprocess
@@ -45,11 +51,14 @@ COMPATIBLE_KERNELS_VERS = {
 
 def perform_pre_checks():
     """Early checks after system facts should be added here."""
+
     check_efi()
     check_tainted_kmods()
     check_readonly_mounts()
     check_rhel_compatible_kernel_is_used()
     check_custom_repos_are_valid()
+    check_package_updates()
+    is_loaded_kernel_latest()
 
 
 def perform_pre_ponr_checks():
@@ -371,8 +380,10 @@ def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
 def check_rhel_compatible_kernel_is_used():
     """Ensure the booted kernel is signed, is standard (not UEK, realtime, ...), and has the same version as in RHEL.
 
-    By requesting that, we can be confident that the RHEL kernel will provide the same capabilities as on the
-    original system.
+        By requesting that, we can be confiden    base.conf.substitutions["ocidomain"] = "oracle.com"
+        base.conf.substitutions["ociregion"] = ""
+    t that the RHEL kernel will provide the same capabilities as on the
+        original system.
     """
     logger.task("Prepare: Check kernel compatibility with RHEL")
     if any(
@@ -451,3 +462,87 @@ def _bad_kernel_substring(kernel_release):
         )
         return True
     return False
+
+
+def check_package_updates():
+    """Ensure that the system packages installed are up-to-date."""
+    logger.task("Prepare: Checking if the packages are up-to-date")
+
+    packages_to_update = get_total_packages_to_update()
+
+    if len(packages_to_update) > 0:
+        logger.warning(
+            "The system has %s packages not updated.\n"
+            "List of packages to update: %s.\n\n"
+            "If you wish to update then before continuing with the conversion, execute the following step:\n"
+            "Run: yum update -y\n" % (len(packages_to_update), ", ".join(packages_to_update))
+        )
+    else:
+        logger.info("System is up-to-date.")
+
+
+def is_loaded_kernel_latest():
+    """Check if the loaded kernel is behind or of the same version as in yum repos."""
+    logger.task("Prepare: Checking if the loaded kernel version is the most recent")
+
+    # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead, we check for `kernel-core`.
+    # But for 6 and 7 releases, the correct way to check is using `kernel`.
+    package_to_check = "kernel-core" if system_info.version.major >= 8 else "kernel"
+
+    # The latest kernel version on repo
+    repoquery_output, _ = run_subprocess(
+        ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"', package_to_check], print_output=False
+    )
+
+    # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
+    if len(repoquery_output) > 0:
+        # Convert to an tuple split with `buildtime` and `kernel` version.
+        # We are also detecting if the sentence "listed more than once in the configuration"
+        # appears in the repoquery output. If it does, we ignore it.
+        # This later check is supposed to avoid duplicate repofiles being defined in the system,
+        # this is a super corner case and should not happen everytime, but if it does, we are aware now.
+        packages = [
+            tuple(str(line).split("\t"))
+            for line in repoquery_output.split("\n")
+            if (line.strip() and "listed more than once in the configuration" not in line.lower())
+        ]
+
+        # Sort out for the most recent kernel with reverse order
+        # In case `repoquery` returns more than one kernel in the output
+        # We display the latest one to the user.
+        _, most_recent_kernel = sorted(packages, reverse=True)[0]
+
+        # The loaded kernel version
+        uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
+        loaded_kernel = uname_output.rsplit(".", 1)[0]
+        match = compare_package_versions(most_recent_kernel, str(loaded_kernel))
+
+        if match == 0:
+            logger.info("Kernel currently loaded is at the latest version.")
+        else:
+            logger.critical(
+                "The current kernel version loaded is different from the latest version in your repos.\n"
+                " Latest kernel version: %s\n"
+                " Current loaded kernel: %s\n\n"
+                "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
+                "1. yum install %s-%s -y\n"
+                "2. reboot" % (most_recent_kernel, loaded_kernel, package_to_check, most_recent_kernel)
+            )
+    else:
+        # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
+        # we allow the user to provide a environment variable to override the functionality and proceed
+        # with the conversion, otherwise, we just throw an critical logging to them.
+        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", "0")
+        if unsupported_skip == "1":
+            logger.warning(
+                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                "the %s comparison.\n"
+                "Beware, this could leave your system in a broken state. " % package_to_check
+            )
+        else:
+            logger.critical(
+                "Could not find any %s from repositories to compare against the loaded kernel.\n"
+                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                "If you wish to ignore this message, set the environment variable "
+                "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
+            )
