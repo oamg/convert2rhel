@@ -471,10 +471,24 @@ def download_pkg(
 
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning(
-            "Couldn't download the %s package using yumdownloader.\n"
-            "Output from the yumdownloader call:\n%s" % (pkg, output)
-        )
+        loggerinst.warning("Output from the yumdownloader call:\n%s" % (output))
+
+        if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
+            loggerinst.critical(
+                "Couldn't download the %s package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "Check to make sure that the %s repositories are enabled"
+                " and the package is updated to its latest version.\n"
+                "If you would rather ignore this check set the environment variable"
+                " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'." % (pkg, system_info.name)
+            )
+        else:
+            loggerinst.warning(
+                "Couldn't download the %s package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
+                % (pkg)
+            )
         return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
