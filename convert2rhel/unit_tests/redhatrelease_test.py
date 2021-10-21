@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import glob
+import os
 import sys
 import unittest
 
@@ -31,13 +32,23 @@ from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkgmanager, redhatrelease, utils
-from convert2rhel.redhatrelease import YumConf
+from convert2rhel.redhatrelease import YumConf, get_os_release_filepath, get_system_release_filepath
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
+
+
+YUM_CONF_WITHOUT_DISTROVERPKG = """[main]
+installonly_limit=3
+
+#  This is the default"""
+
+YUM_CONF_WITH_DISTROVERPKG = """[main]
+installonly_limit=3
+distroverpkg=centos-release
+
+#  This is the default"""
 
 
 class TestRedHatRelease(unittest.TestCase):
-
     supported_rhel_versions = [6, 7, 8]
 
     class DumbMocked(unit_tests.MockFunction):
@@ -142,13 +153,33 @@ def test_yum_patch(monkeypatch, modified, caplog):
         assert "Skipping patching, yum configuration file not modified" in caplog.text
 
 
-YUM_CONF_WITHOUT_DISTROVERPKG = """[main]
-installonly_limit=3
+@pytest.mark.parametrize(("is_file", "exception"), ((True, False), (False, True)))
+def test_get_system_release_filepath(is_file, exception, monkeypatch, caplog):
+    is_file_mock = mock.MagicMock(return_value=is_file)
+    monkeypatch.setattr(os.path, "isfile", value=is_file_mock)
 
-#  This is the default"""
+    if exception:
+        with pytest.raises(SystemExit):
+            get_system_release_filepath()
+        assert (
+            "Error: Unable to find the /etc/system-release file containing the OS name and version"
+            in caplog.records[-1].message
+        )
+    else:
+        assert get_system_release_filepath() == "/etc/system-release"
 
-YUM_CONF_WITH_DISTROVERPKG = """[main]
-installonly_limit=3
-distroverpkg=centos-release
 
-#  This is the default"""
+@pytest.mark.parametrize(("is_file", "exception"), ((True, False), (False, True)))
+def test_get_os_release_filepath(is_file, exception, monkeypatch, caplog):
+    is_file_mock = mock.MagicMock(return_value=is_file)
+    monkeypatch.setattr(os.path, "isfile", value=is_file_mock)
+
+    if exception:
+        with pytest.raises(SystemExit):
+            get_os_release_filepath()
+        assert (
+            "Error: Unable to find the /etc/os-release file containing the information needed."
+            in caplog.records[-1].message
+        )
+    else:
+        assert get_os_release_filepath() == "/etc/os-release"
