@@ -472,10 +472,19 @@ def download_pkg(
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:
         loggerinst.warning(
-            "Couldn't download the %s package using yumdownloader.\n"
-            "Output from the yumdownloader call:\n%s" % (pkg, output)
+            " you are using an env that overrides an inhibitor and"
+            " you understand that if you continue you might lose the rollback."
+            " \nOutput from the yum downloader call:\n%s" % (pkg, output)
         )
-        return None
+
+        if not CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK in os.environ:  # template for what needs to be done
+            loggerinst.critical("")
+        loggerinst.info(
+            "could not complete the rollback because one or more files are not updated, Check to see"
+            "if all packages are updated and try the conversion again"
+        )
+
+        return none
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
     if path:
