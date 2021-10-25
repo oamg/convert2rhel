@@ -3,7 +3,7 @@ import sys
 import pytest
 
 from convert2rhel import redhatrelease, utils
-from convert2rhel.logger import initialize_logger
+from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -57,7 +57,7 @@ def pkg_root(is_py2):
 
 @pytest.fixture(autouse=True)
 def setup_logger(tmpdir):
-    initialize_logger(log_name="convert2rhel", log_dir=str(tmpdir))
+    setup_logger_handler(log_name="convert2rhel", log_dir=str(tmpdir))
 
 
 @pytest.fixture()

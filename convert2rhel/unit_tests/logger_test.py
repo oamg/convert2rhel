@@ -29,7 +29,7 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
     # initializing the logger first
     log_fname = "convert2rhel.log"
     tool_opts.debug = True  # debug entries > stdout if True
-    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
+    logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
 
     # emitting some log entries
@@ -49,7 +49,7 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
 
 def test_tools_opts_debug(tmpdir, read_std, is_py2):
     log_fname = "convert2rhel.log"
-    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
+    logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     tool_opts.debug = True
     logger.debug("debug entry 1")
@@ -73,9 +73,35 @@ def test_tools_opts_debug(tmpdir, read_std, is_py2):
 def test_logger_custom_logger(tmpdir, caplog):
     """Test CustomLogger."""
     log_fname = "convert2rhel.log"
-    logger_module.initialize_logger(log_name=log_fname, log_dir=str(tmpdir))
+    logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     logger.task("Some task")
     logger.file("Some task write to file")
     with pytest.raises(SystemExit):
         logger.critical("Critical error")
+
+
+@pytest.mark.parametrize(
+    ("log_name", "path_exists"),
+    (
+        ("convert2rhel.log", True),
+        ("convert2rhel.log", False),
+    ),
+)
+def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
+    tmpdir = str(tmpdir)
+    archive_dir = os.path.join(tmpdir, "archive")
+    log_file = os.path.join(tmpdir, log_name)
+    test_data = "test data\n"
+
+    if path_exists:
+        open(log_file, "w").write(test_data)
+
+    logger_module.archive_old_logger_files(log_name, tmpdir)
+
+    if path_exists:
+        assert "archive" in os.listdir(tmpdir)
+        archive_files = os.listdir(archive_dir)
+        assert len(archive_files) == 1
+        with open(os.path.join(archive_dir, archive_files[0])) as archive_f:
+            assert archive_f.read() == test_data

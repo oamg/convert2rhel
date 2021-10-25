@@ -17,7 +17,18 @@
 
 
 import os
+import sys
 import unittest
+
+
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
+
+import pytest
+
+from convert2rhel import logger as logger_module
 
 
 try:
@@ -260,3 +271,31 @@ class TestMain(unittest.TestCase):
         for expected, actual in zipped_call_order:
             if expected[1] > 0:
                 self.assertEqual(expected, actual)
+
+
+@pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
+def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
+    setup_logger_handler_mock = mock.Mock()
+    archive_old_logger_files_mock = mock.Mock()
+
+    if exception:
+        archive_old_logger_files_mock.side_effect = exception_type
+
+    monkeypatch.setattr(
+        logger_module,
+        "setup_logger_handler",
+        value=setup_logger_handler_mock,
+    )
+    monkeypatch.setattr(
+        logger_module,
+        "archive_old_logger_files",
+        value=archive_old_logger_files_mock,
+    )
+
+    if exception:
+        main.initialize_logger("convert2rhel.log", "/tmp")
+        assert "Warning: Unable to archive previous log:" in capsys.readouterr().out
+    else:
+        main.initialize_logger("convert2rhel.log", "/tmp")
+        setup_logger_handler_mock.assert_called_once()
+        archive_old_logger_files_mock.assert_called_once()

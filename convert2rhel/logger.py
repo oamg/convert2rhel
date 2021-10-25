@@ -27,6 +27,7 @@ FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
 """
 import logging
 import os
+import shutil
 import sys
 
 from convert2rhel.toolopts import tool_opts
@@ -46,8 +47,8 @@ class LogLevelFile(object):
     label = "FILE"
 
 
-def initialize_logger(log_name, log_dir=LOG_DIR):
-    """Initialize custom logging levels, handlers, and so on. Call this method
+def setup_logger_handler(log_name, log_dir):
+    """Setup custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
         log_name = the name for the log file
         log_dir = path to the dir where log file will be presented
@@ -86,6 +87,42 @@ def initialize_logger(log_name, log_dir=LOG_DIR):
     handler.setFormatter(formatter)
     handler.setLevel(LogLevelFile.level)
     logger.addHandler(handler)
+
+
+def archive_old_logger_files(log_name, log_dir):
+    """Archive the old log files to not mess with multiple runs outputs.
+    Every time a new run begins, this method will be called to archive the previous logs
+    if there is a `convert2rhel.log` file there, it will be archived using
+    the same name for the log file, but having an appended timestamp to it.
+        log_name = the name for the log file
+        log_dir = path to the dir where log file will be presented
+
+    For example:
+        /var/log/convert2rhel/archive/convert2rhel-1635162445070567607.log
+        /var/log/convert2rhel/archive/convert2rhel-1635162478219820043.log
+
+    This way, the user can track the logs for each run individually based on the timestamp.
+    """
+
+    current_log_file = os.path.join(log_dir, log_name)
+    archive_log_dir = os.path.join(log_dir, "archive")
+
+    if not os.path.exists(current_log_file):
+        # No log file found, that means it's a first run or it was manually deleted
+        return
+
+    stat = os.stat(current_log_file)
+
+    # Get the last time the file was modified
+    last_modified_at = stat.st_mtime
+
+    # Create the directory if it don't exist
+    if not os.path.exists(archive_log_dir):
+        os.makedirs(archive_log_dir)
+
+    file_name, suffix = tuple(log_name.rsplit(".", 1))
+    archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, last_modified_at, suffix)
+    shutil.copyfile(current_log_file, archive_log_file)
 
 
 def _task(self, msg, *args, **kwargs):
