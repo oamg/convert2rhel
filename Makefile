@@ -19,6 +19,18 @@ VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
 SHOW_CAPTURE ?= no
 
+# Let the user specify DOCKER at the CLI, otherwise try to autodetect a working podman or docker
+ifndef DOCKER
+  DOCKER := $(shell podman run alpine echo podman 2> /dev/null)
+  ifndef DOCKER
+    DOCKER := $(shell docker run alpine echo docker 2> /dev/null)
+    ifndef DOCKER
+      DUMMY := $(warning Many of the make targets require a working podman or docker.  Please install one of those and check that `poodman run alpine echo hello` or `docker run alpine echo hello` work)
+    endif
+  endif
+endif
+
+
 all: clean images tests
 
 install: .install .images .env .pre-commit
@@ -51,42 +63,42 @@ clean:
 images: .images
 
 .images:
-	@docker build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
-	@docker build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
-	@docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
-	@docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
+	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
+	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
+	@$(DOCKER) build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
+	@$(DOCKER) build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
 	touch $@
 
 tests: images
 	@echo 'CentOS Linux 7 tests'
-	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
+	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
 	@echo 'CentOS Linux 8 tests'
-	@docker run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
+	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
 
 lint: images
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"
+	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"
 
 lint-errors: images
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
+	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
 tests8: images
-	@docker run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
+	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
 
 rpms: images
 	mkdir -p .rpms
 	rm -frv .rpms/*
-	docker build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
-	docker build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
-	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.rpms .
-	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.rpms .
-	docker rm $$(docker ps -aq) -f
+	$(DOCKER) build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
+	$(DOCKER) build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
+	$(DOCKER) cp $$($(DOCKER) create $(IMAGE)/centos8rpmbuild):/data/.rpms .
+	$(DOCKER) cp $$($(DOCKER) create $(IMAGE)/centos7rpmbuild):/data/.rpms .
+	$(DOCKER) rm $$($(DOCKER) ps -aq) -f
 
 copr-build: rpms
 	mkdir -p .srpms
 	rm -frv .srpms/*
-	docker cp $$(docker create $(IMAGE)/centos8rpmbuild):/data/.srpms .
-	docker cp $$(docker create $(IMAGE)/centos7rpmbuild):/data/.srpms .
-	docker rm $$(docker ps -aq) -f
+	$(DOCKER) cp $$($(DOCKER) create $(IMAGE)/centos8rpmbuild):/data/.srpms .
+	$(DOCKER) cp $$($(DOCKER) create $(IMAGE)/centos7rpmbuild):/data/.srpms .
+	$(DOCKER) rm $$($(DOCKER) ps -aq) -f
 	copr-cli --config .copr.conf build --nowait @oamg/convert2rhel .srpms/*
 
 update-vms:

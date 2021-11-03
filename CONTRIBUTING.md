@@ -9,6 +9,7 @@
 Required dependencies:
 - virtualenv
 - pre-commit
+- podman (or a working docker)
 
 The commands below create a python3 virtual environment with all the necessary dependencies installed,
 build needed images,
@@ -54,7 +55,7 @@ git commit --no-verify
 
 # Building rpms locally
 
-You need podman or docker installed
+You need podman or a working docker installed
 
 ```bash
 make rpms
@@ -63,7 +64,7 @@ make rpms
 # Building copr builds locally
 
 You need:
-- podman or docker installed
+- podman or a working docker installed
 - have an account at https://copr.fedorainfracloud.org/api/, copy copr config
   and paste it to the repo root as .copr.conf
 - request build permissions at https://copr.fedorainfracloud.org/coprs/g/oamg/convert2rhel/permissions/
