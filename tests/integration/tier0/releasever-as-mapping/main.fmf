@@ -1,0 +1,12 @@
+summary: releasever-as-mapping
+
+tier: 0
+adjust:
+  enabled: false
+  when: >
+    distro != centos-7 and
+    distro != centos-8 and
+    distro != oracle-7 and
+    distro != oracle-8
+test: |
+  pytest -svv

@@ -1,0 +1,135 @@
+discover+:
+    tier: 1
+
+/activation_key:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/activation_key.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/rhsm:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/rhsm.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/satellite:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/satellite.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/custom_repos:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: add custom repos
+    how: ansible
+    playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/custom_repos.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/changed_yum_conf:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/changed-yum-conf/test_patch_yum_conf.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/remove_excluded_pkgs:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/remove-excluded-pkgs/test_remove_excluded_pkgs.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/remove_all_submgr_pkgs:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: install subscription manager
+    how: ansible
+    # change to generic installation playbook
+    playbook: tests/integration/tier1/remove-all-submgr-pkgs/ansible/main.yml
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_remove_all_submgr_pkgs.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/resolve_dependency:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: install dependency packages
+    how: shell
+    script: pytest -svv tests/integration/tier1/resolve-dependency/install_dependency_packages.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/rhsm.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+
+/one_kernel_scenario:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-7 and
+      distro != oracle-7
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: add custom repos
+    how: ansible
+    playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+  - name: install one kernel
+    how: shell
+    script: pytest -svv tests/integration/tier1/one-kernel-scenario/install_one_kernel.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+  - name: remove other kernels
+    how: shell
+    script: pytest -svv tests/integration/tier1/one-kernel-scenario/remove_other_kernels.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
+  - name: run conversion
+    how: shell
+    script: pytest -svv tests/integration/tier1/one-kernel-scenario/run_conversion.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
