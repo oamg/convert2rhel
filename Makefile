@@ -25,7 +25,7 @@ ifndef DOCKER
   ifndef DOCKER
     DOCKER := $(shell docker run alpine echo docker 2> /dev/null)
     ifndef DOCKER
-      DUMMY := $(warning Many of the make targets require a working podman or docker.  Please install one of those and check that `poodman run alpine echo hello` or `docker run alpine echo hello` work)
+      DUMMY := $(warning Many of the make targets require a working podman or docker.  Please install one of those and check that `podman run alpine echo hello` or `docker run alpine echo hello` work)
     endif
   endif
 endif
