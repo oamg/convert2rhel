@@ -1,14 +1,14 @@
 minimum_pre_commit_version: "2.9.0"
 repos:
   - repo: "https://github.com/psf/black"
-    rev: "21.5b1"
+    rev: "21.10b0"
     hooks:
       - id: "black"
         name: "Format code (black)"
         language_version: "python3"
 
   - repo: "https://github.com/timothycrosley/isort"
-    rev: 5.8.0
+    rev: 5.10.1
     hooks:
       - id: isort
         language_version: "python3"
