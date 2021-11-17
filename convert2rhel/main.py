@@ -19,21 +19,10 @@ import logging
 import os
 import sys
 
-from convert2rhel import (
-    breadcrumbs,
-    cert,
-    checks,
-    grub,
-    logger,
-    pkghandler,
-    redhatrelease,
-    repo,
-    special_cases,
-    subscription,
-    systeminfo,
-    toolopts,
-    utils,
-)
+from convert2rhel import breadcrumbs, cert, checks, grub
+from convert2rhel import logger as logger_module
+from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
+from convert2rhel.grub import logger
 
 
 loggerinst = logging.getLogger(__name__)
@@ -47,6 +36,26 @@ class ConversionPhase(object):
     POST_PONR_CHANGES = 3
 
 
+def initialize_logger(log_name, log_dir):
+    """
+    Entrypoint function that aggregates other calls for initialization logic
+    and setup for logger handlers.
+
+    .. warning::
+        Setting log_dir underneath a world-writable directory (including
+        letting it be user settable) is insecure.  We will need to write
+        some checks for all calls to `os.makedirs()` if we allow changing
+        log_dir.
+    """
+
+    try:
+        logger_module.archive_old_logger_files(log_name, log_dir)
+    except (IOError, OSError) as e:
+        print("Warning: Unable to archive previous log: %s" % e)
+
+    logger_module.setup_logger_handler(log_name, log_dir)
+
+
 def main():
     """Perform all steps for the entire conversion process."""
 
@@ -54,8 +63,9 @@ def main():
     utils.require_root()
 
     process_phase = ConversionPhase.INIT
+
     # initialize logging
-    logger.initialize_logger("convert2rhel.log")
+    initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
 
     # prepare environment
     utils.set_locale()
