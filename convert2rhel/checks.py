@@ -193,7 +193,7 @@ def ensure_compatibility_of_kmods():
         logger.critical(
             (
                 "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-                "Make sure you have updated the kernel to the latest available and rebooted the system. "
+                "Make sure you have updated the kernel to the latest available version and rebooted the system. "
                 "Remove the unsupported modules and run convert2rhel again to continue with the conversion."
             ).format(kmods=not_supported_kmods, system=system_info.name)
         )
