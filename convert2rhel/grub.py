@@ -324,7 +324,7 @@ def _copy_grub_files(required, optional):
     Return False when any required file has not been copied or is missing.
     """
     if systeminfo.system_info.id != "centos":
-        logger.debug("Skipping copying grub files - only related to CentOS Linux.")
+        logger.debug("Skipping copying GRUB files - only related to CentOS Linux.")
         return True
 
     # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of

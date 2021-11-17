@@ -174,7 +174,7 @@ def call_yum_cmd(
 
 
 def get_problematic_pkgs(output, excluded_pkgs=frozenset()):
-    """Parse the YUM/DNF output to find what packages are causing a transaction failure."""
+    """Parse the YUM/DNF output to find which packages are causing a transaction failure."""
     loggerinst.info("Checking for problematic packages")
     problematic_pkgs = {
         "protected": set(),
@@ -281,7 +281,7 @@ def resolve_dep_errors(output, pkgs=frozenset()):
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
-    """Return list of those installed packages (just names) which are signed
+    """Return list of names of installed packages that are signed
     by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
@@ -291,7 +291,7 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
-    """Return a list of objects, each holding one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
+    """Return a list of objects that hold one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
     of yum and hawkey.Package in case of dnf) and GPG key fingerprints used to sign it. The packages can be
     optionally filtered by name.
     """
@@ -328,7 +328,7 @@ def get_pkg_signature(pkg_obj):
 def get_rpm_header(pkg_obj):
     """The dnf python API does not provide the package rpm header:
       https://bugzilla.redhat.com/show_bug.cgi?id=1876606.
-    So instead, we're getting the header directly from the rpm db.
+    The header is instead fetched directly from the rpm db.
     """
     ts = rpm.TransactionSet()
     rpm_hdr_iter = ts.dbMatch("name", pkg_obj.name)
@@ -377,9 +377,7 @@ def _get_installed_pkg_objects_dnf(name):
 
 
 def get_third_party_pkgs():
-    """Get all the third party packages (non-Red Hat and non-original OS
-    signed) which are going to be kept untouched.
-    """
+    """Get all the third party packages (non-Red Hat and non-original OS-signed) that are going to be kept untouched."""
     third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_orig_os + system_info.fingerprints_rhel
     )
@@ -575,12 +573,13 @@ def remove_excluded_pkgs():
 
 def remove_repofile_pkgs():
     """Remove those non-RHEL packages that contain YUM/DNF repofiles (/etc/yum.repos.d/*.repo) or affect variables
-    in the repofiles (e.g. $releasever)
+    in the repofiles (e.g. $releasever).
 
-    We can't be removing them together with the other excluded packages - it wouldn't
-    be possible to access and install subscription-manager dependencies. At the same time
-    we can't install subscription-manager before removing the excluded packages
-    as there would be a conflict with one of the excluded packages (rhn-client-tools).
+    Red Hat cannot automatically remove these non-RHEL packages with other excluded packages. While other excluded
+    packages must be removed before installing subscription-manager to prevent package conflicts, these non-RHEL
+    packages must be present on the system during subscription-manager installation so that the system can access and
+    install subscription-manager dependencies. As a result, these non-RHEL packages must be manually removed after
+    subscription-manager installation.
     """
     loggerinst.info("Searching for packages containing repofiles or affecting variables in the repofiles:\n")
     remove_pkgs_with_confirm(system_info.repofile_pkgs)
@@ -741,11 +740,11 @@ def get_kernel(kernels_raw):
 def replace_non_rhel_installed_kernel(version):
     """Replace the installed non-RHEL kernel with RHEL kernel with same version."""
     loggerinst.warning(
-        "The convert2rhel is going to force-replace the only"
+        "The convert2rhel utlity is going to force-replace the only"
         " kernel installed, which has the same NEVRA as the"
         " only available RHEL kernel. If anything goes wrong"
         " with such replacement, the system will become"
-        " unbootable. If you want the convert2rhel to install"
+        " unbootable. If you want the convert2rhel utility to install"
         " the RHEL kernel in a safer manner, you can install a"
         " different version of kernel first and then run"
         " convert2rhel again."
@@ -812,7 +811,8 @@ def fix_default_kernel():
     """
     Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus in
     /etc/sysconfig/kernel as DEFAULTKERNEL.
-    This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for RHEL 6,7 and kernel-core for RHEL 8
+    This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for RHEL 6
+    and RHEL7 and kernel-core for RHEL 8
     """
     loggerinst = logging.getLogger(__name__)
 
@@ -847,7 +847,7 @@ def fix_invalid_grub2_entries():
     - convert2rhel removes the original OS kernels, but for these the boot entries are not removed
 
     The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
-    OS kernels, and setting the RHEL kernel as default.
+    OS kernels, and set the RHEL kernel as default.
     """
     if system_info.version.major < 8 or system_info.arch == "s390x":
         # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
@@ -905,8 +905,8 @@ def update_rhel_kernel():
 def clear_versionlock():
     """A package can be locked to a specific version using a YUM/DNF versionlock plugin. Then, even if a newer version
     of a package is available, yum or dnf won't update it. That may cause a problem during the conversion as other
-    RHEL packages may depend on a different version than is locked. That's why we clear all the locks to prevent a
-    system conversion failure.
+    RHEL packages may depend on a different version than is locked. Therefore, the Convert2RHEL utility clears all the
+    locks to prevent a system conversion failure.
     DNF has been designed to be backwards compatible with YUM. So the file in which the version locks are defined for
     YUM works correctly even with DNF thanks to symlinks created by DNF.
     """
