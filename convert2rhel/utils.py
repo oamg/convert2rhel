@@ -484,7 +484,7 @@ def download_pkg(
             "if all packages are updated and try the conversion again"
         )
 
-        return none
+        return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
     if path:
