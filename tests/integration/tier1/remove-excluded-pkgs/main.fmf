@@ -1,11 +1,5 @@
 summary: remove-excluded-pkgs
 
-tier: 0
-adjust:
-  enabled: false
-  when: >
-    distro != centos-8
+tier: 1
 
-/good:
-  test: |
-    pytest -svv
+test: pytest -svv
