@@ -34,7 +34,7 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
 
 
 def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
-    assert shell("modprobe -r -v bonding").output == "rmmod bonding\n"
+    assert shell("modprobe -r -v bonding").returncode == 0
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
             env.str("RHSM_SERVER_URL"),
