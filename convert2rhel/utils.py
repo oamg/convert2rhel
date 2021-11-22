@@ -477,7 +477,7 @@ def download_pkg(
             " \nOutput from the yum downloader call:\n%s %s" % (pkg, output)
         )
 
-        if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:  # template for what needs to be done
+        if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
             loggerinst.critical("")
         loggerinst.info(
             "could not complete the rollback because one or more files are not updated, Check to see"
