@@ -69,20 +69,21 @@ images: .images
 	@$(DOCKER) build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE)/centos7rpmbuild .
 	touch $@
 
-tests: images
-	@echo 'CentOS Linux 7 tests'
-	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
-	@echo 'CentOS Linux 8 tests'
-	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
-
 lint: images
 	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh"
 
 lint-errors: images
 	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
+tests: tests7 tests8
+
+tests7: images
+	@echo 'CentOS Linux 7 tests'
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
+
 tests8: images
-	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
+	@echo 'CentOS Linux 8 tests'
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
 
 rpms: images
 	mkdir -p .rpms
