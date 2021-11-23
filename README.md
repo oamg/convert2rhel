@@ -7,11 +7,12 @@ For details about the utility and its usage, consult one of the following source
 1. Run `man convert2rhel` once the utility is installed on your system
 
 ## Contributing
+
 Contributions are welcome. Take a look at [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to get started.
 
 ## Contact
 
 For questions, troubleshooting, bug reports and feature requests:
 
-* create [an issue](https://github.com/oamg/convert2rhel/issues/new) here on GitHub,
-* ask a question through [GitHub Discussions](https://github.com/oamg/convert2rhel/discussions)
+* Create [an issue](https://github.com/oamg/convert2rhel/issues/new) here on GitHub.
+* Ask a question through [GitHub Discussions](https://github.com/oamg/convert2rhel/discussions).
