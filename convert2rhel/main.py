@@ -91,6 +91,7 @@ def main():
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
         redhatrelease.system_release_file.backup()
+        redhatrelease.os_release_file.backup()
         repo.backup_yum_repos()
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")

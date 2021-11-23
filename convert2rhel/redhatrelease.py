@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import glob
 import logging
 import os
 import re
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 
 
 loggerinst = logging.getLogger(__name__)
@@ -56,6 +54,14 @@ def get_system_release_content():
         return utils.get_file_content(filepath)
     except EnvironmentError as err:
         loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
+
+
+def get_os_release_filepath():
+    """Return path of the OS Release file."""
+    release_filepath = "/etc/os-release"  # RHEL 6/7/8 based OSes
+    if os.path.isfile(release_filepath):
+        return release_filepath
+    loggerinst.critical("Error: Unable to find the %s file containing the information needed." % release_filepath)
 
 
 class YumConf(object):
@@ -108,3 +114,4 @@ class YumConf(object):
 
 # Code to be executed upon module import
 system_release_file = utils.RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
+os_release_file = utils.RestorableFile(get_os_release_filepath())  # pylint: disable=C0103
