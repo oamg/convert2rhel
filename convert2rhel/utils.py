@@ -473,7 +473,7 @@ def download_pkg(
     if ret_code != 0:
         loggerinst.warning(
             "Couldn't download the %s package using yumdownloader.\n"
-            " Output from the yum downloader call:\n%s %s" % (pkg, output)
+            " Output from the yum downloader call:\n%s" % (pkg, output)
         )
 
         if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
