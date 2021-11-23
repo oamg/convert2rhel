@@ -473,18 +473,18 @@ def download_pkg(
     if ret_code != 0:
         loggerinst.warning(
             "Couldn't download the %s package using yumdownloader.\n"
-            " Output from the yum downloader call:\n%s" % (pkg, output)
+            " Output from the yumdownloader call:\n%s" % (pkg, output)
         )
 
         if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
             loggerinst.critical(
                 "This means we will not be able to do a complete rollback and may put the system in a broken state."
                 " Check to make sure that your packages are up to date."
-                " If you would rather ignore this check set the envirament variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' to 1."
+                " If you would rather ignore this check set the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' to 1."
             )
         else:
             loggerinst.warning(
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' enviroment variable detected, continuing conversion."
+                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
                 " This may put the system in an unsupported broken state on a rollback."
             )
         return None
