@@ -144,7 +144,7 @@ def call_yum_cmd(
     return stdout, returncode
 
 
-def get_problematic_pkgs(output, excluded_pkgs=set()):
+def get_problematic_pkgs(output, excluded_pkgs=frozenset()):
     """Parse the YUM/DNF output to find what packages are causing a transaction failure."""
     loggerinst.info("Checking for problematic packages")
     problematic_pkgs = {
@@ -201,7 +201,7 @@ def get_pkgs_to_distro_sync(problematic_pkgs):
     )
 
 
-def resolve_dep_errors(output, pkgs=set()):
+def resolve_dep_errors(output, pkgs=frozenset()):
     """Recursive function. If there are dependency errors in the yum output,
     try to resolve them by yum downgrades.
     """
