@@ -1453,3 +1453,54 @@ kernel.x86_64    4.7.2-201.fc24   @updates
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
+
+with open(
+    os.path.join(os.path.dirname(__file__), "data/pkghandler_yum_distro_sync_output_expect_deps_for_3_pkgs_found.txt")
+) as f:
+    YUM_DISTRO_SYNC_OUTPUT = f.read()
+
+
+@pytest.mark.parametrize(
+    "output, message, expected_names",
+    (
+        # Test just the regex itself
+        ("Test", "%s", set()),
+        ("Error: Package: not_a_package_name", "%s", set()),
+        ("gcc-10.3.1-1.el8.x86_64", "%s", set(["gcc"])),
+        ("gcc-c++-10.3.1-1.el8.x86_64", "%s", set(["gcc-c++"])),
+        ("NetworkManager-1.26.8-1.fc33.x86_64", "%s", set(["NetworkManager"])),
+        # Test with simple error messages that we"ve pre-compiled
+        ("Error: Package: gcc-10.3.1-1.el8.x86_64", "Error: Package: %s", set(["gcc"])),
+        ("multilib versions: gcc-10.3.1-1.el8.i686", "multilib versions: %s", set(["gcc"])),
+        ("problem with installed package: gcc-10.3.1-1.el8.x86_64", "problem with installed package: %s", set(["gcc"])),
+        # Test with strings more like actual yum output
+        (
+            """Junk
+     Test gcc-1-2.i686
+     Test gcc-c++-1-2.i686
+     More Junk
+     Test bash-3-4.x86_64""",
+            "Test %s",
+            set(["gcc", "gcc-c++", "bash"]),
+        ),
+        (YUM_DISTRO_SYNC_OUTPUT, "Error: Package: %s", set(["gcc", "gcc-c++", "libstdc++-devel"])),
+    ),
+)
+def test_find_pkg_names(output, message, expected_names):
+    """Test that find_pkg_names finds the expected packages."""
+    assert pkghandler.find_pkg_names(output, message) == expected_names
+
+
+@pytest.mark.parametrize(
+    "output, message",
+    (
+        # Test just the regex itself
+        ("Test", "%s"),
+        ("Error: Package: not_a_package_name", "%s"),
+        # Test that the message key is having an influence
+        ("multilib versions: gcc-10.3.1-1.el8.i686", "Error: Package: %s"),
+    ),
+)
+def test_find_pkg_names_no_names(output, message):
+    """Test that find_pkg_names does not find any names in these outputs."""
+    assert pkghandler.find_pkg_names(output, message) == set()
