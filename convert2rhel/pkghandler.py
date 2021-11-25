@@ -36,6 +36,28 @@ MAX_YUM_CMD_CALLS = 3
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
+#
+# Regular expressions used to find package names in yum output
+#
+
+# This regex finds package NEVRs + arch (name epoch version release and
+# architechture) in a string.  It separates the epoch from the rest of the
+# NEVR, leaving us to parse the name from the remaining NVR.
+# Note that the regex requires at least two dashes but the NVR can contain
+# more than that.  For instance: gcc-c++-4.8.5-44.0.3.el7.x86_64
+PKG_NEVR = r"\b([0-9]+:)?(\S+-\S+-\S+)\b"
+
+# It would be better to construct this dynamically but we don't have lru_cache
+# in Python-2.6 and modifying a global after your program initializes isn't a
+# good idea.
+_KNOWN_PKG_MESSAGE_KEYS = (
+    "%s",
+    "Error: Package: %s",
+    "multilib versions: %s",
+    "problem with installed package %s",
+)
+_PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
+
 
 class PkgWFingerprint(object):
     """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
@@ -161,27 +183,29 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         loggerinst.info("Found protected packages: %s" % set(protected))
         problematic_pkgs["protected"] = set(protected) - excluded_pkgs
 
-    package_nevr_re = r"[0-9]*:?([a-z][a-z0-9-_]*?)-[0-9]"
-    deps = re.findall("Error: Package: %s" % package_nevr_re, output, re.MULTILINE)
+    deps = find_pkg_names(output, "Error: Package: %s")
     if deps:
-        loggerinst.info("Found packages causing dependency errors: %s" % set(deps))
-        problematic_pkgs["errors"] = set(deps) - excluded_pkgs
+        loggerinst.info("Found packages causing dependency errors: %s" % deps)
+        problematic_pkgs["errors"] = deps - excluded_pkgs
 
-    multilib = re.findall("multilib versions: %s" % package_nevr_re, output, re.MULTILINE)
+    multilib = find_pkg_names(output, "multilib versions: %s")
     if multilib:
-        loggerinst.info("Found multilib packages: %s" % set(multilib))
-        problematic_pkgs["multilib"] = set(multilib) - excluded_pkgs
+        loggerinst.info("Found multilib packages: %s" % multilib)
+        problematic_pkgs["multilib"] = multilib - excluded_pkgs
 
-    mismatches = re.findall("problem with installed package %s" % package_nevr_re, output, re.MULTILINE)
+    mismatches = find_pkg_names(output, "problem with installed package %s")
     if mismatches:
-        loggerinst.info("Found mismatched packages: %s" % set(mismatches))
-        problematic_pkgs["mismatches"] = set(mismatches) - excluded_pkgs
+        loggerinst.info("Found mismatched packages: %s" % mismatches)
+        problematic_pkgs["mismatches"] = mismatches - excluded_pkgs
 
     # What yum prints in the Requires is a capability, not a package name. And capability can be an arbitrary string,
     # e.g. perl(Carp) or redhat-lsb-core(x86-64).
     # Yet, passing a capability to yum distro-sync does not yield the expected result - the packages that provide the
     # capability are not getting downgraded. So here we're getting only the part of a capability that consists of
     # package name characters only. It will work in most cases but not in all (e.g. "perl(Carp)").
+    #
+    # We can fix this with another yum or rpm call.  This rpm command line will print the package name:
+    #   rpm -q --whatprovides "CAPABILITY"
     package_name_re = r"([a-z][a-z0-9-]*)"
     req = re.findall("Requires: %s" % package_name_re, output, re.MULTILINE)
     if req:
@@ -189,6 +213,33 @@ def get_problematic_pkgs(output, excluded_pkgs=set()):
         problematic_pkgs["required"] = set(req) - excluded_pkgs
 
     return problematic_pkgs
+
+
+def find_pkg_names(output, message_key="%s"):
+    """
+    Find all the package names of a "type" from amongst a string of output from yum.
+
+    :arg output: The yum output to parse for package names
+    :arg message_key: This function tries to retrieve "types" of packages from the yum output.
+        Packages that have multilib problems or dependency errors for instance.
+        The message_key is a format string which contains some of the yum
+        message which can be used as context for finding the type.  ie:
+        "multilib versions: %s" would be enough to only select package names
+        that yum said were multilib problems.
+    :returns: A set of the package names found.
+    """
+    try:
+        regular_expression = _PKG_REGEX_CACHE[message_key]
+    except KeyError:
+        regular_expression = re.compile(message_key % PKG_NEVR, re.MULTILINE)
+
+    names = set()
+    nvrs = regular_expression.findall(output)
+    for nvr in (entry[1] for entry in nvrs if entry[1]):
+        name, _version, _release = nvr.rsplit("-", 2)
+        names.add(name)
+
+    return names
 
 
 def get_pkgs_to_distro_sync(problematic_pkgs):
