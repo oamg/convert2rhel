@@ -41,11 +41,9 @@ versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disab
 #
 
 # This regex finds package NEVRs + arch (name epoch version release and
-# architechture) in a string.  It separates the epoch from the rest of the
-# NEVR, leaving us to parse the name from the remaining NVR.
-# Note that the regex requires at least two dashes but the NVR can contain
-# more than that.  For instance: gcc-c++-4.8.5-44.0.3.el7.x86_64
-PKG_NEVR = r"\b([0-9]+:)?(\S+-\S+-\S+)\b"
+# architechture) in a string.  Note that the regex requires at least two dashes but the
+# NEVR can contain more than that.  For instance: gcc-c++-4.8.5-44.0.3.el7.x86_64
+PKG_NEVR = r"\b(?:([0-9]+):)?(\S+)-(\S+)-(\S+)\b"
 
 # It would be better to construct this dynamically but we don't have lru_cache
 # in Python-2.6 and modifying a global after your program initializes isn't a
@@ -235,8 +233,7 @@ def find_pkg_names(output, message_key="%s"):
 
     names = set()
     nvrs = regular_expression.findall(output)
-    for nvr in (entry[1] for entry in nvrs if entry[1]):
-        name, _version, _release = nvr.rsplit("-", 2)
+    for _epoch, name, _version, _release in nvrs:
         names.add(name)
 
     return names
