@@ -16,11 +16,11 @@
         msg: "Distribution must be CentOS or Oracle Linux"
       when: ansible_distribution != 'CentOS' and ansible_distribution != 'OracleLinux'
 
-    - name: Validate Release Version (6.10, 7.9, 8.4)
+    - name: Validate Release Version (6.10, 7.9, 8.5)
       fail:
-        msg: "Distribution version must be 6.10, 7.9, or 8.4"
+        msg: "Distribution version must be 6.10, 7.9, or 8.5"
       when: (ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9'
-             and ansible_distribution_version != '8.4') or skip_os_version_check|bool
+             and ansible_distribution_version != '8.5') or skip_os_version_check|bool
 
     - name: Download Red Hat GPG key
       get_url:
