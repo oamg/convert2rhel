@@ -284,39 +284,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertIn(pkghandler.call_yum_cmd.return_string, utils.remove_pkgs.pkgs)
         self.assertEqual(utils.remove_pkgs.critical, False)
 
-    def test_get_problematic_pkgs(self):
-        error_pkgs = pkghandler.get_problematic_pkgs("", set())
-        self.assertEqual(
-            error_pkgs,
-            {
-                "protected": set(),
-                "errors": set(),
-                "multilib": set(),
-                "required": set(),
-                "mismatches": set(),
-            },
-        )
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_PROTECTED_ERROR, set())
-        self.assertIn("systemd", error_pkgs["protected"])
-        self.assertIn("yum", error_pkgs["protected"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
-        self.assertIn("libreport-anaconda", error_pkgs["errors"])
-        self.assertIn("abrt-cli", error_pkgs["errors"])
-        self.assertIn("libreport-plugin-rhtsupport", error_pkgs["required"])
-        self.assertIn("python2-hawkey", error_pkgs["required"])
-        self.assertIn("mod_ldap", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-trialuse", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-core", error_pkgs["required"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, set())
-        self.assertIn("openldap", error_pkgs["multilib"])
-        self.assertIn("p11-kit", error_pkgs["multilib"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MISMATCHED_PKGS_ERROR, set())
-        self.assertIn("python39-psycopg2-debug", error_pkgs["mismatches"])
-
     def test_get_pkgs_to_distro_sync(self):
         problematic_pkgs = {
             "protected": set(["a"]),
@@ -1461,6 +1428,87 @@ with open(
 
 
 @pytest.mark.parametrize(
+    "yum_output, expected",
+    (
+        (
+            "",
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_PROTECTED_ERROR,
+            {
+                "protected": set(("systemd", "yum")),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_MULTILIB_ERROR,
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(("openldap", "p11-kit")),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_MISMATCHED_PKGS_ERROR,
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(("python39-psycopg2-debug",)),
+            },
+        ),
+        # This currently does not pass because the Requires handling
+        # misparses a Requires in the test data (It turns
+        # python2_hawkey into python2).  Testing it in its own function
+        # for now.
+        # (
+        #     YUM_REQUIRES_ERROR,
+        #     {
+        #         "protected": set(),
+        #         "errors": set(("libreport-anaconda", "abrt-cli", "mod_ldap", "redhat-lsb-trialuse")),
+        #         "multilib": set(),
+        #         "required": set(("libreport-plugin-rhtsupport", "python2-hawkey", "redhat-lsb-core")),
+        #         "mismatches": set(),
+        #     },
+        # ),
+    ),
+)
+def test_get_problematic_pkgs(yum_output, expected):
+    error_pkgs = pkghandler.get_problematic_pkgs(yum_output, set())
+
+    assert error_pkgs == expected
+
+
+# FIXME: There is a bug in requires handling.  We're detecting the python2
+# package is a problem because there's a Requires: python2_hawkey line.  Until
+# that's fixed, test the things that we can here.  Once it is fixed, re-implement
+# this test via parametrize on test_get_problematic_pkgs instead of a standalone
+# test case.
+def test_get_problematic_pkgs_requires():
+    error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
+    assert "libreport-anaconda" in error_pkgs["errors"]
+    assert "abrt-cli" in error_pkgs["errors"]
+    assert "libreport-plugin-rhtsupport" in error_pkgs["required"]
+    assert "python2-hawkey" in error_pkgs["required"]
+    assert "mod_ldap" in error_pkgs["errors"]
+    assert "redhat-lsb-trialuse" in error_pkgs["errors"]
+    assert "redhat-lsb-core" in error_pkgs["required"]
+
+
+@pytest.mark.parametrize(
     "output, message, expected_names",
     (
         # Test just the regex itself
@@ -1468,12 +1516,24 @@ with open(
         ("Error: Package: not_a_package_name", "%s", set()),
         ("gcc-10.3.1-1.el8.x86_64", "%s", set(["gcc"])),
         ("gcc-c++-10.3.1-1.el8.x86_64", "%s", set(["gcc-c++"])),
-        ("NetworkManager-1.26.8-1.fc33.x86_64", "%s", set(["NetworkManager"])),
-        # Test with simple error messages that we"ve pre-compiled
+        ("ImageMagick-c++-6.9.10.68-6.el7_9.i686", "%s", set(["ImageMagick-c++"])),
+        ("389-ds-base-1.3.10.2-14.el7_9.x86_64", "%s", set(["389-ds-base"])),
+        ("devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-11-libstdc++-devel"])),
+        ("devtoolset-1.1-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-1.1-libstdc++-devel"])),
+        # Test regex with an epoch
+        ("NetworkManager-1:1.18.8-2.0.1.el7_9.x86_64", "%s", set(["NetworkManager"])),
+        # Test with simple error messages that we've pre-compiled the regex for
         ("Error: Package: gcc-10.3.1-1.el8.x86_64", "Error: Package: %s", set(["gcc"])),
         ("multilib versions: gcc-10.3.1-1.el8.i686", "multilib versions: %s", set(["gcc"])),
         ("problem with installed package: gcc-10.3.1-1.el8.x86_64", "problem with installed package: %s", set(["gcc"])),
-        # Test with strings more like actual yum output
+        # Test that a template that was not pre-compiled works
+        (
+            """Some Test Junk
+     Test gcc-1-2.i686""",
+            "Test %s",
+            set(["gcc"]),
+        ),
+        # Test with multiple packages to be found
         (
             """Junk
      Test gcc-1-2.i686
@@ -1483,6 +1543,7 @@ with open(
             "Test %s",
             set(["gcc", "gcc-c++", "bash"]),
         ),
+        # Test with actual yum output
         (YUM_DISTRO_SYNC_OUTPUT, "Error: Package: %s", set(["gcc", "gcc-c++", "libstdc++-devel"])),
     ),
 )
