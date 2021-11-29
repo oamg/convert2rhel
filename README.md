@@ -15,3 +15,5 @@ For questions, troubleshooting, bug reports and feature requests:
 
 * create [an issue](https://github.com/oamg/convert2rhel/issues/new) here on GitHub,
 * ask a question through [GitHub Discussions](https://github.com/oamg/convert2rhel/discussions)
+
+# Outside action test 
