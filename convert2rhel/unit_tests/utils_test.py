@@ -208,7 +208,7 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
     @unit_tests.mock(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
-    def test_download_pkg_failed_download_overrridden(self):
+    def test_download_pkg_failed_download_overridden(self):
         path = utils.download_pkg("kernel")
 
         self.assertEqual(path, None)
