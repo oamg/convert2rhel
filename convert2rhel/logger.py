@@ -30,6 +30,8 @@ import os
 import shutil
 import sys
 
+from time import gmtime, strftime
+
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import format_msg_with_datetime
 
@@ -113,15 +115,18 @@ def archive_old_logger_files(log_name, log_dir):
 
     stat = os.stat(current_log_file)
 
-    # Get the last time the file was modified
-    last_modified_at = stat.st_mtime
+    # Get the last modified time in UTC
+    last_modified_at = gmtime(stat.st_mtime)
+
+    # Format time to a human-readable format
+    formatted_time = strftime("%Y%m%dT%H%M%SZ", last_modified_at)
 
     # Create the directory if it don't exist
     if not os.path.exists(archive_log_dir):
         os.makedirs(archive_log_dir)
 
     file_name, suffix = tuple(log_name.rsplit(".", 1))
-    archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, last_modified_at, suffix)
+    archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, formatted_time, suffix)
     shutil.copyfile(current_log_file, archive_log_file)
 
 
