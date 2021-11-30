@@ -27,6 +27,10 @@ def get_system_version(system_release_content=None):
 
 
 def test_install_dependency_packages(shell):
+    """Having certain packages installed used to cause conversion failures - namely yum dependency resolution errors.
+
+    This test verifies that having these packages pre-installed does not cause a failure anymore
+    """
 
     with open("/etc/system-release", "r") as file:
         system_release = file.read()
@@ -40,6 +44,7 @@ def test_install_dependency_packages(shell):
                 "python2-dnf-plugins-core",  # OAMG-4690
                 "redhat-lsb-trialuse",  # OAMG-4942
                 "ldb-tools",  # OAMG-4941
+                "gcc-c++",  # OAMG-6136
                 "python-requests",  # OAMG-4936
             ]
         elif system_version.major == 8:
