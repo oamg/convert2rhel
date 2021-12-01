@@ -87,6 +87,7 @@ class SystemInfo(object):
         self.default_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
+        # Gets the release version of the Linux based system, see the docstring in the “get_releasever()”
         self.releasever = None
         # List of kmods to not inhbit the conversion upon when detected as not available in RHEL
         self.kmods_to_ignore = []
@@ -204,7 +205,13 @@ class SystemInfo(object):
         return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
-        """Get the release version to be passed to yum through --releasever.
+        """Releasever is used to referance the Version of Oracle Linux or Centos
+        to a variable to be converted to when going through the conversion that will
+        be put in a repo baseurl. By default the RELEASE_VER_MAPPING is used but if it
+        the var can’t be found then the releasever will be used, to find the version
+        specific config files in the convert2rhel/convert2rhel/data .
+
+        Get the release version to be passed to yum through --releasever.
 
         The default value is hardcoded in the RELEASE_VER_MAPPING but it can be
         overridden by the user by specifying it in the config file.
