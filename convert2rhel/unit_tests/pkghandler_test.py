@@ -284,39 +284,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertIn(pkghandler.call_yum_cmd.return_string, utils.remove_pkgs.pkgs)
         self.assertEqual(utils.remove_pkgs.critical, False)
 
-    def test_get_problematic_pkgs(self):
-        error_pkgs = pkghandler.get_problematic_pkgs("", set())
-        self.assertEqual(
-            error_pkgs,
-            {
-                "protected": set(),
-                "errors": set(),
-                "multilib": set(),
-                "required": set(),
-                "mismatches": set(),
-            },
-        )
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_PROTECTED_ERROR, set())
-        self.assertIn("systemd", error_pkgs["protected"])
-        self.assertIn("yum", error_pkgs["protected"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
-        self.assertIn("libreport-anaconda", error_pkgs["errors"])
-        self.assertIn("abrt-cli", error_pkgs["errors"])
-        self.assertIn("libreport-plugin-rhtsupport", error_pkgs["required"])
-        self.assertIn("python2-hawkey", error_pkgs["required"])
-        self.assertIn("mod_ldap", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-trialuse", error_pkgs["errors"])
-        self.assertIn("redhat-lsb-core", error_pkgs["required"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MULTILIB_ERROR, set())
-        self.assertIn("openldap", error_pkgs["multilib"])
-        self.assertIn("p11-kit", error_pkgs["multilib"])
-
-        error_pkgs = pkghandler.get_problematic_pkgs(YUM_MISMATCHED_PKGS_ERROR, set())
-        self.assertIn("python39-psycopg2-debug", error_pkgs["mismatches"])
-
     def test_get_pkgs_to_distro_sync(self):
         problematic_pkgs = {
             "protected": set(["a"]),
@@ -1415,9 +1382,39 @@ Error: Package: mod_ldap-2.1.11-34.el7.x86_64 (rhel-7-server-rpms)
            Removing: python2_hawkey-0.22.5-2.el7_9.x86_64 (@extras/7)
                python2_hawkey = 0.22.5-2.el7_9
            Downgraded By: python2_hawkey-0.6.3-4.el7.x86_64 (rhel-7-server-rpms)
-               python2_hawkey = 0.6.3-4.el7"""
+               python2_hawkey = 0.6.3-4.el7
+Error: Package: gcc-c++-4.8.5-44.0.3.el7.x86_64 (@ol7_latest)
+           Requires: gcc = 4.8.5-44.0.3.el7
+           Removing: gcc-4.8.5-44.0.3.el7.x86_64 (@ol7_latest)
+               gcc = 4.8.2-16.el7
+               gcc = 4.8.5-44.0.3.el7
+           Downgraded By: gcc-4.8.5-44.el7.x86_64 (rhel-7-server-rpms)
+               gcc = 4.8.2-16.el7
+               gcc = 4.8.5-44.el7
+           Available: gcc-4.8.2-16.el7.x86_64 (rhel-7-server-rpms)
+               gcc = 4.8.2-16.el7"""
+
+# Test for bugs in parsing package names that have unusual features
+# This is artificial test data; these packages don't normally dep on themselves
+# but we want to test that both the code handling packages in error state and
+# the code handling packages they require will catch these package names.
+YUM_UNUSUAL_PKG_NAME_REQUIRES_ERROR = """
+Error: Package: gcc-c++-4.8.5-44.0.3.el7.x86_64 (rhel-7-server-rpms)
+           Requires: gcc-c++ = 4.8.5-44.0.3.el7
+Error: Package: NetworkManager-1.18.8-2.0.1.el7_9.x86_64 (rhel-7-server-rpms)
+           Requires: NetworkManager = 1.18.8-2.0.1.el7_9
+Error: Package: ImageMagick-c++-6.9.10.68-6.el7_9.x86_64 (rhel-7-server-rpms)
+           Requires: ImageMagick-c++ = 6.9.10.68-6.el7_9
+Error: Package: devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64 (rhel-7-server-rpms)
+           Requires: devtoolset-11-libstdc++-devel = 11.2.1-1.2.el7
+Error: Package: java-1.8.0-openjdk-1.8.0.312.b07-2.fc33.x86_64 (rhel-7-server-rpms)
+           Requires: java-1.8.0-openjdk = 1.8.0.312.b07-2.fc33
+Error: Package: 389-ds-base-1.3.10.2-14.el7_9.x86_64 (rhel-7-server-rpms)
+           Requires: 389-ds-base = 1.3.10.2-14.el7_9
+               """
 
 YUM_MULTILIB_ERROR = """
+       Protected multilib versions: libstdc++-4.8.5-44.el7.i686 != libstdc++-4.8.5-44.0.3.el7.x86_64
 Error: Protected multilib versions: 2:p11-kit-0.18.7-1.fc19.i686 != p11-kit-0.18.3-1.fc19.x86_64
 Error: Protected multilib versions: openldap-2.4.36-4.fc19.i686 != openldap-2.4.35-4.fc19.x86_64"""
 
@@ -1453,3 +1450,176 @@ kernel.x86_64    4.7.2-201.fc24   @updates
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
+
+with open(
+    os.path.join(os.path.dirname(__file__), "data/pkghandler_yum_distro_sync_output_expect_deps_for_3_pkgs_found.txt")
+) as f:
+    YUM_DISTRO_SYNC_OUTPUT = f.read()
+
+
+@pytest.mark.parametrize(
+    "yum_output, expected",
+    (
+        (
+            "",
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_PROTECTED_ERROR,
+            {
+                "protected": set(("systemd", "yum")),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_MULTILIB_ERROR,
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(("libstdc++", "openldap", "p11-kit")),
+                "required": set(),
+                "mismatches": set(),
+            },
+        ),
+        (
+            YUM_MISMATCHED_PKGS_ERROR,
+            {
+                "protected": set(),
+                "errors": set(),
+                "multilib": set(),
+                "required": set(),
+                "mismatches": set(("python39-psycopg2-debug",)),
+            },
+        ),
+        # These currently do not pass because the Requires handling
+        # misparses a Requires in the test data (It turns
+        # python2_hawkey into python2).  Testing it in its own function
+        # for now.
+        # (
+        #     YUM_REQUIRES_ERROR,
+        #     {
+        #         "protected": set(),
+        #         "errors": set(("gcc-c++", "libreport-anaconda", "abrt-cli", "mod_ldap", "redhat-lsb-trialuse")),
+        #         "multilib": set(),
+        #         "required": set(("gcc", "libreport-plugin-rhtsupport", "python2-hawkey", "redhat-lsb-core")),
+        #         "mismatches": set(),
+        #     },
+        # ),
+        # (
+        #     YUM_UNUSUAL_PKG_NAME_REQUIRES_ERROR,
+        #     {
+        #         "protected": set(),
+        #         "errors": set(("gcc-c++", "NetworkManager", "ImageMagick-c++",
+        #         "devtoolset-11-libstdc++-devel", "java-1.8.0-openjdk", "389-ds-base")),
+        #         "multilib": set(),
+        #         "required": set(("gcc-c++", "NetworkManager", "ImageMagick-c++",
+        #         "devtoolset-11-libstdc++-devel", "java-1.8.0-openjdk", "389-ds-base")),
+        #         "mismatches": set(),
+        #     },
+        # ),
+    ),
+)
+def test_get_problematic_pkgs(yum_output, expected):
+    error_pkgs = pkghandler.get_problematic_pkgs(yum_output, set())
+
+    assert error_pkgs == expected
+
+
+# FIXME: There is a bug in requires handling.  We're detecting the python2
+# package is a problem because there's a Requires: python2_hawkey line.  Until
+# that's fixed, the following two test cases will test the things that work
+# (Errors parsing).  Once it is fixed, re-implement this test via parametrize
+# on test_get_problematic_pkgs instead of a standalone test case.
+# https://github.com/oamg/convert2rhel/issues/378
+def test_get_problematic_pkgs_requires():
+    """Merge into test_get_problematic_pkgs once requires parsing bug is fixed."""
+    error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
+    assert "libreport-anaconda" in error_pkgs["errors"]
+    assert "abrt-cli" in error_pkgs["errors"]
+    assert "libreport-plugin-rhtsupport" in error_pkgs["required"]
+    assert "python2-hawkey" in error_pkgs["required"]
+    assert "mod_ldap" in error_pkgs["errors"]
+    assert "redhat-lsb-trialuse" in error_pkgs["errors"]
+    assert "redhat-lsb-core" in error_pkgs["required"]
+    assert "gcc-c++" in error_pkgs["errors"]
+    assert "gcc" in error_pkgs["required"]
+
+
+def test_get_problematic_pkgs_requires_unusual_names():
+    """Merge into test_get_problematic_pkgs once requires parsing bug is fixed."""
+    error_pkgs = pkghandler.get_problematic_pkgs(YUM_UNUSUAL_PKG_NAME_REQUIRES_ERROR, set())
+    assert "gcc-c++" in error_pkgs["errors"]
+    assert "NetworkManager" in error_pkgs["errors"]
+    assert "ImageMagick-c++" in error_pkgs["errors"]
+    assert "devtoolset-11-libstdc++-devel" in error_pkgs["errors"]
+    assert "java-1.8.0-openjdk" in error_pkgs["errors"]
+    assert "389-ds-base" in error_pkgs["errors"]
+
+
+@pytest.mark.parametrize(
+    "output, message, expected_names",
+    (
+        # Test just the regex itself
+        ("Test", "%s", set()),
+        ("Error: Package: not_a_package_name", "%s", set()),
+        ("gcc-10.3.1-1.el8.x86_64", "%s", set(["gcc"])),
+        ("gcc-c++-10.3.1-1.el8.x86_64", "%s", set(["gcc-c++"])),
+        ("ImageMagick-c++-6.9.10.68-6.el7_9.i686", "%s", set(["ImageMagick-c++"])),
+        ("389-ds-base-1.3.10.2-14.el7_9.x86_64", "%s", set(["389-ds-base"])),
+        ("devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-11-libstdc++-devel"])),
+        ("devtoolset-1.1-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-1.1-libstdc++-devel"])),
+        ("java-1.8.0-openjdk-1.8.0.312.b07-2.fc33.x86_64", "%s", set(["java-1.8.0-openjdk"])),
+        # Test NEVR with an epoch
+        ("NetworkManager-1:1.18.8-2.0.1.el7_9.x86_64", "%s", set(["NetworkManager"])),
+        # Test with simple error messages that we've pre-compiled the regex for
+        ("Error: Package: gcc-10.3.1-1.el8.x86_64", "Error: Package: %s", set(["gcc"])),
+        ("multilib versions: gcc-10.3.1-1.el8.i686", "multilib versions: %s", set(["gcc"])),
+        ("problem with installed package: gcc-10.3.1-1.el8.x86_64", "problem with installed package: %s", set(["gcc"])),
+        # Test that a template that was not pre-compiled works
+        (
+            """Some Test Junk
+     Test gcc-1-2.i686""",
+            "Test %s",
+            set(["gcc"]),
+        ),
+        # Test with multiple packages to be found
+        (
+            """Junk
+     Test gcc-1-2.i686
+     Test gcc-c++-1-2.i686
+     More Junk
+     Test bash-3-4.x86_64""",
+            "Test %s",
+            set(["gcc", "gcc-c++", "bash"]),
+        ),
+        # Test with actual yum output
+        (YUM_DISTRO_SYNC_OUTPUT, "Error: Package: %s", set(["gcc", "gcc-c++", "libstdc++-devel"])),
+    ),
+)
+def test_find_pkg_names(output, message, expected_names):
+    """Test that find_pkg_names finds the expected packages."""
+    assert pkghandler.find_pkg_names(output, message) == expected_names
+
+
+@pytest.mark.parametrize(
+    "output, message",
+    (
+        # Test just the regex itself
+        ("Test", "%s"),
+        ("Error: Package: not_a_package_name", "%s"),
+        # Test that the message key is having an influence
+        ("multilib versions: gcc-10.3.1-1.el8.i686", "Error: Package: %s"),
+    ),
+)
+def test_find_pkg_names_no_names(output, message):
+    """Test that find_pkg_names does not find any names in these outputs."""
+    assert pkghandler.find_pkg_names(output, message) == set()
