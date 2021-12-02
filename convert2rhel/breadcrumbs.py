@@ -21,7 +21,7 @@ import os
 import re
 import sys
 
-from time import gmtime, strftime
+from datetime import datetime
 
 from convert2rhel import pkghandler, systeminfo
 
@@ -113,7 +113,7 @@ class Breadcrumbs(object):
 
     def _get_formated_time(self):
         """Set timestamp in format YYYYMMDDHHMMZ"""
-        return strftime("%Y%m%dT%H%M%Z", gmtime())
+        return datetime.utcnow().isoformat() + "Z"
 
     def _set_env(self):
         """Catch and set CONVERT2RHEL_ environment variables"""
