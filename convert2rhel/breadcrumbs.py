@@ -69,7 +69,7 @@ class Breadcrumbs(object):
         self._set_started()
 
     def finish_success(self):
-        """Set data accessible after sucessfull conversion and generate the JSON file."""
+        """Set data accessible after successfully conversion and generate the JSON file."""
         self._set_target_os()
         self._set_success_ok()
         self._set_ended()
@@ -83,8 +83,8 @@ class Breadcrumbs(object):
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
-        # the index position is there because get_installed_pkg_objects return list, which is filtred and
-        # should countain just one item
+        # the index position is there because get_installed_pkg_objects return list, which is filtered and
+        # should contain just one item
         self._pkg_object = pkghandler.get_installed_pkg_objects(name="convert2rhel")[0]
 
     def _set_executed(self):
