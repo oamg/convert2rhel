@@ -313,20 +313,30 @@ def attach_subscription():
         tool_opts.pool = pool
         loggerinst.info("Attaching provided subscription pool ID to the system ...")
     else:
-        # Let the user choose the subscription appropriate for the conversion
-        loggerinst.info("Manually select subscription appropriate for the conversion")
         subs_list = get_avail_subs()
+
         if len(subs_list) == 0:
             loggerinst.warning("No subscription available for the conversion.")
             return False
 
-        print_avail_subs(subs_list)
-        sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
+        elif len(subs_list) == 1:
+            sub_num = 0
+            loggerinst.info(
+                " %s is the only subscription available, it will automatically be selected for the conversion."
+                % subs_list[0].pool_id
+            )
+
+        else:
+            # Let the user choose the subscription appropriate for the conversion
+            loggerinst.info("Manually select subscription appropriate for the conversion")
+            print_avail_subs(subs_list)
+            sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
+            loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
+
         pool.extend(["--pool", subs_list[sub_num].pool_id])
         tool_opts.pool = pool
-        loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
-
     _, ret_code = utils.run_subprocess(pool)
+
     if ret_code != 0:
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
