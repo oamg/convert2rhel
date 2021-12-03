@@ -32,7 +32,7 @@ from collections import namedtuple
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkgmanager, redhatrelease, utils
-from convert2rhel.redhatrelease import YumConf, get_os_release_filepath, get_system_release_filepath
+from convert2rhel.redhatrelease import YumConf, get_system_release_filepath
 from convert2rhel.systeminfo import system_info
 
 
@@ -167,19 +167,3 @@ def test_get_system_release_filepath(is_file, exception, monkeypatch, caplog):
         )
     else:
         assert get_system_release_filepath() == "/etc/system-release"
-
-
-@pytest.mark.parametrize(("is_file", "exception"), ((True, False), (False, True)))
-def test_get_os_release_filepath(is_file, exception, monkeypatch, caplog):
-    is_file_mock = mock.MagicMock(return_value=is_file)
-    monkeypatch.setattr(os.path, "isfile", value=is_file_mock)
-
-    if exception:
-        with pytest.raises(SystemExit):
-            get_os_release_filepath()
-        assert (
-            "Error: Unable to find the /etc/os-release file containing the information needed."
-            in caplog.records[-1].message
-        )
-    else:
-        assert get_os_release_filepath() == "/etc/os-release"
