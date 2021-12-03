@@ -532,7 +532,7 @@ class RestorableFile(object):
                 # IOError for py2 and OSError for py3
                 loggerinst.critical("Error(%s): %s" % (err.errno, err.strerror))
         else:
-            loggerinst.info("Can't find %s", self.filepath)
+            loggerinst.info("Can't find %s.", self.filepath)
 
     def restore(self):
         """Restore a previously backed up file"""
