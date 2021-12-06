@@ -398,6 +398,7 @@ Version = namedtuple("Version", ["major", "minor"])
                     "python3-subscription-manager-rhsm",
                     "dnf-plugin-subscription-manager",
                     "python3-syspurpose",
+                    "python3-cloud-what",
                 )
             ),
         ),

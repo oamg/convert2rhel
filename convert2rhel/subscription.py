@@ -465,6 +465,7 @@ def download_rhsm_pkgs():
             "python3-subscription-manager-rhsm",
             "dnf-plugin-subscription-manager",
             "python3-syspurpose",
+            "python3-cloud-what",
         ]
         _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 
