@@ -84,7 +84,7 @@ class TestSubscription(unittest.TestCase):
             self.tuples = tuples
             self.default_tuple = ("output", 0)
             self.called = 0
-            self.cmd = ""
+            self.cmd = []
 
         def __call__(self, cmd, *args, **kwargs):
             self.cmd = cmd
@@ -139,7 +139,7 @@ class TestSubscription(unittest.TestCase):
     def test_get_registration_cmd(self):
         tool_opts.username = "user"
         tool_opts.password = "pass with space"
-        expected = 'subscription-manager register --force --username=user --password="pass with space"'
+        expected = ["subscription-manager", "register", "--force", "--username=user", "--password=pass with space"]
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
@@ -219,7 +219,14 @@ class TestSubscription(unittest.TestCase):
         tool_opts.username = "user"
         tool_opts.password = "pass"
         tool_opts.serverurl = "url"
-        expected = 'subscription-manager register --force --username=user --password="pass" --serverurl="url"'
+        expected = [
+            "subscription-manager",
+            "register",
+            "--force",
+            "--username=user",
+            "--password=pass",
+            "--serverurl=url",
+        ]
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
     @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
@@ -295,7 +302,7 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: ["filename"])
-    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, b, enable_repos, disable_repos, set_releasever: (None, 1))
+    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, args, enable_repos, disable_repos, set_releasever: (None, 1))
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
 

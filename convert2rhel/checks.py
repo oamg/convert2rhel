@@ -105,7 +105,7 @@ def check_tainted_kmods():
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
         system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<< Tainted
     """
-    unsigned_modules, _ = run_subprocess("grep '(' /proc/modules")
+    unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
     module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
         logger.critical(
@@ -162,10 +162,10 @@ def check_custom_repos_are_valid():
     # Without clearing the metadata cache, the `yum makecache` command may return 0 (everything's ok) even when
     # the baseurl of a repository is not accessible. That would happen when the repository baseurl is changed but yum
     # still uses the previous baseurl stored in its cache.
-    call_yum_cmd(command="clean", args="metadata", print_output=False)
+    call_yum_cmd(command="clean", args=["metadata"], print_output=False)
 
     output, ret_code = call_yum_cmd(
-        command="makecache", args="-v --setopt=*.skip_if_unavailable=False", print_output=False
+        command="makecache", args=["-v", "--setopt=*.skip_if_unavailable=False"], print_output=False
     )
     if ret_code != 0:
         logger.critical(
@@ -210,10 +210,10 @@ def get_loaded_kmods():
     kernel modules in case of different kernel release
     """
     logger.debug("Getting a list of loaded kernel modules.")
-    lsmod_output, _ = run_subprocess("lsmod", print_output=False)
+    lsmod_output, _ = run_subprocess(["lsmod"], print_output=False)
     modules = re.findall(r"^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
     return set(
-        _get_kmod_comparison_key(run_subprocess("modinfo -F filename %s" % module, print_output=False)[0])
+        _get_kmod_comparison_key(run_subprocess(["modinfo", "-F", "filename", module], print_output=False)[0])
         for module in modules
     )
 
@@ -236,20 +236,25 @@ def _get_kmod_comparison_key(path):
 
 def get_rhel_supported_kmods():
     """Return set of target RHEL supported kernel modules."""
-    repoquery_repoids_args = " ".join("--repoid " + repoid for repoid in system_info.get_enabled_rhel_repos())
+    basecmd = [
+        "repoquery",
+        "--releasever=%s" % system_info.releasever,
+    ]
+    if system_info.version.major == 8:
+        basecmd.append("--setopt=module_platform_id=platform:el8")
+
+    for repoid in system_info.get_enabled_rhel_repos():
+        basecmd.extend(("--repoid", repoid))
+
+    cmd = basecmd[:]
+    cmd.append("-f")
+    cmd.append("/lib/modules/*.ko*")
     # Without the release package installed, dnf can't determine the modularity
     #   platform ID.
-    setopt_arg = "--setopt=module_platform_id=platform:el8" if system_info.version.major == 8 else ""
     # get output of a command to get all packages which are the source
     # of kmods
-    kmod_pkgs_str, _ = run_subprocess(
-        ("repoquery --releasever={releasever} {setopt_arg} {repoids_args} -f /lib/modules/*.ko*").format(
-            releasever=system_info.releasever,
-            setopt_arg=setopt_arg,
-            repoids_args=repoquery_repoids_args,
-        ),
-        print_output=False,
-    )
+    kmod_pkgs_str, _ = run_subprocess(cmd, print_output=False)
+
     # from these packages we select only the latest one
     kmod_pkgs = get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
     if not kmod_pkgs:
@@ -264,16 +269,13 @@ def get_rhel_supported_kmods():
             "Comparing the loaded kernel modules with the modules available in the following RHEL"
             " kernel packages available in the enabled repositories:\n {0}".format("\n ".join(kmod_pkgs))
         )
+
     # querying obtained packages for files they produces
-    rhel_kmods_str, _ = run_subprocess(
-        ("repoquery --releasever={releasever} {setopt_arg} {repoids_args} -l {pkgs}").format(
-            releasever=system_info.releasever,
-            setopt_arg=setopt_arg,
-            repoids_args=repoquery_repoids_args,
-            pkgs=" ".join(kmod_pkgs),
-        ),
-        print_output=False,
-    )
+    cmd = basecmd[:]
+    cmd.append("-l")
+    cmd.extend(kmod_pkgs)
+    rhel_kmods_str, _ = run_subprocess(cmd, print_output=False)
+
     return get_rhel_kmods_keys(rhel_kmods_str)
 
 
@@ -421,8 +423,7 @@ def _bad_kernel_version(kernel_release):
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     kernel_pkg = run_subprocess(
-        'rpm -qf --qf "%{{NAME}}" /boot/vmlinuz-{kernel_release}'.format(kernel_release=kernel_release),
-        print_output=False,
+        ["rpm", "-qf", "--qf", "%{NAME}", "/boot/vmlinuz-%s" % kernel_release], print_output=False
     )[0]
     logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
     kernel_pkg_obj = get_installed_pkg_objects(kernel_pkg)[0]
