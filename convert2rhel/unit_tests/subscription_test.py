@@ -38,6 +38,14 @@ else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
 
+class DumbCallable(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+
+
 class TestSubscription(unittest.TestCase):
     class GetAvailSubsMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -85,13 +93,6 @@ class TestSubscription(unittest.TestCase):
             if self.tuples:
                 return self.tuples.pop(0)
             return self.default_tuple
-
-    class DumbCallable(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-
-        def __call__(self, *args, **kwargs):
-            self.called += 1
 
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
@@ -298,59 +299,6 @@ class TestSubscription(unittest.TestCase):
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
 
-    class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-
-        def __call__(self, pkgs_to_download, repo_path, repo_content):
-            self.called += 1
-            self.pkgs_to_download = pkgs_to_download
-            self.repo_path = repo_path
-            self.repo_content = repo_content
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
-    @unit_tests.mock(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
-    @unit_tests.mock(utils, "mkdir_p", DumbCallable())
-    def test_download_rhsm_pkgs(self):
-        subscription.download_rhsm_pkgs()
-
-        self.assertEqual(subscription._download_rhsm_pkgs.called, 1)
-        self.assertEqual(
-            subscription._download_rhsm_pkgs.pkgs_to_download,
-            ["subscription-manager", "subscription-manager-rhsm-certificates", "subscription-manager-rhsm"],
-        )
-
-        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
-
-        subscription.download_rhsm_pkgs()
-
-        self.assertEqual(subscription._download_rhsm_pkgs.called, 2)
-        self.assertEqual(
-            subscription._download_rhsm_pkgs.pkgs_to_download,
-            [
-                "subscription-manager",
-                "subscription-manager-rhsm-certificates",
-                "subscription-manager-rhsm",
-                "python-syspurpose",
-            ],
-        )
-
-        system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
-
-        subscription.download_rhsm_pkgs()
-
-        self.assertEqual(subscription._download_rhsm_pkgs.called, 3)
-        self.assertEqual(
-            subscription._download_rhsm_pkgs.pkgs_to_download,
-            [
-                "subscription-manager",
-                "subscription-manager-rhsm-certificates",
-                "python3-subscription-manager-rhsm",
-                "dnf-plugin-subscription-manager",
-                "python3-syspurpose",
-            ],
-        )
-
     class StoreContentMocked(unit_tests.MockFunction):
         def __init__(self):
             self.called = 0
@@ -398,6 +346,71 @@ class TestSubscription(unittest.TestCase):
             self.dest = dest
             self.reposdir = reposdir
             return self.to_return
+
+
+class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self, pkgs_to_download, repo_path, repo_content):
+        self.called += 1
+        self.pkgs_to_download = pkgs_to_download
+        self.repo_path = repo_path
+        self.repo_content = repo_content
+
+
+Version = namedtuple("Version", ["major", "minor"])
+
+
+@pytest.mark.parametrize(
+    (
+        "version",
+        "downloaded_pkgs",
+    ),
+    (
+        (
+            (6, 0),
+            frozenset(
+                (
+                    "subscription-manager",
+                    "subscription-manager-rhsm-certificates",
+                    "subscription-manager-rhsm",
+                )
+            ),
+        ),
+        (
+            (7, 0),
+            frozenset(
+                (
+                    "subscription-manager",
+                    "subscription-manager-rhsm-certificates",
+                    "subscription-manager-rhsm",
+                    "python-syspurpose",
+                )
+            ),
+        ),
+        (
+            (8, 0),
+            frozenset(
+                (
+                    "subscription-manager",
+                    "subscription-manager-rhsm-certificates",
+                    "python3-subscription-manager-rhsm",
+                    "dnf-plugin-subscription-manager",
+                    "python3-syspurpose",
+                )
+            ),
+        ),
+    ),
+)
+def test_download_rhsm_pkgs(version, downloaded_pkgs, monkeypatch):
+    monkeypatch.setattr(system_info, "version", Version(*version))
+    monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
+    monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
+    subscription.download_rhsm_pkgs()
+
+    assert subscription._download_rhsm_pkgs.called == 1
+    assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == downloaded_pkgs
 
 
 @pytest.mark.parametrize(
