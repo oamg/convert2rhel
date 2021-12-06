@@ -77,7 +77,7 @@ def is_secure_boot():
     if not is_efi():
         return False
     try:
-        stdout, ecode = utils.run_subprocess("mokutil --sb-state", print_output=False)
+        stdout, ecode = utils.run_subprocess(["mokutil", "--sb-state"], print_output=False)
     except OSError:
         logger.debug("The mokutil utility for secure boot is not installed. Secure boot is likely not enabled.")
         return False
@@ -92,7 +92,7 @@ def _get_partition(directory):
 
     Raise BootloaderError if the partition can't be detected.
     """
-    stdout, ecode = utils.run_subprocess("/usr/sbin/grub2-probe --target=device %s" % directory, print_output=False)
+    stdout, ecode = utils.run_subprocess(["/usr/sbin/grub2-probe", "--target=device", directory], print_output=False)
     if ecode or not stdout:
         logger.error("grub2-probe returned %s. Output:\n%s" % (ecode, stdout))
         raise BootloaderError("Unable to get device information for %s." % directory)
@@ -133,7 +133,7 @@ def _get_blk_device(device):
 
     Raise the BootloaderError when unable to get the block device.
     """
-    output, ecode = utils.run_subprocess("lsblk -spnlo name %s" % device, print_output=False)
+    output, ecode = utils.run_subprocess(["lsblk", "-spnlo", "name", device], print_output=False)
     if ecode:
         logger.debug("lsblk output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get a block device for '%s'." % device)
@@ -143,7 +143,7 @@ def _get_blk_device(device):
 
 def _get_device_number(device):
     """Return dict with 'major' and 'minor' number of the specified device/partition."""
-    output, ecode = utils.run_subprocess("lsblk -spnlo MAJ:MIN %s" % device, print_output=False)
+    output, ecode = utils.run_subprocess(["lsblk", "-spnlo", "MAJ:MIN", device], print_output=False)
     if ecode:
         logger.debug("lsblk output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
@@ -235,7 +235,7 @@ class EFIBootInfo(object):
     def __init__(self):
         if not is_efi():
             raise EFINotUsed("Unable to collect data about UEFI on a BIOS system.")
-        bootmgr_output, ecode = utils.run_subprocess("/usr/sbin/efibootmgr -v", print_output=False)
+        bootmgr_output, ecode = utils.run_subprocess(["/usr/sbin/efibootmgr", "-v"], print_output=False)
         if ecode:
             raise BootloaderError("Unable to get information about UEFI boot entries.")
 
@@ -399,10 +399,20 @@ def _add_rhel_boot_entry(efibootinfo_orig):
         return efibootinfo_orig
 
     # The new boot entry is being set as first in the boot order
-    cmd_fmt = "/usr/sbin/efibootmgr --create --disk %s --part %s --loader '%s' --label '%s'"
-    cmd_params = (blk_dev, dev_number["minor"], efi_path, label)
+    cmd = [
+        "/usr/sbin/efibootmgr",
+        "--create",
+        "--disk",
+        blk_dev,
+        "--part",
+        dev_number["minor"],
+        "--loader",
+        efi_path,
+        "--label",
+        label,
+    ]
 
-    stdout, ecode = utils.run_subprocess(cmd_fmt % cmd_params, print_output=False)
+    stdout, ecode = utils.run_subprocess(cmd, print_output=False)
     if ecode:
         logger.debug("efibootmgr output:\n-----\n%s\n-----" % stdout)
         raise BootloaderError("Unable to add a new UEFI bootloader entry for RHEL.")
@@ -463,7 +473,7 @@ def _remove_orig_boot_entry(efibootinfo_orig, efibootinfo_new):
             % (orig_boot_entry.boot_number, orig_boot_entry.label, efibin_path_orig)
         )
         return
-    _, ecode = utils.run_subprocess("/usr/sbin/efibootmgr -Bb %s" % orig_boot_entry.boot_number, print_output=False)
+    _, ecode = utils.run_subprocess(["/usr/sbin/efibootmgr", "-Bb", orig_boot_entry.boot_number], print_output=False)
     if ecode:
         # this is not a critical issue; the entry will be even removed
         # automatically if it is invalid (points to non-existing efibin)

@@ -55,14 +55,16 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.return_string = "Test output"
             self.fail_once = False
             self.command = None
+            self.args = None
 
-        def __call__(self, command, *args, **kwargs):
+        def __call__(self, command, args, *other_args, **kwargs):
             if self.fail_once and self.called == 0:
                 self.return_code = 1
             if self.fail_once and self.called > 0:
                 self.return_code = 0
             self.called += 1
             self.command = command
+            self.args = args
             return self.return_string, self.return_code
 
     class GetInstalledPkgsByFingerprintMocked(unit_tests.MockFunction):
@@ -71,15 +73,15 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self, output_text="Test output"):
-            self.cmd = ""
-            self.cmds = ""
+            self.cmd = []
+            self.cmds = []
             self.called = 0
             self.output = output_text
             self.ret_code = 0
 
         def __call__(self, cmd, print_cmd=True, print_output=True):
             self.cmd = cmd
-            self.cmds += "%s\n" % cmd
+            self.cmds.append(cmd)
             self.called += 1
             return self.output, self.ret_code
 
@@ -161,7 +163,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_clear_versionlock_user_says_yes(self):
         pkghandler.clear_versionlock()
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
-        self.assertEqual(pkghandler.call_yum_cmd.command, "versionlock clear")
+        self.assertEqual(pkghandler.call_yum_cmd.command, "versionlock")
+        self.assertEqual(pkghandler.call_yum_cmd.args, ["clear"])
 
     @unit_tests.mock(utils, "ask_to_continue", SysExitCallableObject())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
@@ -179,7 +182,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(
             utils.run_subprocess.cmd,
-            "yum install -y --releasever=8 --setopt=module_platform_id=platform:el8",
+            ["yum", "install", "-y", "--releasever=8", "--setopt=module_platform_id=platform:el8"],
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -188,7 +191,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_call_yum_cmd_not_setting_releasever(self):
         pkghandler.call_yum_cmd("install", set_releasever=False)
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y"])
 
     @pytest.mark.skipif(
         not is_rpm_based_os(),
@@ -216,8 +219,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.call_yum_cmd("install")
 
         self.assertEqual(
-            utils.run_subprocess.cmd,
-            "yum install -y --disablerepo=* --enablerepo=rhel-7-extras-rpm",
+            utils.run_subprocess.cmd, ["yum", "install", "-y", "--disablerepo=*", "--enablerepo=rhel-7-extras-rpm"]
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -228,10 +230,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_call_yum_cmd_with_submgr_enabled_repos(self):
         pkghandler.call_yum_cmd("install")
 
-        self.assertEqual(
-            utils.run_subprocess.cmd,
-            "yum install -y --enablerepo=rhel-7-extras-rpm",
-        )
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "--enablerepo=rhel-7-extras-rpm"])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
@@ -239,29 +238,29 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(system_info, "submgr_enabled_repos", ["not-to-be-used-in-the-yum-call"])
     @unit_tests.mock(tool_opts, "enablerepo", ["not-to-be-used-in-the-yum-call"])
     def test_call_yum_cmd_with_repo_overrides(self):
-        pkghandler.call_yum_cmd("install", "pkg", enable_repos=[], disable_repos=[])
+        pkghandler.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[])
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y pkg")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "pkg"])
 
         pkghandler.call_yum_cmd(
             "install",
-            "pkg",
+            ["pkg"],
             enable_repos=["enable-repo"],
             disable_repos=["disable-repo"],
         )
 
         self.assertEqual(
             utils.run_subprocess.cmd,
-            "yum install -y --disablerepo=disable-repo --enablerepo=enable-repo pkg",
+            ["yum", "install", "-y", "--disablerepo=disable-repo", "--enablerepo=enable-repo", "pkg"],
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd_w_downgrades_correct_cmd(self):
-        pkghandler.call_yum_cmd_w_downgrades("update", ["pkg1 pkg2"])
+        pkghandler.call_yum_cmd_w_downgrades("update", ["pkg1", "pkg2"])
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum update -y pkg1 pkg2")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "pkg1", "pkg2"])
 
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_call_yum_cmd_w_downgrades_one_fail(self):
@@ -878,7 +877,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_preserve_only_rhel_kernel(self):
         pkghandler.preserve_only_rhel_kernel()
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum update -y kernel")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "kernel"])
         self.assertEqual(pkghandler.get_installed_pkgs_by_fingerprint.called, 1)
 
     gpg_keys_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
@@ -899,7 +898,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertNotEqual(len(gpg_keys), 0)
         for gpg_key in gpg_keys:
             self.assertIn(
-                "rpm --import %s" % os.path.join(gpg_dir, gpg_key),
+                ["rpm", "--import", os.path.join(gpg_dir, gpg_key)],
                 utils.run_subprocess.cmds,
             )
 
@@ -1047,7 +1046,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y kernel-4.7.2-201.fc24")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "kernel-4.7.2-201.fc24"])
 
     class ReplaceNonRhelInstalledKernelMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1083,7 +1082,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
-        self.assertEqual(utils.run_subprocess.cmd, "yum install -y kernel-4.7.4-200.fc24")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "kernel-4.7.4-200.fc24"])
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1117,7 +1116,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.download_pkg.enable_repos, ["enabled_rhsm_repo"])
         self.assertEqual(
             utils.run_subprocess.cmd,
-            "rpm -i --force --nodeps --replacepkgs %skernel-4.7.4-200.fc24*" % utils.TMP_DIR,
+            ["rpm", "-i", "--force", "--nodeps", "--replacepkgs", "%skernel-4.7.4-200.fc24*" % utils.TMP_DIR],
         )
 
         # test the use case where custom repos are used for the conversion

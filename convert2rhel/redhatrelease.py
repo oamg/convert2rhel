@@ -100,7 +100,7 @@ class YumConf(object):
         """Return true if the YUM/DNF configuration file has been modified by the user."""
         conf = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
 
-        output, _ = utils.run_subprocess("rpm -Vf %s" % conf, print_output=False)
+        output, _ = utils.run_subprocess(["rpm", "-Vf", conf], print_output=False)
         # rpm -Vf does not return information about the queried file but about all files owned by the rpm
         # that owns the queried file. Character '5' on position 3 means that the file was modified.
         return True if re.search(r"^.{2}5.*? %s$" % conf, output, re.MULTILINE) else False

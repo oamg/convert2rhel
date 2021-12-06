@@ -85,7 +85,7 @@ def unregister_system():
     if not submgr_installed:
         loggerinst.info("The subscription-manager package is not installed.")
         return
-    unregistration_cmd = "subscription-manager unregister"
+    unregistration_cmd = ["subscription-manager", "unregister"]
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
         loggerinst.warning("System unregistration failed with return code %d and message:\n%s", ret_code, output)
@@ -126,13 +126,13 @@ def register_system():
 def get_registration_cmd():
     """Build a command for subscription-manager for registering the system."""
     loggerinst.info("Building subscription-manager command ... ")
-    registration_cmd = "subscription-manager register --force"
+    registration_cmd = ["subscription-manager", "register", "--force"]
     if tool_opts.activation_key:
         # Activation key has been passed
         # -> username/password not required
         # -> organization required
         loggerinst.info("    ... activation key detected: %s" % tool_opts.activation_key)
-        registration_cmd += ' --activationkey="%s"' % tool_opts.activation_key
+        registration_cmd.append("--activationkey=%s" % tool_opts.activation_key)
     else:
         # No activation key -> username/password required
         if tool_opts.username and tool_opts.password:
@@ -153,7 +153,7 @@ def get_registration_cmd():
                 # Hint user for which username they need to enter pswd
                 loggerinst.info("Username: " + username)
             password = utils.prompt_user("Password: ", password=True)
-        registration_cmd += ' --username=%s --password="%s"' % (username, password)
+        registration_cmd.extend(["--username=%s" % username, "--password=%s" % password])
         tool_opts.username = username
     if tool_opts.org:
         loggerinst.info("    ... organization detected")
@@ -167,16 +167,16 @@ def get_registration_cmd():
         org = utils.prompt_user("Organization: ")
     if "org" in locals():
         # TODO: test how this option works with org name with spaces
-        registration_cmd += " --org=%s" % org
+        registration_cmd.append("--org=%s" % org)
     if tool_opts.serverurl:
         loggerinst.debug("    ... using custom RHSM URL")
-        registration_cmd += ' --serverurl="%s"' % tool_opts.serverurl
+        registration_cmd.append("--serverurl=%s" % tool_opts.serverurl)
     return registration_cmd
 
 
 def call_registration_cmd(registration_cmd):
     """Wrapper for run_subprocess that avoids leaking password in the log."""
-    loggerinst.debug("Calling command '%s'" % hide_password(registration_cmd))
+    loggerinst.debug("Calling command '%s'" % hide_password(" ".join(registration_cmd)))
     _, ret_code = utils.run_subprocess(registration_cmd, print_cmd=False)
     return ret_code
 
@@ -234,7 +234,7 @@ def install_rhel_subscription_manager():
         # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
         # and we need these packages to be replaced with the provided RPMs from RHEL.
         "install",
-        " ".join(rpms_to_install),
+        args=rpms_to_install,
         # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
         # the repos that are available on the system
         enable_repos=[],
@@ -269,15 +269,15 @@ def attach_subscription():
     if tool_opts.activation_key:
         loggerinst.info("Using the activation key provided through the command line...")
         return True
-
+    pool = ["subscription-manager", "attach"]
     if tool_opts.auto_attach:
-        pool = "--auto"
+        pool.append("--auto")
         tool_opts.pool = "-a"
         loggerinst.info("Auto-attaching compatible subscriptions to the system ...")
     elif tool_opts.pool:
         # The subscription pool ID has been passed through a command line
         # option
-        pool = "--pool %s" % tool_opts.pool
+        pool.extend(["--pool", tool_opts.pool])
         tool_opts.pool = pool
         loggerinst.info("Attaching provided subscription pool ID to the system ...")
     else:
@@ -290,11 +290,11 @@ def attach_subscription():
 
         print_avail_subs(subs_list)
         sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
-        pool = "--pool " + subs_list[sub_num].pool_id
+        pool.extend(["--pool", subs_list[sub_num].pool_id])
         tool_opts.pool = pool
         loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
 
-    _, ret_code = utils.run_subprocess("subscription-manager attach %s" % pool)
+    _, ret_code = utils.run_subprocess(pool)
     if ret_code != 0:
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
@@ -308,7 +308,7 @@ def get_avail_subs():
     """
     # Get multiline string holding all the subscriptions available to the
     # logged-in user
-    subs_raw, ret_code = utils.run_subprocess("subscription-manager list --available", print_output=False)
+    subs_raw, ret_code = utils.run_subprocess(["subscription-manager", "list", "--available"], print_output=False)
     if ret_code != 0:
         loggerinst.critical("Unable to get list of available subscriptions:\n%s" % subs_raw)
     return list(get_sub(subs_raw))
@@ -343,7 +343,7 @@ def get_avail_repos():
     """Get list of all the repositories (their IDs) currently available for
     the registered system through subscription-manager.
     """
-    repos_raw, _ = utils.run_subprocess("subscription-manager repos", print_output=False)
+    repos_raw, _ = utils.run_subprocess(["subscription-manager", "repos"], print_output=False)
     return list(get_repo(repos_raw))
 
 
@@ -375,14 +375,18 @@ def disable_repos():
     """Before enabling specific repositories, all repositories should be
     disabled. This can be overriden by the --disablerepo option.
     """
-    disable_cmd = ""
+    disable_cmd = ["subscription-manager", "repos"]
+    disable_repos = []
     for repo in tool_opts.disablerepo:
-        disable_cmd += " --disable=%s" % repo
-    if not disable_cmd:
+        disable_repos.append("--disable=%s" % repo)
+
+    if not disable_repos:
         # Default is to disable all repos to make clean environment for
         # enabling repos later
-        disable_cmd = " --disable='*'"
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % disable_cmd, print_output=False)
+        disable_repos.append("--disable=*")
+
+    disable_cmd.extend(disable_repos)
+    output, ret_code = utils.run_subprocess(disable_cmd, print_output=False)
     if ret_code != 0:
         loggerinst.critical("Repos were not possible to disable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories disabled.")
@@ -398,10 +402,10 @@ def enable_repos(rhel_repoids):
     else:
         repos_to_enable = rhel_repoids
 
-    enable_cmd = ""
+    enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:
-        enable_cmd += " --enable=%s" % repo
-    output, ret_code = utils.run_subprocess("subscription-manager repos%s" % enable_cmd, print_output=False)
+        enable_cmd.append("--enable=%s" % repo)
+    output, ret_code = utils.run_subprocess(enable_cmd, print_output=False)
     if ret_code != 0:
         loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")

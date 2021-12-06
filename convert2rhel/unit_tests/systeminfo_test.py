@@ -166,7 +166,7 @@ class TestSysteminfo(unittest.TestCase):
         system_info.generate_rpm_va()
 
         self.assertTrue(utils.run_subprocess.called > 0)
-        self.assertEqual(utils.run_subprocess.used_args[0][0], "rpm -Va")
+        self.assertEqual(utils.run_subprocess.used_args[0][0], ["rpm", "-Va"])
         self.assertTrue(os.path.isfile(self.rpmva_output_file))
         self.assertEqual(utils.get_file_content(self.rpmva_output_file), "rpmva\n")
 

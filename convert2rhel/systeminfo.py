@@ -145,7 +145,7 @@ class SystemInfo(object):
         return version
 
     def _get_architecture(self):
-        arch, _ = utils.run_subprocess("uname -i", print_output=False)
+        arch, _ = utils.run_subprocess(["uname", "-i"], print_output=False)
         arch = arch.strip()  # Remove newline
         self.logger.info("%-20s %s" % ("Architecture:", arch))
         return arch
@@ -230,7 +230,7 @@ class SystemInfo(object):
         return self._get_cfg_opt("kmods_to_ignore").split()
 
     def _get_booted_kernel(self):
-        kernel_vra = run_subprocess("uname -r", print_output=False)[0].rstrip()
+        kernel_vra = run_subprocess(["uname", "-r"], print_output=False)[0].rstrip()
         self.logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_vra))
         return kernel_vra
 
@@ -249,7 +249,7 @@ class SystemInfo(object):
             " minutes. It can be disabled by using the"
             " --no-rpm-va option."
         )
-        rpm_va, _ = utils.run_subprocess("rpm -Va", print_output=False)
+        rpm_va, _ = utils.run_subprocess(["rpm", "-Va"], print_output=False)
         output_file = os.path.join(logger.LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
         self.logger.info("The 'rpm -Va' output has been stored in the %s file" % output_file)
@@ -283,7 +283,7 @@ class SystemInfo(object):
 
     @staticmethod
     def is_rpm_installed(name):
-        _, return_code = run_subprocess("rpm -q '%s'" % name, print_cmd=False, print_output=False)
+        _, return_code = run_subprocess(["rpm", "-q", name], print_cmd=False, print_output=False)
         return return_code == 0
 
     # TODO write unit tests

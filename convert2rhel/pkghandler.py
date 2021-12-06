@@ -74,7 +74,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     if retries <= 0:
         loggerinst.critical("Could not resolve yum errors.")
 
-    output, ret_code = call_yum_cmd(cmd, "%s" % (" ".join(pkgs)))
+    output, ret_code = call_yum_cmd(cmd, pkgs)
     loggerinst.info("Received return code: %s\n" % str(ret_code))
     # handle success condition #1
     if ret_code == 0:
@@ -109,7 +109,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
 
 def call_yum_cmd(
     command,
-    args="",
+    args=None,
     print_output=True,
     enable_repos=None,
     disable_repos=None,
@@ -128,8 +128,10 @@ def call_yum_cmd(
     By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
     release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
     """
+    if args is None:
+        args = []
 
-    cmd = "yum %s -y" % command
+    cmd = ["yum", command, "-y"]
 
     # The --disablerepo yum option must be added before --enablerepo,
     #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
@@ -140,14 +142,14 @@ def call_yum_cmd(
         repos_to_disable = tool_opts.disablerepo
 
     for repo in repos_to_disable:
-        cmd += " --disablerepo=%s" % repo
+        cmd.append("--disablerepo=%s" % repo)
 
     if set_releasever and system_info.releasever:
-        cmd += " --releasever=%s" % system_info.releasever
+        cmd.append("--releasever=%s" % system_info.releasever)
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if system_info.version.major == 8:
-        cmd += " --setopt=module_platform_id=platform:el8"
+        cmd.append("--setopt=module_platform_id=platform:el8")
 
     repos_to_enable = []
     if isinstance(enable_repos, list):
@@ -158,10 +160,9 @@ def call_yum_cmd(
         repos_to_enable = system_info.get_enabled_rhel_repos()
 
     for repo in repos_to_enable:
-        cmd += " --enablerepo=%s" % repo
+        cmd.append("--enablerepo=%s" % repo)
 
-    if args:
-        cmd += " " + args
+    cmd.extend(args)
 
     stdout, returncode = utils.run_subprocess(cmd, print_output=print_output)
     # handle when yum returns non-zero code when there is nothing to do
@@ -272,7 +273,8 @@ def resolve_dep_errors(output, pkgs=frozenset()):
     pkgs_to_distro_sync = pkgs_to_distro_sync.union(pkgs)
     cmd = "distro-sync"
     loggerinst.info("\n\nTrying to resolve the following packages: %s" % ", ".join(pkgs_to_distro_sync))
-    output, ret_code = call_yum_cmd(command=cmd, args=" %s" % " ".join(pkgs_to_distro_sync))
+    output, ret_code = call_yum_cmd(command=cmd, args=list(pkgs_to_distro_sync))
+
     if ret_code != 0:
         return resolve_dep_errors(output, pkgs_to_distro_sync)
     return output
@@ -643,7 +645,7 @@ def install_gpg_keys():
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
         output, ret_code = utils.run_subprocess(
-            "rpm --import %s" % os.path.join(gpg_path, gpg_key),
+            ["rpm", "--import", os.path.join(gpg_path, gpg_key)],
             print_output=False,
         )
         if ret_code != 0:
@@ -670,7 +672,7 @@ def install_rhel_kernel():
     later on.
     """
     loggerinst.info("Installing RHEL kernel ...")
-    output, ret_code = call_yum_cmd(command="install", args="kernel")
+    output, ret_code = call_yum_cmd(command="install", args=["kernel"])
 
     if ret_code != 0:
         loggerinst.critical("Error occured while attempting to install the RHEL kernel")
@@ -713,21 +715,21 @@ def handle_no_newer_rhel_kernel_available():
             # kernel
             older = available[-1]
             utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
-            call_yum_cmd(command="install", args="kernel-%s" % older)
+            call_yum_cmd(command="install", args=["kernel-%s" % older])
         else:
             replace_non_rhel_installed_kernel(installed[0])
 
         return
 
     # Install the latest out of the available non-clashing RHEL kernels
-    call_yum_cmd(command="install", args="kernel-%s" % to_install[-1])
+    call_yum_cmd(command="install", args=["kernel-%s" % to_install[-1]])
 
 
 def get_kernel_availability():
     """Return a tuple - a list of installed kernel versions and a list of
     available kernel versions.
     """
-    output, _ = call_yum_cmd(command="list", args="--showduplicates kernel", print_output=False)
+    output, _ = call_yum_cmd(command="list", args=["--showduplicates", "kernel"], print_output=False)
     return (list(get_kernel(data)) for data in output.split("Available Packages"))
 
 
@@ -767,7 +769,7 @@ def replace_non_rhel_installed_kernel(version):
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
-        "rpm -i --force --nodeps --replacepkgs %s*" % os.path.join(utils.TMP_DIR, pkg),
+        ["rpm", "-i", "--force", "--nodeps", "--replacepkgs", "%s*" % os.path.join(utils.TMP_DIR, pkg)],
         print_output=False,
     )
     if ret_code != 0:
@@ -863,14 +865,14 @@ def fix_invalid_grub2_entries():
 
     # Removing a boot entry that used to be the default makes grubby to choose a different entry as default, but we will
     # call grub --set-default to set the new default on all the proper places, e.g. for grub2-editenv
-    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --default-kernel", print_output=False)
+    output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--default-kernel"], print_output=False)
     if ret_code:
         # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
         # pick one entry in any case.
         loggerinst.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
         return
     loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
-    output, ret_code = utils.run_subprocess("/usr/sbin/grubby --set-default %s" % output.strip())
+    output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
     if ret_code:
         loggerinst.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
 
@@ -888,7 +890,7 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
-            call_yum_cmd("install %s" % name)
+            call_yum_cmd("install", args=[name])
 
 
 def update_rhel_kernel():
@@ -897,7 +899,7 @@ def update_rhel_kernel():
     latest available version.
     """
     loggerinst.info("Updating RHEL kernel.")
-    call_yum_cmd(command="update", args="kernel")
+    call_yum_cmd(command="update", args=["kernel"])
 
 
 def clear_versionlock():
@@ -917,7 +919,7 @@ def clear_versionlock():
         versionlock_file.backup()
 
         loggerinst.info("Clearing package versions locks...")
-        call_yum_cmd("versionlock clear", print_output=False)
+        call_yum_cmd("versionlock", args=["clear"], print_output=False)
     else:
         loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
 

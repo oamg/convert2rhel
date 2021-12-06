@@ -181,7 +181,7 @@ class CountableMockObject(MockFunction):
 def is_rpm_based_os():
     """Check if the OS is rpm based."""
     try:
-        run_subprocess("rpm")
+        run_subprocess(["rpm"])
     except EnvironmentError:
         return False
     else:
@@ -257,7 +257,7 @@ def run_subprocess_side_effect(*stubs):
 
     def factory(*args, **kwargs):
         for kws, result in stubs:
-            if all(kw in args[0].split() for kw in kws):
+            if all(kw in args[0] for kw in kws):
                 return result
         else:
             return run_subprocess(*args, **kwargs)

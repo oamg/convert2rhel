@@ -51,15 +51,15 @@ class TestUtils(unittest.TestCase):
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self, output="Test output", ret_code=0):
-            self.cmd = ""
-            self.cmds = ""
+            self.cmd = []
+            self.cmds = []
             self.called = 0
             self.output = output
             self.ret_code = ret_code
 
         def __call__(self, cmd, print_cmd=True, print_output=True):
             self.cmd = cmd
-            self.cmds += "%s\n" % cmd
+            self.cmds.append(cmd)
             self.called += 1
             return self.output, self.ret_code
 
@@ -108,8 +108,9 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(utils.run_subprocess.called, len(pkgs))
 
-        rpm_remove_cmd = "rpm -e --nodeps"
-        self.assertTrue(re.search(r"^%s pkg" % rpm_remove_cmd, utils.run_subprocess.cmds, re.MULTILINE))
+        rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
+        for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
+            self.assertEqual(rpm_remove_cmd + [pkg], cmd)
 
     @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -120,8 +121,9 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(utils.run_subprocess.called, len(pkgs))
 
-        rpm_remove_cmd = "rpm -e --nodeps"
-        self.assertTrue(re.search(r"^%s pkg" % rpm_remove_cmd, utils.run_subprocess.cmds, re.MULTILINE))
+        rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
+        for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
+            self.assertEqual(rpm_remove_cmd + [pkg], cmd)
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_local_rpms_with_empty_list(self):
@@ -136,7 +138,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual("rpm -i pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual(["rpm", "-i", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)
 
     @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -146,15 +148,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual("rpm -i --replacepkgs pkg1 pkg2 pkg3", utils.run_subprocess.cmd)
+        self.assertEqual(["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)
 
     def test_run_subprocess(self):
-        output, code = utils.run_subprocess("echo foobar")
+        output, code = utils.run_subprocess(["echo", "foobar"])
 
         self.assertEqual(output, "foobar\n")
         self.assertEqual(code, 0)
 
-        output, code = utils.run_subprocess("sh -c 'exit 56'")  # a command that just returns 56
+        output, code = utils.run_subprocess(["sh", "-c", "exit 56"])  # a command that just returns 56
 
         self.assertEqual(output, "")
         self.assertEqual(code, 56)
@@ -199,8 +201,18 @@ class TestUtils(unittest.TestCase):
         )
 
         self.assertEqual(
-            'yumdownloader -v --destdir="%s" --setopt=reposdir="%s" --disablerepo="*" --enablerepo="repo1"'
-            ' --enablerepo="repo2" --releasever=8 --setopt=module_platform_id=platform:el8 kernel' % (dest, reposdir),
+            [
+                "yumdownloader",
+                "-v",
+                "--destdir=%s" % dest,
+                "--setopt=reposdir=%s" % reposdir,
+                "--disablerepo=*",
+                "--enablerepo=repo1",
+                "--enablerepo=repo2",
+                "--releasever=8",
+                "--setopt=module_platform_id=platform:el8",
+                "kernel",
+            ],
             utils.run_cmd_in_pty.cmd,
         )
         self.assertTrue(path)  # path is not None (which is the case of unsuccessful download)

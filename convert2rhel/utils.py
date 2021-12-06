@@ -119,24 +119,28 @@ def restart_system():
     from convert2rhel.toolopts import tool_opts
 
     if tool_opts.restart:
-        run_subprocess("reboot")
+        run_subprocess(["reboot"])
     else:
         loggerinst.warning("In order to boot the RHEL kernel, restart of the system is needed.")
 
 
-def run_subprocess(cmd="", print_cmd=True, print_output=True):
+def run_subprocess(cmd, print_cmd=True, print_output=True):
     """Call the passed command and optionally log the called command (print_cmd=True) and its
     output (print_output=True). Switching off printing the command can be useful in case it contains
     a password in plain text.
-    """
-    if print_cmd:
-        loggerinst.debug("Calling command '%s'" % cmd)
 
-    # Python 2.6 has a bug in shlex that interprets certain characters in a string as
-    # a NULL character. This is a workaround that encodes the string to avoid the issue.
-    if sys.version_info[0] == 2 and sys.version_info[1] == 6:
-        cmd = cmd.encode("ascii")
-    cmd = shlex.split(cmd, False)
+    The cmd is specified as a list starting with the command and followed by a list of arguments.
+    Example: ["dnf", "repoquery", "kernel"]
+    """
+    # This check is here because we passed in strings in the past and changed to a list
+    # for security hardening.  Remove this once everyone is comfortable with using a list
+    # instead.
+    if isinstance(cmd, str):
+        raise TypeError("cmd should be a list, not a str")
+
+    if print_cmd:
+        loggerinst.debug("Calling command '%s'" % " ".join(cmd))
+
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -157,7 +161,7 @@ def run_subprocess(cmd="", print_cmd=True, print_output=True):
     return output, return_code
 
 
-def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
+def run_cmd_in_pty(cmd, print_cmd=True, print_output=True, columns=120):
     """Similar to run_subprocess(), but the command is executed in a pseudo-terminal.
 
     The pseudo-terminal can be useful when a command prints out a different output with or without an active terminal
@@ -175,15 +179,21 @@ def run_cmd_in_pty(cmd="", print_cmd=True, print_output=True, columns=120):
     :return: The output (combined stdout and stderr) and the return code of the executed command
     :rtype: tuple
     """
+    # This check is here because we passed in strings in the past and changed to a list
+    # for security hardening.  Remove this once everyone is comfortable with using a list
+    # instead.
+    if isinstance(cmd, str):
+        raise TypeError("cmd should be a list, not a str")
+
     if print_cmd:
-        loggerinst.debug("Calling command '%s'" % cmd)
+        loggerinst.debug("Calling command '%s'" % " ".join(cmd))
 
     class PexpectSizedWindowSpawn(pexpect.spawn):
         # https://github.com/pexpect/pexpect/issues/134
         def setwinsize(self, rows, cols):
             super(PexpectSizedWindowSpawn, self).setwinsize(0, columns)
 
-    process = PexpectSizedWindowSpawn(cmd, env={"LC_ALL": "C"}, timeout=None)
+    process = PexpectSizedWindowSpawn(cmd[0], cmd[1:], env={"LC_ALL": "C"}, timeout=None)
 
     # The setting of window size is super unreliable
     process.setwinsize(0, columns)
@@ -374,7 +384,7 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
 
     for nvra in pkgs_to_remove:
         loggerinst.info("Removing package: %s" % nvra)
-        _, ret_code = run_subprocess("rpm -e --nodeps %s" % nvra)
+        _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
             if critical:
                 loggerinst.critical("Error: Couldn't remove %s." % nvra)
@@ -393,21 +403,20 @@ def install_local_rpms(pkgs_to_install, replace=False, critical=True):
     if replace:
         cmd_param.append("--replacepkgs")
 
-    cmd = " ".join(cmd_param)
-    pkgs = " ".join(pkgs_to_install)
-
     loggerinst.info("Installing packages:")
     for pkg in pkgs_to_install:
         loggerinst.info("\t%s" % pkg)
 
-    output, ret_code = run_subprocess("%s %s" % (cmd, pkgs), print_output=False)
+    cmd = cmd_param + pkgs_to_install
+    output, ret_code = run_subprocess(cmd, print_output=False)
     if ret_code != 0:
+        pkgs_as_str = " ".join(pkgs_to_install)
         loggerinst.debug(output.strip())
         if critical:
-            loggerinst.critical("Error: Couldn't install %s packages." % pkgs)
+            loggerinst.critical("Error: Couldn't install %s packages." % pkgs_as_str)
             return False
 
-        loggerinst.warning("Couldn't install %s packages." % pkgs)
+        loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
         return False
 
     for path in pkgs_to_install:
@@ -449,25 +458,25 @@ def download_pkg(
     loggerinst.debug("Downloading the %s package." % pkg)
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
-    cmd = 'yumdownloader -v --destdir="%s"' % dest
+    cmd = ["yumdownloader", "-v", "--destdir=%s" % dest]
     if reposdir:
-        cmd += ' --setopt=reposdir="%s"' % reposdir
+        cmd.append("--setopt=reposdir=%s" % reposdir)
 
     if isinstance(disable_repos, list):
         for repo in disable_repos:
-            cmd += ' --disablerepo="%s"' % repo
+            cmd.append("--disablerepo=%s" % repo)
 
     if isinstance(enable_repos, list):
         for repo in enable_repos:
-            cmd += ' --enablerepo="%s"' % repo
+            cmd.append("--enablerepo=%s" % repo)
 
     if set_releasever and system_info.releasever:
-        cmd += " --releasever=%s" % system_info.releasever
+        cmd.append("--releasever=%s" % system_info.releasever)
 
     if system_info.version.major == 8:
-        cmd += " --setopt=module_platform_id=platform:el8"
+        cmd.append("--setopt=module_platform_id=platform:el8")
 
-    cmd += " %s" % pkg
+    cmd.append(pkg)
 
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:

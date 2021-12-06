@@ -109,7 +109,7 @@ def test__get_partition(monkeypatch, caplog, expected_res, directory, exception,
         assert grub._get_partition(directory) == expected_res
         assert len(caplog.records) == 0
     utils.run_subprocess.assert_called_once_with(
-        "/usr/sbin/grub2-probe --target=device %s" % directory, print_output=False
+        ["/usr/sbin/grub2-probe", "--target=device", directory], print_output=False
     )
 
 
@@ -132,7 +132,7 @@ def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, s
         assert grub._get_blk_device(device) == expected_res
 
     if subproc_called:
-        utils.run_subprocess.assert_called_once_with("lsblk -spnlo name %s" % device, print_output=False)
+        utils.run_subprocess.assert_called_once_with(["lsblk", "-spnlo", "name", device], print_output=False)
 
     else:
         utils.run_subprocess.assert_not_called()
@@ -157,7 +157,7 @@ def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subp
         assert grub._get_device_number(device) == expected_res
 
     if subproc_called:
-        utils.run_subprocess.assert_called_once_with("lsblk -spnlo MAJ:MIN %s" % device, print_output=False)
+        utils.run_subprocess.assert_called_once_with(["lsblk", "-spnlo", "MAJ:MIN", device], print_output=False)
     else:
         utils.run_subprocess.assert_not_called()
         assert len(caplog.records) == 0
@@ -453,7 +453,7 @@ def test_efibootinfo(
         assert current_bootnum in efibootinfo_obj.entries
 
     if subproc_called:
-        utils.run_subprocess.assert_called_once_with("/usr/sbin/efibootmgr -v", print_output=False)
+        utils.run_subprocess.assert_called_once_with(["/usr/sbin/efibootmgr", "-v"], print_output=False)
     else:
         utils.run_subprocess.assert_not_called()
 
