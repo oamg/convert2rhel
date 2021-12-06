@@ -133,3 +133,17 @@ discover+:
   - name: reboot machine
     how: ansible
     playbook: tests/ansible_collections/reboot.yml
+
+/language_test:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: set non english locale
+    how: shell
+    script: pytest -svv tests/integration/tier1/set-locale/use_non_english_language.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/activation_key.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml
