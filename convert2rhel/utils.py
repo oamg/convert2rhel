@@ -586,11 +586,13 @@ def get_rpm_header(rpm_path, _open=open):
 
 
 def set_locale():
-    """Set the POSIX default locale for the main process as well as the child processes.
+    """Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
 
     The reason is to get predictable output from the executables we call, not influenced by non-default locale.
+    We need to be setting not only LC_ALL but LANG as well because subscription-manager considers LANG to have priority
+    over LC_ALL even though it goes against POSIX which specifies that LC_ALL overrides LANG.
     """
-    os.environ.update({"LC_ALL": "C"})
+    os.environ.update({"LC_ALL": "C", "LANG": "C"})
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
