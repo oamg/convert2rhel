@@ -1,0 +1,11 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: false
+  #on ol7 there may be rhn-client-tols package present which prevents subscription-manager to be installed
+- include: remove_rhn_client_tools.yml
+  when: ansible_facts['distribution_major_version'] == "7" and ansible_facts['distribution'] == "OracleLinux"
+- include: install_submgr_from_ubi_7.yml
+  when: ansible_facts['distribution_major_version'] == "7"
+- include: install_submgr_from_centos_8.yml
+  when: ansible_facts['distribution_major_version'] == "8"

@@ -2,9 +2,6 @@ execute:
   how: tmt
 discover:
   how: fmf
-provision:
-  how: minute
-  image: 1MT-CentOS-8
 prepare:
   - name: main preparation step
     how: ansible
@@ -15,5 +12,4 @@ prepare:
     package: convert2rhel
     missing: fail
 environment-file:
-  - workaround.yaml
-  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/test-env-file/.workaround.yaml
+  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
