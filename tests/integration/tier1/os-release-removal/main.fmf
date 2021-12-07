@@ -1,0 +1,6 @@
+summary: os-release removal
+
+tier: 1
+
+test: |
+  pytest -svv

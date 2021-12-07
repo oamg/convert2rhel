@@ -42,3 +42,11 @@ discover+:
     when: distro != centos-8
   discover+:
     test: resolve-broken-ol8-rollback
+
+/backup_release:
+  discover+:
+    test: backup-release
+  prepare+:
+  - name: install subscription manager
+    how: ansible
+    playbook: tests/ansible_collections/roles/install-submgr/main.yml

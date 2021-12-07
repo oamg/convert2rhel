@@ -147,3 +147,17 @@ discover+:
   - name: reboot machine
     how: ansible
     playbook: tests/ansible_collections/reboot.yml
+
+/missing_os_release:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: remove os-relase
+    how: shell
+    script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/satellite.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/reboot.yml

@@ -1,0 +1,6 @@
+summary: variant help message
+
+tier: 0
+
+test: |
+  pytest -svv
