@@ -164,11 +164,14 @@ discover+:
 
 /yum_distro_sync:
   discover+:
-    test: yum-distro-sync
+    test: checks-after-conversion
   prepare+:
     - name: install problematic package
       how: shell
       script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
+    - name: main conversion preparation
+      how: shell
+      script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
     - name: reboot machine
       how: ansible
       playbook: tests/ansible_collections/reboot.yml
