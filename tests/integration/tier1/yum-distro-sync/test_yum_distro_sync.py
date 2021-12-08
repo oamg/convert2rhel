@@ -13,8 +13,8 @@ def test_yum_distro_sync(convert2rhel, shell):
         4) Do the same checks and conditions as is in convert2rhel/pkghandler.py in call_yum_cmd_w_downgrades.
 
     Another problem is, that yum behaves differently on Centos 7 and Centos 8
-        - on Centos 7 gives 0 and any error in both cases
-        - on Centos 8  gives 0 and any error if in list of packages for distro-sync is at least
+        - on Centos 7 returns 0 and any error in both cases
+        - on Centos 8  returns 0 and any error if in list of packages for distro-sync is at least
           one, which can be successfully distro synced. If all of the given cannot be synced, there
           is an error, which caused problems: https://issues.redhat.com/browse/OAMG-4600. But
           the error isn't in fact error, the package stays there
@@ -33,10 +33,11 @@ def test_yum_distro_sync(convert2rhel, shell):
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
-    out = shell("yum distro-sync cpaste zip")  # any error on Centos 7 and Centos 8
+    # any error on Centos 7 and Centos 8
+    out = shell("yum distro-sync cpaste zip")
     assert condition_test(out.output, out.returncode)
-
-    out = shell("yum distro-sync cpaste")  # an error on Centos 8, which should be skipped
+    # an error on Centos 8, which should be skipped
+    out = shell("yum distro-sync cpaste")
     assert condition_test(out.output, out.returncode)
 
     shell("subscription-manager unregister")
