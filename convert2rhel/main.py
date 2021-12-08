@@ -258,6 +258,7 @@ def rollback_changes():
     utils.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
+    redhatrelease.os_release_file.restore()
     special_cases.shim_x64_pkg_protection_file.restore()
     pkghandler.versionlock_file.restore()
     system_cert = cert.SystemCert()
