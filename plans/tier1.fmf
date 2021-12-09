@@ -166,6 +166,9 @@ discover+:
   discover+:
     test: checks-after-conversion
   prepare+:
+    - name: enable extras repo for Oracle Linux
+      how: ansible
+      playbook: tests/integration/tier1/yum-distro-sync/add-extras-repo/main.yml
     - name: install problematic package
       how: shell
       script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py

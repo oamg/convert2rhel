@@ -1,3 +1,5 @@
 summary: yum-distro-sync
 
+tier: 1
+
 test: pytest -svv

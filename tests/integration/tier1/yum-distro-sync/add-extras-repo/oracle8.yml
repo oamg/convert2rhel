@@ -1,0 +1,10 @@
+- hosts: all
+  tasks:
+    - name: Add CentOS extras repo to OL8
+      yum_repository:
+        name: centos8-extras
+        description: CentOS extras for $basearch
+        baseurl: http://mirror.centos.org/centos-8/8/extras/$basearch/os/
+        gpgcheck: no
+        enabled: yes
+        file: centos8-extras
