@@ -87,7 +87,7 @@ class SystemInfo(object):
         self.default_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
-        # Gets the release version of the Linux based system, see the docstring in the “get_releasever()”
+        # Value to use for substituting the $releasever variable in the url of RHEL repositories
         self.releasever = None
         # List of kmods to not inhbit the conversion upon when detected as not available in RHEL
         self.kmods_to_ignore = []
