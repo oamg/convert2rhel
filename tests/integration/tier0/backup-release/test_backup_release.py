@@ -1,14 +1,15 @@
+import os
 import platform
 
 from envparse import env
 
 
-def test_backup_os_release(shell, convert2rhel):
+def test_backup_os_release_no_envar(shell, convert2rhel):
     """
-    This test case renoves all the repos on the system and validates that
-    the /etc/os-release package is being backed up and restored during rollback.
-    Ref ticket: OAMG-5457. Note that after the test, the $releaserver
-    variable is unset.
+    In this scenario there is no variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` set.
+    This means the conversion is inhibited in early stage.
+    This test case removes all the repos on the system which prevents the backup of some files.
+    Satellite is being used in all of test cases.
     """
 
     # OL distros may not have wget installed
@@ -25,10 +26,35 @@ def test_backup_os_release(shell, convert2rhel):
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
-        ("--no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )
+    ) as c2r:
+        c2r.expect("set the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK.")
+        assert c2r.exitstatus != 0
+
+    assert shell("find /etc/os-release").returncode == 0
+
+
+def test_backup_os_release_with_envar(shell, convert2rhel):
+    """
+    In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.
+    This test case removes all the repos on the system and validates that
+    the /etc/os-release package is being backed up and restored during rollback.
+    Ref ticket: OAMG-5457. Note that after the test, the $releaserver
+    variable is unset.
+    """
+
+    assert shell("find /etc/os-release").returncode == 0
+
+    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+
+    with convert2rhel(
+        ("--no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+            env.str("SATELLITE_KEY"),
+            env.str("SATELLITE_ORG"),
+        ),
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
