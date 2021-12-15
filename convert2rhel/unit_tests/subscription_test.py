@@ -333,12 +333,42 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
-
         self.assertEqual(utils.remove_pkgs.called, 1)
 
+    @unit_tests.mock(logging.Logger, "info", LogMocked())
     @unit_tests.mock(os.path, "isdir", lambda x: True)
     @unit_tests.mock(os, "listdir", lambda x: ["filename"])
-    @unit_tests.mock(pkghandler, "call_yum_cmd", lambda a, args, enable_repos, disable_repos, set_releasever: (None, 1))
+    @unit_tests.mock(
+        pkghandler,
+        "call_yum_cmd",
+        lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 0),
+    )
+    @unit_tests.mock(pkghandler, "filter_installed_pkgs", DumbCallable())
+    @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
+    @unit_tests.mock(utils.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
+    @unit_tests.mock(subscription, "track_installed_submgr_pkgs", DumbCallable())
+    def test_install_rhel_subscription_manager(self):
+        subscription.install_rhel_subscription_manager()
+        self.assertEqual(pkghandler.get_pkg_names_from_rpm_paths.called, 1)
+        self.assertTrue("\nPackages installed:\n" in logging.Logger.info.msg)
+        self.assertEqual(subscription.track_installed_submgr_pkgs.called, 1)
+
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
+    @unit_tests.mock(os.path, "isdir", lambda x: True)
+    @unit_tests.mock(os, "listdir", lambda x: "")
+    @unit_tests.mock(subscription, "SUBMGR_RPMS_DIR", "")
+    def test_install_rhel_subscription_manager_without_packages(self):
+        subscription.install_rhel_subscription_manager()
+        self.assertTrue("No RPMs found" in logging.Logger.warning.msg)
+
+    @unit_tests.mock(os, "listdir", lambda x: [":w"])
+    @unit_tests.mock(
+        pkghandler,
+        "call_yum_cmd",
+        lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 1),
+    )
+    @unit_tests.mock(pkghandler, "filter_installed_pkgs", lambda x: ["test"])
+    @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", lambda x: ["test"])
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
 
@@ -543,3 +573,27 @@ def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, mon
             subscription.verify_rhsm_installed()
 
         assert critical_string in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("installed_pkgs", "not_tracked_pkgs", "skip_pkg_msg", "expected"),
+    (
+        (
+            ["pkg1", "pkg2", "pkg3"],
+            ["pkg3"],
+            "Skipping tracking previously installed package: pkg3",
+            "Tracking installed packages: ['pkg1', 'pkg2']",
+        ),
+        (["pkg1", "pkg2", "pkg3"], [], None, "Tracking installed packages: ['pkg1', 'pkg2', 'pkg3']"),
+    ),
+)
+def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_msg, expected, monkeypatch, caplog):
+    track_installed_pkgs_mock = mock.Mock()
+    monkeypatch.setattr(utils.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
+
+    subscription.track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs)
+
+    if skip_pkg_msg:
+        assert skip_pkg_msg in caplog.records[-2].message
+    assert expected in caplog.records[-1].message
+    assert track_installed_pkgs_mock.called == 1

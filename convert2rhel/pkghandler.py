@@ -933,3 +933,38 @@ def has_duplicate_repos_across_disablerepo_enablerepo_options():
             message += "\n%s" % repo
         message += "\nThis ambiguity may have unintended consequences."
         loggerinst.warning(message)
+
+
+def filter_installed_pkgs(pkg_names):
+    """Check if a package is present on the system based on a list of package names.
+
+    This function aims to act as a filter for a list of pkg_names to return wether or not a package is present on the
+    system.
+
+    :param pkg_names: List of package names
+    :type pkg_names: list[str]
+    :return: A list of packages that are present on the system.
+    :rtype: list[str]
+    """
+    rpms_present = []
+    for pkg in pkg_names:
+        # Check for already installed packages.
+        # If a package is installed, add it to a list which is returned.
+        if system_info.is_rpm_installed(pkg):
+            rpms_present.append(pkg)
+
+    return rpms_present
+
+
+def get_pkg_names_from_rpm_paths(rpm_paths):
+    """Return names of packages represented by locally stored rpm packages.
+
+    :param rpm_paths: List of rpm with filepaths.
+    :type rpm_paths: list[str]
+    :return: A list of package names extracted from the rpm filepath.
+    :rtype: list
+    """
+    pkg_names = []
+    for rpm_path in rpm_paths:
+        pkg_names.append(utils.get_package_name_from_rpm(rpm_path))
+    return pkg_names

@@ -48,13 +48,9 @@ discover+:
   discover+:
     test: releasever-as-mapping
 
-/resolve_broken_ol8_rollback:
-  # TODO this test is disabled for c7 until the OAMG-5455 is done
-  adjust:
-    enabled: false
-    when: distro != centos-8
+/check_rollback_handling:
   discover+:
-    test: resolve-broken-ol8-rollback
+    test: test-check-rollback-handling
 
 /backup_release:
   discover+:

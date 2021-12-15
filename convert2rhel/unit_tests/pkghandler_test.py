@@ -1660,3 +1660,28 @@ def test_find_pkg_names(output, message, expected_names):
 def test_find_pkg_names_no_names(output, message):
     """Test that find_pkg_names does not find any names in these outputs."""
     assert pkghandler.find_pkg_names(output, message) == set()
+
+
+@pytest.mark.parametrize(
+    (
+        "packages",
+        "expected",
+        "is_rpm_installed",
+    ),
+    (
+        (["package1", "package2"], [], False),
+        (["package1", "package2"], ["package1", "package2"], True),
+    ),
+)
+def test_filter_installed_pkgs(packages, expected, is_rpm_installed, monkeypatch):
+    monkeypatch.setattr(system_info, "is_rpm_installed", mock.Mock(return_value=is_rpm_installed))
+    assert pkghandler.filter_installed_pkgs(packages) == expected
+
+
+@pytest.mark.parametrize(
+    ("rpm_paths", "expected"),
+    ((["pkg1", "pkg2"], ["pkg1", "pkg2"]),),
+)
+def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
+    monkeypatch.setattr(utils, "get_package_name_from_rpm", lambda x: x)
+    assert pkghandler.get_pkg_names_from_rpm_paths(rpm_paths) == expected

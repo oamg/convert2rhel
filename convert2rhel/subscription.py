@@ -222,18 +222,29 @@ def remove_original_subscription_manager():
 
 
 def install_rhel_subscription_manager():
-    loggerinst.info("Installing subscription-manager RPMs.")
+    loggerinst.info("Checking for subscription-manager RPMs.")
     rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
 
     if not rpms_to_install:
-        loggerinst.warn("No RPMs found in %s." % SUBMGR_RPMS_DIR)
+        loggerinst.warning("No RPMs found in %s." % SUBMGR_RPMS_DIR)
         return
 
+    # These functions have to be called before installation of the
+    # subscription-manager packages, otherwise
+    # `pkghandler.filter_installed_pkgs()` would return every single package
+    # that is listed in `rpms_to_install` and we don't want this to happen. We
+    # want to know about the packages that were installed before the
+    # installation of subscription-manager.
+    pkg_names = pkghandler.get_pkg_names_from_rpm_paths(rpms_to_install)
+    pkgs_to_not_track = pkghandler.filter_installed_pkgs(pkg_names)
+
+    loggerinst.info("Installing subscription-manager RPMs.")
     _, ret_code = pkghandler.call_yum_cmd(
         # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
         # and we need these packages to be replaced with the provided RPMs from RHEL.
-        "install",
+        command="install",
         args=rpms_to_install,
+        print_output=True,
         # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
         # the repos that are available on the system
         enable_repos=[],
@@ -243,19 +254,30 @@ def install_rhel_subscription_manager():
     )
     if ret_code:
         loggerinst.critical("Failed to install subscription-manager packages. See the above yum output for details.")
-    else:
-        loggerinst.info("Packages installed:\n%s" % "\n".join(rpms_to_install))
-        pkg_names = get_installed_submgr_pkg_names(rpms_to_install)
-        utils.changed_pkgs_control.track_installed_pkgs(pkg_names)
-        loggerinst.debug("Tracking installed packages: %r" % pkg_names)
+
+    loggerinst.info("\nPackages installed:\n%s" % "\n".join(rpms_to_install))
+
+    track_installed_submgr_pkgs(pkg_names, pkgs_to_not_track)
 
 
-def get_installed_submgr_pkg_names(rpm_paths):
-    """Return names of packages represented by locally stored rpm packages."""
-    pkg_names = []
-    for rpm_path in rpm_paths:
-        pkg_names.append(utils.get_package_name_from_rpm(rpm_path))
-    return pkg_names
+def track_installed_submgr_pkgs(installed_pkg_names, pkgs_to_not_track):
+    """Tracking newly installed subscription-manager pkgs to be able to remove them during a rollback if needed.
+
+    :param installed_pkg_names: List of packages that were installed on the system.
+    :type installed_pkg_names: list[str]
+    :param pkgs_to_not_track: List of packages that needs to be removed from tracking.
+    :type pkgs_to_not_track: list[str]
+    """
+    pkgs_to_track = []
+    for installed_pkg in installed_pkg_names:
+        if installed_pkg not in pkgs_to_not_track:
+            pkgs_to_track.append(installed_pkg)
+        else:
+            # Don't track packages that were present on the system before the installation
+            loggerinst.debug("Skipping tracking previously installed package: %s" % installed_pkg)
+
+    loggerinst.debug("Tracking installed packages: %r" % pkgs_to_track)
+    utils.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
 
 
 def attach_subscription():

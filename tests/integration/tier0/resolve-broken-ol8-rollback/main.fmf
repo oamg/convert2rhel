@@ -1,5 +1,0 @@
-summary: inhibit-if-oracle-system-uses-not-standard-kernel
-
-tier: 0
-
-test: pytest -svv
