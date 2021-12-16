@@ -205,16 +205,15 @@ class SystemInfo(object):
         return self._get_cfg_opt("repofile_pkgs").split()
 
     def _get_releasever(self):
-        """Releasever is used to referance the Version of Oracle Linux or Centos
-        to a variable to be converted to when going through the conversion that will
-        be put in a repo baseurl. By default the RELEASE_VER_MAPPING is used but if it
-        the var can’t be found then the releasever will be used, to find the version
-        specific config files in the convert2rhel/convert2rhel/data .
-
+        """
         Get the release version to be passed to yum through --releasever.
 
-        The default value is hardcoded in the RELEASE_VER_MAPPING but it can be
-        overridden by the user by specifying it in the config file.
+        Releasever is used to figure out the version of RHEL that is to be used
+        for the conversion, passing the releasever var to yum to it’s --releasever
+        option when accessing RHEL repos in the conversion. By default, the value is found by mapping
+        from the current distro's version to a compatible version of RHEL via the RELEASE_VER_MAPPING.
+        This can be overridden by the user by specifying it in the config file. The version specific
+        config files are located in convert2rhel/convert2rhel/data.
         """
         releasever_cfg = self._get_cfg_opt("releasever")
         try:
