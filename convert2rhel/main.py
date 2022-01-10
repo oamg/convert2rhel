@@ -79,6 +79,9 @@ def main():
         loggerinst.task("Prepare: Show Red Hat software EULA")
         show_eula()
 
+        loggerinst.task("Prepare: Clean yum cache metadata")
+        pkghandler.clean_yum_metadata()
+
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
@@ -88,6 +91,7 @@ def main():
         pkghandler.clear_versionlock()
 
         # check the system prior the conversion (possible inhibit)
+        loggerinst.task("Prepare: Perform basic system checks")
         checks.perform_pre_checks()
 
         # backup system release file before starting conversion process

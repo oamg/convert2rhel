@@ -1940,3 +1940,12 @@ def test_filter_installed_pkgs(packages, expected, is_rpm_installed, monkeypatch
 def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
     monkeypatch.setattr(utils, "get_package_name_from_rpm", lambda x: x)
     assert pkghandler.get_pkg_names_from_rpm_paths(rpm_paths) == expected
+
+
+@pytest.mark.parametrize(
+    ("ret_code", "expected"), ((0, "Cached yum metadata cleaned successfully."), (1, "Failed to clean yum metadata"))
+)
+def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
+    monkeypatch.setattr(pkghandler, "call_yum_cmd", value=mock.Mock(return_value=("Test", ret_code)))
+    pkghandler.clean_yum_metadata()
+    assert expected in caplog.records[-1].message
