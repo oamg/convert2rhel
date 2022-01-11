@@ -254,7 +254,9 @@ class EFIBootInfo(object):
     def _parse_efi_boot_entries(self, bootmgr_output):
         """Return dict of UEFI boot loader entries: {"<boot_number>": EFIBootLoader}"""
         self.entries = {}
-        regexp_entry = re.compile(r"^Boot(?P<bootnum>[0-9]+)(?P<active>\*?)\s*(?P<label>.*?)\t(?P<bin_source>.*)$")
+        regexp_entry = re.compile(
+            r"^Boot(?P<bootnum>[a-zA-Z0-9]+)(?P<active>\*?)\s*(?P<label>.*?)\t(?P<bin_source>.*)$"
+        )
         for line in bootmgr_output.splitlines():
             match = regexp_entry.match(line)
             if not match:
