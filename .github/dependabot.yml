@@ -9,6 +9,6 @@ updates:
 
   # Maintain dependencies for pip
   - package-ecosystem: "pip"
-    directory: "requirements/"
+    directory: "/"
     schedule:
       interval: "weekly"
