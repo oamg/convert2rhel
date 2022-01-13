@@ -90,6 +90,13 @@ discover+:
     playbook: tests/ansible_collections/reboot.yml
 
 /resolve_dependency:
+  # There is no dependecy package for Oracle Linux 8
+  adjust:
+    enabled: false
+    when: >
+      distro != oraclelinux-7 and
+      distro != centos-7 and
+      distro != centos-8
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -108,7 +115,7 @@ discover+:
     enabled: false
     when: >
       distro != centos-7 and
-      distro != oracle-7
+      distro != oraclelinux-7
   discover+:
     test: checks-after-conversion
   prepare+:

@@ -7,6 +7,8 @@ def test_satellite_conversion(shell, convert2rhel):
     # Remove subscription manager if installed
     assert shell("yum remove subscription-manager -y").returncode == 0
 
+    assert shell("yum install wget -y").returncode == 0
+
     # Install katello package
     pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
     pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"

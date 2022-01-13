@@ -44,8 +44,9 @@ jobs:
         distros: [centos-7]
       epel-8-x86_64:
         distros: [centos-8]
-      # TODO enable when OL7/8 images are working in artemis
-      #oraclelinux-7-x86_64: {}
-      #oraclelinux-8-x86_64: {}
+      oraclelinux-7-x86_64:
+        distros: [oraclelinux-7]
+      oraclelinux-8-x86_64:
+        distros: [oraclelinux-8]
     use_internal_tf: True
   trigger: pull_request

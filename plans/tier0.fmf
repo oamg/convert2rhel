@@ -14,7 +14,7 @@ discover+:
     enabled: false
     when: >
       distro != centos-7 and
-      distro != oracle-8
+      distro != oraclelinux-8
   discover+:
     test: check-variant-message
 
@@ -26,8 +26,12 @@ discover+:
   adjust:
     enabled: false
     when: >
-      distro != oracle-7 and
-      distro != oracle-8
+      distro != oraclelinux-7 and
+      distro != oraclelinux-8
+  prepare+:
+    - name: install unsupported unbreakable kernel
+      how: ansible
+      playbook: tests/integration/tier0/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/install_unbreakable_kernel.yml
   discover+:
     test: inhibit-if-oracle-system-uses-not-standard-kernel
 
