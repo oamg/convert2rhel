@@ -1,4 +1,4 @@
-pylint==2.6.0
+pylint==2.12.2
 astroid==2.4.2
 pytest==6.2.1
 pytest-cov==3.0.0

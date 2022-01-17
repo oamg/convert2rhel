@@ -1,4 +1,4 @@
-pylint==1.1.0
+pylint==2.12.2
 astroid==1.2
 unittest2==0.5.1
 pytest==3.2.5
