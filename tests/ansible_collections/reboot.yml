@@ -1,6 +1,26 @@
 ---
 - hosts: all
   tasks:
-    - name: Reboot into RHEL
-      reboot:
-        reboot_timeout: 600
+    - name: Handle the reboot
+      block:
+      - name: Reboot the machine
+        reboot:
+          reboot_timeout: 600
+      - name: Force a failure
+        ansible.builtin.command: /bin/false
+      #always:
+      #- name: find the name of working directory
+      #  shell: ls
+      #  register: ls_output
+
+      #- debug: var=ls_output.stdout
+
+      #- name: copy to work-dir
+      #  shell: cp /var/log/messages /var/ARTIFACTS/{{ ls_output.stdout }}
+
+      # other option?
+      #- name: save log files
+      #  ansible.builtin.fetch:
+      #    src: /var/log/messages
+      #    dest: ./
+      #    flat: yes
