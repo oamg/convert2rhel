@@ -225,3 +225,68 @@ For building the copr locally, you will need:
 ```bash
 make copr-build
 ```
+
+### Avoiding calling yum API in some specific cases
+
+We found out a bug that happened during the handling of a SIGINT
+signal (or pressing CTRL + C), the problem was caused when a user pressed those
+combination of keys during any step of the conversion before the point of no
+return, thus, starting the process of rollback and failing in the first call
+`yum` call to check wether or not some packages were installed on the system.
+
+The problem is that when we enter in that state of rollback after a SIGINT,
+`librpm` is handling the signal on their code (without any possibility to
+change this) and when the librpm detects that a SIGINT was raised, it
+understands that the execution of process should stop and a exit code 1 is sent
+to the user. One way to bypass that is not calling `yum` methods that actually
+trigger `librpm` in the process, instead, prefer calling the `yum` binary or
+any other binary that achieve the same output you desire. The reason for this
+change is that `librpm` won't trigger their handling of SIGINT if we call the
+binary directly with `call_yum_cmd` or `run_subporcess` for example, as it
+understands it's a new process and that process wasn't in the middle of the
+SIGINT raising.
+
+For example, checkout the
+[PR#411](https://github.com/oamg/convert2rhel/pull/411/files#diff-51e9ff11d39778d3b26778b293fc350430a82e2feed0dab2938da7c0069ffdc6R84)
+that introduced the change, as well, some exaplantion on why the code was
+changed from calling the yum API to calling the `rpm` command.
+
+Another example is this minimal code reproduction from
+[@abadger](https://github.com/abadger) where you can see the issue.
+
+And lastly, here's a reference ticket that originated this issue
+[OAMG-5756](https://issues.redhat.com/browse/OAMG-5756).
+
+```python
+#!/usr/bin/python2 -tt
+import time
+from yum import YumBase
+from rpmUtils.miscutils import checkSignals
+
+yb = YumBase()
+try:
+    #yb.doConfigSetup(init_plugins=False)
+    yb.runTransaction(False)
+except (BaseException, SystemExit, Exception) as e:
+    print('We were able to catch an exception from runTransaction!')
+    print(type(e))
+    print(e)
+print('Sleeping')
+time.sleep(3)
+# Hit Ctrl-C
+# If KeyboardInterrupt is raised, chances are that this did not cause the
+# problem
+try:
+    checkSignals()
+except (BaseException, SystemExit, Exception) as e:
+    print('We were able to catch an exception from checkSignals!')
+    print(type(e))
+    print(e)
+finally:
+    print('In the finally block')
+# If the previous try: except  exits immediately without message, then the
+# issue occurred.
+# If it raises a KeyboardInterrupt traceback then we're okay.
+# If it prints out anything then we're either okay or encountering a different
+# behaviour.
+```

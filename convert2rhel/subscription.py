@@ -81,8 +81,16 @@ def unregister_system():
         loggerinst.info("Skipping due to the use of --keep-rhsm.")
         return
 
-    submgr_installed = pkghandler.get_installed_pkg_objects("subscription-manager")
-    if not submgr_installed:
+    # We are calling run_subprocess with rpm here because of a bug in
+    # Oracle/CentOS Linux 7 in which the process always exit with 1 in case of a
+    # rollback when KeyboardInterrupt is raised, so, to avoid many changes and
+    # different conditionals, we are doing a simple call for rpm to verify if
+    # subscription-manager is installed on the system.  This is the current line
+    # on `rpm` that causes the process to exit with any interaction with the yum
+    # library
+    # https://github.com/rpm-software-management/rpm/blob/rpm-4.11.x/lib/rpmdb.c#L640
+    _, ret_code = utils.run_subprocess(["rpm", "--quiet", "-q", "subscription-manager"])
+    if ret_code != 0:
         loggerinst.info("The subscription-manager package is not installed.")
         return
     unregistration_cmd = ["subscription-manager", "unregister"]
@@ -106,8 +114,12 @@ def register_system():
             attempt_msg = "Attempt %d of %d: " % (attempt + 1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
         loggerinst.info("%sRegistering the system using subscription-manager ...", attempt_msg)
 
-        ret_code = call_registration_cmd(registration_cmd)
+        output, ret_code = call_registration_cmd(registration_cmd)
         if ret_code == 0:
+            # Handling a signal interrupt that was previously handled by
+            # subscription-manager.
+            if "user interrupted process" in output.lower():
+                raise KeyboardInterrupt
             return
         loggerinst.info("System registration failed with return code = %s" % str(ret_code))
         if tool_opts.credentials_thru_cli:
@@ -176,8 +188,7 @@ def get_registration_cmd():
 def call_registration_cmd(registration_cmd):
     """Wrapper for run_subprocess that avoids leaking password in the log."""
     loggerinst.debug("Calling command '%s'" % hide_password(" ".join(registration_cmd)))
-    _, ret_code = utils.run_subprocess(registration_cmd, print_cmd=False)
-    return ret_code
+    return utils.run_subprocess(registration_cmd, print_cmd=False)
 
 
 def hide_password(cmd):

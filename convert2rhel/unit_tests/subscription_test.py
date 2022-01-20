@@ -28,8 +28,7 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkghandler, subscription, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-
-from . import GetLoggerMocked
+from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -74,6 +73,14 @@ class TestSubscription(unittest.TestCase):
     class GetRegistrationCmdMocked(unit_tests.MockFunction):
         def __call__(self):
             return "subscription-manager register whatever-options"
+
+    class CallRegistrationCmdMocked(unit_tests.MockFunction):
+        def __init__(self, cmd):
+            self.cmd = cmd
+
+        def __call__(self, cmd):
+            self.cmd = cmd
+            return ("User interrupted process.", 0)
 
     class RunSubprocessMocked(unit_tests.MockFunction):
         def __init__(self, tuples=None):
@@ -241,6 +248,11 @@ class TestSubscription(unittest.TestCase):
         subscription.register_system()
         self.assertEqual(utils.run_subprocess.called, 3)
         self.assertEqual(len(subscription.logging.getLogger.critical_msgs), 0)
+
+    @unit_tests.mock(subscription, "get_registration_cmd", GetRegistrationCmdMocked())
+    @unit_tests.mock(subscription, "call_registration_cmd", CallRegistrationCmdMocked("cmd"))
+    def test_register_system_fail_with_keyboardinterrupt(self):
+        self.assertRaises(KeyboardInterrupt, subscription.register_system)
 
     def test_hiding_password(self):
         test_cmd = "subscription-manager register --force " '--username=jdoe --password="%s" --org=0123'
@@ -488,37 +500,49 @@ def test_download_rhsm_pkgs(version, downloaded_pkgs, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("submgr_installed", "unregistration_failure"),
-    (
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False),
-    ),
+    ("output", "ret_code", "expected"),
+    (("", 0, "System unregistered successfully."), ("Failed to unregister.", 1, "System unregistration failed")),
 )
-def test_unregister_system(submgr_installed, unregistration_failure, monkeypatch, caplog):
-    if unregistration_failure:
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("output", 1)))
-    else:
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("output", 0)))
+def test_unregister_system(output, ret_code, expected, monkeypatch, caplog):
+    submgr_command = ("subscription-manager", "unregister")
+    rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
 
-    if submgr_installed:
-        monkeypatch.setattr(
-            pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")]
-        )
-    else:
-        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda _: None)
+    # Mock rpm command
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (
+                submgr_command,
+                (
+                    output,
+                    ret_code,
+                ),
+            ),
+            (rpm_command, ("", 0)),
+        ),
+    )
+    monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
 
     subscription.unregister_system()
 
-    if submgr_installed:
-        utils.run_subprocess.assert_called_once()
-        if unregistration_failure:
-            assert "System unregistration failed" in caplog.text
-        else:
-            assert "System unregistered successfully." in caplog.text
-    else:
-        assert "The subscription-manager package is not installed." in caplog.text
+    assert expected in caplog.records[-1].message
+
+
+def test_unregister_system_submgr_not_found(monkeypatch, caplog):
+    rpm_command = "rpm --quiet -q subscription-manager"
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            ((rpm_command,), ("", 1)),
+        )
+    )
+    monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
+    subscription.unregister_system()
+    assert "The subscription-manager package is not installed." in caplog.records[-1].message
+
+
+def test_unregister_system_keep_rhsm(monkeypatch, caplog):
+    monkeypatch.setattr(tool_opts, "keep_rhsm", value=True)
+    subscription.unregister_system()
+    assert "Skipping due to the use of --keep-rhsm." in caplog.records[-1].message
 
 
 @mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
@@ -559,7 +583,9 @@ def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, mon
 
     if submgr_installed:
         monkeypatch.setattr(
-            pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")]
+            pkghandler,
+            "get_installed_pkg_objects",
+            lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")],
         )
 
         subscription.verify_rhsm_installed()
