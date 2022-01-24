@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import os
 import unittest
 
@@ -23,7 +22,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests
+from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests, utils
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
@@ -90,7 +89,22 @@ REPOQUERY_L_STUB_BAD = (
 )
 
 
+@pytest.fixture
+def convert2rhel_latest_version_test(monkeypatch, tmpdir, request):
+    marker = request.param
+    monkeypatch.setattr(checks, "convert2rhel_version", marker["local_version"])
+
+    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(marker["package_version"], 0))
+
+    monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
+    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(marker["pmajor"], 0))
+    monkeypatch.setattr(utils, "TMP_DIR", str(tmpdir))
+
+    return marker["local_version"], marker["package_version"]
+
+
 def test_perform_pre_checks(monkeypatch):
+    check_convert2rhel_latest_mock = mock.Mock()
     check_thirdparty_kmods_mock = mock.Mock()
     check_efi_mock = mock.Mock()
     check_readonly_mounts_mock = mock.Mock()
@@ -99,6 +113,11 @@ def test_perform_pre_checks(monkeypatch):
     check_package_updates_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
 
+    monkeypatch.setattr(
+        checks,
+        "check_convert2rhel_latest",
+        value=check_convert2rhel_latest_mock,
+    )
     monkeypatch.setattr(
         checks,
         "check_efi",
@@ -134,6 +153,7 @@ def test_perform_pre_checks(monkeypatch):
 
     checks.perform_pre_checks()
 
+    check_convert2rhel_latest_mock.assert_called_once()
     check_thirdparty_kmods_mock.assert_called_once()
     check_efi_mock.assert_called_once()
     check_readonly_mounts_mock.assert_called_once()
@@ -151,6 +171,105 @@ def test_pre_ponr_checks(monkeypatch):
     )
     checks.perform_pre_ponr_checks()
     ensure_compatibility_of_kmods_mock.assert_called_once()
+
+
+def test_repoquery__failure(caplog, monkeypatch, tmpdir, request):
+    repoquery_output = " error message"
+    return_code = 1
+    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(repoquery_output, return_code))
+
+    monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
+    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
+    monkeypatch.setattr(utils, "TMP_DIR", str(tmpdir))
+
+    checks.check_convert2rhel_latest()
+
+    log_msg = "Couldn't check if this is the latest version of convert2rhel\n" "repoquery failed %s, %s" % (
+        return_code,
+        repoquery_output,
+    )
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    ([{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],),
+    indirect=True,
+)
+def test_convert2rhel_latest_out_of_date_el6(caplog, convert2rhel_latest_version_test):
+    checks.check_convert2rhel_latest()
+
+    local_version, dummy_ = convert2rhel_latest_version_test
+    log_msg = (
+        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
+        "Only the latest version is supported for conversion." % (local_version)
+    )
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    (
+        [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],
+        [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "8"}],
+    ),
+    indirect=True,
+)
+def test_convert2rhel_latest_log_check_exit(caplog, convert2rhel_latest_version_test):
+    with pytest.raises(SystemExit):
+        checks.check_convert2rhel_latest()
+    local_version, dummy_ = convert2rhel_latest_version_test
+
+    log_msg = (
+        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
+        "Only the latest version is supported for conversion. If you want to ignore this you can set 'CONVERT2RHEL_UNSUPPORTED_VERSION' to continue"
+        % (local_version)
+    )
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    (
+        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6", "enset": "1"}],
+        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7", "enset": "1"}],
+        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "8", "enset": "1"}],
+    ),
+    indirect=True,
+)
+def test_convert2rhel_latest_log_check_env(caplog, monkeypatch, convert2rhel_latest_version_test):
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_VERSION": "1"})
+    checks.check_convert2rhel_latest()
+
+    local_version, dummy_ = convert2rhel_latest_version_test
+    log_msg = (
+        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
+        "'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion" % (local_version)
+    )
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    (
+        [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "6"}],
+        [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "7"}],
+        [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "8"}],
+        [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "6"}],
+        [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "7"}],
+        [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "8"}],
+    ),
+    indirect=True,
+)
+def test_c2r_up_to_date(caplog, monkeypatch, convert2rhel_latest_version_test):
+    checks.check_convert2rhel_latest()
+
+    local_version, dummy_ = convert2rhel_latest_version_test
+    log_msg = (
+        "You are currently running %s and the latest version of convert2rhel is 0.17.\n"
+        "Continuing conversion." % (local_version,)
+    )
+    assert log_msg in caplog.text
 
 
 @pytest.mark.parametrize(
