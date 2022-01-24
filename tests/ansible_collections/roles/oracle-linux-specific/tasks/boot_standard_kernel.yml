@@ -5,7 +5,7 @@
     state: latest
 
 - name: Get installed kernel version
-  shell: rpm -q --last kernel | head -1 |  gawk 'match($0, /kernel-(.+) \s+.+/, s) {print s[1]}'
+  shell: rpm -q --last kernel | head -1 | cut -d " " -f1 | sed 's/kernel-//'
   register: kernel_ver
 
 - name: Set default kernel to Red Hat compatible kernel

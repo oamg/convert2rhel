@@ -8,7 +8,7 @@
         state: latest
 
     - name: Get installed kernel version
-      shell: rpm -q --last kernel-uek | head -1 |  gawk 'match($0, /kernel-uek-(.+) \s+.+/, s) {print s[1]}'
+      shell: rpm -q --last kernel-uek | head -1 | cut -d " " -f1 | sed 's/kernel-uek-//'
       register: kernel_ver
 
     - name: Set default kernel to the unbreakable kernel
