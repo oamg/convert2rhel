@@ -25,6 +25,15 @@ from convert2rhel import systeminfo, utils
 
 logger = logging.getLogger(__name__)
 
+GRUB2_BIOS_ENTRYPOINT = "/boot/grub2"
+"""The entrypoint path of the BIOS GRUB2"""
+
+GRUB2_BIOS_CONFIG_FILE = os.path.join(GRUB2_BIOS_ENTRYPOINT, "grub.cfg")
+"""The path to the configuration file for GRUB2 in BIOS"""
+
+GRUB2_BIOS_ENV_FILE = os.path.join(GRUB2_BIOS_ENTRYPOINT, "grubenv")
+"""The path to the env file for GRUB2 in BIOS"""
+
 EFI_MOUNTPOINT = "/boot/efi/"
 """The path to the required mountpoint for ESP."""
 
@@ -570,6 +579,56 @@ def post_ponr_set_efi_configuration():
         _replace_efi_boot_entry()
     except BootloaderError as e:
         _log_critical_error(e.message)
+
+
+def update_grub_after_conversion():
+    """Update GRUB2 images and config after conversion.
+
+    This is mainly a protective measure to prevent issues in case the original distribution GRUB2 tooling
+    generates images that expect different format of a config file. To be on the safe side we
+    rather re-generate the GRUB2 config file and install the GRUB2 image.
+    We opted for doing that only for GRUB2 and not for GRUB Legacy intentionally for the reason of
+    RHEL 6 having transitioned to the Extended Life-cycle Support phase.
+    """
+
+    if systeminfo.system_info.version.major == 6:
+        logger.warning(
+            "Convert2RHEL does not install updated GRUB Legacy bootloader image on RHEL 6. Install the image manually "
+            "by following https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/sect-grub-installing."
+        )
+        return
+
+    utils.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
+    utils.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()
+
+    grub2_config_file = GRUB2_BIOS_CONFIG_FILE if not is_efi() else os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
+
+    output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False)
+    logger.debug("Output for grub2-mkconfig %s" % output)
+
+    if ret_code != 0:
+        logger.warning("GRUB2 config file generation failed.")
+        return
+
+    if not is_efi():
+        # We don't need to call `grub2-install` in EFI systems because the image change is already being handled
+        # by grub itself. We only need to regenerate the grub.cfg file in order to make it work.
+        # And this can be done by calling the `grub2-mkconfig` or reinstalling some packages
+        # as we are already calling `grub2-mkconfig` before of this step, then it's not necessary
+        # to proceed and call it a second time.
+        # Relevant bugzilla for this: https://bugzilla.redhat.com/show_bug.cgi?id=1917213
+        logger.debug("Detected BIOS setup, proceeding to install the new GRUB2 images.")
+        blk_device = get_grub_device()
+        logger.debug("Got device '%s'" % blk_device)
+
+        output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-install", blk_device], print_output=False)
+        logger.debug("Output for grub2-install %s" % output)
+
+        if ret_code != 0:
+            logger.warning("Couldn't install the new images with GRUB2.")
+            return
+
+    logger.info("Successfully updated GRUB2 on the system.")
 
 
 def _log_critical_error(title):
