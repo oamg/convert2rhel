@@ -18,10 +18,13 @@
 import copy
 import os
 
+from collections import namedtuple
+
 import pytest
 import six
 
 from convert2rhel import grub, utils
+from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.checks_test import EFIBootInfoMocked
 
 
@@ -476,6 +479,7 @@ def test__is_rhel_in_boot_entries(efi_bin_path, label, expected_ret_val):
 )
 def test__add_rhel_boot_entry(efi_file_exists, exc, exc_msg, rhel_entry_exists, subproc, log_msg, monkeypatch, caplog):
     monkeypatch.setattr("convert2rhel.grub._get_device_number", mock.Mock(return_value={"major": 252, "minor": 1}))
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major", "minor"])(8, 5))
     monkeypatch.setattr("convert2rhel.grub.get_efi_partition", mock.Mock(return_value="/dev/sda"))
     monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
     monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_file_exists))
@@ -538,3 +542,63 @@ def test__remove_orig_boot_entry(
     assert log_msg in caplog.records[-1].message
     if not orig_removed and not curr_boot_label and not pxe_orig_efi_bin and not efi_bin_exists:
         utils.run_subprocess.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("releasever_major", "is_efi", "config_path", "grub2_mkconfig_exit_code", "grub2_install_exit_code", "expected"),
+    (
+        (8, True, "/boot/efi/EFI/redhat/grub.cfg", 0, 0, "Successfully updated GRUB2 on the system."),
+        (8, False, "/boot/grub2/grub.cfg", 0, 0, "Successfully updated GRUB2 on the system."),
+        (7, False, "/boot/grub2/grub.cfg", 0, 1, "Couldn't install the new images with GRUB2."),
+        (7, False, "/boot/grub2/grub.cfg", 1, 1, "GRUB2 config file generation failed."),
+        (
+            6,
+            False,
+            "/boot/grub/grub.conf",
+            1,
+            1,
+            "Convert2RHEL does not install updated GRUB Legacy bootloader image on RHEL 6.",
+        ),
+    ),
+)
+def test_update_grub_after_conversion(
+    releasever_major,
+    is_efi,
+    config_path,
+    grub2_mkconfig_exit_code,
+    grub2_install_exit_code,
+    expected,
+    monkeypatch,
+    caplog,
+):
+    monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr(
+        "convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major"])(releasever_major)
+    )
+    run_subprocess_mocked = mock.Mock(
+        spec=utils.run_subprocess,
+        side_effect=run_subprocess_side_effect(
+            (
+                (
+                    "/usr/sbin/grub2-mkconfig",
+                    "-o",
+                    "%s" % config_path,
+                ),
+                (
+                    "output",
+                    grub2_mkconfig_exit_code,
+                ),
+            ),
+            (("/usr/sbin/grub2-install", "/dev/sda"), ("output", grub2_install_exit_code)),
+        ),
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mocked,
+    )
+
+    grub.update_grub_after_conversion()
+    if expected is not None:
+        assert expected in caplog.records[-1].message
