@@ -4,4 +4,4 @@ unittest2==0.5.1
 pytest==3.2.5
 mock==2.0.0
 pytest-catchlog==1.2.2
-pathlib2==2.3.5
+pathlib2==2.3.6
