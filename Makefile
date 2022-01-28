@@ -18,6 +18,7 @@ PIP ?= pip3
 VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
 SHOW_CAPTURE ?= no
+PYTEST_ARGS ?=
 
 # Let the user specify DOCKER at the CLI, otherwise try to autodetect a working podman or docker
 ifndef DOCKER
@@ -49,7 +50,7 @@ install: .install .images .env .pre-commit
 	cp .env.example .env
 
 tests-locally: install
-	. $(VENV)/bin/activate; pytest
+	. $(VENV)/bin/activate; pytest $(PYTEST_ARGS)
 
 lint-locally: install
 	. $(VENV)/bin/activate; ./scripts/run_lint.sh
@@ -79,11 +80,11 @@ tests: tests7 tests8
 
 tests7: images
 	@echo 'CentOS Linux 7 tests'
-	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE)
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
 
 tests8: images
 	@echo 'CentOS Linux 8 tests'
-	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE)
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
 
 rpms: images
 	mkdir -p .rpms
