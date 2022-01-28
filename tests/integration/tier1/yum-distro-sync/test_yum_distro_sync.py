@@ -44,7 +44,7 @@ def test_yum_distro_sync(convert2rhel, shell):
 
 
 def condition_test(output, ret_code):
-    """__ THE SAME__ conditions as in convert2rhel/pkghandler.py are. Just small change -
+    """__THE SAME__ conditions as in convert2rhel/pkghandler.py are. Just small change -
     they returns True or False depending on success or not."""
 
     if ret_code == 0:

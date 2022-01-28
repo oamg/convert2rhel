@@ -37,7 +37,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     # check that packages still are in place
     assert shell("rpm -qi usermode").returncode == 0
     assert shell("rpm -qi rhn-setup").returncode == 0
-    if platform.platform().find("centos-7") != -1:
+    if "centos-7" in platform.platform():
         assert shell("rpm -qi centos-release").returncode == 0
-    elif platform.platform().find("centos-8") != -1:
+    elif "centos-8" in platform.platform():
         assert shell("rpm -qi centos-linux-release").returncode == 0

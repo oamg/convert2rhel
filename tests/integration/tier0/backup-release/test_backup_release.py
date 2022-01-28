@@ -60,8 +60,8 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
         c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
-        # On OracleLinux there is one question less than on Centos
-        if platform.platform().find("oracle-8") < 0:
+        # On OracleLinux8 there is one question less than on other distros
+        if "oracle-8" not in platform.platform():
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
         c2r.expect("The tool allows rollback of any action until this point.")
