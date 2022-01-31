@@ -117,7 +117,7 @@ make tests7
 make tests8
 ```
 
-If you're willing to pass extra arguments for the pytest execution inside the container
+If you want to pass extra arguments for the pytest execution inside the container
 you can do so by just using the variable `PYTEST_ARGS` after the make command you
 are trying to use, like this:
 
