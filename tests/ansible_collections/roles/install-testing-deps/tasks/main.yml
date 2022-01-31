@@ -9,9 +9,13 @@
   ignore_errors: True
   register: pip_command
 
-- name: Install pip if not present
+- name: Install pip on rhel7 like systems if not present
+  shell: curl https://bootstrap.pypa.io/pip/3.6/get-pip.py | python3
+  when: pip_command.stderr and ansible_facts['distribution_major_version'] == "7"
+
+- name: Install pip on rhel8 like systems if not present
   shell: curl https://bootstrap.pypa.io/pip/get-pip.py | python3
-  when: pip_command.stderr
+  when: pip_command.stderr and ansible_facts['distribution_major_version'] == "8"
 
 - name: Install pytest framework dependencies
   pip:
