@@ -4,7 +4,7 @@ ENV PYTHON python3
 ENV PIP pip3
 ENV PYTHONDONTWRITEBYTECODE 1
 
-ENV URL_GET_PIP "https://bootstrap.pypa.io/pip/get-pip.py"
+ENV URL_GET_PIP "https://bootstrap.pypa.io/pip/3.6/get-pip.py"
 ENV APP_DEV_DEPS "requirements/centos8.requirements.txt"
 ENV APP_MAIN_DEPS \
     python3 \
@@ -14,6 +14,10 @@ ENV APP_MAIN_DEPS \
 WORKDIR /data
 
 FROM base as install_main_deps
+
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+
 RUN dnf update -y && dnf install -y $APP_MAIN_DEPS && dnf clean all
 
 FROM install_main_deps as install_dev_deps
