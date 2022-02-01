@@ -304,13 +304,11 @@ def attach_subscription():
     pool = ["subscription-manager", "attach"]
     if tool_opts.auto_attach:
         pool.append("--auto")
-        tool_opts.pool = "-a"
         loggerinst.info("Auto-attaching compatible subscriptions to the system ...")
     elif tool_opts.pool:
         # The subscription pool ID has been passed through a command line
         # option
         pool.extend(["--pool", tool_opts.pool])
-        tool_opts.pool = pool
         loggerinst.info("Attaching provided subscription pool ID to the system ...")
     else:
         subs_list = get_avail_subs()
@@ -334,7 +332,6 @@ def attach_subscription():
             loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
 
         pool.extend(["--pool", subs_list[sub_num].pool_id])
-        tool_opts.pool = pool
     _, ret_code = utils.run_subprocess(pool)
 
     if ret_code != 0:
