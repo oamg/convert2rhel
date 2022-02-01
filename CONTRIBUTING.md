@@ -60,7 +60,7 @@ Required dependencies:
 - python
 - pre-commit
 - git
-- podma or docker
+- podman or docker
 
 Optional dependencies:
 
