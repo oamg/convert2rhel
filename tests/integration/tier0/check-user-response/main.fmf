@@ -1,0 +1,6 @@
+summary: check user response during registration
+
+tier: 0
+
+test: |
+  pytest -svv
