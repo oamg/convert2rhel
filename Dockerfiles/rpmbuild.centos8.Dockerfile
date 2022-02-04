@@ -1,5 +1,8 @@
 FROM centos:8 as base
 
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+
 RUN dnf update -y && dnf clean all
 
 ENV APP_MAIN_DEPS \

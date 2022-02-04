@@ -3,6 +3,10 @@
   yum:
     name: "*"
     state: latest
+    # In case the package is already installed on the system (by user or CI system)
+    # and the version of the package is not the latest in copr repo it would be
+    # updated at this point. The package version would then differ from the intended one.
+    exclude: convert2rhel
   register: update
 
 - name: Reboot

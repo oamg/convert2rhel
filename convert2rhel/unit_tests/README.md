@@ -117,6 +117,26 @@ make tests7
 make tests8
 ```
 
+If you want to pass extra arguments for the pytest execution inside the container
+you can do so by just using the variable `PYTEST_ARGS` after the make command you
+are trying to use, like this:
+
+```bash
+# Run only the test_something test case
+make tests7 PYTEST_ARGS="-k test_something"
+
+# Print pytest version
+make tests7 PYTEST_ARGS="--version"
+```
+
+The same is true when you're trying to execute the tests both with `make tests7` and
+`make tests8`, the `PYTEST_ARGS` will be passed down to both of them
+
+```bash
+# Print pytest version in both containers
+make tests PYTEST_ARGS="--version"
+```
+
 ### Locally
 
 To run the tests locally, you can use an alteady made `make` command we have
