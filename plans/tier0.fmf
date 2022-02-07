@@ -1,6 +1,10 @@
 discover+:
     tier: 0
 
+/check_user_response:
+  discover+:
+    test: check-user-response
+
 /check_custom_repo:
   discover+:
     test: check-custom-repo
