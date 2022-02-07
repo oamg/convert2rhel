@@ -12,4 +12,5 @@
 - name: Install pytest framework dependencies
   pip:
     name: ["pytest", "pytest-cov", "envparse", "click", "pexpect", "dataclasses", "jsonschema"]
-    executable: "/usr/local/bin/pip"
+    # Use pip3 in case pip was installed via rpm package on this system
+    executable: pip3
