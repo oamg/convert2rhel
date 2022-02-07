@@ -4,7 +4,7 @@
       yum_repository:
         name: baseos
         description: CentOS Linux 8 BaseOS
-        baseurl: http://mirror.centos.org/centos/8/BaseOS/x86_64/os/
+        baseurl: http://vault.centos.org/centos/8/BaseOS/x86_64/os/
         gpgcheck: no
 
     - name: Install subscription-manager from the CentOS Linux 8 BaseOS repo (signed by CentOS)
