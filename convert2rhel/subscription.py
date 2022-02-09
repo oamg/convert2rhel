@@ -63,6 +63,9 @@ MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
 REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 
 
+_SUBMGR_PKG_REMOVED_IN_CL_85 = "subscription-manager-initial-setup-addon"
+
+
 def subscribe_system():
     """Register and attach a specific subscription to OS."""
     while True:
@@ -229,7 +232,20 @@ def remove_original_subscription_manager():
     pkghandler.print_pkg_info(submgr_pkgs)
     utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
-    utils.remove_pkgs(submgr_pkg_names, critical=False)
+
+    if system_info.id == "centos" and system_info.version.major == 8 and system_info.version.minor == 5:
+        if _SUBMGR_PKG_REMOVED_IN_CL_85 in submgr_pkg_names:
+            # The package listed in _SUBMGR_PKG_REMOVED_IN_CL_85 has been
+            # removed from CentOS Linux 8.5 and causes conversion to fail if
+            # it's installed on that system because it's not possible to back it up.
+            # https://bugzilla.redhat.com/show_bug.cgi?id=2046292
+            utils.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
+            submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
+
+    # Make sure that the list of submgr pkg names is not empty before trying to
+    # remove any other submgr pkg on the system
+    if submgr_pkg_names:
+        utils.remove_pkgs(submgr_pkg_names, critical=False)
 
 
 def install_rhel_subscription_manager():
