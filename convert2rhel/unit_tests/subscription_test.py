@@ -376,6 +376,29 @@ class TestSubscription(unittest.TestCase):
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
         self.assertEqual(utils.remove_pkgs.called, 1)
+    @unit_tests.mock(
+        pkghandler,
+        "get_installed_pkg_objects",
+        lambda _: [namedtuple("Pkg", ["name"])("subscription-manager-initial-setup-addon")],
+    )
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
+    @unit_tests.mock(system_info, "id", "centos")
+    @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
+    def test_remove_original_subscription_manager_missing_package_ol_85(self):
+        subscription.remove_original_subscription_manager()
+        self.assertEqual(utils.remove_pkgs.called, 2)
+
+    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [])
+    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
+    def test_remove_original_subscription_manager_no_pkgs(self):
+        subscription.remove_original_subscription_manager()
+
+        self.assertEqual(len(subscription.loggerinst.info_msgs), 2)
+        self.assertTrue(
+            "No packages related to subscription-manager installed." in subscription.loggerinst.info_msgs[-1]
+        )
 
     @unit_tests.mock(logging.Logger, "info", LogMocked())
     @unit_tests.mock(os.path, "isdir", lambda x: True)
