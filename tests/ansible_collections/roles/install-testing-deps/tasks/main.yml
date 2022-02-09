@@ -4,20 +4,13 @@
     name: python3
     state: present
 
-- name: Check if pip present
-  shell: pip
-  ignore_errors: True
-  register: pip_command
-
-- name: Install pip on rhel7 like systems if not present
-  shell: curl https://bootstrap.pypa.io/pip/3.6/get-pip.py | python3
-  when: pip_command.stderr and ansible_facts['distribution_major_version'] == "7"
-
-- name: Install pip on rhel8 like systems if not present
-  shell: curl https://bootstrap.pypa.io/pip/get-pip.py | python3
-  when: pip_command.stderr and ansible_facts['distribution_major_version'] == "8"
+- name: Install pip if not present
+  # ensurepip is available in python-3.4+
+  # ensurepip won't install pip if it is already installed
+  command: python3 -m ensurepip --default-pip
 
 - name: Install pytest framework dependencies
   pip:
     name: ["pytest", "pytest-cov", "envparse", "click", "pexpect", "dataclasses", "jsonschema"]
-    executable: "/usr/local/bin/pip"
+    # Use pip3 in case pip was installed via rpm package on this system
+    executable: pip3
