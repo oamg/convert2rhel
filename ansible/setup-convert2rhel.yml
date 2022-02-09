@@ -2,9 +2,9 @@
   become: yes
   strategy: free
 
+  # You may modify these to fit your environment or use ansible-playbook --extra-vars
+  # to override them if needed.
   vars:
-    rhsm_username: redhat-user-name
-    rhsm_password: redhat-users-password
     skip_os_version_check: false
     # added for RHELDST-7822
     SSLCACERT: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
@@ -56,35 +56,3 @@
     - name: Install Convert2RHEL
       yum:
         name: convert2rhel
-
-    # NOTE 1: use the -y option to answer yes to all yes/no questions the
-    # tool asks carefully and only after you have tested interactively to
-    # ensure that there are not surprises within your environment.  Also
-    # take care to read and follow all prerequisites and backup guidance documented at
-    # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index
-
-    # NOTE 2: the following command may take 20-40 minutes on average to
-    # complete, depending on quantity of packages installed and speed of
-    # network and storage.  This will need to be run in parallel from the
-    # control node or Tower to effectively run against many systems.
-
-    - name: Run Convert2RHEL
-      command: >
-        convert2rhel
-        -u "{{ rhsm_username }}"
-        -p "{{ rhsm_password }}"
-        --auto-attach
-        --debug
-        -y
-
-    - name: reboot
-      reboot:
-
-    - name: recollect ansible facts on running distribution on system
-      setup:
-        gather_subset: 'distribution'
-
-    - name: Verify system is converted to Red Hat Enterprise Linux (RHEL)
-      assert:
-        that: ansible_distribution == 'RedHat'
-        msg: "OS conversion failed. OS is NOT Red Hat"
