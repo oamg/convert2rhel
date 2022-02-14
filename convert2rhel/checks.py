@@ -437,15 +437,23 @@ def _bad_kernel_version(kernel_release):
 
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
-    kernel_pkg = run_subprocess(
-        ["rpm", "-qf", "--qf", "%{NAME}", "/boot/vmlinuz-%s" % kernel_release], print_output=False
-    )[0]
+    vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
+    kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path], print_output=False)
     logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
+
+    os_vendor = system_info.name.split()[0]
+    if return_code == 1:
+        logger.warning(
+            "The booted kernel %s is not owned by any installed package."
+            " It needs to be owned by a package signed by %s." % (vmlinuz_path, os_vendor)
+        )
+
+        return True
+
     kernel_pkg_obj = get_installed_pkg_objects(kernel_pkg)[0]
     kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
     bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
     # e.g. Oracle Linux Server -> Oracle
-    os_vendor = system_info.name.split()[0]
     if bad_signature:
         logger.warning("Custom kernel detected. The booted kernel needs to be signed by %s." % os_vendor)
         return True
