@@ -3,31 +3,31 @@ execute:
 discover:
   how: fmf
 prepare:
+  - name: install latest copr build
+    how: install
+    copr: '@oamg/convert2rhel'
+    package: convert2rhel
+    missing: fail
   - name: add reboot fail
     how: ansible
     playbook: tests/ansible_collections/reboot.yml
   - name: main preparation step
     how: ansible
     playbook: tests/ansible_collections/main.yml
-  - name: install latest copr build
-    how: install
-    copr: '@oamg/convert2rhel'
-    package: convert2rhel
-    missing: fail
 environment-file:
   - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/test-copr/.env
 finish:
   # Log files has to be copied to the CWD so it is synced back
-  - name: collect system log files to TEST_DATA
-    how: shell
-    script: cp -r /var/log/messages $TMT_TEST_DATA/messages
+  #- name: collect system log files to TEST_DATA
+  #  how: shell
+  #  script: cp -r /var/log/messages $TMT_TEST_DATA/messages
   - name: collect to PLAN_DATA
     how: shell
     script: cp -r /var/log/messages $TMT_PLAN_DATA/messages
   - name: some file test
     how: shell
-    script: touch "$TMT_TEST_DATA/my_file.txt";
+    script: touch "$TMT_PLAN_DATA/my_file.txt";
   # TODO remove this
   - name: ls directory
     how: shell
-    script: ls $TMT_TEST_DATA
+    script: ls $TMT_PLAN_DATA
