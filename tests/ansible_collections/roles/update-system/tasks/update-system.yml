@@ -8,10 +8,3 @@
     # updated at this point. The package version would then differ from the intended one.
     exclude: convert2rhel
   register: update
-
-- name: Reboot
-  reboot:
-  # we need reboot only CentOS, because OL will be
-  #   rebooted in later steps (booting into standard kernel)
-  when: (ansible_facts['distribution'] == "CentOS") and
-        (update.changed)

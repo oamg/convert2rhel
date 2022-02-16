@@ -8,9 +8,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/activation_key.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /rhsm:
   discover+:
@@ -19,9 +19,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/rhsm.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /satellite:
   discover+:
@@ -30,9 +30,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/satellite.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /custom_repos:
   discover+:
@@ -44,9 +44,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/custom_repos.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /changed_yum_conf:
   discover+:
@@ -55,9 +55,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/changed-yum-conf/test_patch_yum_conf.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_excluded_pkgs:
   adjust:
@@ -70,9 +70,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/remove-excluded-pkgs/test_remove_excluded_pkgs.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_all_submgr_pkgs:
   discover+:
@@ -85,9 +85,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_remove_all_submgr_pkgs.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /resolve_dependency:
   # There is no dependecy package for Oracle Linux 8
@@ -106,9 +106,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/rhsm.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /one_kernel_scenario:
   adjust:
@@ -127,19 +127,19 @@ discover+:
     script: pytest -svv tests/integration/tier1/one-kernel-scenario/install_one_kernel.py
   - name: reboot machine
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
   - name: remove other kernels
     how: shell
     script: pytest -svv tests/integration/tier1/one-kernel-scenario/remove_other_kernels.py
   - name: reboot machine
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
   - name: run conversion
     how: shell
     script: pytest -svv tests/integration/tier1/one-kernel-scenario/run_conversion.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /language_test:
   discover+:
@@ -151,9 +151,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/activation_key.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /missing_os_release:
   discover+:
@@ -165,9 +165,9 @@ discover+:
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/method/satellite.py
-  - name: reboot machine
+  - name: reboot after conversion
     how: ansible
-    playbook: tests/ansible_collections/reboot.yml
+    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /yum_distro_sync:
   discover+:
@@ -182,6 +182,6 @@ discover+:
     - name: main conversion preparation
       how: shell
       script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
-    - name: reboot machine
+    - name: reboot after conversion
       how: ansible
-      playbook: tests/ansible_collections/reboot.yml
+      playbook: tests/ansible_collections/roles/reboot/main.yml

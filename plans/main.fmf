@@ -6,6 +6,9 @@ prepare:
   - name: main preparation step
     how: ansible
     playbook: tests/ansible_collections/main.yml
+  - name: reboot system after update
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
   - name: install latest copr build
     how: install
     copr: '@oamg/convert2rhel'
