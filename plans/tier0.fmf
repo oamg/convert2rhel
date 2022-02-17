@@ -1,6 +1,10 @@
 discover+:
     tier: 0
 
+/check_user_privileges:
+  discover+:
+    test: check-privileges
+
 /check_custom_repo:
   discover+:
     test: check-custom-repo
