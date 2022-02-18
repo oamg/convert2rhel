@@ -48,7 +48,7 @@ def perform_pre_checks():
     check_efi()
     check_tainted_kmods()
     check_readonly_mounts()
-    check_rhel_compatible_kernel_is_used()
+    #check_rhel_compatible_kernel_is_used()
     check_custom_repos_are_valid()
 
 
