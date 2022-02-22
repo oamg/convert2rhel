@@ -1,0 +1,25 @@
+- hosts: all
+  tasks:
+    - block:
+      - name: Overwrite AppStream repository
+        yum_repository:
+          name: appstream
+          description: AppStream repo
+          baseurl: http://mirror.nsc.liu.se/centos-store/$contentdir/$releasever/AppStream/$basearch/os/
+          state: present
+          gpgcheck: yes
+          enabled: yes
+          gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+          file: CentOS-Linux-AppStream
+
+      - name: Overwrite BaseOS repository
+        yum_repository:
+          name: baseos
+          description: BaseOS repo
+          baseurl: http://mirror.nsc.liu.se/centos-store/$contentdir/$releasever/BaseOS/$basearch/os/
+          state: present
+          gpgcheck: yes
+          enabled: yes
+          gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+          file: CentOS-Linux-BaseOS
+      when: ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8"

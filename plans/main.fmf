@@ -3,6 +3,9 @@ execute:
 discover:
   how: fmf
 prepare:
+  - name: workaround c8 repos
+    how: ansible
+    playbook: tests/ansible_collections/workaround-c8.yml
   - name: main preparation step
     how: ansible
     playbook: tests/ansible_collections/main.yml
