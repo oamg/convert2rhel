@@ -12,22 +12,3 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "pylint"
-        # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where
-        # version 2.x.x is not available
-        versions: ["1.x.x"]
-
-      - dependency-name: "pytest"
-        # ignore major version 3.x.x and 4.x.x since we use it for CentOS 6/7
-        # and newer versions are not available for these systems
-        versions: ["3.x.x", "4.x.x"]
-
-      - dependency-name: "astroid"
-        # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where
-        # version 2.x.x is not available
-        versions: ["1.x.x"]
-
-      - dependency-name: "mock"
-        # ignore version 3.0.5 we use for CentOS Linux 6 and 7 on which version 4.x.x is not available
-        versions: ["3.0.5"]
