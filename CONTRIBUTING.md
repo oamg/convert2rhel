@@ -163,31 +163,8 @@ Also, you can check out our
 file to get a better understanding on how to write, run and see the coverage of
 the unit tests.
 
-#### Writing integration tests
-
-The general idea of our integration tests is to run the convert2rhel tool as a
-black box and look for explicit outputs given a system state and inputs - like
-environment variables and CLI parameters.
-
-Usually, the integration tests are written by the QE team in Convert2RHEL using
-all the best practices they already have for integration tests, but every
-developer can help them to write the integration tests as well.
-
-If you want to know more on how to execute the integration tests locally or how
-to create them, you can read the guide [Integration
-tests](https://github.com/oamg/convert2rhel/tree/main/tests/integration) which
-covers all the necessary steps to execute the integration tests locally. The
-structure of the integration tests can be found in the
-[convert2rhel/plans](https://github.com/oamg/convert2rhel/tree/main/plans)
-folder. We use [fmf](https://fmf.readthedocs.io/en/stable/index.html) format to
-define which which tests will be executed. Tests are then executed using the
-[tmt](https://tmt.readthedocs.io/en/stable/index.html) tool. Tests themself are
-written in mostly in `Python`. However one can write the integration test in
-any other language, eg. in `Bash`.
-
-Finally, you can find out all the integration testing for Convert2RHEL at the
-[convert2rhel/tests](https://github.com/oamg/convert2rhel/tree/main/tests)
-folder.
+To learm more about our integration tests, see
+[tests/integration/README.md](https://github.com/oamg/convert2rhel/blob/main/tests/integration/README.md).
 
 ## Styleguide
 
