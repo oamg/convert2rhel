@@ -1,7 +1,7 @@
 pylint==1.1.0
 astroid==1.6.6
 unittest2==0.5.1
-pytest==3.2.5
+pytest==7.0.1
 mock==3.0.5
 pytest-catchlog==1.2.2
 pathlib2==2.3.7.post1
