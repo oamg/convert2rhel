@@ -73,4 +73,7 @@ class SystemCert(object):
             os.remove(self._target_cert_path)
             loggerinst.info("Certificate %s removed" % self._target_cert_path)
         except OSError as err:
-            loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))
+            if err.errno == 2:
+                pass
+            else:
+                loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))
