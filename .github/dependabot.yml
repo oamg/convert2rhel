@@ -14,5 +14,11 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "pylint"
-        # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where version 2.x.x is not available
+        # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where
+        # version 2.x.x is not available
+        versions: ["1.x.x"]
+
+      - dependency-name: "astroid"
+        # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where
+        # version 2.x.x is not available
         versions: ["1.x.x"]
