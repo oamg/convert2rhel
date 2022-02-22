@@ -27,3 +27,7 @@ updates:
         # ignore major version 1.x.x we use for CentOS Linux 6 and 7 where
         # version 2.x.x is not available
         versions: ["1.x.x"]
+
+      - dependency-name: "mock"
+        # ignore version 3.0.5 we use for CentOS Linux 6 and 7 on which version 4.x.x is not available
+        versions: ["3.0.5"]
