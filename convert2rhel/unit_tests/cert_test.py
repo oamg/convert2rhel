@@ -90,30 +90,51 @@ class TestCert(unittest.TestCase):
         shutil.rmtree(unit_tests.TMP_DIR)
 
 
-@pytest.mark.parametrize(
-    (
-        "create_file",
-        "expected_text_in_logs",
-    ),
-    (
-        (True, "/filename removed"),
-        (False, "No such file or directory"),
-    ),
-)
-def test_remove_cert(
-    monkeypatch,
-    create_file,
-    expected_text_in_logs,
-    caplog,
-    tmpdir,
-):
+@pytest.fixture
+def remove_cert_setup(monkeypatch, tmpdir):
     tmp_file = tmpdir / "filename"
-    if create_file:
-        tmp_file.write(b"some content")
 
     monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
     monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=str(tmp_file)))
 
     sys_cert = cert.SystemCert()
-    sys_cert.remove()
-    assert expected_text_in_logs in caplog.messages[-1]
+
+    return {
+        "cert_path_obj": tmp_file,
+        "sys_cert_instance": sys_cert,
+    }
+
+
+def test_remove_cert(caplog, remove_cert_setup):
+    cert_file = remove_cert_setup["cert_path_obj"]
+    cert_file.write(b"some content")
+
+    remove_cert_setup["sys_cert_instance"].remove()
+
+    assert "/filename removed" in caplog.messages[-1]
+
+
+@pytest.mark.parametrize(
+    (
+        "error_condition",
+        "expected_text_in_logs",
+    ),
+    (
+        (
+            OSError(2, "No such file or directory"),
+            "No such file or directory",
+        ),
+        (OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"), "Permission denied:"),
+    ),
+)
+def test_remove_cert_error_conditions(error_condition, expected_text_in_logs, caplog, monkeypatch, remove_cert_setup):
+    def fake_os_remove(path):
+        raise error_condition
+
+    monkeypatch.setattr(os, "remove", fake_os_remove)
+
+    # Execute the tested code
+    remove_cert_setup["sys_cert_instance"].remove()
+
+    # Assert that the test passed
+    assert expected_text_in_logs != caplog.messages[-1]
