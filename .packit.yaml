@@ -40,13 +40,13 @@ jobs:
 - job: tests
   metadata:
     targets:
-      epel-7-x86_64:
-        distros: [centos-7]
+      #epel-7-x86_64:
+      #  distros: [centos-7]
       epel-8-x86_64:
         distros: [centos-8]
-      oraclelinux-7-x86_64:
-        distros: [oraclelinux-7]
-      oraclelinux-8-x86_64:
-        distros: [oraclelinux-8]
+      #oraclelinux-7-x86_64:
+      #  distros: [oraclelinux-7]
+      #oraclelinux-8-x86_64:
+      #  distros: [oraclelinux-8]
     use_internal_tf: True
   trigger: pull_request
