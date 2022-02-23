@@ -133,8 +133,6 @@ def test_remove_cert_error_conditions(error_condition, expected_text_in_logs, ca
 
     monkeypatch.setattr(os, "remove", fake_os_remove)
 
-    # Execute the tested code
     remove_cert_setup["sys_cert_instance"].remove()
 
-    # Assert that the test passed
     assert expected_text_in_logs != caplog.messages[-1]
