@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
 import errno
 import getpass
 import inspect
@@ -55,12 +54,6 @@ DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
 TMP_DIR = "/var/lib/convert2rhel/"
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
-
-
-def format_msg_with_datetime(msg, level):
-    """Return a string with msg formatted according to the level"""
-    temp_date = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
-    return "[%s] %s - %s", temp_date, level.upper(), msg
 
 
 def get_executable_name():
