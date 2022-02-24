@@ -283,3 +283,18 @@ discover+:
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/config_file:
+  adjust:
+      enabled: false
+      when: >
+        distro != centos-8
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/config-file/test_config_file.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml

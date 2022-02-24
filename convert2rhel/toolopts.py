@@ -15,14 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import copy
 import logging
 import optparse
+import os
 import sys
+
+from six.moves import configparser
 
 from convert2rhel import __version__, utils
 
 
 loggerinst = logging.getLogger(__name__)
+
+# Paths for configuration files
+CONFIG_PATHS = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
 
 
 class ToolOpts(object):
@@ -30,6 +37,7 @@ class ToolOpts(object):
         self.debug = False
         self.username = None
         self.password_file = None
+        self.config_file = None
         self.password = None
         self.no_rhsm = False
         self.enablerepo = []
@@ -49,6 +57,15 @@ class ToolOpts(object):
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
 
+    def set_opts(self, supported_opts):
+        """Set ToolOpts data using dict with values from config file.
+
+        :param supported_opts: Supported options in config file
+        """
+        for key, value in supported_opts.items():
+            if value is not None and hasattr(self, key):
+                setattr(self, key, value)
+
 
 class CLI(object):
     def __init__(self):
@@ -63,6 +80,7 @@ class CLI(object):
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -f pswd_file] [--pool pool_id | -a] [--disablerepo repoid]"
+            "  convert2rhel [-c | --config-file conf_file]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
             " [--disable-colors] [-y]\n"
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
@@ -159,7 +177,7 @@ class CLI(object):
             help="File containing"
             " password for the subscription-manager in the plain"
             " text form. It's an alternative to the --password"
-            " option.",
+            " option. Deprecated, use --config-file instead.",
         )
         group.add_option(
             "-k",
@@ -178,6 +196,13 @@ class CLI(object):
             " organizations is possible to obtain by running"
             " 'subscription-manager orgs'. From the listed pairs"
             " Name:Key, use the Key here.",
+        )
+        group.add_option(
+            "-c",
+            "--config-file",
+            help="Configuration file containing"
+            " password or activation key for subscription-manager."
+            " Example of this file in /etc/convert2rhel.ini",
         )
         group.add_option(
             "-a",
@@ -263,8 +288,19 @@ class CLI(object):
         parsed_opts, _ = self._parser.parse_args()
 
         global tool_opts  # pylint: disable=C0103
+
         if parsed_opts.debug:
             tool_opts.debug = True
+
+        # Processing the configuration file
+        conf_file_opts = options_from_config_files(parsed_opts.config_file)
+        ToolOpts.set_opts(tool_opts, conf_file_opts)  # pylint: disable=E0601
+        config_opts = copy.copy(tool_opts)
+        tool_opts.config_file = parsed_opts.config_file
+        # corner case: password on CLI or in password file and activation-key in the config file
+        # password from CLI has precedence and activation-key must be deleted (unused)
+        if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
+            tool_opts.activation_key = None
 
         if parsed_opts.disable_colors:
             tool_opts.disable_colors = True
@@ -279,6 +315,7 @@ class CLI(object):
             tool_opts.password = parsed_opts.password
 
         if parsed_opts.password_from_file:
+            loggerinst.warning("Deprecated. Use -c | --config-file instead.")
             tool_opts.password_file = parsed_opts.password_from_file
             tool_opts.password = utils.get_file_content(parsed_opts.password_from_file)
 
@@ -325,6 +362,19 @@ class CLI(object):
         if parsed_opts.org:
             tool_opts.org = parsed_opts.org
 
+        # Checks of multiple authentication sources
+        if tool_opts.password and tool_opts.activation_key:
+            loggerinst.warning("Set only one of password or activation key. Activation key take precedence.")
+
+        if parsed_opts.password and parsed_opts.password_from_file:
+            loggerinst.warning("Password file argument take precedence over the password argument.")
+
+        if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
+            loggerinst.warning("Command line authentication method take precedence over method in configuration file.")
+
+        if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
+            loggerinst.warning("Password file take precedence over the config file.")
+
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True
 
@@ -336,6 +386,62 @@ def warn_on_unsupported_options():
             "See help (convert2rhel -h) for more information."
         )
         utils.ask_to_continue()
+
+
+def options_from_config_files(cfg_path=None):
+    """Parse the convert2rhel.ini configuration file.
+
+    This function will try to parse the convert2rhel.ini configuration file and
+    return a dictionary containing the values found in the file.
+
+    .. note::
+       This function will parse the configuration file following a specific
+       order, which is:
+       1) Path provided by the user in cfg_path (Highest priority).
+       2) ~/.convert2rhel.ini (The 2nd highest priority).
+       3) /etc/convert2rhel.ini (The lowest priority).
+
+    :param cfg_path: Path of a custom configuration file
+    :type cfg_path: str
+
+    :return: Dict with the supported options alongside their values.
+    :rtype: dict[str | None, str | None]
+    """
+    headers = ["subscription_manager"]  # supported sections in config file
+    config_file = configparser.ConfigParser()
+    paths = [os.path.expanduser(path) for path in CONFIG_PATHS]
+    # Create dict with all supported options, all of them set to None
+    # needed for avoiding problems with files priority
+    # The name of supported option MUST correspond with the name in ToolOpts()
+    # Otherwise it won't be used
+    supported_opts = {"password": None, "activation_key": None}
+
+    if cfg_path:
+        cfg_path = os.path.expanduser(cfg_path)
+        if not os.path.exists(cfg_path):
+            raise OSError(2, "No such file or directory: '%s'" % cfg_path)
+        paths.insert(0, cfg_path)  # highest priority
+
+    for path in paths:
+        if os.path.exists(path):
+            if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
+                loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
+            config_file.read(path)
+
+            for header in config_file.sections():
+                if header in headers:
+                    for option in config_file.options(header):
+                        if option.lower() in supported_opts:
+                            # Solving priority
+                            if supported_opts[option.lower()] is None:
+                                supported_opts[option] = config_file.get(header, option)
+                                loggerinst.debug("Found %s in %s" % (option, path))
+                        else:
+                            loggerinst.warning("Unsupported option %s in %s" % (option, path))
+                elif header not in headers and header != "DEFAULT":
+                    loggerinst.warning("Unsupported header %s in %s." % (header, path))
+
+    return supported_opts
 
 
 # Code to be executed upon module import
