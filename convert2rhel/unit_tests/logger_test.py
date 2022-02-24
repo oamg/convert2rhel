@@ -33,18 +33,18 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
     logger = logging.getLogger(__name__)
 
     # emitting some log entries
-    logger.info("Test info")
-    logger.debug("Test debug")
+    logger.info("Test info: %s", "data")
+    logger.debug("Test debug: %s", "other data")
 
     # Test if logs were emmited to the file
     with open(str(tmpdir.join(log_fname))) as log_f:
-        assert "Test info" in log_f.readline().rstrip()
-        assert "Test debug" in log_f.readline().rstrip()
+        assert "Test info: data" in log_f.readline().rstrip()
+        assert "Test debug: other data" in log_f.readline().rstrip()
 
     # Test if logs were emmited to the stdout
     stdouterr_out, stdouterr_err = read_std()
-    assert "Test info" in stdouterr_out
-    assert "Test debug" in stdouterr_out
+    assert "Test info: data" in stdouterr_out
+    assert "Test debug: other data" in stdouterr_out
 
 
 def test_tools_opts_debug(tmpdir, read_std, is_py2):
@@ -52,22 +52,22 @@ def test_tools_opts_debug(tmpdir, read_std, is_py2):
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     tool_opts.debug = True
-    logger.debug("debug entry 1")
+    logger.debug("debug entry 1: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
     # TODO should be in stdout, but this only works when running this test
     #   alone (see https://github.com/pytest-dev/pytest/issues/5502)
     try:
-        assert "debug entry 1" in stdouterr_out
+        assert "debug entry 1: data" in stdouterr_out
     except AssertionError:
         if not is_py2:
-            assert "debug entry 1" in stdouterr_err
+            assert "debug entry 1: data" in stdouterr_err
         else:
             # this workaround is not working for py2 - passing
             pass
     tool_opts.debug = False
-    logger.debug("debug entry 2")
+    logger.debug("debug entry 2: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
-    assert "debug entry 2" not in stdouterr_out
+    assert "debug entry 2: data" not in stdouterr_out
 
 
 def test_logger_custom_logger(tmpdir, caplog):
@@ -75,10 +75,15 @@ def test_logger_custom_logger(tmpdir, caplog):
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
-    logger.task("Some task")
-    logger.file("Some task write to file")
+    logger.task("Some task: %s", "data")
+    logger.file("Some task write to file: %s", "data")
     with pytest.raises(SystemExit):
-        logger.critical("Critical error")
+        logger.critical("Critical error: %s", "data")
+
+    assert len(caplog.records) == 3
+    assert "Some task: data\n" in caplog.text
+    assert "Some task write to file: data\n" in caplog.text
+    assert "Critical error: data\n" in caplog.text
 
 
 @pytest.mark.parametrize(

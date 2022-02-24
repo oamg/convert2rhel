@@ -33,7 +33,6 @@ import sys
 from time import gmtime, strftime
 
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import format_msg_with_datetime
 
 
 LOG_DIR = "/var/log/convert2rhel"
@@ -153,7 +152,7 @@ def _debug(self, msg, *args, **kwargs):
         if tool_opts.debug:
             self._log(logging.DEBUG, msg, args, **kwargs)
         else:
-            self._log(LogLevelFile.level, format_msg_with_datetime(msg, "debug"), args, **kwargs)
+            self._log(LogLevelFile.level, msg, args, **kwargs)
 
 
 class bcolors:
@@ -183,7 +182,7 @@ class CustomFormatter(logging.Formatter, object):
             new_fmt = fmt_orig if self.color_disabled else bcolors.OKGREEN + fmt_orig + bcolors.ENDC
             self._fmt = new_fmt
             self.datefmt = "%m/%d/%Y %H:%M:%S"
-        elif record.levelno in [logging.INFO, LogLevelFile.level]:
+        elif record.levelno in [logging.INFO]:
             self._fmt = "%(message)s"
             self.datefmt = ""
         elif record.levelno in [logging.WARNING]:
