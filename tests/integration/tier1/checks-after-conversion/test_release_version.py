@@ -12,7 +12,7 @@ def test_correct_distro():
     """
     with open("/etc/migration-results") as json_file:
         json_data = json.load(json_file)
-        source_distro = json_data["activities"][0]["source_os"]
+        source_distro = json_data["activities"][-1]["source_os"]
 
     with open("/etc/system-release", "r") as sys_release:
         destination_distro = sys_release.read()

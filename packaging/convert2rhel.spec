@@ -96,6 +96,10 @@ install -d %{buildroot}%{_sharedstatedir}/%{name}/rhsm/
 install -d -m 755 %{buildroot}%{_mandir}/man8
 install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
+# Put the config file into place
+install -d %{buildroot}%{_sysconfdir}/
+install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.ini
+
 %files
 
 %if 0%{?rhel} && 0%{?rhel} <= 6
@@ -107,6 +111,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %{_datadir}/%{name}/
 %{_sharedstatedir}/%{name}/
 %{python_sitelib}/%{name}*
+%config(noreplace) %attr(0600, root, root) %{_sysconfdir}/convert2rhel.ini
 
 %{!?_licensedir:%global license %%doc}
 %license LICENSE
