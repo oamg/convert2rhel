@@ -153,15 +153,22 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
     return output, return_code
 
 
-def run_cmd_in_pty(cmd, print_cmd=True, print_output=True, columns=120):
+def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, columns=120):
     """Similar to run_subprocess(), but the command is executed in a pseudo-terminal.
 
     The pseudo-terminal can be useful when a command prints out a different output with or without an active terminal
     session. E.g. yumdownloader does not print the name of the downloaded rpm if not executed from a terminal.
     Switching off printing the command can be useful in case it contains a password in plain text.
 
-    :param cmd: The command to execute, including the options, e.g. "ls -al"
-    :type cmd: string
+    :param cmd: The command to execute, including the options as a list, e.g. ["ls", "-al"]
+    :type cmd: list
+    :param expect_script: An iterable of pairs of expected strings and response strings.  By giving
+    these pairs, interactive programs can be scripted.  Example:
+        run_cmd_in_pty(['sudo', 'whoami'], [('password: ', 'sudo_password\n')])
+        Note1: The caller is responsible for adding newlines to the response strings where
+        needed.  Note2: This function will await pexpect.EOF after all of the pairs in expect_script
+        have been exhausted.
+    :type expect_script: iterable of 2-tuples or strings:
     :param print_cmd: Log the command (to both logfile and stdout)
     :type print_cmd: bool
     :param print_output: Log the combined stdout and stderr of the executed command (to both logfile and stdout)
@@ -180,26 +187,57 @@ def run_cmd_in_pty(cmd, print_cmd=True, print_output=True, columns=120):
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % " ".join(cmd))
 
-    class PexpectSizedWindowSpawn(pexpect.spawn):
-        # https://github.com/pexpect/pexpect/issues/134
-        def setwinsize(self, rows, cols):
-            super(PexpectSizedWindowSpawn, self).setwinsize(0, columns)
-
-    process = PexpectSizedWindowSpawn(cmd[0], cmd[1:], env={"LC_ALL": "C"}, timeout=None)
-
-    # The setting of window size is super unreliable
-    process.setwinsize(0, columns)
+    process = PexpectSizedWindowSpawn(cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None)
+    # Needed on RHEL-8+ (see comments near PexpectSizedWindowSpawn definition)
+    process.setwinsize(1, columns)
     loggerinst.debug("Pseudo-PTY columns set to: %s" % (process.getwinsize(),))
 
+    for expect, send in expect_script:
+        process.expect(expect)
+        process.send(send)
+
     process.expect(pexpect.EOF)
+    try:
+        process.wait()
+    except pexpect.ExceptionPexpect:
+        # RHEL 7's pexpect throws an exception if the process has already exited
+        # We're just waiting to be sure that the process has finished so we can
+        # ignore the exception.
+        pass
+
+    # Per the pexpect API, this is necessary in order to get the return code
+    process.close()
+    return_code = process.exitstatus
+
     output = process.before.decode()
     if print_output:
         loggerinst.info(output.rstrip("\n"))
 
-    process.close()  # Per the pexpect API, this is necessary in order to get the return code
-    return_code = process.exitstatus
-
     return output, return_code
+
+
+# For pexpect released prior to 2015 (RHEL7's pexpect-2.3),
+# spawn.__init__() hardcodes a call to setwinsize(24, 80) to set the
+# initial terminal size.  There is no official way to set the terminal size
+# to a custom value before the process starts. This can cause an issue with
+# truncated lines for processes which read the terminal size when they
+# start and never refresh that value (like yumdownloader)
+#
+# overriding setwinsize to set the columns to the size we want in this
+# subclass is a kludge for the issue.  On pexpect-2.3, it fixes the issue
+# because of the setwinsize call in __init__() at the cost of never being
+# able to change the column size later.  On later pexpect (RHEL-8 has
+# pexpect-4.3), this doesn't fix the issue of the terminal size being small
+# when the subprocess starts but dnf download checks the terminal's size
+# just before it prints the statusline we care about.  So setting the
+# terminal size via setwinsize() after the process is created works (note:
+# there is a race condition there but it's unlikely to ever trigger as it
+# would require downloading a package to happen quicker than the time
+# between calling spawn.__init__() and spawn.setwinsize())
+class PexpectSizedWindowSpawn(pexpect.spawn):
+    # https://github.com/pexpect/pexpect/issues/134
+    def setwinsize(self, rows, cols):
+        super(PexpectSizedWindowSpawn, self).setwinsize(rows, 120)
 
 
 def let_user_choose_item(num_of_options, item_to_choose):

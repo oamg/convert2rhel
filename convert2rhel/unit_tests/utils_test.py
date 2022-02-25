@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import getpass
+import logging
 import os
 import sys
 import unittest
@@ -260,6 +261,67 @@ class TestUtils(unittest.TestCase):
 
     def test_is_rpm_based_os(self):
         assert is_rpm_based_os() in (True, False)
+
+
+@pytest.mark.parametrize(
+    "command, expected_output, expected_code",
+    (
+        (["echo", "foobar"], "foobar", 0),
+        (["sh", "-c", "exit 56"], "", 56),
+    ),
+)
+def test_run_cmd_in_pty_simple(command, expected_output, expected_code, monkeypatch):
+    output, code = utils.run_cmd_in_pty(command)
+    assert output.strip() == expected_output
+    assert code == expected_code
+
+
+def test_run_cmd_in_pty_expect_script():
+    if sys.version_info < (3,):
+        prompt_cmd = "raw_input"
+    else:
+        prompt_cmd = "input"
+    output, code = utils.run_cmd_in_pty(
+        [sys.executable, "-c", 'print(%s("Ask for password: "))' % prompt_cmd],
+        expect_script=(("password: *", "Foo bar\n"),),
+    )
+
+    assert output.strip().splitlines()[-1] == "Foo bar"
+    assert code == 0
+
+
+@pytest.mark.parametrize(
+    "print_cmd, print_output",
+    (
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ),
+)
+def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts, caplog):
+    global_tool_opts.debug = True
+    caplog.set_level(logging.DEBUG)
+
+    output, code = utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
+
+    expected_count = 1  # There will always be one debug log stating the pty columns
+    if print_cmd:
+        assert caplog.records[0].levelname == "DEBUG"
+        assert caplog.records[0].message.strip() == "Calling command 'echo foo bar'"
+        expected_count += 1
+
+    if print_output:
+        assert caplog.records[-1].levelname == "INFO"
+        assert caplog.records[-1].message.strip() == "foo bar"
+        expected_count += 1
+
+    assert len(caplog.records) == expected_count
+
+
+def test_run_cmd_in_pty_check_for_deprecated_string():
+    with pytest.raises(TypeError, match="cmd should be a list, not a str"):
+        utils.run_cmd_in_pty("echo foobar")
 
 
 def test_get_package_name_from_rpm(monkeypatch):

@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from convert2rhel import redhatrelease, utils
+from convert2rhel import redhatrelease, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -58,6 +58,13 @@ def pkg_root(is_py2):
 @pytest.fixture(autouse=True)
 def setup_logger(tmpdir):
     setup_logger_handler(log_name="convert2rhel", log_dir=str(tmpdir))
+
+
+@pytest.fixture
+def global_tool_opts(monkeypatch):
+    local_tool_opts = toolopts.ToolOpts()
+    monkeypatch.setattr(toolopts, "tool_opts", local_tool_opts)
+    return local_tool_opts
 
 
 @pytest.fixture()

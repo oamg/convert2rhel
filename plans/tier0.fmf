@@ -5,6 +5,10 @@ discover+:
   discover+:
     test: basic-sanity-checks
 
+/check_cve
+  discover+:
+    test: check-cve
+
 /check_user_response:
   discover+:
     test: check-user-response
