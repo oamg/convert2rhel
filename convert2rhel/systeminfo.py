@@ -38,6 +38,11 @@ from convert2rhel.toolopts import tool_opts
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 #   version update at the same time.
 RELEASE_VER_MAPPING = {
+    "8.10": "8.10",
+    "8.9": "8.9",
+    "8.8": "8.8",
+    "8.7": "8.7",
+    "8.6": "8.6",
     "8.5": "8.5",
     "8.4": "8.4",
     "7.9": "7Server",
