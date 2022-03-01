@@ -15,7 +15,7 @@ known_third_party=[
 known_first_party=["convert2rhel"]
 
 [tool.coverage.run]
-branch = false
+branch = true
 source = ["convert2rhel"]
 omit = ["convert2rhel/unit_tests/*",]
 
