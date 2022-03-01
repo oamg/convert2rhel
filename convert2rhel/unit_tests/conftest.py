@@ -57,7 +57,19 @@ def pkg_root():
 
 @pytest.fixture(autouse=True)
 def setup_logger(tmpdir):
-    setup_logger_handler(log_name="convert2rhel", log_dir=str(tmpdir))
+    initialize_logger(log_name="convert2rhel", log_dir=str(tmpdir))
+
+
+@pytest.fixture
+def system_cert(monkeypatch, tmpdir):
+    tmp_file = tmpdir / "filename"
+
+    monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
+    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=str(tmp_file)))
+
+    sys_cert = cert.SystemCert()
+
+    return sys_cert
 
 
 @pytest.fixture
