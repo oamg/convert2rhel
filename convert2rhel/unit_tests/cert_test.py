@@ -90,26 +90,12 @@ class TestCert(unittest.TestCase):
         shutil.rmtree(unit_tests.TMP_DIR)
 
 
-@pytest.fixture
-def remove_cert_setup(monkeypatch, tmpdir):
-    tmp_file = tmpdir / "filename"
-
-    monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
-    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=str(tmp_file)))
-
-    sys_cert = cert.SystemCert()
-
-    return {
-        "cert_path_obj": tmp_file,
-        "sys_cert_instance": sys_cert,
-    }
-
-
 def test_remove_cert(caplog, remove_cert_setup):
-    cert_file = remove_cert_setup["cert_path_obj"]
-    cert_file.write(b"some content")
+    cert_file = system_cert._target_cert_path
+    with open(cert_filename, 'wb') as  cert_file:
+        cert_file.write(b'some content')
 
-    remove_cert_setup["sys_cert_instance"].remove()
+    system_cert[sys_cert].remove()
 
     assert "/filename removed" in caplog.messages[-1]
 
