@@ -7,9 +7,6 @@ def test_remove_all_submgr_pkgs(shell, convert2rhel):
     And that the system is unregistered before that.
     """
 
-    with open("/etc/system-release", "r") as file:
-        system_release = file.read()
-
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
             env.str("RHSM_SERVER_URL"),
