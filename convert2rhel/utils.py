@@ -57,6 +57,7 @@ BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 def get_executable_name():
     """Get name of the executable file passed to the python interpreter."""
+
     return os.path.basename(inspect.stack()[-1][1])
 
 
@@ -624,9 +625,12 @@ class RestorablePackage(object):
         """Save version of RPM package"""
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
-            # When backing up the packages, the original system repofiles are still available and for them we can't
-            # use the releasever for RHEL repositories
-            self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
+            if os.path.exists(get_hardcoded_repofile):
+                self.path = download_pkg(self.name, dest=BACKUP_DIR, reposdir=get_hardcoded_repos_dir())
+            else:
+                # When backing up the packages, the original system repofiles are still available and for them we can't
+                # use the releasever for RHEL repositories
+                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % TMP_DIR)
 
