@@ -24,6 +24,7 @@ import sys
 import rpm
 
 from convert2rhel import pkgmanager, utils
+from convert2rhel.backup import RestorableFile, remove_pkgs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -35,7 +36,7 @@ loggerinst = logging.getLogger(__name__)
 MAX_YUM_CMD_CALLS = 3
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
-versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
+versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 #
 # Regular expressions used to find package names in yum output
@@ -104,7 +105,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     to_remove = problematic_pkgs["errors"] | problematic_pkgs["mismatches"]
     if to_remove:
         loggerinst.warning("Removing problematic packages to continue with conversion:\n%s" % "\n".join(to_remove))
-        utils.remove_pkgs(to_remove, backup=False, critical=False)
+        remove_pkgs(to_remove, backup=False, critical=False)
     return call_yum_cmd_w_downgrades(cmd, pkgs, retries - 1)
 
 
@@ -604,7 +605,7 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
@@ -714,7 +715,7 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
+            remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
             call_yum_cmd(command="install", args=["kernel-%s" % older])
         else:
             replace_non_rhel_installed_kernel(installed[0])
@@ -799,7 +800,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(
+        remove_pkgs(
             pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
             backup=False,
         )

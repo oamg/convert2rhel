@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 
-from convert2rhel import breadcrumbs, cert, checks, grub
+from convert2rhel import backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
 
@@ -254,7 +254,7 @@ def rollback_changes():
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
     subscription.rollback()
-    utils.changed_pkgs_control.restore_pkgs()
+    backup.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()

@@ -34,8 +34,7 @@ else:
 
 from collections import namedtuple
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import utils
+from convert2rhel import backup, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
 
@@ -84,32 +83,32 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(utils.require_root(), None)
 
     def test_track_installed_pkg(self):
-        control = utils.ChangedRPMPackagesController()
+        control = backup.ChangedRPMPackagesController()
         pkgs = ["pkg1", "pkg2", "pkg3"]
         for pkg in pkgs:
             control.track_installed_pkg(pkg)
         self.assertEqual(control.installed_pkgs, pkgs)
 
-    @unit_tests.mock(utils.RestorablePackage, "backup", DummyFuncMocked())
+    @unit_tests.mock(backup.RestorablePackage, "backup", DummyFuncMocked())
     def test_backup_and_track_removed_pkg(self):
-        control = utils.ChangedRPMPackagesController()
+        control = backup.ChangedRPMPackagesController()
         pkgs = ["pkg1", "pkg2", "pkg3"]
         for pkg in pkgs:
             control.backup_and_track_removed_pkg(pkg)
-        self.assertEqual(utils.RestorablePackage.backup.called, len(pkgs))
+        self.assertEqual(backup.RestorablePackage.backup.called, len(pkgs))
         self.assertEqual(len(control.removed_pkgs), len(pkgs))
 
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_with_empty_list(self):
-        utils.remove_pkgs([])
+        backup.remove_pkgs([])
         self.assertEqual(utils.run_subprocess.called, 0)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(backup.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_without_backup(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.remove_pkgs(pkgs, False)
-        self.assertEqual(utils.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, 0)
+        backup.remove_pkgs(pkgs, False)
+        self.assertEqual(backup.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, 0)
 
         self.assertEqual(utils.run_subprocess.called, len(pkgs))
 
@@ -117,12 +116,12 @@ class TestUtils(unittest.TestCase):
         for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
             self.assertEqual(rpm_remove_cmd + [pkg], cmd)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(backup.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_with_backup(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.remove_pkgs(pkgs)
-        self.assertEqual(utils.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, len(pkgs))
+        backup.remove_pkgs(pkgs)
+        self.assertEqual(backup.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, len(pkgs))
 
@@ -135,22 +134,22 @@ class TestUtils(unittest.TestCase):
         utils.install_local_rpms([])
         self.assertEqual(utils.run_subprocess.called, 0)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
+    @unit_tests.mock(backup.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_local_rpms_without_replace(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
         utils.install_local_rpms(pkgs)
-        self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
+        self.assertEqual(backup.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(["rpm", "-i", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)
 
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
+    @unit_tests.mock(backup.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_install_local_rpms_with_replace(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
         utils.install_local_rpms(pkgs, replace=True)
-        self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
+        self.assertEqual(backup.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(utils.run_subprocess.called, 1)
         self.assertEqual(["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)

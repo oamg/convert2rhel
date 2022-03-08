@@ -22,7 +22,7 @@ import re
 from collections import namedtuple
 from time import sleep
 
-from convert2rhel import pkghandler, utils
+from convert2rhel import backup, pkghandler, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -383,11 +383,11 @@ def remove_original_subscription_manager():
             # removed from CentOS Linux 8.5 and causes conversion to fail if
             # it's installed on that system because it's not possible to back it up.
             # https://bugzilla.redhat.com/show_bug.cgi?id=2046292
-            utils.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
+            backup.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
             submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
 
     # Remove any oter subscription-manager packages present on the system
-    utils.remove_pkgs(submgr_pkg_names, critical=False)
+    backup.remove_pkgs(submgr_pkg_names, critical=False)
 
 
 def install_rhel_subscription_manager():
@@ -446,7 +446,7 @@ def track_installed_submgr_pkgs(installed_pkg_names, pkgs_to_not_track):
             loggerinst.debug("Skipping tracking previously installed package: %s" % installed_pkg)
 
     loggerinst.debug("Tracking installed packages: %r" % pkgs_to_track)
-    utils.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
+    backup.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
 
 
 def attach_subscription():

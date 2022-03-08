@@ -18,6 +18,7 @@
 import logging
 import os
 
+from convert2rhel.backup import RestorableFile
 from convert2rhel.grub import is_efi
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import RestorableFile, mkdir_p, run_subprocess

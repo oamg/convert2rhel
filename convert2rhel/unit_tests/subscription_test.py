@@ -25,8 +25,7 @@ from collections import namedtuple
 import pexpect
 import pytest
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import pkghandler, subscription, toolopts, utils
+from convert2rhel import backup, pkghandler, subscription, unit_tests, toolopts, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
@@ -256,10 +255,11 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
+    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
-        self.assertEqual(utils.remove_pkgs.called, 1)
+
+        self.assertEqual(backup.remove_pkgs.called, 1)
 
     @unit_tests.mock(
         pkghandler,
