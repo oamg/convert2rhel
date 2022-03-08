@@ -405,7 +405,7 @@ def _add_rhel_boot_entry(efibootinfo_orig):
         "--disk",
         blk_dev,
         "--part",
-        dev_number["minor"],
+        str(dev_number["minor"]),
         "--loader",
         efi_path,
         "--label",
