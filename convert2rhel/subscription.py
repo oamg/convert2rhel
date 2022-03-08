@@ -127,50 +127,49 @@ def get_registration_cmd():
     """Build a command for subscription-manager for registering the system."""
     loggerinst.info("Building subscription-manager command ... ")
     registration_cmd = ["subscription-manager", "register", "--force"]
+
+    loggerinst.info("Checking for activation key ...")
     if tool_opts.activation_key:
         # Activation key has been passed
         # -> username/password not required
         # -> organization required
         loggerinst.info("    ... activation key detected: %s" % tool_opts.activation_key)
-        registration_cmd.append("--activationkey=%s" % tool_opts.activation_key)
-    else:
-        # No activation key -> username/password required
-        if tool_opts.username and tool_opts.password:
-            loggerinst.info("    ... activation key not found, using given username and password")
-        else:
-            loggerinst.info("    ... activation key not found, username and password required")
 
-        if tool_opts.username:
-            loggerinst.info("    ... username detected")
-            username = tool_opts.username
-        else:
-            username = utils.prompt_user("Username: ")
-        if tool_opts.password:
-            loggerinst.info("    ... password detected")
-            password = tool_opts.password
-        else:
-            if tool_opts.username:
-                # Hint user for which username they need to enter pswd
-                loggerinst.info("Username: " + username)
-            password = utils.prompt_user("Password: ", password=True)
-        registration_cmd.extend(["--username=%s" % username, "--password=%s" % password])
-        tool_opts.username = username
-    if tool_opts.org:
-        loggerinst.info("    ... organization detected")
-        org = tool_opts.org
-    elif tool_opts.activation_key:
-        loggerinst.info("    ... activation key requires organization")
-        # Organization is required when activation key is used
         # TODO: Parse the output of 'subscription-manager orgs' and let the
         # user choose from the available organizations. If there's just one,
         # pick it automatically.
-        org = utils.prompt_user("Organization: ")
-    if "org" in locals():
-        # TODO: test how this option works with org name with spaces
-        registration_cmd.append("--org=%s" % org)
+        # Organization is required when activation key is used
+        if tool_opts.org:
+            loggerinst.info("    ... org detected")
+
+        org = tool_opts.org
+        while not org:
+            org = utils.prompt_user("Organization: ")
+
+        registration_cmd.extend(("--activationkey=%s" % tool_opts.activation_key, "--org=%s" % org))
+    else:
+        loggerinst.info("    ... activation key not found, username and password required")
+
+        if tool_opts.username:
+            loggerinst.info("    ... username detected")
+
+        username = tool_opts.username
+        while not username:
+            username = utils.prompt_user("Username: ")
+
+        if tool_opts.password:
+            loggerinst.info("    ... password detected")
+
+        password = tool_opts.password
+        while not password:
+            password = utils.prompt_user("Password: ", password=True)
+
+        registration_cmd.extend(("--username=%s" % username, "--password=%s" % password))
+
     if tool_opts.serverurl:
         loggerinst.debug("    ... using custom RHSM URL")
         registration_cmd.append("--serverurl=%s" % tool_opts.serverurl)
+
     return registration_cmd
 
 

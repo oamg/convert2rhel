@@ -105,6 +105,23 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, *args, **kwargs):
             return True
 
+    class PromptUserLoopMocked(unit_tests.MockFunction):
+        def __init__(self):
+            self.called = {}
+
+        def __call__(self, *args, **kwargs):
+            return_value = ""
+
+            # args[0] is the current question being asked
+            if args[0] not in self.called:
+                self.called[args[0]] = 0
+
+            if self.called[args[0]] >= 1:
+                return_value = "test"
+
+            self.called[args[0]] += 1
+            return return_value
+
     class RemoveFileMocked(unit_tests.MockFunction):
         def __init__(self, removed=True):
             self.removed = removed
@@ -141,6 +158,25 @@ class TestSubscription(unittest.TestCase):
         tool_opts.password = "pass with space"
         expected = ["subscription-manager", "register", "--force", "--username=user", "--password=pass with space"]
         self.assertEqual(subscription.get_registration_cmd(), expected)
+
+    def test_get_registration_cmd_activation_key(self):
+        tool_opts.activation_key = "activation_key"
+        tool_opts.org = "org"
+        expected = ["subscription-manager", "register", "--force", "--activationkey=activation_key", "--org=org"]
+        self.assertEqual(subscription.get_registration_cmd(), expected)
+
+    @unit_tests.mock(utils, "prompt_user", PromptUserLoopMocked())
+    def test_get_registration_cmd_activation_key_empty_string(self):
+        tool_opts.activation_key = "activation_key"
+        expected = ["subscription-manager", "register", "--force", "--activationkey=activation_key", "--org=test"]
+        self.assertEqual(subscription.get_registration_cmd(), expected)
+        self.assertEqual(utils.prompt_user.called, {"Organization: ": 2})
+
+    @unit_tests.mock(utils, "prompt_user", PromptUserLoopMocked())
+    def test_get_registration_cmd_empty_string(self):
+        expected = ["subscription-manager", "register", "--force", "--username=test", "--password=test"]
+        self.assertEqual(subscription.get_registration_cmd(), expected)
+        self.assertEqual(utils.prompt_user.called, {"Username: ": 2, "Password: ": 2})
 
     @unit_tests.mock(subscription, "get_avail_subs", GetAvailSubsMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())

@@ -249,12 +249,21 @@ def ask_to_continue():
 
 
 def prompt_user(question, password=False):
+    """Prompt the user with a question and return his response to the caller.
+
+    :param question: The question to prompt to the user.
+    :param password: If the question is for a password, then the output is blanked out.
+
+    This will return the user response to the caller as a string.
+    """
     color_question = Color.BOLD + question + Color.END
+
     if password:
         response = getpass.getpass(color_question)
     else:
         response = moves.input(color_question)
     loggerinst.info("\n")
+
     return response
 
 

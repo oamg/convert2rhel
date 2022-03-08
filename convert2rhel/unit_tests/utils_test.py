@@ -14,12 +14,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import getpass
 import os
 import re
 import sys
 import unittest
 
 import pytest
+
+from six import moves
+
+from convert2rhel.utils import prompt_user
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -326,3 +331,19 @@ def test_remove_tmp_dir(monkeypatch, dir_name, caplog, tmpdir):
         assert "Failed removing temporary folder " + dir_name in caplog.text
     else:
         assert "TypeError error while removing temporary folder " in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("question", "is_password", "response"),
+    (
+        ("Username: ", False, "test"),
+        ("Password: ", True, "test"),
+    ),
+)
+def test_prompt_user(question, is_password, response, monkeypatch):
+    if is_password:
+        monkeypatch.setattr(getpass, "getpass", lambda _: response)
+    else:
+        monkeypatch.setattr(moves, "input", lambda _: response)
+
+    assert prompt_user(question, is_password) == response
