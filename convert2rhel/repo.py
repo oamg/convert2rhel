@@ -20,7 +20,7 @@ import os
 import shutil
 
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR
+from convert2rhel.utils import BACKUP_DIR, DATA_DIR
 
 
 loggerinst = logging.getLogger(__name__)
@@ -68,3 +68,15 @@ def restore_yum_repos():
 
     if not repo_has_restored:
         loggerinst.info("No .repo files to rollback")
+
+
+def get_hardcoded_repofiles_dir():
+    """Get the path to the hardcoded repofiles for CentOS/Oracle Linux.
+
+    :return: A string with the destination of the hardcoded repofiles
+    :rtype: str
+    """
+    hardcoded_repofiles = os.path.join(
+        DATA_DIR, "repos/%s-%s.%s" % system_info.id, system_info.version.minor, system_info.version.major
+    )
+    return hardcoded_repofiles

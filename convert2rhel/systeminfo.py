@@ -97,6 +97,7 @@ class SystemInfo(object):
         self.kmods_to_ignore = []
         # Booted kernel VRA (version, release, architecture), e.g. "4.18.0-240.22.1.el8_3.x86_64"
         self.booted_kernel = ""
+        #
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
