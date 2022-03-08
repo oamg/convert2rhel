@@ -3,6 +3,8 @@ upstream_package_name: convert2rhel
 downstream_package_name: convert2rhel
 upstream_project_url: https://github.com/oamg/convert2rhel
 
+srpm_build_deps: []
+
 actions:
   # do not get the version from a tag (git describe) but from the spec file
   get-current-version:
