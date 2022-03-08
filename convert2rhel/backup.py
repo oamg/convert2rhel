@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 
+from convert2rhel import toolopts
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.utils import BACKUP_DIR, TMP_DIR, download_pkg, remove_orphan_folders, run_subprocess
 
@@ -133,7 +134,9 @@ class RestorablePackage(object):
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
             hardcoded_reposdir = get_hardcoded_repofiles_dir()
-            reposdir = hardcoded_reposdir if os.path.exists(hardcoded_reposdir) else None
+            reposdir = None
+            if os.path.exists(hardcoded_reposdir) and toolopts.no_rhsm:
+                reposdir = hardcoded_reposdir
 
             # When backing up the packages, the original system repofiles are still available and for them we can't
             # use the releasever for RHEL repositories
