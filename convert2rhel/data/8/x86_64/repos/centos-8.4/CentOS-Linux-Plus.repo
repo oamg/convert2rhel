@@ -9,9 +9,9 @@
 # baseurl line instead.
 
 [plus]
-name=CentOS Linux $releasever - Plus
-#mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/$releasever/centosplus/$basearch/os/
+name=CentOS Linux 8.4.2105 - Plus
+#mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=centosplus&infra=$infra
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/centosplus/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

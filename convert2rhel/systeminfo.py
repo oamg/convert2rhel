@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import socket
 
 from collections import namedtuple
 
@@ -106,6 +107,7 @@ class SystemInfo(object):
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
+        self.has_internet_access = self._check_internet_access()
 
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
@@ -305,6 +307,36 @@ class SystemInfo(object):
         #          "to be consumed before registering the system with RHSM."
         #     )
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
+
+    def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
+        """Check weather or not the machine is connect to the internet.
+
+        This method will try to stabilish a socket connection throught the
+        default host in the method signature (8.8.8.8), if it's connected
+        successfully, then we know that internet is accessibly from the host.
+
+        .. warnings::
+            We might have some problems with this if the host machine is using
+            a NAT gateway to route the outbound requests
+        .. seealso::
+            * Comparision of different methods to check internet connections: https://stackoverflow.com/a/33117579
+            * Redirecting ip addresses: https://stackoverflow.com/a/33117579https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+
+        :param host: The host to stablish to connection. Defatuls to "8.8.8.8".
+        :type host: str
+        :param port: The port to use in the connection. Defaults to 53.
+        :type port: int
+        :param timeout: The maximum number of timeouts for the connection. Defaults to 3.
+        :type port: int
+        """
+        try:
+            self.logger.info("Checking internet connectivity using host '%s' and port '%s'." % (host, port))
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except OSError:
+            self.logger.warning("Couldn't connect to the host '%s'." % host)
+            return False
 
 
 # Code to be executed upon module import

@@ -9,9 +9,9 @@
 # baseurl line instead.
 
 [fasttrack]
-name=CentOS Linux $releasever - FastTrack
-#mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=fasttrack&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/$releasever/fasttrack/$basearch/os/
+name=CentOS Linux 8.4.2105 - FastTrack
+#mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=fasttrack&infra=$infra
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/fasttrack/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

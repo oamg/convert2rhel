@@ -26,7 +26,6 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=0
 
-
 [ol8_u0_baseos_base]
 name=Oracle Linux 8 BaseOS GA ($basearch)
 baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/0/baseos/base/$basearch/

@@ -1,36 +1,36 @@
 # CentOS-Linux-Sources.repo
 
 [baseos-source]
-name=CentOS Linux $releasever - BaseOS - Source
-baseurl=http://vault.centos.org/$contentdir/$releasever/BaseOS/Source/
+name=CentOS Linux 8.4.2105 - BaseOS - Source
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/BaseOS/Source/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [appstream-source]
-name=CentOS Linux $releasever - AppStream - Source
-baseurl=http://vault.centos.org/$contentdir/$releasever/AppStream/Source/
+name=CentOS Linux 8.4.2105 - AppStream - Source
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/AppStream/Source/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [powertools-source]
-name=CentOS Linux $releasever - PowerTools - Source
-baseurl=http://vault.centos.org/$contentdir/$releasever/PowerTools/Source/
+name=CentOS Linux 8.4.2105 - PowerTools - Source
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/PowerTools/Source/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [extras-source]
-name=CentOS Linux $releasever - Extras - Source
-baseurl=http://vault.centos.org/$contentdir/$releasever/extras/Source/
+name=CentOS Linux 8.4.2105 - Extras - Source
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/extras/Source/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [plus-source]
-name=CentOS Linux $releasever - Plus - Source
-baseurl=http://vault.centos.org/$contentdir/$releasever/centosplus/Source/
+name=CentOS Linux 8.4.2105 - Plus - Source
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/centosplus/Source/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

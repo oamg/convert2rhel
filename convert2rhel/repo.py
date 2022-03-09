@@ -77,6 +77,6 @@ def get_hardcoded_repofiles_dir():
     :rtype: str
     """
     hardcoded_repofiles = os.path.join(
-        DATA_DIR, "repos/%s-%s.%s" % system_info.id, system_info.version.minor, system_info.version.major
+        DATA_DIR, "repos/%s-%s.%s" % (system_info.id, system_info.version.major, system_info.version.minor)
     )
     return hardcoded_repofiles

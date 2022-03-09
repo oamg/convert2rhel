@@ -4,7 +4,7 @@
 # Verify your mount point matches one of the below file:// paths.
 
 [media-baseos]
-name=CentOS Linux 8.4.2105 - Media - BaseOS
+name=CentOS Linux 8.5.2111 - Media - BaseOS
 baseurl=file:///media/CentOS/BaseOS
         file:///media/cdrom/BaseOS
         file:///media/cdrecorder/BaseOS
@@ -13,7 +13,7 @@ enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [media-appstream]
-name=CentOS Linux 8.4.2105 - Media - AppStream
+name=CentOS Linux 8.5.2111 - Media - AppStream
 baseurl=file:///media/CentOS/AppStream
         file:///media/cdrom/AppStream
         file:///media/cdrecorder/AppStream

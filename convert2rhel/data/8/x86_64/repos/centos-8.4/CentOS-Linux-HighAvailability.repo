@@ -9,9 +9,9 @@
 # baseurl line instead.
 
 [ha]
-name=CentOS Linux $releasever - HighAvailability
-#mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=HighAvailability&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/$releasever/HighAvailability/$basearch/os/
+name=CentOS Linux 8.4.2105 - HighAvailability
+#mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=HighAvailability&infra=$infra
+baseurl=http://vault.centos.org/$contentdir/8.4.2105/HighAvailability/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

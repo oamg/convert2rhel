@@ -129,8 +129,8 @@ def test_restorable_file_backup(filepath, backup_dir, file_content, expected, tm
     if file_content:
         tmp_file.write(file_content)
 
-    monkeypatch.setattr(backup, "BACKUP_DIR", tmp_backup)
-    rf = backup.RestorableFile(filepath=tmp_file)
+    monkeypatch.setattr(backup, "BACKUP_DIR", str(tmp_backup))
+    rf = backup.RestorableFile(filepath=str(tmp_file))
     rf.backup()
 
     if expected:
@@ -140,7 +140,7 @@ def test_restorable_file_backup(filepath, backup_dir, file_content, expected, tm
 def test_restorable_file_backup_oserror(tmpdir, caplog):
     tmp_file = tmpdir.join("test.rpm")
     tmp_file.write("test")
-    rf = backup.RestorableFile(filepath=tmp_file)
+    rf = backup.RestorableFile(filepath=str(tmp_file))
 
     with pytest.raises(SystemExit):
         rf.backup()
@@ -150,7 +150,7 @@ def test_restorable_file_backup_oserror(tmpdir, caplog):
 
 @pytest.mark.parametrize(
     ("filepath", "backup_dir", "file_content", "expected"),
-    (("test.rpm", "backup", "test", "File {} restored"), ("test.rpm", "backup", "", "{} hasn't been backed up")),
+    (("test.rpm", "backup", "test", "restored"), ("test.rpm", "backup", "", "hasn't been backed up")),
 )
 def test_restorable_file_restore(filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog):
     tmp_backup = tmpdir
@@ -159,12 +159,12 @@ def test_restorable_file_restore(filepath, backup_dir, file_content, expected, t
     if file_content:
         tmp_backup.write(file_content)
 
-    monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(tmp_backup))
-    rf = backup.RestorableFile(filepath=tmp_file)
+    monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
+    rf = backup.RestorableFile(filepath=str(tmp_file))
     rf.restore()
 
     if expected:
-        assert expected.format(tmp_backup) in caplog.records[-1].message
+        assert expected in caplog.records[-1].message
 
 
 def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
@@ -172,13 +172,13 @@ def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
     tmp_backup = tmp_backup.mkdir("backup").join("test.rpm")
     tmp_backup.write("test")
 
-    monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(tmp_backup))
+    monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
 
-    rf = backup.RestorableFile(filepath=tmp_backup)
+    rf = backup.RestorableFile(filepath="/non-existing/test.rpm")
     rf.restore()
 
     # Source and dest files are the same, which throws this error
-    assert "Error(None): None" in caplog.records[-1].message
+    assert "Error(2): No such file or directory" in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

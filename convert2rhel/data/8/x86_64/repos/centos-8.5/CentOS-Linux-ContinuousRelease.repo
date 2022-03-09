@@ -16,20 +16,9 @@
 # feedback for the next release.
 
 [cr]
-name=CentOS Linux 8.4.2105 - ContinuousRelease
-#mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=cr&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.4.2105/cr/$basearch/os/
-gpgcheck=1
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
-# CentOS-Linux-Debuginfo.repo
-#
-# All debug packages are merged into a single repo, split by basearch, and are
-# not signed.
-
-[debuginfo]
-name=CentOS Linux 8.4.2105 - Debuginfo
-baseurl=http://debuginfo.centos.org/8.4.2105/$basearch/
+name=CentOS Linux 8.5.2111 - ContinuousRelease
+#mirrorlist=http://#mirrorlist.centos.org/?release=8.5.2111&arch=$basearch&repo=cr&infra=$infra
+baseurl=http://vault.centos.org/$contentdir/8.5.2111/cr/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

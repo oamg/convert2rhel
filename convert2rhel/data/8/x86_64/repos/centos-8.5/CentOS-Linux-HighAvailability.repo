@@ -1,4 +1,4 @@
-# CentOS-Linux-AppStream.repo
+# CentOS-Linux-HighAvailability.repo
 #
 # The #mirrorlist system uses the connecting IP address of the client and the
 # update status of each mirror to pick current mirrors that are geographically
@@ -8,10 +8,10 @@
 # If the #mirrorlist does not work for you, you can try the commented out
 # baseurl line instead.
 
-[appstream]
-name=CentOS Linux 8.4.2105 - AppStream
-#mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=AppStream&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.4.2105/AppStream/$basearch/os/
+[ha]
+name=CentOS Linux 8.5.2111 - HighAvailability
+#mirrorlist=http://#mirrorlist.centos.org/?release=8.5.2111&arch=$basearch&repo=HighAvailability&infra=$infra
+baseurl=http://vault.centos.org/$contentdir/8.5.2111/HighAvailability/$basearch/os/
 gpgcheck=1
-enabled=1
+enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
