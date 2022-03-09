@@ -78,12 +78,15 @@ discover+:
   discover+:
     test: checks-after-conversion
   prepare+:
+  - name: test no sub manager installed
+    how: shell
+    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
   - name: install subscription manager
     how: ansible
     playbook: tests/ansible_collections/roles/install-submgr/main.yml
   - name: main conversion preparation
     how: shell
-    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_remove_all_submgr_pkgs.py
+    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
