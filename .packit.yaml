@@ -20,7 +20,6 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
-    - oraclelinux-7-x86_64
     - oraclelinux-8-x86_64
 - job: copr_build
   trigger: commit
@@ -43,12 +42,10 @@ jobs:
   metadata:
     targets:
       epel-7-x86_64:
-        distros: [centos-7]
+        distros: [centos-7, oraclelinux-7]
       # Disabled until C8 repos are stable again, see OAMG-6499, OAMG-6535 for more info
       #epel-8-x86_64:
       #  distros: [centos-8]
-      oraclelinux-7-x86_64:
-        distros: [oraclelinux-7]
       oraclelinux-8-x86_64:
         distros: [oraclelinux-8]
     use_internal_tf: True
