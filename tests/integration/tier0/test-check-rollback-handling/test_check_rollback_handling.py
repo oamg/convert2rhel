@@ -1,18 +1,60 @@
-import os
 import platform
 
 from envparse import env
 
 
+booted_os = platform.platform()
+# TODO: in integration test for PR#411. Add 'oracle-logos' and 'centos-logos'
+#  to (OL_7_PKGS, OL_8_PKGS) and (COS_7_PKGS, COS_8_PKGS) respectively
+#  as these missing packages are a result of a different cause
+#  but still missing after a rollback.
+OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup"]
+OL_8_PKGS = ["oracle-release-el8", "usermode", "rhn-setup"]
+COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose"]
+COS_8_PKGS = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose"]
+# The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
+# and Oracle Linux 8.2 respectively.
+
+
+def install_pkg(shell, pkgs=None):
+    if "centos-7" in booted_os:
+        pkgs = COS_7_PKGS
+    elif "centos-8" in booted_os:
+        pkgs = COS_8_PKGS
+    elif "oracle-7" in booted_os:
+        pkgs = OL_7_PKGS
+    elif "oracle-8" in booted_os:
+        pkgs = OL_8_PKGS
+    for pkg in pkgs:
+        print(f"PREP: Setting up {pkg}")
+        assert shell(f"yum install -y {pkg}").returncode == 0
+
+
+def is_installed(shell, pkgs=None):
+    # Iterate over given packages and check if untracked packages stay installed.
+    for pkg in pkgs:
+        print(f"CHECK: Checking for {pkg}")
+        query = shell(f"rpm -q {pkg}")
+        assert f"{pkg} is not installed" not in query.output
+
+
+def post_rollback_check(shell):
+    if "centos-7" in booted_os:
+        is_installed(shell, COS_7_PKGS)
+    elif "centos-8" in booted_os:
+        is_installed(shell, COS_8_PKGS)
+    elif "oracle-7" in booted_os:
+        is_installed(shell, OL_7_PKGS)
+    elif "oracle-8" in booted_os:
+        is_installed(shell, OL_8_PKGS)
+
+
 def test_proper_rhsm_clean_up(shell, convert2rhel):
-    """Test that c2r does not remove usermod, rhn-setup and os-release during rollback.
-    Also checks that the system was successfully unregistered.
-    """
+    # Primary issue - checking for usermode, rhn-setup and os-release.
+    # It also checks that the system has been successfully unregistered.
+    install_pkg(shell)
+    # define_booted_os(shell)
 
-    # Ensure usermode and rhn-setup packages are presented
-    assert shell("yum install -y usermode rhn-setup").returncode == 0
-
-    # run c2r until subscribing the system and then emulate pressing Ctrl + C
     with convert2rhel(
         ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
             env.str("RHSM_SERVER_URL"),
@@ -32,50 +74,33 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
         c2r.expect("Calling command 'subscription-manager unregister'")
         c2r.expect("System unregistered successfully.")
 
-    # check that packages still are in place
-    assert shell("rpm -qi usermode").returncode == 0
-    assert shell("rpm -qi rhn-setup").returncode == 0
-    if "centos-7" in platform.platform():
-        assert shell("rpm -qi centos-release").returncode == 0
-    elif "centos-8" in platform.platform():
-        assert shell("rpm -qi centos-linux-release").returncode == 0
-
-
-def assert_not_installed(shell, pkg=""):
-    # Checks if untracked package stays installed
-    query = shell(f"rpm -q {pkg}")
-    try:
-        assert f"{pkg} is not installed" not in query.output
-    except AssertionError:
-        # Install the package (if missing) back
-        # to not misrepresent results of other tests
-        os.system(f"yum install -y {pkg}")
-        raise
+    post_rollback_check(shell)
 
 
 def test_check_untrack_pkgs_graceful(convert2rhel, shell):
+    # Provide c2r with incorrect username and password,
+    # so the registration fails and c2r performs rollback.
+    # Primary issue - checking for python/3-syspurpose not being removed.
     username = "foo"
     password = "bar"
-    # Provide c2r with incorrect username and password,
-    # so it fails the registration and performs rollback.
+    install_pkg(shell)
+    # define_booted_os(shell)
     with convert2rhel(f"-y --no-rpm-va --username {username} --password {password}") as c2r:
         assert c2r.exitstatus != 0
-    if "centos-8" in platform.platform():
-        assert_not_installed(shell, "python3-syspurpose")
-    elif "oracle-7" in platform.platform():
-        assert_not_installed(shell, "oracle-logos")
+
+    post_rollback_check(shell)
 
 
 def test_check_untrack_pkgs_force(convert2rhel, shell):
-    # Terminate the c2r process forcefully,
-    # so it performs rollback.
+    # Terminate the c2r process forcefully, so the rollback is performed.
+    # Primary issue - checking for python/3-syspurpose not being removed.
+    install_pkg(shell)
+    # define_booted_os(shell)
     with convert2rhel(f"-y --no-rpm-va") as c2r:
         c2r.expect("Username")
         # Due to inconsistent behaviour of 'Ctrl+c'
         # use 'Ctrl+d' instead
         c2r.sendcontrol("d")
         assert c2r.exitstatus != 0
-    if "centos-8" in platform.platform():
-        assert_not_installed(shell, "python3-syspurpose")
-    elif "oracle-7" in platform.platform():
-        assert_not_installed(shell, "oracle-logos")
+
+    post_rollback_check(shell)
