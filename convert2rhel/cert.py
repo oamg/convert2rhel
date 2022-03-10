@@ -74,7 +74,7 @@ class SystemCert(object):
             loggerinst.info("Certificate %s removed" % self._target_cert_path)
         except OSError as err:
             if err.errno == 2:
-                """Resolves RHSM error when removing certs, as the system migth not have intalled any certs yet"""
-                loggernist.debug("No RHSM certificates found to be removed")
+                # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
+                loggerinst.debug("No RHSM certificates found to be removed")
             else:
                 loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))

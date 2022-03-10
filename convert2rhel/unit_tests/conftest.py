@@ -9,6 +9,12 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
+if sys.version_info[:2] <= (2, 7):
+    import mock  # pylint: disable=import-error
+else:
+    from unittest import mock  # pylint: disable=no-name-in-module
+
+
 @pytest.fixture(scope="session")
 def is_py26():
     return sys.version_info[:2] == (2, 6)
@@ -57,7 +63,7 @@ def pkg_root():
 
 @pytest.fixture(autouse=True)
 def setup_logger(tmpdir):
-    initialize_logger(log_name="convert2rhel", log_dir=str(tmpdir))
+    setup_logger_handler(log_name="convert2rhel", log_dir=str(tmpdir))
 
 
 @pytest.fixture

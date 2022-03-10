@@ -90,12 +90,12 @@ class TestCert(unittest.TestCase):
         shutil.rmtree(unit_tests.TMP_DIR)
 
 
-def test_remove_cert(caplog, remove_cert_setup):
-    cert_file = system_cert._target_cert_path
-    with open(cert_filename, 'wb') as  cert_file:
-        cert_file.write(b'some content')
+def test_remove_cert(caplog, system_cert):
+    cert_filename = system_cert._target_cert_path
+    with open(cert_filename, "wb") as cert_file:
+        cert_file.write(b"some content")
 
-    system_cert[sys_cert].remove()
+    system_cert.remove()
 
     assert "/filename removed" in caplog.messages[-1]
 
@@ -113,12 +113,12 @@ def test_remove_cert(caplog, remove_cert_setup):
         (OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"), "Permission denied:"),
     ),
 )
-def test_remove_cert_error_conditions(error_condition, expected_text_in_logs, caplog, monkeypatch, remove_cert_setup):
+def test_remove_cert_error_conditions(error_condition, expected_text_in_logs, caplog, monkeypatch, system_cert):
     def fake_os_remove(path):
         raise error_condition
 
     monkeypatch.setattr(os, "remove", fake_os_remove)
 
-    remove_cert_setup["sys_cert_instance"].remove()
+    system_cert.remove()
 
     assert expected_text_in_logs != caplog.messages[-1]
