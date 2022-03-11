@@ -67,7 +67,7 @@ def setup_logger(tmpdir):
 
 
 @pytest.fixture
-def system_cert(monkeypatch, tmpdir):
+def system_cert_with_target_path(monkeypatch, tmpdir):
     tmp_file = tmpdir / "filename"
 
     monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
