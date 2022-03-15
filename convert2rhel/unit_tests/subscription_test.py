@@ -181,6 +181,13 @@ class TestSubscription(unittest.TestCase):
         expected = ["subscription-manager", "register", "--force", "--username=user", "--password=pass with space"]
         self.assertEqual(subscription.get_registration_cmd(), expected)
 
+    @unit_tests.mock(subscription, "get_avail_subs", GetOneSubMocked())
+    @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
+    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
+    def test_attach_subscription_one_sub_available(self):
+        self.assertEqual(subscription.attach_subscription(), True)
+        self.assertEqual(utils.let_user_choose_item.called, 0)
+
     def test_get_registration_cmd_activation_key(self):
         tool_opts.activation_key = "activation_key"
         tool_opts.org = "org"
@@ -199,6 +206,7 @@ class TestSubscription(unittest.TestCase):
         expected = ["subscription-manager", "register", "--force", "--username=test", "--password=test"]
         self.assertEqual(subscription.get_registration_cmd(), expected)
         self.assertEqual(utils.prompt_user.called, {"Username: ": 2, "Password: ": 2})
+        
     @unit_tests.mock(subscription, "get_avail_subs", GetOneSubMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
