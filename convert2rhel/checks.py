@@ -380,10 +380,8 @@ def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
 def check_rhel_compatible_kernel_is_used():
     """Ensure the booted kernel is signed, is standard (not UEK, realtime, ...), and has the same version as in RHEL.
 
-        By requesting that, we can be confiden    base.conf.substitutions["ocidomain"] = "oracle.com"
-        base.conf.substitutions["ociregion"] = ""
-    t that the RHEL kernel will provide the same capabilities as on the
-        original system.
+    By requesting that, we can be confident that the RHEL kernel will provide the same capabilities as on the
+    original system.
     """
     logger.task("Prepare: Check kernel compatibility with RHEL")
     if any(
@@ -510,12 +508,13 @@ def is_loaded_kernel_latest():
         # Sort out for the most recent kernel with reverse order
         # In case `repoquery` returns more than one kernel in the output
         # We display the latest one to the user.
-        _, most_recent_kernel = sorted(packages, reverse=True)[0]
+        _, latest_kernel = sorted(packages, reverse=True)[0]
+        latest_kernel = latest_kernel.replace('"', "")
 
         # The loaded kernel version
         uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
         loaded_kernel = uname_output.rsplit(".", 1)[0]
-        match = compare_package_versions(most_recent_kernel, str(loaded_kernel))
+        match = compare_package_versions(latest_kernel, str(loaded_kernel))
 
         if match == 0:
             logger.info("Kernel currently loaded is at the latest version.")
@@ -526,7 +525,7 @@ def is_loaded_kernel_latest():
                 " Current loaded kernel: %s\n\n"
                 "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                 "1. yum install %s-%s -y\n"
-                "2. reboot" % (most_recent_kernel, loaded_kernel, package_to_check, most_recent_kernel)
+                "2. reboot" % (latest_kernel, loaded_kernel, package_to_check, latest_kernel)
             )
     else:
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
