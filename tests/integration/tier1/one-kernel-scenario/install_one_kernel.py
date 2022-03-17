@@ -1,7 +1,5 @@
 import platform
 
-import pytest
-
 
 def test_install_one_kernel(shell):
     # installing kernel package

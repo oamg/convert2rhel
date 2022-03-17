@@ -21,8 +21,11 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
     assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
 
-    # Move all repos to other location so it is not used
+    # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup && mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
+
+    # Since we are moving all repos away, we need to bypass kernel check
+    os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
@@ -71,6 +74,10 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
 
     # Restore repos
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
+
+    # Clean up
+    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
+    del os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"]
 
 
 def test_missing_system_release(shell, convert2rhel):
