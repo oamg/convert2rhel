@@ -204,3 +204,26 @@ discover+:
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/system_up_to_date:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: preapre non latest kernel
+    how: shell
+    script: pytest -svv tests/integration/tier1/system-up-to-date/install_non_latest_kernel.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+  - name: test inhibitor on non latest kernels
+    how: shell
+    script: pytest -svv tests/integration/tier1/system-up-to-date/test_non_latest_kernel_inhibitor.py
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+  - name: test conversion non updated package
+    how: shell
+    script: pytest -svv tests/integration/tier1/system-up-to-date/test_system_up_to_date.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml

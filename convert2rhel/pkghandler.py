@@ -1059,7 +1059,7 @@ def _get_packages_to_update_dnf():
     # Same thing for CentOS, but this time, the URL for the vault has changed
     # and instead of just ussing $releasever (8.5, 8.4...), we need either
     # using the correct $releasever (8.5.2111) or setting up the $contentdir
-    if system_info.id == "centos":
+    elif system_info.id == "centos":
         base.conf.substitutions["contentdir"] = system_info.id
 
     base.read_all_repos()

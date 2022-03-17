@@ -9,5 +9,5 @@ def test_activation_key_conversion(convert2rhel):
             env.str("RHSM_ORG"),
         )
     ) as c2r:
-        pass
+        c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0

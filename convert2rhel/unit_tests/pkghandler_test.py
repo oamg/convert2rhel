@@ -41,6 +41,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
+from convert2rhel.unit_tests.conftest import all_systems, oracle7
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -193,7 +194,13 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(
             utils.run_subprocess.cmd,
-            ["yum", "install", "-y", "--releasever=8", "--setopt=module_platform_id=platform:el8"],
+            [
+                "yum",
+                "install",
+                "-y",
+                "--releasever=8",
+                "--setopt=module_platform_id=platform:el8",
+            ],
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -230,7 +237,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.call_yum_cmd("install")
 
         self.assertEqual(
-            utils.run_subprocess.cmd, ["yum", "install", "-y", "--disablerepo=*", "--enablerepo=rhel-7-extras-rpm"]
+            utils.run_subprocess.cmd,
+            [
+                "yum",
+                "install",
+                "-y",
+                "--disablerepo=*",
+                "--enablerepo=rhel-7-extras-rpm",
+            ],
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -241,7 +255,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_call_yum_cmd_with_submgr_enabled_repos(self):
         pkghandler.call_yum_cmd("install")
 
-        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "--enablerepo=rhel-7-extras-rpm"])
+        self.assertEqual(
+            utils.run_subprocess.cmd,
+            ["yum", "install", "-y", "--enablerepo=rhel-7-extras-rpm"],
+        )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
@@ -262,7 +279,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(
             utils.run_subprocess.cmd,
-            ["yum", "install", "-y", "--disablerepo=disable-repo", "--enablerepo=enable-repo", "pkg"],
+            [
+                "yum",
+                "install",
+                "-y",
+                "--disablerepo=disable-repo",
+                "--enablerepo=enable-repo",
+                "pkg",
+            ],
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -284,7 +308,11 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda _: ["pkg"])
     @unit_tests.mock(pkghandler, "resolve_dep_errors", lambda output: output)
-    @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg: {"errors": set([pkg]), "mismatches": set()})
+    @unit_tests.mock(
+        pkghandler,
+        "get_problematic_pkgs",
+        lambda pkg: {"errors": set([pkg]), "mismatches": set()},
+    )
     @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
     def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -1057,7 +1085,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "kernel-4.7.2-201.fc24"])
+        self.assertEqual(
+            utils.run_subprocess.cmd,
+            ["yum", "install", "-y", "kernel-4.7.2-201.fc24"],
+        )
 
     class ReplaceNonRhelInstalledKernelMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1093,7 +1124,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
         self.assertEqual(utils.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
-        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "kernel-4.7.4-200.fc24"])
+        self.assertEqual(
+            utils.run_subprocess.cmd,
+            ["yum", "install", "-y", "kernel-4.7.4-200.fc24"],
+        )
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1127,7 +1161,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.download_pkg.enable_repos, ["enabled_rhsm_repo"])
         self.assertEqual(
             utils.run_subprocess.cmd,
-            ["rpm", "-i", "--force", "--nodeps", "--replacepkgs", "%skernel-4.7.4-200.fc24*" % utils.TMP_DIR],
+            [
+                "rpm",
+                "-i",
+                "--force",
+                "--nodeps",
+                "--replacepkgs",
+                "%skernel-4.7.4-200.fc24*" % utils.TMP_DIR,
+            ],
         )
 
         # test the use case where custom repos are used for the conversion
@@ -1392,7 +1433,11 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     ),
 )
 def test_call_yum_cmd_w_downgrades(monkeypatch, retcode, output):
-    monkeypatch.setattr(pkghandler, "call_yum_cmd", value=mock.Mock(return_value=(output, retcode)))
+    monkeypatch.setattr(
+        pkghandler,
+        "call_yum_cmd",
+        value=mock.Mock(return_value=(output, retcode)),
+    )
     resolve_dep_errors = mock.Mock()
     monkeypatch.setattr(pkghandler, "resolve_dep_errors", value=resolve_dep_errors)
     monkeypatch.setattr(pkghandler, "get_problematic_pkgs", value=mock.Mock())
@@ -1408,7 +1453,11 @@ def test_call_yum_cmd_w_downgrades(monkeypatch, retcode, output):
         ("123-4.fc35", "123-4.fc35", 0),
         ("123-5.fc35", "123-4.fc35", 1),
         ("123-3.fc35", "123-4.fc35", -1),
-        ("4.6~pre16262021g84ef6bd9-3.fc35", "4.6~pre16262021g84ef6bd9-3.fc35", 0),
+        (
+            "4.6~pre16262021g84ef6bd9-3.fc35",
+            "4.6~pre16262021g84ef6bd9-3.fc35",
+            0,
+        ),
         ("2:8.2.3568-1.fc35", "2:8.2.3568-1.fc35", 0),
     ),
 )
@@ -1438,12 +1487,19 @@ def test_compare_package_versions(version1, version2, expected):
 )
 def test_get_total_packages_to_update(package_manager_type, packages, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
-    monkeypatch.setattr(pkghandler, "_get_packages_to_update_%s" % package_manager_type, value=lambda: packages)
+    monkeypatch.setattr(
+        pkghandler,
+        "_get_packages_to_update_%s" % package_manager_type,
+        value=lambda: packages,
+    )
 
     assert get_total_packages_to_update() == packages
 
 
-@pytest.mark.skipif(pkgmanager.TYPE != "yum", reason="No yum module detected on the system, skipping it.")
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
 def test_get_packages_to_update_yum(packages, monkeypatch):
     sys.path.insert(0, "/usr/share/yum-cli")
@@ -1459,12 +1515,19 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
 
     monkeypatch.setattr(YumBaseCli, "returnPkgLists", value=pkg_lists_mock)
 
+    # Remvoe the /usr/share/yum-cli from the system path so the code
+    # can load it
+    sys.path.remove("/usr/share/yum-cli")
     assert _get_packages_to_update_yum() == packages
 
 
-@pytest.mark.skipif(pkgmanager.TYPE != "dnf", reason="No dnf module detected on the system, skipping it.")
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "dnf",
+    reason="No dnf module detected on the system, skipping it.",
+)
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
-def test_get_packages_to_update_dnf(packages, monkeypatch):
+@all_systems
+def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
     from dnf import Base  # pylint: disable=E0401
 
     dummy_mock = mock.Mock()
@@ -1577,7 +1640,10 @@ Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
 with open(
-    os.path.join(os.path.dirname(__file__), "data/pkghandler_yum_distro_sync_output_expect_deps_for_3_pkgs_found.txt")
+    os.path.join(
+        os.path.dirname(__file__),
+        "data/pkghandler_yum_distro_sync_output_expect_deps_for_3_pkgs_found.txt",
+    )
 ) as f:
     YUM_DISTRO_SYNC_OUTPUT = f.read()
 
@@ -1698,17 +1764,49 @@ def test_get_problematic_pkgs_requires_unusual_names():
         ("Error: Package: not_a_package_name", "%s", set()),
         ("gcc-10.3.1-1.el8.x86_64", "%s", set(["gcc"])),
         ("gcc-c++-10.3.1-1.el8.x86_64", "%s", set(["gcc-c++"])),
-        ("ImageMagick-c++-6.9.10.68-6.el7_9.i686", "%s", set(["ImageMagick-c++"])),
+        (
+            "ImageMagick-c++-6.9.10.68-6.el7_9.i686",
+            "%s",
+            set(["ImageMagick-c++"]),
+        ),
         ("389-ds-base-1.3.10.2-14.el7_9.x86_64", "%s", set(["389-ds-base"])),
-        ("devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-11-libstdc++-devel"])),
-        ("devtoolset-1.1-libstdc++-devel-11.2.1-1.2.el7.x86_64", "%s", set(["devtoolset-1.1-libstdc++-devel"])),
-        ("java-1.8.0-openjdk-1.8.0.312.b07-2.fc33.x86_64", "%s", set(["java-1.8.0-openjdk"])),
+        (
+            "devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64",
+            "%s",
+            set(["devtoolset-11-libstdc++-devel"]),
+        ),
+        (
+            "devtoolset-1.1-libstdc++-devel-11.2.1-1.2.el7.x86_64",
+            "%s",
+            set(["devtoolset-1.1-libstdc++-devel"]),
+        ),
+        (
+            "java-1.8.0-openjdk-1.8.0.312.b07-2.fc33.x86_64",
+            "%s",
+            set(["java-1.8.0-openjdk"]),
+        ),
         # Test NEVR with an epoch
-        ("NetworkManager-1:1.18.8-2.0.1.el7_9.x86_64", "%s", set(["NetworkManager"])),
+        (
+            "NetworkManager-1:1.18.8-2.0.1.el7_9.x86_64",
+            "%s",
+            set(["NetworkManager"]),
+        ),
         # Test with simple error messages that we've pre-compiled the regex for
-        ("Error: Package: gcc-10.3.1-1.el8.x86_64", "Error: Package: %s", set(["gcc"])),
-        ("multilib versions: gcc-10.3.1-1.el8.i686", "multilib versions: %s", set(["gcc"])),
-        ("problem with installed package: gcc-10.3.1-1.el8.x86_64", "problem with installed package: %s", set(["gcc"])),
+        (
+            "Error: Package: gcc-10.3.1-1.el8.x86_64",
+            "Error: Package: %s",
+            set(["gcc"]),
+        ),
+        (
+            "multilib versions: gcc-10.3.1-1.el8.i686",
+            "multilib versions: %s",
+            set(["gcc"]),
+        ),
+        (
+            "problem with installed package: gcc-10.3.1-1.el8.x86_64",
+            "problem with installed package: %s",
+            set(["gcc"]),
+        ),
         # Test that a template that was not pre-compiled works
         (
             """Some Test Junk
@@ -1727,7 +1825,11 @@ def test_get_problematic_pkgs_requires_unusual_names():
             set(["gcc", "gcc-c++", "bash"]),
         ),
         # Test with actual yum output
-        (YUM_DISTRO_SYNC_OUTPUT, "Error: Package: %s", set(["gcc", "gcc-c++", "libstdc++-devel"])),
+        (
+            YUM_DISTRO_SYNC_OUTPUT,
+            "Error: Package: %s",
+            set(["gcc", "gcc-c++", "libstdc++-devel"]),
+        ),
     ),
 )
 def test_find_pkg_names(output, message, expected_names):
@@ -1762,7 +1864,11 @@ def test_find_pkg_names_no_names(output, message):
     ),
 )
 def test_filter_installed_pkgs(packages, expected, is_rpm_installed, monkeypatch):
-    monkeypatch.setattr(system_info, "is_rpm_installed", mock.Mock(return_value=is_rpm_installed))
+    monkeypatch.setattr(
+        system_info,
+        "is_rpm_installed",
+        mock.Mock(return_value=is_rpm_installed),
+    )
     assert pkghandler.filter_installed_pkgs(packages) == expected
 
 
