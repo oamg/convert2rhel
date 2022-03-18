@@ -39,7 +39,7 @@ install: .install .images .env .pre-commit
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
-	$(PIP) install --upgrade -r ./requirements/local.centos8.requirements.txt; \
+	$(PIP) install --upgrade -r ./requirements/centos8.requirements.txt; \
 	touch $@
 
 .pre-commit:
