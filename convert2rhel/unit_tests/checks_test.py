@@ -584,7 +584,10 @@ class TestEFIChecks(unittest.TestCase):
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
     def test_check_efi_efi_detected_secure_boot(self):
-        self._check_efi_critical("The conversion with secure boot is currently not possible.")
+        self._check_efi_critical(
+            "The conversion with secure boot is currently not possible.\n"
+            "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
+        )
         self.assertTrue("Secure boot detected." in checks.logger.info_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
