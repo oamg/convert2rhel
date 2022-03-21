@@ -11,7 +11,7 @@ jobs:
     name: coverage-centos${{ matrix.centos_ver }}
     strategy:
       matrix:
-        centos_ver: [8]
+        centos_ver: [7, 8]
 
     runs-on: ubuntu-20.04
     steps:
