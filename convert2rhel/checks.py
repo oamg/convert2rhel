@@ -72,7 +72,10 @@ def check_efi():
         logger.critical("Only x86_64 systems are supported for UEFI conversions.")
     if grub.is_secure_boot():
         logger.info("Secure boot detected.")
-        logger.critical("The conversion with secure boot is currently not possible.")
+        logger.critical(
+            "The conversion with secure boot is currently not possible.\n"
+            "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
+        )
 
     # Get information about the bootloader. Currently the data is not used, but it's
     # good to check that we can obtain all the required data before the PONR. Better to
