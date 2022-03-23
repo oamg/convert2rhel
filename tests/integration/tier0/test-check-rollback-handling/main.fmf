@@ -1,0 +1,5 @@
+summary: check-if-rollback-is-finishing-up-properly
+
+tier: 0
+
+test: pytest -svv
