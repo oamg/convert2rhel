@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import functools
 import itertools
 import logging
 import os
@@ -28,6 +28,7 @@ import rpm
 from convert2rhel import __version__ as convert2rhel_version
 from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
+    _package_version_cmp,
     call_yum_cmd,
     compare_package_versions,
     get_installed_pkg_objects,
@@ -37,13 +38,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import (
-    ask_to_continue,
-    get_file_content,
-    run_subprocess,
-    store_content_to_file,
-    convert_to_int_or_zero,
-)
+from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess, store_content_to_file
 
 
 logger = logging.getLogger(__name__)
@@ -284,8 +279,7 @@ def check_custom_repos_are_valid():
 def ensure_compatibility_of_kmods():
     """Ensure that the host kernel modules are compatible with RHEL.
 
-    :raises:
-        SystemExit: Interrupts the conversion because some kernel modules are not supported in RHEL.
+    :raises SystemExit: Interrupts the conversion because some kernel modules are not supported in RHEL.
     """
     host_kmods = get_loaded_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
@@ -306,7 +300,7 @@ def ensure_compatibility_of_kmods():
             (
                 "The following kernel modules are not supported in RHEL:\n{kmods}\n"
                 "Make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-                "Remove the unsupported modules and run convert2rhel again to continue with the conversion."
+                "Prevent the unsupported modules from loading by following https://access.redhat.com/solutions/41278 and run convert2rhel again to continue with the conversion."
             ).format(kmods=not_supported_kmods, system=system_info.name)
         )
 
@@ -438,49 +432,14 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     list_of_sorted_pkgs = []
     for distinct_kernel_pkgs in pkgs_groups:
         if distinct_kernel_pkgs[0].startswith(("kernel", "kmod")):
-            list_of_sorted_pkgs.append(max(distinct_kernel_pkgs[1], key=_repos_version_key))
+            list_of_sorted_pkgs.append(
+                max(
+                    distinct_kernel_pkgs[1],
+                    key=functools.cmp_to_key(_package_version_cmp),
+                )
+            )
 
     return tuple(list_of_sorted_pkgs)
-
-
-def _repos_version_key(pkg_name):
-    """Identify the version key in a given package name.
-
-    Consider the following pkg_name that will be passed to this function::
-
-        pkg_name = 'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64'
-
-    The output of this will be a tuple containing the package version in a tuple::
-
-        result = _repos_version_key(pkg_name=pkg_name)
-        print(result)
-        # (4, 15, 0, 240, 10, 1)
-
-    The function will ignore the package name as it is not an important information here
-    and will only care about the version that is tied to it's name.
-
-    :param pkg_name: The package to extract the version
-    :type pkg_name: str
-    :return: A tuple containing the package version.
-    :rtype: tuple[int]
-    :raises:
-        SystemExit: Raises SytemExit if it can't find the version in the pkg_name.
-    """
-    # TODO(r0x0d): This should be moved to repo.py or utils.py?
-    try:
-        rpm_version = KERNEL_REPO_RE.search(pkg_name).group("version")
-    except AttributeError:
-        logger.critical(
-            "Unexpected package: %s\n Couldn't find the version of the given package.",
-            pkg_name,
-        )
-    else:
-        return tuple(
-            map(
-                convert_to_int_or_zero,
-                KERNEL_REPO_VER_SPLIT_RE.split(rpm_version),
-            )
-        )
 
 
 def get_rhel_kmods_keys(rhel_kmods_str):

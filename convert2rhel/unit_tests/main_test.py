@@ -17,7 +17,6 @@
 
 
 import os
-import sys
 import unittest
 
 from collections import OrderedDict
@@ -339,12 +338,12 @@ def test_main(monkeypatch):
     resolve_system_info_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
-    perform_pre_checks_mock = mock.Mock()
     system_release_file_mock = mock.Mock()
     os_release_file_mock = mock.Mock()
     backup_varsdir_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
+    perform_system_checks_mock = mock.Mock()
     pre_ponr_conversion_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     post_ponr_conversion_mock = mock.Mock()
@@ -363,11 +362,11 @@ def test_main(monkeypatch):
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(checks, "perform_pre_checks", perform_pre_checks_mock)
     monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
     monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
+    monkeypatch.setattr(checks, "perform_system_checks", perform_system_checks_mock)
     monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
@@ -386,7 +385,6 @@ def test_main(monkeypatch):
     assert resolve_system_info_mock.call_count == 1
     assert collect_early_data_mock.call_count == 1
     assert clean_yum_metadata_mock.call_count == 1
-    assert perform_pre_checks_mock.call_count == 1
     assert system_release_file_mock.call_count == 1
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1

@@ -1315,7 +1315,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_fix_default_kernel_with_no_incorrect_kernel(self):
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
-        self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
+        self.assertTrue(
+            any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs)
+        )
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
 
 
@@ -1926,7 +1928,6 @@ def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
     pkghandler.clean_yum_metadata()
     assert expected in caplog.records[-1].message
 
-
 @all_systems
 def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     pkgs = ["pkg-1", "pkg-2"]
@@ -1935,3 +1936,36 @@ def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     result = pkghandler.get_system_packages_for_replacement()
     for pkg in pkgs:
         assert pkg in result
+
+@pytest.mark.parametrize(
+    ("pkg_1", "pkg_2", "expected"),
+    (
+        (
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64",
+            "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            -1,
+        ),
+        (
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0:4.18.0-240.10.1.el8_3.x86_64",
+            1,
+        ),
+        (
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            0,
+        ),
+        (
+            "no-arch-0:4.18.0-240.15.1.el8_3",
+            "no-arch-0:4.18.0-240.15.1.el8_3",
+            0,
+        ),
+        (
+            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
+            0,
+        ),
+    ),
+)
+def test__package_version_cmp(pkg_1, pkg_2, expected):
+    assert pkghandler._package_version_cmp(pkg_1, pkg_2) == expected
