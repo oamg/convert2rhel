@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Required imports:
 import logging
 import os
 import shutil
@@ -247,10 +246,23 @@ def test_get_release_ver_other(
 ):
     monkeypatch.setattr(systeminfo.SystemInfo, "_get_cfg_opt", mock.Mock(return_value=releasever_val))
     monkeypatch.setattr(systeminfo.SystemInfo, "_check_internet_access", mock.Mock(return_value=has_internet))
+    monkeypatch.setattr(
+        systeminfo.SystemInfo,
+        "_get_cfg_opt",
+        mock.Mock(return_value=releasever_val),
+    )
     if self_name:
-        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_name", mock.Mock(return_value=self_name))
+        monkeypatch.setattr(
+            systeminfo.SystemInfo,
+            "_get_system_name",
+            mock.Mock(return_value=self_name),
+        )
     if self_version:
-        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_version", mock.Mock(return_value=self_version))
+        monkeypatch.setattr(
+            systeminfo.SystemInfo,
+            "_get_system_version",
+            mock.Mock(return_value=self_version),
+        )
     # calling resolve_system_info one more time to enable our monkeypatches
     if exception:
         with pytest.raises(exception):
@@ -389,3 +401,37 @@ def test_get_system_distribution_id(system_release_content, expected):
 @centos8
 def test_get_system_distribution_id_default_system_release_content(pretend_os):
     assert system_info._get_system_distribution_id() == None
+
+@pytest.mark.parametrize( 
+    (
+        "submgr_enabled_repos",
+        "tool_opts_no_rhsm",
+        "tool_opts_enablerepo",
+        "expected",
+    ),
+    (
+        (
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+            False,
+            [],
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+        ),
+        (
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+            True,
+            ["cli-rhel-repo1.repo", "cli-rhel-repo2.repo"],
+            ["cli-rhel-repo1.repo", "cli-rhel-repo2.repo"],
+        ),
+    ),
+)
+def test_get_enabled_rhel_repos(
+    submgr_enabled_repos,
+    tool_opts_no_rhsm,
+    tool_opts_enablerepo,
+    expected,
+):
+    system_info.submgr_enabled_repos = submgr_enabled_repos
+    tool_opts.enablerepo = tool_opts_enablerepo
+    tool_opts.no_rhsm = tool_opts_no_rhsm
+
+    assert system_info.get_enabled_rhel_repos() == expected

@@ -332,12 +332,18 @@ class SystemInfo(object):
         _, return_code = run_subprocess(["rpm", "-q", name], print_cmd=False, print_output=False)
         return return_code == 0
 
-    # TODO write unit tests
     def get_enabled_rhel_repos(self):
-        """Return a tuple of repoids containing RHEL packages.
+        """Get a list of enabled repositories containing RHEL packages.
 
-        These are either the repos enabled through RHSM or the custom
-        repositories passed though CLI.
+        This function can return either the repositories enabled throught the RHSM tool during the conversion or, if
+        the user manually specified the repositories throught the CLI, it will return them based on the
+        `tool_opts.enablerepo` option.
+
+        .. note::
+            The repositories passed through the CLI have more priority than the ones get get from RHSM.
+
+        :return: A list of enabled repos to use during the conversion
+        :rtype: list[str]
         """
         # TODO:
         # if not self.submgr_enabled_repos:

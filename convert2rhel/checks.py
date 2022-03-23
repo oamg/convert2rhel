@@ -37,7 +37,13 @@ from convert2rhel.pkghandler import (
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess, store_content_to_file
+from convert2rhel.utils import (
+    ask_to_continue,
+    get_file_content,
+    run_subprocess,
+    store_content_to_file,
+    convert_to_int_or_zero,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -55,7 +61,7 @@ COMPATIBLE_KERNELS_VERS = {
 }
 
 
-def perform_pre_checks():
+def perform_system_checks():
     """Early checks after system facts should be added here."""
 
     check_custom_repos_are_valid()
@@ -202,7 +208,7 @@ def check_tainted_kmods():
         multipath 20480 0 - Live 0x0000000000000000
         linear 20480 0 - Live 0x0000000000000000
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
-        system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<< Tainted
+        system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<<< Tainted
     """
     logger.task("Prepare: Checking if loaded kernel modules are not tainted")
     unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
@@ -261,7 +267,9 @@ def check_custom_repos_are_valid():
         return
 
     output, ret_code = call_yum_cmd(
-        command="makecache", args=["-v", "--setopt=*.skip_if_unavailable=False"], print_output=False
+        command="makecache",
+        args=["-v", "--setopt=*.skip_if_unavailable=False"],
+        print_output=False,
     )
     if ret_code != 0:
         logger.critical(
@@ -274,11 +282,20 @@ def check_custom_repos_are_valid():
 
 
 def ensure_compatibility_of_kmods():
-    """Ensure if the host kernel modules are compatible with RHEL."""
+    """Ensure that the host kernel modules are compatible with RHEL.
+
+    :raises:
+        SystemExit: Interrupts the conversion because some kernel modules are not supported in RHEL.
+    """
     host_kmods = get_loaded_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
     unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
-    if unsupported_kmods:
+
+    # Validate the best case first. If we don't have any unsupported_kmods, this means
+    # that everything is compatible and good to go.
+    if not unsupported_kmods:
+        logger.debug("Kernel modules are compatible.")
+    else:
         not_supported_kmods = "\n".join(
             map(
                 lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod),
@@ -288,12 +305,10 @@ def ensure_compatibility_of_kmods():
         logger.critical(
             (
                 "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-                "Make sure you have updated the kernel to the latest available version and rebooted the system. "
+                "Make sure you have updated the kernel to the latest available version and rebooted the system.\n"
                 "Remove the unsupported modules and run convert2rhel again to continue with the conversion."
             ).format(kmods=not_supported_kmods, system=system_info.name)
         )
-    else:
-        logger.info("Kernel modules are compatible.")
 
 
 def validate_package_manager_transaction():
@@ -391,64 +406,81 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     kernel pkg do not deprecate kernel modules we only select
     the most recent ones.
 
-    All RHEL kmods packages starts with kernel* or kmod*
+    .. note::
+        All RHEL kmods packages starts with kernel* or kmod*
 
-    For example, we have the following packages list:
-        kernel-core-0:4.18.0-240.10.1.el8_3.x86_64
-        kernel-core-0:4.19.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
-    ==> (output of this function will be)
-        kernel-core-0:4.19.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
+    For example, consider the following list of packages::
 
-    _repos_version_key extract the version of a package
-        into the tuple, i.e.
-        kernel-core-0:4.18.0-240.10.1.el8_3.x86_64 ==>
-        (4, 15, 0, 240, 10, 1)
-
-
-    :type pkgs: Iterable[str]
-    :type pkgs_groups:
-        Iterator[
-            Tuple[
-                package_name_without_version,
-                Iterator[package_name, ...],
-                ...,
-            ]
+        list_of_pkgs = [
+            'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64',
+            'kernel-core-0:4.19.0-240.10.1.el8_3.x86_64',
+            'kmod-debug-core-0:4.18.0-240.10.1.el8_3.x86_64',
+            'kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
         ]
+
+    And when this function gets called with that same list of packages,
+    we have the following output::
+
+        result = get_most_recent_unique_kernel_pkgs(pkgs=list_of_pkgs)
+        print(result)
+        # (
+        #   'kernel-core-0:4.19.0-240.10.1.el8_3.x86_64',
+        #   'kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64'
+        # )
+
+    :param pkgs: A list of package names to be analyzed.
+    :type pkgs: list[str]
+    :return: A tuple of packages name sorted and normalized
+    :rtype: tuple[str]
     """
 
     pkgs_groups = itertools.groupby(sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0])
-    return tuple(
-        max(distinct_kernel_pkgs[1], key=_repos_version_key)
-        for distinct_kernel_pkgs in pkgs_groups
-        if distinct_kernel_pkgs[0].startswith(("kernel", "kmod"))
-    )
+    list_of_sorted_pkgs = []
+    for distinct_kernel_pkgs in pkgs_groups:
+        if distinct_kernel_pkgs[0].startswith(("kernel", "kmod")):
+            list_of_sorted_pkgs.append(max(distinct_kernel_pkgs[1], key=_repos_version_key))
+
+    return tuple(list_of_sorted_pkgs)
 
 
 def _repos_version_key(pkg_name):
+    """Identify the version key in a given package name.
+
+    Consider the following pkg_name that will be passed to this function::
+
+        pkg_name = 'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64'
+
+    The output of this will be a tuple containing the package version in a tuple::
+
+        result = _repos_version_key(pkg_name=pkg_name)
+        print(result)
+        # (4, 15, 0, 240, 10, 1)
+
+    The function will ignore the package name as it is not an important information here
+    and will only care about the version that is tied to it's name.
+
+    :param pkg_name: The package to extract the version
+    :type pkg_name: str
+    :return: A tuple containing the package version.
+    :rtype: tuple[int]
+    :raises:
+        SystemExit: Raises SytemExit if it can't find the version in the pkg_name.
+    """
+    # TODO(r0x0d): This should be moved to repo.py or utils.py?
     try:
         rpm_version = KERNEL_REPO_RE.search(pkg_name).group("version")
     except AttributeError:
         logger.critical(
-            "Unexpected package:\n%s\n is a source of kernel modules.",
+            "Unexpected package: %s\n Couldn't find the version of the given package.",
             pkg_name,
         )
     else:
         return tuple(
             map(
-                _convert_to_int_or_zero,
+                convert_to_int_or_zero,
                 KERNEL_REPO_VER_SPLIT_RE.split(rpm_version),
             )
         )
-
-
-def _convert_to_int_or_zero(s):
-    try:
-        return int(s)
-    except ValueError:
-        return 0
 
 
 def get_rhel_kmods_keys(rhel_kmods_str):
@@ -527,7 +559,10 @@ def _bad_kernel_version(kernel_release):
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
-    kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path], print_output=False)
+    kernel_pkg, return_code = run_subprocess(
+        ["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path],
+        print_output=False,
+    )
     logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
 
     os_vendor = system_info.name.split()[0]

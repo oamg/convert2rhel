@@ -157,7 +157,7 @@ def test_perform_pre_checks(monkeypatch):
     monkeypatch.setattr(checks, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
     monkeypatch.setattr(checks, "check_dbus_is_running", value=check_dbus_is_running_mock)
 
-    checks.perform_pre_checks()
+    checks.perform_system_checks()
 
     check_convert2rhel_latest_mock.assert_called_once()
     check_thirdparty_kmods_mock.assert_called_once()
@@ -169,7 +169,7 @@ def test_perform_pre_checks(monkeypatch):
     check_dbus_is_running_mock.assert_called_once()
 
 
-def test_pre_ponr_checks(monkeypatch):
+def test_perform_pre_ponr_checks(monkeypatch):
     ensure_compatibility_of_kmods_mock = mock.Mock()
     create_transaction_handler_mock = mock.Mock()
     monkeypatch.setattr(
