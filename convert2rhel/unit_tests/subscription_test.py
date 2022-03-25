@@ -206,7 +206,7 @@ class TestSubscription(unittest.TestCase):
         expected = ["subscription-manager", "register", "--force", "--username=test", "--password=test"]
         self.assertEqual(subscription.get_registration_cmd(), expected)
         self.assertEqual(utils.prompt_user.called, {"Username: ": 2, "Password: ": 2})
-        
+
     @unit_tests.mock(subscription, "get_avail_subs", GetOneSubMocked())
     @unit_tests.mock(utils, "let_user_choose_item", LetUserChooseItemMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
