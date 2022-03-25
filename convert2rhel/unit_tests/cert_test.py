@@ -90,9 +90,10 @@ class TestCert(unittest.TestCase):
         shutil.rmtree(unit_tests.TMP_DIR)
 
 
+@pytest.mark.cert_filename("filename")
 def test_remove_cert(caplog, system_cert_with_target_path):
-    cert_filename = system_cert_with_target_path._target_cert_path
-    with open(cert_filename, "wb") as cert_file:
+    cert_file_path = system_cert_with_target_path._target_cert_path
+    with open(cert_file_path, "wb") as cert_file:
         cert_file.write(b"some content")
 
     system_cert_with_target_path.remove()
