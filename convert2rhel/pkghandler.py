@@ -1096,9 +1096,12 @@ def clean_yum_metadata():
     whether the system has the latest package versions installed, or before checking whether enabled repositories have
     accessible URLs.
     """
-    output, ret_code = call_yum_cmd(
-        command="clean", args=["metadata", "--quiet"], enable_repos=["*"], print_output=False
-    )
+    # We are using run_subprocess here as an alternative to call_yum_cmd
+    # which doesn't apply the correct --enablerepos option because at this point
+    # the tool didn't initialize the necessary functions in SystemInfo.
+    # The viable solution was calling the yum command as a subprocess manually
+    # instead of using that function wrapper.
+    output, ret_code = utils.run_subprocess(cmd=("yum", "clean", "metadata", "--quiet"), print_output=False)
     loggerinst.debug("Output of yum clean metadata:\n%s" % output)
 
     if ret_code != 0:
