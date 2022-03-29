@@ -79,9 +79,6 @@ def main():
         loggerinst.task("Prepare: Show Red Hat software EULA")
         show_eula()
 
-        loggerinst.task("Prepare: Clean yum cache metadata")
-        pkghandler.clean_yum_metadata()
-
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
@@ -89,6 +86,9 @@ def main():
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")
         pkghandler.clear_versionlock()
+        
+        loggerinst.task("Prepare: Clean yum cache metadata")
+        pkghandler.clean_yum_metadata()
 
         # check the system prior the conversion (possible inhibit)
         loggerinst.task("Prepare: Perform basic system checks")

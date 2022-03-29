@@ -1096,7 +1096,9 @@ def clean_yum_metadata():
     whether the system has the latest package versions installed, or before checking whether enabled repositories have
     accessible URLs.
     """
-    output, ret_code = call_yum_cmd(command="clean", args=["metadata"], print_output=False)
+    output, ret_code = call_yum_cmd(
+        command="clean", args=["metadata", "--quiet"], enable_repos=["*"], print_output=False
+    )
     loggerinst.debug("Output of yum clean metadata:\n%s" % output)
 
     if ret_code != 0:
