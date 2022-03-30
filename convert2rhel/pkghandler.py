@@ -1101,7 +1101,7 @@ def clean_yum_metadata():
     # the tool didn't initialize the necessary functions in SystemInfo.
     # The viable solution was calling the yum command as a subprocess manually
     # instead of using that function wrapper.
-    output, ret_code = utils.run_subprocess(cmd=("yum", "clean", "metadata", "--quiet"), print_output=False)
+    output, ret_code = utils.run_subprocess(("yum", "clean", "metadata", "--quiet"), print_output=False)
     loggerinst.debug("Output of yum clean metadata:\n%s" % output)
 
     if ret_code != 0:
