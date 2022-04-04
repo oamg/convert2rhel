@@ -27,7 +27,10 @@ import six
 
 from convert2rhel import backup, grub
 from convert2rhel import logger as logger_module
+from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, toolopts, utils
 from convert2rhel.breadcrumbs import breadcrumbs
+from convert2rhel.redhatrelease import os_release_file, system_release_file
+from convert2rhel.systeminfo import system_info
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -294,7 +297,6 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
         setup_logger_handler_mock.assert_called_once()
         archive_old_logger_files_mock.assert_called_once()
 
-
 def test_post_ponr_conversion(monkeypatch):
     install_gpg_keys_mock = mock.Mock()
     perserve_only_rhel_kernel_mock = mock.Mock()
@@ -324,3 +326,62 @@ def test_post_ponr_conversion(monkeypatch):
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
     assert finish_success_mock.call_count == 1
+    
+def test_main(monkeypatch):
+    require_root_mock = mock.Mock()
+    initialize_logger_mock = mock.Mock()
+    toolopts_cli_mock = mock.Mock()
+    show_eula_mock = mock.Mock()
+    resolve_system_info_mock = mock.Mock()
+    collect_early_data_mock = mock.Mock()
+    clean_yum_metadata_mock = mock.Mock()
+    perform_pre_checks_mock = mock.Mock()
+    system_release_file_mock = mock.Mock()
+    os_release_file_mock = mock.Mock()
+    backup_yum_repos_mock = mock.Mock()
+    clear_versionlock_mock = mock.Mock()
+    pre_ponr_conversion_mock = mock.Mock()
+    ask_to_continue_mock = mock.Mock()
+    post_ponr_conversion_mock = mock.Mock()
+    rpm_files_diff_mock = mock.Mock()
+    remove_tmp_dir_mock = mock.Mock()
+    restart_system_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(main, "show_eula", show_eula_mock)
+    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+    monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
+    monkeypatch.setattr(checks, "perform_pre_checks", perform_pre_checks_mock)
+    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
+    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+    monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
+    monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
+    monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
+    monkeypatch.setattr(utils, "restart_system", restart_system_mock)
+
+    assert main.main() == 0
+    assert require_root_mock.call_count == 1
+    assert initialize_logger_mock.call_count == 1
+    assert toolopts_cli_mock.call_count == 1
+    assert show_eula_mock.call_count == 1
+    assert resolve_system_info_mock.call_count == 1
+    assert collect_early_data_mock.call_count == 1
+    assert clean_yum_metadata_mock.call_count == 1
+    assert perform_pre_checks_mock.call_count == 1
+    assert system_release_file_mock.call_count == 1
+    assert os_release_file_mock.call_count == 1
+    assert backup_yum_repos_mock.call_count == 1
+    assert clear_versionlock_mock.call_count == 1
+    assert pre_ponr_conversion_mock.call_count == 1
+    assert ask_to_continue_mock.call_count == 1
+    assert post_ponr_conversion_mock.call_count == 1
+    assert rpm_files_diff_mock.call_count == 1
+    assert remove_tmp_dir_mock.call_count == 1
+    assert restart_system_mock.call_count == 1

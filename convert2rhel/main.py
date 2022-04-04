@@ -92,7 +92,7 @@ def main():
 
         # check the system prior the conversion (possible inhibit)
         loggerinst.task("Prepare: Perform basic system checks")
-        checks.perform_pre_checks()
+        print(checks.perform_pre_checks())
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
