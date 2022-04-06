@@ -499,58 +499,56 @@ def test_download_rhsm_pkgs(version, downloaded_pkgs, monkeypatch):
     assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == downloaded_pkgs
 
 
-@pytest.mark.parametrize(
-    ("output", "ret_code", "expected"),
-    (("", 0, "System unregistered successfully."), ("Failed to unregister.", 1, "System unregistration failed")),
-)
-def test_unregister_system(output, ret_code, expected, monkeypatch, caplog):
-    submgr_command = ("subscription-manager", "unregister")
-    rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
+class TestUnregisteringSystem:
+    @pytest.mark.parametrize(
+        ("output", "ret_code", "expected"),
+        (("", 0, "System unregistered successfully."), ("Failed to unregister.", 1, "System unregistration failed")),
+    )
+    def test_unregister_system(self, output, ret_code, expected, monkeypatch, caplog):
+        submgr_command = ("subscription-manager", "unregister")
+        rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
 
-    # Mock rpm command
-    run_subprocess_mock = mock.Mock(
-        side_effect=run_subprocess_side_effect(
-            (
-                submgr_command,
+        # Mock rpm command
+        run_subprocess_mock = mock.Mock(
+            side_effect=run_subprocess_side_effect(
                 (
-                    output,
-                    ret_code,
+                    submgr_command,
+                    (
+                        output,
+                        ret_code,
+                    ),
                 ),
+                (rpm_command, ("", 0)),
             ),
-            (rpm_command, ("", 0)),
-        ),
-    )
-    monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
-
-    subscription.unregister_system()
-
-    assert expected in caplog.records[-1].message
-
-
-def test_unregister_system_submgr_not_found(monkeypatch, caplog):
-    rpm_command = "rpm --quiet -q subscription-manager"
-    run_subprocess_mock = mock.Mock(
-        side_effect=unit_tests.run_subprocess_side_effect(
-            ((rpm_command,), ("", 1)),
         )
-    )
-    monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
-    subscription.unregister_system()
-    assert "The subscription-manager package is not installed." in caplog.records[-1].message
+        monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
 
+        subscription.unregister_system()
 
-def test_unregister_system_keep_rhsm(monkeypatch, caplog):
-    monkeypatch.setattr(tool_opts, "keep_rhsm", value=True)
-    subscription.unregister_system()
-    assert "Skipping due to the use of --keep-rhsm." in caplog.records[-1].message
+        assert expected in caplog.records[-1].message
 
+    def test_unregister_system_submgr_not_found(self, monkeypatch, caplog):
+        rpm_command = "rpm --quiet -q subscription-manager"
+        run_subprocess_mock = mock.Mock(
+            side_effect=unit_tests.run_subprocess_side_effect(
+                ((rpm_command,), ("", 1)),
+            )
+        )
+        monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
+        subscription.unregister_system()
+        assert "The subscription-manager package is not installed." in caplog.records[-1].message
 
-@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
-def test_unregister_system_skipped(monkeypatch, caplog):
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", mock.Mock())
-    subscription.unregister_system()
-    assert "Skipping due to the use of --keep-rhsm." in caplog.text
-    pkghandler.get_installed_pkg_objects.assert_not_called()
+    def test_unregister_system_keep_rhsm(self, monkeypatch, caplog):
+        monkeypatch.setattr(tool_opts, "keep_rhsm", value=True)
+        subscription.unregister_system()
+        assert "Skipping due to the use of --keep-rhsm." in caplog.records[-1].message
+
+    @mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
+    def test_unregister_system_skipped(self, monkeypatch, caplog):
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", mock.Mock())
+        subscription.unregister_system()
+        assert "Skipping due to the use of --keep-rhsm." in caplog.text
+        pkghandler.get_installed_pkg_objects.assert_not_called()
 
 
 @mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)

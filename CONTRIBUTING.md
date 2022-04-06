@@ -228,34 +228,32 @@ make copr-build
 
 ### Avoiding calling yum API in some specific cases
 
-We found out a bug that happened during the handling of a SIGINT
-signal (or pressing CTRL + C), the problem was caused when a user pressed those
+We found a bug that happened during the handling of a SIGINT
+signal (or pressing CTRL + C). The bug occurred when a user pressed that
 combination of keys during any step of the conversion before the point of no
-return, thus, starting the process of rollback and failing in the first call
-`yum` call to check wether or not some packages were installed on the system.
+return. The Ctrl-C started the rollback process and failed in the first
+`yum` API call to check whether or not some packages were installed on the system.
 
-The problem is that when we enter in that state of rollback after a SIGINT,
-`librpm` is handling the signal on their code (without any possibility to
-change this) and when the librpm detects that a SIGINT was raised, it
-understands that the execution of process should stop and a exit code 1 is sent
-to the user. One way to bypass that is not calling `yum` methods that actually
-trigger `librpm` in the process, instead, prefer calling the `yum` binary or
-any other binary that achieve the same output you desire. The reason for this
-change is that `librpm` won't trigger their handling of SIGINT if we call the
-binary directly with `call_yum_cmd` or `run_subporcess` for example, as it
-understands it's a new process and that process wasn't in the middle of the
-SIGINT raising.
+The problem is that when we enter rollback after a SIGINT, `librpm` handles the
+signal in its code (without any possibility to change this). The `librpm` handler
+detects that a SIGINT was raised, decides that the execution of the process
+should stop, and sends 1 as the program's exit code. One way to bypass this
+problem is not to call `yum` methods that actually trigger `librpm` in the
+process, instead, calling the `yum` binary or any other binary that achieves
+the same goal. By calling `yum` via `call_yum_cmd()` or `run_subprocess()`,
+a separate process is started and the SIGINT is handled by that separate
+process rather than the main convert2rhel process.
 
-For example, checkout the
+For example, checkout
 [PR#411](https://github.com/oamg/convert2rhel/pull/411/files#diff-51e9ff11d39778d3b26778b293fc350430a82e2feed0dab2938da7c0069ffdc6R84)
-that introduced the change, as well, some exaplantion on why the code was
+which introduced the fix for this bug, as well, some explanation on why the code was
 changed from calling the yum API to calling the `rpm` command.
 
-Another example is this minimal code reproduction from
-[@abadger](https://github.com/abadger) where you can see the issue.
-
-And lastly, here's a reference ticket that originated this issue
+Here's the ticket that originated this issue:
 [OAMG-5756](https://issues.redhat.com/browse/OAMG-5756).
+
+Lastly, a minimal reproducer from
+[@abadger](https://github.com/abadger) where you can see the issue.
 
 ```python
 #!/usr/bin/python2 -tt

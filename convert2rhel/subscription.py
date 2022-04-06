@@ -82,11 +82,11 @@ def unregister_system():
         return
 
     # We are calling run_subprocess with rpm here because of a bug in
-    # Oracle/CentOS Linux 7 in which the process always exit with 1 in case of a
-    # rollback when KeyboardInterrupt is raised, so, to avoid many changes and
-    # different conditionals, we are doing a simple call for rpm to verify if
+    # Oracle/CentOS Linux 7 in which the process always exits with 1 in case of a
+    # rollback when KeyboardInterrupt is raised.  To avoid many changes and
+    # different conditionals to handle that, we are doing a simple call to rpm to verify if
     # subscription-manager is installed on the system.  This is the current line
-    # on `rpm` that causes the process to exit with any interaction with the yum
+    # in `rpm` that causes the process to exit with any interaction with the yum
     # library
     # https://github.com/rpm-software-management/rpm/blob/rpm-4.11.x/lib/rpmdb.c#L640
     _, ret_code = utils.run_subprocess(["rpm", "--quiet", "-q", "subscription-manager"])
