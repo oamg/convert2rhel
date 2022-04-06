@@ -371,7 +371,7 @@ def _get_installed_pkg_objects_dnf(name):
     installed = query.installed()
     if name:
         # name__glob provides "shell-style wildcard match" per
-        #  https://dnf.readthedocs.io/en/latest/api_queries.html#dnf.query.Query.filter
+        # https://dnf.readthedocs.io/en/latest/api_queries.html#dnf.query.Query.filter
         installed = installed.filter(name__glob=name)
     return list(installed)
 

@@ -4,14 +4,10 @@ from envparse import env
 
 
 booted_os = platform.platform()
-# TODO: in integration test for PR#411. Add 'oracle-logos' and 'centos-logos'
-#  to (OL_7_PKGS, OL_8_PKGS) and (COS_7_PKGS, COS_8_PKGS) respectively
-#  as these missing packages are a result of a different cause
-#  but still missing after a rollback.
-OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup"]
-OL_8_PKGS = ["oracle-release-el8", "usermode", "rhn-setup"]
-COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose"]
-COS_8_PKGS = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose"]
+OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
+OL_8_PKGS = ["oracle-release-el8", "usermode", "rhn-setup", "oracle-logos"]
+COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
+COS_8_PKGS = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
 # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
 # and Oracle Linux 8.2 respectively.
 
@@ -49,11 +45,27 @@ def post_rollback_check(shell):
         is_installed(shell, OL_8_PKGS)
 
 
+def terminate_and_assert_good_rollback(c2r):
+    if "oracle-7" in booted_os or "centos-7" in booted_os:
+        # Use 'Ctrl + c' first to check for unexpected behaviour
+        # of the rollback feature after process termination
+        c2r.sendcontrol("c")
+        # Due to inconsistent behaviour of 'Ctrl + c' on some distros
+        # use Ctrl + d instead
+        c2r.sendcontrol("d")
+        # Assert the rollback finished all tasks by going through its last task
+        assert c2r.expect("Rollback: Removing installed RHSM certificate") == 0
+        assert c2r.exitstatus != 1
+    else:
+        c2r.sendcontrol("c")
+        assert c2r.expect("Rollback: Removing installed RHSM certificate") == 0
+        assert c2r.exitstatus != 1
+
+
 def test_proper_rhsm_clean_up(shell, convert2rhel):
     # Primary issue - checking for usermode, rhn-setup and os-release.
     # It also checks that the system has been successfully unregistered.
     install_pkg(shell)
-    # define_booted_os(shell)
 
     with convert2rhel(
         ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
@@ -84,7 +96,6 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     username = "foo"
     password = "bar"
     install_pkg(shell)
-    # define_booted_os(shell)
     with convert2rhel(f"-y --no-rpm-va --username {username} --password {password}") as c2r:
         assert c2r.exitstatus != 0
 
@@ -95,7 +106,6 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     # Terminate the c2r process forcefully, so the rollback is performed.
     # Primary issue - checking for python/3-syspurpose not being removed.
     install_pkg(shell)
-    # define_booted_os(shell)
     with convert2rhel(f"-y --no-rpm-va") as c2r:
         c2r.expect("Username")
         # Due to inconsistent behaviour of 'Ctrl+c'
@@ -104,3 +114,94 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
         assert c2r.exitstatus != 0
 
     post_rollback_check(shell)
+
+
+def test_terminate_registration_start(convert2rhel):
+    # Send termination signal immediately after c2r tries the registration.
+    with convert2rhel(
+        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+        )
+    ) as c2r:
+        c2r.expect("Registering the system using subscription-manager")
+        terminate_and_assert_good_rollback(c2r)
+
+
+def test_terminate_on_username_prompt(convert2rhel):
+    # Send termination signal on the user prompt for Username.
+    with convert2rhel("-y --no-rpm-va") as c2r:
+        c2r.expect("Username:")
+        terminate_and_assert_good_rollback(c2r)
+
+
+def test_terminate_on_password_prompt(convert2rhel):
+    # Send termination signal on the user prompt for Password.
+    with convert2rhel(("-y --no-rpm-va --username {}").format(env.str("RHSM_USERNAME"))) as c2r:
+        c2r.expect("Password:")
+        terminate_and_assert_good_rollback(c2r)
+
+
+def test_terminate_on_subscription_prompt(convert2rhel):
+    # Send termination signal on the user prompt Subscription version.
+    with convert2rhel(
+        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+        )
+    ) as c2r:
+        c2r.expect("Enter number of the chosen subscription:")
+        terminate_and_assert_good_rollback(c2r)
+
+
+def test_terminate_on_organization_prompt(convert2rhel):
+    # Send termination signal on the user prompt for Organization.
+    with convert2rhel(
+        ("-y --no-rpm-va --serverurl {} -k {}").format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_KEY"),
+        )
+    ) as c2r:
+        c2r.expect("Organization:")
+        terminate_and_assert_good_rollback(c2r)
+
+
+def test_terminate_on_pool_prompt(convert2rhel):
+    # Send termination signal on each user prompt asking about continuation.
+    # There is one less prompt on Oracle Linux 8 and CentOS 7
+    if "oracle-8" in booted_os or "centos-7" in booted_os:
+        prompt_count = 2
+    else:
+        prompt_count = 3
+    for i in range(prompt_count):
+        with convert2rhel(
+            ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
+                env.str("RHSM_SERVER_URL"),
+                env.str("RHSM_USERNAME"),
+                env.str("RHSM_PASSWORD"),
+                env.str("RHSM_POOL"),
+            )
+        ) as c2r:
+            if i == 0:
+                c2r.expect("Continue with the system conversion?")
+                terminate_and_assert_good_rollback(c2r)
+            elif i == 1:
+                c2r.expect("Continue with the system conversion?")
+                c2r.sendline("y")
+                c2r.expect("Continue with the system conversion?")
+                terminate_and_assert_good_rollback(c2r)
+            elif i == 2:
+                for n in range(1):
+                    c2r.expect("Continue with the system conversion?")
+                    c2r.sendline("y")
+                c2r.expect("Continue with the system conversion?")
+                terminate_and_assert_good_rollback(c2r)
+            elif i == 3:
+                for n in range(2):
+                    c2r.expect("Continue with the system conversion?")
+                    c2r.sendline("y")
+                c2r.expect("The tool allows rollback of any action until this point.")
+                c2r.expect("Continue with the system conversion?")
+                terminate_and_assert_good_rollback(c2r)
