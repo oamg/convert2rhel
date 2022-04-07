@@ -1,0 +1,21 @@
+- hosts: all
+  tasks:
+    - name: Add Centos 8.4.2105 BaseOS repo
+      yum_repository:
+        name: baseos-84
+        description: CentOS Linux 8.4.2105 - BaseOS
+        baseurl: http://vault.centos.org/$contentdir/8.4.2105/BaseOS/$basearch/os/
+        enabled: no
+        gpgcheck: no
+    - name: Add Centos 8.4.2105 AppStream repo
+      yum_repository:
+        name: appstream-84
+        description: CentOS Linux 8.4.2105 - AppStream
+        baseurl: http://vault.centos.org/$contentdir/8.4.2105/AppStream/$basearch/os/
+        enabled: no
+        gpgcheck: no
+    - name: Install package which isn't in CentOS 8.5 anymore
+      yum:
+        name: subscription-manager-initial-setup-addon
+        enablerepo: "appstream-84,baseos-84"
+        state: present

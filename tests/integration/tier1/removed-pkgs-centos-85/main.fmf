@@ -1,0 +1,10 @@
+summary: Removed pkgs from CentOS 8.5
+
+tier: 1
+
+adjust:
+  enabled: false
+  when: >
+    distro != centos-8
+
+test: pytest -svv

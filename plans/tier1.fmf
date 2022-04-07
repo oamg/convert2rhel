@@ -227,3 +227,15 @@ discover+:
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/removed_pkgs_centos_85:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8
+  discover+:
+    test: removed-pkgs-centos-85
+  prepare+:
+    - name: install removed pkgs from CentOS 8.5
+      how: ansible
+      playbook: tests/integration/tier1/removed-pkgs-centos-85/ansible/install_removed_pkgs_from_centos_85_repos.yml
