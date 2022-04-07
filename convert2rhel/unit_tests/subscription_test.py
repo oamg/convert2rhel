@@ -376,6 +376,7 @@ class TestSubscription(unittest.TestCase):
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
         self.assertEqual(utils.remove_pkgs.called, 1)
+
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkg_objects",
