@@ -255,6 +255,34 @@ def test_run_cmd_in_pty_check_for_deprecated_string():
         utils.run_cmd_in_pty("echo foobar")
 
 
+TERMINAL_SIZE_SCRIPT = """
+def terminal_size():
+    import fcntl, termios, struct, sys
+    h, w, hp, wp = struct.unpack('HHHH',
+        fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ,
+        struct.pack('HHHH', 0, 0, 0, 0)))
+    return w, h
+
+print(terminal_size()[0])
+"""
+
+
+@pytest.mark.parametrize(
+    ("columns",),
+    (
+        (40,),
+        (120,),
+    ),
+)
+def test_run_cmd_in_pty_size_set_on_startup(columns, tmpdir):
+    with open(str(tmpdir / "terminal-test.py"), "w") as f:
+        f.write(TERMINAL_SIZE_SCRIPT)
+
+    output, return_code = utils.run_cmd_in_pty([sys.executable, str(tmpdir / "terminal-test.py")], columns=columns)
+
+    assert int(output.strip()) == columns
+
+
 def test_get_package_name_from_rpm(monkeypatch):
     monkeypatch.setattr(utils, "rpm", get_rpm_mocked())
     monkeypatch.setattr(utils, "get_rpm_header", lambda _: get_rpm_header_mocked())
