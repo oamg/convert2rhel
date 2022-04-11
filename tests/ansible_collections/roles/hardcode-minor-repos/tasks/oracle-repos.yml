@@ -1,0 +1,79 @@
+- name: Overwrite BaseOS repository (OL8.4)
+  yum_repository:
+    name: ol8_baseos_latest
+    description: BaseOS repo
+    baseurl: https://yum.oracle.com/repo/OracleLinux/OL8/4/baseos/base/x86_64/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+    file: oracle-linux-ol8
+
+# We have to disable appstream to avoid update confilct
+- name: Overwrite Appstream repository (OL8.4)
+  yum_repository:
+    name: ol8_appstream
+    description: Appstream repo
+    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/appstream/$basearch/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+    file: oracle-linux-ol8
+
+# TODO: Are kernel-uek-5.4.17-2136.306.1.3.el8uek and btrfs-progs-5.15.1-0.el8 8.5 or from <8.4 version?
+# if 8.5 we should probably disable this repo as well?
+- name: Overwrite UEKR6 repository (OL8.4)
+  yum_repository:
+    name: ol8_UEKR6
+    description: UEKR6 repo
+    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/UEKR6/$basearch/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+    file: uek-ol8
+
+#- name: Overwrite Codeready Builder repository (OL8.4)
+#  yum_repository:
+#    name: ol8_codeready_builder
+#    description: Codeready Builder repo
+#    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/codeready/builder/$basearch/
+#    state: present
+#    gpgcheck: yes
+#    enabled: yes
+#    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+#    file: oracle-linux-ol8
+
+#- name: Overwrite U0 Baseos Base repository (OL8.4)
+#  yum_repository:
+#    name: ol8_u0_baseos_base
+#    description: U0 Baseos Base repo
+#    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/0/baseos/base/$basearch/
+#    state: present
+#    gpgcheck: yes
+#    enabled: yes
+#    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+#    file: oracle-linux-ol8
+
+#- name: Overwrite U0 Baseos Base repository (OL8.4)
+#  yum_repository:
+#    name: ol8_u0_baseos_base
+#    description: U0 Baseos Base repo
+#    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/0/baseos/base/$basearch/
+#    state: present
+#    gpgcheck: yes
+#    enabled: yes
+#    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+#    file: oracle-linux-ol8
+
+#- name: Overwrite Addons repository (OL8.4)
+#  yum_repository:
+#    name: ol8_addons
+#    description: U0 Addons repo
+#    baseurl: https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/addons/$basearch/
+#    state: present
+#    gpgcheck: yes
+#    enabled: yes
+#    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+#    file: oracle-linux-ol8

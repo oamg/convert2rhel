@@ -47,10 +47,10 @@ jobs:
       epel-7-x86_64:
         distros: [centos-7]
       epel-8-x86_64:
-        distros: [centos-8]
+        distros: [centos-8.4, centos-8-latest]
       oraclelinux-7-x86_64:
         distros: [oraclelinux-7]
       oraclelinux-8-x86_64:
-        distros: [oraclelinux-8]
+        distros: [oraclelinux-8.4, oraclelinux-8.5]
     use_internal_tf: True
   trigger: pull_request

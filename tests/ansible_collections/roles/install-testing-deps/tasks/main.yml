@@ -1,8 +1,14 @@
 ---
+- name: Check python3 is installed
+  command: rpm -q python36
+  register: package_check
+  ignore_errors: true
+
 - name: Ensure python3
   yum:
     name: python3
-    state: present
+    state: installed
+  when: package_check.rc != 0
 
 - name: Install pip if not present
   # ensurepip is available in python-3.4+
