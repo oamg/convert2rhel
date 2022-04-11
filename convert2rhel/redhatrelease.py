@@ -109,3 +109,4 @@ class YumConf(object):
 # Code to be executed upon module import
 system_release_file = utils.RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
 os_release_file = utils.RestorableFile(OS_RELEASE_FILEPATH)  # pylint: disable=C0103
+print("just testing")
