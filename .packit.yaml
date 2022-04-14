@@ -5,11 +5,6 @@ upstream_project_url: https://github.com/oamg/convert2rhel
 
 srpm_build_deps: []
 
-actions:
-  # do not get the version from a tag (git describe) but from the spec file
-  get-current-version:
-  - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
-
 jobs:
 - job: copr_build
   trigger: pull_request
@@ -22,6 +17,10 @@ jobs:
     - epel-8-x86_64
     - oraclelinux-7-x86_64
     - oraclelinux-8-x86_64
+  actions:
+    # do not get the version from a tag (git describe) but from the spec file
+    get-current-version:
+    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 - job: copr_build
   trigger: commit
   metadata:
@@ -39,6 +38,9 @@ jobs:
     # have higher NVR than all the PR builds
     post-upstream-clone:
     - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
+    # do not get the version from a tag (git describe) but from the spec file
+    get-current-version:
+    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 - job: tests
   metadata:
     targets:
