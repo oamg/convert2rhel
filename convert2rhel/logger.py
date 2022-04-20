@@ -126,7 +126,7 @@ def archive_old_logger_files(log_name, log_dir):
 
     file_name, suffix = tuple(log_name.rsplit(".", 1))
     archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, formatted_time, suffix)
-    shutil.copyfile(current_log_file, archive_log_file)
+    shutil.move(current_log_file, archive_log_file)
 
 
 def _task(self, msg, *args, **kwargs):
