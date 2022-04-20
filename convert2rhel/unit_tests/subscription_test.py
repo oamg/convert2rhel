@@ -295,7 +295,7 @@ class TestSubscription(unittest.TestCase):
     )
     @unit_tests.mock(pkghandler, "filter_installed_pkgs", DumbCallable())
     @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
-    @unit_tests.mock(utils.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
+    @unit_tests.mock(backup.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
     @unit_tests.mock(subscription, "track_installed_submgr_pkgs", DumbCallable())
     def test_install_rhel_subscription_manager(self):
         subscription.install_rhel_subscription_manager()
@@ -1056,7 +1056,7 @@ def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, mon
 )
 def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_msg, expected, monkeypatch, caplog):
     track_installed_pkgs_mock = mock.Mock()
-    monkeypatch.setattr(utils.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
+    monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
 
     subscription.track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs)
 
