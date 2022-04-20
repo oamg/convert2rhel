@@ -1,4 +1,10 @@
 ---
+# trying to install python3 on OL8.4 fails
+- name: Check python3 is installed
+  command: rpm -q python36
+  register: package_check
+  ignore_errors: true
+
 - name: Ensure python3
   yum:
     # gcc and python3-devel are needed for psutil
@@ -7,6 +13,7 @@
       - "gcc"
       - "python3-devel"
     state: present
+  when: package_check.rc != 0
 
 - name: Install pip if not present
   # ensurepip is available in python-3.4+

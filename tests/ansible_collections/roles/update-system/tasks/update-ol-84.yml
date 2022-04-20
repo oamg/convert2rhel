@@ -1,5 +1,8 @@
 ---
-- name: Update system
+# On OL8.4 we cannot run update with appstream repo as it contains
+# updated versions (8.5), creating dependency problems in
+# yum transaction.
+- name: Update system - Oracle Linux 8.4
   yum:
     name: "*"
     state: latest
@@ -7,5 +10,6 @@
     # and the version of the package is not the latest in copr repo it would be
     # updated at this point. The package version would then differ from the intended one.
     exclude: convert2rhel
-    skip_broken: yes
+    disablerepo: "*"
+    enablerepo: ol8_baseos_latest
   register: update

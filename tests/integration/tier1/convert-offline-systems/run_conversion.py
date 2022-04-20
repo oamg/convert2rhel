@@ -10,7 +10,7 @@ def test_convert_offline_systems(shell, convert2rhel):
     # The CentOS8 Extras repo url is unreachable due to offline system setup.
     # The repoquery returns an error, thus we need to disable this repository.
     if "centos-8" in platform.platform():
-        shell("yum-config-manager --disable extras --disable epel-modular")
+        shell("yum-config-manager --disable extras --disable epel-modular --disable appstream")
 
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
     with convert2rhel(

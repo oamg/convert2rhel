@@ -1,0 +1,10 @@
+- name: Overwrite BaseOS repository (OracleLinux8.4)
+  yum_repository:
+    name: ol8_baseos_latest
+    description: BaseOS repo
+    baseurl: https://yum.oracle.com/repo/OracleLinux/OL8/4/baseos/base/x86_64/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+    file: oracle-linux-ol8

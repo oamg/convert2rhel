@@ -2,6 +2,12 @@
 - hosts: all
   roles:
 
+    - role: hardcode-minor-repos
+      when:
+        # For Oracle Linux 8.4 and CentOS 8.4.2105
+        - ansible_facts['distribution_version'] == "8.4" or
+          ansible_facts['distribution_version'] == "8.4.2105"
+
     - role: update-system
 
     - role: oracle-linux-specific
