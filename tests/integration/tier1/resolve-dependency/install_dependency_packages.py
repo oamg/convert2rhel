@@ -45,6 +45,8 @@ def test_install_dependency_packages(shell):
         elif system_version.major == 8:
             dependency_pkgs = [
                 "python39-psycopg2-debug",  # OAMG-5239, OAMG-4944 - package not available on Oracle Linux 8
+                "iwl7260-firmware",  # RHELC-567
+                "iwlax2xx-firmware",  # RHELC-567 - causing problems during the conversion on OL8
             ]
 
     # installing dependency packages
