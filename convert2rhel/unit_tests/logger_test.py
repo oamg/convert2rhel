@@ -110,3 +110,5 @@ def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
         assert len(archive_files) == 1
         with open(os.path.join(archive_dir, archive_files[0])) as archive_f:
             assert archive_f.read() == test_data
+
+    assert not os.path.exists(log_file)
