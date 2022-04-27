@@ -106,17 +106,30 @@ class TestUtils(unittest.TestCase):
     ]
 
     @unit_tests.mock(
-        utils, "download_pkg", lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/"
+        utils,
+        "download_pkg",
+        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/",
     )
     def test_download_pkgs(self):
-        paths = utils.download_pkgs(["pkg1", "pkg2"], "/dest/", "/reposdir/", ["repo1"], ["repo2"], False)
+        paths = utils.download_pkgs(
+            ["pkg1", "pkg2"],
+            "/dest/",
+            "/reposdir/",
+            ["repo1"],
+            ["repo2"],
+            False,
+        )
 
         self.assertEqual(paths, ["/filepath/", "/filepath/"])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
     @unit_tests.mock(system_info, "releasever", "8")
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
-    @unit_tests.mock(utils, "get_rpm_path_from_yumdownloader_output", lambda x, y, z: "/path/test.rpm")
+    @unit_tests.mock(
+        utils,
+        "get_rpm_path_from_yumdownloader_output",
+        lambda x, y, z: "/path/test.rpm",
+    )
     def test_download_pkg_success_with_all_params(self):
         dest = "/test dir/"
         reposdir = "/my repofiles/"
@@ -343,9 +356,15 @@ def test_prompt_user(question, is_password, response, monkeypatch):
         ("5.14.15-300.fc35", ("0", "5.14.15", "300.fc35")),
         ("0.17-9.fc35", ("0", "0.17", "9.fc35")),
         ("2.34.1-2.fc35", ("0", "2.34.1", "2.fc35")),
-        ("0.9.1-2.20210420git36391559.fc35", ("0", "0.9.1", "2.20210420git36391559.fc35")),
+        (
+            "0.9.1-2.20210420git36391559.fc35",
+            ("0", "0.9.1", "2.20210420git36391559.fc35"),
+        ),
         ("2:8.2.3568-1.fc35", ("2", "8.2.3568", "1.fc35")),
-        ("4.6~pre16262021g84ef6bd9-3.fc35", ("0", "4.6~pre16262021g84ef6bd9", "3.fc35")),
+        (
+            "4.6~pre16262021g84ef6bd9-3.fc35",
+            ("0", "4.6~pre16262021g84ef6bd9", "3.fc35"),
+        ),
     ),
 )
 def test_string_to_version(string_version, nevra):

@@ -506,7 +506,6 @@ def string_to_version(verstring):
     return (epoch, version, release)
 
 
-changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
 def remove_orphan_folders():
     """Even after removing redhat-release-* package, some of its folders are
     still present, are empty, and that blocks us from installing centos-release

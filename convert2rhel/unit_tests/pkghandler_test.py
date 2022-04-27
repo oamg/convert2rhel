@@ -31,13 +31,12 @@ if sys.version_info[:2] <= (2, 7):
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
-from convert2rhel import pkghandler, pkgmanager, utils
+from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.pkghandler import (
     _get_packages_to_update_dnf,
     _get_packages_to_update_yum,
     get_total_packages_to_update,
 )
-from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
@@ -313,8 +312,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         "get_problematic_pkgs",
         lambda pkg: {"errors": set([pkg]), "mismatches": set()},
     )
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
-    @unit_tests.mock(pkghandler, "get_problematic_pkgs", lambda pkg: {"errors": set([pkg]), "mismatches": set()})
     @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
         pkghandler.call_yum_cmd.return_code = 1
@@ -1117,6 +1114,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
+    @unit_tests.mock(backup, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):
@@ -1124,8 +1122,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
-        self.assertEqual(utils.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
+        self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
+        self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
         self.assertEqual(
             utils.run_subprocess.cmd,
             ["yum", "install", "-y", "kernel-4.7.4-200.fc24"],
