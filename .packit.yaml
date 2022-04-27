@@ -15,8 +15,6 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
-    - oraclelinux-7-x86_64
-    - oraclelinux-8-x86_64
   actions:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
@@ -31,8 +29,6 @@ jobs:
     - epel-6-x86_64
     - epel-7-x86_64
     - epel-8-x86_64
-    - oraclelinux-7-x86_64
-    - oraclelinux-8-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
@@ -45,12 +41,8 @@ jobs:
   metadata:
     targets:
       epel-7-x86_64:
-        distros: [centos-7]
+        distros: [centos-7, oraclelinux-7]
       epel-8-x86_64:
-        distros: [centos-8]
-      oraclelinux-7-x86_64:
-        distros: [oraclelinux-7]
-      oraclelinux-8-x86_64:
-        distros: [oraclelinux-8]
+        distros: [centos-8, oraclelinux-8]
     use_internal_tf: True
   trigger: pull_request
