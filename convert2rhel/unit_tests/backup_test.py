@@ -4,7 +4,7 @@ import unittest
 
 import pytest
 
-from convert2rhel import backup, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import backup, unit_tests  # Imports unit_tests/__init__.py
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -46,12 +46,11 @@ class TestBackup(unittest.TestCase):
             self.should_bkp = backup
             self.critical = critical
 
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_remove_pkgs_with_empty_list(self):
-        backup.remove_pkgs([])
-        self.assertEqual(utils.run_subprocess.called, 0)
-
-    @unit_tests.mock(backup.changed_pkgs_control, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(
+        backup.changed_pkgs_control,
+        "backup_and_track_removed_pkg",
+        DummyFuncMocked(),
+    )
     @unit_tests.mock(backup, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_without_backup(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
@@ -64,25 +63,25 @@ class TestBackup(unittest.TestCase):
         for cmd, pkg in zip(backup.run_subprocess.cmds, pkgs):
             self.assertEqual(rpm_remove_cmd + [pkg], cmd)
 
-    @unit_tests.mock(backup.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
+    @unit_tests.mock(
+        backup.ChangedRPMPackagesController,
+        "backup_and_track_removed_pkg",
+        DummyFuncMocked(),
+    )
     @unit_tests.mock(backup, "run_subprocess", RunSubprocessMocked())
     def test_remove_pkgs_with_backup(self):
         pkgs = ["pkg1", "pkg2", "pkg3"]
         backup.remove_pkgs(pkgs)
-        self.assertEqual(backup.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, len(pkgs))
+        self.assertEqual(
+            backup.ChangedRPMPackagesController.backup_and_track_removed_pkg.called,
+            len(pkgs),
+        )
 
         self.assertEqual(backup.run_subprocess.called, len(pkgs))
 
         rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
         for cmd, pkg in zip(backup.run_subprocess.cmds, pkgs):
             self.assertEqual(rpm_remove_cmd + [pkg], cmd)
-
-        def test_track_installed_pkg(self):
-            control = backup.ChangedRPMPackagesController()
-            pkgs = ["pkg1", "pkg2", "pkg3"]
-            for pkg in pkgs:
-                control.track_installed_pkg(pkg)
-            self.assertEqual(control.installed_pkgs, pkgs)
 
     @unit_tests.mock(backup.RestorablePackage, "backup", DummyFuncMocked())
     def test_backup_and_track_removed_pkg(self):
@@ -116,12 +115,100 @@ class TestBackup(unittest.TestCase):
         self.assertEqual(backup.changed_pkgs_control.track_installed_pkg.called, len(pkgs))
 
         self.assertEqual(backup.run_subprocess.called, 1)
-        self.assertEqual(["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"], backup.run_subprocess.cmd)
+        self.assertEqual(
+            ["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"],
+            backup.run_subprocess.cmd,
+        )
+
+
+def test_remove_pkgs_with_empty_list(caplog):
+    backup.remove_pkgs([])
+    assert "No package to remove" in caplog.messages[-1]
+
+
+def test_track_installed_pkg():
+    control = backup.ChangedRPMPackagesController()
+    pkgs = ["pkg1", "pkg2", "pkg3"]
+    for pkg in pkgs:
+        control.track_installed_pkg(pkg)
+    assert control.installed_pkgs == pkgs
+
+
+def test_track_installed_pkgs():
+    control = backup.ChangedRPMPackagesController()
+    pkgs = ["pkg1", "pkg2", "pkg3"]
+    control.track_installed_pkgs(pkgs)
+    assert control.installed_pkgs == pkgs
+
+
+def test_changed_pkgs_control_remove_installed_pkgs(monkeypatch, caplog):
+    removed_pkgs = ["pkg_1"]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (("rpm", "-e", "--nodeps", removed_pkgs[0]), ("test", 0)),
+        )
+    )
+    monkeypatch.setattr(
+        backup,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    control = backup.ChangedRPMPackagesController()
+    control.installed_pkgs = removed_pkgs
+    control._remove_installed_pkgs()
+    assert "Removing package: %s" % removed_pkgs[0] in caplog.records[-1].message
+
+
+def test_changed_pkgs_control_install_removed_pkgs(monkeypatch):
+    install_local_rpms_mock = mock.Mock()
+    removed_pkgs = [mock.Mock()]
+    monkeypatch.setattr(
+        backup.changed_pkgs_control,
+        "_install_local_rpms",
+        value=install_local_rpms_mock,
+    )
+    backup.changed_pkgs_control.removed_pkgs = removed_pkgs
+    backup.changed_pkgs_control._install_removed_pkgs()
+    assert install_local_rpms_mock.call_count == 1
+
+
+def test_changed_pkgs_control_install_removed_pkgs_without_path(monkeypatch, caplog):
+    install_local_rpms_mock = mock.Mock()
+    removed_pkgs = [mock.Mock()]
+    monkeypatch.setattr(
+        backup.changed_pkgs_control,
+        "_install_local_rpms",
+        value=install_local_rpms_mock,
+    )
+    backup.changed_pkgs_control.removed_pkgs = removed_pkgs
+    backup.changed_pkgs_control.removed_pkgs[0].path = None
+    backup.changed_pkgs_control._install_removed_pkgs()
+    assert install_local_rpms_mock.call_count == 1
+    assert "Couldn't find a backup" in caplog.records[-1].message
+
+
+def test_changed_pkgs_control_restore_pkgs(monkeypatch):
+    install_local_rpms_mock = mock.Mock()
+    remove_pkgs_mock = mock.Mock()
+    monkeypatch.setattr(
+        backup.changed_pkgs_control,
+        "_install_local_rpms",
+        value=install_local_rpms_mock,
+    )
+    monkeypatch.setattr(backup, "remove_pkgs", value=remove_pkgs_mock)
+
+    backup.changed_pkgs_control.restore_pkgs()
+    assert install_local_rpms_mock.call_count == 1
+    assert remove_pkgs_mock.call_count == 1
 
 
 @pytest.mark.parametrize(
     ("filepath", "backup_dir", "file_content", "expected"),
-    (("test.rpm", "backup", "test", None), ("test.rpm", "backup", "", "Can't find")),
+    (
+        ("test.rpm", "backup", "test", None),
+        ("test.rpm", "backup", "", "Can't find"),
+    ),
 )
 def test_restorable_file_backup(filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog):
     tmp_file = tmpdir.join(filepath)
@@ -150,7 +237,10 @@ def test_restorable_file_backup_oserror(tmpdir, caplog):
 
 @pytest.mark.parametrize(
     ("filepath", "backup_dir", "file_content", "expected"),
-    (("test.rpm", "backup", "test", "restored"), ("test.rpm", "backup", "", "hasn't been backed up")),
+    (
+        ("test.rpm", "backup", "test", "restored"),
+        ("test.rpm", "backup", "", "hasn't been backed up"),
+    ),
 )
 def test_restorable_file_restore(filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog):
     tmp_backup = tmpdir
@@ -183,9 +273,20 @@ def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
 
 @pytest.mark.parametrize(
     ("pkgs_to_remove", "ret_code", "backup_pkg", "critical", "expected"),
-    ((["pkg1"], 1, False, True, "Error: Couldn't remove {}."), (["pkg1"], 1, False, False, "Couldn't remove {}.")),
+    (
+        (["pkg1"], 1, False, True, "Error: Couldn't remove {}."),
+        (["pkg1"], 1, False, False, "Couldn't remove {}."),
+    ),
 )
-def test_remove_pkgs_failed_to_remove(pkgs_to_remove, ret_code, backup_pkg, critical, expected, monkeypatch, caplog):
+def test_remove_pkgs_failed_to_remove(
+    pkgs_to_remove,
+    ret_code,
+    backup_pkg,
+    critical,
+    expected,
+    monkeypatch,
+    caplog,
+):
     run_subprocess_mock = mock.Mock(
         side_effect=unit_tests.run_subprocess_side_effect(
             (("rpm", "-e", "--nodeps", pkgs_to_remove[0]), ("test", ret_code)),
@@ -199,7 +300,11 @@ def test_remove_pkgs_failed_to_remove(pkgs_to_remove, ret_code, backup_pkg, crit
 
     if critical:
         with pytest.raises(SystemExit):
-            backup.remove_pkgs(pkgs_to_remove=pkgs_to_remove, backup=backup_pkg, critical=critical)
+            backup.remove_pkgs(
+                pkgs_to_remove=pkgs_to_remove,
+                backup=backup_pkg,
+                critical=critical,
+            )
     else:
         backup.remove_pkgs(pkgs_to_remove=pkgs_to_remove, backup=backup_pkg, critical=critical)
 

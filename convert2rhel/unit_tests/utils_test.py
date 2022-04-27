@@ -34,7 +34,7 @@ else:
 
 from collections import namedtuple
 
-from convert2rhel import backup, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
 
