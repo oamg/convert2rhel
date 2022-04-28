@@ -25,6 +25,7 @@ import rpm
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -1012,14 +1013,17 @@ def get_total_packages_to_update():
     if it's Oracle/CentOS Linux 7 or 6, it will use `yum`, otherwise it should use `dnf`.
 
     :return: The packages that need to be updated.
-    :rtype: List[str]
+    :rtype: list[str]
     """
     packages = []
 
+    hardcoded_reposdir = get_hardcoded_repofiles_dir()
+    reposdir = hardcoded_reposdir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
+
     if pkgmanager.TYPE == "yum":
-        packages = _get_packages_to_update_yum()
+        packages = _get_packages_to_update_yum(reposdir=reposdir)
     elif pkgmanager.TYPE == "dnf":
-        packages = _get_packages_to_update_dnf()
+        packages = _get_packages_to_update_dnf(reposdir=reposdir)
 
     return set(packages)
 
@@ -1035,22 +1039,26 @@ def _get_packages_to_update_yum():
     return all_packages
 
 
-def _get_packages_to_update_dnf():
+def _get_packages_to_update_dnf(reposdir):
     """Query all the packages with dnf that has an update pending on the system."""
     packages = []
     base = pkgmanager.Base()
-    # Fix the case when we are trying to query packages in Oracle Linux 8
-    # when the DNF API gets called, those variables are not populated by default.
-    if system_info.id == "oracle":
-        base.conf.substitutions["ocidomain"] = "oracle.com"
-        base.conf.substitutions["ociregion"] = ""
 
-    # Same thing for CentOS, but this time, the URL for the vault has changed
-    # and instead of just ussing $releasever (8.5, 8.4...), we need either
-    # using the correct $releasever (8.5.2111) or setting up the $contentdir
-    elif system_info.id == "centos":
-        base.conf.substitutions["contentdir"] = system_info.id
+    # If we have a custom reposdir to use, then we need to update the base
+    # config from DNF to read from the repos in there.
+    if reposdir:
+        base.conf.reposdir = reposdir
 
+    # Set DNF to read from the proper config files, at this moment, DNF can't
+    # automatically read and load the config files
+    # so we have to specify it to him.
+    # We set the PRIO_MAINCONFIG as the base config file to be read.
+    # We also set the folder /etc/dnf/vars as the main point for vars
+    # replacement in repo files.
+    # See this bugzilla comment:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
+    base.conf.read(priority=base.conf.PRIO_MAINCONFIG)
+    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()
 

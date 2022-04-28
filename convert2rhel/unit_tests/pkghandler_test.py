@@ -40,7 +40,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import all_systems
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -1517,12 +1517,13 @@ def test_compare_package_versions(version1, version2, expected):
         ),
     ),
 )
-def test_get_total_packages_to_update(package_manager_type, packages, expected, monkeypatch):
+@centos8
+def test_get_total_packages_to_update(package_manager_type, packages, expected, pretend_os, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
     monkeypatch.setattr(
         pkghandler,
         "_get_packages_to_update_%s" % package_manager_type,
-        value=lambda: packages,
+        value=lambda reposdir: packages,
     )
 
     assert get_total_packages_to_update() == expected
@@ -1534,7 +1535,6 @@ def test_get_total_packages_to_update(package_manager_type, packages, expected, 
 )
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
 def test_get_packages_to_update_yum(packages, monkeypatch):
-
     PkgName = namedtuple("PkgNames", ["name"])
     PkgUpdates = namedtuple("PkgUpdates", ["updates"])
     transaction_pkgs = []
@@ -1552,9 +1552,21 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
     pkgmanager.TYPE != "dnf",
     reason="No dnf module detected on the system, skipping it.",
 )
-@pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
+@pytest.mark.parametrize(
+    ("packages", "reposdir"),
+    (
+        (
+            ["package-1", "package-2", "package-i3"],
+            None,
+        ),
+        (
+            ["package-1"],
+            "test/reposdir",
+        ),
+    ),
+)
 @all_systems
-def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
+def test_get_packages_to_update_dnf(packages, reposdir, pretend_os, monkeypatch):
     dummy_mock = mock.Mock()
     PkgName = namedtuple("PkgNames", ["name"])
     transaction_pkgs = [PkgName(package) for package in packages]
@@ -1565,7 +1577,7 @@ def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
     monkeypatch.setattr(pkgmanager.Base, "resolve", value=dummy_mock)
     monkeypatch.setattr(pkgmanager.Base, "transaction", value=transaction_pkgs)
 
-    assert _get_packages_to_update_dnf() == packages
+    assert _get_packages_to_update_dnf(reposdir=reposdir) == packages
 
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected
