@@ -134,7 +134,7 @@ class RestorablePackage(object):
         if os.path.isdir(BACKUP_DIR):
             hardcoded_reposdir = get_hardcoded_repofiles_dir()
             reposdir = (
-                hardcoded_respodir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
+                hardcoded_reposdir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
             )
 
             # When backing up the packages, the original system repofiles are still available and for them we can't
