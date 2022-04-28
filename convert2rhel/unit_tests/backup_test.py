@@ -4,7 +4,8 @@ import unittest
 
 import pytest
 
-from convert2rhel import backup, unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import backup, repo, unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel.unit_tests.conftest import centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -309,3 +310,70 @@ def test_remove_pkgs_failed_to_remove(
         backup.remove_pkgs(pkgs_to_remove=pkgs_to_remove, backup=backup_pkg, critical=critical)
 
     assert expected.format(pkgs_to_remove[0]) in caplog.records[-1].message
+
+
+@centos8
+def test_restorable_package_backup(pretend_os, monkeypatch, tmpdir):
+    backup_dir = str(tmpdir)
+    data_dir = str(tmpdir.join("data-dir"))
+    dowloaded_pkg_dir = str(tmpdir.join("some-path"))
+    download_pkg_mock = mock.Mock(return_value=dowloaded_pkg_dir)
+    monkeypatch.setattr(backup, "BACKUP_DIR", backup_dir)
+    monkeypatch.setattr(repo, "DATA_DIR", data_dir)
+    monkeypatch.setattr(backup, "download_pkg", download_pkg_mock)
+    rp = backup.RestorablePackage(pkgname="pkg-1")
+    rp.backup()
+
+    assert download_pkg_mock.call_count == 1
+    assert rp.path == dowloaded_pkg_dir
+
+
+def test_restorable_package_backup_without_dir(monkeypatch, tmpdir, caplog):
+    backup_dir = str(tmpdir.join("non-existing"))
+    monkeypatch.setattr(backup, "BACKUP_DIR", backup_dir)
+    rp = backup.RestorablePackage(pkgname="pkg-1")
+    rp.backup()
+
+    assert "Can't access %s" % backup_dir in caplog.records[-1].message
+
+
+def test_changedrpms_packages_controller_install_local_rpms(monkeypatch, caplog):
+    pkgs = ["pkg-1"]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (("rpm", "-i", pkgs[0]), ("test", 1)),
+        )
+    )
+    monkeypatch.setattr(
+        backup,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    control = backup.ChangedRPMPackagesController()
+    result = control._install_local_rpms(pkgs_to_install=pkgs, replace=False, critical=False)
+
+    assert result == False
+    assert run_subprocess_mock.call_count == 1
+    assert "Couldn't install %s packages." % pkgs[0] in caplog.records[-1].message
+
+
+def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypatch, caplog):
+    pkgs = ["pkg-1"]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (("rpm", "-i", pkgs[0]), ("test", 1)),
+        )
+    )
+    monkeypatch.setattr(
+        backup,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    control = backup.ChangedRPMPackagesController()
+    with pytest.raises(SystemExit):
+        result = control._install_local_rpms(pkgs_to_install=pkgs, replace=False, critical=True)
+
+    assert run_subprocess_mock.call_count == 1
+    assert "Error: Couldn't install %s packages." % pkgs[0] in caplog.records[-1].message

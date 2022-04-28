@@ -70,7 +70,6 @@ class ChangedRPMPackagesController(object):
             loggerinst.debug(output.strip())
             if critical:
                 loggerinst.critical("Error: Couldn't install %s packages." % pkgs_as_str)
-                return False
 
             loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
             return False
@@ -134,16 +133,15 @@ class RestorablePackage(object):
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
             hardcoded_reposdir = get_hardcoded_repofiles_dir()
-
-            reposdir = None
-            if os.path.exists(hardcoded_reposdir) and system_info.has_internet_access:
-                reposdir = hardcoded_reposdir
+            reposdir = (
+                hardcoded_respodir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
+            )
 
             # When backing up the packages, the original system repofiles are still available and for them we can't
             # use the releasever for RHEL repositories
             self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False, reposdir=reposdir)
         else:
-            loggerinst.warning("Can't access %s" % TMP_DIR)
+            loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
 
 def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
