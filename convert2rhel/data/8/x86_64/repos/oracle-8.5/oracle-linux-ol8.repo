@@ -26,6 +26,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=0
 
+
 [ol8_u0_baseos_base]
 name=Oracle Linux 8 BaseOS GA ($basearch)
 baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/0/baseos/base/$basearch/
@@ -61,6 +62,13 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=0
 
+[ol8_u5_baseos_base]
+name=Oracle Linux 8.5 BaseOS ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/5/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
 [ol8_addons]
 name=Oracle Linux 8 Addons ($basearch)
 baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/addons/$basearch/
@@ -68,16 +76,9 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=0
 
-[ol8_UEKR6]
-name=Latest Unbreakable Enterprise Kernel Release 6 for Oracle Linux $releasever ($basearch)
-baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/UEKR6/$basearch/
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
-gpgcheck=1
-enabled=1
-
-[ol8_UEKR6_RDMA]
-name=Oracle Linux 8 UEK6 RDMA ($basearch)
-baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/UEKR6/RDMA/$basearch/
+[ol8_u4_security_validation]
+name=Oracle Linux $releasever Update 4 ($basearch) Security Validations
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/4/security/validation/$basearch/
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 gpgcheck=1
 enabled=0

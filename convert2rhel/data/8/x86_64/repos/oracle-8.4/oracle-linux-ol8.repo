@@ -1,0 +1,70 @@
+[ol8_baseos_latest]
+name=Oracle Linux 8 BaseOS Latest ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/baseos/latest/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol8_appstream]
+name=Oracle Linux 8 Application Stream ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/appstream/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+
+[ol8_codeready_builder]
+name=Oracle Linux 8 CodeReady Builder ($basearch) - Unsupported
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/codeready/builder/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_distro_builder]
+name=Oracle Linux 8 Distro Builder ($basearch) - Unsupported
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/distro/builder/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+
+[ol8_u0_baseos_base]
+name=Oracle Linux 8 BaseOS GA ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/0/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_u1_baseos_base]
+name=Oracle Linux 8.1 BaseOS ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/1/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_u2_baseos_base]
+name=Oracle Linux 8.2 BaseOS ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/2/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_u3_baseos_base]
+name=Oracle Linux 8.3 BaseOS ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/3/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_u4_baseos_base]
+name=Oracle Linux 8.4 BaseOS ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/4/baseos/base/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
+
+[ol8_addons]
+name=Oracle Linux 8 Addons ($basearch)
+baseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/addons/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=0
