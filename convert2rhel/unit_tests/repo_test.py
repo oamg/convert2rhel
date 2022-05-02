@@ -26,3 +26,7 @@ class TestRepo(unit_tests.ExtendedTestCase):
         repos = repo.get_rhel_repoids()
 
         self.assertEqual(repos, ["rhel_server"])
+
+
+# def test_get_hardcoded_repofiles_dir():
+#    pass

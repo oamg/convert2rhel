@@ -370,3 +370,22 @@ def test_prompt_user(question, is_password, response, monkeypatch):
 def test_string_to_version(string_version, nevra):
     nevra_version = utils.string_to_version(string_version)
     assert nevra_version == nevra
+
+
+@pytest.mark.parametrize(
+    ("path_exists", "list_dir", "expected"),
+    (
+        (True, ["dir-1", "dir-2"], 0),
+        (True, [], 2),
+        (False, [], 0),
+        (False, ["dir-1", "dir-2"], 0),
+    ),
+)
+def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypatch):
+    os_remove_mock = mock.Mock()
+    monkeypatch.setattr(os.path, "exists", value=lambda path: path_exists)
+    monkeypatch.setattr(os, "listdir", value=lambda path: list_dir)
+    monkeypatch.setattr(os, "rmdir", value=os_remove_mock)
+
+    utils.remove_orphan_folders()
+    assert os_remove_mock.call_count == expected
