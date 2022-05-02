@@ -1021,7 +1021,7 @@ def get_total_packages_to_update():
     reposdir = hardcoded_reposdir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
 
     if pkgmanager.TYPE == "yum":
-        packages = _get_packages_to_update_yum(reposdir=reposdir)
+        packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
         packages = _get_packages_to_update_dnf(reposdir=reposdir)
 

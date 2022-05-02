@@ -1520,13 +1520,19 @@ def test_compare_package_versions(version1, version2, expected):
 @centos8
 def test_get_total_packages_to_update(package_manager_type, packages, expected, pretend_os, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
-    monkeypatch.setattr(
-        pkghandler,
-        "_get_packages_to_update_%s" % package_manager_type,
-        value=lambda reposdir: packages,
-    )
-
-    assert get_total_packages_to_update() == expected
+    if package_manager_type == "dnf":
+        monkeypatch.setattr(
+            pkghandler,
+            "_get_packages_to_update_%s" % package_manager_type,
+            value=lambda reposdir: packages,
+        )
+    else:
+        monkeypatch.setattr(
+            pkghandler,
+            "_get_packages_to_update_%s" % package_manager_type,
+            value=lambda: packages,
+        )
+    assert get_total_packages_to_update() == packages
 
 
 @pytest.mark.skipif(
