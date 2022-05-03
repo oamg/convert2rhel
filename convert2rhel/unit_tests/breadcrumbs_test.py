@@ -15,25 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
 import json
-import os
-import sys
 
 import pytest
 
-
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
-
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import breadcrumbs
 
 

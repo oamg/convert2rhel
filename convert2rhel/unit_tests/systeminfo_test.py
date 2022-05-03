@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Required imports:
-import itertools
 import logging
 import os
 import shutil

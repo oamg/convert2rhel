@@ -22,7 +22,6 @@ import sys
 from convert2rhel import breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
-from convert2rhel.grub import logger
 
 
 loggerinst = logging.getLogger(__name__)

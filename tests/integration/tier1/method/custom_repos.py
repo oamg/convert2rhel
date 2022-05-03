@@ -2,14 +2,6 @@ import re
 
 from collections import namedtuple
 
-import pytest
-
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
-
 
 def get_system_version(system_release_content=None):
     """Return a namedtuple with major and minor elements, both of an int type.

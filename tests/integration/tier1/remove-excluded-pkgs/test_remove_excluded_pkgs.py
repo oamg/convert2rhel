@@ -1,7 +1,3 @@
-import sys
-
-import pexpect
-
 from envparse import env
 
 
