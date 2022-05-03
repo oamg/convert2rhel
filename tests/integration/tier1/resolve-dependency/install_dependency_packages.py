@@ -1,11 +1,6 @@
 import re
 
 from collections import namedtuple
-from pathlib import Path
-
-import pytest
-
-from envparse import env
 
 
 def get_system_version(system_release_content=None):

@@ -25,12 +25,6 @@ from convert2rhel import grub, utils
 from convert2rhel.unit_tests.checks_test import EFIBootInfoMocked
 
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
-
 if sys.version_info[:2] <= (2, 7):
     import mock  # pylint: disable=import-error
 else:

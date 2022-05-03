@@ -41,7 +41,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import all_systems, oracle7
+from convert2rhel.unit_tests.conftest import all_systems
 
 
 if sys.version_info[:2] <= (2, 7):

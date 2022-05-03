@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import getpass
 import os
-import re
 import sys
 import unittest
 

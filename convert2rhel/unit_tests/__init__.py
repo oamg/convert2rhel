@@ -19,7 +19,6 @@ import os
 import unittest
 
 from functools import wraps
-from warnings import warn
 
 from convert2rhel.utils import run_subprocess
 
