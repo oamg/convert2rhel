@@ -329,6 +329,7 @@ class SystemInfo(object):
         .. warnings::
             We might have some problems with this if the host machine is using
             a NAT gateway to route the outbound requests
+
         .. seealso::
             * Comparision of different methods to check internet connections: https://stackoverflow.com/a/33117579
             * Redirecting ip addresses: https://stackoverflow.com/a/33117579https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address

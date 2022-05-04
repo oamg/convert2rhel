@@ -77,7 +77,11 @@ def restore_yum_repos():
 
 
 def is_eus_repos_available():
-    """"""
+    """Detected if the current system is an EUS one.
+
+    :return: The return can be either the path to the eus repos, or None, meaning it is not a EUS system.
+    :rtype: str | None
+    """
     hardcoded_reposdir = _get_hardcoded_repofiles_dir()
     reposdir = None
     if os.path.exists(hardcoded_reposdir) and system_info.has_internet_access:
