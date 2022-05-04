@@ -5,7 +5,7 @@ from envparse import env
 
 booted_os = platform.platform()
 OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
-OL_8_PKGS = ["oracle-release-el8", "usermode", "rhn-setup", "oracle-logos"]
+OL_8_PKGS = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
 COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
 COS_8_PKGS = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
 # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9

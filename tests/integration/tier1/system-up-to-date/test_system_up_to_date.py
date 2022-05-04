@@ -13,7 +13,15 @@ def test_skip_kernel_check(shell, convert2rhel):
     the kernel check inhibitor. One of the way to allow this is to not have
     any kernel packages present in repos.
     """
-    shell("mkdir /tmp/my_tmp; mv /etc/yum.repos.d/* /tmp/my_tmp")
+
+    assert shell("mkdir /tmp/s_backup")
+    assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
+    # TODO this has to be fixed
+    # Move all repos to other location, so it is not being used
+    # EUS version use hardoced repos from c2r
+    if "centos-8.4" in system_version or "oracle-8.4" in system_version:
+        assert shell("mkdir /tmp/s_backup_eus")
+        assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     with convert2rhel(
         ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -44,7 +52,8 @@ def test_skip_kernel_check(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
     # Clean up
-    shell("mv /tmp/my_tmp/* /etc/yum.repos.d/")
+    if "centos-8.4" in system_version or "oracle-8.4" in system_version:
+        assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
 
 def test_system_not_updated(shell, convert2rhel):

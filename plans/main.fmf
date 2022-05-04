@@ -15,4 +15,4 @@ prepare:
     package: convert2rhel
     missing: fail
 environment-file:
-  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
+  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/premium-activation-key/.env
