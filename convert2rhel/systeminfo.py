@@ -90,6 +90,8 @@ class SystemInfo(object):
         self.logger = None
         # IDs of the default Red Hat CDN repositories that correspond to the current system
         self.default_rhsm_repoids = None
+        # IDS of the eus Red Hat CDN repositories that correspond to the current system
+        self.eus_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
         # Value to use for substituting the $releasever variable in the url of RHEL repositories
@@ -114,6 +116,7 @@ class SystemInfo(object):
         self.excluded_pkgs = self._get_excluded_pkgs()
         self.repofile_pkgs = self._get_repofile_pkgs()
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
+        self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
@@ -193,6 +196,9 @@ class SystemInfo(object):
     def _get_default_rhsm_repoids(self):
         return self._get_cfg_opt("default_rhsm_repoids").split()
 
+    def _get_eus_rhsm_repoids(self):
+        return self._get_cfg_opt("eus_rhsm_repoids").split()
+
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""
         if option_name in self.cfg_content:
@@ -230,7 +236,12 @@ class SystemInfo(object):
             self.logger.critical(
                 "%s of version %d.%d is not allowed for conversion.\n"
                 "Allowed versions are: %s"
-                % (self.name, self.version.major, self.version.minor, list(RELEASE_VER_MAPPING.keys()))
+                % (
+                    self.name,
+                    self.version.major,
+                    self.version.minor,
+                    list(RELEASE_VER_MAPPING.keys()),
+                )
             )
 
     def _get_kmods_to_ignore(self):
