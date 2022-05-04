@@ -633,7 +633,7 @@ def enable_repos(rhel_repoids):
 
 
 def _submgr_enable_repos(repos_to_enable):
-    """ """
+    """Go through subscription manager repos and try to enable them through subscription-manager."""
     enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:
         enable_cmd.append("--enable=%s" % repo)

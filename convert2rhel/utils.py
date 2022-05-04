@@ -509,7 +509,7 @@ def string_to_version(verstring):
 def remove_orphan_folders():
     """Even after removing redhat-release-* package, some of its folders are
     still present, are empty, and that blocks us from installing centos-release
-    pkg back. So, by now, we are removing them manually.
+    pkg back. So, for now, we are removing them manually.
     """
     rh_release_paths = [
         "/usr/share/redhat-release",

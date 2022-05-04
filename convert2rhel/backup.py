@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 
-from convert2rhel.repo import is_eus_repos_available
+from convert2rhel.repo import get_eus_repos_available
 from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, run_subprocess
 
 
@@ -21,7 +21,7 @@ class ChangedRPMPackagesController(object):
         self.installed_pkgs.append(pkg)
 
     def track_installed_pkgs(self, pkgs):
-        """Track packages installed  before the PONR to be able to remove them later (roll them back) if needed."""
+        """Track packages installed before the PONR to be able to remove them later (roll them back) if needed."""
         self.installed_pkgs += pkgs
 
     def backup_and_track_removed_pkg(self, pkg):
@@ -131,7 +131,7 @@ class RestorablePackage(object):
         """Save version of RPM package"""
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
-            reposdir = is_eus_repos_available()
+            reposdir = get_eus_repos_available()
 
             # When backing up the packages, the original system repofiles are still available and for them we can't
             # use the releasever for RHEL repositories

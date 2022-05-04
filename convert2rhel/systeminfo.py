@@ -100,7 +100,6 @@ class SystemInfo(object):
         self.kmods_to_ignore = []
         # Booted kernel VRA (version, release, architecture), e.g. "4.18.0-240.22.1.el8_3.x86_64"
         self.booted_kernel = ""
-        #
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
@@ -320,9 +319,9 @@ class SystemInfo(object):
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
     def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
-        """Check weather or not the machine is connect to the internet.
+        """Check wether or not the machine is connect to the internet.
 
-        This method will try to stabilish a socket connection throught the
+        This method will try to estabilish a socket connection through the
         default host in the method signature (8.8.8.8), if it's connected
         successfully, then we know that internet is accessibly from the host.
 
@@ -331,15 +330,17 @@ class SystemInfo(object):
             a NAT gateway to route the outbound requests
 
         .. seealso::
-            * Comparision of different methods to check internet connections: https://stackoverflow.com/a/33117579
-            * Redirecting ip addresses: https://stackoverflow.com/a/33117579https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+            * Comparison of different methods to check internet connections: https://stackoverflow.com/a/33117579
+            * Redirecting IP addresses: https://stackoverflow.com/a/33117579https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
 
-        :param host: The host to stablish to connection. Defatuls to "8.8.8.8".
+        :param host: The host to establish a connection to. Defaults to "8.8.8.8".
         :type host: str
-        :param port: The port to use in the connection. Defaults to 53.
+        :param port: The port for the connection. Defaults to 53.
         :type port: int
-        :param timeout: The maximum number of timeouts for the connection. Defaults to 3.
+        :param timeout: The timeout in seconds for the connection. Defaults to 3.
         :type port: int
+        :return: Return boolean indicating whether or not we have internet access.
+        :rtype: bool
         """
         try:
             self.logger.info("Checking internet connectivity using host '%s' and port '%s'." % (host, port))

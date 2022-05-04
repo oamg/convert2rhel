@@ -76,11 +76,11 @@ def test_get_rhel_repoids(pretend_os, path_exists, expected, monkeypatch):
     ),
 )
 @centos8
-def test_is_eus_repos_available(pretend_os, path_exists, has_internet_access, expected, monkeypatch):
+def test_get_eus_repos_available(pretend_os, path_exists, has_internet_access, expected, monkeypatch):
     monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
     monkeypatch.setattr(system_info, "has_internet_access", value=has_internet_access)
 
-    assert repo.is_eus_repos_available() == expected
+    assert repo.get_eus_repos_available() == expected
 
 
 @pytest.mark.parametrize(("expected"), (("/usr/share/convert2rhel/repos/centos-8.5"),))

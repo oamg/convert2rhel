@@ -25,7 +25,7 @@ import rpm
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
-from convert2rhel.repo import is_eus_repos_available
+from convert2rhel.repo import get_eus_repos_available
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -1024,7 +1024,7 @@ def get_total_packages_to_update():
     """
     packages = []
 
-    reposdir = is_eus_repos_available()
+    reposdir = get_eus_repos_available()
 
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
