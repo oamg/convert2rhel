@@ -164,8 +164,8 @@ class TestSysteminfo(unittest.TestCase):
         # TODO: move class from unittest to pytest and use global tool_opts fixture
         tool_opts.no_rpm_va = False
         # Check that rpm -Va is executed (default) and stored into the specific file.
+        tool_opts.no_rpm_va = False
         system_info.generate_rpm_va()
-
         self.assertTrue(utils.run_subprocess.called > 0)
         self.assertEqual(utils.run_subprocess.used_args[0][0], ["rpm", "-Va"])
         self.assertTrue(os.path.isfile(self.rpmva_output_file))

@@ -29,6 +29,7 @@ from convert2rhel import backup, pkghandler, subscription, unit_tests, toolopts,
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests.conftest import centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -1064,3 +1065,166 @@ def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_
         assert skip_pkg_msg in caplog.records[-2].message
     assert expected in caplog.records[-1].message
     assert track_installed_pkgs_mock.called == 1
+
+
+# ----
+
+
+@pytest.mark.parametrize(
+    ("rhel_repoids", "subprocess", "should_raise", "expected", "expected_message"),
+    (
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["repo-1", "repo-2"],
+            "Repositories enabled through subscription-manager",
+        ),
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 1),
+            True,
+            ["repo-1", "repo-2"],
+            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+@centos8
+def test_enable_repos_rhel_repoids(
+    pretend_os, rhel_repoids, subprocess, should_raise, expected, expected_message, monkeypatch, caplog
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in rhel_repoids:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd_mock, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=rhel_repoids)
+    else:
+        subscription.enable_repos(rhel_repoids=rhel_repoids)
+        assert system_info.submgr_enabled_repos == expected
+
+    assert expected_message in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("rhel_repoids", "default_rhsm_repoids", "subprocess", "subprocess2", "should_raise", "expected"),
+    (
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ["test-repo-1", "test-repo-2"],
+            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
+            ("test-repo-1, test-repo-2", 1),
+            True,
+            "Repos were not possible to enable through subscription-manager:\ntest-repo-1, test-repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ["test-repo-1", "test-repo-2"],
+            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
+            ("test-repo-1, test-repo-2", 0),
+            False,
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+@centos8
+def test_enable_repos_rhel_repoids_fallback_default_rhsm(
+    pretend_os, rhel_repoids, default_rhsm_repoids, subprocess, subprocess2, should_raise, expected, monkeypatch, caplog
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in rhel_repoids:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(side_effect=[subprocess, subprocess2])
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(system_info, "default_rhsm_repoids", value=default_rhsm_repoids)
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=rhel_repoids)
+    else:
+        subscription.enable_repos(rhel_repoids=rhel_repoids)
+        assert system_info.submgr_enabled_repos == default_rhsm_repoids
+
+    assert expected in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 2
+
+
+@pytest.mark.parametrize(
+    ("toolopts_enablerepo", "subprocess", "should_raise", "expected", "expected_message"),
+    (
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["repo-1", "repo-2"],
+            "Repositories enabled through subscription-manager",
+        ),
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 1),
+            True,
+            ["repo-1", "repo-2"],
+            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+def test_enable_repos_toolopts_enablerepo(
+    toolopts_enablerepo, subprocess, should_raise, expected, expected_message, monkeypatch, caplog
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in toolopts_enablerepo:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd_mock, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(tool_opts, "enablerepo", toolopts_enablerepo)
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=None)
+    else:
+        subscription.enable_repos(rhel_repoids=None)
+        assert system_info.submgr_enabled_repos == expected
+
+    assert expected_message in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1

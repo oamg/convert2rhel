@@ -56,7 +56,7 @@ def test_get_rhel_repoids(pretend_os, path_exists, expected, monkeypatch):
         (
             True,
             True,
-            "/usr/share/convert2rhel/repos/centos-8.5",
+            "/usr/share/convert2rhel/repos/centos-8.4",
         ),
         (
             False,
@@ -83,7 +83,7 @@ def test_get_eus_repos_available(pretend_os, path_exists, has_internet_access, e
     assert repo.get_eus_repos_available() == expected
 
 
-@pytest.mark.parametrize(("expected"), (("/usr/share/convert2rhel/repos/centos-8.5"),))
+@pytest.mark.parametrize(("expected"), (("/usr/share/convert2rhel/repos/centos-8.4"),))
 @centos8
 def test_get_hardcoded_repofiles_dir(pretend_os, expected):
     assert repo._get_hardcoded_repofiles_dir() == expected

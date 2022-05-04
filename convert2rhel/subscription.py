@@ -614,7 +614,7 @@ def enable_repos(rhel_repoids):
         repos_to_enable = rhel_repoids
 
     # Check if the rhel_repoids is the eus ones
-    if rhel_repoids == system_info.eus_rhsm_repoids:
+    if repos_to_enable == system_info.eus_rhsm_repoids:
         try:
             # Try a first time and see if it's possible to enable the EUS repositories
             # Otherwise, if it raiess an exception, try to enable the default rhsm-repos
@@ -622,8 +622,8 @@ def enable_repos(rhel_repoids):
         except SystemExit:
             loggerinst.info("Falling back to using default rhsm repositories.")
             # Fallback to the default_rhsm_repoids
-            _submgr_enable_repos(system_info.default_rhsm_repoids)
             repos_to_enable = system_info.default_rhsm_repoids
+            _submgr_enable_repos(repos_to_enable)
     else:
         # This could be either the default_rhsm repos or any user specific
         # repoids
