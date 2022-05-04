@@ -2,9 +2,8 @@ import logging
 import os
 import shutil
 
-from convert2rhel.repo import get_hardcoded_repofiles_dir
-from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR, TMP_DIR, download_pkg, remove_orphan_folders, run_subprocess
+from convert2rhel.repo import is_eus_repos_available
+from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, run_subprocess
 
 
 loggerinst = logging.getLogger(__name__)
@@ -132,14 +131,16 @@ class RestorablePackage(object):
         """Save version of RPM package"""
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
-            hardcoded_reposdir = get_hardcoded_repofiles_dir()
-            reposdir = (
-                hardcoded_reposdir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
-            )
+            reposdir = is_eus_repos_available()
 
             # When backing up the packages, the original system repofiles are still available and for them we can't
             # use the releasever for RHEL repositories
-            self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False, reposdir=reposdir)
+            self.path = download_pkg(
+                self.name,
+                dest=BACKUP_DIR,
+                set_releasever=False,
+                reposdir=reposdir,
+            )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 

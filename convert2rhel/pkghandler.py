@@ -25,7 +25,7 @@ import rpm
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
-from convert2rhel.repo import get_hardcoded_repofiles_dir
+from convert2rhel.repo import is_eus_repos_available
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -771,7 +771,14 @@ def replace_non_rhel_installed_kernel(version):
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
-        ["rpm", "-i", "--force", "--nodeps", "--replacepkgs", "%s*" % os.path.join(utils.TMP_DIR, pkg)],
+        [
+            "rpm",
+            "-i",
+            "--force",
+            "--nodeps",
+            "--replacepkgs",
+            "%s*" % os.path.join(utils.TMP_DIR, pkg),
+        ],
         print_output=False,
     )
     if ret_code != 0:
@@ -1017,8 +1024,7 @@ def get_total_packages_to_update():
     """
     packages = []
 
-    hardcoded_reposdir = get_hardcoded_repofiles_dir()
-    reposdir = hardcoded_reposdir if (os.path.exists(hardcoded_reposdir) and system_info.has_internet_access) else None
+    reposdir = is_eus_repos_available()
 
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()

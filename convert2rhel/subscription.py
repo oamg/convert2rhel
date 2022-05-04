@@ -99,7 +99,11 @@ def unregister_system():
     unregistration_cmd = ["subscription-manager", "unregister"]
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning("System unregistration failed with return code %d and message:\n%s", ret_code, output)
+        loggerinst.warning(
+            "System unregistration failed with return code %d and message:\n%s",
+            ret_code,
+            output,
+        )
     else:
         loggerinst.info("System unregistered successfully.")
 
@@ -113,8 +117,14 @@ def register_system():
         registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
         attempt_msg = ""
         if attempt > 0:
-            attempt_msg = "Attempt %d of %d: " % (attempt + 1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
-        loggerinst.info("%sRegistering the system using subscription-manager ...", attempt_msg)
+            attempt_msg = "Attempt %d of %d: " % (
+                attempt + 1,
+                MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE,
+            )
+        loggerinst.info(
+            "%sRegistering the system using subscription-manager ...",
+            attempt_msg,
+        )
 
         output, ret_code = registration_cmd()
         if ret_code == 0:
@@ -514,7 +524,11 @@ def get_avail_subs():
 def get_sub(subs_raw):
     """Generator that provides subscriptions available to a logged-in user."""
     # Split all the available subscriptions per one subscription
-    for sub_raw in re.findall(r"Subscription Name.*?Type:\s+\w+\n\n", subs_raw, re.DOTALL | re.MULTILINE):
+    for sub_raw in re.findall(
+        r"Subscription Name.*?Type:\s+\w+\n\n",
+        subs_raw,
+        re.DOTALL | re.MULTILINE,
+    ):
         pool_id = get_pool_id(sub_raw)
         yield namedtuple("Sub", ["pool_id", "sub_raw"])(pool_id, sub_raw)
 
@@ -599,6 +613,27 @@ def enable_repos(rhel_repoids):
     else:
         repos_to_enable = rhel_repoids
 
+    # Check if the rhel_repoids is the eus ones
+    if rhel_repoids == system_info.eus_rhsm_repoids:
+        try:
+            # Try a first time and see if it's possible to enable the EUS repositories
+            # Otherwise, if it raiess an exception, try to enable the default rhsm-repos
+            _submgr_enable_repos(repos_to_enable)
+        except SystemExit:
+            loggerinst.info("Falling back to using default rhsm repositories.")
+            # Fallback to the default_rhsm_repoids
+            _submgr_enable_repos(system_info.default_rhsm_repoids)
+            repos_to_enable = system_info.default_rhsm_repoids
+    else:
+        # This could be either the default_rhsm repos or any user specific
+        # repoids
+        _submgr_enable_repos(repos_to_enable)
+
+    system_info.submgr_enabled_repos = repos_to_enable
+
+
+def _submgr_enable_repos(repos_to_enable):
+    """ """
     enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:
         enable_cmd.append("--enable=%s" % repo)
@@ -606,8 +641,6 @@ def enable_repos(rhel_repoids):
     if ret_code != 0:
         loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
-
-    system_info.submgr_enabled_repos = repos_to_enable
 
 
 def rollback():
@@ -651,7 +684,10 @@ def download_rhsm_pkgs():
         loggerinst.info("Skipping due to the use of --keep-rhsm.")
         return
     utils.mkdir_p(_RHSM_TMP_DIR)
-    pkgs_to_download = ["subscription-manager", "subscription-manager-rhsm-certificates"]
+    pkgs_to_download = [
+        "subscription-manager",
+        "subscription-manager-rhsm-certificates",
+    ]
 
     if system_info.version.major == 6:
         pkgs_to_download.append("subscription-manager-rhsm")
