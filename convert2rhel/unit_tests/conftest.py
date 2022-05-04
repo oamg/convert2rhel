@@ -86,8 +86,8 @@ def pretend_os(request, pkg_root, monkeypatch):
     >>>     (
     >>>         ("7.9.1111", "CentOS Linux"),
     >>>         ("7.9.1111", "Oracle Linux Server"),
-    >>>         ("8.4.1111", "CentOS Linux"),
-    >>>         ("8.4.1111", "Oracle Linux Server"),
+    >>>         ("8.5.2111", "CentOS Linux"),
+    >>>         ("8.5.2111", "Oracle Linux Server"),
     >>>     ),
     >>>     indirect=True,
     >>> )
@@ -156,14 +156,15 @@ all_systems = pytest.mark.parametrize(
     (
         ("7.9.1111", "CentOS Linux"),
         ("7.9.1111", "Oracle Linux Server"),
-        ("8.4.1111", "CentOS Linux"),
-        ("8.4.1111", "Oracle Linux Server"),
+        ("8.5.2111", "CentOS Linux"),
+        ("8.5.2111", "Oracle Linux Server"),
     ),
     indirect=True,
 )
+
 centos8 = pytest.mark.parametrize(
     "pretend_os",
-    (("8.4.1111", "CentOS Linux"),),
+    (("8.5.2111", "CentOS Linux"),),
     indirect=True,
 )
 centos7 = pytest.mark.parametrize(
@@ -173,7 +174,7 @@ centos7 = pytest.mark.parametrize(
 )
 oracle8 = pytest.mark.parametrize(
     "pretend_os",
-    (("8.4.1111", "Oracle Linux Server"),),
+    (("8.5.2111", "Oracle Linux Server"),),
     indirect=True,
 )
 oracle7 = pytest.mark.parametrize(

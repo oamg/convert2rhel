@@ -15,18 +15,75 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
+import os
+
+import pytest
+
 from convert2rhel import repo
 from convert2rhel.systeminfo import system_info
+from convert2rhel.unit_tests.conftest import centos8
 
 
-class TestRepo(unit_tests.ExtendedTestCase):
-    @unit_tests.mock(system_info, "default_rhsm_repoids", ["rhel_server"])
-    def test_get_rhel_repoids(self):
-        repos = repo.get_rhel_repoids()
+@pytest.mark.parametrize(
+    ("path_exists", "expected"),
+    (
+        (
+            True,
+            [
+                "rhel-8-for-x86_64-baseos-eus-rpms",
+                "rhel-8-for-x86_64-appstream-eus-rpms",
+            ],
+        ),
+        (
+            False,
+            [
+                "rhel-8-for-x86_64-baseos-rpms",
+                "rhel-8-for-x86_64-appstream-rpms",
+            ],
+        ),
+    ),
+)
+@centos8
+def test_get_rhel_repoids(pretend_os, path_exists, expected, monkeypatch):
+    monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
+    repos = repo.get_rhel_repoids()
+    assert repos == expected
 
-        self.assertEqual(repos, ["rhel_server"])
+
+@pytest.mark.parametrize(
+    ("path_exists", "has_internet_access", "expected"),
+    (
+        (
+            True,
+            True,
+            "/usr/share/convert2rhel/repos/centos-8.5",
+        ),
+        (
+            False,
+            False,
+            None,
+        ),
+        (
+            True,
+            False,
+            None,
+        ),
+        (
+            False,
+            True,
+            None,
+        ),
+    ),
+)
+@centos8
+def test_is_eus_repos_available(pretend_os, path_exists, has_internet_access, expected, monkeypatch):
+    monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
+    monkeypatch.setattr(system_info, "has_internet_access", value=has_internet_access)
+
+    assert repo.is_eus_repos_available() == expected
 
 
-# def test_get_hardcoded_repofiles_dir():
-#    pass
+@pytest.mark.parametrize(("expected"), (("/usr/share/convert2rhel/repos/centos-8.5"),))
+@centos8
+def test_get_hardcoded_repofiles_dir(pretend_os, expected):
+    assert repo._get_hardcoded_repofiles_dir() == expected
