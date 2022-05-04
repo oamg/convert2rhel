@@ -11,7 +11,7 @@
 [extras]
 name=CentOS Linux 8.5.2111 - Extras
 #mirrorlist=http://#mirrorlist.centos.org/?release=8.5.2111&arch=$basearch&repo=extras&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.5.2111/extras/$basearch/os/
+baseurl=https://vault.centos.org/$contentdir/8.5.2111/extras/$basearch/os/
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

@@ -11,7 +11,7 @@
 [devel]
 name=CentOS Linux 8.4.2105 - Devel WARNING! FOR BUILDROOT USE ONLY!
 #mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=Devel&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.4.2105/Devel/$basearch/os/
+baseurl=https://vault.centos.org/$contentdir/8.4.2105/Devel/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

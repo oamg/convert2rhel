@@ -11,7 +11,7 @@
 [powertools]
 name=CentOS Linux 8.4.2105 - PowerTools
 #mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=PowerTools&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.4.2105/PowerTools/$basearch/os/
+baseurl=https://vault.centos.org/$contentdir/8.4.2105/PowerTools/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial

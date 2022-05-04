@@ -2,7 +2,7 @@
   yum_repository:
     name: appstream
     description: AppStream repo
-    baseurl: http://vault.centos.org/$contentdir/8.4.2105/AppStream/$basearch/os/
+    baseurl: https://vault.centos.org/$contentdir/8.4.2105/AppStream/$basearch/os/
     state: present
     gpgcheck: yes
     enabled: yes
@@ -13,7 +13,7 @@
   yum_repository:
     name: baseos
     description: BaseOS repo
-    baseurl: http://vault.centos.org/$contentdir/8.4.2105/BaseOS/$basearch/os/
+    baseurl: https://vault.centos.org/$contentdir/8.4.2105/BaseOS/$basearch/os/
     state: present
     gpgcheck: yes
     enabled: yes

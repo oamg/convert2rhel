@@ -18,7 +18,7 @@
 [cr]
 name=CentOS Linux 8.4.2105 - ContinuousRelease
 #mirrorlist=http://#mirrorlist.centos.org/?release=8.4.2105&arch=$basearch&repo=cr&infra=$infra
-baseurl=http://vault.centos.org/$contentdir/8.4.2105/cr/$basearch/os/
+baseurl=https://vault.centos.org/$contentdir/8.4.2105/cr/$basearch/os/
 gpgcheck=1
 enabled=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
