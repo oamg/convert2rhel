@@ -25,7 +25,7 @@ from convert2rhel.unit_tests.conftest import centos8
 
 
 @pytest.mark.parametrize(
-    ("path_exists", "expected"),
+    ("is_eus_release", "expected"),
     (
         (
             True,
@@ -44,46 +44,30 @@ from convert2rhel.unit_tests.conftest import centos8
     ),
 )
 @centos8
-def test_get_rhel_repoids(pretend_os, path_exists, expected, monkeypatch):
-    monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
+def test_get_rhel_repoids(pretend_os, is_eus_release, expected, monkeypatch):
+    monkeypatch.setattr(repo.system_info, "corresponds_to_rhel_eus_release", value=lambda: is_eus_release)
     repos = repo.get_rhel_repoids()
     assert repos == expected
 
 
 @pytest.mark.parametrize(
-    ("path_exists", "has_internet_access", "expected"),
+    ("path_exists", "expected"),
     (
         (
-            True,
             True,
             "/usr/share/convert2rhel/repos/centos-8.4",
         ),
         (
             False,
-            False,
-            None,
-        ),
-        (
-            True,
-            False,
             None,
         ),
         (
             False,
-            True,
             None,
         ),
     ),
 )
 @centos8
-def test_get_eus_repos_available(pretend_os, path_exists, has_internet_access, expected, monkeypatch):
+def test_get_hardcoded_repofiles_dir(pretend_os, path_exists, expected, monkeypatch):
     monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
-    monkeypatch.setattr(system_info, "has_internet_access", value=has_internet_access)
-
-    assert repo.get_eus_repos_available() == expected
-
-
-@pytest.mark.parametrize(("expected"), (("/usr/share/convert2rhel/repos/centos-8.4"),))
-@centos8
-def test_get_hardcoded_repofiles_dir(pretend_os, expected):
-    assert repo._get_hardcoded_repofiles_dir() == expected
+    assert repo.get_hardcoded_repofiles_dir() == expected

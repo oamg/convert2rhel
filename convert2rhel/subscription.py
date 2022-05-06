@@ -22,7 +22,7 @@ import re
 from collections import namedtuple
 from time import sleep
 
-from convert2rhel import backup, pkghandler, utils
+from convert2rhel import backup, pkghandler, systeminfo, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -613,14 +613,20 @@ def enable_repos(rhel_repoids):
     else:
         repos_to_enable = rhel_repoids
 
-    # Check if the rhel_repoids is the eus ones
     if repos_to_enable == system_info.eus_rhsm_repoids:
         try:
-            # Try a first time and see if it's possible to enable the EUS repositories
+            loggerinst.info(
+                "The system version corresponds to a RHEL Extended Update Support (EUS) release. "
+                "Trying to enable RHEL EUS repositories."
+            )
+            # Try first if it's possible to enable EUS repoids. Otherwise try enabling the default RHSM repoids.
             # Otherwise, if it raiess an exception, try to enable the default rhsm-repos
             _submgr_enable_repos(repos_to_enable)
         except SystemExit:
-            loggerinst.info("Falling back to using default rhsm repositories.")
+            loggerinst.info(
+                "The RHEL EUS repositories are not possible to enable.\n"
+                "Trying to enable standard RHEL repositories as a fallback."
+            )
             # Fallback to the default_rhsm_repoids
             repos_to_enable = system_info.default_rhsm_repoids
             _submgr_enable_repos(repos_to_enable)

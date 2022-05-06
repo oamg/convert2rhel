@@ -837,8 +837,9 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         ([], False, "System is up-to-date."),
     ),
 )
-def test_check_package_updates(packages, exception, expected, monkeypatch, caplog):
-    monkeypatch.setattr(checks, "get_total_packages_to_update", value=lambda: packages)
+@centos8
+def test_check_package_updates(pretend_os, packages, exception, expected, monkeypatch, caplog):
+    monkeypatch.setattr(checks, "get_total_packages_to_update", value=lambda reposdir: packages)
     monkeypatch.setattr(checks, "ask_to_continue", value=lambda: mock.Mock())
 
     check_package_updates()
@@ -858,6 +859,14 @@ def test_check_package_updates_with_repoerror(monkeypatch, caplog):
     assert (
         "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-2].message
     )
+
+
+@centos8
+def test_check_package_updates_without_internet(pretend_os, monkeypatch, caplog):
+    system_info.has_internet_access = False
+    check_package_updates()
+
+    assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

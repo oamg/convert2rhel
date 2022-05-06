@@ -5,7 +5,7 @@ import unittest
 import pytest
 
 from convert2rhel import backup, repo, unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel.unit_tests.conftest import centos8
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -373,7 +373,30 @@ def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypa
 
     control = backup.ChangedRPMPackagesController()
     with pytest.raises(SystemExit):
-        result = control._install_local_rpms(pkgs_to_install=pkgs, replace=False, critical=True)
+        control._install_local_rpms(pkgs_to_install=pkgs, replace=False, critical=True)
 
     assert run_subprocess_mock.call_count == 1
     assert "Error: Couldn't install %s packages." % pkgs[0] in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("is_eus_system"),
+    (
+        (True),
+        (False),
+    ),
+)
+def test_restorable_package_backup(is_eus_system, tmpdir, monkeypatch):
+    pkg_to_backup = "pkg-1"
+
+    # Python 2.7 needs a string or buffer and not a LocalPath
+    tmpdir = str(tmpdir)
+    download_pkg_mock = mock.Mock()
+    monkeypatch.setattr(backup, "download_pkg", value=download_pkg_mock)
+    monkeypatch.setattr(backup, "BACKUP_DIR", value=tmpdir)
+    monkeypatch.setattr(backup.system_info, "corresponds_to_rhel_eus_release", value=lambda: is_eus_system)
+    monkeypatch.setattr(backup, "get_hardcoded_repofiles_dir", value=lambda: tmpdir if is_eus_system else None)
+
+    rp = backup.RestorablePackage(pkgname=pkg_to_backup)
+    rp.backup()
+    assert download_pkg_mock.call_count == 1

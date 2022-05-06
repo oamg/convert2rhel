@@ -27,14 +27,17 @@ loggerinst = logging.getLogger(__name__)
 
 
 def get_rhel_repoids():
-    """Get IDs of the Red Hat CDN repositories that correspond to the current system."""
+    """Get IDs of the Red Hat CDN repositories that correspond to the current system.
 
-    reposdir = get_eus_repos_available()
+    In case the to-be-converted-OS minor version corresponds to RHEL Extended Update Support (EUS) release,
+    we preferably enable the RHEL EUS repoids as those provide security updates over two years, in comparison to 6 months
+    in case of the standard non-EUS repoids.
+    """
 
-    if not reposdir:
-        repos_needed = system_info.default_rhsm_repoids
-    else:
+    if system_info.corresponds_to_rhel_eus_release():
         repos_needed = system_info.eus_rhsm_repoids
+    else:
+        repos_needed = system_info.default_rhsm_repoids
 
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
@@ -51,7 +54,7 @@ def backup_yum_repos():
         if repo.endswith(".repo") and repo != "redhat.repo":
             repo_path = os.path.join("/etc/yum.repos.d/", repo)
             shutil.copy2(repo_path, BACKUP_DIR)
-            loggerinst.info("Backed up repo: %s" % (repo_path))
+            loggerinst.info("Backed up r    epo: %s" % (repo_path))
             repo_files_backed_up = True
     if not repo_files_backed_up:
         loggerinst.info("No .repo files backed up.")
@@ -76,25 +79,15 @@ def restore_yum_repos():
         loggerinst.info("No .repo files to rollback")
 
 
-def get_eus_repos_available():
-    """Detected if the current system is an EUS one.
-
-    :return: The return can be either the path to the eus repos, or None, meaning it is not a EUS system.
-    :rtype: str | None
-    """
-    hardcoded_reposdir = _get_hardcoded_repofiles_dir()
-    reposdir = None
-    if os.path.exists(hardcoded_reposdir) and system_info.has_internet_access:
-        reposdir = hardcoded_reposdir
-
-    return reposdir
-
-
-def _get_hardcoded_repofiles_dir():
+def get_hardcoded_repofiles_dir():
     """Get the path to the hardcoded repofiles for CentOS/Oracle Linux.
 
-    :return: A string with the destination of the hardcoded repofiles
-    :rtype: str
+    We use hardcoded original vendor repofiles to be able to check whether the system is updated before the conversion.
+    To be able to download backup of packages before we remove them, we can't rely on the repofiles available on
+    the system.
+
+    :return: The return can be either the path to the eus repos, or None, meaning we don't have any hardcoded repo files.
+    :rtype: str | None
     """
     hardcoded_repofiles = os.path.join(
         DATA_DIR,
@@ -105,4 +98,7 @@ def _get_hardcoded_repofiles_dir():
             system_info.version.minor,
         ),
     )
-    return hardcoded_repofiles
+    if os.path.exists(hardcoded_repofiles):
+        return hardcoded_repofiles
+
+    return None

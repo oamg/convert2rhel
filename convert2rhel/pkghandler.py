@@ -25,7 +25,7 @@ import rpm
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
-from convert2rhel.repo import get_eus_repos_available
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -1013,22 +1013,27 @@ def compare_package_versions(version1, version2):
     return rpm.labelCompare(evr1, evr2)
 
 
-def get_total_packages_to_update():
+def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
 
     It uses both yum/dnf depending on weather they are installed on the system,
-    if it's Oracle/CentOS Linux 7 or 6, it will use `yum`, otherwise it should use `dnf`.
+    In case of RHEL 6 or 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
+
+    To check whether the system is updated or not, we use original vendor repofiles which we ship within the
+    convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
+
+    :param reposdir: The path to the hardcoded repositories for EUS (If any).
+    :type reposdir: str | None
 
     :return: The packages that need to be updated.
     :rtype: list[str]
     """
     packages = []
 
-    reposdir = get_eus_repos_available()
-
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
+        # We're using the reposdir with dnf only because we currently hardcode the repofiles for RHEL 8 derivatives only.
         packages = _get_packages_to_update_dnf(reposdir=reposdir)
 
     return set(packages)
@@ -1046,12 +1051,18 @@ def _get_packages_to_update_yum():
 
 
 def _get_packages_to_update_dnf(reposdir):
-    """Query all the packages with dnf that has an update pending on the system."""
+    """Query all the packages with dnf that has an update pending on the
+    system.
+
+    :param reposdir: The path to the hardcoded repositories for EUS (If any).
+    :type reposdir: str | None
+    """
     packages = []
     base = pkgmanager.Base()
 
-    # If we have a custom reposdir to use, then we need to update the base
-    # config from DNF to read from the repos in there.
+    # If we have an reposdir, that means we are trying to check the packages under
+    # CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4.
+    # That means we need to use our hardcoded repository files instead of the system ones.
     if reposdir:
         base.conf.reposdir = reposdir
 
@@ -1064,7 +1075,10 @@ def _get_packages_to_update_dnf(reposdir):
     # See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=base.conf.PRIO_MAINCONFIG)
-    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
+    base.conf.substitutions.update_from_etc(
+        nstallroot=base.conf.installroot,
+        varsdir=base.conf.varsdir
+    )
     base.read_all_repos()
     base.fill_sack()
 

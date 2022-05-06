@@ -29,6 +29,7 @@ from convert2rhel.pkghandler import (
     get_pkg_fingerprint,
     get_total_packages_to_update,
 )
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess
@@ -477,6 +478,14 @@ def check_package_updates():
         logger.warning(str(e))
         ask_to_continue()
         return
+        
+    reposdir = get_hardcoded_repofiles_dir()
+
+    if reposdir and not system_info.has_internet_access:
+        logger.warning("Skipping the check as no internet connection has been detected.")
+        return
+
+    packages_to_update = get_total_packages_to_update(reposdir=reposdir)
 
     if len(packages_to_update) > 0:
         logger.warning(

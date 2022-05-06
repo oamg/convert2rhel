@@ -1,8 +1,26 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright(C) 2016 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import logging
 import os
 import shutil
 
-from convert2rhel.repo import get_eus_repos_available
+from convert2rhel.repo import get_hardcoded_repofiles_dir
+from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, run_subprocess
 
 
@@ -131,16 +149,19 @@ class RestorablePackage(object):
         """Save version of RPM package"""
         loggerinst.info("Backing up %s" % self.name)
         if os.path.isdir(BACKUP_DIR):
-            reposdir = get_eus_repos_available()
+            reposdir = get_hardcoded_repofiles_dir()
 
-            # When backing up the packages, the original system repofiles are still available and for them we can't
-            # use the releasever for RHEL repositories
-            self.path = download_pkg(
-                self.name,
-                dest=BACKUP_DIR,
-                set_releasever=False,
-                reposdir=reposdir,
-            )
+            if reposdir and system_info.corresponds_to_rhel_eus_release():
+                # When backing up the packages, the original system repofiles are still available and for them we can't
+                # use the releasever for RHEL repositories
+                self.path = download_pkg(
+                    self.name,
+                    dest=BACKUP_DIR,
+                    set_releasever=False,
+                    reposdir=reposdir,
+                )
+            else:
+                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 

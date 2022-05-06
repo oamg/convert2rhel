@@ -36,7 +36,7 @@ from convert2rhel.toolopts import tool_opts
 
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
-#   version update at the same time.
+# version update at the same time.
 RELEASE_VER_MAPPING = {
     "8.10": "8.10",
     "8.9": "8.9",
@@ -90,7 +90,7 @@ class SystemInfo(object):
         self.logger = None
         # IDs of the default Red Hat CDN repositories that correspond to the current system
         self.default_rhsm_repoids = None
-        # IDS of the eus Red Hat CDN repositories that correspond to the current system
+        # IDs of the Extended Update Support (EUS) Red Hat CDN repositories that correspond to the current system
         self.eus_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
@@ -322,8 +322,8 @@ class SystemInfo(object):
         """Check wether or not the machine is connect to the internet.
 
         This method will try to estabilish a socket connection through the
-        default host in the method signature (8.8.8.8), if it's connected
-        successfully, then we know that internet is accessibly from the host.
+        default host in the method signature (8.8.8.8). If it's connected
+        successfully, then we know that internet is accessible from the host.
 
         .. warnings::
             We might have some problems with this if the host machine is using
@@ -350,6 +350,19 @@ class SystemInfo(object):
         except OSError:
             self.logger.warning("Couldn't connect to the host '%s'." % host)
             return False
+
+    def corresponds_to_rhel_eus_release(self):
+        """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.
+
+        For example if we detect CentOS Linux 8.4, the corresponding RHEL 8.4 is an EUS release, but if we detect
+        CentOS Linux 8.5, the corresponding RHEL 8.5 is not an EUS release.
+
+        :return: Whether or not the current system has a EUS correspondent in RHEL.
+        :rtype: bool
+        """
+        system_version = "%s.%s" % (self.version.major, self.version.minor)
+        EUS_MINOR_VERSIONS = ["8.4", "8.6", "8.8", "8.10"]
+        return system_version in EUS_MINOR_VERSIONS
 
 
 # Code to be executed upon module import

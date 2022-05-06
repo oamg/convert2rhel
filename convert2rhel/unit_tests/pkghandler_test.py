@@ -1469,7 +1469,7 @@ def test_compare_package_versions(version1, version2, expected):
 
 
 @pytest.mark.parametrize(
-    ("package_manager_type", "packages", "expected"),
+    ("package_manager_type", "packages", "expected", "reposdir"),
     (
         (
             "yum",
@@ -1481,6 +1481,7 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             },
+            None
         ),
         (
             "yum",
@@ -1489,6 +1490,7 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
             {"convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8"},
+            None,
         ),
         (
             "dnf",
@@ -1502,6 +1504,21 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.0-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             },
+            None
+        ),
+        (
+            "dnf",
+            [
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            ],
+            {
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            },
+            "test/reposdir",
         ),
         (
             "dnf",
@@ -1514,11 +1531,12 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.1-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             },
+            "test/reposdir",
         ),
     ),
 )
 @centos8
-def test_get_total_packages_to_update(package_manager_type, packages, expected, pretend_os, monkeypatch):
+def test_get_total_packages_to_update(package_manager_type, packages, expected, reposdir, pretend_os, monkeypatch,):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
     if package_manager_type == "dnf":
         monkeypatch.setattr(
@@ -1532,7 +1550,7 @@ def test_get_total_packages_to_update(package_manager_type, packages, expected, 
             "_get_packages_to_update_%s" % package_manager_type,
             value=lambda: packages,
         )
-    assert get_total_packages_to_update() == packages
+    assert get_total_packages_to_update(reposdir=reposdir) == packages
 
 
 @pytest.mark.skipif(
