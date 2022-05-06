@@ -277,3 +277,22 @@ def test_check_internet_access(side_effect, expected, monkeypatch):
     system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
+
+
+@pytest.mark.parametrize(
+    ("major", "minor", "expected"),
+    (
+        ("7", "9", False),
+        ("8", "4", True),
+        ("8", "5", False),
+        ("8", "6", True),
+        ("8", "7", False),
+        ("8", "8", True),
+        ("8", "9", False),
+        ("8", "10", True),
+    ),
+)
+def test_corresponds_to_rhel_eus_release(major, minor, expected):
+    version = namedtuple("version", ["major", "minor"])(major, minor)
+    system_info.version = version
+    assert system_info.corresponds_to_rhel_eus_release() == expected
