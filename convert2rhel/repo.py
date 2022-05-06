@@ -54,7 +54,7 @@ def backup_yum_repos():
         if repo.endswith(".repo") and repo != "redhat.repo":
             repo_path = os.path.join("/etc/yum.repos.d/", repo)
             shutil.copy2(repo_path, BACKUP_DIR)
-            loggerinst.info("Backed up r    epo: %s" % (repo_path))
+            loggerinst.info("Backed up repo: %s" % (repo_path))
             repo_files_backed_up = True
     if not repo_files_backed_up:
         loggerinst.info("No .repo files backed up.")
