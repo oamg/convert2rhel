@@ -1088,7 +1088,8 @@ def _get_packages_to_update_dnf(reposdir):
         packages.append(package.name)
 
     return packages
-    
+
+
 def clean_yum_metadata():
     """Remove cached metadata from yum.
 
