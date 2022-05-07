@@ -862,7 +862,8 @@ def test_check_package_updates_with_repoerror(monkeypatch, caplog):
 
 
 @centos8
-def test_check_package_updates_without_internet(pretend_os, monkeypatch, caplog):
+def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch, caplog):
+    monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
     system_info.has_internet_access = False
     check_package_updates()
 

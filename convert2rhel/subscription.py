@@ -22,7 +22,7 @@ import re
 from collections import namedtuple
 from time import sleep
 
-from convert2rhel import backup, pkghandler, systeminfo, utils
+from convert2rhel import backup, pkghandler, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 

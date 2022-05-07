@@ -25,7 +25,6 @@ import rpm
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
-from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -1016,7 +1015,7 @@ def compare_package_versions(version1, version2):
 def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
 
-    It uses both yum/dnf depending on weather they are installed on the system,
+    It uses both yum/dnf depending on whether they are installed on the system,
     In case of RHEL 6 or 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
 
     To check whether the system is updated or not, we use original vendor repofiles which we ship within the

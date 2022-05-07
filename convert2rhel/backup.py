@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2016 Red Hat, Inc.
+# Copyright(C) 2022 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -151,9 +151,13 @@ class RestorablePackage(object):
         if os.path.isdir(BACKUP_DIR):
             reposdir = get_hardcoded_repofiles_dir()
 
+            # One of the reasons we hardcode repofiles pointing to archived repositories of older system
+            # minor versions is that we need to be able to download an older package version as a backup.
+            # Because for example the default repofiles on CentOS Linux 8.4 point only to 8.latest repositories
+            # that already don't contain 8.4 packages.
+            # The reason for the EUS condition is that convert2rhel allows conversions of just those older system
+            # minor versions that correspond to a RHEL EUS release.
             if reposdir and system_info.corresponds_to_rhel_eus_release():
-                # When backing up the packages, the original system repofiles are still available and for them we can't
-                # use the releasever for RHEL repositories
                 self.path = download_pkg(
                     self.name,
                     dest=BACKUP_DIR,

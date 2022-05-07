@@ -319,7 +319,7 @@ class SystemInfo(object):
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
     def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
-        """Check wether or not the machine is connect to the internet.
+        """Check whether or not the machine is connected to the internet.
 
         This method will try to estabilish a socket connection through the
         default host in the method signature (8.8.8.8). If it's connected
