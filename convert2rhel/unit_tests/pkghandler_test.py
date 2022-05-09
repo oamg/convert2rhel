@@ -1466,7 +1466,7 @@ def test_compare_package_versions(version1, version2, expected):
 
 
 @pytest.mark.parametrize(
-    ("package_manager_type", "packages"),
+    ("package_manager_type", "packages", "expected"),
     (
         (
             "yum",
@@ -1474,6 +1474,18 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
+            {
+                "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+                "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+            },
+        ),
+        (
+            "yum",
+            [
+                "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+                "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+            ],
+            {"convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8"},
         ),
         (
             "dnf",
@@ -1482,10 +1494,27 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.0-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             ],
+            {
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            },
+        ),
+        (
+            "dnf",
+            [
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.1-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            ],
+            {
+                "dunst-1.7.1-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            },
         ),
     ),
 )
-def test_get_total_packages_to_update(package_manager_type, packages, monkeypatch):
+def test_get_total_packages_to_update(package_manager_type, packages, expected, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
     monkeypatch.setattr(
         pkghandler,
@@ -1493,7 +1522,7 @@ def test_get_total_packages_to_update(package_manager_type, packages, monkeypatc
         value=lambda: packages,
     )
 
-    assert get_total_packages_to_update() == packages
+    assert get_total_packages_to_update() == expected
 
 
 @pytest.mark.skipif(

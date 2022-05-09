@@ -22,7 +22,7 @@ from collections import namedtuple
 
 import pytest
 
-from convert2rhel import checks, grub, systeminfo, unit_tests
+from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
@@ -839,12 +839,25 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
 )
 def test_check_package_updates(packages, exception, expected, monkeypatch, caplog):
     monkeypatch.setattr(checks, "get_total_packages_to_update", value=lambda: packages)
+    monkeypatch.setattr(checks, "ask_to_continue", value=lambda: mock.Mock())
 
     check_package_updates()
     if exception:
         expected = expected.format(len(packages))
 
     assert expected in caplog.records[-1].message
+
+
+def test_check_package_updates_with_repoerror(monkeypatch, caplog):
+    get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError)
+    monkeypatch.setattr(checks, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
+    monkeypatch.setattr(checks, "ask_to_continue", value=lambda: mock.Mock())
+
+    check_package_updates()
+    # This is -2 because the last message is the error from the RepoError class.
+    assert (
+        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-2].message
+    )
 
 
 @pytest.mark.parametrize(

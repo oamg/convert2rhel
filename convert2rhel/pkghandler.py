@@ -1020,7 +1020,7 @@ def get_total_packages_to_update():
     elif pkgmanager.TYPE == "dnf":
         packages = _get_packages_to_update_dnf()
 
-    return packages
+    return set(packages)
 
 
 def _get_packages_to_update_yum():
