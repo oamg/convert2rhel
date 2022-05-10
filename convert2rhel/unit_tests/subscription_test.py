@@ -765,9 +765,8 @@ class TestRegistrationCommand(object):
         reg_cmd = subscription.RegistrationCommand(activation_key="0xDEADBEEF", org="Local Organization")
         assert reg_cmd() == ("", 0)
 
-        assert utils.run_subprocess.called_once_with(
-            "subscription-manager",
-            ["register", "--force", "--activationkey=0xDEADBEEF", "--org=Local Organization"],
+        utils.run_subprocess.assert_called_once_with(
+            ["subscription-manager", "register", "--force", "--activationkey=0xDEADBEEF", "--org=Local Organization"],
             print_cmd=False,
         )
         assert utils.run_cmd_in_pty.call_count == 0
@@ -779,10 +778,9 @@ class TestRegistrationCommand(object):
         reg_cmd = subscription.RegistrationCommand(username="me_myself_and_i", password="a password")
         reg_cmd()
 
-        assert utils.run_cmd_in_pty.called_once_with(
-            "subscription-manager",
-            ["register", "--force", "--username=me_myself_and_i"],
-            expect_script=(("assword: *", "a password\n"),),
+        utils.run_cmd_in_pty.assert_called_once_with(
+            ["subscription-manager", "register", "--force", "--username=me_myself_and_i"],
+            expect_script=(("[Pp]assword: ", "a password\n"),),
             print_cmd=False,
         )
         assert utils.run_cmd_in_pty.call_count == 1

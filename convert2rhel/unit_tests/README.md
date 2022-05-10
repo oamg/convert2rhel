@@ -49,7 +49,7 @@ def test_check_for_yum_updates(monkeypatch):
     monkeypatch.setattr(package_handler, "get_packages_to_update", value=packages_to_update_mock)
 
     assert package_handler.get_packages_to_update() is not None
-    assert packages_to_update_mock.assert_called_once_with(["package-1", "package-2"])
+    packages_to_update_mock.assert_called_once_with(["package-1", "package-2"])
 ```
 
 And this other example, of a test that don't need any mocks for external

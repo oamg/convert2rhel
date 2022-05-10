@@ -275,7 +275,7 @@ class RegistrationCommand(object):
                 "Calling command '%s %s'" % (self.cmd, " ".join(hide_secrets(self.args)))
             )  # lgtm[py/clear-text-logging-sensitive-data]
             output, ret_code = utils.run_cmd_in_pty(
-                [self.cmd] + self.args, expect_script=(("assword: ", self.password + "\n"),), print_cmd=False
+                [self.cmd] + self.args, expect_script=(("[Pp]assword: ", self.password + "\n"),), print_cmd=False
             )
         else:
             # Warning: Currently activation_key can only be specified on the CLI.  This is insecure
