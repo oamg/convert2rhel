@@ -5,7 +5,7 @@ discover+:
   discover+:
     test: basic-sanity-checks
 
-/check_cve
+/check_cve:
   discover+:
     test: check-cve
 
