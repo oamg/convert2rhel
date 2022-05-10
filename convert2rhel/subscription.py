@@ -232,7 +232,7 @@ class RegistrationCommand(object):
             else:
                 if tool_opts.username:
                     # Hint user for which username they need to enter pswd
-                    loggerinst.info("Username: %s", username)
+                    loggerinst.info("Username: %s", username)  # lgtm[py/clear-text-logging-sensitive-data]
                 password = ""
                 while not password:
                     password = utils.prompt_user("Password: ", password=True)
@@ -271,7 +271,9 @@ class RegistrationCommand(object):
         secrets secure.
         """
         if self.password:
-            loggerinst.debug("Calling command '%s %s'" % (self.cmd, " ".join(hide_secrets(self.args))))
+            loggerinst.debug(
+                "Calling command '%s %s'" % (self.cmd, " ".join(hide_secrets(self.args)))
+            )  # lgtm[py/clear-text-logging-sensitive-data]
             output, ret_code = utils.run_cmd_in_pty(
                 [self.cmd] + self.args, expect_script=(("assword: ", self.password + "\n"),), print_cmd=False
             )
@@ -312,7 +314,8 @@ def hide_secrets(args):
 
     if hide_next:
         loggerinst.debug(
-            "Passed arguments had unexpected secret argument," " '{0}', without a secret".format(sanitized_list[-1])
+            "Passed arguments had unexpected secret argument,"
+            " '{0}', without a secret".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
         )
 
     return sanitized_list
