@@ -1,6 +1,0 @@
-summary: check cve fixes
-
-tier: 0
-
-test: |
-  pytest -svv
