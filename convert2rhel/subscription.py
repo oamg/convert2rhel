@@ -242,10 +242,8 @@ def remove_original_subscription_manager():
             utils.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
             submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
 
-    # Make sure that the list of submgr pkg names is not empty before trying to
-    # remove any other submgr pkg on the system
-    if submgr_pkg_names:
-        utils.remove_pkgs(submgr_pkg_names, critical=False)
+    # Remove any oter subscription-manager packages present on the system
+    utils.remove_pkgs(submgr_pkg_names, critical=False)
 
 
 def install_rhel_subscription_manager():
