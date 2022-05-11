@@ -162,11 +162,11 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
 
     :param cmd: The command to execute, including the options as a list, e.g. ["ls", "-al"]
     :type cmd: list
-    :param expect_script: An iterable of pairs of expected strings and response strings.  By giving
+    :param expect_script: An iterable of pairs of expected strings and response strings. By giving
     these pairs, interactive programs can be scripted.  Example:
         run_cmd_in_pty(['sudo', 'whoami'], [('password: ', 'sudo_password\n')])
         Note1: The caller is responsible for adding newlines to the response strings where
-        needed.  Note2: This function will await pexpect.EOF after all of the pairs in expect_script
+        needed. Note2: This function will await pexpect.EOF after all of the pairs in expect_script
         have been exhausted.
     :type expect_script: iterable of 2-tuples or strings:
     :param print_cmd: Log the command (to both logfile and stdout)
@@ -218,18 +218,18 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
 
 # For pexpect released prior to 2015 (RHEL7's pexpect-2.3),
 # spawn.__init__() hardcodes a call to setwinsize(24, 80) to set the
-# initial terminal size.  There is no official way to set the terminal size
+# initial terminal size. There is no official way to set the terminal size
 # to a custom value before the process starts. This can cause an issue with
 # truncated lines for processes which read the terminal size when they
 # start and never refresh that value (like yumdownloader)
 #
 # overriding setwinsize to set the columns to the size we want in this
-# subclass is a kludge for the issue.  On pexpect-2.3, it fixes the issue
+# subclass is a kludge for the issue. On pexpect-2.3, it fixes the issue
 # because of the setwinsize call in __init__() at the cost of never being
 # able to change the column size later.  On later pexpect (RHEL-8 has
 # pexpect-4.3), this doesn't fix the issue of the terminal size being small
 # when the subprocess starts but dnf download checks the terminal's size
-# just before it prints the statusline we care about.  So setting the
+# just before it prints the statusline we care about. So setting the
 # terminal size via setwinsize() after the process is created works (note:
 # there is a race condition there but it's unlikely to ever trigger as it
 # would require downloading a package to happen quicker than the time

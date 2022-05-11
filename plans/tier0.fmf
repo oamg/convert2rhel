@@ -7,7 +7,7 @@ discover+:
 
 /check_cve:
   discover+:
-    test: check-cve
+    test: check-cve-2022-1662
 
 /check_user_response:
   discover+:

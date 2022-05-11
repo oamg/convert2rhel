@@ -143,32 +143,35 @@ class RegistrationCommand(object):
         """
         A callable that can register a system with subscription-manager.
 
-        :kwarg server_url: Optional url to the subscription-manager backend.
+        :kwarg server_url: Optional URL to the subscription-manager backend.
             Useful when the customer has an on-prem subscription-manager instance.
         :kwarg activation_key: subscription-manager activation_key that can be
-            used to register the system.  Org must be specified if this was given.
+            used to register the system. Org must be specified if this was given.
         :kwarg org: The organization that the activation_key is associated with.
-            Required if activation_key is specified.
+            It is required if activation_key is specified.
         :kwarg username: Username to authenticate with subscription-manager.
             Required if password is specified.
         :kwarg password: Password to authenticate with subscription-manager.
-            Required if username is specified.
+            It is required if username is specified.
 
         .. note:: Either activation_key and org or username and password must
-            be specfied.
+            be specified.
         """
         self.cmd = "subscription-manager"
         self.server_url = server_url
 
         if activation_key and not org:
             raise ValueError("org must be specified if activation_key is used")
+
         self.activation_key = activation_key
         self.org = org
 
         self.password = password
         self.username = username
+
         if (password and not username) or (username and not password):
             raise ValueError("username and password must be used together")
+
         elif not password:
             # No password set
             if not self.activation_key:
@@ -177,9 +180,9 @@ class RegistrationCommand(object):
     @classmethod
     def from_tool_opts(cls, tool_opts):
         """
-        Alternate constructor that gets subscription-manager args from ToolOpts
+        Alternate constructor that gets subscription-manager args from ToolOpts.
 
-        convert2rhel's commandline contains the information needed to register
+        convert2rhel's command-line contains the information needed to register
         with subscription-manager. Get the information from the passed in
         ToolOpts structure to create the RegistrationCommand.
 
@@ -216,6 +219,7 @@ class RegistrationCommand(object):
                 loggerinst.info("    ... activation key not found, using given username and password")
             else:
                 loggerinst.info("    ... activation key not found, username and password required")
+
             if tool_opts.username:
                 loggerinst.info("    ... username detected")
                 username = tool_opts.username
@@ -279,7 +283,7 @@ class RegistrationCommand(object):
             )
         else:
             # Warning: Currently activation_key can only be specified on the CLI.  This is insecure
-            # but there's nothing we can do about it for now.  Once subscription-manager issue:
+            # but there's nothing we can do about it for now. Once subscription-manager issue:
             # https://issues.redhat.com/browse/ENT-4724 is implemented, we can change both password
             # and activation_key to use a file-based approach to passing the secrets.
             output, ret_code = utils.run_subprocess([self.cmd] + self.args, print_cmd=False)
