@@ -251,6 +251,14 @@ class RegistrationCommand(object):
 
     @property
     def args(self):
+        """
+        This property is a list of the command-line arguments that will be passed to
+        subscription-manager to register the system. Set the individual attributes for
+        :attr:`server_url`, :attr:`activation_key`, etc to affect the values here.
+
+        .. note:: :attr:`password` is not passed on the command line. Instead,
+            it is sent to the running subscription-manager process via pexpect.
+        """
         args = ["register", "--force"]
 
         if self.server_url:
@@ -282,7 +290,7 @@ class RegistrationCommand(object):
                 [self.cmd] + self.args, expect_script=(("[Pp]assword: ", self.password + "\n"),), print_cmd=False
             )
         else:
-            # Warning: Currently activation_key can only be specified on the CLI.  This is insecure
+            # Warning: Currently activation_key can only be specified on the CLI. This is insecure
             # but there's nothing we can do about it for now. Once subscription-manager issue:
             # https://issues.redhat.com/browse/ENT-4724 is implemented, we can change both password
             # and activation_key to use a file-based approach to passing the secrets.
@@ -292,7 +300,17 @@ class RegistrationCommand(object):
 
 
 def hide_secrets(args):
-    """Replace secret values with asterisks."""
+    """
+    Replace secret values with asterisks.
+
+    This function takes a list of arguments which will be passed to
+    subscription-manager on the command line and returns a new list
+    that has any secret values obscured with asterisks.
+
+    :arg args: An argument list for subscription-manager which may contain
+        secret values.
+    :returns: A new list of arguments with secret values hidden.
+    """
     obfuscation_string = "*" * 5
     secret_args = frozenset(("--password", "--activationkey", "--token"))
 
