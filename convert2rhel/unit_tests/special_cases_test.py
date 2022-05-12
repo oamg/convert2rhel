@@ -126,11 +126,35 @@ def test_unprotect_shim_x64(mock_is_efi, mock_os_remove, sys_id, is_efi, removal
         "expected_message",
     ),
     (
-        (True, True, ("output", 0), 1, "Removing iwlax2xx-firmware package."),
+        (
+            True,
+            True,
+            ("output", 0),
+            1,
+            "Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware package.",
+        ),
         (True, True, ("output", 1), 1, "Unable to remove the package iwlax2xx-firmware."),
-        (True, False, ("output", 0), 0, "Removing iwlax2xx-firmware package."),
-        (False, True, ("output", 0), 0, "Removing iwlax2xx-firmware package."),
-        (False, False, ("output", 0), 0, "Removing iwlax2xx-firmware package."),
+        (
+            True,
+            False,
+            ("output", 0),
+            0,
+            "Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware package.",
+        ),
+        (
+            False,
+            True,
+            ("output", 0),
+            0,
+            "Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware package.",
+        ),
+        (
+            False,
+            False,
+            ("output", 0),
+            0,
+            "Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware package.",
+        ),
     ),
 )
 @oracle8
