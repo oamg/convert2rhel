@@ -509,6 +509,7 @@ def download_rhsm_pkgs():
             "dnf-plugin-subscription-manager",
             "python3-syspurpose",
             "python3-cloud-what",
+            "json-c.x86_64",  # there's also an i686 version which we don't need
         ]
         _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 

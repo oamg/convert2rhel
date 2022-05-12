@@ -480,7 +480,7 @@ Version = namedtuple("Version", ["major", "minor"])
 @pytest.mark.parametrize(
     (
         "version",
-        "downloaded_pkgs",
+        "pkgs_to_download",
     ),
     (
         (
@@ -514,19 +514,20 @@ Version = namedtuple("Version", ["major", "minor"])
                     "dnf-plugin-subscription-manager",
                     "python3-syspurpose",
                     "python3-cloud-what",
+                    "json-c.x86_64",
                 )
             ),
         ),
     ),
 )
-def test_download_rhsm_pkgs(version, downloaded_pkgs, monkeypatch):
+def test_download_rhsm_pkgs(version, pkgs_to_download, monkeypatch):
     monkeypatch.setattr(system_info, "version", Version(*version))
     monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
     monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
     subscription.download_rhsm_pkgs()
 
     assert subscription._download_rhsm_pkgs.called == 1
-    assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == downloaded_pkgs
+    assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == pkgs_to_download
 
 
 class TestUnregisteringSystem:
