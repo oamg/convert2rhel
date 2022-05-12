@@ -504,15 +504,33 @@ def is_loaded_kernel_latest():
     """Check if the loaded kernel is behind or of the same version as in yum repos."""
     logger.task("Prepare: Checking if the loaded kernel version is the most recent")
 
+    reposdir = get_hardcoded_repofiles_dir()
+
+    if reposdir and not system_info.has_internet_access:
+        logger.warning("Skipping the check as no internet connection has been detected.")
+        return
+
+    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"']
+
+    # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
+    # instead of the system repositories located under /etc/yum.repos.d
+    if reposdir:
+        cmd.append("--setopt=reposdir=%s" % reposdir)
+
     # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead, we check for `kernel-core`.
     # But for 6 and 7 releases, the correct way to check is using `kernel`.
     package_to_check = "kernel-core" if system_info.version.major >= 8 else "kernel"
 
-    # The latest kernel version on repo
-    repoquery_output, _ = run_subprocess(
-        ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"', package_to_check],
-        print_output=False,
-    )
+    # Append the package name as the last item on the list
+    cmd.append(package_to_check)
+
+    # Search for available kernel package versions available in different repositories using the `repoquery` command.
+    # If convert2rhel is running on a EUS system, then repoquery will use the hardcoded repofiles available under
+    # /usr/share/convert2rhel/repos, meaning that the tool will fetch only the latest kernels available for that EUS
+    # version, and not the most updated version from other newer versions.
+    # If the case is that convert2rhel is not running on a EUS system, for example, Oracle Linux 8.5, then it will use
+    # the system repofiles.
+    repoquery_output, _ = run_subprocess(cmd, print_output=False)
 
     # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
     if len(repoquery_output) > 0:

@@ -927,6 +927,75 @@ def test_is_loaded_kernel_latest(
 
 
 @pytest.mark.parametrize(
+    ("repoquery_version", "uname_version", "return_code", "package_name", "raise_system_exit"),
+    (
+        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.42.2.el7.x86_64", 0, "kernel-core", True),
+        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, "kernel-core", False),
+    ),
+)
+@centos8
+def test_is_loaded_kernel_latest_eus_system(
+    pretend_os,
+    repoquery_version,
+    uname_version,
+    return_code,
+    package_name,
+    raise_system_exit,
+    tmpdir,
+    monkeypatch,
+    caplog,
+):
+    fake_reposdir_path = str(tmpdir)
+    monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: fake_reposdir_path)
+    run_subprocess_mocked = mock.Mock(
+        spec=run_subprocess,
+        side_effect=run_subprocess_side_effect(
+            (
+                (
+                    "repoquery",
+                    "--quiet",
+                    "--qf",
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    "--setopt=reposdir=%s" % fake_reposdir_path,
+                    package_name,
+                ),
+                (
+                    repoquery_version,
+                    return_code,
+                ),
+            ),
+            (("uname", "-r"), (uname_version, return_code)),
+        ),
+    )
+    monkeypatch.setattr(
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mocked,
+    )
+
+    if raise_system_exit:
+        with pytest.raises(SystemExit):
+            is_loaded_kernel_latest()
+
+        repoquery_kernel_version = repoquery_version.split("\t", 1)[1]
+        uname_kernel_version = uname_version.rsplit(".", 1)[0]
+        assert "Latest kernel version: %s\n" % repoquery_kernel_version in caplog.records[-1].message
+        assert "Current loaded kernel: %s\n" % uname_kernel_version in caplog.records[-1].message
+    else:
+        is_loaded_kernel_latest()
+        assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
+
+
+@centos8
+def test_is_loaded_kernel_latest_eus_system_no_connection(pretend_os, monkeypatch, tmpdir, caplog):
+    monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
+    system_info.has_internet_access = False
+
+    is_loaded_kernel_latest()
+    assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
     ("repoquery_version", "return_code", "major_ver", "package_name", "unsupported_skip", "expected"),
     (
         (
