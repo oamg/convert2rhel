@@ -21,12 +21,14 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
         # On OracleLinux8 there is one question less than on other distros
         if "oracle-8" not in platform.platform():
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
-        c2r.expect("The subscription-manager package is not installed.")
-        c2r.expect("No packages related to subscription-manager installed.")
+        assert c2r.expect("The subscription-manager package is not installed.") == 0
+        assert c2r.expect("No packages related to subscription-manager installed.") == 0
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
