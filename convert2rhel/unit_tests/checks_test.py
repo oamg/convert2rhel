@@ -16,11 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
+import unittest
 
 from collections import namedtuple
 
 import pytest
+import six
 
 from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests
 from convert2rhel.checks import (
@@ -40,15 +41,9 @@ from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
 
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
 
 MODINFO_STUB = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz\n"

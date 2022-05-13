@@ -17,18 +17,16 @@
 
 import copy
 import os
-import sys
 
 import pytest
+import six
 
 from convert2rhel import grub, utils
 from convert2rhel.unit_tests.checks_test import EFIBootInfoMocked
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 # TODO(pstodulk): put here a real examples of an output..

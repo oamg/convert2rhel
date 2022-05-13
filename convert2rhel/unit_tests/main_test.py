@@ -20,36 +20,21 @@ import os
 import sys
 import unittest
 
-
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+from collections import OrderedDict
 
 import pytest
+import six
 
 from convert2rhel import backup, grub
 from convert2rhel import logger as logger_module
 from convert2rhel.breadcrumbs import breadcrumbs
 
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
-from convert2rhel import (
-    cert,
-    checks,
-    main,
-    pkghandler,
-    redhatrelease,
-    repo,
-    special_cases,
-    subscription,
-    unit_tests,
-    utils,
-)
+from convert2rhel import cert, checks
+from convert2rhel import logger as logger_module
+from convert2rhel import main, pkghandler, redhatrelease, repo, special_cases, subscription, unit_tests, utils
 from convert2rhel.toolopts import tool_opts
 
 

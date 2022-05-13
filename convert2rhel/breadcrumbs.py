@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import itertools
 import json
 import os
 import re
 import sys
 
 from datetime import datetime
+
+from six.moves import zip_longest
 
 from convert2rhel import pkghandler, systeminfo
 
@@ -161,11 +162,7 @@ def sanitize_cli_options(all_cli_options, options_to_sanitize):
     """
 
     def sanitized_iterator():
-        """In older version of python is zip_longest called izip_longest"""
-        if sys.version_info[:2] <= (2, 7):
-            elems = itertools.izip_longest(all_cli_options, all_cli_options[1:], fillvalue=None)
-        else:
-            elems = itertools.zip_longest(all_cli_options, all_cli_options[1:], fillvalue=None)
+        elems = zip_longest(all_cli_options, all_cli_options[1:], fillvalue=None)
 
         for (c, n) in elems:
             # we need to handle 2 possible cases how arguments are specified

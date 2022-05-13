@@ -3,15 +3,14 @@ import sys
 import unittest
 
 import pytest
+import six
 
 from convert2rhel import backup, repo, unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 class TestBackup(unittest.TestCase):

@@ -22,6 +22,7 @@ import sys
 import unittest
 
 import pytest
+import six
 
 import convert2rhel.toolopts
 import convert2rhel.utils
@@ -30,10 +31,8 @@ from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.toolopts import tool_opts
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 def mock_cli_arguments(args):
