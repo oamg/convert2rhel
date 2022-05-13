@@ -1,6 +1,7 @@
 import sys
 
 import pytest
+import six
 
 from convert2rhel import redhatrelease, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
@@ -46,12 +47,11 @@ def read_std(capsys, is_py2):
 
 
 @pytest.fixture()
-def pkg_root(is_py2):
+def pkg_root():
     """Return the pathlib.Path of the convert2rhel package root."""
-    if is_py2:
-        import pathlib2 as pathlib  # pylint: disable=import-error
-    else:
-        import pathlib  # pylint: disable=import-error
+    six.add_move(six.MovedModule("pathlib", "pathlib2", "pathlib"))
+    from six.moves import pathlib
+
     return pathlib.Path(__file__).parents[2]
 
 

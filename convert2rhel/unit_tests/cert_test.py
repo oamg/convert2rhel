@@ -14,26 +14,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import os
+import shutil
+import unittest
+
+import pytest
+import six
 
 from convert2rhel import unit_tests
 
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
-import os
-import shutil
-import sys
-
-import pytest
-
-
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 from convert2rhel import cert, utils
 from convert2rhel.systeminfo import system_info

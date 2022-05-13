@@ -1,8 +1,7 @@
-import sys
-
 from collections import namedtuple
 
 import pytest
+import six
 
 from convert2rhel import special_cases
 from convert2rhel.systeminfo import system_info
@@ -10,10 +9,8 @@ from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 @mock.patch("convert2rhel.special_cases.perform_java_openjdk_workaround")

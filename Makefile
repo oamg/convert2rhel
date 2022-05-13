@@ -64,6 +64,7 @@ clean:
 images: .images
 
 .images:
+	@$(DOCKER) build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)/centos6 .
 	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
 	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
 	@$(DOCKER) build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
@@ -85,6 +86,10 @@ tests7: images
 tests8: images
 	@echo 'CentOS Linux 8 tests'
 	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
+
+tests6: images
+	@echo 'CentOS Linux 6 tests'
+	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
 
 rpms: images
 	mkdir -p .rpms
