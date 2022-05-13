@@ -41,7 +41,7 @@ def test_check_user_response_organization(convert2rhel):
             env.str("RHSM_KEY"),
         )
     ) as c2r:
-        c2r.expect_exact(" ... activation key detected: ")
+        c2r.expect_exact("activation key detected")
         c2r.expect_exact("Organization: ")
         c2r.sendline()
         assert c2r.expect_exact(["Organization", "Registering the system"]) == 0
