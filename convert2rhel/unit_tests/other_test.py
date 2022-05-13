@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
-import unittest
 
 from convert2rhel import __version__, logger, pkghandler, utils
 
@@ -23,13 +22,12 @@ from convert2rhel import __version__, logger, pkghandler, utils
 RPM_SPEC_VERSION_RE = re.compile(r"^Version: +(.+)$")
 
 
-class TestOther(unittest.TestCase):
-    def test_correct_constants(self):
-        # Prevents unintentional change of constants
-        self.assertEqual(utils.TMP_DIR, "/var/lib/convert2rhel/")
-        self.assertEqual(utils.DATA_DIR, "/usr/share/convert2rhel/")
-        self.assertEqual(pkghandler.MAX_YUM_CMD_CALLS, 3)
-        self.assertEqual(logger.LOG_DIR, "/var/log/convert2rhel")
+def test_correct_constants():
+    # Prevents unintentional change of constants
+    assert utils.TMP_DIR == "/var/lib/convert2rhel/"
+    assert utils.DATA_DIR == "/usr/share/convert2rhel/"
+    assert pkghandler.MAX_YUM_CMD_CALLS == 3
+    assert logger.LOG_DIR == "/var/log/convert2rhel"
 
 
 def test_package_version(pkg_root):
