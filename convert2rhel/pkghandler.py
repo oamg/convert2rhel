@@ -1024,18 +1024,9 @@ def get_total_packages_to_update():
 
 
 def _get_packages_to_update_yum():
-    """Query all the packages with yum that has an update pending on the
-    system."""
-    # Check first if this path is not in the `sys.path`
-    if "/usr/share/yum-cli" not in sys.path:
-        # Yum's installation path for the CLI code
-        # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/bin/yum#L26
-        sys.path.insert(0, "/usr/share/yum-cli")
-
-    from cli import YumBaseCli  # pylint: disable=E0401
-
-    base = YumBaseCli()
-    packages = base.returnPkgLists(["updates"], None)
+    """Query all the packages with yum that has an update pending on the system."""
+    base = pkgmanager.YumBase()
+    packages = base.doPackageLists(pkgnarrow="updates")
     all_packages = []
     for package in packages.updates:
         all_packages.append(package.name)
@@ -1044,12 +1035,9 @@ def _get_packages_to_update_yum():
 
 
 def _get_packages_to_update_dnf():
-    """Query all the packages with dnf that has an update pending on the
-    system."""
-    from dnf import Base  # pylint: disable=E0401
-
+    """Query all the packages with dnf that has an update pending on the system."""
     packages = []
-    base = Base()
+    base = pkgmanager.Base()
     # Fix the case when we are trying to query packages in Oracle Linux 8
     # when the DNF API gets called, those variables are not populated by default.
     if system_info.id == "oracle":

@@ -1502,8 +1502,6 @@ def test_get_total_packages_to_update(package_manager_type, packages, monkeypatc
 )
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
 def test_get_packages_to_update_yum(packages, monkeypatch):
-    sys.path.insert(0, "/usr/share/yum-cli")
-    from cli import YumBaseCli  # pylint: disable=E0401
 
     PkgName = namedtuple("PkgNames", ["name"])
     PkgUpdates = namedtuple("PkgUpdates", ["updates"])
@@ -1513,11 +1511,8 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
 
     pkg_lists_mock = mock.Mock(return_value=PkgUpdates(transaction_pkgs))
 
-    monkeypatch.setattr(YumBaseCli, "returnPkgLists", value=pkg_lists_mock)
+    monkeypatch.setattr(pkgmanager.YumBase, "doPackageLists", value=pkg_lists_mock)
 
-    # Remvoe the /usr/share/yum-cli from the system path so the code
-    # can load it
-    sys.path.remove("/usr/share/yum-cli")
     assert _get_packages_to_update_yum() == packages
 
 
@@ -1528,17 +1523,15 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
 @all_systems
 def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
-    from dnf import Base  # pylint: disable=E0401
-
     dummy_mock = mock.Mock()
     PkgName = namedtuple("PkgNames", ["name"])
     transaction_pkgs = [PkgName(package) for package in packages]
 
-    monkeypatch.setattr(Base, "read_all_repos", value=dummy_mock)
-    monkeypatch.setattr(Base, "fill_sack", value=dummy_mock)
-    monkeypatch.setattr(Base, "upgrade_all", value=dummy_mock)
-    monkeypatch.setattr(Base, "resolve", value=dummy_mock)
-    monkeypatch.setattr(Base, "transaction", value=transaction_pkgs)
+    monkeypatch.setattr(pkgmanager.Base, "read_all_repos", value=dummy_mock)
+    monkeypatch.setattr(pkgmanager.Base, "fill_sack", value=dummy_mock)
+    monkeypatch.setattr(pkgmanager.Base, "upgrade_all", value=dummy_mock)
+    monkeypatch.setattr(pkgmanager.Base, "resolve", value=dummy_mock)
+    monkeypatch.setattr(pkgmanager.Base, "transaction", value=transaction_pkgs)
 
     assert _get_packages_to_update_dnf() == packages
 
