@@ -469,6 +469,14 @@ class TestRegisterSystem(object):
         )
         monkeypatch.setattr(subscription.RegistrationCommand, "from_tool_opts", fake_from_tool_opts)
 
+        # We may want to move this to the toplevel if we have other needs to
+        # test pexpect driven code.  If we do so, though, we would want to
+        # make it a bit more generic:
+        # * Be able to set iterations before success
+        # * Allow setting both exitstatus and signalstatus
+        # * Allow setting stdout output
+        # * Probably make the output and status settable per invocation rather
+        #   than using a count
         class FakeProcess(mock.Mock):
             called_count = 0
 
