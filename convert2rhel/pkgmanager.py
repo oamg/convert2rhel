@@ -18,8 +18,16 @@
 try:
     from yum import *
 
+    # This is added here to prevent a generic try-except in the
+    # `check_package_updates`() function.
+    from yum.Errors import RepoError  # lgtm[py/unused-import]
+
     TYPE = "yum"
 except ImportError:
     from dnf import *  # pylint: disable=import-error
+
+    # This is added here to prevent a generic try-except in the
+    # `check_package_updates`() function.
+    from dnf.exceptions import RepoError  # lgtm[py/unused-import]
 
     TYPE = "dnf"

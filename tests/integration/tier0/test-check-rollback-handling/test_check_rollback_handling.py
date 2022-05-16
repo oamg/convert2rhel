@@ -81,6 +81,8 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
         c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
         c2r.expect("The tool allows rollback of any action until this point.")
         c2r.sendline("n")
         c2r.expect("Calling command 'subscription-manager unregister'")
@@ -166,42 +168,3 @@ def test_terminate_on_organization_prompt(convert2rhel):
     ) as c2r:
         c2r.expect("Organization:")
         terminate_and_assert_good_rollback(c2r)
-
-
-def test_terminate_on_pool_prompt(convert2rhel):
-    # Send termination signal on each user prompt asking about continuation.
-    # There is one less prompt on Oracle Linux 8 and CentOS 7
-    if "oracle-8" in booted_os or "centos-7" in booted_os:
-        prompt_count = 2
-    else:
-        prompt_count = 3
-    for i in range(prompt_count):
-        with convert2rhel(
-            ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
-            )
-        ) as c2r:
-            if i == 0:
-                c2r.expect("Continue with the system conversion?")
-                terminate_and_assert_good_rollback(c2r)
-            elif i == 1:
-                c2r.expect("Continue with the system conversion?")
-                c2r.sendline("y")
-                c2r.expect("Continue with the system conversion?")
-                terminate_and_assert_good_rollback(c2r)
-            elif i == 2:
-                for n in range(1):
-                    c2r.expect("Continue with the system conversion?")
-                    c2r.sendline("y")
-                c2r.expect("Continue with the system conversion?")
-                terminate_and_assert_good_rollback(c2r)
-            elif i == 3:
-                for n in range(2):
-                    c2r.expect("Continue with the system conversion?")
-                    c2r.sendline("y")
-                c2r.expect("The tool allows rollback of any action until this point.")
-                c2r.expect("Continue with the system conversion?")
-                terminate_and_assert_good_rollback(c2r)

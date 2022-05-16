@@ -21,7 +21,7 @@ import logging
 import os
 import re
 
-from convert2rhel import grub
+from convert2rhel import grub, pkgmanager
 from convert2rhel.pkghandler import (
     call_yum_cmd,
     compare_package_versions,
@@ -31,7 +31,7 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import get_file_content, run_subprocess
+from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess
 
 
 logger = logging.getLogger(__name__)
@@ -466,15 +466,27 @@ def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
     logger.task("Prepare: Checking if the packages are up-to-date")
 
-    packages_to_update = get_total_packages_to_update()
+    try:
+        packages_to_update = get_total_packages_to_update()
+    except pkgmanager.RepoError as e:
+        logger.warning(
+            "There was an error while checking whether the installed packages are up-to-date. Having updated system is "
+            "an important prerequisite for a successful conversion. Consider stopping the conversion to "
+            "verify that manually."
+        )
+        logger.warning(str(e))
+        ask_to_continue()
+        return
 
     if len(packages_to_update) > 0:
         logger.warning(
             "The system has %s packages not updated.\n"
             "List of packages to update: %s.\n\n"
-            "If you wish to update then before continuing with the conversion, execute the following step:\n"
-            "Run: yum update -y\n" % (len(packages_to_update), ", ".join(packages_to_update))
+            "Not updating the packages may cause the conversion to fail.\n"
+            "Consider stopping the conversion and update the packages before re-running convert2rhel."
+            % (len(packages_to_update), " ".join(packages_to_update))
         )
+        ask_to_continue()
     else:
         logger.info("System is up-to-date.")
 
@@ -489,7 +501,8 @@ def is_loaded_kernel_latest():
 
     # The latest kernel version on repo
     repoquery_output, _ = run_subprocess(
-        ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"', package_to_check], print_output=False
+        ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"', package_to_check],
+        print_output=False,
     )
 
     # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)

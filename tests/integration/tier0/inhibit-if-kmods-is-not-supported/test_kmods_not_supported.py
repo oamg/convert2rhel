@@ -52,11 +52,12 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
-        # On OracleLinux8 there is one question less than on other distros
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
         if "oracle-8" not in platform.platform():
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
-        c2r.expect("Kernel modules are compatible.")
+        assert c2r.expect("Kernel modules are compatible.") == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
     assert c2r.exitstatus != 0
