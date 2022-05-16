@@ -54,6 +54,8 @@ def test_skip_kernel_check(shell, convert2rhel):
     # Clean up
     if "centos-8.4" in system_version or "oracle-8.4" in system_version:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
+    else:
+        assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
 
 def test_system_not_updated(shell, convert2rhel):
