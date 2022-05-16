@@ -467,9 +467,19 @@ def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
     logger.task("Prepare: Checking if the packages are up-to-date")
 
+    reposdir = get_hardcoded_repofiles_dir()
+
+    if reposdir and not system_info.has_internet_access:
+        logger.warning("Skipping the check as no internet connection has been detected.")
+        return
+
     try:
-        packages_to_update = get_total_packages_to_update()
+        packages_to_update = get_total_packages_to_update(reposdir=reposdir)
     except pkgmanager.RepoError as e:
+        # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
+        # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
+        # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
+        # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
         logger.warning(
             "There was an error while checking whether the installed packages are up-to-date. Having updated system is "
             "an important prerequisite for a successful conversion. Consider stopping the conversion to "
@@ -478,14 +488,6 @@ def check_package_updates():
         logger.warning(str(e))
         ask_to_continue()
         return
-        
-    reposdir = get_hardcoded_repofiles_dir()
-
-    if reposdir and not system_info.has_internet_access:
-        logger.warning("Skipping the check as no internet connection has been detected.")
-        return
-
-    packages_to_update = get_total_packages_to_update(reposdir=reposdir)
 
     if len(packages_to_update) > 0:
         logger.warning(
