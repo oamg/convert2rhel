@@ -271,10 +271,10 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(system_info, "id", "centos")
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
+    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):
         subscription.remove_original_subscription_manager()
-        self.assertEqual(utils.remove_pkgs.called, 2)
+        self.assertEqual(backup.remove_pkgs.called, 2)
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [])
     @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())

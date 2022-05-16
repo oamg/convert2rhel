@@ -1073,11 +1073,8 @@ def _get_packages_to_update_dnf(reposdir):
     # replacement in repo files.
     # See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
-    base.conf.read(priority=base.conf.PRIO_MAINCONFIG)
-    base.conf.substitutions.update_from_etc(
-        nstallroot=base.conf.installroot,
-        varsdir=base.conf.varsdir
-    )
+    base.conf.read(priority=pkgmanager.dnf.conf.PRIO_MAINCONFIG)
+    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()
 
