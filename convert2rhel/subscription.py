@@ -35,7 +35,7 @@ _CENTOS_6_REPO_CONTENT = (
     "[centos-6-contrib-convert2rhel]\n"
     "name=CentOS Linux 6 - Contrib added by Convert2RHEL\n"
     "baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n"
-    "gpgcheck=0\n"
+    "gpgcheck=1\n"
     "enabled=1\n"
 )
 _CENTOS_6_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "centos_6.repo")
@@ -43,7 +43,7 @@ _UBI_7_REPO_CONTENT = (
     "[ubi-7-convert2rhel]\n"
     "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
     "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
-    "gpgcheck=0\n"
+    "gpgcheck=1\n"
     "enabled=1\n"
 )
 _UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
@@ -53,7 +53,7 @@ _UBI_8_REPO_CONTENT = (
     "[ubi-8-baseos-convert2rhel]\n"
     "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
     "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
-    "gpgcheck=0\n"
+    "gpgcheck=1\n"
     "enabled=1\n"
 )
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
