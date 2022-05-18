@@ -380,13 +380,14 @@ def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypa
 
 
 @pytest.mark.parametrize(
-    ("is_eus_system"),
+    ("is_eus_system", "has_internet_access"),
     (
-        (True),
-        (False),
+        (True, True),
+        (False, False),
     ),
 )
-def test_restorable_package_backup(is_eus_system, tmpdir, monkeypatch):
+@centos8
+def test_restorable_package_backup(pretend_os, is_eus_system, has_internet_access, tmpdir, monkeypatch):
     pkg_to_backup = "pkg-1"
 
     # Python 2.7 needs a string or buffer and not a LocalPath
@@ -396,6 +397,7 @@ def test_restorable_package_backup(is_eus_system, tmpdir, monkeypatch):
     monkeypatch.setattr(backup, "BACKUP_DIR", value=tmpdir)
     monkeypatch.setattr(backup.system_info, "corresponds_to_rhel_eus_release", value=lambda: is_eus_system)
     monkeypatch.setattr(backup, "get_hardcoded_repofiles_dir", value=lambda: tmpdir if is_eus_system else None)
+    backup.system_info.has_internet_access = has_internet_access
 
     rp = backup.RestorablePackage(pkgname=pkg_to_backup)
     rp.backup()

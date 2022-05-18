@@ -467,6 +467,13 @@ def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
     logger.task("Prepare: Checking if the packages are up-to-date")
 
+    if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
+        logger.info(
+            "Skipping the check because there are no publicly available %s %d.%d repositories available."
+            % (system_info.name, system_info.version.major, system_info.version.minor)
+        )
+        return
+
     reposdir = get_hardcoded_repofiles_dir()
 
     if reposdir and not system_info.has_internet_access:
@@ -505,6 +512,13 @@ def check_package_updates():
 def is_loaded_kernel_latest():
     """Check if the loaded kernel is behind or of the same version as in yum repos."""
     logger.task("Prepare: Checking if the loaded kernel version is the most recent")
+
+    if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
+        logger.info(
+            "Skipping the check because there are no publicly available %s %d.%d repositories available."
+            % (system_info.name, system_info.version.major, system_info.version.minor)
+        )
+        return
 
     reposdir = get_hardcoded_repofiles_dir()
 

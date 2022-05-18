@@ -155,17 +155,21 @@ class RestorablePackage(object):
             # minor versions is that we need to be able to download an older package version as a backup.
             # Because for example the default repofiles on CentOS Linux 8.4 point only to 8.latest repositories
             # that already don't contain 8.4 packages.
-            # The reason for the EUS condition is that convert2rhel allows conversions of just those older system
-            # minor versions that correspond to a RHEL EUS release.
-            if reposdir and system_info.corresponds_to_rhel_eus_release():
+            if not system_info.has_internet_access:
+                if reposdir:
+                    loggerinst.debug(
+                        "Not using repository files stored in %s due to the absence of internet access." % reposdir
+                    )
+                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
+            else:
+                if reposdir:
+                    loggerinst.debug("Using repository files stored in %s." % reposdir)
                 self.path = download_pkg(
                     self.name,
                     dest=BACKUP_DIR,
                     set_releasever=False,
                     reposdir=reposdir,
                 )
-            else:
-                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 

@@ -108,7 +108,6 @@ class SystemInfo(object):
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
-        self.has_internet_access = self._check_internet_access()
 
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
@@ -121,6 +120,7 @@ class SystemInfo(object):
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
+        self.has_internet_access = self._check_internet_access()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -361,7 +361,7 @@ class SystemInfo(object):
         :rtype: bool
         """
         system_version = "%s.%s" % (self.version.major, self.version.minor)
-        EUS_MINOR_VERSIONS = ["8.4", "8.6", "8.8", "8.10"]
+        EUS_MINOR_VERSIONS = ["8.4", "8.6", "8.8"]
         return system_version in EUS_MINOR_VERSIONS
 
 

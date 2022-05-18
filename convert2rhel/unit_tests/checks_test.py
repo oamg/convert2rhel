@@ -36,7 +36,7 @@ from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import centos7, centos8
+from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
 
 
@@ -830,6 +830,17 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertTrue("Unable to access the repositories passed through " in checks.logger.critical_msgs[0])
 
 
+@oracle8
+def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog):
+    message = (
+        "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
+    )
+
+    check_package_updates()
+
+    assert message in caplog.records[-1].message
+
+
 @pytest.mark.parametrize(
     ("packages", "exception", "expected"),
     (
@@ -870,6 +881,17 @@ def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch,
     assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
 
 
+@oracle8
+def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, caplog):
+    message = (
+        "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
+    )
+
+    is_loaded_kernel_latest()
+
+    assert message in caplog.records[-1].message
+
+
 @pytest.mark.parametrize(
     ("repoquery_version", "uname_version", "return_code", "major_ver", "package_name", "raise_system_exit"),
     (
@@ -882,10 +904,13 @@ def test_is_loaded_kernel_latest(
     repoquery_version, uname_version, return_code, major_ver, package_name, raise_system_exit, monkeypatch, caplog
 ):
     Version = namedtuple("Version", ("major", "minor"))
+    # Using the minor version as 99, so the tests should never fail because of a constraint in the code, since we don't
+    # mind the minor version number (for now), and require only that the major version to be in the range of 6 to 8,
+    # we can set the minor version to 99 to avoid hardcoded checks in the code.
     monkeypatch.setattr(
         checks.system_info,
         "version",
-        value=Version(major=major_ver, minor=0),
+        value=Version(major=major_ver, minor=99),
     )
 
     run_subprocess_mocked = mock.Mock(

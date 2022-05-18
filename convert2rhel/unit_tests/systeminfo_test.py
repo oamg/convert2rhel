@@ -289,7 +289,6 @@ def test_check_internet_access(side_effect, expected, monkeypatch):
         ("8", "7", False),
         ("8", "8", True),
         ("8", "9", False),
-        ("8", "10", True),
     ),
 )
 def test_corresponds_to_rhel_eus_release(major, minor, expected):
