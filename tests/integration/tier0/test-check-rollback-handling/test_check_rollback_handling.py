@@ -81,8 +81,9 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
         c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
+        if "centos-7" in booted_os or "oracle-7" in booted_os:
+            c2r.expect("Continue with the system conversion?")
+            c2r.sendline("y")
         c2r.expect("The tool allows rollback of any action until this point.")
         c2r.sendline("n")
         c2r.expect("Calling command 'subscription-manager unregister'")

@@ -54,7 +54,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
-        if "oracle-8" not in platform.platform():
+        if "oracle-7" in platform.platform() or "centos-7" in platform.platform():
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
         assert c2r.expect("Kernel modules are compatible.") == 0

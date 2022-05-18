@@ -1,5 +1,6 @@
 ---
 # trying to install python3 on OL8.4 fails
+# TODO if OL8.4 repos are not hardcoded to 8.4 we can update the python version (remove the part below)
 - name: Check python3 is installed
   command: rpm -q python36
   register: package_check
@@ -9,9 +10,9 @@
   yum:
     # gcc and python3-devel are needed for psutil
     name:
-      - "python3"
-      - "gcc"
-      - "python3-devel"
+      - python3
+      - gcc
+      - python3-devel
     state: present
   when: package_check.rc != 0
 

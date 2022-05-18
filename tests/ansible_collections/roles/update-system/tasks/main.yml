@@ -1,8 +1,8 @@
 ---
-- include: update-ol-84.yml
-  when:
-    - ansible_facts['distribution_version'] == "8.4"
-    - ansible_facts['distribution'] == "OracleLinux"
+#- include: update-ol-84.yml
+#  when:
+#    - ansible_facts['distribution_version'] == "8.4"
+#    - ansible_facts['distribution'] == "OracleLinux"
 - include: update-system.yml
   when:
     - ansible_facts['distribution_version'] != "8.4" or ansible_facts['distribution'] != "OracleLinux"
