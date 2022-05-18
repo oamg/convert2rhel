@@ -460,7 +460,7 @@ class TestRegisterSystem(object):
         assert caplog.records[-1].levelname == "CRITICAL"
 
     def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog):
-        """Check the function tries to register multiple times without critical log."""
+        """Test that the three attempts work: fail to register two times and succeed the third time."""
         tool_opts.credentials_thru_cli = False
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
 
