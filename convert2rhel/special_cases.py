@@ -50,14 +50,20 @@ def remove_iwlax2xx_firmware():
     iwl7260_firmware = system_info.is_rpm_installed(name="iwl7260-firmware")
     iwlax2xx_firmware = system_info.is_rpm_installed(name="iwlax2xx-firmware")
 
-    logger.info("Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware package.")
+    logger.info("Checking if the iwl7260-firmware and iwlax2xx-firmware packages are installed.")
     if system_info.id == "oracle" and system_info.version.major == 8:
         # If we have both of the firmware installed on the system, we need to remove the later one,
         # iwlax2xx-firmware, since this causes problem in the OL8 conversion in the replace packages step.
         if iwl7260_firmware and iwlax2xx_firmware:
+            logger.info(
+                "Removing the iwlax2xx-firmware package. Its content is provided by the RHEL iwl7260-firmware"
+                " package."
+            )
             _, exit_code = run_subprocess(["rpm", "-e", "--nodeps", "iwlax2xx-firmware"])
             if exit_code != 0:
                 logger.error("Unable to remove the package iwlax2xx-firmware.")
+        else:
+            logger.info("The iwl7260-firmware and iwlax2xx-firmware packages are not both installed. Nothing to do.")
     else:
         logger.info("Relevant to Oracle Linux 8 only. Skipping.")
 
