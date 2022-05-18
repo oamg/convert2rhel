@@ -674,7 +674,7 @@ def test_check_rhel_compatible_kernel_is_used(
             check_rhel_compatible_kernel_is_used()
     else:
         check_rhel_compatible_kernel_is_used()
-        assert "Kernel is compatible" in caplog.records[-1].message
+        assert "is compatible with RHEL" in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
@@ -950,7 +950,7 @@ def test_is_loaded_kernel_latest(
         assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
     else:
         is_loaded_kernel_latest()
-        assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
+        assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
@@ -1016,7 +1016,7 @@ def test_is_loaded_kernel_latest_eus_system(
         assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
     else:
         is_loaded_kernel_latest()
-        assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
+        assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
 
 
 @centos8

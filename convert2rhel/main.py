@@ -205,7 +205,7 @@ def pre_ponr_conversion():
         subscription.disable_repos()
 
     # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
-    loggerinst.task("Convert: Remove packages containing repofiles")
+    loggerinst.task("Convert: Remove packages containing .repo files")
     pkghandler.remove_repofile_pkgs()
 
     # we need to enable repos after removing repofile pkgs, otherwise we don't get backups

@@ -23,6 +23,7 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR, DATA_DIR
 
 
+DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d/"
 loggerinst = logging.getLogger(__name__)
 
 
@@ -45,16 +46,14 @@ def get_rhel_repoids():
 
 
 def backup_yum_repos():
-    """Backup .repo files in /etc/yum.repos.d/ so the repositories
-    can be restored on rollback.
-    """
-    loggerinst.info("Backing up repositories")
+    """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
+    loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
     repo_files_backed_up = False
-    for repo in os.listdir("/etc/yum.repos.d/"):
+    for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
         if repo.endswith(".repo") and repo != "redhat.repo":
-            repo_path = os.path.join("/etc/yum.repos.d/", repo)
+            repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
             shutil.copy2(repo_path, BACKUP_DIR)
-            loggerinst.info("Backed up repo: %s" % (repo_path))
+            loggerinst.debug("Backed up .repo file: %s" % repo_path)
             repo_files_backed_up = True
     if not repo_files_backed_up:
         loggerinst.info("No .repo files backed up.")
@@ -62,9 +61,7 @@ def backup_yum_repos():
 
 
 def restore_yum_repos():
-    """Rollback all .repo files in /etc/yum.repos.d/ that were
-    backed up.
-    """
+    """Rollback all .repo files in /etc/yum.repos.d/ that were backed up."""
     loggerinst.task("Rollback: Restore .repo files to /etc/yum.repos.d/")
     repo_has_restored = False
     for repo in os.listdir(BACKUP_DIR):
@@ -72,7 +69,7 @@ def restore_yum_repos():
             repo_path_from = os.path.join(BACKUP_DIR, repo)
             repo_path_to = os.path.join("/etc/yum.repos.d/", repo)
             shutil.move(repo_path_from, repo_path_to)
-            loggerinst.info("Restored repo: %s" % (repo))
+            loggerinst.info("Restored .repo file: %s" % (repo))
             repo_has_restored = True
 
     if not repo_has_restored:
