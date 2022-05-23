@@ -66,6 +66,12 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     # Primary issue - checking for usermode, rhn-setup and os-release.
     # It also checks that the system has been successfully unregistered.
     install_pkg(shell)
+    if "oracle-7" in booted_os or "centos-7" in booted_os:
+        prompt_amount = 3
+    elif "oracle-8" in booted_os:
+        prompt_amount = 3
+    elif "centos-8" in booted_os:
+        prompt_amount = 3
 
     with convert2rhel(
         ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
@@ -75,15 +81,10 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        if "centos-7" in booted_os or "oracle-7" in booted_os:
+        while prompt_amount > 0:
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
+            prompt_amount -= 1
         c2r.expect("The tool allows rollback of any action until this point.")
         c2r.sendline("n")
         c2r.expect("Calling command 'subscription-manager unregister'")

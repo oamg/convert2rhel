@@ -5,4 +5,6 @@
 - include: rhel7-repos.yml
   when: ansible_facts['distribution_major_version'] == "7"
 - include: rhel8-repos.yml
-  when: ansible_facts['distribution_major_version'] == "8"
+  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.6"
+- include: rhel8-eus-repos.yml
+  when: ansible_facts['distribution_version'] == "8.4"

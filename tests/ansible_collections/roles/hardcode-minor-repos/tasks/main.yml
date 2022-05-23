@@ -1,5 +1,0 @@
----
-#- include: oracle-repos.yml
-#  when: ansible_facts['distribution'] == "OracleLinux"
-- include: centos-repos.yml
-  when: ansible_facts['distribution'] == "CentOS"

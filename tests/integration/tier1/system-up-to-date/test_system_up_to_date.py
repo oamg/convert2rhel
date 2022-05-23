@@ -19,12 +19,13 @@ def test_skip_kernel_check(shell, convert2rhel):
     # TODO this has to be fixed
     # Move all repos to other location, so it is not being used
     # EUS version use hardoced repos from c2r
-    if "centos-8.4" in system_version or "oracle-8.4" in system_version:
+
+    if "centos-8" in system_version in system_version:
         assert shell("mkdir /tmp/s_backup_eus")
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     with convert2rhel(
-        ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -33,7 +34,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     ) as c2r:
         if "centos-7" in system_version or "oracle-7" in system_version:
             c2r.expect("Could not find any kernel from repositories to compare against the loaded kernel.")
-        elif "centos-8" in system_version or "oracle-8" in system_version:
+        elif "centos-8" in system_version:
             c2r.expect("Could not find any kernel-core from repositories to compare against the loaded kernel.")
     assert c2r.exitstatus != 0
 
@@ -52,7 +53,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
     # Clean up
-    if "centos-8.4" in system_version or "oracle-8.4" in system_version:
+    if "centos-8" in system_version in system_version:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 

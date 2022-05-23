@@ -2,13 +2,8 @@
 - hosts: all
   roles:
 
-    - role: hardcode-minor-repos
-      when: ansible_facts['distribution_version'] == "8.4"
-      # Change the CentOS 8.4 repostitories only
-        # TODO remove below commented part
-        # For Oracle Linux 8.4 and CentOS 8.4.2105
-        #- ansible_facts['distribution_version'] == "8.4" or
-        #  ansible_facts['distribution_version'] == "8.4.2105"
+    - role: hardcode-minor-version-repos
+      when: ansible_facts['distribution_version'] == "8.4" and ansible_facts['distribution'] == "CentOS"
 
     - role: update-system
 

@@ -24,12 +24,12 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
     assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
 
+    # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup")
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
-    # TODO this has to be fixed
-    # Move all repos to other location, so it is not being used
-    # EUS version use hardoced repos from c2r
-    if "centos-8.4" in system or "oracle-8.4" in system:
+
+    # EUS version use hardoced repos from c2r as well
+    if "centos-8" in system or "oracle-8.4" in system:
         assert shell("mkdir /tmp/s_backup_eus")
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -68,14 +68,6 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
             env.str("SATELLITE_ORG"),
         ),
     ) as c2r:
-        # c2r.expect("Continue with the system conversion?")
-        # c2r.sendline("y")
-        # c2r.expect("Continue with the system conversion?")
-        # c2r.sendline("y")
-        # On OracleLinux8 there is one question less than on other distros
-        # if "oracle-8" not in system:
-        #    c2r.expect("Continue with the system conversion?")
-        #    c2r.sendline("y")
         c2r.expect(
             "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
         )
@@ -84,10 +76,10 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
 
     assert shell("find /etc/os-release").returncode == 0
 
-    # Restore repos
+    # Return repositories to their original location
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
-    if "centos-8.4" in system or "oracle-8.4" in system:
+    if "centos-8" in system or "oracle-8.4" in system:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Clean up

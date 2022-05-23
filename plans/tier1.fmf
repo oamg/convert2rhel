@@ -199,6 +199,13 @@ discover+:
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /system_up_to_date:
+  # On Oracle Linux 8 we do not have minor version repositories so we skip the check for up-to-date system
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8 and
+      distro != centos-7 and
+      distro != oraclelinux-7
   discover+:
     test: checks-after-conversion
   prepare+:

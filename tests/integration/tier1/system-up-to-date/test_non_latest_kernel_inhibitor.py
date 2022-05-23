@@ -29,7 +29,6 @@ def test_non_latest_kernel(shell, convert2rhel):
     System has non latest kernel installed, thus the conversion
     has to be inhibited.
     """
-    system_version = platform.platform()
 
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -39,8 +38,15 @@ def test_non_latest_kernel(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("The current kernel version loaded is different from the latest version in your repos.")
+        if "centos-7" in platform.platform() or "oracle-7" in platform.platform():
+            c2r.expect(
+                "The version of the loaded kernel is different from the latest version on the enabled system repositories."
+            )
+        else:
+            c2r.expect(
+                "The version of the loaded kernel is different from the latest version on repositories defined in the"
+            )
     assert c2r.exitstatus != 0
 
-    # Clean up, reboot is required after this
+    # Clean up, reboot is required after setting the newest kernel
     set_latest_kernel(shell)

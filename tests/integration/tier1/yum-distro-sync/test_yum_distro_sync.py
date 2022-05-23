@@ -27,8 +27,7 @@ def test_yum_distro_sync(convert2rhel, shell):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        ),
-        unregister=False,
+        )
     ) as c2r:
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
@@ -39,8 +38,6 @@ def test_yum_distro_sync(convert2rhel, shell):
     # an error on Centos 8, which should be skipped
     out = shell("yum distro-sync cpaste")
     assert condition_test(out.output, out.returncode)
-
-    shell("subscription-manager unregister")
 
 
 def condition_test(output, ret_code):

@@ -10,6 +10,13 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     """
 
     assert shell("yum remove -y subscription-manager").returncode == 0
+    system_version = platform.platform()
+    if "oracle-7" in system_version or "centos-7" in system_version:
+        prompt_amount = 2
+    elif "oracle-8" in system_version:
+        prompt_amount = 1
+    elif "centos-8" in system_version:
+        prompt_amount = 2
 
     with convert2rhel(
         ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -19,18 +26,12 @@ def test_no_sub_manager_installed(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        # On OracleLinux8 there is one question less than on other distros
-        if "oracle-7" in platform.platform() or "centos-7" in platform.platform():
+        while prompt_amount > 0:
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
+            prompt_amount -= 1
         assert c2r.expect("The subscription-manager package is not installed.") == 0
         assert c2r.expect("No packages related to subscription-manager installed.") == 0
 
         c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("The tool allows rollback of any action until this point.")
         c2r.sendline("n")

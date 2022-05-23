@@ -1,4 +1,4 @@
-- name: Overwrite AppStream repository (CentOS8.4)
+- name: Overwrite AppStream repository (CentOS 8.4)
   yum_repository:
     name: appstream
     description: AppStream repo
@@ -9,7 +9,7 @@
     gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
     file: CentOS-Linux-AppStream
 
-- name: Overwrite BaseOS repository (CentOS8.4)
+- name: Overwrite BaseOS repository (CentOS 8.4)
   yum_repository:
     name: baseos
     description: BaseOS repo
@@ -19,3 +19,14 @@
     enabled: yes
     gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
     file: CentOS-Linux-BaseOS
+
+- name: Overwrite Extras repository (CentOS 8.4)
+  yum_repository:
+    name: extras
+    description: Extras repo
+    baseurl: https://vault.centos.org/$contentdir/8.4.2105/extras/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+    file: CentOS-Linux-Extras

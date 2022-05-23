@@ -87,7 +87,7 @@ def convert2rhel(shell):
     def factory(
         options: str,
         timeout: int = 60 * 60,
-        unregister: bool = True,
+        unregister: bool = False,
     ) -> ContextManager[pexpect.spawn]:
         c2r_runtime = pexpect.spawn(
             f"convert2rhel {options}",

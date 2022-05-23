@@ -4,11 +4,7 @@ from envparse import env
 def test_check_user_response_user_and_password(convert2rhel):
     # Run c2r registration with no username and password provided
     # check for user prompt enforcing input, then continue with registration
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {}".format(
-            env.str("RHSM_SERVER_URL"),
-        )
-    ) as c2r:
+    with convert2rhel("-y --no-rpm-va --serverurl {}".format(env.str("RHSM_SERVER_URL")), unregister=True) as c2r:
         c2r.expect_exact(" ... activation key not found, username and password required")
         c2r.expect_exact("Username")
         c2r.sendline()
@@ -39,7 +35,8 @@ def test_check_user_response_organization(convert2rhel):
         "-y --no-rpm-va --serverurl {} -k {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_KEY"),
-        )
+        ),
+        unregister=True,
     ) as c2r:
         c2r.expect_exact("activation key detected")
         c2r.expect_exact("Organization: ")
@@ -60,7 +57,8 @@ def test_auto_attach_pool_submgr(convert2rhel):
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_SINGLE_SUB_USERNAME"),
             env.str("RHSM_SINGLE_SUB_PASSWORD"),
-        )
+        ),
+        unregister=True,
     ) as c2r:
         c2r.expect(
             f"{single_pool_id} is the only subscription available, it will automatically be selected for the conversion."
