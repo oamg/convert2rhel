@@ -14,4 +14,14 @@ def test_check_user_privileges(shell):
         result.output == "The tool needs to be run under the root user.\n" "\n" "No changes were made to the system.\n"
     )
     # Delete testuser (if present)
-    os.system(f"userdel -r '{user}'")
+    assert os.system(f"userdel -r '{user}'") == 0
+
+
+def test_manpage_exists(shell):
+    assert shell("man -w convert2rhel").returncode == 0
+
+
+def test_smoke_basic(shell):
+    assert shell("convert2rhel --help").returncode == 0
+    assert shell("convert2rhel -h").returncode == 0
+    assert shell("convert2rhel <<< n").returncode != 0

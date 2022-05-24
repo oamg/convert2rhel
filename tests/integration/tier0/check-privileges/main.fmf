@@ -1,6 +1,0 @@
-summary: check user privileges
-
-tier: 0
-
-test: |
-  pytest -svv
