@@ -381,10 +381,7 @@ def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypa
 
 @pytest.mark.parametrize(
     ("is_eus_system", "has_internet_access"),
-    (
-        (True, True),
-        (False, False),
-    ),
+    ((True, True), (False, False), (True, False), (False, True)),
 )
 @centos8
 def test_restorable_package_backup(pretend_os, is_eus_system, has_internet_access, tmpdir, monkeypatch):
