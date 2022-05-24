@@ -497,12 +497,13 @@ def check_package_updates():
         return
 
     if len(packages_to_update) > 0:
+        repos_message = "in your system repos" if not reposdir else "in repositories defined at: %s " % reposdir
         logger.warning(
-            "The system has %s packages not updated.\n"
+            "The system has %s packages not updated based %s.\n"
             "List of packages to update: %s.\n\n"
             "Not updating the packages may cause the conversion to fail.\n"
             "Consider stopping the conversion and update the packages before re-running convert2rhel."
-            % (len(packages_to_update), " ".join(packages_to_update))
+            % (len(packages_to_update), repos_message, " ".join(packages_to_update))
         )
         ask_to_continue()
     else:
@@ -575,13 +576,14 @@ def is_loaded_kernel_latest():
         if match == 0:
             logger.info("Kernel currently loaded is at the latest version.")
         else:
+            repos_message = "in your system repos" if not reposdir else "in repositories defined at: %s " % reposdir
             logger.critical(
-                "The current kernel version loaded is different from the latest version in your repos.\n"
+                "The current kernel version loaded is different from the latest version %s.\n"
                 " Latest kernel version: %s\n"
                 " Current loaded kernel: %s\n\n"
                 "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                 "1. yum install %s-%s -y\n"
-                "2. reboot" % (latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+                "2. reboot" % (repos_message, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
             )
     else:
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
