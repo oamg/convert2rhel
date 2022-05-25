@@ -280,18 +280,17 @@ def test_check_internet_access(side_effect, expected, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("major", "minor", "expected"),
+    ("releasever", "expected"),
     (
-        ("7", "9", False),
-        ("8", "4", True),
-        ("8", "5", False),
-        ("8", "6", True),
-        ("8", "7", False),
-        ("8", "8", True),
-        ("8", "9", False),
+        ("7.9", False),
+        ("8.4", True),
+        ("8.5", False),
+        ("8.6", False),
+        ("8.7", False),
+        ("8.8", False),
+        ("8.9", False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(major, minor, expected):
-    version = namedtuple("version", ["major", "minor"])(major, minor)
-    system_info.version = version
+def test_corresponds_to_rhel_eus_release(releasever, expected):
+    system_info.releasever = releasever
     assert system_info.corresponds_to_rhel_eus_release() == expected

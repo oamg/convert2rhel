@@ -25,11 +25,11 @@ from collections import namedtuple
 import pexpect
 import pytest
 
-from convert2rhel import backup, pkghandler, subscription, unit_tests, toolopts, utils  # Imports unit_tests/__init__.py
+from convert2rhel import backup, pkghandler, subscription, unit_tests, toolopts, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import centos8
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -1149,7 +1149,15 @@ def test_enable_repos_rhel_repoids(
 )
 @centos8
 def test_enable_repos_rhel_repoids_fallback_default_rhsm(
-    pretend_os, rhel_repoids, default_rhsm_repoids, subprocess, subprocess2, should_raise, expected, monkeypatch, caplog
+    pretend_os,
+    rhel_repoids,
+    default_rhsm_repoids,
+    subprocess,
+    subprocess2,
+    should_raise,
+    expected,
+    monkeypatch,
+    caplog,
 ):
     cmd_mock = ["subscription-manager", "repos"]
     for repo in rhel_repoids:
@@ -1228,3 +1236,35 @@ def test_enable_repos_toolopts_enablerepo(
 
     assert expected_message in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("subprocess", "expected"),
+    (
+        (("output", 0), "RHEL repositories locked"),
+        (("output", 1), "Locking RHEL repositories failed"),
+    ),
+)
+@centos8
+def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, monkeypatch, caplog):
+    cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    subscription.lock_releasever_in_rhel_repositories()
+
+    assert expected in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1
+
+
+@centos7
+def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
+    subscription.lock_releasever_in_rhel_repositories()
+    assert "Not an EUS system, skipping the RHEL lock releasever." in caplog.records[-1].message

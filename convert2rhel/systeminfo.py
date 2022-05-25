@@ -55,6 +55,9 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
+# List of EUS minor versions supported
+EUS_MINOR_VERSIONS = ["8.4"]
+
 Version = namedtuple("Version", ["major", "minor"])
 
 
@@ -360,9 +363,7 @@ class SystemInfo(object):
         :return: Whether or not the current system has a EUS correspondent in RHEL.
         :rtype: bool
         """
-        system_version = "%s.%s" % (self.version.major, self.version.minor)
-        EUS_MINOR_VERSIONS = ["8.4", "8.6", "8.8"]
-        return system_version in EUS_MINOR_VERSIONS
+        return self.releasever in EUS_MINOR_VERSIONS
 
 
 # Code to be executed upon module import

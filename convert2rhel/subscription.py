@@ -728,3 +728,33 @@ def exit_on_failed_download(paths):
             " the failed yumdownloader call above. These packages are necessary for the conversion"
             " unless you use the --no-rhsm option."
         )
+
+
+def lock_releasever_in_rhel_repositories():
+    """Lock the releasever in the RHEL repositories located under /etc/yum.repos.d/rehat.repo
+
+    After converting from an EUS system to a RHEL EUS, we need to lock the releasever in the redhat.repo file
+    to prevent future errors such as, running `yum update` and not being able to find the repositories metadata.
+
+    .. note::
+        This function should only run if the detected system is an EUS correspondent, otherwise, there is no need
+        to lock the releasever in the redhat.repo file as the repository structure when using EUS is slightly
+        different from a non-EUS repository.
+    """
+
+    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent.
+    if system_info.corresponds_to_rhel_eus_release():
+        loggerinst.info("Locking the releasever to %s in RHEL repositories." % system_info.releasever)
+        cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+        if ret_code != 0:
+            loggerinst.warning(
+                "Locking RHEL repositories failed with return code %d and message:\n%s",
+                ret_code,
+                output,
+            )
+        else:
+            loggerinst.info("RHEL repositories locked on %s" % system_info.releasever)
+    else:
+        loggerinst.info("Not an EUS system, skipping the RHEL lock releasever.")
