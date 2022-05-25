@@ -331,7 +331,7 @@ class SystemInfo(object):
 
         .. seealso::
             * Comparison of different methods to check internet connections: https://stackoverflow.com/a/33117579
-            * Redirecting IP addresses: https://stackoverflow.com/a/33117579https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+            * Redirecting IP addresses: https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
 
         :param host: The host to establish a connection to. Defaults to "8.8.8.8".
         :type host: str
