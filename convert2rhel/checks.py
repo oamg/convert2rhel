@@ -527,7 +527,7 @@ def is_loaded_kernel_latest():
         logger.warning("Skipping the check as no internet connection has been detected.")
         return
 
-    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"']
+    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
 
     # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
     # instead of the system repositories located under /etc/yum.repos.d
@@ -557,7 +557,7 @@ def is_loaded_kernel_latest():
         # This later check is supposed to avoid duplicate repofiles being defined in the system,
         # this is a super corner case and should not happen everytime, but if it does, we are aware now.
         packages = [
-            tuple(str(line).split("\t"))
+            tuple(str(line).replace('"', "").split("\t"))
             for line in repoquery_output.split("\n")
             if (line.strip() and "listed more than once in the configuration" not in line.lower())
         ]
@@ -565,8 +565,9 @@ def is_loaded_kernel_latest():
         # Sort out for the most recent kernel with reverse order
         # In case `repoquery` returns more than one kernel in the output
         # We display the latest one to the user.
-        _, latest_kernel = sorted(packages, reverse=True)[0]
-        latest_kernel = latest_kernel.replace('"', "")
+        packages.sort(key=lambda x: x[0], reverse=True)
+
+        _, latest_kernel, repoid = packages[0]
 
         # The loaded kernel version
         uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
@@ -576,14 +577,18 @@ def is_loaded_kernel_latest():
         if match == 0:
             logger.info("Kernel currently loaded is at the latest version.")
         else:
-            repos_message = "in your system repos" if not reposdir else "in repositories defined at: %s " % reposdir
+            repos_message = (
+                "in the enabled system repositories"
+                if not reposdir
+                else "in repositories defined in the %s folder" % reposdir
+            )
             logger.critical(
-                "The current kernel version loaded is different from the latest version %s.\n"
-                " Latest kernel version: %s\n"
-                " Current loaded kernel: %s\n\n"
+                "The version of the loaded kernel is different from the latest version %s.\n"
+                " Latest kernel version available in %s: %s\n"
+                " Loaded kernel version: %s\n\n"
                 "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                 "1. yum install %s-%s -y\n"
-                "2. reboot" % (repos_message, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+                "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
             )
     else:
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories

@@ -895,9 +895,9 @@ def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, caplog):
 @pytest.mark.parametrize(
     ("repoquery_version", "uname_version", "return_code", "major_ver", "package_name", "raise_system_exit"),
     (
-        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.42.2.el7.x86_64", 0, 8, "kernel-core", True),
-        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, 7, "kernel", False),
-        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, 6, "kernel", False),
+        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.42.2.el7.x86_64", 0, 8, "kernel-core", True),
+        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, 7, "kernel", False),
+        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, 6, "kernel", False),
     ),
 )
 def test_is_loaded_kernel_latest(
@@ -912,7 +912,7 @@ def test_is_loaded_kernel_latest(
         "version",
         value=Version(major=major_ver, minor=99),
     )
-
+    system_info.id = "centos"
     run_subprocess_mocked = mock.Mock(
         spec=run_subprocess,
         side_effect=run_subprocess_side_effect(
@@ -921,7 +921,7 @@ def test_is_loaded_kernel_latest(
                     "repoquery",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
                     package_name,
                 ),
                 (
@@ -942,10 +942,12 @@ def test_is_loaded_kernel_latest(
         with pytest.raises(SystemExit):
             is_loaded_kernel_latest()
 
-        repoquery_kernel_version = repoquery_version.split("\t", 1)[1]
+        repoquery_kernel_version = repoquery_version.split("\t")[1]
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert "Latest kernel version: %s\n" % repoquery_kernel_version in caplog.records[-1].message
-        assert "Current loaded kernel: %s\n" % uname_kernel_version in caplog.records[-1].message
+        assert (
+            "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version in caplog.records[-1].message
+        )
+        assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
     else:
         is_loaded_kernel_latest()
         assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
@@ -954,8 +956,8 @@ def test_is_loaded_kernel_latest(
 @pytest.mark.parametrize(
     ("repoquery_version", "uname_version", "return_code", "package_name", "raise_system_exit"),
     (
-        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.42.2.el7.x86_64", 0, "kernel-core", True),
-        ("1634146676\t3.10.0-1160.45.1.el7", "3.10.0-1160.45.1.el7.x86_64", 0, "kernel-core", False),
+        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.42.2.el7.x86_64", 0, "kernel-core", True),
+        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, "kernel-core", False),
     ),
 )
 @centos8
@@ -980,7 +982,7 @@ def test_is_loaded_kernel_latest_eus_system(
                     "repoquery",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
                     "--setopt=reposdir=%s" % fake_reposdir_path,
                     package_name,
                 ),
@@ -1002,10 +1004,16 @@ def test_is_loaded_kernel_latest_eus_system(
         with pytest.raises(SystemExit):
             is_loaded_kernel_latest()
 
-        repoquery_kernel_version = repoquery_version.split("\t", 1)[1]
+        repoquery_kernel_version = repoquery_version.split("\t")[1]
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert "Latest kernel version: %s\n" % repoquery_kernel_version in caplog.records[-1].message
-        assert "Current loaded kernel: %s\n" % uname_kernel_version in caplog.records[-1].message
+        assert (
+            "The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
+            % fake_reposdir_path
+        )
+        assert (
+            "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version in caplog.records[-1].message
+        )
+        assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
     else:
         is_loaded_kernel_latest()
         assert "Kernel currently loaded is at the latest version." in caplog.records[-1].message
@@ -1047,7 +1055,7 @@ def test_is_loaded_kernel_latest_unsupported_skip(
                     "repoquery",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"',
+                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
                     package_name,
                 ),
                 (
