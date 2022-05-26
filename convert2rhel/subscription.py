@@ -742,8 +742,9 @@ def lock_releasever_in_rhel_repositories():
         different from a non-EUS repository.
     """
 
-    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent.
-    if system_info.corresponds_to_rhel_eus_release():
+    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if te
+    # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be available.
+    if system_info.corresponds_to_rhel_eus_release() and not tool_opts.no_rhsm:
         loggerinst.info("Locking the releasever to %s in RHEL repositories." % system_info.releasever)
         cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
 
