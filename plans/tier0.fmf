@@ -1,6 +1,10 @@
 discover+:
     tier: 0
 
+/basic_sanity_checks:
+  discover+:
+    test: basic-sanity-checks
+
 /check_user_response:
   discover+:
     test: check-user-response

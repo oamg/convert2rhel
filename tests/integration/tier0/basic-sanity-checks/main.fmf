@@ -1,0 +1,6 @@
+summary: user privileges, manpage exists, basic smoke
+
+tier: 0
+
+test: |
+  pytest -svv
