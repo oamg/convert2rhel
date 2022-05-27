@@ -1267,4 +1267,4 @@ def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, 
 @centos7
 def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
     subscription.lock_releasever_in_rhel_repositories()
-    assert "Not an EUS system, skipping the RHEL lock releasever." in caplog.records[-1].message
+    assert "Skipping locking RHEL repositories to a specific EUS minor version." in caplog.records[-1].message

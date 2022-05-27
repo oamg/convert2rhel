@@ -731,21 +731,24 @@ def exit_on_failed_download(paths):
 
 
 def lock_releasever_in_rhel_repositories():
-    """Lock the releasever in the RHEL repositories located under /etc/yum.repos.d/rehat.repo
+    """Lock the releasever in the RHEL repositories located under /etc/yum.repos.d/redhat.repo
 
-    After converting from an EUS system to a RHEL EUS, we need to lock the releasever in the redhat.repo file
+    After converting to a RHEL EUS minor version, we need to lock the releasever in the redhat.repo file
     to prevent future errors such as, running `yum update` and not being able to find the repositories metadata.
 
     .. note::
-        This function should only run if the detected system is an EUS correspondent, otherwise, there is no need
-        to lock the releasever in the redhat.repo file as the repository structure when using EUS is slightly
-        different from a non-EUS repository.
+        This function should only run if the system corresponds to a RHEL EUS version to make sure the converted system
+        keeps receiving updates for the specific EUS minor version instead of the latest minor version which is the
+        default.
     """
 
-    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if te
+    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
     # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be available.
     if system_info.corresponds_to_rhel_eus_release() and not tool_opts.no_rhsm:
-        loggerinst.info("Locking the releasever to %s in RHEL repositories." % system_info.releasever)
+        loggerinst.info(
+            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
+            % system_info.releasever
+        )
         cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
 
         output, ret_code = utils.run_subprocess(cmd, print_output=False)
@@ -756,6 +759,6 @@ def lock_releasever_in_rhel_repositories():
                 output,
             )
         else:
-            loggerinst.info("RHEL repositories locked on %s" % system_info.releasever)
+            loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
     else:
-        loggerinst.info("Not an EUS system, skipping the RHEL lock releasever.")
+        loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")

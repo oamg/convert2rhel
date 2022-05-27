@@ -497,7 +497,9 @@ def check_package_updates():
         return
 
     if len(packages_to_update) > 0:
-        repos_message = "in your system repos" if not reposdir else "in repositories defined at: %s " % reposdir
+        repos_message = (
+            "on the enabled system repos" if not reposdir else "on repositories defined in the %s folder" % reposdir
+        )
         logger.warning(
             "The system has %s packages not updated based %s.\n"
             "List of packages to update: %s.\n\n"
@@ -578,9 +580,9 @@ def is_loaded_kernel_latest():
             logger.info("Kernel currently loaded is at the latest version.")
         else:
             repos_message = (
-                "in the enabled system repositories"
+                "on the enabled system repositories"
                 if not reposdir
-                else "in repositories defined in the %s folder" % reposdir
+                else "on repositories defined in the %s folder" % reposdir
             )
             logger.critical(
                 "The version of the loaded kernel is different from the latest version %s.\n"
