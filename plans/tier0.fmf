@@ -5,6 +5,10 @@ discover+:
   discover+:
     test: basic-sanity-checks
 
+/check_cve:
+  discover+:
+    test: check-cve-2022-1662
+
 /check_user_response:
   discover+:
     test: check-user-response

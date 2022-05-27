@@ -1,0 +1,4 @@
+[allowlist]
+paths = [
+    '''tests/integration/tier0/check-cve/test_cve_fixes.py''',
+]
