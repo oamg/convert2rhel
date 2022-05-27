@@ -25,9 +25,8 @@ from collections import namedtuple
 import pexpect
 import pytest
 
-from convert2rhel import backup, pkghandler, subscription, unit_tests, toolopts, utils
+from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
@@ -1209,7 +1208,14 @@ def test_enable_repos_rhel_repoids_fallback_default_rhsm(
     ),
 )
 def test_enable_repos_toolopts_enablerepo(
-    toolopts_enablerepo, subprocess, should_raise, expected, expected_message, monkeypatch, caplog
+    toolopts_enablerepo,
+    subprocess,
+    should_raise,
+    expected,
+    expected_message,
+    tool_opts,
+    monkeypatch,
+    caplog,
 ):
     cmd_mock = ["subscription-manager", "repos"]
     for repo in toolopts_enablerepo:
@@ -1225,7 +1231,8 @@ def test_enable_repos_toolopts_enablerepo(
         "run_subprocess",
         value=run_subprocess_mock,
     )
-    monkeypatch.setattr(tool_opts, "enablerepo", toolopts_enablerepo)
+    tool_opts.enablerepo = toolopts_enablerepo
+    # monkeypatch.setattr(tool_opts, "enablerepo", toolopts_enablerepo)
 
     if should_raise:
         with pytest.raises(SystemExit):
