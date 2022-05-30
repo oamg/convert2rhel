@@ -19,6 +19,7 @@
 import logging
 import os
 import shutil
+import socket
 import sys
 import unittest
 
@@ -267,7 +268,7 @@ def test_get_release_ver_other(
     ("side_effect", "expected"),
     (
         (None, True),
-        (OSError, False),
+        (socket.error, False),
     ),
 )
 def test_check_internet_access(side_effect, expected, monkeypatch):
