@@ -350,7 +350,7 @@ class SystemInfo(object):
             socket.setdefaulttimeout(timeout)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
             return True
-        except OSError:
+        except (socket.timeout, socket.error):
             self.logger.warning("Couldn't connect to the host '%s'." % host)
             return False
 
