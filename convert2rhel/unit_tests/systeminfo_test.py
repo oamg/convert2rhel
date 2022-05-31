@@ -163,7 +163,6 @@ class TestSysteminfo(unittest.TestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # TODO: move class from unittest to pytest and use global tool_opts fixture
-        tool_opts.no_rpm_va = False
         # Check that rpm -Va is executed (default) and stored into the specific file.
         tool_opts.no_rpm_va = False
         system_info.generate_rpm_va()
