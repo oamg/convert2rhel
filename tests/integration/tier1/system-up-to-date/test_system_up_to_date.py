@@ -14,13 +14,12 @@ def test_skip_kernel_check(shell, convert2rhel):
     any kernel packages present in repos.
     """
 
+    # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup")
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
-    # TODO this has to be fixed
-    # Move all repos to other location, so it is not being used
-    # EUS version use hardoced repos from c2r
 
-    if "centos-8" in system_version in system_version:
+    # EUS version use hardoced repos from c2r as well
+    if "centos-8" in system_version:
         assert shell("mkdir /tmp/s_backup_eus")
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -34,7 +33,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     ) as c2r:
         if "centos-7" in system_version or "oracle-7" in system_version:
             c2r.expect("Could not find any kernel from repositories to compare against the loaded kernel.")
-        elif "centos-8" in system_version:
+        else:
             c2r.expect("Could not find any kernel-core from repositories to compare against the loaded kernel.")
     assert c2r.exitstatus != 0
 

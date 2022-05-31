@@ -7,5 +7,4 @@
     # and the version of the package is not the latest in copr repo it would be
     # updated at this point. The package version would then differ from the intended one.
     exclude: convert2rhel
-    skip_broken: yes
   register: update

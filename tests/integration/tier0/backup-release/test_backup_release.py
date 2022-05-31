@@ -25,12 +25,12 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
 
     # Move all repos to other location, so it is not being used
-    assert shell("mkdir /tmp/s_backup")
+    assert shell("mkdir /tmp/s_backup").returncode == 0
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardoced repos from c2r as well
     if "centos-8" in system or "oracle-8.4" in system:
-        assert shell("mkdir /tmp/s_backup_eus")
+        assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     # Since we are moving all repos away, we need to bypass kernel check

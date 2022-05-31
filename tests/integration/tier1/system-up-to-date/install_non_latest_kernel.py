@@ -33,3 +33,7 @@ def test_install_one_kernel(shell):
         shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
     elif "centos-8" in system_version:
         handle_centos8(shell)
+    # Test is being run only for the latest released oracle-linux
+    elif "oracle-8" in system_version:
+        assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
+        shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")

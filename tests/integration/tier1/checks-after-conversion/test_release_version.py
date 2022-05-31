@@ -6,9 +6,10 @@ def test_basic_conversion(shell):
     assert "Red Hat Enterprise Linux" in os_release
 
 
-def test_correct_distro(shell):
-    shell("cat /etc/migration-results")
-
+def test_correct_distro():
+    """ "
+    Check that we landed on the correct version
+    """
     with open("/etc/migration-results") as json_file:
         json_data = json.load(json_file)
         source_distro = json_data["activities"][0]["source_os"]

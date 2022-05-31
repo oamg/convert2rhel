@@ -1,3 +1,4 @@
+import os
 import re
 import socket
 
@@ -51,3 +52,5 @@ def test_prepare_system(shell):
     assert shell("iptables -I OUTPUT -d 8.8.8.8 -j DROP").returncode == 0
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
+
+    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"

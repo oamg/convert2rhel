@@ -40,6 +40,7 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
 
     with convert2rhel("-y --no-rpm-va --disable-submgr {} --debug".format(enable_repo_opt)) as c2r:
         c2r.expect("Conversion successful!")
+    assert c2r.exitstatus == 0
 
     # after the conversion using custom repostitories it is expected to enable repos by yourself
     if system_version.major == 7:
@@ -52,5 +53,3 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
         elif system_version.minor == 4:
             enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-eus-rpms --enable rhel-8-for-x86_64-appstream-eus-rpms"
     shell("yum-config-manager {}".format(enable_repo_opt))
-
-    assert c2r.exitstatus == 0
