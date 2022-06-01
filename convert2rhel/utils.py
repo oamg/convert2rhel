@@ -178,6 +178,10 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     :type columns: int
     :return: The output (combined stdout and stderr) and the return code of the executed command
     :rtype: tuple
+
+    .. warning:: unittests which utilize this may fail on pexpect-2.3 (RHEL7) unless capfd
+        (pytest's capture of stdout) is disabled.  Look at the
+        test_run_cmd_in_pty_size_set_on_startup unittest for an example.
     """
     # This check is here because we passed in strings in the past and changed to a list
     # for security hardening.  Remove this once everyone is comfortable with using a list
@@ -191,6 +195,8 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     process = PexpectSpawnWithDimensions(
         cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None, dimensions=(1, columns)
     )
+    # The setting of window size is super unreliable
+    process.setwinsize(1, columns)
     loggerinst.debug("Pseudo-PTY created with columns set to: %s" % (process.getwinsize(),))
 
     for expect, send in expect_script:
@@ -238,6 +244,10 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
     overridden setwindowsize(), making the terminal the size that we want. If we then revert
     setwindowsize() back to the real function prior to returning from the subclass's __init__(),
     user's of the returned spawn object won't know that we temporarily overrode that method.
+
+    .. warning:: unittests which utilize this may fail on pexpect-2.3 (RHEL7) unless capfd
+        (pytest's capture of stdout) is disabled.  Look at the
+        test_run_cmd_in_pty_size_set_on_startup unittest for an example.
     """
 
     def __init__(self, *args, **kwargs):
@@ -249,31 +259,29 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             # This is a kludge to give us a dimensions kwarg on pexpect 2.3 or less.
             #
             if "dimensions" not in kwargs:
-                # We can only handle the case where the exception is because dimensions was passed
+                # We can only handle the case where the exception is caused by passing dimensions
                 # to pexpect.spawn.  If that's not what's happening here, re-raise the exception.
                 raise
 
             dimensions = kwargs.pop("dimensions")
-            real_setwinsize = self.setwinsize
 
             # pexpect.spawn.__init__() calls setwinsize to set the rows and columns to a default
             # value.  Temporarily override setwinsize with a version that hardcodes the rows
             # and columns to set rows and columns before the process is spawned.
             # https://github.com/pexpect/pexpect/issues/134
-            def _setwinsize(self, rows, cols):
-                # This is a closure.  It takes dimensions from the function's defining scope.
+            def _setwinsize(rows, cols):
+                # This is a closure.  It takes self and dimensions from the function's defining scope.
                 super(PexpectSpawnWithDimensions, self).setwinsize(dimensions[0], dimensions[1])
 
+            # Save the real setwinsize and monkeypatch our kludge in
+            real_setwinsize = self.setwinsize
             self.setwinsize = _setwinsize
 
+            # Call pexpect.spawn.__init__() which will use the monkeypatched setwinsize()
             super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
 
             # Restore the real setwinsize
             self.setwinsize = real_setwinsize
-
-            # I don't have a good explanation but this call, after the process has been started
-            # by pexpect.spawn.__init__(), is also needed on at least RHEL7.
-            self.setwinsize(dimensions[0], dimensions[1])
 
 
 def let_user_choose_item(num_of_options, item_to_choose):
