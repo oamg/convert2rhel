@@ -116,11 +116,11 @@ def main():
         loggerinst.task("Final: RPM files modified by the conversion")
         systeminfo.system_info.modified_rpm_files_diff()
 
-        loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-        utils.remove_tmp_dir()
-
         loggerinst.task("Final: Updating GRUB2 configuration")
         grub.update_grub_after_conversion()
+
+        loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
+        utils.remove_tmp_dir()
 
         loggerinst.info("\nConversion successful!\n")
 
