@@ -275,12 +275,21 @@ print(terminal_size()[0])
     ),
 )
 def test_run_cmd_in_pty_size_set_on_startup(columns, tmpdir):
+    """Test whether run_cmd_in_pty sets the terminal window size on startup."""
     with open(str(tmpdir / "terminal-test.py"), "w") as f:
         f.write(TERMINAL_SIZE_SCRIPT)
 
     output, return_code = utils.run_cmd_in_pty([sys.executable, str(tmpdir / "terminal-test.py")], columns=columns)
 
     assert int(output.strip()) == columns
+
+
+def test_run_cmd_in_pty_size_set_on_startup_unknown_typeerror():
+    """Test whether we re-raise TypeError when we don't know how to handle it."""
+    # Our compat class handles TypeError caused by passing dimensions.  Check
+    # that TypeError caused by something else re-raises the TypeError.
+    with pytest.raises(TypeError, match=".*got an unexpected keyword argument 'unknown'"):
+        _dummy = utils.PexpectSpawnWithDimensions("/bin/true", [], unknown=False)
 
 
 def test_get_package_name_from_rpm(monkeypatch):

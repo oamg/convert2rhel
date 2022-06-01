@@ -245,12 +245,16 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             # With pexpect-2.4+, dimensions is a valid keyword arg
             super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
         except TypeError:
+            #
             # This is a kludge to give us a dimensions kwarg on pexpect 2.3 or less.
+            #
             if "dimensions" not in kwargs:
+                # We can only handle the case where the exception is because dimensions was passed
+                # to pexpect.spawn.  If that's not what's happening here, re-raise the exception.
                 raise
 
-            real_setwinsize = self.setwinsize
             dimensions = kwargs.pop("dimensions")
+            real_setwinsize = self.setwinsize
 
             # pexpect.spawn.__init__() calls setwinsize to set the rows and columns to a default
             # value.  Temporarily override setwinsize with a version that hardcodes the rows
@@ -268,7 +272,7 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             self.setwinsize = real_setwinsize
 
             # I don't have a good explanation but this call, after the process has been started
-            # by pexpect.spawn.__init__() is also needed on at least RHEL7.
+            # by pexpect.spawn.__init__(), is also needed on at least RHEL7.
             self.setwinsize(dimensions[0], dimensions[1])
 
 
