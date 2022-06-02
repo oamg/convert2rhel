@@ -1,4 +1,4 @@
-summary: changed-yum-conf
+summary: changed-grub-file
 
 tier: 1
 test: pytest -svv

@@ -261,3 +261,25 @@ discover+:
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/changed_grub_valid:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: modify /etc/default/grub with valid changes
+    how: shell
+    script: pytest -svv tests/integration/tier1/changed-grub-file/test_valid_changed_grub.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/changed_grub_invalid:
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: modify /etc/default/grub with invalid changes
+    how: shell
+    script: pytest -svv tests/integration/tier1/changed-grub-file/test_invalid_changed_grub.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
