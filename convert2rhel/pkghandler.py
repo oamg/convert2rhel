@@ -24,6 +24,7 @@ import sys
 import rpm
 
 from convert2rhel import pkgmanager, utils
+from convert2rhel.backup import RestorableFile, remove_pkgs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -35,7 +36,7 @@ loggerinst = logging.getLogger(__name__)
 MAX_YUM_CMD_CALLS = 3
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
-versionlock_file = utils.RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
+versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 #
 # Regular expressions used to find package names in yum output
@@ -104,7 +105,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     to_remove = problematic_pkgs["errors"] | problematic_pkgs["mismatches"]
     if to_remove:
         loggerinst.warning("Removing problematic packages to continue with conversion:\n%s" % "\n".join(to_remove))
-        utils.remove_pkgs(to_remove, backup=False, critical=False)
+        remove_pkgs(to_remove, backup=False, critical=False)
     return call_yum_cmd_w_downgrades(cmd, pkgs, retries - 1)
 
 
@@ -604,7 +605,7 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    utils.remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
@@ -714,7 +715,7 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
+            remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
             call_yum_cmd(command="install", args=["kernel-%s" % older])
         else:
             replace_non_rhel_installed_kernel(installed[0])
@@ -769,7 +770,14 @@ def replace_non_rhel_installed_kernel(version):
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
-        ["rpm", "-i", "--force", "--nodeps", "--replacepkgs", "%s*" % os.path.join(utils.TMP_DIR, pkg)],
+        [
+            "rpm",
+            "-i",
+            "--force",
+            "--nodeps",
+            "--replacepkgs",
+            "%s*" % os.path.join(utils.TMP_DIR, pkg),
+        ],
         print_output=False,
     )
     if ret_code != 0:
@@ -799,7 +807,7 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(
+        remove_pkgs(
             pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
             backup=False,
         )
@@ -1004,21 +1012,28 @@ def compare_package_versions(version1, version2):
     return rpm.labelCompare(evr1, evr2)
 
 
-def get_total_packages_to_update():
+def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
 
-    It uses both yum/dnf depending on weather they are installed on the system,
-    if it's Oracle/CentOS Linux 7 or 6, it will use `yum`, otherwise it should use `dnf`.
+    It uses both yum/dnf depending on whether they are installed on the system,
+    In case of RHEL 6 or 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
+
+    To check whether the system is updated or not, we use original vendor repofiles which we ship within the
+    convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
+
+    :param reposdir: The path to the hardcoded repositories for EUS (If any).
+    :type reposdir: str | None
 
     :return: The packages that need to be updated.
-    :rtype: List[str]
+    :rtype: list[str]
     """
     packages = []
 
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
-        packages = _get_packages_to_update_dnf()
+        # We're using the reposdir with dnf only because we currently hardcode the repofiles for RHEL 8 derivatives only.
+        packages = _get_packages_to_update_dnf(reposdir=reposdir)
 
     return set(packages)
 
@@ -1034,22 +1049,32 @@ def _get_packages_to_update_yum():
     return all_packages
 
 
-def _get_packages_to_update_dnf():
-    """Query all the packages with dnf that has an update pending on the system."""
+def _get_packages_to_update_dnf(reposdir):
+    """Query all the packages with dnf that has an update pending on the
+    system.
+
+    :param reposdir: The path to the hardcoded repositories for EUS (If any).
+    :type reposdir: str | None
+    """
     packages = []
     base = pkgmanager.Base()
-    # Fix the case when we are trying to query packages in Oracle Linux 8
-    # when the DNF API gets called, those variables are not populated by default.
-    if system_info.id == "oracle":
-        base.conf.substitutions["ocidomain"] = "oracle.com"
-        base.conf.substitutions["ociregion"] = ""
 
-    # Same thing for CentOS, but this time, the URL for the vault has changed
-    # and instead of just ussing $releasever (8.5, 8.4...), we need either
-    # using the correct $releasever (8.5.2111) or setting up the $contentdir
-    elif system_info.id == "centos":
-        base.conf.substitutions["contentdir"] = system_info.id
+    # If we have an reposdir, that means we are trying to check the packages under
+    # CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4.
+    # That means we need to use our hardcoded repository files instead of the system ones.
+    if reposdir:
+        base.conf.reposdir = reposdir
 
+    # Set DNF to read from the proper config files, at this moment, DNF can't
+    # automatically read and load the config files
+    # so we have to specify it to him.
+    # We set the PRIO_MAINCONFIG as the base config file to be read.
+    # We also set the folder /etc/dnf/vars as the main point for vars
+    # replacement in repo files.
+    # See this bugzilla comment:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
+    base.conf.read(priority=pkgmanager.dnf.conf.PRIO_MAINCONFIG)
+    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()
 

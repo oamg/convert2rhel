@@ -31,8 +31,7 @@ if sys.version_info[:2] <= (2, 7):
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import pkghandler, pkgmanager, utils
+from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.pkghandler import (
     _get_packages_to_update_dnf,
     _get_packages_to_update_yum,
@@ -41,7 +40,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import all_systems
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -170,8 +169,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=True))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=1))
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(utils.RestorableFile, "backup", DumbCallableObject)
-    @unit_tests.mock(utils.RestorableFile, "restore", DumbCallableObject)
+    @unit_tests.mock(backup.RestorableFile, "backup", DumbCallableObject)
+    @unit_tests.mock(backup.RestorableFile, "restore", DumbCallableObject)
     def test_clear_versionlock_user_says_yes(self):
         pkghandler.clear_versionlock()
         self.assertEqual(pkghandler.call_yum_cmd.called, 1)
@@ -313,7 +312,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         "get_problematic_pkgs",
         lambda pkg: {"errors": set([pkg]), "mismatches": set()},
     )
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
         pkghandler.call_yum_cmd.return_code = 1
         pkghandler.MAX_YUM_CMD_CALLS = 1
@@ -325,8 +324,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ["fingerprint"],
         )
 
-        self.assertIn(pkghandler.call_yum_cmd.return_string, utils.remove_pkgs.pkgs)
-        self.assertEqual(utils.remove_pkgs.critical, False)
+        self.assertIn(pkghandler.call_yum_cmd.return_string, pkghandler.remove_pkgs.pkgs)
+        self.assertEqual(pkghandler.remove_pkgs.critical, False)
 
     def test_get_pkgs_to_distro_sync(self):
         problematic_pkgs = {
@@ -853,7 +852,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkgs_w_different_fingerprint",
@@ -862,8 +861,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_remove_pkgs_with_confirm(self):
         pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
 
-        self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
-        self.assertEqual(utils.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")
+        self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
+        self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")
 
     class CallYumCmdWDowngradesMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1115,19 +1114,23 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
+    @unit_tests.mock(backup, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     def test_handle_older_rhel_kernel_not_available_multiple_installed(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE_MULTIPLE_INSTALLED
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        self.assertEqual(len(utils.remove_pkgs.pkgs), 1)
-        self.assertEqual(utils.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
+        self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
+        self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
         self.assertEqual(
             utils.run_subprocess.cmd,
             ["yum", "install", "-y", "kernel-4.7.4-200.fc24"],
         )
+        self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
+        self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "kernel-4.7.4-200.fc24")
+        self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y", "kernel-4.7.4-200.fc24"])
 
     class DownloadPkgMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -1224,7 +1227,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         GetInstalledPkgsWDifferentFingerprintMocked(),
     )
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     def test_remove_non_rhel_kernels(self):
         removed_pkgs = pkghandler.remove_non_rhel_kernels()
 
@@ -1285,7 +1288,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         GetInstalledPkgsWDifferentFingerprintMocked(),
     )
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
-    @unit_tests.mock(utils, "remove_pkgs", RemovePkgsMocked())
+    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
     @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
     def test_install_additional_rhel_kernel_pkgs(self):
         removed_pkgs = pkghandler.remove_non_rhel_kernels()
@@ -1466,7 +1469,7 @@ def test_compare_package_versions(version1, version2, expected):
 
 
 @pytest.mark.parametrize(
-    ("package_manager_type", "packages", "expected"),
+    ("package_manager_type", "packages", "expected", "reposdir"),
     (
         (
             "yum",
@@ -1478,6 +1481,7 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             },
+            None,
         ),
         (
             "yum",
@@ -1486,6 +1490,7 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
             {"convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8"},
+            None,
         ),
         (
             "dnf",
@@ -1499,6 +1504,21 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.0-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             },
+            None,
+        ),
+        (
+            "dnf",
+            [
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            ],
+            {
+                "dunst-1.7.1-1.fc35.x86_64",
+                "dunst-1.7.0-1.fc35.x86_64",
+                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+            },
+            "test/reposdir",
         ),
         (
             "dnf",
@@ -1511,18 +1531,33 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.1-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             },
+            "test/reposdir",
         ),
     ),
 )
-def test_get_total_packages_to_update(package_manager_type, packages, expected, monkeypatch):
+@centos8
+def test_get_total_packages_to_update(
+    package_manager_type,
+    packages,
+    expected,
+    reposdir,
+    pretend_os,
+    monkeypatch,
+):
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
-    monkeypatch.setattr(
-        pkghandler,
-        "_get_packages_to_update_%s" % package_manager_type,
-        value=lambda: packages,
-    )
-
-    assert get_total_packages_to_update() == expected
+    if package_manager_type == "dnf":
+        monkeypatch.setattr(
+            pkghandler,
+            "_get_packages_to_update_%s" % package_manager_type,
+            value=lambda reposdir: packages,
+        )
+    else:
+        monkeypatch.setattr(
+            pkghandler,
+            "_get_packages_to_update_%s" % package_manager_type,
+            value=lambda: packages,
+        )
+    assert get_total_packages_to_update(reposdir=reposdir) == expected
 
 
 @pytest.mark.skipif(
@@ -1531,7 +1566,6 @@ def test_get_total_packages_to_update(package_manager_type, packages, expected, 
 )
 @pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
 def test_get_packages_to_update_yum(packages, monkeypatch):
-
     PkgName = namedtuple("PkgNames", ["name"])
     PkgUpdates = namedtuple("PkgUpdates", ["updates"])
     transaction_pkgs = []
@@ -1549,9 +1583,21 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
     pkgmanager.TYPE != "dnf",
     reason="No dnf module detected on the system, skipping it.",
 )
-@pytest.mark.parametrize(("packages"), ((["package-1", "package-2", "package-3"],)))
+@pytest.mark.parametrize(
+    ("packages", "reposdir"),
+    (
+        (
+            ["package-1", "package-2", "package-i3"],
+            None,
+        ),
+        (
+            ["package-1"],
+            "test/reposdir",
+        ),
+    ),
+)
 @all_systems
-def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
+def test_get_packages_to_update_dnf(packages, reposdir, pretend_os, monkeypatch):
     dummy_mock = mock.Mock()
     PkgName = namedtuple("PkgNames", ["name"])
     transaction_pkgs = [PkgName(package) for package in packages]
@@ -1562,7 +1608,7 @@ def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
     monkeypatch.setattr(pkgmanager.Base, "resolve", value=dummy_mock)
     monkeypatch.setattr(pkgmanager.Base, "transaction", value=transaction_pkgs)
 
-    assert _get_packages_to_update_dnf() == packages
+    assert _get_packages_to_update_dnf(reposdir=reposdir) == packages
 
 
 YUM_PROTECTED_ERROR = """Error: Trying to remove "systemd", which is protected

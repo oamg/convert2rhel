@@ -3,9 +3,9 @@
   yum:
     # gcc and python3-devel are needed for psutil
     name:
-      - "python3"
-      - "gcc"
-      - "python3-devel"
+      - python3
+      - gcc
+      - python3-devel
     state: present
 
 - name: Install pip if not present

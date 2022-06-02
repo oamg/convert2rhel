@@ -29,6 +29,7 @@ from convert2rhel.pkghandler import (
     get_pkg_fingerprint,
     get_total_packages_to_update,
 )
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import ask_to_continue, get_file_content, run_subprocess
@@ -466,9 +467,26 @@ def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
     logger.task("Prepare: Checking if the packages are up-to-date")
 
+    if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
+        logger.info(
+            "Skipping the check because there are no publicly available %s %d.%d repositories available."
+            % (system_info.name, system_info.version.major, system_info.version.minor)
+        )
+        return
+
+    reposdir = get_hardcoded_repofiles_dir()
+
+    if reposdir and not system_info.has_internet_access:
+        logger.warning("Skipping the check as no internet connection has been detected.")
+        return
+
     try:
-        packages_to_update = get_total_packages_to_update()
+        packages_to_update = get_total_packages_to_update(reposdir=reposdir)
     except pkgmanager.RepoError as e:
+        # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
+        # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
+        # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
+        # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
         logger.warning(
             "There was an error while checking whether the installed packages are up-to-date. Having updated system is "
             "an important prerequisite for a successful conversion. Consider stopping the conversion to "
@@ -479,12 +497,15 @@ def check_package_updates():
         return
 
     if len(packages_to_update) > 0:
+        repos_message = (
+            "on the enabled system repos" if not reposdir else "on repositories defined in the %s folder" % reposdir
+        )
         logger.warning(
-            "The system has %s packages not updated.\n"
+            "The system has %s packages not updated based %s.\n"
             "List of packages to update: %s.\n\n"
             "Not updating the packages may cause the conversion to fail.\n"
             "Consider stopping the conversion and update the packages before re-running convert2rhel."
-            % (len(packages_to_update), " ".join(packages_to_update))
+            % (len(packages_to_update), repos_message, " ".join(packages_to_update))
         )
         ask_to_continue()
     else:
@@ -495,15 +516,40 @@ def is_loaded_kernel_latest():
     """Check if the loaded kernel is behind or of the same version as in yum repos."""
     logger.task("Prepare: Checking if the loaded kernel version is the most recent")
 
+    if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
+        logger.info(
+            "Skipping the check because there are no publicly available %s %d.%d repositories available."
+            % (system_info.name, system_info.version.major, system_info.version.minor)
+        )
+        return
+
+    reposdir = get_hardcoded_repofiles_dir()
+
+    if reposdir and not system_info.has_internet_access:
+        logger.warning("Skipping the check as no internet connection has been detected.")
+        return
+
+    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
+
+    # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
+    # instead of the system repositories located under /etc/yum.repos.d
+    if reposdir:
+        cmd.append("--setopt=reposdir=%s" % reposdir)
+
     # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead, we check for `kernel-core`.
     # But for 6 and 7 releases, the correct way to check is using `kernel`.
     package_to_check = "kernel-core" if system_info.version.major >= 8 else "kernel"
 
-    # The latest kernel version on repo
-    repoquery_output, _ = run_subprocess(
-        ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}"', package_to_check],
-        print_output=False,
-    )
+    # Append the package name as the last item on the list
+    cmd.append(package_to_check)
+
+    # Search for available kernel package versions available in different repositories using the `repoquery` command.
+    # If convert2rhel is running on a EUS system, then repoquery will use the hardcoded repofiles available under
+    # /usr/share/convert2rhel/repos, meaning that the tool will fetch only the latest kernels available for that EUS
+    # version, and not the most updated version from other newer versions.
+    # If the case is that convert2rhel is not running on a EUS system, for example, Oracle Linux 8.5, then it will use
+    # the system repofiles.
+    repoquery_output, _ = run_subprocess(cmd, print_output=False)
 
     # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
     if len(repoquery_output) > 0:
@@ -513,7 +559,7 @@ def is_loaded_kernel_latest():
         # This later check is supposed to avoid duplicate repofiles being defined in the system,
         # this is a super corner case and should not happen everytime, but if it does, we are aware now.
         packages = [
-            tuple(str(line).split("\t"))
+            tuple(str(line).replace('"', "").split("\t"))
             for line in repoquery_output.split("\n")
             if (line.strip() and "listed more than once in the configuration" not in line.lower())
         ]
@@ -521,8 +567,9 @@ def is_loaded_kernel_latest():
         # Sort out for the most recent kernel with reverse order
         # In case `repoquery` returns more than one kernel in the output
         # We display the latest one to the user.
-        _, latest_kernel = sorted(packages, reverse=True)[0]
-        latest_kernel = latest_kernel.replace('"', "")
+        packages.sort(key=lambda x: x[0], reverse=True)
+
+        _, latest_kernel, repoid = packages[0]
 
         # The loaded kernel version
         uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
@@ -532,13 +579,18 @@ def is_loaded_kernel_latest():
         if match == 0:
             logger.info("Kernel currently loaded is at the latest version.")
         else:
+            repos_message = (
+                "on the enabled system repositories"
+                if not reposdir
+                else "on repositories defined in the %s folder" % reposdir
+            )
             logger.critical(
-                "The current kernel version loaded is different from the latest version in your repos.\n"
-                " Latest kernel version: %s\n"
-                " Current loaded kernel: %s\n\n"
+                "The version of the loaded kernel is different from the latest version %s.\n"
+                " Latest kernel version available in %s: %s\n"
+                " Loaded kernel version: %s\n\n"
                 "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                 "1. yum install %s-%s -y\n"
-                "2. reboot" % (latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+                "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
             )
     else:
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories

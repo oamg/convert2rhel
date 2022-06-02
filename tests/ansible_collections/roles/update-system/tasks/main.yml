@@ -1,2 +1,7 @@
 ---
+# We can't update Oracle Linux 8.4 to the latest 8.4 packages because there are no public Oracle Linux 8.4 repositories available.
+# The CentOS Linux 8.4 can be updated using this role because the repositories on the system image has been
+# tweaked to point to the CentOS Linux 8.4 repositories in the Vault.
 - include: update-system.yml
+  when:
+    - not (ansible_facts['distribution_version'] == "8.4" and ansible_facts['distribution'] == "OracleLinux")

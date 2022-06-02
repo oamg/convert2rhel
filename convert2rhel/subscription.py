@@ -22,7 +22,7 @@ import re
 from collections import namedtuple
 from time import sleep
 
-from convert2rhel import pkghandler, utils
+from convert2rhel import backup, pkghandler, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -99,7 +99,11 @@ def unregister_system():
     unregistration_cmd = ["subscription-manager", "unregister"]
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning("System unregistration failed with return code %d and message:\n%s", ret_code, output)
+        loggerinst.warning(
+            "System unregistration failed with return code %d and message:\n%s",
+            ret_code,
+            output,
+        )
     else:
         loggerinst.info("System unregistered successfully.")
 
@@ -113,8 +117,14 @@ def register_system():
         registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
         attempt_msg = ""
         if attempt > 0:
-            attempt_msg = "Attempt %d of %d: " % (attempt + 1, MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE)
-        loggerinst.info("%sRegistering the system using subscription-manager ...", attempt_msg)
+            attempt_msg = "Attempt %d of %d: " % (
+                attempt + 1,
+                MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE,
+            )
+        loggerinst.info(
+            "%sRegistering the system using subscription-manager ...",
+            attempt_msg,
+        )
 
         output, ret_code = registration_cmd()
         if ret_code == 0:
@@ -383,11 +393,11 @@ def remove_original_subscription_manager():
             # removed from CentOS Linux 8.5 and causes conversion to fail if
             # it's installed on that system because it's not possible to back it up.
             # https://bugzilla.redhat.com/show_bug.cgi?id=2046292
-            utils.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
+            backup.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
             submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
 
     # Remove any oter subscription-manager packages present on the system
-    utils.remove_pkgs(submgr_pkg_names, critical=False)
+    backup.remove_pkgs(submgr_pkg_names, critical=False)
 
 
 def install_rhel_subscription_manager():
@@ -446,7 +456,7 @@ def track_installed_submgr_pkgs(installed_pkg_names, pkgs_to_not_track):
             loggerinst.debug("Skipping tracking previously installed package: %s" % installed_pkg)
 
     loggerinst.debug("Tracking installed packages: %r" % pkgs_to_track)
-    utils.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
+    backup.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
 
 
 def attach_subscription():
@@ -514,7 +524,11 @@ def get_avail_subs():
 def get_sub(subs_raw):
     """Generator that provides subscriptions available to a logged-in user."""
     # Split all the available subscriptions per one subscription
-    for sub_raw in re.findall(r"Subscription Name.*?Type:\s+\w+\n\n", subs_raw, re.DOTALL | re.MULTILINE):
+    for sub_raw in re.findall(
+        r"Subscription Name.*?Type:\s+\w+\n\n",
+        subs_raw,
+        re.DOTALL | re.MULTILINE,
+    ):
         pool_id = get_pool_id(sub_raw)
         yield namedtuple("Sub", ["pool_id", "sub_raw"])(pool_id, sub_raw)
 
@@ -599,6 +613,33 @@ def enable_repos(rhel_repoids):
     else:
         repos_to_enable = rhel_repoids
 
+    if repos_to_enable == system_info.eus_rhsm_repoids:
+        try:
+            loggerinst.info(
+                "The system version corresponds to a RHEL Extended Update Support (EUS) release. "
+                "Trying to enable RHEL EUS repositories."
+            )
+            # Try first if it's possible to enable EUS repoids. Otherwise try enabling the default RHSM repoids.
+            # Otherwise, if it raiess an exception, try to enable the default rhsm-repos
+            _submgr_enable_repos(repos_to_enable)
+        except SystemExit:
+            loggerinst.info(
+                "The RHEL EUS repositories are not possible to enable.\n"
+                "Trying to enable standard RHEL repositories as a fallback."
+            )
+            # Fallback to the default_rhsm_repoids
+            repos_to_enable = system_info.default_rhsm_repoids
+            _submgr_enable_repos(repos_to_enable)
+    else:
+        # This could be either the default_rhsm repos or any user specific
+        # repoids
+        _submgr_enable_repos(repos_to_enable)
+
+    system_info.submgr_enabled_repos = repos_to_enable
+
+
+def _submgr_enable_repos(repos_to_enable):
+    """Go through subscription manager repos and try to enable them through subscription-manager."""
     enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:
         enable_cmd.append("--enable=%s" % repo)
@@ -606,8 +647,6 @@ def enable_repos(rhel_repoids):
     if ret_code != 0:
         loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
-
-    system_info.submgr_enabled_repos = repos_to_enable
 
 
 def rollback():
@@ -651,7 +690,10 @@ def download_rhsm_pkgs():
         loggerinst.info("Skipping due to the use of --keep-rhsm.")
         return
     utils.mkdir_p(_RHSM_TMP_DIR)
-    pkgs_to_download = ["subscription-manager", "subscription-manager-rhsm-certificates"]
+    pkgs_to_download = [
+        "subscription-manager",
+        "subscription-manager-rhsm-certificates",
+    ]
 
     if system_info.version.major == 6:
         pkgs_to_download.append("subscription-manager-rhsm")
@@ -686,3 +728,37 @@ def exit_on_failed_download(paths):
             " the failed yumdownloader call above. These packages are necessary for the conversion"
             " unless you use the --no-rhsm option."
         )
+
+
+def lock_releasever_in_rhel_repositories():
+    """Lock the releasever in the RHEL repositories located under /etc/yum.repos.d/redhat.repo
+
+    After converting to a RHEL EUS minor version, we need to lock the releasever in the redhat.repo file
+    to prevent future errors such as, running `yum update` and not being able to find the repositories metadata.
+
+    .. note::
+        This function should only run if the system corresponds to a RHEL EUS version to make sure the converted system
+        keeps receiving updates for the specific EUS minor version instead of the latest minor version which is the
+        default.
+    """
+
+    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
+    # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be available.
+    if system_info.corresponds_to_rhel_eus_release() and not tool_opts.no_rhsm:
+        loggerinst.info(
+            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
+            % system_info.releasever
+        )
+        cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+        if ret_code != 0:
+            loggerinst.warning(
+                "Locking RHEL repositories failed with return code %d and message:\n%s",
+                ret_code,
+                output,
+            )
+        else:
+            loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
+    else:
+        loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")

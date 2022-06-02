@@ -28,7 +28,9 @@ else:
 
 import pytest
 
+from convert2rhel import backup, grub
 from convert2rhel import logger as logger_module
+from convert2rhel.breadcrumbs import breadcrumbs
 
 
 try:
@@ -142,7 +144,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(main.loggerinst.critical_msgs), 1)
 
     @unit_tests.mock(
-        utils.changed_pkgs_control,
+        backup.changed_pkgs_control,
         "restore_pkgs",
         unit_tests.CountableMockObject(),
     )
@@ -172,7 +174,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
-        self.assertEqual(utils.changed_pkgs_control.restore_pkgs.called, 1)
+        self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
         self.assertEqual(repo.restore_yum_repos.called, 1)
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
         self.assertEqual(redhatrelease.os_release_file.restore.called, 1)
@@ -305,3 +307,34 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
         main.initialize_logger("convert2rhel.log", "/tmp")
         setup_logger_handler_mock.assert_called_once()
         archive_old_logger_files_mock.assert_called_once()
+
+
+def test_post_ponr_conversion(monkeypatch):
+    install_gpg_keys_mock = mock.Mock()
+    perserve_only_rhel_kernel_mock = mock.Mock()
+    replace_non_red_hat_pkgs_left_mock = mock.Mock()
+    list_non_red_hat_pkgs_left_mock = mock.Mock()
+    post_ponr_set_efi_configuration_mock = mock.Mock()
+    yum_conf_patch_mock = mock.Mock()
+    lock_releasever_in_rhel_repositories_mock = mock.Mock()
+    finish_success_mock = mock.Mock()
+
+    monkeypatch.setattr(pkghandler, "install_gpg_keys", install_gpg_keys_mock)
+    monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
+    monkeypatch.setattr(pkghandler, "replace_non_red_hat_packages", replace_non_red_hat_pkgs_left_mock)
+    monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
+    monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
+    monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
+    monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_success", finish_success_mock)
+
+    main.post_ponr_conversion()
+
+    assert install_gpg_keys_mock.call_count == 1
+    assert perserve_only_rhel_kernel_mock.call_count == 1
+    assert replace_non_red_hat_pkgs_left_mock.call_count == 1
+    assert list_non_red_hat_pkgs_left_mock.call_count == 1
+    assert post_ponr_set_efi_configuration_mock.call_count == 1
+    assert yum_conf_patch_mock.call_count == 1
+    assert lock_releasever_in_rhel_repositories_mock.call_count == 1
+    assert finish_success_mock.call_count == 1

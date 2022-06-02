@@ -19,6 +19,7 @@
 import logging
 import os
 import shutil
+import socket
 import sys
 import unittest
 
@@ -162,10 +163,9 @@ class TestSysteminfo(unittest.TestCase):
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
     def test_generate_rpm_va(self):
         # TODO: move class from unittest to pytest and use global tool_opts fixture
-        tool_opts.no_rpm_va = False
         # Check that rpm -Va is executed (default) and stored into the specific file.
+        tool_opts.no_rpm_va = False
         system_info.generate_rpm_va()
-
         self.assertTrue(utils.run_subprocess.called > 0)
         self.assertEqual(utils.run_subprocess.used_args[0][0], ["rpm", "-Va"])
         self.assertTrue(os.path.isfile(self.rpmva_output_file))
@@ -225,24 +225,28 @@ def test_get_release_ver(pretend_os):
         "releasever_val",
         "self_name",
         "self_version",
+        "has_internet",
         "exception",
     ),
     (
         # good cases
         # if releasever set in config - it takes precedence
-        ("not_existing_release_ver_set_in_config", None, None, None),
+        ("not_existing_release_ver_set_in_config", None, None, True, None),
         # Good cases which matches supported pathes
-        ("", "CentOS Linux", systeminfo.Version(8, 4), None),
-        ("", "Oracle Linux Server", systeminfo.Version(8, 4), None),
+        ("", "CentOS Linux", systeminfo.Version(8, 4), True, None),
+        ("", "Oracle Linux Server", systeminfo.Version(8, 4), True, None),
         # bad cases
-        ("", "NextCool Linux", systeminfo.Version(8, 4), SystemExit),
-        ("", "CentOS Linux", systeminfo.Version(8, 10000), SystemExit),
+        ("", "NextCool Linux", systeminfo.Version(8, 4), False, SystemExit),
+        ("", "CentOS Linux", systeminfo.Version(8, 10000), False, SystemExit),
     ),
 )
 # need to pretend centos8 in order to system info were resolved at module init
 @centos8
-def test_get_release_ver_other(pretend_os, monkeypatch, releasever_val, self_name, self_version, exception):
+def test_get_release_ver_other(
+    pretend_os, monkeypatch, releasever_val, self_name, self_version, has_internet, exception
+):
     monkeypatch.setattr(systeminfo.SystemInfo, "_get_cfg_opt", mock.Mock(return_value=releasever_val))
+    monkeypatch.setattr(systeminfo.SystemInfo, "_check_internet_access", mock.Mock(return_value=has_internet))
     if self_name:
         monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_name", mock.Mock(return_value=self_name))
     if self_version:
@@ -255,3 +259,38 @@ def test_get_release_ver_other(pretend_os, monkeypatch, releasever_val, self_nam
         system_info.resolve_system_info()
     if releasever_val:
         assert system_info.releasever == releasever_val
+    if has_internet:
+        assert system_info.has_internet_access == has_internet
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected"),
+    (
+        (None, True),
+        (socket.error, False),
+    ),
+)
+def test_check_internet_access(side_effect, expected, monkeypatch):
+    monkeypatch.setattr(systeminfo.socket.socket, "connect", mock.Mock(side_effect=side_effect))
+    # Have to initialize the logger since we are not constructing the
+    # system_info object properly i.e: we are not calling `resolve_system_info()`
+    system_info.logger = logging.getLogger(__name__)
+
+    assert system_info._check_internet_access() == expected
+
+
+@pytest.mark.parametrize(
+    ("releasever", "expected"),
+    (
+        ("7.9", False),
+        ("8.4", True),
+        ("8.5", False),
+        ("8.6", False),
+        ("8.7", False),
+        ("8.8", False),
+        ("8.9", False),
+    ),
+)
+def test_corresponds_to_rhel_eus_release(releasever, expected):
+    system_info.releasever = releasever
+    assert system_info.corresponds_to_rhel_eus_release() == expected

@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 
-from convert2rhel import breadcrumbs, cert, checks, grub
+from convert2rhel import backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
 
@@ -234,6 +234,8 @@ def post_ponr_conversion():
     grub.post_ponr_set_efi_configuration()
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
+    loggerinst.task("Convert: Lock releasever in RHEL repositories")
+    subscription.lock_releasever_in_rhel_repositories()
 
     breadcrumbs.breadcrumbs.finish_success()
 
@@ -254,7 +256,7 @@ def rollback_changes():
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
     subscription.rollback()
-    utils.changed_pkgs_control.restore_pkgs()
+    backup.changed_pkgs_control.restore_pkgs()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()

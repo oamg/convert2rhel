@@ -20,15 +20,24 @@ import os
 import shutil
 
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR
+from convert2rhel.utils import BACKUP_DIR, DATA_DIR
 
 
 loggerinst = logging.getLogger(__name__)
 
 
 def get_rhel_repoids():
-    """Get IDs of the Red Hat CDN repositories that correspond to the current system."""
-    repos_needed = system_info.default_rhsm_repoids
+    """Get IDs of the Red Hat CDN repositories that correspond to the current system.
+
+    In case the to-be-converted-OS minor version corresponds to RHEL Extended Update Support (EUS) release,
+    we preferably enable the RHEL EUS repoids as those provide security updates over two years, in comparison to 6 months
+    in case of the standard non-EUS repoids.
+    """
+
+    if system_info.corresponds_to_rhel_eus_release():
+        repos_needed = system_info.eus_rhsm_repoids
+    else:
+        repos_needed = system_info.default_rhsm_repoids
 
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
@@ -68,3 +77,28 @@ def restore_yum_repos():
 
     if not repo_has_restored:
         loggerinst.info("No .repo files to rollback")
+
+
+def get_hardcoded_repofiles_dir():
+    """Get the path to the hardcoded repofiles for CentOS/Oracle Linux.
+
+    We use hardcoded original vendor repofiles to be able to check whether the system is updated before the conversion.
+    To be able to download backup of packages before we remove them, we can't rely on the repofiles available on
+    the system.
+
+    :return: The return can be either the path to the eus repos, or None, meaning we don't have any hardcoded repo files.
+    :rtype: str | None
+    """
+    hardcoded_repofiles = os.path.join(
+        DATA_DIR,
+        "repos/%s-%s.%s"
+        % (
+            system_info.id,
+            system_info.version.major,
+            system_info.version.minor,
+        ),
+    )
+    if os.path.exists(hardcoded_repofiles):
+        return hardcoded_repofiles
+
+    return None

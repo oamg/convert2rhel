@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import socket
 
 from collections import namedtuple
 
@@ -35,7 +36,7 @@ from convert2rhel.toolopts import tool_opts
 
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
-#   version update at the same time.
+# version update at the same time.
 RELEASE_VER_MAPPING = {
     "8.10": "8.10",
     "8.9": "8.9",
@@ -53,6 +54,9 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
+
+# List of EUS minor versions supported
+EUS_MINOR_VERSIONS = ["8.4"]
 
 Version = namedtuple("Version", ["major", "minor"])
 
@@ -89,6 +93,8 @@ class SystemInfo(object):
         self.logger = None
         # IDs of the default Red Hat CDN repositories that correspond to the current system
         self.default_rhsm_repoids = None
+        # IDs of the Extended Update Support (EUS) Red Hat CDN repositories that correspond to the current system
+        self.eus_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
         # Value to use for substituting the $releasever variable in the url of RHEL repositories
@@ -111,11 +117,13 @@ class SystemInfo(object):
         self.excluded_pkgs = self._get_excluded_pkgs()
         self.repofile_pkgs = self._get_repofile_pkgs()
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
+        self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
+        self.has_internet_access = self._check_internet_access()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -190,6 +198,9 @@ class SystemInfo(object):
     def _get_default_rhsm_repoids(self):
         return self._get_cfg_opt("default_rhsm_repoids").split()
 
+    def _get_eus_rhsm_repoids(self):
+        return self._get_cfg_opt("eus_rhsm_repoids").split()
+
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""
         if option_name in self.cfg_content:
@@ -227,7 +238,12 @@ class SystemInfo(object):
             self.logger.critical(
                 "%s of version %d.%d is not allowed for conversion.\n"
                 "Allowed versions are: %s"
-                % (self.name, self.version.major, self.version.minor, list(RELEASE_VER_MAPPING.keys()))
+                % (
+                    self.name,
+                    self.version.major,
+                    self.version.minor,
+                    list(RELEASE_VER_MAPPING.keys()),
+                )
             )
 
     def _get_kmods_to_ignore(self):
@@ -304,6 +320,50 @@ class SystemInfo(object):
         #          "to be consumed before registering the system with RHSM."
         #     )
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
+
+    def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
+        """Check whether or not the machine is connected to the internet.
+
+        This method will try to estabilish a socket connection through the
+        default host in the method signature (8.8.8.8). If it's connected
+        successfully, then we know that internet is accessible from the host.
+
+        .. warnings::
+            We might have some problems with this if the host machine is using
+            a NAT gateway to route the outbound requests
+
+        .. seealso::
+            * Comparison of different methods to check internet connections: https://stackoverflow.com/a/33117579
+            * Redirecting IP addresses: https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+
+        :param host: The host to establish a connection to. Defaults to "8.8.8.8".
+        :type host: str
+        :param port: The port for the connection. Defaults to 53.
+        :type port: int
+        :param timeout: The timeout in seconds for the connection. Defaults to 3.
+        :type port: int
+        :return: Return boolean indicating whether or not we have internet access.
+        :rtype: bool
+        """
+        try:
+            self.logger.info("Checking internet connectivity using host '%s' and port '%s'." % (host, port))
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except (socket.timeout, socket.error):
+            self.logger.warning("Couldn't connect to the host '%s'." % host)
+            return False
+
+    def corresponds_to_rhel_eus_release(self):
+        """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.
+
+        For example if we detect CentOS Linux 8.4, the corresponding RHEL 8.4 is an EUS release, but if we detect
+        CentOS Linux 8.5, the corresponding RHEL 8.5 is not an EUS release.
+
+        :return: Whether or not the current system has a EUS correspondent in RHEL.
+        :rtype: bool
+        """
+        return self.releasever in EUS_MINOR_VERSIONS
 
 
 # Code to be executed upon module import

@@ -36,4 +36,14 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
 
     assert c2r.exitstatus == 0
 
+    # replace url in yum.repos.d rhel repo to the original one
+    original_url = "baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
+    new_url = "baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"
+    shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel7.repo'.format(new_url, original_url))
+
+    enable_repo_opt = (
+        "--enable rhel-7-server-rpms --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms"
+    )
+    shell("yum-config-manager {}".format(enable_repo_opt))
+
     assert shell("yum install -y python3 --enablerepo=*").returncode == 0

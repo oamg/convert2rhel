@@ -191,7 +191,7 @@ discover+:
   - name: allow access to Satellite only
     how: shell
     script: pytest -svv tests/integration/tier1/convert-offline-systems/prepare_system.py
-  - name: run offline conversion
+  - name: run offline conversion using the satellite
     how: shell
     script: pytest -svv tests/integration/tier1/convert-offline-systems/run_conversion.py
   - name: reboot after conversion
@@ -199,6 +199,13 @@ discover+:
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /system_up_to_date:
+  # On Oracle Linux 8.4 we do not have minor version repositories so we skip the check for up-to-date system.
+  # The other distributions (including latest Oracle Linux 8 ) have all the necessary repositories
+  # to make the check possible.
+  adjust:
+    enabled: false
+    when: >
+      distro == oraclelinux-8.4
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -238,3 +245,19 @@ discover+:
     - name: reboot after conversion
       how: ansible
       playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/satellite_non_eus_repos:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8.4 and
+      distro != oraclelinux-8.4
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/satellite_non_eus_repos/satellite_non_eus_repos.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml

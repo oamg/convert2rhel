@@ -34,8 +34,7 @@ else:
 
 from collections import namedtuple
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import utils
+from convert2rhel import unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
 
@@ -83,78 +82,6 @@ class TestUtils(unittest.TestCase):
     def test_require_root_is_root(self):
         self.assertEqual(utils.require_root(), None)
 
-    def test_track_installed_pkg(self):
-        control = utils.ChangedRPMPackagesController()
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        for pkg in pkgs:
-            control.track_installed_pkg(pkg)
-        self.assertEqual(control.installed_pkgs, pkgs)
-
-    @unit_tests.mock(utils.RestorablePackage, "backup", DummyFuncMocked())
-    def test_backup_and_track_removed_pkg(self):
-        control = utils.ChangedRPMPackagesController()
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        for pkg in pkgs:
-            control.backup_and_track_removed_pkg(pkg)
-        self.assertEqual(utils.RestorablePackage.backup.called, len(pkgs))
-        self.assertEqual(len(control.removed_pkgs), len(pkgs))
-
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_remove_pkgs_with_empty_list(self):
-        utils.remove_pkgs([])
-        self.assertEqual(utils.run_subprocess.called, 0)
-
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_remove_pkgs_without_backup(self):
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.remove_pkgs(pkgs, False)
-        self.assertEqual(utils.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, 0)
-
-        self.assertEqual(utils.run_subprocess.called, len(pkgs))
-
-        rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
-        for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
-            self.assertEqual(rpm_remove_cmd + [pkg], cmd)
-
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "backup_and_track_removed_pkg", DummyFuncMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_remove_pkgs_with_backup(self):
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.remove_pkgs(pkgs)
-        self.assertEqual(utils.ChangedRPMPackagesController.backup_and_track_removed_pkg.called, len(pkgs))
-
-        self.assertEqual(utils.run_subprocess.called, len(pkgs))
-
-        rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
-        for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
-            self.assertEqual(rpm_remove_cmd + [pkg], cmd)
-
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_local_rpms_with_empty_list(self):
-        utils.install_local_rpms([])
-        self.assertEqual(utils.run_subprocess.called, 0)
-
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_local_rpms_without_replace(self):
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.install_local_rpms(pkgs)
-        self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
-
-        self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual(["rpm", "-i", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)
-
-    @unit_tests.mock(utils.ChangedRPMPackagesController, "track_installed_pkg", DummyFuncMocked())
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_local_rpms_with_replace(self):
-        pkgs = ["pkg1", "pkg2", "pkg3"]
-        utils.install_local_rpms(pkgs, replace=True)
-        self.assertEqual(utils.ChangedRPMPackagesController.track_installed_pkg.called, len(pkgs))
-
-        self.assertEqual(utils.run_subprocess.called, 1)
-        self.assertEqual(["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"], utils.run_subprocess.cmd)
-
     def test_run_subprocess(self):
         output, code = utils.run_subprocess(["echo", "foobar"])
 
@@ -179,17 +106,30 @@ class TestUtils(unittest.TestCase):
     ]
 
     @unit_tests.mock(
-        utils, "download_pkg", lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/"
+        utils,
+        "download_pkg",
+        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/",
     )
     def test_download_pkgs(self):
-        paths = utils.download_pkgs(["pkg1", "pkg2"], "/dest/", "/reposdir/", ["repo1"], ["repo2"], False)
+        paths = utils.download_pkgs(
+            ["pkg1", "pkg2"],
+            "/dest/",
+            "/reposdir/",
+            ["repo1"],
+            ["repo2"],
+            False,
+        )
 
         self.assertEqual(paths, ["/filepath/", "/filepath/"])
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
     @unit_tests.mock(system_info, "releasever", "8")
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
-    @unit_tests.mock(utils, "get_rpm_path_from_yumdownloader_output", lambda x, y, z: "/path/test.rpm")
+    @unit_tests.mock(
+        utils,
+        "get_rpm_path_from_yumdownloader_output",
+        lambda x, y, z: "/path/test.rpm",
+    )
     def test_download_pkg_success_with_all_params(self):
         dest = "/test dir/"
         reposdir = "/my repofiles/"
@@ -416,11 +356,36 @@ def test_prompt_user(question, is_password, response, monkeypatch):
         ("5.14.15-300.fc35", ("0", "5.14.15", "300.fc35")),
         ("0.17-9.fc35", ("0", "0.17", "9.fc35")),
         ("2.34.1-2.fc35", ("0", "2.34.1", "2.fc35")),
-        ("0.9.1-2.20210420git36391559.fc35", ("0", "0.9.1", "2.20210420git36391559.fc35")),
+        (
+            "0.9.1-2.20210420git36391559.fc35",
+            ("0", "0.9.1", "2.20210420git36391559.fc35"),
+        ),
         ("2:8.2.3568-1.fc35", ("2", "8.2.3568", "1.fc35")),
-        ("4.6~pre16262021g84ef6bd9-3.fc35", ("0", "4.6~pre16262021g84ef6bd9", "3.fc35")),
+        (
+            "4.6~pre16262021g84ef6bd9-3.fc35",
+            ("0", "4.6~pre16262021g84ef6bd9", "3.fc35"),
+        ),
     ),
 )
 def test_string_to_version(string_version, nevra):
     nevra_version = utils.string_to_version(string_version)
     assert nevra_version == nevra
+
+
+@pytest.mark.parametrize(
+    ("path_exists", "list_dir", "expected"),
+    (
+        (True, ["dir-1", "dir-2"], 0),
+        (True, [], 2),
+        (False, [], 0),
+        (False, ["dir-1", "dir-2"], 0),
+    ),
+)
+def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypatch):
+    os_remove_mock = mock.Mock()
+    monkeypatch.setattr(os.path, "exists", value=lambda path: path_exists)
+    monkeypatch.setattr(os, "listdir", value=lambda path: list_dir)
+    monkeypatch.setattr(os, "rmdir", value=os_remove_mock)
+
+    utils.remove_orphan_folders()
+    assert os_remove_mock.call_count == expected

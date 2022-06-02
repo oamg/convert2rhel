@@ -4,6 +4,9 @@ import platform
 from envparse import env
 
 
+system = platform.platform()
+
+
 def test_backup_os_release_no_envar(shell, convert2rhel):
     """
     In this scenario there is no variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` set.
@@ -22,7 +25,13 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
 
     # Move all repos to other location, so it is not being used
-    assert shell("mkdir /tmp/s_backup && mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
+    assert shell("mkdir /tmp/s_backup").returncode == 0
+    assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
+
+    # EUS version use hardoced repos from c2r as well
+    if "centos-8" in system or "oracle-8.4" in system:
+        assert shell("mkdir /tmp/s_backup_eus").returncode == 0
+        assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     # Since we are moving all repos away, we need to bypass kernel check
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
@@ -54,26 +63,24 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
 
     with convert2rhel(
-        ("--no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         ),
     ) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        # On OracleLinux8 there is one question less than on other distros
-        if "oracle-8" not in platform.platform():
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("y")
-        c2r.expect("The tool allows rollback of any action until this point.")
-        c2r.sendline("n")
+        c2r.expect(
+            "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
+        )
+        c2r.send(chr(3))
+        c2r.sendcontrol("d")
 
     assert shell("find /etc/os-release").returncode == 0
 
-    # Restore repos
+    # Return repositories to their original location
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
+
+    if "centos-8" in system or "oracle-8.4" in system:
+        assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Clean up
     del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]

@@ -39,6 +39,14 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
 
 def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     assert shell("modprobe -r -v bonding").returncode == 0
+
+    system_version = platform.platform()
+    if "oracle-7" in system_version or "centos-7" in system_version:
+        prompt_amount = 3
+    elif "oracle-8" in system_version:
+        prompt_amount = 2
+    elif "centos-8" in system_version:
+        prompt_amount = 3
     # If custom module is not loaded the conversion is not inhibited.
     with convert2rhel(
         ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -48,19 +56,15 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-        if "oracle-8" not in platform.platform():
+        while prompt_amount > 0:
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
+            prompt_amount -= 1
+
         assert c2r.expect("Kernel modules are compatible.") == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
-    assert c2r.exitstatus != 0
+        assert c2r.exitstatus != 0
 
 
 def test_tainted_kernel_inhibitor(shell, convert2rhel):

@@ -25,11 +25,10 @@ from collections import namedtuple
 import pexpect
 import pytest
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import pkghandler, subscription, toolopts, utils
+from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -256,10 +255,11 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
+    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
-        self.assertEqual(utils.remove_pkgs.called, 1)
+
+        self.assertEqual(backup.remove_pkgs.called, 1)
 
     @unit_tests.mock(
         pkghandler,
@@ -270,10 +270,10 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(system_info, "id", "centos")
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(utils, "remove_pkgs", DumbCallable())
+    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):
         subscription.remove_original_subscription_manager()
-        self.assertEqual(utils.remove_pkgs.called, 2)
+        self.assertEqual(backup.remove_pkgs.called, 2)
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [])
     @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
@@ -295,7 +295,7 @@ class TestSubscription(unittest.TestCase):
     )
     @unit_tests.mock(pkghandler, "filter_installed_pkgs", DumbCallable())
     @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
-    @unit_tests.mock(utils.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
+    @unit_tests.mock(backup.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
     @unit_tests.mock(subscription, "track_installed_submgr_pkgs", DumbCallable())
     def test_install_rhel_subscription_manager(self):
         subscription.install_rhel_subscription_manager()
@@ -1056,7 +1056,7 @@ def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, mon
 )
 def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_msg, expected, monkeypatch, caplog):
     track_installed_pkgs_mock = mock.Mock()
-    monkeypatch.setattr(utils.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
+    monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
 
     subscription.track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs)
 
@@ -1064,3 +1064,214 @@ def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_
         assert skip_pkg_msg in caplog.records[-2].message
     assert expected in caplog.records[-1].message
     assert track_installed_pkgs_mock.called == 1
+
+
+# ----
+
+
+@pytest.mark.parametrize(
+    ("rhel_repoids", "subprocess", "should_raise", "expected", "expected_message"),
+    (
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["repo-1", "repo-2"],
+            "Repositories enabled through subscription-manager",
+        ),
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 1),
+            True,
+            ["repo-1", "repo-2"],
+            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+@centos8
+def test_enable_repos_rhel_repoids(
+    pretend_os, rhel_repoids, subprocess, should_raise, expected, expected_message, monkeypatch, caplog
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in rhel_repoids:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd_mock, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=rhel_repoids)
+    else:
+        subscription.enable_repos(rhel_repoids=rhel_repoids)
+        assert system_info.submgr_enabled_repos == expected
+
+    assert expected_message in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("rhel_repoids", "default_rhsm_repoids", "subprocess", "subprocess2", "should_raise", "expected"),
+    (
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ["test-repo-1", "test-repo-2"],
+            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
+            ("test-repo-1, test-repo-2", 1),
+            True,
+            "Repos were not possible to enable through subscription-manager:\ntest-repo-1, test-repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ["test-repo-1", "test-repo-2"],
+            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
+            ("test-repo-1, test-repo-2", 0),
+            False,
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+@centos8
+def test_enable_repos_rhel_repoids_fallback_default_rhsm(
+    pretend_os,
+    rhel_repoids,
+    default_rhsm_repoids,
+    subprocess,
+    subprocess2,
+    should_raise,
+    expected,
+    monkeypatch,
+    caplog,
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in rhel_repoids:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(side_effect=[subprocess, subprocess2])
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(system_info, "default_rhsm_repoids", value=default_rhsm_repoids)
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=rhel_repoids)
+    else:
+        subscription.enable_repos(rhel_repoids=rhel_repoids)
+        assert system_info.submgr_enabled_repos == default_rhsm_repoids
+
+    assert expected in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 2
+
+
+@pytest.mark.parametrize(
+    ("toolopts_enablerepo", "subprocess", "should_raise", "expected", "expected_message"),
+    (
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["repo-1", "repo-2"],
+            "Repositories enabled through subscription-manager",
+        ),
+        (
+            ["repo-1", "repo-2"],
+            ("repo-1, repo-2", 1),
+            True,
+            ["repo-1", "repo-2"],
+            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+        ),
+        (
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            ("repo-1, repo-2", 0),
+            False,
+            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
+            "Repositories enabled through subscription-manager",
+        ),
+    ),
+)
+def test_enable_repos_toolopts_enablerepo(
+    toolopts_enablerepo,
+    subprocess,
+    should_raise,
+    expected,
+    expected_message,
+    tool_opts,
+    monkeypatch,
+    caplog,
+):
+    cmd_mock = ["subscription-manager", "repos"]
+    for repo in toolopts_enablerepo:
+        cmd_mock.append("--enable=%s" % repo)
+
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd_mock, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    tool_opts.enablerepo = toolopts_enablerepo
+    # monkeypatch.setattr(tool_opts, "enablerepo", toolopts_enablerepo)
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            subscription.enable_repos(rhel_repoids=None)
+    else:
+        subscription.enable_repos(rhel_repoids=None)
+        assert system_info.submgr_enabled_repos == expected
+
+    assert expected_message in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("subprocess", "expected"),
+    (
+        (("output", 0), "RHEL repositories locked"),
+        (("output", 1), "Locking RHEL repositories failed"),
+    ),
+)
+@centos8
+def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, monkeypatch, caplog):
+    cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd, subprocess),
+        )
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    subscription.lock_releasever_in_rhel_repositories()
+
+    assert expected in caplog.records[-1].message
+    assert run_subprocess_mock.call_count == 1
+
+
+@centos7
+def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
+    subscription.lock_releasever_in_rhel_repositories()
+    assert "Skipping locking RHEL repositories to a specific EUS minor version." in caplog.records[-1].message
