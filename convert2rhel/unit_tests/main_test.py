@@ -297,6 +297,7 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
         setup_logger_handler_mock.assert_called_once()
         archive_old_logger_files_mock.assert_called_once()
 
+
 def test_post_ponr_conversion(monkeypatch):
     install_gpg_keys_mock = mock.Mock()
     perserve_only_rhel_kernel_mock = mock.Mock()
@@ -326,7 +327,8 @@ def test_post_ponr_conversion(monkeypatch):
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
     assert finish_success_mock.call_count == 1
-    
+
+
 def test_main(monkeypatch):
     require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()

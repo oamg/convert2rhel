@@ -38,8 +38,8 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests.conftest import all_systems, centos8
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
