@@ -20,7 +20,7 @@ import os
 import re
 import shutil
 
-from convert2rhel import systeminfo, utils
+from convert2rhel import backup, systeminfo, utils
 
 
 logger = logging.getLogger(__name__)
@@ -598,8 +598,8 @@ def update_grub_after_conversion():
         )
         return
 
-    utils.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
-    utils.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()
+    backup.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
+    backup.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()
 
     grub2_config_file = GRUB2_BIOS_CONFIG_FILE if not is_efi() else os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
 
