@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.25
+Version:        0.26
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -110,6 +110,34 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Jun 3 2022 Eric Gustavsson <egustavs@redhat.com> 0.26
+- Support RHEL EUS version 8.4
+- Auto-attach subscription if only one is available
+- Improve check for packages to update from
+- Improve installation of subscription manager packages
+- Fix unavailable repos on CentOS Linux 8 in Ansible playbook
+- Improve message on how to disable Secure Boot 
+- Update release mapping to 8.10
+- Improve clarity over a variety of logging and messages
+- Untrack previously installed subscription manager packages
+- Add (unsupported) possibility to convert from Rocky Linux 8
+- Add (unsupported) possibility to convert from AlmaLinux 8
+- Improve code stability of subprocess calls 
+- Use password file in Ansible playbook to prevent leaking password through proccess list (CVE-2022-1662)
+- Fix KeyError when handling alphabetical characters in boot entries
+- Exclude iwlax2xx-firmware dependency in Oracle Linux 8
+- Prevent duplicate logging when getting package updates
+- Prevent backing up specific package that is not available on latest minor version
+- Fixed logs of previous runs being moved instead of copied
+- Prevent user from not selecting a response when queried
+- Fixed minor version not being added correctly when creating RHEL GRUB entry
+
+* Fri Apr 8 2022 Eric Gustavsson <egustavs@redhat.com> 0.25-4
+- Fix pexpect spawn not being correct column width
+
+* Wed Apr 6 2022 Eric Gustavsson <egustavs@redhat.com> 0.25-3
+- Fix sending subscription-manager password to command line
+
 * Mon Dec 13 2021 Eric Gustavsson <egustavs@redhat.com> 0.25-1
 - Fix python3-cloud-what package issue
 - Fix yum distro-sync returning non-zero value for no change
