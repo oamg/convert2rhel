@@ -116,13 +116,13 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 - Improve check for packages to update from
 - Improve installation of subscription manager packages
 - Fix unavailable repos on CentOS Linux 8 in Ansible playbook
-- Improve message on how to disable Secure Boot 
+- Improve message on how to disable Secure Boot
 - Update release mapping to 8.10
 - Improve clarity over a variety of logging and messages
 - Untrack previously installed subscription manager packages
 - Add (unsupported) possibility to convert from Rocky Linux 8
 - Add (unsupported) possibility to convert from AlmaLinux 8
-- Improve code stability of subprocess calls 
+- Improve code stability of subprocess calls
 - Use password file in Ansible playbook to prevent leaking password through proccess list (CVE-2022-1662)
 - Fix KeyError when handling alphabetical characters in boot entries
 - Exclude iwlax2xx-firmware dependency in Oracle Linux 8
