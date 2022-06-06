@@ -580,9 +580,9 @@ def is_loaded_kernel_latest():
             logger.info("Kernel currently loaded is at the latest version.")
         else:
             repos_message = (
-                "on the enabled system repositories"
+                "in the enabled system repositories"
                 if not reposdir
-                else "on repositories defined in the %s folder" % reposdir
+                else "in repositories defined in the %s folder" % reposdir
             )
             logger.critical(
                 "The version of the loaded kernel is different from the latest version %s.\n"
