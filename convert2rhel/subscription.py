@@ -114,7 +114,6 @@ def register_system():
     # Loop the registration process until successful registration
     attempt = 0
     while attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
-        registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
         attempt_msg = ""
         if attempt > 0:
             attempt_msg = "Attempt %d of %d: " % (
@@ -126,6 +125,7 @@ def register_system():
             attempt_msg,
         )
 
+        registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
         output, ret_code = registration_cmd()
         if ret_code == 0:
             # Handling a signal interrupt that was previously handled by
@@ -135,14 +135,6 @@ def register_system():
             return
 
         loggerinst.info("System registration failed with return code = %s" % str(ret_code))
-        if tool_opts.credentials_thru_cli:
-            loggerinst.warning(
-                "Error: Unable to register your system with subscription-manager using the provided credentials."
-            )
-        else:
-            loggerinst.info("Trying again - provide username and password.")
-            tool_opts.username = None
-            tool_opts.password = None
         sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
         attempt += 1
     loggerinst.critical("Unable to register the system through subscription-manager.")
