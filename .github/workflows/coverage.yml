@@ -40,4 +40,4 @@ jobs:
           fail_ci_if_error: true
           files: ./coverage.xml
           override_commit: ${{ github.sha }}
-          parent_commit: ${{ github.event.pull_request.base.sha }}
+          commit_parent: ${{ github.event.pull_request.base.sha }}
