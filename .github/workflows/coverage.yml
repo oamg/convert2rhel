@@ -33,11 +33,27 @@ jobs:
         run: |
           docker run --name pytest-container centos${{ matrix.centos_ver }} pytest --cov --cov-report xml --cov-report term
           docker cp pytest-container:/data/coverage.xml .
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          env_vars: OS,PYTHON
+#          fail_ci_if_error: true
+#          files: ./coverage.xml
+
+      - name: Get commit
+        run: |
+          echo "COMMIT_HASH=$(git log --pretty=%H -n 1)" >> $COMMIT_HASH
+
+
+      - name: Get commit parent
+        run: |
+          echo "COMMIT_PARENT=$(git log --pretty=%P -n 1 $COMMIT_HASH)" >> $COMMIT_PARENT
+ 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           env_vars: OS,PYTHON
           fail_ci_if_error: true
           files: ./coverage.xml
-          override_commit: ${{ github.sha }}
-          commit_parent: ${{ github.event.pull_request.base.sha }}
+          override_commit: ${{ env.COMMIT_HASH }}
+          commit_parent: ${{ env.COMMIT_PARENT }}
