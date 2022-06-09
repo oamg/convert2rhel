@@ -17,6 +17,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -29,10 +30,12 @@ jobs:
           context: .
           file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
           tags: centos${{ matrix.centos_ver }}
+
       - name: Run pytest coverage
         run: |
           docker run --name pytest-container centos${{ matrix.centos_ver }} pytest --cov --cov-report xml --cov-report term
           docker cp pytest-container:/data/coverage.xml .
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
