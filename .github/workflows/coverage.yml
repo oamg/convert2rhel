@@ -47,7 +47,7 @@ jobs:
 
       - name: Get commit parent
         run: |
-          echo "COMMIT_PARENT=$(git show -s --pretty=%P $COMMIT_HASH)" >> $GITHUB_ENV
+          echo "COMMIT_PARENT=$(git show -s --pretty=%P $COMMIT_HASH^1)" >> $GITHUB_ENV
  
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
