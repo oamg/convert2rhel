@@ -14,12 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import socket
-
 import difflib
 import logging
 import os
 import re
+import socket
 
 from collections import namedtuple
 

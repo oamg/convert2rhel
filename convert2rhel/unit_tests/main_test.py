@@ -29,6 +29,7 @@ from convert2rhel import backup, grub
 from convert2rhel import logger as logger_module
 from convert2rhel.breadcrumbs import breadcrumbs
 
+
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
