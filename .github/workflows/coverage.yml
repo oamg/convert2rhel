@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -48,8 +50,8 @@ jobs:
         run: |
           echo "COMMIT_PARENT=$(git show -s --pretty=%P $COMMIT_HASH)" >> $GITHUB_ENV
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
