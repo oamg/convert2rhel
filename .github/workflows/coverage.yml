@@ -42,12 +42,12 @@ jobs:
 
       - name: Get commit
         run: |
-          echo "COMMIT_HASH=$(git log --pretty=%H -n 1)" >> $COMMIT_HASH
+          echo "COMMIT_HASH=$(git log --pretty=%H -n 1)" >> $GITHUB_ENV
 
 
       - name: Get commit parent
         run: |
-          echo "COMMIT_PARENT=$(git log --pretty=%P -n 1 $COMMIT_HASH)" >> $COMMIT_PARENT
+          echo "COMMIT_PARENT=$(git log --pretty=%P -n 1 $COMMIT_HASH)" >> $GITHUB_ENV
  
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
