@@ -39,3 +39,4 @@ jobs:
           env_vars: OS,PYTHON
           fail_ci_if_error: true
           files: ./coverage.xml
+          override_commit: ${{GITHUB_SHA}}
