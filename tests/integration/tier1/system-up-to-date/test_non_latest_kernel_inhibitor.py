@@ -39,17 +39,13 @@ def test_non_latest_kernel(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        if "centos-7" in system_version or "oracle-7" in system_version:
+        if "centos-8" in system_version:
             c2r.expect(
-                "The version of the loaded kernel is different from the latest version on the enabled system repositories."
-            )
-        elif "oracle-8" in system_version:
-            c2r.expect(
-                "The version of the loaded kernel is different from the latest version on the enabled system repositories."
+                "The version of the loaded kernel is different from the latest version in repositories defined in the"
             )
         else:
             c2r.expect(
-                "The version of the loaded kernel is different from the latest version on repositories defined in the"
+                "The version of the loaded kernel is different from the latest version in the enabled system repositories."
             )
     assert c2r.exitstatus != 0
 
