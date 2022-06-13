@@ -69,7 +69,7 @@ class ChangedRPMPackagesController(object):
         """Install packages locally available."""
 
         if not pkgs_to_install:
-            loggerinst.info("No package to install")
+            loggerinst.info("No package to install.")
             return False
 
         cmd_param = ["rpm", "-i"]
@@ -127,7 +127,7 @@ class RestorableFile(object):
         loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
 
         if not os.path.isfile(backup_filepath):
-            loggerinst.warning("%s hasn't been backed up" % self.filepath)
+            loggerinst.info("%s hasn't been backed up." % self.filepath)
             return
         try:
             shutil.copy2(backup_filepath, self.filepath)
@@ -137,7 +137,7 @@ class RestorableFile(object):
             # IOError for py2 and OSError for py3
             loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
             return
-        loggerinst.info("File %s restored" % self.filepath)
+        loggerinst.info("File %s restored." % self.filepath)
 
 
 class RestorablePackage(object):
@@ -147,7 +147,7 @@ class RestorablePackage(object):
 
     def backup(self):
         """Save version of RPM package"""
-        loggerinst.info("Backing up %s" % self.name)
+        loggerinst.info("Backing up %s." % self.name)
         if os.path.isdir(BACKUP_DIR):
             reposdir = get_hardcoded_repofiles_dir()
 

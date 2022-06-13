@@ -231,7 +231,7 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
     def test_check_needed_repos_availability(self):
         subscription.check_needed_repos_availability(["rhel_x"])
-        self.assertTrue("Needed RHEL repos are available" in logging.Logger.info.msg)
+        self.assertTrue("Needed RHEL repositories are available." in logging.Logger.info.msg)
 
         subscription.check_needed_repos_availability(["rhel_z"])
         self.assertTrue("rhel_z repository is not available" in logging.Logger.warning.msg)

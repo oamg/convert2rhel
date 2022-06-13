@@ -669,7 +669,7 @@ def check_needed_repos_availability(repo_ids_needed):
             utils.ask_to_continue()
             all_repos_avail = False
     if all_repos_avail:
-        loggerinst.info("Needed RHEL repos are available.")
+        loggerinst.info("Needed RHEL repositories are available.")
 
 
 def download_rhsm_pkgs():

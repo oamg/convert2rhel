@@ -57,15 +57,13 @@ class SystemCert(object):
         """RHEL certificate (.pem) is used by subscription-manager to
         determine the running system type/version.
         """
-        loggerinst.info("Installing RHEL certificate to the system.")
-
         try:
             utils.mkdir_p(self._target_cert_dir)
             shutil.copy(self._source_cert_path, self._target_cert_dir)
         except OSError as err:
             loggerinst.critical("OSError({0}): {1}".format(err.errno, err.strerror))
 
-        loggerinst.debug("Certificate copied to %s." % self._target_cert_dir)
+        loggerinst.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
 
     def remove(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""

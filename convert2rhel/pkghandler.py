@@ -413,7 +413,7 @@ def list_third_party_pkgs():
     if third_party_pkgs:
         loggerinst.warning(
             "Only packages signed by %s are to be"
-            " reinstalled. Red Hat support won't be provided"
+            " replaced. Red Hat support won't be provided"
             " for the following third party packages:\n" % system_info.name
         )
         print_pkg_info(third_party_pkgs)
@@ -583,7 +583,7 @@ def remove_repofile_pkgs():
     install subscription-manager dependencies. As a result, these non-RHEL packages must be manually removed after
     subscription-manager installation.
     """
-    loggerinst.info("Searching for packages containing repofiles or affecting variables in the repofiles:\n")
+    loggerinst.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
     remove_pkgs_with_confirm(system_info.repofile_pkgs)
 
 

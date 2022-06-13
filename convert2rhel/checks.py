@@ -118,6 +118,7 @@ def check_tainted_kmods():
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
         system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<< Tainted
     """
+    logger.task("Prepare: Checking if loaded kernel modules are not tainted")
     unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
     module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
@@ -128,6 +129,7 @@ def check_tainted_kmods():
             "Uninstall or disable the following module(s) and run convert2rhel "
             "again to continue with the conversion:\n  {1}".format(LINK_KMODS_RH_POLICY, module_names)
         )
+    logger.info("No tainted kernel module is loaded.")
 
 
 def check_readonly_mounts():
@@ -211,7 +213,7 @@ def ensure_compatibility_of_kmods():
             ).format(kmods=not_supported_kmods, system=system_info.name)
         )
     else:
-        logger.debug("Kernel modules are compatible.")
+        logger.info("Kernel modules are compatible.")
 
 
 def get_loaded_kmods():
@@ -404,7 +406,7 @@ def check_rhel_compatible_kernel_is_used():
             " installed in step 2 manually".format(system_info.name, system_info.version.major)
         )
     else:
-        logger.info("Kernel is compatible with RHEL")
+        logger.info("The booted kernel %s is compatible with RHEL." % system_info.booted_kernel)
 
 
 def _bad_kernel_version(kernel_release):
@@ -465,7 +467,7 @@ def _bad_kernel_substring(kernel_release):
 
 def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
-    logger.task("Prepare: Checking if the packages are up-to-date")
+    logger.task("Prepare: Checking if the installed packages are up-to-date")
 
     if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
         logger.info(
@@ -577,7 +579,7 @@ def is_loaded_kernel_latest():
         match = compare_package_versions(latest_kernel, str(loaded_kernel))
 
         if match == 0:
-            logger.info("Kernel currently loaded is at the latest version.")
+            logger.info("The currently loaded kernel is at the latest version.")
         else:
             repos_message = (
                 "in the enabled system repositories"
