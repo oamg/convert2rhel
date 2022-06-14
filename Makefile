@@ -79,6 +79,10 @@ lint-errors: images
 
 tests: tests7 tests8
 
+tests6: images
+	@echo 'CentOS Linux 6 tests'
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
+
 tests7: images
 	@echo 'CentOS Linux 7 tests'
 	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos7 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
@@ -86,10 +90,6 @@ tests7: images
 tests8: images
 	@echo 'CentOS Linux 8 tests'
 	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos8 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
-
-tests6: images
-	@echo 'CentOS Linux 6 tests'
-	@$(DOCKER) run --user=$(id -ur):$(id -gr) --rm -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest
 
 rpms: images
 	mkdir -p .rpms
