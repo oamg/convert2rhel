@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# The SSL implementation that python-2.6 uses is insecure and pip refuses to install
+# packages using it. This script will use curl to download the packages securely and
+# then pip can be asked to install from the local files
+
 links=(
     "https://files.pythonhosted.org/packages/3a/05/f4936fde0aa8ce3b646b6014c59417c8cc7c1958df41e05bc77fcb098743/scandir-0.4.zip"
     "https://files.pythonhosted.org/packages/94/4a/db842e7a0545de1cdb0439bb80e6e42dfe82aaeaadd4072f2263a4fbed23/funcsigs-1.0.2.tar.gz"

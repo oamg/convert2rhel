@@ -28,6 +28,9 @@ COPY $PREP_PIP_DEPS $PREP_PIP_DEPS
 COPY $APP_DEV_DEPS $APP_DEV_DEPS
 COPY $APP_PRE_DEV_DEPS $APP_PRE_DEV_DEPS
 RUN chmod +x $PREP_PIP_DEPS
+# The SSL implementation that python-2.6 uses is insecure and pip refuses to install
+# packages using it. This script will use curl to download the packages securely and
+# then pip can be asked to install from the local files
 RUN $PREP_PIP_DEPS
 RUN $PIP install --no-index --find-links /data -r $APP_PRE_DEV_DEPS
 RUN $PIP install --no-index --find-links /data -r $APP_DEV_DEPS
