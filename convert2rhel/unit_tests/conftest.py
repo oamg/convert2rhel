@@ -4,7 +4,7 @@ import sys
 import pytest
 import six
 
-from convert2rhel import cert, redhatrelease, systeminfo, toolopts, utils
+from convert2rhel import backup, cert, redhatrelease, systeminfo, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -170,6 +170,13 @@ def global_system_info(monkeypatch):
     local_system_info = systeminfo.SystemInfo()
     monkeypatch.setattr(systeminfo, "system_info", system_info)
     return local_system_info
+
+
+@pytest.fixture
+def global_backup_control(monkeypatch):
+    local_backup_control = backup.BackupController()
+    monkeypatch.setattr(backup, "backup_control", local_backup_control)
+    return local_backup_control
 
 
 @pytest.fixture()

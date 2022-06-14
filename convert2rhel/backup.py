@@ -15,10 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import abc
 import logging
 import os
 import shutil
 
+import six
+
+from convert2rhel import utils
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, run_subprocess
@@ -102,6 +106,150 @@ class ChangedRPMPackagesController(object):
         self._remove_installed_pkgs()
         remove_orphan_folders()
         self._install_removed_pkgs()
+
+
+class BackupController(object):
+    """
+    Controls backup and restore for all restorable types.
+
+    This is the second version of a backup controller.  It handles all types of things that
+    convert2rhel will change on the system which it can restore in case of a failure before the
+    Point-of-no-return (PONR).
+
+    The basic interface to this is a stack.  When a Restorable is pushed onto the stack, it is
+    backed up.  When it is popped off of the stack, it is restored.
+    """
+
+    def __init__(self):
+        self._restorables = []
+
+    def push(self, restorable):
+        """
+        Enable a RestorableChange and track it in case it needs to be restored.
+
+        :arg restorable: RestorableChange object that can be restored later.
+        """
+        if not isinstance(restorable, RestorableChange):
+            raise TypeError("`%s` is not a RestorableChange object" % restorable)
+
+        restorable.enable()
+
+        self._restorables.append(restorable)
+
+    def pop(self):
+        """
+        Restore and then return the last RestorableiChange added to the Controller.
+
+        :returns: RestorableChange object that was last added.
+        :raises IndexError: If there are no RestorableChanges currently known to the Controller.
+        """
+        restorable = self._restorables.pop()
+        restorable.restore()
+
+        return restorable
+
+    def pop_all(self):
+        """
+        Restores all RestorableChanges known to the Controller and then returns them.
+
+        :returns: List of RestorableChange objects that were known to the Controller.
+        :raises IndexError: If there are no RestorableChanges currently known to the Controller.
+
+        After running, the Controller object will not know about any RestorableChanges.
+        """
+        restorables = self._restorables
+
+        if not restorables:
+            raise IndexError("pop from empty list")
+
+        # We want to restore in the reverse order the changes were enabled.
+        for restorable in reversed(restorables):
+            restorable.restore()
+
+        # Reset the internal storage in case we want to use it again
+        self._restorables = []
+
+        # Now that we know everything succeeded, reverse the list that we return to the user
+        restorables.reverse()
+
+        return restorables
+
+
+@six.add_metaclass(abc.ABCMeta)
+class RestorableChange(object):
+    """
+    Interface definition for types which can be restored.
+    """
+
+    @abc.abstractmethod
+    def __init__(self):
+        self.enabled = False
+
+    @abc.abstractmethod
+    def enable(self):
+        """
+        Backup should be idempotent.  In other words, it should know if the resource has already
+        been backed up and refuse to do so a second time.
+        """
+        self.enabled = True
+
+    @abc.abstractmethod
+    def restore(self):
+        """
+        Restore the state of the system.
+        """
+        self.enabled = False
+
+
+class RestorableRpmKey(RestorableChange):
+    def __init__(self, keyfile):
+        super(RestorableRpmKey, self).__init__()
+        self.previous_state = None
+        self.keyfile = keyfile
+        self.keyid = utils.find_keyid(keyfile)
+
+    def enable(self):
+
+        # For idempotence, do not back this up if we've already done so.
+        if self.enabled:
+            return
+
+        if not self.installed:
+            output, ret_code = utils.run_subprocess(["rpm", "--import", self.keyfile], print_output=False)
+            if ret_code != 0:
+                raise utils.ImportGPGKeyError("Failed to import the GPG key %s: %s" % (self.keyfile, output))
+
+            self.previous_state = "not_installed"
+            loggerinst.info("GPG key %s imported", self.keyid)
+
+        else:
+            self.previous_state = "installed"
+
+        super(RestorableRpmKey, self).enable()
+
+    @property
+    def installed(self):
+        output, status = utils.run_subprocess(["rpm", "-q", "gpg-pubkey-%s" % self.keyid], print_output=False)
+
+        if status == 0:
+            return True
+
+        if status == 1 and "package gpg-pubkey-%s is not installed" % self.keyid in output:
+            return False
+
+        raise utils.ImportGPGKeyError(
+            "Searching the rpmdb for the gpg key %s failed: Code %s: %s" % (self.keyid, status, output)
+        )
+
+    def restore(self):
+        if not self.enabled or self.previous_state in (None, "installed"):
+            self.enabled = False
+            return
+
+        # The self.previous_state == "not_installed" case
+        utils.run_subprocess(["rpm", "-e", "gpg-pubkey-%s" % self.keyid])
+
+        super(RestorableRpmKey, self).restore()
 
 
 class RestorableFile(object):
@@ -207,3 +355,4 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
+backup_control = BackupController()

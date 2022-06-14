@@ -161,6 +161,7 @@ class TestMain(unittest.TestCase):
     )
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
+    @unit_tests.mock(backup.backup_control, "pop_all", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
@@ -171,11 +172,13 @@ class TestMain(unittest.TestCase):
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)
+        self.assertEqual(backup.backup_control.pop_all.called, 1)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
@@ -199,6 +202,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["check_and_resolve"] = 1
+        intended_call_order["install_gpg_keys"] = 1
         intended_call_order["download_rhsm_pkgs"] = 1
         intended_call_order["replace_subscription_manager"] = 1
         intended_call_order["verify_rhsm_installed"] = 1
@@ -222,6 +226,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
@@ -246,6 +251,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["check_and_resolve"] = 1
+        intended_call_order["install_gpg_keys"] = 1
 
         # Do not expect this one to be called - related to RHSM
         intended_call_order["download_rhsm_pkgs"] = 0
@@ -309,7 +315,6 @@ def test_post_ponr_conversion(monkeypatch):
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
     finish_success_mock = mock.Mock()
 
-    monkeypatch.setattr(pkghandler, "install_gpg_keys", install_gpg_keys_mock)
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
     monkeypatch.setattr(pkghandler, "replace_non_red_hat_packages", replace_non_red_hat_pkgs_left_mock)
     monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
@@ -320,7 +325,6 @@ def test_post_ponr_conversion(monkeypatch):
 
     main.post_ponr_conversion()
 
-    assert install_gpg_keys_mock.call_count == 1
     assert perserve_only_rhel_kernel_mock.call_count == 1
     assert replace_non_red_hat_pkgs_left_mock.call_count == 1
     assert list_non_red_hat_pkgs_left_mock.call_count == 1

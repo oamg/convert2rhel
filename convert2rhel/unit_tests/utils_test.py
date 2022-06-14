@@ -386,6 +386,67 @@ def test_get_rpm_header(monkeypatch):
     assert utils.get_rpm_header("/path/to.rpm", _open=mock.mock_open())[rpm.RPMTAG_NAME] == "pkg1"
 
 
+class TestFindKeys:
+    gpg_key = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
+    )
+
+    def test_find_keyid(self):
+        assert utils.find_keyid(self.gpg_key) == "fd431d51"
+
+    def test_find_keyid_bad_file(self, tmpdir):
+        gpg_key = os.path.join(str(tmpdir), "badkeyfile")
+        with open(gpg_key, "w") as f:
+            f.write("bad data\n")
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Failed to import the rpm gpg key into a temporary keyring.*"
+        ):
+            utils.find_keyid(gpg_key)
+
+    def test_find_keyid_gpg_bad_keyring(self, monkeypatch):
+        class MockedRunSubProcess(object):
+            def __init__(self):
+                self.called = 0
+
+            def __call__(self, *args, **kwargs):
+                # Fail on the second call
+                self.called += 1
+                if self.called == 2:
+                    return ("", 1)
+
+                return real_run_subprocess(*args, **kwargs)
+
+        real_run_subprocess = utils.run_subprocess
+        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Failed to read the temporary keyring with the rpm gpg key:.*"
+        ):
+            utils.find_keyid(self.gpg_key)
+
+    def test_find_keyid_no_gpg_output(self, monkeypatch):
+        class MockedRunSubProcess(object):
+            def __init__(self):
+                self.called = 0
+
+            def __call__(self, *args, **kwargs):
+                # Fail on the second call
+                self.called += 1
+                if self.called == 2:
+                    return ("", 0)
+
+                return real_run_subprocess(*args, **kwargs)
+
+        real_run_subprocess = utils.run_subprocess
+        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Unable to determine the gpg keyid for the rpm key file: %s" % self.gpg_key
+        ):
+            utils.find_keyid(self.gpg_key)
+
+
 @pytest.mark.parametrize("dir_name", ("/existing", "/nonexisting", None))
 # TODO change to tmpdir fixture
 def test_remove_tmp_dir(monkeypatch, dir_name, caplog, tmpdir):

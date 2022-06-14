@@ -911,28 +911,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "kernel"])
         self.assertEqual(pkghandler.get_installed_pkgs_by_fingerprint.called, 1)
 
-    gpg_keys_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
-
-    @unit_tests.mock(utils, "DATA_DIR", gpg_keys_dir)
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_install_gpg_keys(self):
-        pkghandler.install_gpg_keys()
-
-        gpg_dir = os.path.realpath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../data/version-independent/gpg-keys/*",
-            )
-        )
-        gpg_keys = glob.glob(gpg_dir)
-
-        self.assertNotEqual(len(gpg_keys), 0)
-        for gpg_key in gpg_keys:
-            self.assertIn(
-                ["rpm", "--import", os.path.join(gpg_dir, gpg_key)],
-                utils.run_subprocess.cmds,
-            )
-
     class GetInstalledPkgsWDifferentFingerprintMocked(unit_tests.MockFunction):
         def __init__(self):
             self.is_only_rhel_kernel_installed = False
@@ -1919,6 +1897,49 @@ def test_find_pkg_names(output, message, expected_names):
 def test_find_pkg_names_no_names(output, message):
     """Test that find_pkg_names does not find any names in these outputs."""
     assert pkghandler.find_pkg_names(output, message) == set()
+
+
+class TestInstallGpgKeys(object):
+    data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
+    gpg_keys_dir = os.path.join(data_dir, "gpg-keys")
+
+    def test_install_gpg_keys(self, monkeypatch, global_backup_control):
+        monkeypatch.setattr(utils, "DATA_DIR", self.data_dir)
+
+        # Prevent RestorableRpmKey from actually performing any work
+        enable_mock = mock.Mock()
+        monkeypatch.setattr(backup.RestorableRpmKey, "enable", enable_mock)
+
+        pkghandler.install_gpg_keys()
+
+        # Get the filenames for every gpg key registered with backup_control
+        restorable_keys = set()
+        for key in global_backup_control._restorables:
+            restorable_keys.add(key.keyfile)
+
+        gpg_file_glob = os.path.join(self.gpg_keys_dir, "*")
+        gpg_keys = glob.glob(gpg_file_glob)
+
+        # Make sure we have some keys in the data dir to check
+        assert len(gpg_keys) != 0
+
+        # check that all of the keys from data_dir have been registered with the backup_control.
+        # We'll test what the restorable keys do in backup_test (for the RestorableKey class)
+        assert len(restorable_keys) == len(global_backup_control._restorables)
+        for gpg_key in gpg_keys:
+            assert gpg_key in restorable_keys
+
+    def test_install_gpg_keys_fail_create_restorable(self, monkeypatch, tmpdir, global_backup_control):
+        keys_dir = os.path.join(str(tmpdir), "gpg-keys")
+        os.mkdir(keys_dir)
+        bad_gpg_key_filename = os.path.join(keys_dir, "bad-key")
+        with open(bad_gpg_key_filename, "w") as f:
+            f.write("BAD_DATA")
+
+        monkeypatch.setattr(utils, "DATA_DIR", str(tmpdir))
+
+        with pytest.raises(SystemExit, match="Importing the GPG key into rpm failed:\n .*"):
+            pkghandler.install_gpg_keys()
 
 
 @pytest.mark.parametrize(
