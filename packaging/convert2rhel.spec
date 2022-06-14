@@ -48,6 +48,10 @@ Requires:       yum
 Requires:       yum-utils
 Requires:       pexpect
 %endif
+# grub2-tools includes grub2-mkconfig and grub2-install needed by PR#417
+%if 0%{?rhel} && 0%{?rhel} >= 7
+Requires:       grub2-tools
+%endif
 
 
 %description

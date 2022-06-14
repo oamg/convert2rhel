@@ -5,19 +5,31 @@ import fileinput
 from envparse import env
 
 
-targetline = "GRUB_CMDLINE_LINUX"
+target_line = "GRUB_CMDLINE_LINUX"
 
 
 def test_modify_grub_valid(convert2rhel):
-    blockcmt = "\n# comment added by test\n"
-    inlinecmt_post = "# comment added by test"
+    """
+    Modify the /etc/default/grub file with 'valid' changes adding newlines, whitespaces and comments.
+    Valid meaning that none of the changes should cause any issue calling 'grub2-mkconfig'.
+    The changes made to the grub file result into:
+    5 GRUB_TERMINAL_OUTPUT="foo"
+    6
+    7 # comment added by test
+    8      GRUB_CMDLINE_LINUX="bar"     # comment added by test
+    9 # comment added by test
+    10
+    11 GRUB_DISABLE_RECOVERY="foobar"
+    """
+    block_comment = "\n# comment added by test\n"
+    inline_comment_post = "# comment added by test"
     whitespace = "     "
     for line in fileinput.FileInput("/etc/default/grub", inplace=True):
-        if targetline in line:
+        if target_line in line:
             line = line.replace("\n", "")
             line = line.replace(
                 line,
-                blockcmt + whitespace + line + whitespace + inlinecmt_post + blockcmt + "\n",
+                block_comment + whitespace + line + whitespace + inline_comment_post + block_comment + "\n",
             )
         print(line, end="")
 
