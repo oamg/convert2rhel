@@ -307,6 +307,28 @@
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
+/kernel-core-only:
+    adjust+:
+        - enabled: false
+          when: >
+              distro != centos-8 and
+              distro != oraclelinux-8.
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: make sure the 'kernel-core' is the only installed kernel package
+          how: shell
+          script: pytest -svv tests/integration/tier1/kernel-core-only/remove_kernel_pkg.py
+        - name: reboot after kernel remove
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/activation_key.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+
 /config_file:
     adjust+:
         - enabled: false
