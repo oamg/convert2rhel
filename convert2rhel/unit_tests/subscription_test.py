@@ -17,13 +17,13 @@
 
 import logging
 import os
-import sys
 import unittest
 
 from collections import namedtuple
 
 import pexpect
 import pytest
+import six
 
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import system_info
@@ -31,10 +31,8 @@ from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 class DumbCallable(unit_tests.MockFunction):

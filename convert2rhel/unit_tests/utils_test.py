@@ -21,28 +21,19 @@ import sys
 import unittest
 
 import pytest
-
-from six import moves
+import six
 
 from convert2rhel.utils import prompt_user
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
-
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from collections import namedtuple
+
+from six.moves import mock
 
 from convert2rhel import unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
-
-
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
 
 
 class TestUtils(unittest.TestCase):
@@ -345,7 +336,7 @@ def test_prompt_user(question, is_password, response, monkeypatch):
     if is_password:
         monkeypatch.setattr(getpass, "getpass", lambda _: response)
     else:
-        monkeypatch.setattr(moves, "input", lambda _: response)
+        monkeypatch.setattr(six.moves, "input", lambda _: response)
 
     assert prompt_user(question, is_password) == response
 

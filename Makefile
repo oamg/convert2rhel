@@ -64,6 +64,7 @@ clean:
 images: .images
 
 .images:
+	@$(DOCKER) build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)/centos6 .
 	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)/centos7 .
 	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)/centos8 .
 	@$(DOCKER) build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE)/centos8rpmbuild .
@@ -77,6 +78,10 @@ lint-errors: images
 	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
 tests: tests7 tests8
+
+tests6: images
+	@echo 'CentOS Linux 6 tests'
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
 
 tests7: images
 	@echo 'CentOS Linux 7 tests'

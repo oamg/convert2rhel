@@ -14,25 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import socket
-
-from collections import namedtuple
-
-from convert2rhel.utils import run_subprocess
-
-
-try:
-    import ConfigParser as configparser
-except ImportError:
-    import configparser  # pylint: disable=import-error
-
 import difflib
 import logging
 import os
 import re
+import socket
+
+from collections import namedtuple
+
+from six.moves import configparser
 
 from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
+from convert2rhel.utils import run_subprocess
 
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor

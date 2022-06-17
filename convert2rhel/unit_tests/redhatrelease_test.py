@@ -16,18 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
 import unittest
 
 import pytest
+import six
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
-
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from collections import namedtuple
+
+from six.moves import mock
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkgmanager, redhatrelease, utils

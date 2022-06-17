@@ -26,6 +26,7 @@ import unittest
 from collections import namedtuple
 
 import pytest
+import six
 
 from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, system_info
@@ -34,10 +35,8 @@ from convert2rhel.unit_tests import is_rpm_based_os
 from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 class TestSysteminfo(unittest.TestCase):
