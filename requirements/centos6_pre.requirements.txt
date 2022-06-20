@@ -5,4 +5,4 @@ py==1.4.33
 argparse==1.4.0
 coverage==3.7.1
 funcsigs==1.0.2
-scandir==0.4
+scandir==1.10.0
