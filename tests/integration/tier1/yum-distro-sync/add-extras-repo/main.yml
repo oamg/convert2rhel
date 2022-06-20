@@ -2,7 +2,7 @@
 - hosts: all
   gather_facts: yes
   become: false
-- include: oracle7.yml
+- import_playbook: oracle7.yml
   when: ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "7"
-- include: oracle8.yml
+- import_playbook: oracle8.yml
   when: ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "8"
