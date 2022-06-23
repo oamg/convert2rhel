@@ -67,3 +67,17 @@ discover+:
   - name: install subscription manager
     how: ansible
     playbook: tests/ansible_collections/roles/install-submgr/main.yml
+
+/custom_kernel:
+  adjust:
+    enabled: false
+    when: >
+      distro != oraclelinux-7 and
+      distro != centos-7 and
+      distro != centos-8.4
+  discover+:
+    test: custom-kernel
+  prepare+:
+  - name: install custom kernel
+    how: ansible
+    playbook: tests/integration/tier0/custom-kernel/install_custom_kernel.py

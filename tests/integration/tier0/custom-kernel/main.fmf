@@ -1,0 +1,6 @@
+summary: custom kernel inhibitor
+
+tier: 0
+
+test: |
+  pytest -svv
