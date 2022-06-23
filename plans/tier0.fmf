@@ -77,3 +77,11 @@
             distro != centos-8-latest
     discover+:
         test: sub-man-rollback
+
+/custom_kernel:
+  discover+:
+    test: custom-kernel
+  prepare+:
+  - name: install custom kernel
+    how: shell
+    script: pytest -svv tests/integration/tier0/custom-kernel/install_custom_kernel.py
