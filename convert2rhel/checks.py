@@ -19,6 +19,7 @@
 import itertools
 import logging
 import os
+import os.path
 import re
 import tempfile
 
@@ -74,15 +75,16 @@ def perform_pre_ponr_checks():
 
 def check_convert2rhel_latest():
     """Make sure that we are running the latest version of convert2rhel"""
-
+    gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
+    ssl_cert_path = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
     repo_content = (
         "[convert2rhel]\n"
         "name=Convert2RHEL Repository\n"
         "baseurl=https://cdn.redhat.com/content/public/convert2rhel/$releasever/x86_64/os/\n"
         "gpgcheck=1\n"
         "enabled=1\n"
-        "sslcacert=/etc/rhsm/ca/redhat-uep.pem\n"
-        "gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release\n"
+        "sslcacert=%s\n"
+        "gpgkey=file://%s\n" % (ssl_cert_path, gpg_path)
     )
 
     cmd = [
@@ -110,6 +112,7 @@ def check_convert2rhel_latest():
     PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
     convert2rhel_versions = re.findall(PKG_NEVR, raw_output_convert2rhel_versions, re.MULTILINE)
     latest_version = ("0", "0.00", "0")
+
     for package_version in convert2rhel_versions:
         # rpm.lableCompare(pkg1, pkg2) compare two kernel version strings and return
         # -1 if str2 is greater then str1, 0 if they are equal, 1 if str1 is greater the str2
@@ -117,9 +120,6 @@ def check_convert2rhel_latest():
         if ver_compare > 0:
             latest_version = package_version[1:]
 
-    print(package_version[1:])
-    print(latest_version)
-    print(ver_compare)
     ver_compare = rpm.labelCompare(("0", convert2rhel_version, "0"), ("0", latest_version[1], "0"))
     if ver_compare < 0:
         if "CONVERT2RHEL_UNSUPPORTED_VERSION" in os.environ:
