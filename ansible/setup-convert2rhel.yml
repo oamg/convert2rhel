@@ -39,14 +39,14 @@
           path: /etc/yum.repos.d/{{ item }}
           regexp: ^mirrorlist
           replace: "#mirrorlist"
-        loop: centos8_repos
+        loop: "{{ centos8_repos }}"
 
       - name: Switch repo to vault.centos.org.
         replace:
           path: /etc/yum.repos.d/{{ item }}
           regexp: "#baseurl=http://mirror.centos.org"
           replace: baseurl=https://vault.centos.org
-        loop: centos8_repos
+        loop: "{{ centos8_repos }}"
       when: ansible_distribution == 'CentOS' and ansible_distribution_major_version | int == 8
 
     - name: Download Red Hat GPG key
