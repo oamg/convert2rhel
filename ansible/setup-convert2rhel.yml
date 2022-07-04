@@ -30,7 +30,7 @@
       fail:
         msg: "Distribution version must be 6.10, 7.9, or 8.5"
       when: (ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9'
-             and ansible_distribution_version != '8.5') or skip_os_version_check|bool
+             and ansible_distribution_version != '8.5') and skip_os_version_check|bool
 
     - name: Patch repositories if dealing with CentOS8.
       block:
@@ -39,14 +39,14 @@
           path: /etc/yum.repos.d/{{ item }}
           regexp: ^mirrorlist
           replace: "#mirrorlist"
-        loop: centos8_repos
+        loop: "{{ centos8_repos }}"
 
       - name: Switch repo to vault.centos.org.
         replace:
           path: /etc/yum.repos.d/{{ item }}
           regexp: "#baseurl=http://mirror.centos.org"
           replace: baseurl=https://vault.centos.org
-        loop: centos8_repos
+        loop: "{{ centos8_repos }}"
       when: ansible_distribution == 'CentOS' and ansible_distribution_major_version | int == 8
 
     - name: Download Red Hat GPG key
