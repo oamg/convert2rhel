@@ -604,7 +604,7 @@ def update_grub_after_conversion():
     grub2_config_file = GRUB2_BIOS_CONFIG_FILE if not is_efi() else os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
 
     output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False)
-    logger.debug("Output for grub2-mkconfig %s" % output)
+    logger.debug("Output of the grub2-mkconfig call:\n%s" % output)
 
     if ret_code != 0:
         logger.warning("GRUB2 config file generation failed.")
@@ -619,10 +619,10 @@ def update_grub_after_conversion():
         # Relevant bugzilla for this: https://bugzilla.redhat.com/show_bug.cgi?id=1917213
         logger.debug("Detected BIOS setup, proceeding to install the new GRUB2 images.")
         blk_device = get_grub_device()
-        logger.debug("Got device '%s'" % blk_device)
+        logger.debug("Device to install the GRUB2 image to: '%s'" % blk_device)
 
         output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-install", blk_device], print_output=False)
-        logger.debug("Output for grub2-install %s" % output)
+        logger.debug("Output of the grub2-install call:\n%s" % output)
 
         if ret_code != 0:
             logger.warning("Couldn't install the new images with GRUB2.")
