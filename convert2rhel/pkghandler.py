@@ -614,31 +614,111 @@ def replace_non_red_hat_packages():
     the Red Hat ones.
     """
 
-    # The subscription-manager packages on Oracle Linux 6 are installed from CentOS Linux 6 repositories. They are
-    # not replaced during the system conversion with the RHEL ones because convert2rhel replaces only packages
+    # The subscription-manager packages on Oracle Linux 6 are installed from
+    # CentOS Linux 6 repositories. They are not replaced during the system
+    # conversion with the RHEL ones because convert2rhel replaces only packages
     # signed by the original system vendor (Oracle).
-
-    submgr_pkgs = []
-    if system_info.id == "oracle" and system_info.version.major == 6:
-        submgr_pkgs += ["subscription-manager*"]
-
-    # TODO: run yum commands with --assumeno first and show the user what will
-    # be done and then ask if we should continue the operation
-
-    loggerinst.info("Performing update of the %s packages ..." % system_info.name)
+    submgr_pkgs = ["subscrpition-manager*"] if system_info.id == "oracle" and system_info.version.major == "6" else []
     orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades("update", orig_os_pkgs + submgr_pkgs)
+    enabled_repos = system_info.get_enabled_rhel_repos()
+    orig_os_pkgs += submgr_pkgs
 
-    loggerinst.info("Performing reinstallation of the %s packages ..." % system_info.name)
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades("reinstall", orig_os_pkgs + submgr_pkgs)
+    if pkgmanager.TYPE == "yum":
+        _process_yum_transaction(enabled_repos, orig_os_pkgs)
+    elif pkgmanager.TYPE == "dnf":
+        _process_dnf_transaction(enabled_repos, orig_os_pkgs)
 
-    # distro-sync (downgrade) the packages that had the following:
-    #  'Installed package <package> not available.'
-    cmd = "distro-sync"
-    loggerinst.info("Performing %s of the packages left ..." % cmd)
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades(cmd, orig_os_pkgs + submgr_pkgs)
+    loggerinst.info("Transaction completed successfully.")
+
+
+def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
+    """ """
+    base = pkgmanager.Base()
+    base.conf.substitutions["releasever"] = system_info.releasever
+
+    # Read and populate the repositories class in DNF
+    base.read_all_repos()
+
+    # Get a list of all repositories in the system and disable the ones we
+    # don't care about for this specific operation
+    repos = base.repos.all()
+    for repo in repos:
+        if repo.id not in enabled_repos:
+            repo.disable()
+
+    # Fill the sack for the enabled repositories
+    base.fill_sack()
+
+    loggerinst.info("Performing upgrade, reinstall and distro_sync of the %s packages ..." % system_info.name)
+    for pkg in orig_os_pkgs:
+        base.upgrade(pkg_spec=pkg)
+        try:
+            base.reinstall(pkg_spec=pkg)
+        except pkgmanager.exceptions.PackagesNotAvailableError:
+            # Try to use downgrade here and move the allow_erasing to resolve
+            base.downgrade(pkg)
+
+    # Resolve, donwload and process the transaction
+    try:
+        base.resolve(allow_erasing=True)
+    except pkgmanager.exceptions.DepsolveError as e:
+        loggerinst.debug("Got the following exception message: %s" % e)
+        loggerinst.critical("Failed to solve dependencies in the transaction.")
+
+    try:
+        base.download_packages(base.transaction.install_set)
+    except pkgmanager.execeptions.DownloadError as e:
+        loggerinst.debug("Got the following exception message: %s" % e)
+        loggerinst.critical("Failed to download packages.")
+
+    try:
+        base.do_transaction()
+    except (pkgmanager.exceptions.Error, pkgmanager.exceptions.TransactionCheckError) as e:
+        loggerinst.debug("Got the following exception message: %s" % e)
+        loggerinst.critical("Failed to process dnf transactions.")
+
+
+def _process_yum_transaction(enabled_repos, orig_os_pkgs):
+    """ """
+    yb = pkgmanager.YumBase()
+    yb.conf.yumvar["releasever"] = system_info.releasever
+    yb.repos.disableRepo("*")
+
+    loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
+    for repo in enabled_repos:
+        yb.repos.enableRepo(repo)
+
+    loggerinst.info("Performing update, reinstall and downgrade of the %s packages ..." % system_info.name)
+    for pkg in orig_os_pkgs:
+        yb.update(name=pkg)
+        try:
+            yb.reinstall(name=pkg)
+        except pkgmanager.Errors.ReinstallInstallError:
+            yb.downgrade(name=pkg)
+
+    loggerinst.info("Resolving yum dependencies for the transaction.")
+    # For YumBase().resolveDeps() the "exceptions" that can arise from this
+    # actually returns in the form of a tuple (int, str), meaning that the
+    # error codes will have a different meaning and message depending on the
+    # number.
+    # For example:
+    #   0. Transaction finished successfully, but it was empty.
+    #   1. Any general error that happened during the transaction
+    #   2. Transaction finished successfully, being able to process any package
+    #   it had in the transaction set.
+    ret_code, msg = yb.resolveDeps()
+    if ret_code == 1:
+        loggerinst.critical("YUM transaction failed: %s" % msg)
+
+    try:
+        yb.processTransaction()
+    except (
+        pkgmanager.Errors.YumRPMCheckError,
+        pkgmanager.Errors.YumTestTransactionError,
+        pkgmanager.Errors.YumRPMTransError,
+    ) as e:
+        loggerinst.debug("Got the following exception message: %s" % e)
+        loggerinst.critical("Failed to process yum transactions.")
 
 
 def install_gpg_keys():
