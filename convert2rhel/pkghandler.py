@@ -623,6 +623,8 @@ def replace_non_red_hat_packages():
     enabled_repos = system_info.get_enabled_rhel_repos()
     orig_os_pkgs += submgr_pkgs
 
+    loggerinst.info("Using the following repositories: %s" % ",".join(enabled_repos))
+
     if pkgmanager.TYPE == "yum":
         _process_yum_transaction(enabled_repos, orig_os_pkgs)
     elif pkgmanager.TYPE == "dnf":
@@ -636,6 +638,9 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
     base = pkgmanager.Base()
     base.conf.substitutions["releasever"] = system_info.releasever
 
+    if system_info.releasever == 8:
+        base.conf.module_platform_id = "platform:el8"
+
     # Read and populate the repositories class in DNF
     base.read_all_repos()
 
@@ -643,8 +648,11 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
     # don't care about for this specific operation
     repos = base.repos.all()
     for repo in repos:
-        if repo.id not in enabled_repos:
-            repo.disable()
+        # We are disabling the repositories that we don't want based on this `if` condition
+        # were if the repo.id is not in the enabled_repos list, we just disable it.
+        # In the other hand, if it is a repo that we want to have enabled, let's just call
+        # repo.enable() to make sure that it will be enabled when we run the transactions.
+        repo.disable if repo.id not in enabled_repos else repo.enable()
 
     # Fill the sack for the enabled repositories
     base.fill_sack()
@@ -656,18 +664,22 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
             base.reinstall(pkg_spec=pkg)
         except pkgmanager.exceptions.PackagesNotAvailableError:
             # Try to use downgrade here and move the allow_erasing to resolve
-            base.downgrade(pkg)
+            try:
+                base.downgrade(pkg)
+            except pkgmanager.exceptions.PackagesNotInstalledError:
+                loggerinst.warning("Package %s not available in any Red Hat repositories" % pkg)
+                continue
 
     # Resolve, donwload and process the transaction
     try:
         base.resolve(allow_erasing=True)
     except pkgmanager.exceptions.DepsolveError as e:
         loggerinst.debug("Got the following exception message: %s" % e)
-        loggerinst.critical("Failed to solve dependencies in the transaction.")
+        loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
     try:
         base.download_packages(base.transaction.install_set)
-    except pkgmanager.execeptions.DownloadError as e:
+    except pkgmanager.exceptions.DownloadError as e:
         loggerinst.debug("Got the following exception message: %s" % e)
         loggerinst.critical("Failed to download packages.")
 

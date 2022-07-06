@@ -28,6 +28,6 @@ except ImportError:
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates`() function.
-    from dnf.exceptions import RepoError
+    from dnf.exceptions import RepoError  # lgtm[py/unused-import]
 
     TYPE = "dnf"
