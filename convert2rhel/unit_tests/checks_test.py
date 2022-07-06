@@ -265,10 +265,7 @@ def test_c2r_up_to_date(caplog, monkeypatch, convert2rhel_latest_version_test):
     checks.check_convert2rhel_latest()
 
     local_version, dummy_ = convert2rhel_latest_version_test
-    log_msg = (
-        "You are currently running %s and the latest version of convert2rhel is 0.17.\n"
-        "Continuing conversion." % (local_version,)
-    )
+    log_msg = "Latest available convert2rhel version is installed.\n" "Continuing conversion."
     assert log_msg in caplog.text
 
 

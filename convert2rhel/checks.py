@@ -120,6 +120,9 @@ def check_convert2rhel_latest():
         if ver_compare > 0:
             latest_version = package_version[1:]
 
+    # After the for loop latest_version will have the epoch ,version, and release ex:("0" "0.26" "1.el7") information from convert2rhel yum repo.
+    # the release for latest_verion will be "1.el7" and the relase for convert2rhel_version will be hard coded as "0" below,
+    # therefore when the versions are the same the latest_version's release field will cause it to evaluate as later
     ver_compare = rpm.labelCompare(("0", convert2rhel_version, "0"), ("0", latest_version[1], "0"))
     if ver_compare < 0:
         if "CONVERT2RHEL_UNSUPPORTED_VERSION" in os.environ:
@@ -145,10 +148,7 @@ def check_convert2rhel_latest():
                 )
 
     else:
-        logger.info(
-            "You are currently running %s and the latest version of convert2rhel is %s.\n"
-            "Continuing conversion." % (convert2rhel_version, latest_version[1])
-        )
+        logger.debug("Latest available convert2rhel version is installed.\n" "Continuing conversion.")
 
 
 def check_efi():
