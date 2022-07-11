@@ -1,5 +1,5 @@
 pylint==1.1.0
-astroid==1.2
+astroid==2.12.1
 unittest2==0.5.1
 pytest==3.2.5
 pytest-cov==2.5.1
