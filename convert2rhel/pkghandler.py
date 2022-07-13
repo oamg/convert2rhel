@@ -35,6 +35,9 @@ loggerinst = logging.getLogger(__name__)
 # an error.
 MAX_YUM_CMD_CALLS = 3
 
+# Limit the number of loops overithe yum transaction.
+MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS = 3
+
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
@@ -58,6 +61,9 @@ _KNOWN_PKG_MESSAGE_KEYS = (
 )
 _PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
 
+# Extract the first package that appears in the yum depsolve error
+EXTRACT_PKG_FROM_YUM_DEPSOLVE = re.compile(r".*?(?=requires)")
+
 
 class PkgWFingerprint(object):
     """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
@@ -72,6 +78,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     dependencies, especially when it tries to downgrade pkgs. This function
     tries to resolve the dependency errors where yum is not able to.
     """
+    # TODO(r0x0d): Verify if we need to remove this specific function.
 
     if retries <= 0:
         loggerinst.critical("Could not resolve yum errors.")
@@ -609,32 +616,44 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
-def replace_non_red_hat_packages():
-    """Wrapper for yum commands that replace the non-Red Hat packages with
-    the Red Hat ones.
-    """
-
+def _get_system_packages_for_replacement():
+    """ """
     # The subscription-manager packages on Oracle Linux 6 are installed from
     # CentOS Linux 6 repositories. They are not replaced during the system
     # conversion with the RHEL ones because convert2rhel replaces only packages
     # signed by the original system vendor (Oracle).
     submgr_pkgs = ["subscrpition-manager*"] if system_info.id == "oracle" and system_info.version.major == "6" else []
     orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    enabled_repos = system_info.get_enabled_rhel_repos()
     orig_os_pkgs += submgr_pkgs
+    return orig_os_pkgs
 
+
+def replace_non_red_hat_packages():
+    """Wrapper for yum commands that replace the non-Red Hat packages with
+    the Red Hat ones.
+    """
+
+    enabled_repos = system_info.get_enabled_rhel_repos()
     loggerinst.info("Using the following repositories: %s" % ",".join(enabled_repos))
 
     if pkgmanager.TYPE == "yum":
-        _process_yum_transaction(enabled_repos, orig_os_pkgs)
+        _process_yum_transaction(enabled_repos)
     elif pkgmanager.TYPE == "dnf":
-        _process_dnf_transaction(enabled_repos, orig_os_pkgs)
+        _process_dnf_transaction(enabled_repos)
 
     loggerinst.info("Transaction completed successfully.")
 
 
-def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
-    """ """
+def _process_dnf_transaction(enabled_repos):
+    """Internal function to process dnf commands into a single transaction.
+
+    This internal function is intended to process the dnf transaction set.
+
+    :param enabled_repos: The repositories that will be enabled for the
+    transaction.
+    :type enabled_repos: list[str]
+    :raises SystemExit: TODO
+    """
     base = pkgmanager.Base()
     base.conf.substitutions["releasever"] = system_info.releasever
 
@@ -643,22 +662,21 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
 
     # Read and populate the repositories class in DNF
     base.read_all_repos()
-
-    # Get a list of all repositories in the system and disable the ones we
-    # don't care about for this specific operation
     repos = base.repos.all()
     for repo in repos:
-        # We are disabling the repositories that we don't want based on this `if` condition
-        # were if the repo.id is not in the enabled_repos list, we just disable it.
-        # In the other hand, if it is a repo that we want to have enabled, let's just call
-        # repo.enable() to make sure that it will be enabled when we run the transactions.
+        # We are disabling the repositories that we don't want based on this
+        # `if` condition were if the repo.id is not in the enabled_repos list,
+        # we just disable it. In the other hand, if it is a repo that we want
+        # to have enabled, let's just call repo.enable() to make sure that it
+        # will be enabled when we run the transactions.
         repo.disable if repo.id not in enabled_repos else repo.enable()
 
     # Fill the sack for the enabled repositories
     base.fill_sack()
 
     loggerinst.info("Performing upgrade, reinstall and distro_sync of the %s packages ..." % system_info.name)
-    for pkg in orig_os_pkgs:
+    original_os_pkgs = _get_system_packages_for_replacement()
+    for pkg in original_os_pkgs:
         base.upgrade(pkg_spec=pkg)
         try:
             base.reinstall(pkg_spec=pkg)
@@ -683,6 +701,8 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
         loggerinst.debug("Got the following exception message: %s" % e)
         loggerinst.critical("Failed to download packages.")
 
+    # base.transaction_check()
+
     try:
         base.do_transaction()
     except (pkgmanager.exceptions.Error, pkgmanager.exceptions.TransactionCheckError) as e:
@@ -690,47 +710,154 @@ def _process_dnf_transaction(enabled_repos, orig_os_pkgs):
         loggerinst.critical("Failed to process dnf transactions.")
 
 
-def _process_yum_transaction(enabled_repos, orig_os_pkgs):
-    """ """
-    yb = pkgmanager.YumBase()
-    yb.conf.yumvar["releasever"] = system_info.releasever
-    yb.repos.disableRepo("*")
+def _process_yum_transaction(enabled_repos):
+    """Internal function to process yum commands into a single transaction.
 
-    loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
-    for repo in enabled_repos:
-        yb.repos.enableRepo(repo)
+    This internal function is supposed to be used only by the
+    `replace_non_red_hat_packages()` public function, as this is a replacement
+    of the old `call_yum_cmd_w_downgrades()` function, that in the psat, used
+    to call the yum commands (upgrade, reinstall and downgrade) several times
+    in order to replace all the possible packages from the original system
+    vendor to the RHEL ones.
 
-    loggerinst.info("Performing update, reinstall and downgrade of the %s packages ..." % system_info.name)
-    for pkg in orig_os_pkgs:
-        yb.update(name=pkg)
+    ..notes::
+        The implementation of this yum transaction is different from the dnf
+        one, mainly because yum can raise some "exceptions" while trying to
+        resolve the dependencies of the transaction. Because of this, we need
+        to loop throught a couple of times until we know that all of the
+        dependencies are resolved without problems.
+
+        You might wonder "why not removing the packages that caused a failure
+        and only loop throught the dep solving again?" Well. Since we are
+        removing the problematic packages using `rpm` and not some specific
+        method in the transaction itself, yum doesn't know that something has
+        changed (The resolveDeps() function doesn't refresh if something else
+        happens outside the transaction), in order to make sure that we won't
+        have any problems with our transaction, it is easier to loop throught
+        everything again and just recreate the transaction, so yum will keep
+        track of what's changed.
+
+        This function should loop max 2 times to get to the point where our
+        transaction doesn't have any problematic packages in there, and the
+        subsequent transactions are "faster" because of some yum internal cache
+        mechanism.
+
+        This might be optimizaed in the future, but for now, it's somewhat
+        reliable.
+
+    :param enabled_repos: The repositories that will be enabled for the
+    transaction.
+    :type enabled_repos: list[str]
+    :raises SystemExit: Raises an SystemExit when the transaction process fails
+    or the dependency solve reached it's limit.
+    """
+    # TODO(r0x0d): Find a way to optmize this. Might be in a separate PR.
+    resolve_deps_finished = False
+
+    # Do not allow this to loop till eternity.
+    attemps = 0
+    while attemps < MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
+        original_os_pkgs = _get_system_packages_for_replacement()
+
+        yb = pkgmanager.YumBase()
+        yb.conf.yumvar["releasever"] = system_info.releasever
+        yb.repos.disableRepo("*")
+
+        loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
+        for repo in enabled_repos:
+            yb.repos.enableRepo(repo)
+
+        loggerinst.info("Performing update, reinstall and downgrade of the %s packages ..." % system_info.name)
+        for pkg in original_os_pkgs:
+            yb.update(name=pkg)
+            try:
+                yb.reinstall(name=pkg)
+            except pkgmanager.Errors.ReinstallInstallError:
+                yb.downgrade(name=pkg)
+
+        loggerinst.info("Resolving yum dependencies for the transaction.")
+        # For YumBase().resolveDeps() the "exceptions" that can arise from this
+        # actually returns in the form of a tuple (int, str | Sequence[str]),
+        # meaning that the error codes will have a different meaning and
+        # message depending on the number.
+        # For example:
+        #   0. Transaction finished successfully, but it was empty.
+        #   1. Any general error that happened during the transaction
+        #   2. Transaction finished successfully, being able to process any
+        #   package it had in the transaction set.
+        #
+        # We actually need to loop through this for some time to remove all the
+        # packages that are causing dependencies problems. This is stated in
+        # the yum source code for the `resolveDeps` function, that if any
+        # errors are "thrown" for the user, you will need to loop until the
+        # point you don't have any more errors.
+        ret_code, msg = yb.resolveDeps()
+
+        # For the return code 1, yum can output two kinds of error, one being
+        # that it reached the limit for depsolving, and the actual dependencies
+        # that caused an problem.
+        if ret_code == 1:
+            if "Depsolving loop limit reached" not in msg:
+                loggerinst.info("Found problematic packages.")
+                _resolve_yum_problematic_dependencies(msg)
+                continue
+
+        # TODO(r0x0d): Checking if there's any function to call to test the
+        # transaction, dnf too.
+
         try:
-            yb.reinstall(name=pkg)
-        except pkgmanager.Errors.ReinstallInstallError:
-            yb.downgrade(name=pkg)
+            loggerinst.info("Processing yum transaction.")
+            yb.processTransaction()
+            resolve_deps_finished = True
+            break
+        except (
+            pkgmanager.Errors.YumRPMCheckError,
+            pkgmanager.Errors.YumTestTransactionError,
+            pkgmanager.Errors.YumRPMTransError,
+        ) as e:
+            loggerinst.debug("Got the following exception message: %s" % e)
+            loggerinst.critical("Failed to process yum transactions.")
 
-    loggerinst.info("Resolving yum dependencies for the transaction.")
-    # For YumBase().resolveDeps() the "exceptions" that can arise from this
-    # actually returns in the form of a tuple (int, str), meaning that the
-    # error codes will have a different meaning and message depending on the
-    # number.
-    # For example:
-    #   0. Transaction finished successfully, but it was empty.
-    #   1. Any general error that happened during the transaction
-    #   2. Transaction finished successfully, being able to process any package
-    #   it had in the transaction set.
-    ret_code, msg = yb.resolveDeps()
-    if ret_code == 1:
-        loggerinst.critical("YUM transaction failed: %s" % msg)
+    # Since the `resolveDeps()` needs to be called multiple time in order to
+    # resolve every dependency for the transaction, and we are limiting the
+    # number of loops it can go throught, we are checking afterwards if it was
+    # really done or not. In case of not being done (i.e; not resolving the
+    # dependencies) we log a critical message.
+    if not resolve_deps_finished:
+        loggerinst.critical("Failed to process the dependencies.")
 
-    try:
-        yb.processTransaction()
-    except (
-        pkgmanager.Errors.YumRPMCheckError,
-        pkgmanager.Errors.YumTestTransactionError,
-        pkgmanager.Errors.YumRPMTransError,
-    ) as e:
-        loggerinst.debug("Got the following exception message: %s" % e)
-        loggerinst.critical("Failed to process yum transactions.")
+
+def _resolve_yum_problematic_dependencies(output):
+    """Internal function to parse yum resolve dependencies errors.
+
+    This internal function has the purpose to parse the yum `resolveDeps()`
+    errors that may arise from the transaction. It should not be used by other
+    functions here, as the purpose of this is serving the yum single
+    transactions.
+
+    :param output: A list of strings with packages names that had a dependency
+    error.
+    :type output: list[str]
+    """
+    packages_to_remove = []
+    for package in output:
+        resolve_error = re.findall(EXTRACT_PKG_FROM_YUM_DEPSOLVE, str(package))
+        if resolve_error:
+            # The first string to appear in index 0 is the package we want.
+            packages_to_remove.append(str(resolve_error[0]).replace(" ", ""))
+
+    if packages_to_remove:
+        packages_to_remove = set(packages_to_remove)
+        loggerinst.debug(
+            "Removing problematic packages to continue with the conversion:\n%s", "\n".join(packages_to_remove)
+        )
+        remove_pkgs(
+            pkgs_to_remove=set(packages_to_remove),
+            backup=True,
+            critical=False,
+        )
+    else:
+        loggerinst.info("No packages to remove.")
 
 
 def install_gpg_keys():
