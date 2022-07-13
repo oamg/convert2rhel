@@ -113,7 +113,8 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
     # Clean up
     os.system(f"cp /tmp/__init__.py {PATH_TO_VERSION}")
     del os.environ["CONVERT2RHEL_UNSUPPORTED_VERSION"]
-    
+
+
 def test_clean_cache(convert2rhel):
     # Test that the yum clean is done before any other check that c2r does
     with convert2rhel("--no-rpm-va --debug") as c2r:
