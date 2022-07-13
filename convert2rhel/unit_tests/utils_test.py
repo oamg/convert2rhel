@@ -240,7 +240,7 @@ def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts,
     with capfd.disabled():
         output, code = utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
 
-    expected_count = 1  # There will always be one debug log stating the pty columns
+    expected_count = 0
     if print_cmd:
         assert caplog.records[0].levelname == "DEBUG"
         assert caplog.records[0].message.strip() == "Calling command 'echo foo bar'"

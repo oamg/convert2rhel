@@ -195,9 +195,6 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     process = PexpectSpawnWithDimensions(
         cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None, dimensions=(1, columns)
     )
-    # The setting of window size is super unreliable
-    process.setwinsize(1, columns)
-    loggerinst.debug("Pseudo-PTY created with columns set to: %s" % (process.getwinsize(),))
 
     for expect, send in expect_script:
         process.expect(expect)
