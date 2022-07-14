@@ -43,16 +43,17 @@ def test_smoke_basic(shell):
     assert shell("convert2rhel <<< n").returncode != 0
 
 
-# Find where the site packages for Convert2RHEL are.
-PATH_TO_VERSION = subprocess.check_output(["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"])
+# Find where the site packages for Convert2RHEL are and backup the original version.
+PATH_TO_VERSION = subprocess.check_output(
+    ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
+).decode("utf-8")
+os.system(f"cp {PATH_TO_VERSION} /tmp/")
 
 
 def change_c2r_version(version):
     """
     Modify the __init__.py in which the version is stored.
     """
-    # Backup the original version
-    os.system(f"cp {PATH_TO_VERSION} /tmp/")
     with open(PATH_TO_VERSION, "r+") as version_file:
         version_file.write(f"__version__ = '{version}'")
 
@@ -123,3 +124,18 @@ def test_clean_cache(convert2rhel):
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
+
+def test_rhsm_error_logged(convert2rhel):
+    """
+    Test if the OSError for RHSM certificate being removed
+    is not being logged in cases the certificate is not installed yet.
+    """
+    with convert2rhel("--debug --no-rpm-va") as c2r:
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+        assert c2r.expect("DEBUG - No RHSM certificates found to be removed") == 0
+
+    # Check for error not present in log file
+    with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
+        for line in logfile:
+            assert "ERROR - OSError(2): No such file or directory" not in line
