@@ -4,11 +4,11 @@ import sys
 import pytest
 import six
 
-from convert2rhel import cert, redhatrelease, toolopts, utils
+from convert2rhel import cert, redhatrelease, systeminfo, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import get_pytest_mark
+from convert2rhel.unit_tests import get_pytest_marker
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -141,7 +141,7 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
     .. seealso::
         https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
     """
-    cert_file_returns = get_pytest_mark(request, "cert_filename")
+    cert_file_returns = get_pytest_marker(request, "cert_filename")
 
     if not cert_file_returns:
         temporary_filename = "filename"
@@ -165,9 +165,16 @@ def global_tool_opts(monkeypatch):
     return local_tool_opts
 
 
+@pytest.fixture
+def global_system_info(monkeypatch):
+    local_system_info = systeminfo.SystemInfo()
+    monkeypatch.setattr(systeminfo, "system_info", system_info)
+    return local_system_info
+
+
 @pytest.fixture()
 def pretend_os(request, pkg_root, monkeypatch):
-    """Parametric fixture to pretend to be one of available OS for convertion.
+    """Parametric fixture to pretend to be one of the available OSes for conversion.
 
     See https://docs.pytest.org/en/6.2.x/example/parametrize.html#indirect-parametrization
     for more information.
@@ -246,6 +253,15 @@ def pretend_os(request, pkg_root, monkeypatch):
         value=lambda: "x86_64",
     )
     tool_opts.no_rpm_va = True
+
+    # We can't depend on a test environment (containers) having an init system so we have to
+    # disable probing for the right value by hardcoding an anwer
+    monkeypatch.setattr(
+        system_info,
+        "_is_dbus_running",
+        value=lambda: True,
+    )
+
     system_info.resolve_system_info()
 
 

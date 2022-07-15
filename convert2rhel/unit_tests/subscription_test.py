@@ -21,18 +21,40 @@ import unittest
 
 from collections import namedtuple
 
+import dbus
+import dbus.connection
+import dbus.exceptions
 import pexpect
 import pytest
 import six
 
+from six.moves import urllib
+
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests import GetLoggerMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests import GetLoggerMocked, get_pytest_marker, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
+
+@pytest.fixture
+def mocked_rhsm_call_blocking(monkeypatch, request):
+    rhsm_returns = get_pytest_marker(request, "rhsm_returns")
+    if not rhsm_returns:
+        rhsm_returns = namedtuple("Mark", ("args",))([None])
+
+    fake_bus_obj = mock.Mock()
+    fake_dbus_connection = mock.Mock(return_value=fake_bus_obj)
+
+    monkeypatch.setattr(dbus, "SystemBus", mock.Mock())
+    monkeypatch.setattr(dbus.connection, "Connection", fake_dbus_connection)
+
+    fake_bus_obj.call_blocking = mock.Mock(side_effect=rhsm_returns.args[0])
+
+    return fake_bus_obj.call_blocking
 
 
 class DumbCallable(unit_tests.MockFunction):
@@ -125,26 +147,6 @@ class GetNoAvailSubsOnceMocked(unit_tests.MockFunction):
         return [namedtuple("Sub", ["pool_id", "sub_raw"])("samplepool", "Subscription description")]
 
 
-class RegistrationCmdCallMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self):
-        self.called += 1
-        return ("User interrupted process.", 0)
-
-
-class RegistrationCmdFromTooloptsMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.tool_opts = None
-        self.called = 0
-
-    def __call__(self, tool_opts):
-        self.called += 1
-        self.tool_opts = tool_opts
-        return RegistrationCmdCallMocked()
-
-
 class TestSubscription(unittest.TestCase):
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
@@ -211,11 +213,6 @@ class TestSubscription(unittest.TestCase):
         "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
     )
 
-    @unit_tests.mock(subscription, "unregister_system", unit_tests.CountableMockObject())
-    def test_rollback(self):
-        subscription.rollback()
-        self.assertEqual(subscription.unregister_system.called, 1)
-
     class LogMocked(unit_tests.MockFunction):
         def __init__(self):
             self.msg = ""
@@ -240,15 +237,6 @@ class TestSubscription(unittest.TestCase):
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
         self.assertTrue("rhel repository is not available" in logging.Logger.warning.msg)
-
-    @unit_tests.mock(os.path, "isdir", lambda x: True)
-    @unit_tests.mock(os, "listdir", lambda x: [])
-    def test_replace_subscription_manager_rpms_not_available(self):
-        self.assertRaises(SystemExit, subscription.replace_subscription_manager)
-
-        os.path.isdir = lambda x: False
-        os.listdir = lambda x: ["filename"]
-        self.assertRaises(SystemExit, subscription.replace_subscription_manager)
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
@@ -438,15 +426,57 @@ class TestAttachSubscription(object):
 
 
 class TestRegisterSystem(object):
-    def test_register_system_fail_non_interactive(self, tool_opts, monkeypatch, caplog):
+    @pytest.mark.parametrize(
+        ("unregister_system_mock", "stop_rhsm_mock", "expected_log_messages"),
+        (
+            (mock.Mock(), mock.Mock(), []),
+            (
+                mock.Mock(side_effect=subscription.UnregisterError("Unregister failed")),
+                mock.Mock(),
+                ["Unregister failed"],
+            ),
+            (
+                mock.Mock(),
+                mock.Mock(side_effect=subscription.StopRhsmError("Stopping RHSM failed")),
+                ["Stopping RHSM failed"],
+            ),
+        ),
+    )
+    def test_register_system_all_good(
+        self,
+        tool_opts,
+        monkeypatch,
+        caplog,
+        mocked_rhsm_call_blocking,
+        unregister_system_mock,
+        stop_rhsm_mock,
+        expected_log_messages,
+    ):
+        monkeypatch.setattr(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 1)
+        monkeypatch.setattr(subscription, "sleep", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", unregister_system_mock)
+        monkeypatch.setattr(subscription, "_stop_rhsm", stop_rhsm_mock)
+
+        tool_opts.username = "user"
+        tool_opts.password = "pass"
+        tool_opts.credentials_thru_cli = True
+
+        subscription.register_system()
+
+        assert unregister_system_mock.called
+        assert stop_rhsm_mock.called
+        assert caplog.records[-1].levelname == "INFO"
+        assert caplog.records[-1].message == "System registration succeeded."
+        for message in expected_log_messages:
+            assert message in caplog.text
+
+    @pytest.mark.rhsm_returns(dbus.exceptions.DBusException("nope"))
+    def test_register_system_fail_non_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Check the critical severity is logged when the credentials are given on the cmdline but registration fails."""
         monkeypatch.setattr(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 1)
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
-
-        fake_spawn = mock.Mock()
-        fake_spawn.before.decode = mock.Mock(return_value="nope")
-        fake_spawn.exitstatus = 1
-        monkeypatch.setattr(utils, "PexpectSpawnWithDimensions", fake_spawn)
+        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
@@ -457,47 +487,79 @@ class TestRegisterSystem(object):
 
         assert caplog.records[-1].levelname == "CRITICAL"
 
-    def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog):
+    @pytest.mark.rhsm_returns((dbus.exceptions.DBusException("nope"), dbus.exceptions.DBusException("nope"), None))
+    def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Test that the three attempts work: fail to register two times and succeed the third time."""
         tool_opts.credentials_thru_cli = False
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
 
         fake_from_tool_opts = mock.Mock(
             return_value=subscription.RegistrationCommand(username="invalid", password="invalid")
         )
         monkeypatch.setattr(subscription.RegistrationCommand, "from_tool_opts", fake_from_tool_opts)
 
-        # We may want to move this to the toplevel if we have other needs to
-        # test pexpect driven code.  If we do so, though, we would want to
-        # make it a bit more generic:
-        # * Be able to set iterations before success
-        # * Allow setting both exitstatus and signalstatus
-        # * Allow setting stdout output
-        # * Probably make the output and status settable per invocation rather
-        #   than using a count
-        class FakeProcess(mock.Mock):
-            called_count = 0
-
-            @property
-            def exitstatus(self):
-                self.called_count += 1
-                return self.called_count % 3
-
-        fake_process = FakeProcess()
-        fake_process.before.decode = mock.Mock(side_effect=("nope", "nope", "Success"))
-        fake_spawn = mock.Mock(return_value=fake_process)
-        monkeypatch.setattr(utils, "PexpectSpawnWithDimensions", fake_spawn)
-
         subscription.register_system()
 
-        assert len(fake_spawn.call_args_list) == 3
+        assert len(mocked_rhsm_call_blocking.call_args_list) == 3
         assert "CRITICAL" not in [rec.levelname for rec in caplog.records]
 
-    def test_register_system_fail_with_keyboardinterrupt(self, monkeypatch):
-        monkeypatch.setattr(subscription.RegistrationCommand, "from_tool_opts", RegistrationCmdFromTooloptsMocked())
+    @pytest.mark.rhsm_returns((KeyboardInterrupt("bang"),))
+    def test_register_system_keyboard_interrupt(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
+        """Test that we stop retrying if the user hits Control-C.."""
 
-        with pytest.raises(KeyboardInterrupt) as err:
+        tool_opts.credentials_thru_cli = False
+        monkeypatch.setattr(subscription, "sleep", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
+
+        pre_created_reg_command = subscription.RegistrationCommand(username="invalid", password="invalid")
+        fake_from_tool_opts = mock.Mock(return_value=pre_created_reg_command)
+        monkeypatch.setattr(subscription.RegistrationCommand, "from_tool_opts", fake_from_tool_opts)
+
+        with pytest.raises(KeyboardInterrupt):
             subscription.register_system()
+
+        assert len(mocked_rhsm_call_blocking.call_args_list) == 1
+        assert "CRITICAL" not in [rec.levelname for rec in caplog.records]
+
+    @pytest.mark.parametrize(
+        ("rhel_major_version", "expected_message"),
+        (
+            (6, "Skipping RHSM service shutdown on CentOS Linux 6."),
+            (7, "RHSM service stopped."),
+        ),
+    )
+    def test_stop_rhsm(self, caplog, monkeypatch, global_system_info, rhel_major_version, expected_message):
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
+        global_system_info.version = Version(rhel_major_version, 10)
+        global_system_info.name = "CentOS Linux"
+
+        run_subprocess_mock = mock.Mock(return_value=("Success", 0))
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
+
+        assert subscription._stop_rhsm() is None
+        assert caplog.records[-1].message == expected_message
+
+    @pytest.mark.parametrize(
+        "rhel_major_version",
+        (
+            # 6 currently doesn't stop rhsm-service.  Revisit if we get host
+            # already registered errors
+            # 6,
+            7,
+        ),
+    )
+    def test_stop_rhsm_failure(self, caplog, monkeypatch, global_system_info, rhel_major_version):
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
+        global_system_info.version = Version(rhel_major_version, 10)
+
+        run_subprocess_mock = mock.Mock(return_value=("Failure", 1))
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
+
+        with pytest.raises(subscription.StopRhsmError, match="Stopping RHSM failed with code: 1; output: Failure"):
+            subscription._stop_rhsm()
 
 
 class TestRegistrationCommand(object):
@@ -505,12 +567,14 @@ class TestRegistrationCommand(object):
         "registration_kwargs",
         (
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
                 "activation_key": "0xDEADBEEF",
                 "org": "Local Organization",
             },
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
+                "rhsm_port": "8443",
+                "rhsm_prefix": "/subscription/",
                 "org": "Local Organization",
                 "username": "me_myself_and_i",
                 "password": "a password",
@@ -547,7 +611,7 @@ class TestRegistrationCommand(object):
             # No credentials specified
             (
                 {
-                    "server_url": "http://localhost/",
+                    "rhsm_hostname": "localhost",
                     "org": "Local Organization",
                 },
                 "activation_key and org or username and password must be specified",
@@ -555,7 +619,7 @@ class TestRegistrationCommand(object):
             # Activation key without an org
             (
                 {
-                    "server_url": "http://localhost/",
+                    "rhsm_hostname": "localhost",
                     "activation_key": "0xDEADBEEF",
                 },
                 "org must be specified if activation_key is used",
@@ -563,7 +627,7 @@ class TestRegistrationCommand(object):
             # Username without a password
             (
                 {
-                    "server_url": "http://localhost/",
+                    "rhsm_hostname": "localhost",
                     "username": "me_myself_and_i",
                 },
                 "username and password must be used together",
@@ -571,7 +635,7 @@ class TestRegistrationCommand(object):
             # Password without a username
             (
                 {
-                    "server_url": "http://localhost/",
+                    "rhsm_hostname": "localhost",
                     "password": "a password",
                 },
                 "username and password must be used together",
@@ -587,12 +651,14 @@ class TestRegistrationCommand(object):
         "registration_kwargs",
         (
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
                 "activation_key": "0xDEADBEEF",
                 "org": "Local Organization",
             },
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
+                "rhsm_port": "8800",
+                "rhsm_prefix": "/rhsm",
                 "org": "Local Organization",
                 "username": "me_myself_and_i",
                 "password": "a password",
@@ -605,27 +671,21 @@ class TestRegistrationCommand(object):
     )
     def test_from_tool_opts_all_data_on_cli(self, registration_kwargs, tool_opts):
         """Test that the RegistrationCommand is created from toolopts successfully."""
-        if "server_url" in registration_kwargs:
-            tool_opts.serverurl = registration_kwargs["server_url"]
-
-        if "org" in registration_kwargs:
-            tool_opts.org = registration_kwargs["org"]
-
-        if "activation_key" in registration_kwargs:
-            tool_opts.activation_key = registration_kwargs["activation_key"]
-
-        if "username" in registration_kwargs:
-            tool_opts.username = registration_kwargs["username"]
-
-        if "password" in registration_kwargs:
-            tool_opts.password = registration_kwargs["password"]
+        for tool_opt_name, value in registration_kwargs.items():
+            setattr(tool_opts, tool_opt_name, value)
 
         reg_cmd = subscription.RegistrationCommand.from_tool_opts(tool_opts)
 
         assert reg_cmd.cmd == "subscription-manager"
 
-        if "server_url" in registration_kwargs:
-            assert reg_cmd.server_url == registration_kwargs["server_url"]
+        if "rhsm_hostname" in registration_kwargs:
+            assert reg_cmd.rhsm_hostname == registration_kwargs["rhsm_hostname"]
+
+        if "rhsm_port" in registration_kwargs:
+            assert reg_cmd.rhsm_port == registration_kwargs["rhsm_port"]
+
+        if "rhsm_prefix" in registration_kwargs:
+            assert reg_cmd.rhsm_prefix == registration_kwargs["rhsm_prefix"]
 
         if "org" in registration_kwargs:
             assert reg_cmd.org == registration_kwargs["org"]
@@ -716,12 +776,21 @@ class TestRegistrationCommand(object):
         "registration_kwargs",
         (
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
                 "activation_key": "0xDEADBEEF",
                 "org": "Local Organization",
             },
             {
-                "server_url": "http://localhost/",
+                "rhsm_hostname": "localhost",
+                "rhsm_port": "8800",
+                "rhsm_prefix": "/rhsm",
+                "activation_key": "0xDEADBEEF",
+                "org": "Local Organization",
+            },
+            {
+                "rhsm_hostname": "localhost",
+                "rhsm_port": "8800",
+                "rhsm_prefix": "rhsm",
                 "org": "Local Organization",
                 "username": "me_myself_and_i",
                 "password": "a password",
@@ -746,8 +815,18 @@ class TestRegistrationCommand(object):
         assert len([arg for arg in args_list if "password" in arg]) == 0
 
         # Assert the other args were added
-        if "server_url" in registration_kwargs:
-            assert "--serverurl={server_url}".format(**registration_kwargs) in args_list
+        if (
+            "rhsm_prefix" in registration_kwargs
+            and "rhsm_port" in registration_kwargs
+            and "rhsm_prefix" in registration_kwargs
+        ):
+            server_url = urllib.parse.urljoin(
+                "https://{rhsm_hostname}:{rhsm_port}".format(**registration_kwargs),
+                "{rhsm_prefix}".format(**registration_kwargs),
+            )
+            assert "--serverurl={0}".format(server_url) in args_list
+        elif "rhsm_hostname" in registration_kwargs:
+            assert "--serverurl=https://{rhsm_hostname}".format(**registration_kwargs) in args_list
 
         if "activation_key" in registration_kwargs:
             assert "--activationkey={activation_key}".format(**registration_kwargs) in args_list
@@ -761,37 +840,171 @@ class TestRegistrationCommand(object):
         expected_length = len(registration_kwargs) + 2
         if "password" in registration_kwargs:
             expected_length -= 1
+        if "rhsm_port" in registration_kwargs:
+            expected_length -= 1
+        if "rhsm_prefix" in registration_kwargs:
+            expected_length -= 1
 
         assert len(args_list) == expected_length
 
-    def test_calling_registration_command_activation_key(self, monkeypatch):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("", 0)))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", mock.Mock(return_value=("", 0)))
-
-        reg_cmd = subscription.RegistrationCommand(activation_key="0xDEADBEEF", org="Local Organization")
-        assert reg_cmd() == ("", 0)
-
-        utils.run_subprocess.assert_called_once_with(
-            ["subscription-manager", "register", "--force", "--activationkey=0xDEADBEEF", "--org=Local Organization"],
-            print_cmd=False,
+    @pytest.mark.parametrize(
+        ("rhsm_hostname", "rhsm_port", "rhsm_prefix", "expected"),
+        (
+            (None, None, None, dbus.Dictionary({}, signature="ss")),
+            ("localhost", None, None, dbus.Dictionary({"host": "localhost"}, signature="ss")),
+            ("localhost", "8443", None, dbus.Dictionary({"host": "localhost", "port": "8443"}, signature="ss")),
+            (
+                "localhost",
+                "8443",
+                "subscription",
+                dbus.Dictionary({"host": "localhost", "port": "8443", "handler": "subscription"}, signature="ss"),
+            ),
+            (
+                "localhost",
+                None,
+                "/subscription",
+                dbus.Dictionary({"host": "localhost", "handler": "/subscription"}, signature="ss"),
+            ),
+        ),
+    )
+    def test_connection_opts(self, rhsm_hostname, rhsm_port, rhsm_prefix, expected):
+        reg_cmd = subscription.RegistrationCommand(
+            org="justice_league",
+            activation_key="wonder twin powers",
+            rhsm_hostname=rhsm_hostname,
+            rhsm_port=rhsm_port,
+            rhsm_prefix=rhsm_prefix,
         )
-        assert utils.run_cmd_in_pty.call_count == 0
+        assert reg_cmd.connection_opts == expected
 
-    def test_calling_registration_command_password(self, monkeypatch):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("", 0)))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", mock.Mock(return_value=("", 0)))
-
-        reg_cmd = subscription.RegistrationCommand(username="me_myself_and_i", password="a password")
+    def test_calling_registration_command_activation_key(self, monkeypatch, mocked_rhsm_call_blocking):
+        reg_cmd = subscription.RegistrationCommand(activation_key="0xDEADBEEF", org="Local Organization")
         reg_cmd()
 
-        utils.run_cmd_in_pty.assert_called_once_with(
-            ["subscription-manager", "register", "--force", "--username=me_myself_and_i"],
-            expect_script=(("[Pp]assword: ", "a password\n"),),
-            print_cmd=False,
+        args = (
+            "Local Organization",
+            ["0xDEADBEEF"],
+            {"force": True},
+            {},
+            "C",
         )
-        assert utils.run_cmd_in_pty.call_count == 1
+        mocked_rhsm_call_blocking.assert_called_once_with(
+            "com.redhat.RHSM1",
+            "/com/redhat/RHSM1/Register",
+            "com.redhat.RHSM1.Register",
+            "RegisterWithActivationKeys",
+            "sasa{sv}a{sv}s",
+            args,
+            timeout=subscription.REGISTRATION_TIMEOUT,
+        )
 
-        assert utils.run_subprocess.call_count == 0
+    def test_calling_registration_command_password(self, monkeypatch, mocked_rhsm_call_blocking):
+        reg_cmd = subscription.RegistrationCommand(username="me_myself_and_i", password="a password")
+
+        reg_cmd()
+
+        args = (
+            "",
+            "me_myself_and_i",
+            "a password",
+            {"force": True},
+            {},
+            "C",
+        )
+        mocked_rhsm_call_blocking.assert_called_once_with(
+            "com.redhat.RHSM1",
+            "/com/redhat/RHSM1/Register",
+            "com.redhat.RHSM1.Register",
+            "Register",
+            "sssa{sv}a{sv}s",
+            args,
+            timeout=subscription.REGISTRATION_TIMEOUT,
+        )
+
+    def test_calling_registration_command_with_connection_opts(self, monkeypatch, mocked_rhsm_call_blocking):
+        reg_cmd = subscription.RegistrationCommand(
+            username="me_myself_and_i",
+            password="a password",
+            rhsm_hostname="rhsm.redhat.com",
+            rhsm_port="443",
+            rhsm_prefix="/",
+        )
+
+        run_subprocess_mocked = mock.Mock(return_value=("", 0))
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
+
+        reg_cmd()
+
+        assert run_subprocess_mocked.call_count == 1
+        call_args = tuple(run_subprocess_mocked.call_args)
+        assert call_args[0][0][:2] == ["subscription-manager", "config"]
+        assert len(run_subprocess_mocked.call_args[0][0][2:]) == 3
+        assert "--server.hostname=rhsm.redhat.com" in call_args[0][0][2:]
+        assert "--server.port=443" in call_args[0][0][2:]
+        assert "--server.prefix=/" in call_args[0][0][2:]
+
+    def test_calling_registration_command_with_serverurl_fails_setting_config(
+        self, monkeypatch, mocked_rhsm_call_blocking
+    ):
+        reg_cmd = subscription.RegistrationCommand(
+            username="me_myself_and_i", password="a password", rhsm_hostname="https://rhsm.redhat.com"
+        )
+
+        run_subprocess_mocked = mock.Mock(return_value=("failed to set server.hostname", 1))
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
+
+        with pytest.raises(
+            ValueError,
+            match="Error setting the subscription-manager connection configuration: failed to set server.hostname",
+        ):
+            reg_cmd()
+
+        assert run_subprocess_mocked.called_once_with(
+            ["subscription-manager", "config", "--server.hostname=rhsm.redhat.com"]
+        )
+
+    @pytest.mark.rhsm_returns((dbus.exceptions.DBusException(name="org.freedesktop.DBus.Error.NoReply"),))
+    def test_registration_succeeds_but_dbus_returns_noreply(self, monkeypatch, mocked_rhsm_call_blocking):
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            mock.Mock(
+                return_value=(
+                    "system identity: 1234-56-78-9abc\n" "name: abc-123\n" "org name: Test\n" "org ID: 12345678910\n",
+                    0,
+                )
+            ),
+        )
+
+        reg_cmd = subscription.RegistrationCommand(
+            username="me_myself_and_i",
+            password="a password",
+        )
+
+        assert reg_cmd() is None
+
+    @pytest.mark.rhsm_returns((dbus.exceptions.DBusException(name="org.freedesktop.DBus.Error.NoReply"),))
+    def test_registration_fails_and_dbus_returns_noreply(self, caplog, monkeypatch, mocked_rhsm_call_blocking):
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            mock.Mock(
+                return_value=(
+                    "This system is not yet registered."
+                    " Try 'subscription-manager register"
+                    " --help' for more information.\n",
+                    1,
+                )
+            ),
+        )
+
+        reg_cmd = subscription.RegistrationCommand(
+            username="me_myself_and_i",
+            password="a password",
+        )
+
+        with pytest.raises(dbus.exceptions.DBusException):
+            reg_cmd()
 
 
 @pytest.mark.parametrize(
@@ -868,6 +1081,43 @@ def test_hide_secret_unexpected_input(caplog):
     assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
 
 
+class TestReplaceSubscriptionManager(object):
+    def test_replace_subscription_manager_skipped(self, monkeypatch, caplog, tool_opts):
+        tool_opts.keep_rhsm = True
+        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+
+        subscription.replace_subscription_manager()
+
+        assert "Skipping due to the use of --keep-rhsm." in caplog.text
+        subscription.unregister_system.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("isdir_return", "listdir_return"),
+        (
+            (True, []),
+            (False, ["filename"]),
+        ),
+    )
+    def test_replace_subscription_manager_rpms_not_available(self, monkeypatch, isdir_return, listdir_return):
+        monkeypatch.setattr(os.path, "isdir", lambda x: isdir_return)
+        monkeypatch.setattr(os, "listdir", lambda x: listdir_return)
+
+        with pytest.raises(SystemExit):
+            subscription.replace_subscription_manager()
+
+    def test_replace_subscription_manager_unregister_failed(self, caplog, monkeypatch):
+        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
+        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
+        monkeypatch.setattr(subscription, "remove_original_subscription_manager", mock.Mock())
+        monkeypatch.setattr(subscription, "install_rhel_subscription_manager", mock.Mock())
+        monkeypatch.setattr(os.path, "isdir", lambda x: True)
+        monkeypatch.setattr(os, "listdir", lambda x: ["filename"])
+
+        subscription.replace_subscription_manager()
+
+        assert caplog.records[-1].message == "Unregister failed"
+
+
 class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
     def __init__(self):
         self.called = 0
@@ -938,7 +1188,7 @@ def test_download_rhsm_pkgs(version, pkgs_to_download, monkeypatch):
 class TestUnregisteringSystem(object):
     @pytest.mark.parametrize(
         ("output", "ret_code", "expected"),
-        (("", 0, "System unregistered successfully."), ("Failed to unregister.", 1, "System unregistration failed")),
+        (("", 0, "System unregistered successfully."),),
     )
     def test_unregister_system(self, output, ret_code, expected, monkeypatch, caplog):
         submgr_command = ("subscription-manager", "unregister")
@@ -963,6 +1213,35 @@ class TestUnregisteringSystem(object):
 
         assert expected in caplog.records[-1].message
 
+    @pytest.mark.parametrize(
+        ("output", "ret_code", "expected"),
+        (("Failed to unregister.", 1, "System unregistration failed"),),
+    )
+    def test_unregister_system_failure(self, output, ret_code, expected, monkeypatch, caplog):
+        submgr_command = ("subscription-manager", "unregister")
+        rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
+
+        # Mock rpm command
+        run_subprocess_mock = mock.Mock(
+            side_effect=run_subprocess_side_effect(
+                (
+                    submgr_command,
+                    (
+                        output,
+                        ret_code,
+                    ),
+                ),
+                (rpm_command, ("", 0)),
+            ),
+        )
+        monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
+
+        with pytest.raises(
+            subscription.UnregisterError,
+            match="System unregistration result:\n%s" % output,
+        ):
+            subscription.unregister_system()
+
     def test_unregister_system_submgr_not_found(self, monkeypatch, caplog):
         rpm_command = ["rpm", "--quiet", "-q", "subscription-manager"]
 
@@ -974,30 +1253,6 @@ class TestUnregisteringSystem(object):
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
         subscription.unregister_system()
         assert "The subscription-manager package is not installed." in caplog.records[-1].message
-
-    def test_unregister_system_keep_rhsm(self, monkeypatch, caplog, tool_opts):
-        tool_opts.keep_rhsm = True
-
-        subscription.unregister_system()
-
-        assert "Skipping due to the use of --keep-rhsm." in caplog.records[-1].message
-
-    def test_unregister_system_skipped(self, monkeypatch, caplog, tool_opts):
-        tool_opts.keep_rhsm = True
-        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", mock.Mock())
-
-        subscription.unregister_system()
-
-        assert "Skipping due to the use of --keep-rhsm." in caplog.text
-        pkghandler.get_installed_pkg_objects.assert_not_called()
-
-
-@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
-def test_replace_subscription_manager_skipped(monkeypatch, caplog):
-    monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
-    subscription.replace_subscription_manager()
-    assert "Skipping due to the use of --keep-rhsm." in caplog.text
-    subscription.unregister_system.assert_not_called()
 
 
 @mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
@@ -1241,6 +1496,34 @@ def test_enable_repos_toolopts_enablerepo(
 
     assert expected_message in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 1
+
+
+class TestRollback(object):
+    def test_rollback(self, monkeypatch):
+        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+
+        subscription.rollback()
+
+        assert subscription.unregister_system.called == 1
+
+    def test_rollback_unregister_skipped(self, monkeypatch, tool_opts, caplog):
+        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+
+        tool_opts.keep_rhsm = True
+
+        subscription.rollback()
+
+        assert subscription.unregister_system.called == 0
+        assert "Skipping due to the use of --keep-rhsm." == caplog.records[-1].message
+
+    def test_rollback_unregister_call_fails(self, monkeypatch, caplog):
+        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
+        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
+
+        subscription.rollback()
+
+        assert mocked_unregister_system.called == 1
+        assert "Unregister failed" == caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

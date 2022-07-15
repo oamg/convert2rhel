@@ -116,6 +116,7 @@ def test_perform_pre_checks(monkeypatch):
     check_rhel_compatible_kernel_is_used_mock = mock.Mock()
     check_package_updates_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
+    check_dbus_is_running_mock = mock.Mock()
 
     monkeypatch.setattr(
         checks,
@@ -154,6 +155,7 @@ def test_perform_pre_checks(monkeypatch):
     )
     monkeypatch.setattr(checks, "check_package_updates", value=check_package_updates_mock)
     monkeypatch.setattr(checks, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
+    monkeypatch.setattr(checks, "check_dbus_is_running", value=check_dbus_is_running_mock)
 
     checks.perform_pre_checks()
 
@@ -164,6 +166,7 @@ def test_perform_pre_checks(monkeypatch):
     check_rhel_compatible_kernel_is_used_mock.assert_called_once()
     check_package_updates_mock.assert_called_once()
     is_loaded_kernel_latest_mock.assert_called_once()
+    check_dbus_is_running_mock.assert_called_once()
 
 
 def test_pre_ponr_checks(monkeypatch):
@@ -1243,3 +1246,43 @@ def test_is_loaded_kernel_latest_unsupported_skip(
         is_loaded_kernel_latest()
 
     assert expected in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("no_rhsm", "dbus_running", "log_msg"),
+    (
+        (True, True, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (True, False, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (False, True, "DBus Daemon is running"),
+    ),
+)
+def test_check_dbus_is_running(
+    caplog, monkeypatch, global_tool_opts, global_system_info, no_rhsm, dbus_running, log_msg
+):
+    monkeypatch.setattr(checks, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = no_rhsm
+    monkeypatch.setattr(checks, "system_info", global_system_info)
+    global_system_info.dbus_running = dbus_running
+
+    assert checks.check_dbus_is_running() is None
+    assert caplog.records[-1].message == log_msg
+
+    assert log_msg == caplog.records[-1].message
+
+
+def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts, global_system_info):
+    monkeypatch.setattr(checks, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = False
+    monkeypatch.setattr(checks, "system_info", global_system_info)
+    global_system_info.dbus_running = False
+
+    with pytest.raises(SystemExit):
+        checks.check_dbus_is_running()
+
+    log_msg = (
+        "Could not find a running DBus Daemon which is needed to"
+        " register with subscription manager.\nPlease start dbus using `systemctl"
+        " start dbus` or (on CentOS Linux 6), `service messagebus start`"
+    )
+    assert log_msg == caplog.records[-1].message
+    assert caplog.records[-1].levelname == "CRITICAL"

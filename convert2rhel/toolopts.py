@@ -19,9 +19,10 @@ import copy
 import logging
 import optparse
 import os
+import re
 import sys
 
-from six.moves import configparser
+from six.moves import configparser, urllib
 
 from convert2rhel import __version__, utils
 
@@ -43,7 +44,9 @@ class ToolOpts(object):
         self.enablerepo = []
         self.disablerepo = []
         self.pool = None
-        self.serverurl = None
+        self.rhsm_hostname = None
+        self.rhsm_port = None
+        self.rhsm_prefix = None
         self.autoaccept = None
         self.auto_attach = None
         self.restart = None
@@ -345,7 +348,36 @@ class CLI(object):
                     "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
                 )
             else:
-                tool_opts.serverurl = parsed_opts.serverurl
+                # Parse the serverurl and save the components.
+                try:
+                    url_parts = _parse_subscription_manager_serverurl(parsed_opts.serverurl)
+                    url_parts = _validate_serverurl_parsing(url_parts)
+                except ValueError as e:
+                    # If we fail to parse, fail the conversion. The reason for
+                    # this harsh treatment is that we will be submitting
+                    # credentials to the server parsed from the serverurl. If
+                    # the user is specifying an internal subscription-manager
+                    # server but typo the url, we would fallback to the
+                    # public red hat subscription-manager server. That would
+                    # mean the user thinks the credentials are being passed
+                    # to their internal subscription-manager server but it
+                    # would really be passed externally.  That's not a good
+                    # security practice.
+                    loggerinst.critical(
+                        "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
+                        "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
+                        "Supplied serverurl: %s\nError: %s" % (parsed_opts.serverurl, e)
+                    )
+
+                tool_opts.rhsm_hostname = url_parts.hostname
+
+                if url_parts.port:
+                    # urllib.parse.urlsplit() converts this into an int but we
+                    # always use it as a str
+                    tool_opts.rhsm_port = str(url_parts.port)
+
+                if url_parts.path:
+                    tool_opts.rhsm_prefix = url_parts.path
 
         if parsed_opts.keep_rhsm:
             if tool_opts.no_rhsm:
@@ -462,6 +494,44 @@ def options_from_config_files(cfg_path=None):
                     loggerinst.warning("Unsupported header %s in %s." % (header, path))
 
     return supported_opts
+
+
+def _parse_subscription_manager_serverurl(serverurl):
+    """Parse a url string in a manner mostly compatible with subscription-manager --serverurl."""
+    # This is an adaptation of what subscription-manager's cli enforces:
+    # https://github.com/candlepin/subscription-manager/blob/main/src/rhsm/utils.py#L112
+
+    # Don't modify http://<something> and https://<something> as they are fine
+    if not re.match("https?://[^/]+", serverurl):
+        # Anthing that looks like a malformed scheme is immediately discarded
+        if re.match("^[^:]+:/.+", serverurl):
+            raise ValueError("Unable to parse --serverurl. Make sure it starts with http://HOST or https://HOST")
+
+        # If there isn't a scheme, add one now
+        serverurl = "https://%s" % serverurl
+
+    url_parts = urllib.parse.urlsplit(serverurl, allow_fragments=False)
+
+    return url_parts
+
+
+def _validate_serverurl_parsing(url_parts):
+    """
+    Perform some tests that we parsed the subscription-manager serverurl successfully.
+
+    :arg url_parts: The parsed serverurl as returned by urllib.parse.urlsplit()
+    :raises ValueError: If any of the checks fail.
+    :returns: url_parts If the check was successful.
+    """
+    if url_parts.scheme not in ("https", "http"):
+        raise ValueError(
+            "Subscription manager must be accessed over http or https.  %s is not valid" % url_parts.scheme
+        )
+
+    if not url_parts.hostname:
+        raise ValueError("A hostname must be specified in a subscription-manager serverurl")
+
+    return url_parts
 
 
 # Code to be executed upon module import

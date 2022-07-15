@@ -8,6 +8,7 @@ ENV URL_GET_PIP "https://bootstrap.pypa.io/pip/2.7/get-pip.py"
 ENV APP_DEV_DEPS "requirements/centos7.requirements.txt"
 ENV APP_MAIN_DEPS \
     python-six \
+    dbus-python \
     pexpect
 
 WORKDIR /data

@@ -11,6 +11,7 @@ ENV PREP_PIP_DEPS "scripts/centos6_pip_prep.sh"
 ENV APP_MAIN_DEPS \
     python-six \
     pexpect \
+    dbus-python \
     gcc \
     python-devel
 

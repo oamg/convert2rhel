@@ -109,11 +109,17 @@ def safe_repr(obj, short=False):
     return result[:_MAX_LENGTH] + " [truncated]..."
 
 
-def get_pytest_mark(request, mark_name):
+def get_pytest_marker(request, mark_name):
     """
     Get a pytest mark from a request.
+
     The pytest API to retrieve a mark changed between RHEL6 and RHEL7.  This function is
     a compatibility shim to retrieve the value.
+
+    Use this function instead of pytest's `request.node.get_closest_marker(mark_name)` so that it will work on all versions of RHEL that we are targeting.
+    .. seealso::
+        * `pytest's get_closest_marker() function which this function wraps <https://docs.pytest.org/en/stable/reference/reference.html#pytest.nodes.Node.get_closest_marker>`_
+        * `A technique you might use where you would need to use this function to retrieve a mark's value. <https://docs.pytest.org/en/stable/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures>`_
     """
     if pytest.__version__.split(".") <= ["3", "6", "0"]:
         mark = request.node.get_marker(mark_name)
