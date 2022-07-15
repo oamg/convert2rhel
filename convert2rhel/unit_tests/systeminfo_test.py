@@ -21,6 +21,7 @@ import os
 import shutil
 import socket
 import sys
+import time
 import unittest
 
 from collections import namedtuple
@@ -276,6 +277,84 @@ def test_check_internet_access(side_effect, expected, monkeypatch):
     system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
+
+
+@pytest.mark.parametrize(
+    ("version_major", "command_output", "expected_command", "expected_output"),
+    (
+        (6, "messagebus: (pid  1315) is running...\n", ["/sbin/service", "messagebus", "status"], True),
+        (6, "messagebus: unrecognized service\n", ["/sbin/service", "messagebus", "status"], False),
+        (6, "", ["/sbin/service", "messagebus", "status"], False),
+        (6, "master status unknown due to insufficient privileges.", ["/sbin/service", "messagebus", "status"], False),
+        (7, "ActiveState=active\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], True),
+        (7, "ActiveState=reloading\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+        (7, "ActiveState=inactive\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+        (7, "ActiveState=failed\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+        (8, "ActiveState=active\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], True),
+        (8, "ActiveState=inactive\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+        # Note: systemctl seems to emit ActiveState=something in all reasonable situations.
+        # So these just test that we do something reasonable if things are totally messed up.
+        (8, "Fruuble\nBarble\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+        (8, "", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
+    ),
+)
+def test_get_dbus_status(monkeypatch, version_major, command_output, expected_command, expected_output):
+    monkeypatch.setattr(system_info, "version", namedtuple("Version", ("major", "minor"))(version_major, 0))
+    monkeypatch.setattr(time, "sleep", mock.Mock)
+    run_subprocess_mocked = mock.Mock(return_value=(command_output, 0))
+    monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
+
+    assert system_info._is_dbus_running() == expected_output
+    assert run_subprocess_mocked.called_once_with(expected_command)
+
+
+@pytest.mark.parametrize(
+    ("states", "expected"),
+    (
+        (
+            (
+                "reloading",
+                "active",
+            ),
+            True,
+        ),
+        (
+            (
+                "activating",
+                "activating",
+                "active",
+            ),
+            True,
+        ),
+        (
+            (
+                "activating",
+                "failed",
+            ),
+            False,
+        ),
+        (
+            (
+                "deactivating",
+                "deactivated",
+            ),
+            False,
+        ),
+    ),
+)
+def test_get_dbus_status_in_progress(monkeypatch, states, expected):
+    """Test that dbus switching from reloading or activating to active is detected."""
+    monkeypatch.setattr(system_info, "version", namedtuple("Version", ("major", "minor"))(8, 0))
+    monkeypatch.setattr(time, "sleep", mock.Mock)
+
+    side_effects = []
+    for state in states:
+        side_effects.append(("ActiveState=%s\n" % state, 0))
+
+    run_subprocess_mocked = mock.Mock(side_effect=side_effects)
+    monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
+
+    assert system_info._is_dbus_running() is expected
 
 
 @pytest.mark.parametrize(

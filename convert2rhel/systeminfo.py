@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import socket
+import time
 
 from collections import namedtuple
 
@@ -28,6 +29,9 @@ from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
 
+
+# Number of times to retry checking the status of dbus
+CHECK_DBUS_STATUS_RETRIES = 3
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -118,6 +122,7 @@ class SystemInfo(object):
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
         self.has_internet_access = self._check_internet_access()
+        self.dbus_running = self._is_dbus_running()
 
     @staticmethod
     def _get_system_release_file_content():
@@ -358,6 +363,80 @@ class SystemInfo(object):
         :rtype: bool
         """
         return self.releasever in EUS_MINOR_VERSIONS
+
+    def _is_dbus_running(self):
+        """
+        Check whether dbus is running.
+
+        :returns: True if dbus is running.  Otherwise False
+        """
+        retries = 0
+        status = False
+
+        while retries < CHECK_DBUS_STATUS_RETRIES:
+            if self.version.major <= 6:
+                status = _is_sysv_managed_dbus_running()
+            else:
+                status = _is_systemd_managed_dbus_running()
+
+            if status is not None:
+                # We know that DBus is definitely running or stopped
+                break
+
+            # Wait for 1 second, 2 seconds, and then 4 seconds for dbus to be running
+            # (In case it was started before convert2rhel but it is slow to start)
+            time.sleep(2**retries)
+            retries += 1
+
+        else:  # while-else
+            # If we haven't gotten a definite yes or no but we've exceeded or retries,
+            # report that DBus is not running
+            status = False
+
+        return status
+
+
+def _is_sysv_managed_dbus_running():
+    """Get DBus status from SysVinit compatible systems."""
+    # None means the status should be retried because we weren't sure if it is turned off.
+    running = None
+    output, _ret_code = utils.run_subprocess(["/sbin/service", "messagebus", "status"])
+    for line in output.splitlines():
+        if line.startswith("messagebus"):
+            if "running" in line:
+                running = True
+                break
+
+            # Note: SysV has a stopped status but I don't think that toggles until after
+            # the service is running so we could be caught in the case where the service
+            # is starting if we don't retry.
+
+    return running
+
+
+def _is_systemd_managed_dbus_running():
+    """Get DBus status from systemd."""
+    # Reloading, activating, etc will return None which means to retry
+    running = None
+
+    output, ret_code = utils.run_subprocess(["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"])
+    for line in output.splitlines():
+        # Note: systemctl seems to always emit an ActiveState line (ActiveState=inactive if
+        # the service doesn't exist).  So this check is just defensive coding.
+        if line.startswith("ActiveState="):
+            state = line.split("=", 1)[1]
+
+            if state == "active":
+                # DBus is definitely running
+                running = True
+                break
+
+            if state in ("inactive", "deactivating", "failed"):
+                # DBus is definitely not running
+                running = False
+                break
+
+    return running
 
 
 # Code to be executed upon module import

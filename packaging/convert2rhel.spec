@@ -31,6 +31,8 @@ BuildRequires:  pexpect
 BuildRequires:  rpm-python
 %endif
 
+# We need to talk to subscription-manager over dbus
+Requires:       dbus
 Requires:       efibootmgr
 Requires:       rpm
 Requires:       python%{python_pkgversion}
@@ -42,12 +44,14 @@ Requires:       dnf
 Requires:       dnf-utils
 Requires:       grubby
 Requires:       python3-pexpect
+Requires:       python3-dbus
 %endif
 %if 0%{?rhel} && 0%{?rhel} <= 7
 Requires:       yum
 # yum-utils includes yumdownloader we use
 Requires:       yum-utils
 Requires:       pexpect
+Requires:       dbus-python
 %endif
 # grub2-tools includes grub2-mkconfig and grub2-install needed by PR#417
 %if 0%{?rhel} && 0%{?rhel} >= 7

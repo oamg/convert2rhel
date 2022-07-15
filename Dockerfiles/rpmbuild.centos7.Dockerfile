@@ -8,6 +8,7 @@ ENV APP_MAIN_DEPS \
     rpmlint \
     python-devel \
     python-setuptools \
+    dbus-python \
     pexpect \
     python-six
 

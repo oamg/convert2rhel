@@ -9,6 +9,7 @@ ENV APP_DEV_DEPS "requirements/centos8.requirements.txt"
 ENV APP_MAIN_DEPS \
     python3 \
     python3-six \
+    python3-dbus \
     python3-pexpect
 
 WORKDIR /data

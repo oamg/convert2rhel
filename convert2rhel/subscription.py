@@ -22,7 +22,13 @@ import re
 from collections import namedtuple
 from time import sleep
 
-from convert2rhel import backup, pkghandler, utils
+import dbus
+import dbus.connection
+import dbus.exceptions
+
+from six.moves import urllib
+
+from convert2rhel import backup, i18n, pkghandler, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -57,13 +63,32 @@ _UBI_8_REPO_CONTENT = (
     "enabled=1\n"
 )
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
+
+# We need to translate config settings between names used for the subscription-manager DBus API and
+# names used for the RHSM config file.  This is the mapping for the settings we care about.
+CONNECT_OPT_NAME_TO_CONFIG_KEY = {
+    "host": "server.hostname",
+    "port": "server.port",
+    "handler": "server.prefix",
+}
+
 MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
 # Using a delay that could help when the RHSM/Satellite server is overloaded.
 # The delay in seconds is a prime number that roughly doubles with each attempt.
 REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
+# Seconds to wait for Registration to complete over DBus. If this timeout is exceeded, we retry.
+REGISTRATION_TIMEOUT = 180
 
 
 _SUBMGR_PKG_REMOVED_IN_CL_85 = "subscription-manager-initial-setup-addon"
+
+
+class UnregisterError(Exception):
+    """Raised with problems unregistering a system."""
+
+
+class StopRhsmError(Exception):
+    """Raised with problems stopping the rhsm daemon."""
 
 
 def subscribe_system():
@@ -80,10 +105,6 @@ def subscribe_system():
 def unregister_system():
     """Unregister the system from RHSM."""
     loggerinst.info("Unregistering the system.")
-    if tool_opts.keep_rhsm:
-        loggerinst.info("Skipping due to the use of --keep-rhsm.")
-        return
-
     # We are calling run_subprocess with rpm here because of a bug in
     # Oracle/CentOS Linux 7 in which the process always exits with 1 in case of a
     # rollback when KeyboardInterrupt is raised.  To avoid many changes and
@@ -96,14 +117,11 @@ def unregister_system():
     if ret_code != 0:
         loggerinst.info("The subscription-manager package is not installed.")
         return
+
     unregistration_cmd = ["subscription-manager", "unregister"]
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.warning(
-            "System unregistration failed with return code %d and message:\n%s",
-            ret_code,
-            output,
-        )
+        raise UnregisterError("System unregistration result:\n%s" % output)
     else:
         loggerinst.info("System unregistered successfully.")
 
@@ -120,33 +138,98 @@ def register_system():
                 attempt + 1,
                 MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE,
             )
+
         loggerinst.info(
             "%sRegistering the system using subscription-manager ...",
             attempt_msg,
         )
 
-        registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
-        output, ret_code = registration_cmd()
-        if ret_code == 0:
-            # Handling a signal interrupt that was previously handled by
-            # subscription-manager.
-            if "user interrupted process" in output.lower():
-                raise KeyboardInterrupt
-            return
+        # Force the system to be unregistered
+        # The subscription-manager DBus API has a force parameter but there's
+        # a bug in susbcription-manager where that doesn't take effect.
+        # Explicitly unregister here to workaround that.
+        # Sub-man bug: https://bugzilla.redhat.com/show_bug.cgi?id=2118486
+        loggerinst.info("Unregistering the system to clear the server's state for our registration.")
+        try:
+            unregister_system()
+        except UnregisterError as e:
+            loggerinst.warning(str(e))
 
-        loggerinst.info("System registration failed with return code = %s" % str(ret_code))
-        sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
-        attempt += 1
-    loggerinst.critical("Unable to register the system through subscription-manager.")
+        # Hack: currently, on RHEL7, subscription-manager unregister is
+        # reporting that the system is not registered but then calling the
+        # subscription-manager Registration API reports that the system is
+        # already registered. We suspect that the test host is being used for
+        # a previous test.  In that test, the system is registered, then
+        # rollback occurs which unregisters the server in some places but it
+        # remains registered in other data.  Then registration fails.
+        #
+        # For the short term, we are going to stop the rhsm service to work
+        # around this issue.  It should restart on its own when needed:
+        loggerinst.info(
+            "Stopping the RHSM service so that registration does not think that the host is already registered."
+        )
+        try:
+            _stop_rhsm()
+        except StopRhsmError as e:
+            # The system really might not be registered yet and also not running rhsm
+            # so ignore the error and try to register the system.
+            loggerinst.info(str(e))
+
+        # Register the system
+        registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
+
+        try:
+            registration_cmd()
+            loggerinst.info("System registration succeeded.")
+        except KeyboardInterrupt:
+            # When the user hits Control-C to exit, we shouldn't retry
+            raise
+        except Exception as e:
+            loggerinst.info("System registration failed with error: %s" % str(e))
+            sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
+            attempt += 1
+            continue
+
+        break
+
+    else:  # While-else
+        # We made the maximum number of subscription-manager retries and still failed
+        loggerinst.critical("Unable to register the system through subscription-manager.")
+
+    return None
+
+
+def _stop_rhsm():
+    """Stop the rhsm service."""
+    cmd = ["/bin/systemctl", "stop", "rhsm"]
+    if system_info.version.major <= 6:
+        # On RHEL6, there isn't a service-oriented way to stop rhsm.  It is started on demand so
+        # there isn't an init script to stop it.  If we find we need to stop it, because we're
+        # etting "machine is already registered" errors there, then we'll need to look for
+        # rhsm-service in the process list and send it the TERM signal.
+        loggerinst.info("Skipping RHSM service shutdown on {0} {1}.".format(system_info.name, system_info.version.major))
+        return
+
+    output, ret_code = utils.run_subprocess(cmd, print_output=False)
+    if ret_code != 0:
+        raise StopRhsmError("Stopping RHSM failed with code: %s; output: %s" % (ret_code, output))
+    loggerinst.info("RHSM service stopped.")
 
 
 class RegistrationCommand(object):
-    def __init__(self, activation_key=None, org=None, username=None, password=None, server_url=None):
+    def __init__(
+        self,
+        activation_key=None,
+        org=None,
+        username=None,
+        password=None,
+        rhsm_hostname=None,
+        rhsm_port=None,
+        rhsm_prefix=None,
+    ):
         """
         A callable that can register a system with subscription-manager.
 
-        :kwarg server_url: Optional URL to the subscription-manager backend.
-            Useful when the customer has an on-prem subscription-manager instance.
         :kwarg activation_key: subscription-manager activation_key that can be
             used to register the system. Org must be specified if this was given.
         :kwarg org: The organization that the activation_key is associated with.
@@ -155,12 +238,15 @@ class RegistrationCommand(object):
             Required if password is specified.
         :kwarg password: Password to authenticate with subscription-manager.
             It is required if username is specified.
+        :kwarg rhsm_hostname: Optional hostname of a subscription-manager backend.
+            Useful when the customer has an on-prem subscription-manager instance.
+        :kwarg rhsm_port: Optional port for a subscription-manager backend.
+        :kwarg rhsm_prefix: Optional path element of a subscription-manager backend.
 
         .. note:: Either activation_key and org or username and password must
             be specified.
         """
         self.cmd = "subscription-manager"
-        self.server_url = server_url
 
         if activation_key and not org:
             raise ValueError("org must be specified if activation_key is used")
@@ -178,6 +264,10 @@ class RegistrationCommand(object):
             # No password set
             if not self.activation_key:
                 raise ValueError("activation_key and org or username and password must be specified")
+
+        self.rhsm_hostname = rhsm_hostname
+        self.rhsm_port = rhsm_port
+        self.rhsm_prefix = rhsm_prefix
 
     @classmethod
     def from_tool_opts(cls, tool_opts):
@@ -245,9 +335,15 @@ class RegistrationCommand(object):
 
             registration_attributes["password"] = password
 
-        if tool_opts.serverurl:
-            loggerinst.debug("    ... using custom RHSM URL")
-            registration_attributes["server_url"] = tool_opts.serverurl
+        if tool_opts.rhsm_hostname:
+            loggerinst.debug("    ... using custom RHSM hostname")
+            registration_attributes["rhsm_hostname"] = tool_opts.rhsm_hostname
+        if tool_opts.rhsm_port:
+            loggerinst.debug("    ... using custom RHSM port")
+            registration_attributes["rhsm_port"] = tool_opts.rhsm_port
+        if tool_opts.rhsm_prefix:
+            loggerinst.debug("    ... using custom RHSM prefix")
+            registration_attributes["rhsm_prefix"] = tool_opts.rhsm_prefix
 
         return cls(**registration_attributes)
 
@@ -263,8 +359,18 @@ class RegistrationCommand(object):
         """
         args = ["register", "--force"]
 
-        if self.server_url:
-            args.append("--serverurl=%s" % self.server_url)
+        if self.connection_opts:
+            if self.rhsm_port:
+                netloc = "%s:%s" % (self.rhsm_hostname, self.rhsm_port)
+            else:
+                netloc = self.rhsm_hostname
+
+            prefix = self.rhsm_prefix if self.rhsm_prefix else ""
+            if prefix.startswith("/"):
+                prefix = prefix[1:]
+
+            server_url = urllib.parse.urlunsplit(("https", netloc, prefix, "", ""))
+            args.append("--serverurl=%s" % server_url)
 
         if self.activation_key:
             args.append("--activationkey=%s" % self.activation_key)
@@ -277,28 +383,185 @@ class RegistrationCommand(object):
 
         return args
 
+    @property
+    def connection_opts(self):
+        """
+        This property is a dbus.Dictionary that contains the connection options for RHSM
+        dbus calls.
+
+        Set :attr:`server_url` to affect this value.
+        """
+        connection_opts = {}
+
+        if self.rhsm_hostname:
+            connection_opts["host"] = self.rhsm_hostname
+
+        if self.rhsm_port is not None:
+            connection_opts["port"] = self.rhsm_port
+
+        if self.rhsm_prefix:
+            connection_opts["handler"] = self.rhsm_prefix
+
+        connection_opts = dbus.Dictionary(connection_opts, signature="sv", variant_level=1)
+        return connection_opts
+
     def __call__(self):
         """
-        Run the subscription-manager command.
+        Use dbus to register the system with subscription-manager.
 
-        Wrapper for running the subscription-manager command that keeps
-        secrets secure.
+        Status of dbus on various platforms:
+            * RHEL6:
+                * DBUS-1.2.24 is present but may not be installed.
+                * Install the dbus package and run /etc/rc.d/init.d/messagebus start
+                * dbus-python-0.83.0 is available
+            * RHEL7:
+                * dbus-1.10.24 is installed and run by default
+                * dbus-python-1.1.9 is available
+            * RHEL8 & RHEL9
+                * dbus-1.12.x is installed and run by default
+                * python3-dbus-1.2.x is available
+
+        .. seealso::
+            Documentation for the subscription-manager dbus API:
+            https://www.candlepinproject.org/docs/subscription-manager/dbus_objects.html
         """
-        if self.password:
-            loggerinst.debug(
-                "Calling command '%s %s'" % (self.cmd, " ".join(hide_secrets(self.args)))
-            )  # lgtm[py/clear-text-logging-sensitive-data]
-            output, ret_code = utils.run_cmd_in_pty(
-                [self.cmd] + self.args, expect_script=(("[Pp]assword: ", self.password + "\n"),), print_cmd=False
-            )
-        else:
-            # Warning: Currently activation_key can only be specified on the CLI. This is insecure
-            # but there's nothing we can do about it for now. Once subscription-manager issue:
-            # https://issues.redhat.com/browse/ENT-4724 is implemented, we can change both password
-            # and activation_key to use a file-based approach to passing the secrets.
-            output, ret_code = utils.run_subprocess([self.cmd] + self.args, print_cmd=False)
+        # Note: dbus doesn't understand empty python dicts. Use dbus.Dictionary({}, signature="ss")
+        # if we need one in the future.
+        REGISTER_OPTS_DICT = dbus.Dictionary({"force": True}, signature="sv", variant_level=1)
 
-        return output, ret_code
+        loggerinst.debug("Getting a handle to the system dbus")
+        system_bus = dbus.SystemBus()
+
+        # Create a new bus so we can talk to rhsm privately (For security:
+        # talking on the system bus might be eavesdropped in certain scenarios)
+        loggerinst.debug("Getting a subscription-manager RegisterServer object from dbus")
+        register_server = system_bus.get_object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
+        loggerinst.debug("Starting a private DBus to talk to subscription-manager")
+        address = register_server.Start(
+            i18n.SUBSCRIPTION_MANAGER_LOCALE, dbus_interface="com.redhat.RHSM1.RegisterServer"
+        )
+
+        try:
+            # Use the private bus to register the machine
+            loggerinst.debug("Connecting to the private DBus")
+            private_bus = dbus.connection.Connection(address)
+
+            try:
+                if self.password:
+                    loggerinst.info("Registering via username/password: %s" % " ".join(hide_secrets(self.args)))
+                    args = (
+                        self.org or "",
+                        self.username,
+                        self.password,
+                        REGISTER_OPTS_DICT,
+                        self.connection_opts,
+                        i18n.SUBSCRIPTION_MANAGER_LOCALE,
+                    )
+                    private_bus.call_blocking(
+                        "com.redhat.RHSM1",
+                        "/com/redhat/RHSM1/Register",
+                        "com.redhat.RHSM1.Register",
+                        "Register",
+                        "sssa{sv}a{sv}s",
+                        args,
+                        timeout=REGISTRATION_TIMEOUT,
+                    )
+
+                else:
+                    loggerinst.info("Registering via org/activation_key: %s" % " ".join(hide_secrets(self.args)))
+                    args = (
+                        self.org,
+                        [self.activation_key],
+                        REGISTER_OPTS_DICT,
+                        self.connection_opts,
+                        i18n.SUBSCRIPTION_MANAGER_LOCALE,
+                    )
+                    private_bus.call_blocking(
+                        "com.redhat.RHSM1",
+                        "/com/redhat/RHSM1/Register",
+                        "com.redhat.RHSM1.Register",
+                        "RegisterWithActivationKeys",
+                        "sasa{sv}a{sv}s",
+                        args,
+                        timeout=REGISTRATION_TIMEOUT,
+                    )
+
+            except dbus.exceptions.DBusException as e:
+                # Sometimes we get NoReply but the registration has succeeded.
+                # Check the registration status before deciding if this is an error.
+                if e.get_dbus_name() == "org.freedesktop.DBus.Error.NoReply":
+                    # We need to set the connection opts in config before
+                    # checking for registration otherwise we might ask the
+                    # wrong server if the host is registered.
+                    self._set_connection_opts_in_config()
+
+                    if not _is_registered():
+                        # Host is not registered so re-raise the error
+                        raise
+                else:
+                    raise
+                # Host was registered so continue
+            else:
+                # On success, we need to set the connection opts as well
+                self._set_connection_opts_in_config()
+
+        finally:
+            # Always shut down the private bus
+            loggerinst.debug("Shutting down private DBus instance")
+            register_server.Stop(i18n.SUBSCRIPTION_MANAGER_LOCALE, dbus_interface="com.redhat.RHSM1.RegisterServer")
+
+    def _set_connection_opts_in_config(self):
+        """
+        Set the connection opts in the rhsm config.
+
+        The command line subscriptioVn-manager register command sets the
+        config but the DBus API does not.  We need to set it so that
+        subsequent subscription-manager cli calls will use the same connection
+        settings.
+        """
+        # DBus policies are preventing the following from working.
+        # Implement this as calls to the subscription-manager CLI for now.
+        #
+        # config_object = system_bus.get_object("com.redhat.RHSM1", "/com/redhat/RHSM1/Config")
+
+        # for option, value in self.connection_opts.items():
+        #     config_object.Set(
+        #         CONNECT_OPT_NAME_TO_CONFIG_KEY[option],
+        #         value,
+        #         i18n.SUBSCRIPTION_MANAGER_LOCALE,
+        #         dbus_interface="com.redhat.RHSM1.ConfigServer",
+        #     )
+        if self.connection_opts:
+            loggerinst.info("Setting RHSM connection configuration.")
+            sub_man_config_command = ["subscription-manager", "config"]
+            for option, value in self.connection_opts.items():
+                sub_man_config_command.append("--%s=%s" % (CONNECT_OPT_NAME_TO_CONFIG_KEY[option], value))
+
+            output, ret_code = utils.run_subprocess(sub_man_config_command, print_cmd=True)
+            if ret_code != 0:
+                raise ValueError("Error setting the subscription-manager connection configuration: %s" % output)
+
+            loggerinst.info("Successfully set RHSM connection configuration.")
+
+
+def _is_registered():
+    """Check if the machine we're running on is registered with subscription-manager."""
+    loggerinst.debug("Checking whether the host was registered.")
+    output, ret_code = utils.run_subprocess(["subscription-manager", "identity"])
+
+    # Registered: ret_code 0 and output like:
+    # system identity: 36dad222-5002-45ba-8840-f41351294213
+    # name: c2r-20220816124728
+    # org name: 13460994
+    # org ID: 13460994
+    if ret_code == 0:
+        loggerinst.debug("Host was registered.")
+        return True
+
+    # Unregistered: ret_code 1 and output like:
+    # This system is not yet registered. Try 'subscription-manager register --help' for more information.
+    loggerinst.debug("Host was not registered.")
+    return False
 
 
 def hide_secrets(args):
@@ -358,7 +621,11 @@ def replace_subscription_manager():
     if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
         loggerinst.critical("The %s directory does not exist or is empty." % SUBMGR_RPMS_DIR)
 
-    unregister_system()
+    try:
+        unregister_system()
+    except UnregisterError as e:
+        loggerinst.warning(str(e))
+
     remove_original_subscription_manager()
     install_rhel_subscription_manager()
 
@@ -643,11 +910,19 @@ def _submgr_enable_repos(repos_to_enable):
 
 def rollback():
     """Rollback subscription related changes"""
+    # Systems using Satellite 6.10 need to stay registered otherwise admins
+    # will lose remote access from the Satellite server.
+    if tool_opts.keep_rhsm:
+        loggerinst.info("Skipping due to the use of --keep-rhsm.")
+        return
+
     try:
         loggerinst.task("Rollback: RHSM-related actions")
         unregister_system()
+    except UnregisterError as e:
+        loggerinst.warning(str(e))
     except OSError:
-        loggerinst.warn("subscription-manager not installed, skipping")
+        loggerinst.warning("subscription-manager not installed, skipping")
 
 
 def check_needed_repos_availability(repo_ids_needed):

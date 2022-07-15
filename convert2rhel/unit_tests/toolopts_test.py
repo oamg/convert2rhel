@@ -22,6 +22,8 @@ import os
 import sys
 import unittest
 
+from collections import namedtuple
+
 import pytest
 import six
 
@@ -41,43 +43,92 @@ def mock_cli_arguments(args):
     return sys.argv[0:1] + args
 
 
-class TestToolopts(unittest.TestCase):
-    def setUp(self):
-        tool_opts.__init__()
-
-    @unit_tests.mock(sys, "argv", mock_cli_arguments(["--username", "uname"]))
-    def test_cmdline_interactive_username_without_passwd(self):
+class TestTooloptsParseFromCLI(object):
+    def test_cmdline_interactive_username_without_passwd(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--username", "uname"]))
         convert2rhel.toolopts.CLI()
-        self.assertEqual(tool_opts.username, "uname")
-        self.assertFalse(tool_opts.credentials_thru_cli)
+        assert global_tool_opts.username == "uname"
+        assert not global_tool_opts.credentials_thru_cli
 
-    @unit_tests.mock(sys, "argv", mock_cli_arguments(["--password", "passwd"]))
-    def test_cmdline_interactive_passwd_without_uname(self):
+    def test_cmdline_interactive_passwd_without_uname(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--password", "passwd"]))
         convert2rhel.toolopts.CLI()
-        self.assertEqual(tool_opts.password, "passwd")
-        self.assertFalse(tool_opts.credentials_thru_cli)
+        assert global_tool_opts.password == "passwd"
+        assert not global_tool_opts.credentials_thru_cli
 
-    @unit_tests.mock(
-        sys,
-        "argv",
-        mock_cli_arguments(["--username", "uname", "--password", "passwd"]),
+    def test_cmdline_non_interactive_with_credentials(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--username", "uname", "--password", "passwd"]))
+        convert2rhel.toolopts.CLI()
+        assert global_tool_opts.username == "uname"
+        assert global_tool_opts.password == "passwd"
+        assert global_tool_opts.credentials_thru_cli
+
+    def test_cmdline_disablerepo_defaults_to_asterisk(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--enablerepo", "foo"]))
+        convert2rhel.toolopts.CLI()
+        assert global_tool_opts.enablerepo == ["foo"]
+        assert global_tool_opts.disablerepo == ["*"]
+
+    #
+    # Parsing of serverurl
+    #
+
+    @pytest.mark.parametrize(
+        ("serverurl", "hostname", "port", "prefix"),
+        (
+            ("https://rhsm.redhat.com:443/", "rhsm.redhat.com", "443", "/"),
+            ("https://localhost/rhsm/", "localhost", None, "/rhsm/"),
+            ("https://rhsm.redhat.com/", "rhsm.redhat.com", None, "/"),
+            ("https://rhsm.redhat.com", "rhsm.redhat.com", None, None),
+            ("https://rhsm.redhat.com:8443", "rhsm.redhat.com", "8443", None),
+            ("subscription.redhat.com", "subscription.redhat.com", None, None),
+        ),
     )
-    def test_cmdline_non_ineractive_with_credentials(self):
+    def test_custom_serverurl(self, monkeypatch, global_tool_opts, serverurl, hostname, port, prefix):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", serverurl]))
         convert2rhel.toolopts.CLI()
-        self.assertEqual(tool_opts.username, "uname")
-        self.assertEqual(tool_opts.password, "passwd")
-        self.assertTrue(tool_opts.credentials_thru_cli)
+        assert global_tool_opts.rhsm_hostname == hostname
+        assert global_tool_opts.rhsm_port == port
+        assert global_tool_opts.rhsm_prefix == prefix
 
-    @unit_tests.mock(sys, "argv", mock_cli_arguments(["--serverurl", "url"]))
-    def test_custom_serverurl(self):
+    def test_no_serverurl(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments([]))
         convert2rhel.toolopts.CLI()
-        self.assertEqual(tool_opts.serverurl, "url")
+        assert global_tool_opts.rhsm_hostname == None
+        assert global_tool_opts.rhsm_port == None
+        assert global_tool_opts.rhsm_prefix == None
 
-    @unit_tests.mock(sys, "argv", mock_cli_arguments(["--enablerepo", "foo"]))
-    def test_cmdline_disablerepo_defaults_to_asterisk(self):
+    @pytest.mark.parametrize(
+        "serverurl",
+        (
+            "gopher://subscription.rhsm.redhat.com/",
+            "https:///",
+            "https://",
+            "/",
+        ),
+    )
+    def test_bad_serverurl(self, caplog, monkeypatch, global_tool_opts, serverurl):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", serverurl]))
+        with pytest.raises(SystemExit):
+            convert2rhel.toolopts.CLI()
+
+        message = (
+            "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
+            "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
+            "Supplied serverurl: %s\nError: " % serverurl
+        )
+        assert message in caplog.records[-1].message
+        assert caplog.records[-1].levelname == "CRITICAL"
+
+    def test_serverurl_with_no_rhsm(self, caplog, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(
+            sys, "argv", mock_cli_arguments(["--serverurl", "localhost", "--no-rhsm", "--enablerepo", "testrepo"])
+        )
+
         convert2rhel.toolopts.CLI()
-        self.assertEqual(tool_opts.enablerepo, ["foo"])
-        self.assertEqual(tool_opts.disablerepo, ["*"])
+
+        message = "Ignoring the --serverurl option. It has no effect when" " --disable-submgr or --no-rhsm is used."
+        assert message in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -406,3 +457,22 @@ def test_set_opts(supported_opts):
     assert tool_opts.password == supported_opts["password"]
     assert tool_opts.activation_key == supported_opts["activation_key"]
     assert not hasattr(tool_opts, "invalid_key")
+
+
+UrlParts = namedtuple("UrlParts", ("scheme", "hostname", "port"))
+
+
+@pytest.mark.parametrize(
+    ("url_parts", "message"),
+    (
+        (
+            UrlParts("gopher", "localhost", None),
+            "Subscription manager must be accessed over http or https.  gopher is not valid",
+        ),
+        (UrlParts("http", None, None), "A hostname must be specified in a subscription-manager serverurl"),
+        (UrlParts("http", "", None), "A hostname must be specified in a subscription-manager serverurl"),
+    ),
+)
+def test_validate_serverurl_parsing(url_parts, message):
+    with pytest.raises(ValueError, match=message):
+        convert2rhel.toolopts._validate_serverurl_parsing(url_parts)

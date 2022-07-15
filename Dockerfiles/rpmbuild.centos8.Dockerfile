@@ -10,6 +10,7 @@ ENV APP_MAIN_DEPS \
     rpm-build \
     rpmlint \
     python3-devel \
+    python3-dbus \
     python3-pexpect \
     python3-six
 

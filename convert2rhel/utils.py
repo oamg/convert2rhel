@@ -31,6 +31,8 @@ import rpm
 
 from six import moves
 
+from convert2rhel import i18n
+
 
 loggerinst = logging.getLogger(__name__)
 
@@ -193,7 +195,11 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
         loggerinst.debug("Calling command '%s'" % " ".join(cmd))
 
     process = PexpectSpawnWithDimensions(
-        cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None, dimensions=(1, columns)
+        cmd[0],
+        cmd[1:],
+        env={"LC_ALL": i18n.SCREENSCRAPED_LOCALE, "LANG": i18n.SCREENSCRAPED_LOCALE},
+        timeout=None,
+        dimensions=(1, columns),
     )
 
     for expect, send in expect_script:
@@ -522,7 +528,7 @@ def set_locale():
     We need to be setting not only LC_ALL but LANG as well because subscription-manager considers LANG to have priority
     over LC_ALL even though it goes against POSIX which specifies that LC_ALL overrides LANG.
     """
-    os.environ.update({"LC_ALL": "C", "LANG": "C"})
+    os.environ.update({"LC_ALL": i18n.SCREENSCRAPED_LOCALE, "LANG": i18n.SCREENSCRAPED_LOCALE})
 
 
 def string_to_version(verstring):

@@ -66,6 +66,7 @@ def perform_pre_checks():
     check_rhel_compatible_kernel_is_used()
     check_package_updates()
     is_loaded_kernel_latest()
+    check_dbus_is_running()
 
 
 def perform_pre_ponr_checks():
@@ -698,3 +699,21 @@ def is_loaded_kernel_latest():
                 "If you wish to ignore this message, set the environment variable "
                 "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
             )
+
+
+def check_dbus_is_running():
+    """Error out if we need to register with rhsm and the dbus daemon is not running."""
+    logger.task("Prepare: Check that DBus Daemon is running")
+
+    if tool_opts.no_rhsm:
+        logger.info("Skipping the check because we have been asked not to subscribe this system to RHSM.")
+        return
+
+    if system_info.dbus_running:
+        logger.info("DBus Daemon is running")
+        return
+
+    logger.critical(
+        "Could not find a running DBus Daemon which is needed to register with subscription manager.\n"
+        "Please start dbus using `systemctl start dbus` or (on CentOS Linux 6), `service messagebus start`"
+    )
