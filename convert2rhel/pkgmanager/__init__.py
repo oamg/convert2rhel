@@ -23,7 +23,7 @@ try:
     from yum.Errors import RepoError  # lgtm[py/unused-import]
 
     TYPE = "yum"
-except ImportError:
+except ImportError as e:
     from dnf import *  # pylint: disable=import-error
 
     # This is added here to prevent a generic try-except in the
@@ -31,3 +31,30 @@ except ImportError:
     from dnf.exceptions import RepoError  # lgtm[py/unused-import]
 
     TYPE = "dnf"
+
+
+def create_transaction_handler():
+    """Create a new instance of TransactionHandler class.
+
+    This function will return a new instance of the TransactionHandler abstract
+    class, that will be either the YumTransactionHandler or
+    DnfTransactionHandler dependening on the running system.
+
+    :return: An instance of the TransactionHandler abstract class.
+    :rtype: TransactionHandler
+    """
+    # This is here to prevent a recursive import on both handler classes. We
+    # are doing this in this ugly way to avoid a massive refactor for the merge
+    # yum transaction work, specially because this module has lots of other
+    # modules that depend on this.
+    # The wisest thing would be to wait on the RHELC-160 work to be started,
+    # and then, refactor this function to have only one entrypoint, hence:
+    # TODO(r0x0d): Refactor this as part of RHELC-160.
+    if TYPE == "yum":
+        from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
+
+        return YumTransactionHandler()
+    elif TYPE == "dnf":
+        from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
+
+        return DnfTransactionHandler()

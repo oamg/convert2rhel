@@ -193,6 +193,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @mock_calls(pkghandler.transaction_handler, "process_transaction", CallOrderMocked)
     @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
@@ -213,6 +214,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["disable_repos"] = 1
         intended_call_order["remove_repofile_pkgs"] = 1
         intended_call_order["enable_repos"] = 1
+        intended_call_order["process_transaction"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
         intended_call_order["perform_pre_checks"] = 1
 
@@ -241,6 +243,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @mock_calls(pkghandler.transaction_handler, "process_transaction", CallOrderMocked)
     @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
@@ -266,7 +269,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["remove_repofile_pkgs"] = 1
 
         intended_call_order["enable_repos"] = 0
-
+        intended_call_order["process_transaction"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
@@ -306,16 +309,15 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
 
 
 def test_post_ponr_conversion(monkeypatch):
-    install_gpg_keys_mock = mock.Mock()
     perserve_only_rhel_kernel_mock = mock.Mock()
-    replace_non_red_hat_pkgs_left_mock = mock.Mock()
+    process_transaction_mock = mock.Mock()
     list_non_red_hat_pkgs_left_mock = mock.Mock()
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
 
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
-    monkeypatch.setattr(pkghandler, "replace_non_red_hat_packages", replace_non_red_hat_pkgs_left_mock)
+    monkeypatch.setattr(pkghandler.transaction_handler, "process_transaction", process_transaction_mock)
     monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
@@ -323,7 +325,7 @@ def test_post_ponr_conversion(monkeypatch):
     main.post_ponr_conversion()
 
     assert perserve_only_rhel_kernel_mock.call_count == 1
-    assert replace_non_red_hat_pkgs_left_mock.call_count == 1
+    assert process_transaction_mock.call_count == 1
     assert list_non_red_hat_pkgs_left_mock.call_count == 1
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
