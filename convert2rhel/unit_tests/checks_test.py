@@ -171,13 +171,20 @@ def test_perform_pre_checks(monkeypatch):
 
 def test_pre_ponr_checks(monkeypatch):
     ensure_compatibility_of_kmods_mock = mock.Mock()
+    process_transaction_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
         "ensure_compatibility_of_kmods",
         value=ensure_compatibility_of_kmods_mock,
     )
+    monkeypatch.setattr(
+        checks.pkghandler.transaction_handler,
+        "process_transaction",
+        value=process_transaction_mock,
+    )
     checks.perform_pre_ponr_checks()
     ensure_compatibility_of_kmods_mock.assert_called_once()
+    process_transaction_mock.assert_called_once()
 
 
 def test_repoquery__failure(caplog, monkeypatch, tmpdir, request):
@@ -353,6 +360,35 @@ def test_ensure_compatibility_of_kmods(
         assert should_be_in_logs in caplog.records[-1].message
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("is_transaction_test_successful", "expected"),
+    (
+        (
+            True,
+            "Transaction validated successfully.",
+        ),
+        (
+            False,
+            "There was an error during the validation of the transaction.",
+        ),
+    ),
+)
+def test_validate_yum_transaction(is_transaction_test_successful, expected, monkeypatch, caplog):
+    monkeypatch.setattr(
+        checks.pkghandler.transaction_handler,
+        "process_transaction",
+        value=lambda test_transaction: is_transaction_test_successful,
+    )
+
+    if not is_transaction_test_successful:
+        with pytest.raises(SystemExit):
+            checks.validate_yum_transaction()
+    else:
+        checks.validate_yum_transaction()
+
+    assert expected in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

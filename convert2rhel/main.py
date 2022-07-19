@@ -21,17 +21,7 @@ import sys
 
 from convert2rhel import backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import (
-    pkghandler,
-    pkgmanager,
-    redhatrelease,
-    repo,
-    special_cases,
-    subscription,
-    systeminfo,
-    toolopts,
-    utils,
-)
+from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
 
 
 loggerinst = logging.getLogger(__name__)
@@ -108,6 +98,7 @@ def main():
         redhatrelease.system_release_file.backup()
         redhatrelease.os_release_file.backup()
         repo.backup_yum_repos()
+        repo.backup_varsdir()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -148,7 +139,6 @@ def main():
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
-
         utils.log_traceback(toolopts.tool_opts.debug)
         no_changes_msg = "No changes were made to the system."
         breadcrumbs.breadcrumbs.finish_collection(success=False)
@@ -238,9 +228,6 @@ def pre_ponr_conversion():
         loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
         subscription.enable_repos(rhel_repoids)
 
-    loggerinst.task("Convert: Validating %s transaction set", pkgmanager.TYPE)
-    pkghandler.transaction_handler.process_transaction(True)
-
     # perform final checks before the conversion
     loggerinst.task("Convert: Final system checks before main conversion")
     checks.perform_pre_ponr_checks()
@@ -249,10 +236,10 @@ def pre_ponr_conversion():
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
 
-    loggerinst.task("Convert: Prepare kernel")
-    pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: Replace system packages")
     pkghandler.transaction_handler.process_transaction()
+    loggerinst.task("Convert: Prepare kernel")
+    pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
     loggerinst.task("Convert: Configure the bootloader")
@@ -279,6 +266,7 @@ def rollback_changes():
     loggerinst.warning("Abnormal exit! Performing rollback ...")
     subscription.rollback()
     backup.changed_pkgs_control.restore_pkgs()
+    repo.restore_varsdir()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()

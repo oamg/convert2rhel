@@ -26,7 +26,7 @@ import tempfile
 import rpm
 
 from convert2rhel import __version__ as convert2rhel_version
-from convert2rhel import grub, pkgmanager, utils
+from convert2rhel import grub, pkghandler, pkgmanager, utils
 from convert2rhel.pkghandler import (
     call_yum_cmd,
     compare_package_versions,
@@ -72,6 +72,7 @@ def perform_pre_checks():
 def perform_pre_ponr_checks():
     """Late checks before ponr should be added here."""
     ensure_compatibility_of_kmods()
+    validate_yum_transaction()
 
 
 def check_convert2rhel_latest():
@@ -293,6 +294,19 @@ def ensure_compatibility_of_kmods():
         )
     else:
         logger.info("Kernel modules are compatible.")
+
+
+def validate_yum_transaction():
+    """ """
+    logger.info("\nValidate the %s transaction", pkgmanager.TYPE)
+
+    is_transaction_test_successful = pkghandler.transaction_handler.process_transaction(
+        test_transaction=True,
+    )
+    if not is_transaction_test_successful:
+        logger.critical("There was an error during the validation of the transaction.\n")
+
+    logger.info("Transaction validated successfully.\n")
 
 
 def get_loaded_kmods():

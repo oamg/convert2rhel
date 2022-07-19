@@ -1312,9 +1312,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_fix_default_kernel_with_no_incorrect_kernel(self):
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
-        self.assertTrue(
-            any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs)
-        )
+        self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
 
 

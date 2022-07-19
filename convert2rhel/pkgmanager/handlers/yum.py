@@ -1,6 +1,7 @@
 __metaclass__ = type
 
 import logging
+import os
 import re
 
 from convert2rhel import pkgmanager
@@ -42,7 +43,7 @@ def _resolve_yum_problematic_dependencies(output):
     if packages_to_remove:
         packages_to_remove = set(packages_to_remove)
         loggerinst.debug(
-            "Removing problematic packages to continue with the conversion:\n%s", "\n".join(packages_to_remove)
+            "Removing problematic packages to continue with the conversion:\n%s\n", ", ".join(packages_to_remove)
         )
         remove_pkgs(
             pkgs_to_remove=set(packages_to_remove),
@@ -51,7 +52,10 @@ def _resolve_yum_problematic_dependencies(output):
             set_releasever=False,
             reposdir=BACKUP_DIR,
             manual_releasever=system_info.version.major,
+            varsdir=os.path.join(BACKUP_DIR, "yum/vars"),
         )
+
+        loggerinst.info("Finished backing up and removing the packages.")
     else:
         loggerinst.info("No packages to remove.")
 
@@ -75,6 +79,7 @@ class YumTransactionHandler(TransactionHandlerBase):
 
     def _setup_base(self):
         """Create a new instance of the yum.YumBase() class."""
+        pkgmanager.misc.setup_locale(override_time=True)
         self._base = pkgmanager.YumBase()
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
@@ -91,7 +96,7 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         This internal method will actually perform three operations in the
         transaction: downgrade, reinstall and downgrade. The downgrade only
-        will be eecuted in case of the the reinstall step raises the
+        will be executed in case of the the reinstall step raises the
         `ReinstallInstallError`.
         """
         original_os_pkgs = get_system_packages_for_replacement()
@@ -105,8 +110,10 @@ class YumTransactionHandler(TransactionHandlerBase):
                 self._base.reinstall(name=pkg)
             except pkgmanager.Errors.ReinstallInstallError:
                 self._base.downgrade(name=pkg)
+            except pkgmanager.Errors.ReinstallRemoveError:
+                loggerinst.info("Can't remove pkg: %s", pkg)
 
-    def _resolve_dependencies(self):
+    def _resolve_dependencies(self, test_transaction):
         """Try to resolve the transaction dependencies.
 
         This method will try to resolve the dependencies of the packages that
@@ -114,32 +121,36 @@ class YumTransactionHandler(TransactionHandlerBase):
         multiple times, that's why it's separated from the rest of the
         `_perform_operations()` internal method.
 
-        :return: A boolean dependning on the success.
+        .. notes::
+            For YumBase().resolveDeps() the "exceptions" that can arise from this
+            actually returns in the form of a tuple (int, str | list[str]),
+            meaning that the error codes will have a different meaning and
+            message depending on the number.
+            For example:
+              0. Transaction finished successfully, but it was empty.
+              1. Any general error that happened during the transaction
+              2. Transaction finished successfully, being able to process any
+              package it had in the transaction set.
+
+            We actually need to loop through this for some time to remove all the
+            packages that are causing dependencies problems. This is stated in
+            the yum source code for the `resolveDeps` function, that if any
+            errors are "thrown" for the user, you will need to loop until the
+            point you don't have any more errors.
+
+        :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
-        loggerinst.info("Resolving yum dependencies for the transaction.")
-        # For YumBase().resolveDeps() the "exceptions" that can arise from this
-        # actually returns in the form of a tuple (int, str | list[str]),
-        # meaning that the error codes will have a different meaning and
-        # message depending on the number.
-        # For example:
-        #   0. Transaction finished successfully, but it was empty.
-        #   1. Any general error that happened during the transaction
-        #   2. Transaction finished successfully, being able to process any
-        #   package it had in the transaction set.
-        #
-        # We actually need to loop through this for some time to remove all the
-        # packages that are causing dependencies problems. This is stated in
-        # the yum source code for the `resolveDeps` function, that if any
-        # errors are "thrown" for the user, you will need to loop until the
-        # point you don't have any more errors.
+        loggerinst.info("Resolving yum dependencies for the transaction.\n")
         ret_code, msg = self._base.resolveDeps()
 
         # For the return code 1, yum can output two kinds of error, one being
         # that it reached the limit for depsolving, and the actual dependencies
         # that caused an problem.
         if ret_code == 1:
-            if "Depsolving loop limit reached" not in msg:
+            # We want to fail earlier in the process, so let's check for this
+            # only when testing the transaction.
+            if "Depsolving loop limit reached" not in msg and test_transaction:
                 _resolve_yum_problematic_dependencies(msg)
                 return False
         return True
@@ -147,21 +158,21 @@ class YumTransactionHandler(TransactionHandlerBase):
     def _process_transaction(self):
         """Internal method to process the transaction.
 
-        :raises SystemExit: It is raised in case of any transaction error that
-        was not handled properly.
+        :return: A boolean indicating if it was successfull or not.
+        :rtype: bool
         """
         try:
-            loggerinst.info("Processing yum transaction.")
             self._base.processTransaction()
         except (
             pkgmanager.Errors.YumRPMCheckError,
             pkgmanager.Errors.YumTestTransactionError,
             pkgmanager.Errors.YumRPMTransError,
         ) as e:
-            loggerinst.debug("Got the following exception message: %s" % e)
-            loggerinst.critical("Failed to process yum transactions.")
+            loggerinst.warning("Failed to validate the yum transaction.")
+            loggerinst.debug("Got the following exception message: %s", e)
+            return False
 
-        loggerinst.info("Processing the transaction was successfully.")
+        return True
 
     def process_transaction(self, test_transaction=False):
         """Process the yum transaction.
@@ -197,11 +208,11 @@ class YumTransactionHandler(TransactionHandlerBase):
             This might be optimizaed in the future, but for now, it's somewhat
             reliable.
 
-        :param enabled_repos: The repositories that will be enabled for the
-        transaction.
-        :type enabled_repos: list[str]
-        :raises SystemExit: Raises an SystemExit when the transaction process
-        fails or the dependency solve reached it's limit.
+        :param test_transaction: Determines if the transaction needs to be
+        tested or not.
+        :type test_transaction: bool
+        :return: A boolean indicating if it was successful or not.
+        :rtype: bool
         """
         resolve_deps_finished = False
 
@@ -209,7 +220,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         attempts = 0
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
             self._perform_operations()
-            resolved = self._resolve_dependencies()
+            resolved = self._resolve_dependencies(test_transaction)
 
             if not resolved:
                 loggerinst.info("Retrying to resolve dependencies %s", attempts)
@@ -219,15 +230,15 @@ class YumTransactionHandler(TransactionHandlerBase):
                 break
 
         if not resolve_deps_finished:
-            loggerinst.critical("Couldn't resolve yum dependencies.")
+            return False
 
         if test_transaction:
             self._base.conf.tsflags.append("test")
-            loggerinst.info("Testing the replacement of the packages.")
+            loggerinst.info("Validating the yum transaction.")
         else:
             loggerinst.info("Replacing the system packages.")
 
-        self._process_transaction()
+        is_transaction_finished = self._process_transaction()
         # Because we call the same thing multiple times, the rpm database is
         # not properly closed at the end.
         # This cause problems because we have another special operation that
@@ -235,3 +246,4 @@ class YumTransactionHandler(TransactionHandlerBase):
         # kernel. In the YumBase() class there is a special __del__() method
         # that resolves all of the locks that it places during the transaction.
         del self._base
+        return is_transaction_finished

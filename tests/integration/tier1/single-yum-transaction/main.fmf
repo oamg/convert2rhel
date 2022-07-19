@@ -1,0 +1,4 @@
+summary: single-yum-transaction
+
+tier: 1
+test: pytest -svv

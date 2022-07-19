@@ -1,4 +1,5 @@
 import logging
+import os
 
 from convert2rhel import pkgmanager
 from convert2rhel.backup import remove_pkgs
@@ -27,7 +28,6 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
     def __init__(self):
         self._base = None
-        self._enabled_repos = system_info.get_enabled_rhel_repos()
 
     def _setup_base(self):
         """Create a new instance of the dnf.Base() class."""
@@ -37,9 +37,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
     def _enable_repos(self):
         """Enable a list of required repositories."""
-        # Read and populate the repositories class in DNF
         self._base.read_all_repos()
         repos = self._base.repos.all()
+        enabled_repos = system_info.get_enabled_rhel_repos()
+        loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
         for repo in repos:
             # We are disabling the repositories that we don't want based on
             # this `if` condition were if the repo.id is not in the
@@ -47,7 +48,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             # is a repo that we want to have enabled, let's just call
             # repo.enable() to make sure that it will be enabled when we run
             # the transactions.
-            repo.disable if repo.id not in self._enabled_repos else repo.enable()
+            repo.disable if repo.id not in enabled_repos else repo.enable()
 
         # Fill the sack for the enabled repositories
         self._base.fill_sack()
@@ -64,6 +65,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         """
         original_os_pkgs = get_system_packages_for_replacement()
         loggerinst.info("Performing upgrade, reinstall and downgrade of the %s packages ..." % system_info.name)
+        packages_to_remove = []
         for pkg in original_os_pkgs:
             self._base.upgrade(pkg_spec=pkg)
             try:
@@ -73,33 +75,56 @@ class DnfTransactionHandler(TransactionHandlerBase):
                     self._base.downgrade(pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available for downgrade.", pkg)
-                    remove_pkgs(
-                        pkgs_to_remove=[pkg],
-                        backup=True,
-                        critical=False,
-                        reposdir=BACKUP_DIR,
-                        set_releasever=False,
-                        manual_releasever=system_info.version.major,
-                    )
+                    packages_to_remove.append(pkg)
 
-        # Resolve, donwload and process the transaction
+        if packages_to_remove:
+            packages_to_remove = set(packages_to_remove)
+            loggerinst.debug(
+                "Removing problematic packages to continue with the conversion:\n%s", ", ".join(packages_to_remove)
+            )
+            remove_pkgs(
+                pkgs_to_remove=set(packages_to_remove),
+                backup=True,
+                critical=False,
+                reposdir=BACKUP_DIR,
+                varsdir=os.path.join(BACKUP_DIR, "dnf/vars"),
+            )
+
+            loggerinst.info("Finished backing up and removing the packages.")
+        else:
+            loggerinst.info("No packages to remove.")
+
+    def _resolve_dependencies(self):
+        """Resolve the dependencies for the transaction.
+
+        This internal method is meant to handle the resolvement of the
+        transaction, including the step to download the packages that are used
+        in the replacement.
+
+        :return: A boolean indicating if it was successful or not.
+        :rtype: bool
+        """
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
-            loggerinst.critical("Failed to resolve dependencies in the transaction.")
+            loggerinst.warning("Failed to resolve dependencines in the transaction.")
             loggerinst.debug("Got the following exception message: %s" % e)
+            return False
 
         try:
             self._base.download_packages(self._base.transaction.install_set)
         except pkgmanager.exceptions.DownloadError as e:
-            loggerinst.critical("An exception raised during the download packages.")
+            loggerinst.warning("Failed to download the transaction packages.")
             loggerinst.debug("Got the following exception message: %s" % e)
+            return False
+
+        return True
 
     def _process_transaction(self):
         """Internal method that will process the transaction.
 
-        :raises SystemExit: If there is any transaction error that was not
-        handled properly.
+        :return: A boolean indicating if it was successfull or not.
+        :rtype: bool
         """
         try:
             self._base.do_transaction()
@@ -107,10 +132,11 @@ class DnfTransactionHandler(TransactionHandlerBase):
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
         ) as e:
-            loggerinst.critical("An exception raised during the transaction.")
-            loggerinst.debug("Got the following exception message: %s" % e)
+            loggerinst.warning("Failed to validate the dnf transaction.")
+            loggerinst.debug("Got the following exception message: %s", e)
+            return False
 
-        loggerinst.info("Finished processing the transaction.")
+        return True
 
     def process_transaction(self, test_transaction=False):
         """Process the dnf transaction.
@@ -128,18 +154,31 @@ class DnfTransactionHandler(TransactionHandlerBase):
         :param test_transaction: Determines if the transaction needs to be
         tested or not.
         :type test_transaction: bool
+        :return: A boolean indicating if it was successful or not.
+        :rtype: bool
         """
         self._setup_base()
         self._enable_repos()
 
         self._perform_operations()
+        is_deps_resolved = self._resolve_dependencies()
+
+        if not is_deps_resolved:
+            return False
 
         # If we need to verify the transaction the first time, we need to
         # append the "test" flag to the `tsflags`.
         if test_transaction:
             self._base.conf.tsflags.append("test")
-            loggerinst.info("Testing the dnf transaction before the replacement.")
+            loggerinst.info("Validating the dnf transaction.")
         else:
             loggerinst.info("Replacing the system packages.")
 
-        self._process_transaction()
+        is_transaction_finished = self._process_transaction()
+        # Manually closing everything after processing the transaction. If we
+        # use del self._base, it seems that dnf is not able to properly clean
+        # everything in the database. We were seeing some problems in the next
+        # steps with the rpmdb, as the history had changed.
+        self._base.close()
+        del self._base
+        return is_transaction_finished

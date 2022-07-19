@@ -101,16 +101,18 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(
         utils,
         "download_pkg",
-        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/",
+        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever, manual_releasever, varsdir: "/filepath/",
     )
     def test_download_pkgs(self):
         paths = utils.download_pkgs(
-            ["pkg1", "pkg2"],
-            "/dest/",
-            "/reposdir/",
-            ["repo1"],
-            ["repo2"],
-            False,
+            pkgs=["pkg1", "pkg2"],
+            dest="/dest/",
+            reposdir="/reposdir/",
+            enable_repos=["repo1"],
+            disable_repos=["repo2"],
+            set_releasever=False,
+            manual_releasever=8,
+            varsdir="/tmp",
         )
 
         self.assertEqual(paths, ["/filepath/", "/filepath/"])

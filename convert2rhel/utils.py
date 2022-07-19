@@ -404,9 +404,23 @@ def download_pkgs(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    manual_releasever=None,
+    varsdir=None,
 ):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
-    return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
+    return [
+        download_pkg(
+            pkg,
+            dest,
+            reposdir,
+            enable_repos,
+            disable_repos,
+            set_releasever,
+            manual_releasever,
+            varsdir,
+        )
+        for pkg in pkgs
+    ]
 
 
 def download_pkg(
@@ -417,6 +431,7 @@ def download_pkg(
     disable_repos=None,
     set_releasever=True,
     manual_releasever=None,
+    varsdir=None,
 ):
     """Download an rpm using yumdownloader and return its filepath.
 
@@ -437,6 +452,8 @@ def download_pkg(
     :type set_releasever: bool
     :param manual_releasever: The releasever to be set manually.
     :type manual_releasever: int | str
+    :param varsdir: The path to the variables directory.
+    :type varsdir: str
 
     :return: The filepath of the downloaded package.
     :rtype: str | None
@@ -463,6 +480,9 @@ def download_pkg(
 
     if not set_releasever and manual_releasever:
         cmd.append("--releasever=%s" % manual_releasever)
+
+    if varsdir:
+        cmd.append("--setopt=varsdir=%s" % varsdir)
 
     if system_info.version.major == 8:
         cmd.append("--setopt=module_platform_id=platform:el8")

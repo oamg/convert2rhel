@@ -46,10 +46,22 @@ class ChangedRPMPackagesController(object):
         """Track packages installed before the PONR to be able to remove them later (roll them back) if needed."""
         self.installed_pkgs += pkgs
 
-    def backup_and_track_removed_pkg(self, pkg, reposdir=None, set_releasever=False, manual_releasever=None):
+    def backup_and_track_removed_pkg(
+        self,
+        pkg,
+        reposdir=None,
+        set_releasever=False,
+        manual_releasever=None,
+        varsdir=None,
+    ):
         """Add a removed RPM pkg to the list of removed pkgs."""
         restorable_pkg = RestorablePackage(pkg)
-        restorable_pkg.backup(reposdir=reposdir, set_releasever=set_releasever, manual_releasever=manual_releasever)
+        restorable_pkg.backup(
+            reposdir=reposdir,
+            set_releasever=set_releasever,
+            manual_releasever=manual_releasever,
+            varsdir=varsdir,
+        )
         self.removed_pkgs.append(restorable_pkg)
 
     def _remove_installed_pkgs(self):
@@ -309,7 +321,13 @@ class RestorablePackage(object):
         self.name = pkgname
         self.path = None
 
-    def backup(self, reposdir=None, set_releasever=False, manual_releasever=None):
+    def backup(
+        self,
+        reposdir=None,
+        set_releasever=False,
+        manual_releasever=None,
+        varsdir=None,
+    ):
         """Save version of RPM package.
 
         :param reposdir: Custom repositories directory to be used in the backup.
@@ -319,11 +337,12 @@ class RestorablePackage(object):
         if os.path.isdir(BACKUP_DIR):
             # If we detect that the current system is an EUS release, then we
             # proceed to use the hardcoded_repofiles, otherwise, we use the
-            # custom reposdir that comes from the method parameter.
-            if system_info.corresponds_to_rhel_eus_release():
+            # custom reposdir that comes from the method parameter. This is
+            # mainly because of CentOS Linux which we have hardcoded repofiles.
+            # If we ever put Oracle Linux repofiles to ship with convert2rhel,
+            # them the second part of this condition can be dropped.
+            if system_info.corresponds_to_rhel_eus_release() and system_info.id == "centos":
                 reposdir = get_hardcoded_repofiles_dir()
-            else:
-                reposdir = reposdir
 
             # One of the reasons we hardcode repofiles pointing to archived
             # repositories of older system minor versions is that we need to be
@@ -336,7 +355,11 @@ class RestorablePackage(object):
                         "Not using repository files stored in %s due to the absence of internet access." % reposdir
                     )
                 self.path = download_pkg(
-                    self.name, dest=BACKUP_DIR, set_releasever=set_releasever, manual_releasever=manual_releasever
+                    self.name,
+                    dest=BACKUP_DIR,
+                    set_releasever=set_releasever,
+                    manual_releasever=manual_releasever,
+                    varsdir=varsdir,
                 )
             else:
                 if reposdir:
@@ -347,16 +370,22 @@ class RestorablePackage(object):
                     set_releasever=set_releasever,
                     reposdir=reposdir,
                     manual_releasever=manual_releasever,
+                    varsdir=varsdir,
                 )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
 
 def remove_pkgs(
-    pkgs_to_remove, backup=True, critical=True, reposdir=None, set_releasever=False, manual_releasever=None
+    pkgs_to_remove,
+    backup=True,
+    critical=True,
+    reposdir=None,
+    set_releasever=False,
+    manual_releasever=None,
+    varsdir=None,
 ):
     """Remove packages not heeding to their dependencies."""
-
     # NOTE(r0x0d): This function is tied to the class
     # ChangedRPMPackagesController and a couple of other places too, ideally, we
     # should decide if we want to use this function as an entrypoint or the
@@ -370,7 +399,13 @@ def remove_pkgs(
         # impossible to access the repositories to download a backup. For this
         # reason we first backup all packages and only after that we remove
         for nvra in pkgs_to_remove:
-            changed_pkgs_control.backup_and_track_removed_pkg(nvra, reposdir, set_releasever, manual_releasever)
+            changed_pkgs_control.backup_and_track_removed_pkg(
+                pkg=nvra,
+                reposdir=reposdir,
+                set_releasever=set_releasever,
+                manual_releasever=manual_releasever,
+                varsdir=varsdir,
+            )
 
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")

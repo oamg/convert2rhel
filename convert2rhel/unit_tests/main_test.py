@@ -162,6 +162,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
     @unit_tests.mock(backup.backup_control, "pop_all", unit_tests.CountableMockObject())
+    @unit_tests.mock(repo, "restore_varsdir", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
@@ -173,6 +174,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)
         self.assertEqual(backup.backup_control.pop_all.called, 1)
+        self.assertEqual(repo.restore_varsdir.called, 1)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", False)
@@ -214,7 +216,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["disable_repos"] = 1
         intended_call_order["remove_repofile_pkgs"] = 1
         intended_call_order["enable_repos"] = 1
-        intended_call_order["process_transaction"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
         intended_call_order["perform_pre_checks"] = 1
 
@@ -269,7 +270,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["remove_repofile_pkgs"] = 1
 
         intended_call_order["enable_repos"] = 0
-        intended_call_order["process_transaction"] = 1
         intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
@@ -343,6 +343,7 @@ def test_main(monkeypatch):
     perform_pre_checks_mock = mock.Mock()
     system_release_file_mock = mock.Mock()
     os_release_file_mock = mock.Mock()
+    backup_varsdir_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     pre_ponr_conversion_mock = mock.Mock()
@@ -367,6 +368,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
     monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
@@ -389,6 +391,7 @@ def test_main(monkeypatch):
     assert system_release_file_mock.call_count == 1
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1
+    assert backup_varsdir_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert pre_ponr_conversion_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1

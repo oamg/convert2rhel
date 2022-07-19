@@ -89,7 +89,7 @@ class TestDnfTransactionHandler:
         )
         instance = DnfTransactionHandler()
 
-        instance.process_transaction(test_transaction)
+        assert instance.process_transaction(test_transaction)
 
         assert pkgmanager.Base.read_all_repos.called
         assert pkgmanager.repodict.RepoDict.all.called
@@ -141,7 +141,7 @@ class TestDnfTransactionHandler:
             side_effect=pkgmanager.exceptions.PackagesNotInstalledError,
         )
         instance = DnfTransactionHandler()
-        instance.process_transaction()
+        assert instance.process_transaction()
 
         assert pkgmanager.Base.read_all_repos.called
         assert pkgmanager.repodict.RepoDict.all.called
@@ -152,7 +152,6 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.resolve.called
         assert pkgmanager.Base.download_packages.called
         assert pkgmanager.Base.do_transaction.called
-        assert "not available for downgrade." in caplog.records[-3].message
         assert pkgmanager.handlers.dnf.remove_pkgs.called
 
     @centos8
@@ -187,10 +186,9 @@ class TestDnfTransactionHandler:
         pkgmanager.Base.resolve = mock.Mock(side_effect=pkgmanager.exceptions.DepsolveError)
         instance = DnfTransactionHandler()
 
-        with pytest.raises(SystemExit):
-            instance.process_transaction()
+        assert not instance.process_transaction()
 
-        assert "Failed to resolve dependencies in the transaction." in caplog.records[-1].message
+        assert "Failed to resolve dependencines in the transaction." in caplog.records[-2].message
 
     @centos8
     @pytest.mark.skipif(
@@ -226,10 +224,9 @@ class TestDnfTransactionHandler:
         )
         instance = DnfTransactionHandler()
 
-        with pytest.raises(SystemExit):
-            instance.process_transaction()
+        assert not instance.process_transaction()
 
-        assert "An exception raised during the download packages." in caplog.records[-1].message
+        assert "Failed to download the transaction packages." in caplog.records[-2].message
 
     @centos8
     @pytest.mark.skipif(
@@ -271,7 +268,6 @@ class TestDnfTransactionHandler:
             ]
         )
         instance = DnfTransactionHandler()
-        with pytest.raises(SystemExit):
-            instance.process_transaction()
+        assert not instance.process_transaction()
 
-        assert "An exception raised during the transaction." in caplog.records[-1].message
+        assert "Failed to validate the dnf transaction." in caplog.records[-2].message
