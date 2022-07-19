@@ -61,7 +61,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         :raises SystemExit: In case of the dependency solving fails.
         """
         original_os_pkgs = get_system_packages_for_replacement()
-        loggerinst.info("Performing upgrade, reinstall and distro_sync of the %s packages ..." % system_info.name)
+        loggerinst.info("Performing upgrade, reinstall and downgrade of the %s packages ..." % system_info.name)
         for pkg in original_os_pkgs:
             self._base.upgrade(pkg_spec=pkg)
             try:
@@ -71,26 +71,25 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 try:
                     self._base.downgrade(pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
-                    loggerinst.warning("Package %s not available in any Red Hat repositories" % pkg)
+                    loggerinst.warning("Package %s not available for downgrade.", pkg)
 
         # Resolve, donwload and process the transaction
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
-            loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
+            loggerinst.debug("Got the following exception message: %s" % e)
 
         try:
             self._base.download_packages(self._base.transaction.install_set)
         except pkgmanager.exceptions.DownloadError as e:
+            loggerinst.critical("An exception raised during the download packages.")
             loggerinst.debug("Got the following exception message: %s" % e)
-            loggerinst.critical("Failed to download packages.")
 
     def _process_transaction(self):
-        """Process the transaction.
+        """Internal method that will process the transaction.
 
-        :raises SystemExit: It is raised in two cases: 1. If the package
-        download fails, 2. If there is any transaction error that was not
+        :raises SystemExit: If there is any transaction error that was not
         handled properly.
         """
         try:
@@ -99,21 +98,26 @@ class DnfTransactionHandler(TransactionHandlerBase):
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
         ) as e:
+            loggerinst.critical("An exception raised during the transaction.")
             loggerinst.debug("Got the following exception message: %s" % e)
-            loggerinst.critical("Failed to process dnf transactions.")
 
-        loggerinst.info("Package replacement completed successfully.")
+        loggerinst.info("Finished processing the transaction.")
 
     def process_transaction(self, test_transaction=False):
-        """Validate if the transaction is actually valid.
+        """Process the dnf transaction.
 
-        In this metod we are actually calling three distinct operations to
-        prepare the final transaction that wil be held by dnf. In the last
-        step, we will check that the transaction is successfull or not. In case
-        of it not being successfull, we bail out before progressing with the
-        conversion.
+        In this method, we will try to perform the transaction based on a
+        conditional statement that will toggle the transaction test or not.
+        If we need to toggle the transaction test, we then append the "test"
+        flag to the `tsflags` property in the base class, which will not
+        consume the transaction, but rather, test everytyhing and do an early
+        return. Otherwise, if we have the `test_transaction` paramter set to
+        false, it indicates that we actually want to process the transaction
+        and consume it (The test will happen anyway, but this should pass
+        without problems).
 
-        :param test_transaction: Determines if the transaction needs to be tested or not.
+        :param test_transaction: Determines if the transaction needs to be
+        tested or not.
         :type test_transaction: bool
         """
         self._setup_base()
@@ -121,9 +125,11 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
         self._perform_operations()
 
+        # If we need to verify the transaction the first time, we need to
+        # append the "test" flag to the `tsflags`.
         if test_transaction:
             self._base.conf.tsflags.append("test")
-            loggerinst.info("Testing the dnf transaction.")
+            loggerinst.info("Testing the dnf transaction before the replacement.")
         else:
             loggerinst.info("Replacing the system packages.")
 

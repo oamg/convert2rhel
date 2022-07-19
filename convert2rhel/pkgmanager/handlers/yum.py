@@ -136,17 +136,12 @@ class YumTransactionHandler(TransactionHandlerBase):
         # that caused an problem.
         if ret_code == 1:
             if "Depsolving loop limit reached" not in msg:
-                loggerinst.info("Found problematic packages.")
                 _resolve_yum_problematic_dependencies(msg)
                 return False
         return True
 
     def _process_transaction(self):
-        """Actually process and consume the transaction.
-
-        This method will process and consume the transaction by actually
-        converting the packages that were previously set in the
-        `_perform_operations` internal function.
+        """Internal method to process the transaction.
 
         :raises SystemExit: It is raised in case of any transaction error that
         was not handled properly.
@@ -162,15 +157,16 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to process yum transactions.")
 
-    def process_transaction(self, test_transaction=False):
-        """Internal function to process yum commands into a single transaction.
+        loggerinst.info("Processing the transaction was successfully.")
 
-        This internal function is supposed to be used only by the
-        `replace_non_red_hat_packages()` public function, as this is a
-        replacement of the old `call_yum_cmd_w_downgrades()` function, that in
-        the psat, used to call the yum commands (upgrade, reinstall and
-        downgrade) several times in order to replace all the possible packages
-        from the original system vendor to the RHEL ones.
+    def process_transaction(self, test_transaction=False):
+        """Process the yum transaction.
+
+        This function is supposed to be an replacement of the old
+        `call_yum_cmd_w_downgrades()` function, that in the past, used to call
+        the yum commands (upgrade, reinstall and downgrade) several times in
+        order to replace all the possible packages from the original system
+        vendor to the RHEL ones.
 
         ..notes::
             The implementation of this yum transaction is different from the
@@ -228,3 +224,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.info("Replacing the system packages.")
 
         self._process_transaction()
+        # Because we call the same thing multiple times, the rpm database is
+        # not properly closed at the end.
+        # This cause problems because we have another special operation that
+        # happen in the middle of all of this, that is preserving the rhel
+        # kernel. In the YumBase() class there is a special __del__() method
+        # that resolves all of the locks that it places during the transaction.
+        del self._base

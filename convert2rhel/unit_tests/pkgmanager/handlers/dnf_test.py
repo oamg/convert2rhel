@@ -151,7 +151,7 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.resolve.called
         assert pkgmanager.Base.download_packages.called
         assert pkgmanager.Base.do_transaction.called
-        assert "not available in any Red Hat repositories" in caplog.records[-3].message
+        assert "not available for downgrade." in caplog.records[-3].message
 
     @centos8
     @pytest.mark.skipif(
@@ -227,7 +227,7 @@ class TestDnfTransactionHandler:
         with pytest.raises(SystemExit):
             instance.process_transaction()
 
-        assert "Failed to download packages." in caplog.records[-1].message
+        assert "An exception raised during the download packages." in caplog.records[-1].message
 
     @centos8
     @pytest.mark.skipif(
@@ -272,4 +272,4 @@ class TestDnfTransactionHandler:
         with pytest.raises(SystemExit):
             instance.process_transaction()
 
-        assert "Failed to process dnf transactions." in caplog.records[-1].message
+        assert "An exception raised during the transaction." in caplog.records[-1].message
