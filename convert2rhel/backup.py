@@ -46,10 +46,10 @@ class ChangedRPMPackagesController(object):
         """Track packages installed before the PONR to be able to remove them later (roll them back) if needed."""
         self.installed_pkgs += pkgs
 
-    def backup_and_track_removed_pkg(self, pkg):
+    def backup_and_track_removed_pkg(self, pkg, reposdir=None, set_releasever=False, manual_releasever=None):
         """Add a removed RPM pkg to the list of removed pkgs."""
         restorable_pkg = RestorablePackage(pkg)
-        restorable_pkg.backup()
+        restorable_pkg.backup(reposdir=reposdir, set_releasever=set_releasever, manual_releasever=manual_releasever)
         self.removed_pkgs.append(restorable_pkg)
 
     def _remove_installed_pkgs(self):
@@ -309,52 +309,68 @@ class RestorablePackage(object):
         self.name = pkgname
         self.path = None
 
-    def backup(self):
-        """Save version of RPM package"""
+    def backup(self, reposdir=None, set_releasever=False, manual_releasever=None):
+        """Save version of RPM package.
+
+        :param reposdir: Custom repositories directory to be used in the backup.
+        :type reposdir: str
+        """
         loggerinst.info("Backing up %s." % self.name)
         if os.path.isdir(BACKUP_DIR):
-            reposdir = get_hardcoded_repofiles_dir()
+            # If we detect that the current system is an EUS release, then we
+            # proceed to use the hardcoded_repofiles, otherwise, we use the
+            # custom reposdir that comes from the method parameter.
+            if system_info.corresponds_to_rhel_eus_release():
+                reposdir = get_hardcoded_repofiles_dir()
+            else:
+                reposdir = reposdir
 
-            # One of the reasons we hardcode repofiles pointing to archived repositories of older system
-            # minor versions is that we need to be able to download an older package version as a backup.
-            # Because for example the default repofiles on CentOS Linux 8.4 point only to 8.latest repositories
-            # that already don't contain 8.4 packages.
+            # One of the reasons we hardcode repofiles pointing to archived
+            # repositories of older system minor versions is that we need to be
+            # able to download an older package version as a backup. Because for
+            # example the default repofiles on CentOS Linux 8.4 point only to
+            # 8.latest repositories that already don't contain 8.4 packages.
             if not system_info.has_internet_access:
                 if reposdir:
                     loggerinst.debug(
                         "Not using repository files stored in %s due to the absence of internet access." % reposdir
                     )
-                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
+                self.path = download_pkg(
+                    self.name, dest=BACKUP_DIR, set_releasever=set_releasever, manual_releasever=manual_releasever
+                )
             else:
                 if reposdir:
                     loggerinst.debug("Using repository files stored in %s." % reposdir)
                 self.path = download_pkg(
                     self.name,
                     dest=BACKUP_DIR,
-                    set_releasever=False,
+                    set_releasever=set_releasever,
                     reposdir=reposdir,
+                    manual_releasever=manual_releasever,
                 )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
 
-def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
+def remove_pkgs(
+    pkgs_to_remove, backup=True, critical=True, reposdir=None, set_releasever=False, manual_releasever=None
+):
     """Remove packages not heeding to their dependencies."""
 
-    # NOTE(r0x0d): This function is tied to the class ChangedRPMPackagesController and
-    # a couple of other places too, ideally, we should decide if we want to use
-    # this function as an entrypoint or the variable `changed_pkgs_control`, so
-    # we can move this piece of code to the `pkghandler.py` where it should be.
-    # Right now, if we move this code to the `pkghandler.py`, we have a
-    # *circular import dependency error*.
-    # @abadger has an implementation in mind to address some of those issues
-    # and actually place a controller in front of classes like this.
+    # NOTE(r0x0d): This function is tied to the class
+    # ChangedRPMPackagesController and a couple of other places too, ideally, we
+    # should decide if we want to use this function as an entrypoint or the
+    # variable `changed_pkgs_control`, so we can move this piece of code to the
+    # `pkghandler.py` where it should be. Right now, if we move this code to the
+    # `pkghandler.py`, we have a *circular import dependency error*. @abadger
+    # has an implementation in mind to address some of those issues and actually
+    # place a controller in front of classes like this.
     if backup:
         # Some packages, when removed, will also remove repo files, making it
         # impossible to access the repositories to download a backup. For this
         # reason we first backup all packages and only after that we remove
         for nvra in pkgs_to_remove:
-            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
+            changed_pkgs_control.backup_and_track_removed_pkg(nvra, reposdir, set_releasever, manual_releasever)
 
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")

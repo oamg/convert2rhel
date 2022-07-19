@@ -8,6 +8,7 @@ from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import BACKUP_DIR
 
 
 loggerinst = logging.getLogger(__name__)
@@ -45,8 +46,11 @@ def _resolve_yum_problematic_dependencies(output):
         )
         remove_pkgs(
             pkgs_to_remove=set(packages_to_remove),
-            backup=False,
+            backup=True,
             critical=False,
+            set_releasever=False,
+            reposdir=BACKUP_DIR,
+            manual_releasever=system_info.version.major,
         )
     else:
         loggerinst.info("No packages to remove.")

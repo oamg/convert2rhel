@@ -1,7 +1,7 @@
 import pytest
 import six
 
-from convert2rhel import pkgmanager, unit_tests
+from convert2rhel import pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos7
@@ -254,6 +254,7 @@ class TestYumTransactionHandler(object):
         assert "Failed to process yum transactions." in caplog.records[-1].message
 
 
+@centos7
 @pytest.mark.parametrize(
     ("output", "expected_remove_pkgs"),
     (
@@ -301,6 +302,7 @@ class TestYumTransactionHandler(object):
     ),
 )
 def test__resolve_yum_problematic_dependencies(
+    pretend_os,
     output,
     expected_remove_pkgs,
     monkeypatch,
@@ -313,8 +315,11 @@ def test__resolve_yum_problematic_dependencies(
         assert pkgmanager.handlers.yum.remove_pkgs.called
         pkgmanager.handlers.yum.remove_pkgs.assert_called_with(
             pkgs_to_remove=expected_remove_pkgs,
-            backup=False,
+            backup=True,
             critical=False,
+            reposdir=utils.BACKUP_DIR,
+            set_releasever=False,
+            manual_releasever=7,
         )
     else:
         assert "No packages to remove." in caplog.records[-1].message

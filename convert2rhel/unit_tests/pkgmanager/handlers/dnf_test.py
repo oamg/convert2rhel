@@ -37,6 +37,7 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(pkgmanager.Base, "download_packages", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "do_transaction", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "transaction", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.handlers.dnf, "remove_pkgs", value=mock.Mock())
 
     @centos8
     @pytest.mark.skipif(
@@ -152,6 +153,7 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.download_packages.called
         assert pkgmanager.Base.do_transaction.called
         assert "not available for downgrade." in caplog.records[-3].message
+        assert pkgmanager.handlers.dnf.remove_pkgs.called
 
     @centos8
     @pytest.mark.skipif(

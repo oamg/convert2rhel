@@ -416,13 +416,30 @@ def download_pkg(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    manual_releasever=None,
 ):
-    """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
+    """Download an rpm using yumdownloader and return its filepath.
 
-    The enable_repos and disable_repos function parameters accept lists. If used, the repos are passed to the
-    --enablerepo and --disablerepo yumdownloader options, respectively.
+    This function accepts a single rpm name as a string to be downloaded through
+    the yumdownloader binary.
 
-    Pass just a single rpm name as a string to the pkg parameter.
+    :param pkg: The packaged that will be downloaded.
+    :type pkg: str
+    :param dest: The destination to download te package. Defaults to `TMP_DIR`
+    :type dest: str
+    :param reposdir: The folder with custom repositories to download.
+    :type reposdir: str
+    :param enable_repos: The repositories to enabled during the download.
+    :type enable_repos: list[str]
+    :param disable_repos: The repositories to disable during the download.
+    :type disable_repos: list[str]
+    :param set_releasever: If it's necessary to set the releasever.
+    :type set_releasever: bool
+    :param manual_releasever: The releasever to be set manually.
+    :type manual_releasever: int | str
+
+    :return: The filepath of the downloaded package.
+    :rtype: str | None
     """
     from convert2rhel.systeminfo import system_info
 
@@ -443,6 +460,9 @@ def download_pkg(
 
     if set_releasever and system_info.releasever:
         cmd.append("--releasever=%s" % system_info.releasever)
+
+    if not set_releasever and manual_releasever:
+        cmd.append("--releasever=%s" % manual_releasever)
 
     if system_info.version.major == 8:
         cmd.append("--setopt=module_platform_id=platform:el8")

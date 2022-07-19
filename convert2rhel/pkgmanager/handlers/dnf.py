@@ -1,9 +1,11 @@
 import logging
 
 from convert2rhel import pkgmanager
+from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import BACKUP_DIR
 
 
 loggerinst = logging.getLogger(__name__)
@@ -67,11 +69,18 @@ class DnfTransactionHandler(TransactionHandlerBase):
             try:
                 self._base.reinstall(pkg_spec=pkg)
             except pkgmanager.exceptions.PackagesNotAvailableError:
-                # Try to use downgrade here and move the allow_erasing to resolve
                 try:
                     self._base.downgrade(pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available for downgrade.", pkg)
+                    remove_pkgs(
+                        pkgs_to_remove=[pkg],
+                        backup=True,
+                        critical=False,
+                        reposdir=BACKUP_DIR,
+                        set_releasever=False,
+                        manual_releasever=system_info.version.major,
+                    )
 
         # Resolve, donwload and process the transaction
         try:
