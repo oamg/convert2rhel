@@ -592,7 +592,9 @@ def check_package_updates():
 
     if len(packages_to_update) > 0:
         repos_message = (
-            "on the enabled system repos" if not reposdir else "on repositories defined in the %s folder" % reposdir
+            "on the enabled system repositories"
+            if not reposdir
+            else "on repositories defined in the %s folder" % reposdir
         )
         logger.warning(
             "The system has %s packages not updated based %s.\n"

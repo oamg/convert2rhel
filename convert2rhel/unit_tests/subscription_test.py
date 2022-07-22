@@ -1082,7 +1082,7 @@ def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_
             ("repo-1, repo-2", 1),
             True,
             ["repo-1", "repo-2"],
-            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+            "Repositories were not possible to enable through subscription-manager:\nrepo-1, repo-2",
         ),
         (
             ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
@@ -1132,7 +1132,7 @@ def test_enable_repos_rhel_repoids(
             ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
             ("test-repo-1, test-repo-2", 1),
             True,
-            "Repos were not possible to enable through subscription-manager:\ntest-repo-1, test-repo-2",
+            "Repositories were not possible to enable through subscription-manager:\ntest-repo-1, test-repo-2",
         ),
         (
             ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
@@ -1194,7 +1194,7 @@ def test_enable_repos_rhel_repoids_fallback_default_rhsm(
             ("repo-1, repo-2", 1),
             True,
             ["repo-1", "repo-2"],
-            "Repos were not possible to enable through subscription-manager:\nrepo-1, repo-2",
+            "Repositories were not possible to enable through subscription-manager:\nrepo-1, repo-2",
         ),
         (
             ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
