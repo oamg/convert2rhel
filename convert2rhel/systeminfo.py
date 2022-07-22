@@ -271,7 +271,7 @@ class SystemInfo(object):
         rpm_va, _ = utils.run_subprocess(["rpm", "-Va"], print_output=False)
         output_file = os.path.join(logger.LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
-        self.logger.info("The 'rpm -Va' output has been stored in the %s file" % output_file)
+        self.logger.info("The 'rpm -Va' output has been stored in the %s file." % output_file)
 
     def modified_rpm_files_diff(self):
         """Get a list of modified rpm files after the conversion and compare it to the one from before the conversion."""

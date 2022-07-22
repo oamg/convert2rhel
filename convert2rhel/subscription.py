@@ -860,7 +860,7 @@ def disable_repos():
     disable_cmd.extend(disable_repos)
     output, ret_code = utils.run_subprocess(disable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to disable through subscription-manager:\n%s" % output)
+        loggerinst.critical("Repositories were not possible to disable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories disabled.")
     return
 
@@ -906,7 +906,7 @@ def _submgr_enable_repos(repos_to_enable):
         enable_cmd.append("--enable=%s" % repo)
     output, ret_code = utils.run_subprocess(enable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repos were not possible to enable through subscription-manager:\n%s" % output)
+        loggerinst.critical("Repositories were not possible to enable through subscription-manager:\n%s" % output)
     loggerinst.info("Repositories enabled through subscription-manager")
 
 
