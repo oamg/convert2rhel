@@ -3,7 +3,7 @@ import sys
 import pytest
 import six
 
-from convert2rhel import redhatrelease, toolopts, utils
+from convert2rhel import cert, redhatrelease, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
