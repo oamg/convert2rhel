@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import errno
 import logging
 import os
 import shutil
@@ -73,7 +74,7 @@ class SystemCert(object):
             os.remove(self._target_cert_path)
             loggerinst.info("Certificate %s removed" % self._target_cert_path)
         except OSError as err:
-            if err.errno == 2:
+            if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
                 loggerinst.debug("No RHSM certificates found to be removed")
             else:
