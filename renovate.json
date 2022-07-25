@@ -2,5 +2,13 @@
   "extends": [
     "config:base"
   ],
-  "enabledManagers": ["docker", "python"]
+  "enabledManagers": ["docker", "python"],
+  "ignorePaths": ["**/centos6*.requirements.txt"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["pytest"],
+      "matchFiles": ["requirements/centos8.requirements.txt"],
+      "allowedVersions": "<=7.0"
+    }
+  ]
 }
