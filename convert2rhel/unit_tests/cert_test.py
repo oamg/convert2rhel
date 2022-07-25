@@ -98,24 +98,27 @@ def test_remove_cert(caplog, system_cert_with_target_path):
 
     system_cert_with_target_path.remove()
 
-    assert "Certificate /filename removed" in caplog.messages[-1]
+    assert "Certificate %s removed" % cert_file_path in caplog.messages[-1]
 
 
 @pytest.mark.parametrize(
     (
         "error_condition",
-        "expected_text_in_logs",
+        "text_not_expected_in_logs",
     ),
     (
         (
             OSError(2, "No such file or directory"),
             "No such file or directory",
         ),
-        (OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"), "Permission denied:"),
+        (
+            OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"),
+            "OSError(13): Permission denied: '/tmpdir/certfile'",
+        ),
     ),
 )
 def test_remove_cert_error_conditions(
-    error_condition, expected_text_in_logs, caplog, monkeypatch, system_cert_with_target_path
+    error_condition, text_not_expected_in_logs, caplog, monkeypatch, system_cert_with_target_path
 ):
     def fake_os_remove(path):
         raise error_condition
@@ -124,4 +127,5 @@ def test_remove_cert_error_conditions(
 
     system_cert_with_target_path.remove()
 
-    assert expected_text_in_logs != caplog.messages[-1]
+    for message in caplog.messages:
+        assert text_not_expected_in_logs not in message

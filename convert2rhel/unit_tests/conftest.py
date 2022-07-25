@@ -68,6 +68,20 @@ def setup_logger(tmpdir):
 
 @pytest.fixture
 def system_cert_with_target_path(monkeypatch, tmpdir, request):
+    """
+    Create a single SystemCert backed by a temp file.
+
+    Use it in unit tests when you need a SystemCert that has a real file backing it.
+
+    You may use a custom pytest.mark named cert_filename to use a specific file name in the temp directory.
+    If you don't the file name will be arbitrary.
+
+    We use this mark instead of using parametrize because parametrize is mainly used to run a test multiple times
+    with diffrent data. For constant data, pytest recommends the use of custom markers.
+
+    .. seealso::
+        https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
+    """
 
     mark = request.node.get_closest_marker("cert_filename")
     if not mark:
