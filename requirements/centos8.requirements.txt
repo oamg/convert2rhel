@@ -1,5 +1,5 @@
 pylint==2.13.4
-astroid==2.11.7
+astroid==2.12.2
 pytest==7.0.1
 pytest-cov==3.0.0
 coverage[toml]
