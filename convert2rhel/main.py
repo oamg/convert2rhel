@@ -87,6 +87,9 @@ def main():
         loggerinst.task("Prepare: Clear YUM/DNF version locks")
         pkghandler.clear_versionlock()
 
+        loggerinst.task("Prepare: Clean yum cache metadata")
+        pkghandler.clean_yum_metadata()
+
         # check the system prior the conversion (possible inhibit)
         checks.perform_pre_checks()
 

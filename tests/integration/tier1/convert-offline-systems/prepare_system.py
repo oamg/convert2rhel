@@ -53,4 +53,4 @@ def test_prepare_system(shell):
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
 
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+    shell("rm -rf /etc/yum.repos.d/*")

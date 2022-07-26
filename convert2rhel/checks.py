@@ -58,12 +58,12 @@ COMPATIBLE_KERNELS_VERS = {
 def perform_pre_checks():
     """Early checks after system facts should be added here."""
 
+    check_custom_repos_are_valid()
     check_convert2rhel_latest()
     check_efi()
     check_tainted_kmods()
     check_readonly_mounts()
     check_rhel_compatible_kernel_is_used()
-    check_custom_repos_are_valid()
     check_package_updates()
     is_loaded_kernel_latest()
 
@@ -258,11 +258,6 @@ def check_custom_repos_are_valid():
         logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
         return
 
-    # Without clearing the metadata cache, the `yum makecache` command may return 0 (everything's ok) even when
-    # the baseurl of a repository is not accessible. That would happen when the repository baseurl is changed but yum
-    # still uses the previous baseurl stored in its cache.
-    call_yum_cmd(command="clean", args=["metadata"], print_output=False)
-
     output, ret_code = call_yum_cmd(
         command="makecache", args=["-v", "--setopt=*.skip_if_unavailable=False"], print_output=False
     )
@@ -271,9 +266,8 @@ def check_custom_repos_are_valid():
             "Unable to access the repositories passed through the --enablerepo option. "
             "For more details, see YUM/DNF output:\n{0}".format(output)
         )
-    else:
-        logger.debug("Output of the previous yum command:\n{0}".format(output))
 
+    logger.debug("Output of the previous yum command:\n{0}".format(output))
     logger.info("The repositories passed through the --enablerepo option are all accessible.")
 
 
