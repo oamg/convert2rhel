@@ -21,7 +21,7 @@ BuildArch:      noarch
 BuildRequires:  python%{python_pkgversion}-devel
 BuildRequires:  python%{python_pkgversion}-setuptools
 BuildRequires:  python%{python_pkgversion}-six
-%if 0%{?rhel} && 0%{?el8}
+%if 0%{?rhel} && 0%{?rhel} >= 8
 BuildRequires:  python3-pexpect
 # rpm is being imported through utils.py
 BuildRequires:  python3-rpm
@@ -35,7 +35,7 @@ Requires:       rpm
 Requires:       python%{python_pkgversion}
 Requires:       python%{python_pkgversion}-setuptools
 Requires:       python%{python_pkgversion}-six
-%if 0%{?rhel} && 0%{?el8}
+%if 0%{?rhel} && 0%{?rhel} >= 8
 Requires:       dnf
 # dnf-utils includes yumdownloader we use
 Requires:       dnf-utils
@@ -98,7 +98,7 @@ install -p man/%{name}.8 %{buildroot}%{_mandir}/man8/
 
 %files
 
-%if 0%{?el6} && 0%{?rhel}
+%if 0%{?rhel} && 0%{?rhel} <= 6
 # without this on CentOS Linux/OL 6, rpmlint gives an error "E: files-attr-not-set"
 %defattr(-,root,root,-)
 %endif
