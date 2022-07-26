@@ -118,7 +118,8 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
 def test_clean_cache(convert2rhel):
     # Test that the yum clean is done before any other check that c2r does
     with convert2rhel("--no-rpm-va --debug") as c2r:
-        c2r.expect("Prepare: Clean yum cache metadata")
-        c2r.expect("Cached yum metadata cleaned successfully.")
+        assert c2r.expect("Prepare: Clean yum cache metadata") == 0
+        assert c2r.expect("Cached yum metadata cleaned successfully.") == 0
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
