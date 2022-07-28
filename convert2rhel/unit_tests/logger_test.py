@@ -46,11 +46,6 @@ def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_t
     stdouterr_out, stdouterr_err = read_std()
     assert "Test info: data" in stdouterr_out
     assert "Test debug: other data" in stdouterr_out
-    loggers = [logging.getLogger()] + list(logging.Logger.manager.loggerDict.values())
-    for logger in loggers:
-        handlers = getattr(logger, "handlers", [])
-        for handler in handlers:
-            logger.removeHandler(handler)
 
 
 def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opts, clear_loggers):
@@ -76,14 +71,9 @@ def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opt
     logger.debug("debug entry 2: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
     assert "debug entry 2: data" not in stdouterr_out
-    loggers = [logging.getLogger()] + list(logging.Logger.manager.loggerDict.values())
-    for logger in loggers:
-        handlers = getattr(logger, "handlers", [])
-        for handler in handlers:
-            logger.removeHandler(handler)
 
 
-def test_logger_custom_logger(tmpdir, caplog):
+def test_logger_custom_logger(tmpdir, caplog, clear_loggers):
     """Test CustomLogger."""
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))

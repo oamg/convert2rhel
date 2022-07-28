@@ -52,10 +52,11 @@ def clear_loggers():
     # Nothing to do in setup
     yield
     # In teardown, we clear all the logger handlers.
-    loggers = [logging.getLogger()] + list(logging.Logger.manager.loggerDict.values())
+    loggers = logging.Logger.manager.loggerDict.values()
     for logger in loggers:
-        handlers = getattr(logger, "handlers", [])
-        for handler in handlers:
+        if not hasattr(logger, "handlers"):
+            continue
+        for handler in logger.handlers[:]:
             logger.removeHandler(handler)
 
 
