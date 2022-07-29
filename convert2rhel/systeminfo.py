@@ -151,9 +151,11 @@ class SystemInfo(object):
         minor_version = int(match.group(2)) if match.group(2) else MINOR_VERSION_UNAVAILABLE
         version = Version(int(match.group(1)), minor_version)
 
-        version_to_log = ("%d.%d" % (version.major, version.minor)
-                          if version.minor is not MINOR_VERSION_UNAVAILABLE
-                          else str(version.major))
+        version_to_log = (
+            "%d.%d" % (version.major, version.minor)
+            if version.minor is not MINOR_VERSION_UNAVAILABLE
+            else str(version.major)
+        )
         self.logger.info("%-20s %s" % ("OS version:", version_to_log))
         return version
 
