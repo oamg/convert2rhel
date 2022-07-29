@@ -13,16 +13,3 @@ known_third_party=[
     "click",
 ]
 known_first_party=["convert2rhel"]
-
-[tool.coverage.run]
-branch = true
-source = ["convert2rhel"]
-omit = ["convert2rhel/unit_tests/*",]
-
-[tool.coverage.paths]
-source = ["convert2rhel/"]
-
-[tool.coverage.report]
-fail_under = 80
-skip_covered = true
-show_missing = true
