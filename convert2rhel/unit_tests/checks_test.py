@@ -389,7 +389,7 @@ def test_ensure_compatibility_of_kmods_excluded(
         checks,
         "get_loaded_kmods",
         mock.Mock(
-            return_value=HOST_MODULES_STUB_GOOD | frozenset((unsupported_pkg)),
+            return_value=HOST_MODULES_STUB_GOOD | frozenset((unsupported_pkg,)),
         ),
     )
     get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
@@ -415,6 +415,7 @@ def test_ensure_compatibility_of_kmods_excluded(
             checks.ensure_compatibility_of_kmods()
     else:
         checks.ensure_compatibility_of_kmods()
+
     get_unsupported_kmods_mocked.assert_called_with(
         # host kmods
         set(
@@ -1001,7 +1002,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog):
 @pytest.mark.parametrize(
     ("packages", "exception", "expected"),
     (
-        (["package-1", "package-2"], True, "The system has {} packages not updated"),
+        (["package-1", "package-2"], True, "The system has {0} packages not updated"),
         ([], False, "System is up-to-date."),
     ),
 )
@@ -1196,9 +1197,9 @@ def test_is_loaded_kernel_latest_eus_system_no_connection(pretend_os, monkeypatc
             "1",
             "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
         ),
-        ("", 0, 8, "kernel-core", "0", "Could not find any {} from repositories"),
-        ("", 0, 7, "kernel", "0", "Could not find any {} from repositories"),
-        ("", 0, 6, "kernel", "0", "Could not find any {} from repositories"),
+        ("", 0, 8, "kernel-core", "0", "Could not find any {0} from repositories"),
+        ("", 0, 7, "kernel", "0", "Could not find any {0} from repositories"),
+        ("", 0, 6, "kernel", "0", "Could not find any {0} from repositories"),
     ),
 )
 def test_is_loaded_kernel_latest_unsupported_skip(

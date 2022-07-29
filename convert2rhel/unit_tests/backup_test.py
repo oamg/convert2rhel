@@ -274,8 +274,8 @@ def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
 @pytest.mark.parametrize(
     ("pkgs_to_remove", "ret_code", "backup_pkg", "critical", "expected"),
     (
-        (["pkg1"], 1, False, True, "Error: Couldn't remove {}."),
-        (["pkg1"], 1, False, False, "Couldn't remove {}."),
+        (["pkg1"], 1, False, True, "Error: Couldn't remove {0}."),
+        (["pkg1"], 1, False, False, "Couldn't remove {0}."),
     ),
 )
 def test_remove_pkgs_failed_to_remove(

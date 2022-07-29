@@ -291,7 +291,8 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
 
     if exception:
         main.initialize_logger("convert2rhel.log", "/tmp")
-        assert "Warning: Unable to archive previous log:" in capsys.readouterr().out
+        out, _ = capsys.readouterr()
+        assert "Warning: Unable to archive previous log:" in out
     else:
         main.initialize_logger("convert2rhel.log", "/tmp")
         setup_logger_handler_mock.assert_called_once()
