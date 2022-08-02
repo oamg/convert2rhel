@@ -300,11 +300,9 @@ def validate_yum_transaction():
     """ """
     logger.info("\nValidate the %s transaction", pkgmanager.TYPE)
 
-    is_transaction_test_successful = pkghandler.transaction_handler.process_transaction(
+    pkghandler.transaction_handler.process_transaction(
         test_transaction=True,
     )
-    if not is_transaction_test_successful:
-        logger.critical("There was an error during the validation of the transaction.\n")
 
     logger.info("Transaction validated successfully.\n")
 

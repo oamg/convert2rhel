@@ -369,10 +369,6 @@ def test_ensure_compatibility_of_kmods(
             True,
             "Transaction validated successfully.",
         ),
-        (
-            False,
-            "There was an error during the validation of the transaction.",
-        ),
     ),
 )
 def test_validate_yum_transaction(is_transaction_test_successful, expected, monkeypatch, caplog):
@@ -382,11 +378,7 @@ def test_validate_yum_transaction(is_transaction_test_successful, expected, monk
         value=lambda test_transaction: is_transaction_test_successful,
     )
 
-    if not is_transaction_test_successful:
-        with pytest.raises(SystemExit):
-            checks.validate_yum_transaction()
-    else:
-        checks.validate_yum_transaction()
+    checks.validate_yum_transaction()
 
     assert expected in caplog.records[-1].message
 

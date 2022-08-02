@@ -158,8 +158,7 @@ class YumTransactionHandler(TransactionHandlerBase):
     def _process_transaction(self):
         """Internal method to process the transaction.
 
-        :return: A boolean indicating if it was successfull or not.
-        :rtype: bool
+        :raises SystemExit: If we can't process the transaction.
         """
         try:
             self._base.processTransaction()
@@ -168,11 +167,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             pkgmanager.Errors.YumTestTransactionError,
             pkgmanager.Errors.YumRPMTransError,
         ) as e:
-            loggerinst.warning("Failed to validate the yum transaction.")
             loggerinst.debug("Got the following exception message: %s", e)
-            return False
+            loggerinst.critical("Failed to validate the yum transaction.")
 
-        return True
+        loggerinst.info("Transaction processed succesfully.")
 
     def process_transaction(self, test_transaction=False):
         """Process the yum transaction.
@@ -211,6 +209,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         :param test_transaction: Determines if the transaction needs to be
         tested or not.
         :type test_transaction: bool
+        :raises SystemExit: If we can't resolve the transaction dependencies.
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
@@ -230,7 +229,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                 break
 
         if not resolve_deps_finished:
-            return False
+            loggerinst.critical("Failed to resolve dependencines in the transaction.")
 
         if test_transaction:
             self._base.conf.tsflags.append("test")
@@ -238,7 +237,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("Replacing the system packages.")
 
-        is_transaction_finished = self._process_transaction()
+        self._process_transaction()
         # Because we call the same thing multiple times, the rpm database is
         # not properly closed at the end.
         # This cause problems because we have another special operation that
@@ -246,4 +245,3 @@ class YumTransactionHandler(TransactionHandlerBase):
         # kernel. In the YumBase() class there is a special __del__() method
         # that resolves all of the locks that it places during the transaction.
         del self._base
-        return is_transaction_finished

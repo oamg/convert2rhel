@@ -76,7 +76,7 @@ class TestYumTransactionHandler(object):
         )
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", value=lambda: enabled_repos)
         instance = YumTransactionHandler()
-        assert instance.process_transaction(test_transaction)
+        instance.process_transaction(test_transaction)
 
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_repos)
         assert pkgmanager.YumBase.update.call_count == len(original_os_pkgs)
@@ -123,7 +123,7 @@ class TestYumTransactionHandler(object):
         )
 
         instance = YumTransactionHandler()
-        assert instance.process_transaction()
+        instance.process_transaction()
 
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_repos)
         assert pkgmanager.YumBase.update.call_count == len(original_os_pkgs)
@@ -165,7 +165,7 @@ class TestYumTransactionHandler(object):
         )
 
         instance = YumTransactionHandler()
-        assert instance.process_transaction()
+        instance.process_transaction()
 
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_repos)
         assert pkgmanager.YumBase.update.call_count == len(original_os_pkgs)
@@ -173,7 +173,7 @@ class TestYumTransactionHandler(object):
         assert pkgmanager.YumBase.downgrade.call_count == 0
         assert pkgmanager.YumBase.resolveDeps.call_count == 1
         assert pkgmanager.YumBase.processTransaction.call_count == 1
-        assert "Can't remove pkg" in caplog.records[-3].message
+        assert "Can't remove pkg" in caplog.records[-4].message
 
     @centos7
     @pytest.mark.skipif(
@@ -206,7 +206,7 @@ class TestYumTransactionHandler(object):
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", value=lambda: enabled_repos)
         pkgmanager.YumBase.resolveDeps = YumResolveDepsMocked()
         instance = YumTransactionHandler()
-        assert instance.process_transaction()
+        instance.process_transaction()
 
     @centos7
     @pytest.mark.skipif(
@@ -241,7 +241,7 @@ class TestYumTransactionHandler(object):
         # limit, this way we test the while limit.
         pkgmanager.YumBase.resolveDeps = YumResolveDepsMocked(-5)
         instance = YumTransactionHandler()
-        assert instance.process_transaction()
+        instance.process_transaction()
 
     @centos7
     @pytest.mark.skipif(
@@ -290,9 +290,10 @@ class TestYumTransactionHandler(object):
         )
 
         instance = YumTransactionHandler()
-        assert not instance.process_transaction()
+        with pytest.raises(SystemExit):
+            instance.process_transaction()
 
-        assert "Failed to validate the yum transaction." in caplog.records[-2].message
+        assert "Failed to validate the yum transaction." in caplog.records[-1].message
 
 
 @centos7

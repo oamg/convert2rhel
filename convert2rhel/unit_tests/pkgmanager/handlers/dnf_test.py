@@ -88,8 +88,7 @@ class TestDnfTransactionHandler:
             return_value=enabled_repos,
         )
         instance = DnfTransactionHandler()
-
-        assert instance.process_transaction(test_transaction)
+        instance.process_transaction(test_transaction)
 
         assert pkgmanager.Base.read_all_repos.called
         assert pkgmanager.repodict.RepoDict.all.called
@@ -141,7 +140,7 @@ class TestDnfTransactionHandler:
             side_effect=pkgmanager.exceptions.PackagesNotInstalledError,
         )
         instance = DnfTransactionHandler()
-        assert instance.process_transaction()
+        instance.process_transaction()
 
         assert pkgmanager.Base.read_all_repos.called
         assert pkgmanager.repodict.RepoDict.all.called
@@ -186,9 +185,10 @@ class TestDnfTransactionHandler:
         pkgmanager.Base.resolve = mock.Mock(side_effect=pkgmanager.exceptions.DepsolveError)
         instance = DnfTransactionHandler()
 
-        assert not instance.process_transaction()
+        with pytest.raises(SystemExit):
+            instance.process_transaction()
 
-        assert "Failed to resolve dependencines in the transaction." in caplog.records[-2].message
+        assert "Failed to resolve dependencines in the transaction." in caplog.records[-1].message
 
     @centos8
     @pytest.mark.skipif(
@@ -224,9 +224,10 @@ class TestDnfTransactionHandler:
         )
         instance = DnfTransactionHandler()
 
-        assert not instance.process_transaction()
+        with pytest.raises(SystemExit):
+            instance.process_transaction()
 
-        assert "Failed to download the transaction packages." in caplog.records[-2].message
+        assert "Failed to download the transaction packages." in caplog.records[-1].message
 
     @centos8
     @pytest.mark.skipif(
@@ -268,6 +269,7 @@ class TestDnfTransactionHandler:
             ]
         )
         instance = DnfTransactionHandler()
-        assert not instance.process_transaction()
+        with pytest.raises(SystemExit):
+            instance.process_transaction()
 
-        assert "Failed to validate the dnf transaction." in caplog.records[-2].message
+        assert "Failed to validate the dnf transaction." in caplog.records[-1].message

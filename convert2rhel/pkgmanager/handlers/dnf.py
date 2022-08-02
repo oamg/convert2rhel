@@ -101,30 +101,27 @@ class DnfTransactionHandler(TransactionHandlerBase):
         transaction, including the step to download the packages that are used
         in the replacement.
 
-        :return: A boolean indicating if it was successful or not.
-        :rtype: bool
+        :raises SystemExit: If we fail to resolve the dependencies or
+            downloading the packages.
         """
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
-            loggerinst.warning("Failed to resolve dependencines in the transaction.")
             loggerinst.debug("Got the following exception message: %s" % e)
-            return False
+            loggerinst.critical("Failed to resolve dependencines in the transaction.")
 
         try:
             self._base.download_packages(self._base.transaction.install_set)
         except pkgmanager.exceptions.DownloadError as e:
-            loggerinst.warning("Failed to download the transaction packages.")
             loggerinst.debug("Got the following exception message: %s" % e)
-            return False
+            loggerinst.critical("Failed to download the transaction packages.")
 
-        return True
+        loggerinst.info("All transaction dependencies resolved successfully.")
 
     def _process_transaction(self):
         """Internal method that will process the transaction.
 
-        :return: A boolean indicating if it was successfull or not.
-        :rtype: bool
+        :raises SystemExit: If we can't process the transaction.
         """
         try:
             self._base.do_transaction()
@@ -132,11 +129,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
         ) as e:
-            loggerinst.warning("Failed to validate the dnf transaction.")
             loggerinst.debug("Got the following exception message: %s", e)
-            return False
+            loggerinst.critical("Failed to validate the dnf transaction.")
 
-        return True
+        loggerinst.info("Transaction processed succesfully.")
 
     def process_transaction(self, test_transaction=False):
         """Process the dnf transaction.
@@ -161,10 +157,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         self._enable_repos()
 
         self._perform_operations()
-        is_deps_resolved = self._resolve_dependencies()
-
-        if not is_deps_resolved:
-            return False
+        self._resolve_dependencies()
 
         # If we need to verify the transaction the first time, we need to
         # append the "test" flag to the `tsflags`.
@@ -174,11 +167,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("Replacing the system packages.")
 
-        is_transaction_finished = self._process_transaction()
+        self._process_transaction()
         # Manually closing everything after processing the transaction. If we
         # use del self._base, it seems that dnf is not able to properly clean
         # everything in the database. We were seeing some problems in the next
         # steps with the rpmdb, as the history had changed.
         self._base.close()
         del self._base
-        return is_transaction_finished
