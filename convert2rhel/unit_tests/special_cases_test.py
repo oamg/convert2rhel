@@ -92,7 +92,6 @@ def test_perform_java_openjdk_workaround(
 @pytest.mark.parametrize(
     ("sys_id", "is_efi", "removal_ok", "log_msg"),
     (
-        ("oracle", False, True, "Relevant to UEFI firmware only"),
         ("oracle", True, True, "removed in accordance with"),
         ("oracle", True, False, "Unable to remove"),
         ("centos", True, True, "Relevant to Oracle Linux 7 only"),
