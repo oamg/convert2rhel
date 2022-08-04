@@ -66,9 +66,6 @@ def main():
     # initialize logging
     initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
 
-    # prepare environment
-    utils.set_locale()
-
     # handle command line arguments
     toolopts.CLI()
 
@@ -283,7 +280,3 @@ def rollback_changes():
             raise
 
     return
-
-
-if __name__ == "__main__":
-    sys.exit(main())

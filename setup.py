@@ -61,7 +61,7 @@ setup(
     packages=["convert2rhel", "convert2rhel/pkgmanager", "convert2rhel/pkgmanager/handlers"],
     entry_points={
         "console_scripts": [
-            "convert2rhel = convert2rhel.main:main",
+            "convert2rhel = convert2rhel.initialize:run",
         ]
     },
     cmdclass={"build_manpage": build_manpage},
