@@ -125,6 +125,7 @@ def test_clean_cache(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
+
 def test_rhsm_error_logged(convert2rhel):
     """
     Test if the OSError for RHSM certificate being removed
