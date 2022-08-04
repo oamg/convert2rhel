@@ -76,6 +76,6 @@ class SystemCert(object):
         except OSError as err:
             if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
-                loggerinst.debug("No RHSM certificates found to be removed")
+                loggerinst.info("No RHSM certificates found to be removed.")
             else:
                 loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))
