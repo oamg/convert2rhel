@@ -134,7 +134,7 @@ def test_rhsm_error_logged(convert2rhel):
     with convert2rhel("--debug --no-rpm-va") as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
-        assert c2r.expect("DEBUG - No RHSM certificates found to be removed") == 0
+        assert c2r.expect("No RHSM certificates found to be removed.") == 0
 
     # Check for error not present in log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
