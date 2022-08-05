@@ -1043,7 +1043,7 @@ def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch,
 
 
 @oracle8
-def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, caplog):
+def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, monkeypatch, caplog):
     message = (
         "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
     )
@@ -1054,15 +1054,64 @@ def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, caplog):
 
 
 @pytest.mark.parametrize(
-    ("repoquery_version", "uname_version", "return_code", "major_ver", "package_name", "raise_system_exit"),
     (
-        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.42.2.el7.x86_64", 0, 8, "kernel-core", True),
-        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, 7, "kernel", False),
-        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, 6, "kernel", False),
+        "repoquery_version",
+        "uname_version",
+        "return_code",
+        "major_ver",
+        "package_name",
+        "raise_system_exit",
+        "expected_message",
+    ),
+    (
+        (
+            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+            "3.10.0-1160.42.2.el7.x86_64",
+            0,
+            8,
+            "kernel-core",
+            True,
+            "Couldn't fetch the list of the most recent kernels avaiable in the repositories. Skipping the loaded kernel check.",
+        ),
+        (
+            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+            "3.10.0-1160.42.2.el7.x86_64",
+            0,
+            8,
+            "kernel-core",
+            True,
+            None,
+        ),
+        (
+            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+            "3.10.0-1160.45.1.el7.x86_64",
+            0,
+            7,
+            "kernel",
+            False,
+            "The currently loaded kernel is at the latest version.",
+        ),
+        (
+            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+            "3.10.0-1160.45.1.el7.x86_64",
+            0,
+            6,
+            "kernel",
+            False,
+            "The currently loaded kernel is at the latest version.",
+        ),
     ),
 )
 def test_is_loaded_kernel_latest(
-    repoquery_version, uname_version, return_code, major_ver, package_name, raise_system_exit, monkeypatch, caplog
+    repoquery_version,
+    uname_version,
+    return_code,
+    major_ver,
+    package_name,
+    raise_system_exit,
+    expected_message,
+    monkeypatch,
+    caplog,
 ):
     Version = namedtuple("Version", ("major", "minor"))
     # Using the minor version as 99, so the tests should never fail because of a constraint in the code, since we don't
@@ -1111,7 +1160,7 @@ def test_is_loaded_kernel_latest(
         assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
     else:
         is_loaded_kernel_latest()
-        assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
+        assert expected_message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
