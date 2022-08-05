@@ -8,27 +8,27 @@ srpm_build_deps: []
 jobs:
 - job: copr_build
   trigger: pull_request
-  metadata:
-    owner: "@oamg"
-    project: convert2rhel
-    targets:
-    - epel-6-x86_64
-    - epel-7-x86_64
-    - epel-8-x86_64
+  owner: "@oamg"
+  project: convert2rhel
+  targets:
+  - epel-6-x86_64
+  - epel-7-x86_64
+  - epel-8-x86_64
   actions:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+    # workaround for https://github.com/packit/packit-service/issues/1601
+    fix-spec-file: []
 - job: copr_build
   trigger: commit
-  metadata:
-    branch: main
-    owner: "@oamg"
-    project: convert2rhel
-    targets:
-    - epel-6-x86_64
-    - epel-7-x86_64
-    - epel-8-x86_64
+  branch: main
+  owner: "@oamg"
+  project: convert2rhel
+  targets:
+  - epel-6-x86_64
+  - epel-7-x86_64
+  - epel-8-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
@@ -37,12 +37,13 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+    # workaround for https://github.com/packit/packit-service/issues/1601
+    fix-spec-file: []
 - job: tests
-  metadata:
-    targets:
-      epel-7-x86_64:
-        distros: [centos-7, oraclelinux-7]
-      epel-8-x86_64:
-        distros: [centos-8.4, centos-8, oraclelinux-8.4, oraclelinux-8.6]
-    use_internal_tf: True
+  targets:
+    epel-7-x86_64:
+      distros: [centos-7, oraclelinux-7]
+    epel-8-x86_64:
+      distros: [centos-8.4, centos-8, oraclelinux-8.4, oraclelinux-8.6]
+  use_internal_tf: True
   trigger: pull_request
