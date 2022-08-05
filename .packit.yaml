@@ -19,6 +19,8 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+    # workaround for https://github.com/packit/packit-service/issues/1601
+    fix-spec-file: []
 - job: copr_build
   trigger: commit
   metadata:
@@ -37,6 +39,8 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+    # workaround for https://github.com/packit/packit-service/issues/1601
+    fix-spec-file: []
 - job: tests
   metadata:
     targets:
