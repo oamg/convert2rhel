@@ -631,13 +631,22 @@ def is_loaded_kernel_latest():
     # Append the package name as the last item on the list
     cmd.append(package_to_check)
 
-    # Search for available kernel package versions available in different repositories using the `repoquery` command.
-    # If convert2rhel is running on a EUS system, then repoquery will use the hardcoded repofiles available under
-    # /usr/share/convert2rhel/repos, meaning that the tool will fetch only the latest kernels available for that EUS
-    # version, and not the most updated version from other newer versions.
-    # If the case is that convert2rhel is not running on a EUS system, for example, Oracle Linux 8.5, then it will use
-    # the system repofiles.
-    repoquery_output, _ = run_subprocess(cmd, print_output=False)
+    # Search for available kernel package versions available in different
+    # repositories using the `repoquery` command.  If convert2rhel is running
+    # on a EUS system, then repoquery will use the hardcoded repofiles
+    # available under /usr/share/convert2rhel/repos, meaning that the tool will
+    # fetch only the latest kernels available for that EUS version, and not the
+    # most updated version from other newer versions.  If the case is that
+    # convert2rhel is not running on a EUS system, for example, Oracle Linux
+    # 8.5, then it will use the system repofiles.
+    repoquery_output, return_code = run_subprocess(cmd, print_output=False)
+
+    if return_code != 0:
+        logger.debug("Got the following output: %s", repoquery_output)
+        logger.warning(
+            "Couldn't fetch the list of the most recent kernels avaiable in the repositories. Skipping the loaded kernel check."
+        )
+        return
 
     # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
     if len(repoquery_output) > 0:
