@@ -178,6 +178,10 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     :type columns: int
     :return: The output (combined stdout and stderr) and the return code of the executed command
     :rtype: tuple
+
+    .. warning:: unittests which utilize this may fail on pexpect-2.3 (RHEL7) unless capfd
+        (pytest's capture of stdout) is disabled.  Look at the
+        test_run_cmd_in_pty_size_set_on_startup unittest for an example.
     """
     # This check is here because we passed in strings in the past and changed to a list
     # for security hardening.  Remove this once everyone is comfortable with using a list
@@ -188,10 +192,9 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % " ".join(cmd))
 
-    process = PexpectSizedWindowSpawn(cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None)
-    # Needed on RHEL-8+ (see comments near PexpectSizedWindowSpawn definition)
-    process.setwinsize(1, columns)
-    loggerinst.debug("Pseudo-PTY columns set to: %s" % (process.getwinsize(),))
+    process = PexpectSpawnWithDimensions(
+        cmd[0], cmd[1:], env={"LC_ALL": "C", "LANG": "C"}, timeout=None, dimensions=(1, columns)
+    )
 
     for expect, send in expect_script:
         process.expect(expect)
@@ -217,28 +220,65 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     return output, return_code
 
 
-# For pexpect released prior to 2015 (RHEL7's pexpect-2.3),
-# spawn.__init__() hardcodes a call to setwinsize(24, 80) to set the
-# initial terminal size. There is no official way to set the terminal size
-# to a custom value before the process starts. This can cause an issue with
-# truncated lines for processes which read the terminal size when they
-# start and never refresh that value (like yumdownloader)
-#
-# overriding setwinsize to set the columns to the size we want in this
-# subclass is a kludge for the issue. On pexpect-2.3, it fixes the issue
-# because of the setwinsize call in __init__() at the cost of never being
-# able to change the column size later.  On later pexpect (RHEL-8 has
-# pexpect-4.3), this doesn't fix the issue of the terminal size being small
-# when the subprocess starts but dnf download checks the terminal's size
-# just before it prints the statusline we care about. So setting the
-# terminal size via setwinsize() after the process is created works (note:
-# there is a race condition there but it's unlikely to ever trigger as it
-# would require downloading a package to happen quicker than the time
-# between calling spawn.__init__() and spawn.setwinsize())
-class PexpectSizedWindowSpawn(pexpect.spawn):
-    # https://github.com/pexpect/pexpect/issues/134
-    def setwinsize(self, rows, cols):
-        super(PexpectSizedWindowSpawn, self).setwinsize(rows, 120)
+class PexpectSpawnWithDimensions(pexpect.spawn):
+    """
+    Pexpect.spawn class that can set terminal size before starting process.
+
+    This class is a workaround to the fact that pexpect-2.3 cannot officially set the terminal size
+    until after the process is started.  On RHEL7, we use pexpect 2.3 along with yumdownloader.
+    yundownloader checks the terminal size when it starts and then uses that terminal size for
+    printing out its progress lines even if the size changes later.  This causes output to be
+    truncated (losing information about the downloaded packages) because the line would be longer
+    than the 80 columns which pexpect.spawn hardcodes as the startup value.
+
+    Modern versions of pexpect (from 2015) fix this by giving spawn a dimensions() argument to set
+    the startup terminal size.  We can emulate this by overriding the setwindowsize() function in
+    a subclass through the use of a big kludge:
+
+    pexpect-2.3's __init__() calls setwindowsize() to set the initial terminal size. If we
+    override setwindowsize() to hardcode the dimensions that we pass in to the subclass's
+    constructor prior to calling the base class's __init__(), pexpect will end up calling our
+    overridden setwindowsize(), making the terminal the size that we want. If we then revert
+    setwindowsize() back to the real function prior to returning from the subclass's __init__(),
+    user's of the returned spawn object won't know that we temporarily overrode that method.
+
+    .. warning:: unittests which utilize this may fail on pexpect-2.3 (RHEL7) unless capfd
+        (pytest's capture of stdout) is disabled.  Look at the
+        test_run_cmd_in_pty_size_set_on_startup unittest for an example.
+    """
+
+    def __init__(self, *args, **kwargs):
+        try:
+            # With pexpect-2.4+, dimensions is a valid keyword arg
+            super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
+        except TypeError:
+            #
+            # This is a kludge to give us a dimensions kwarg on pexpect 2.3 or less.
+            #
+            if "dimensions" not in kwargs:
+                # We can only handle the case where the exception is caused by passing dimensions
+                # to pexpect.spawn.  If that's not what's happening here, re-raise the exception.
+                raise
+
+            dimensions = kwargs.pop("dimensions")
+
+            # pexpect.spawn.__init__() calls setwinsize to set the rows and columns to a default
+            # value.  Temporarily override setwinsize with a version that hardcodes the rows
+            # and columns to set rows and columns before the process is spawned.
+            # https://github.com/pexpect/pexpect/issues/134
+            def _setwinsize(rows, cols):
+                # This is a closure.  It takes self and dimensions from the function's defining scope.
+                super(PexpectSpawnWithDimensions, self).setwinsize(dimensions[0], dimensions[1])
+
+            # Save the real setwinsize and monkeypatch our kludge in
+            real_setwinsize = self.setwinsize
+            self.setwinsize = _setwinsize
+
+            # Call pexpect.spawn.__init__() which will use the monkeypatched setwinsize()
+            super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
+
+            # Restore the real setwinsize
+            self.setwinsize = real_setwinsize
 
 
 def let_user_choose_item(num_of_options, item_to_choose):

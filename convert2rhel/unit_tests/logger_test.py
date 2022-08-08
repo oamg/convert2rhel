@@ -21,14 +21,15 @@ import os
 import pytest
 
 from convert2rhel import logger as logger_module
-from convert2rhel.toolopts import tool_opts
 
 
-def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
+def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_tool_opts, clear_loggers):
     """Test if the logger handlers emmits the events to the file and stdout."""
+    monkeypatch.setattr(logger_module, "tool_opts", global_tool_opts)
+
     # initializing the logger first
     log_fname = "convert2rhel.log"
-    tool_opts.debug = True  # debug entries > stdout if True
+    global_tool_opts.debug = True  # debug entries > stdout if True
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
 
@@ -47,11 +48,12 @@ def test_logger_handlers(tmpdir, caplog, read_std, is_py2, capsys):
     assert "Test debug: other data" in stdouterr_out
 
 
-def test_tools_opts_debug(tmpdir, read_std, is_py2):
+def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opts, clear_loggers):
+    monkeypatch.setattr(logger_module, "tool_opts", global_tool_opts)
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
-    tool_opts.debug = True
+    global_tool_opts.debug = True
     logger.debug("debug entry 1: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
     # TODO should be in stdout, but this only works when running this test
@@ -64,13 +66,14 @@ def test_tools_opts_debug(tmpdir, read_std, is_py2):
         else:
             # this workaround is not working for py2 - passing
             pass
-    tool_opts.debug = False
+
+    global_tool_opts.debug = False
     logger.debug("debug entry 2: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
     assert "debug entry 2: data" not in stdouterr_out
 
 
-def test_logger_custom_logger(tmpdir, caplog):
+def test_logger_custom_logger(tmpdir, caplog, clear_loggers):
     """Test CustomLogger."""
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))

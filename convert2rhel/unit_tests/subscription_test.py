@@ -446,7 +446,7 @@ class TestRegisterSystem(object):
         fake_spawn = mock.Mock()
         fake_spawn.before.decode = mock.Mock(return_value="nope")
         fake_spawn.exitstatus = 1
-        monkeypatch.setattr(utils, "PexpectSizedWindowSpawn", fake_spawn)
+        monkeypatch.setattr(utils, "PexpectSpawnWithDimensions", fake_spawn)
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
@@ -486,7 +486,7 @@ class TestRegisterSystem(object):
         fake_process = FakeProcess()
         fake_process.before.decode = mock.Mock(side_effect=("nope", "nope", "Success"))
         fake_spawn = mock.Mock(return_value=fake_process)
-        monkeypatch.setattr(utils, "PexpectSizedWindowSpawn", fake_spawn)
+        monkeypatch.setattr(utils, "PexpectSpawnWithDimensions", fake_spawn)
 
         subscription.register_system()
 

@@ -20,6 +20,7 @@ import os
 import sys
 import unittest
 
+import pexpect
 import pytest
 import six
 
@@ -201,21 +202,23 @@ class TestUtils(unittest.TestCase):
         (["sh", "-c", "exit 56"], "", 56),
     ),
 )
-def test_run_cmd_in_pty_simple(command, expected_output, expected_code, monkeypatch):
-    output, code = utils.run_cmd_in_pty(command)
+def test_run_cmd_in_pty_simple(command, expected_output, expected_code, capfd, monkeypatch):
+    with capfd.disabled():
+        output, code = utils.run_cmd_in_pty(command)
     assert output.strip() == expected_output
     assert code == expected_code
 
 
-def test_run_cmd_in_pty_expect_script():
+def test_run_cmd_in_pty_expect_script(capfd):
     if sys.version_info < (3,):
         prompt_cmd = "raw_input"
     else:
         prompt_cmd = "input"
-    output, code = utils.run_cmd_in_pty(
-        [sys.executable, "-c", 'print(%s("Ask for password: "))' % prompt_cmd],
-        expect_script=(("password: *", "Foo bar\n"),),
-    )
+    with capfd.disabled():
+        output, code = utils.run_cmd_in_pty(
+            [sys.executable, "-c", 'print(%s("Ask for password: "))' % prompt_cmd],
+            expect_script=(("password: *", "Foo bar\n"),),
+        )
 
     assert output.strip().splitlines()[-1] == "Foo bar"
     assert code == 0
@@ -230,13 +233,14 @@ def test_run_cmd_in_pty_expect_script():
         (False, False),
     ),
 )
-def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts, caplog):
+def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts, caplog, capfd):
     global_tool_opts.debug = True
     caplog.set_level(logging.DEBUG)
 
-    output, code = utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
+    with capfd.disabled():
+        output, code = utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
 
-    expected_count = 1  # There will always be one debug log stating the pty columns
+    expected_count = 0
     if print_cmd:
         assert caplog.records[0].levelname == "DEBUG"
         assert caplog.records[0].message.strip() == "Calling command 'echo foo bar'"
@@ -253,6 +257,82 @@ def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts,
 def test_run_cmd_in_pty_check_for_deprecated_string():
     with pytest.raises(TypeError, match="cmd should be a list, not a str"):
         utils.run_cmd_in_pty("echo foobar")
+
+
+TERMINAL_SIZE_SCRIPT = """
+def terminal_size():
+    import fcntl, termios, struct, sys
+    h, w, hp, wp = struct.unpack('HHHH',
+        fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ,
+        struct.pack('HHHH', 0, 0, 0, 0)))
+    return w, h
+
+print(terminal_size()[0])
+"""
+
+
+@pytest.mark.parametrize(
+    ("columns",),
+    (
+        (40,),
+        (120,),
+    ),
+)
+def test_run_cmd_in_pty_size_set(columns, capfd, tmpdir):
+    """Test whether run_cmd_in_pty sets the terminal window size on startup."""
+    with open(str(tmpdir / "terminal-test.py"), "w") as f:
+        f.write(TERMINAL_SIZE_SCRIPT)
+
+    # Need to disable capfd because pytest capturing interferes with pexpect-2.3's ability to set
+    # the pty size before starting the program.
+    with capfd.disabled():
+        output, return_code = utils.run_cmd_in_pty([sys.executable, str(tmpdir / "terminal-test.py")], columns=columns)
+
+    assert int(output.strip()) == columns
+
+
+@pytest.mark.parametrize(
+    ("columns",),
+    (
+        (40,),
+        (120,),
+    ),
+)
+def test_pexpectspawnwithdimensions_size_set_on_startup(columns, capfd, tmpdir):
+    """Test whether run_cmd_in_pty sets the terminal window size on startup."""
+    with open(str(tmpdir / "terminal-test.py"), "w") as f:
+        f.write(TERMINAL_SIZE_SCRIPT)
+
+    # Need to disable capfd because pytest capturing interferes with pexpect-2.3's ability to set
+    # the pty size before starting the program.
+    with capfd.disabled():
+        process = utils.PexpectSpawnWithDimensions(
+            sys.executable, [str(tmpdir / "terminal-test.py")], dimensions=(1, columns)
+        )
+
+    process.expect(pexpect.EOF)
+    try:
+        process.wait()
+    except pexpect.ExceptionPexpect:
+        # RHEL 7's pexpect throws an exception if the process has already exited
+        # We're just waiting to be sure that the process has finished so we can
+        # ignore the exception.
+        pass
+
+    # Per the pexpect API, this is necessary in order to get the return code
+    process.close()
+
+    output = process.before.decode().splitlines()[-1]
+
+    assert int(output.strip()) == columns
+
+
+def test_pexpectspawnwithdimensions_unknown_typeerror():
+    """Test whether we re-raise TypeError when we don't know how to handle it."""
+    # Our compat class handles TypeError caused by passing dimensions.  Check
+    # that TypeError caused by something else re-raises the TypeError.
+    with pytest.raises(TypeError, match=".*got an unexpected keyword argument 'unknown'"):
+        _dummy = utils.PexpectSpawnWithDimensions("/bin/true", [], unknown=False)
 
 
 def test_get_package_name_from_rpm(monkeypatch):
