@@ -1,4 +1,4 @@
-FROM centos:7 as base
+FROM centos:8 as base
 
 RUN yum update -y && yum clean all
 

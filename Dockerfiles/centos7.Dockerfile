@@ -1,4 +1,4 @@
-FROM centos:7 as base
+FROM centos:8 as base
 
 ENV PYTHON python2
 ENV PIP pip
