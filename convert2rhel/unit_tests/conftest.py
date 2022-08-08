@@ -14,7 +14,7 @@ if sys.version_info[:2] <= (2, 7):
     import mock  # pylint: disable=import-error
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
-    
+
 try:
     from pytest_catchlog import CompatLogCaptureFixture
 
@@ -141,7 +141,11 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
         https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
     """
 
-    mark = request.node.get_closest_marker("cert_filename")
+    if pytest.__version__.split(".") <= ("3", "6", "0"):
+        mark = request.node.get_marker("cert_filename")
+    else:
+        mark = request.node.get_closest_marker("cert_filename")
+
     if not mark:
         temporary_filename = "filename"
     else:
