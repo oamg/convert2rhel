@@ -31,6 +31,7 @@ BuildRequires:  pexpect
 BuildRequires:  rpm-python
 %endif
 
+Requires:       efibootmgr
 Requires:       rpm
 Requires:       python%{python_pkgversion}
 Requires:       python%{python_pkgversion}-setuptools
