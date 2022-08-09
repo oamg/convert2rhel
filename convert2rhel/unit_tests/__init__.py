@@ -20,6 +20,8 @@ import unittest
 
 from functools import wraps
 
+import pytest
+
 from convert2rhel.utils import run_subprocess
 
 
@@ -105,6 +107,20 @@ def safe_repr(obj, short=False):
     if not short or len(result) < _MAX_LENGTH:
         return result
     return result[:_MAX_LENGTH] + " [truncated]..."
+
+
+def get_pytest_mark(request, mark_name):
+    """
+    Get a pytest mark from a request.
+    The pytest API to retrieve a mark changed between RHEL6 and RHEL7.  This function is
+    a compatibility shim to retrieve the value.
+    """
+    if pytest.__version__.split(".") <= ["3", "6", "0"]:
+        mark = request.node.get_marker(mark_name)
+    else:
+        mark = request.node.get_closest_marker(mark_name)
+
+    return mark
 
 
 class ExtendedTestCase(unittest.TestCase):

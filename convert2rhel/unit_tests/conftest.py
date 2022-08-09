@@ -8,6 +8,7 @@ from convert2rhel import cert, redhatrelease, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
+from convert2rhel.unit_tests import get_pytest_mark
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -140,15 +141,12 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
     .. seealso::
         https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
     """
-    if pytest.__version__.split(".") <= ["3", "6", "0"]:
-        mark = request.node.get_marker("cert_filename")
-    else:
-        mark = request.node.get_closest_marker("cert_filename")
+    cert_file_returns = get_pytest_mark(request, "cert_filename")
 
-    if not mark:
+    if not cert_file_returns:
         temporary_filename = "filename"
     else:
-        temporary_filename = mark.args[0]
+        temporary_filename = cert_file_returns.args[0]
 
     tmp_file = tmpdir / temporary_filename
 

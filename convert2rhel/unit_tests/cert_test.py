@@ -25,7 +25,6 @@ from convert2rhel import unit_tests
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 from convert2rhel import cert, utils
 from convert2rhel.systeminfo import system_info
