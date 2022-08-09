@@ -79,13 +79,12 @@ class CLI(object):
             "\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
-            "  convert2rhel [-u username] [-p password | -f pswd_file] [--pool pool_id | -a] [--disablerepo repoid]"
-            "  convert2rhel [-c | --config-file conf_file]"
+            "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
             " [--disable-colors] [-y]\n"
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]\n"
-            "  convert2rhel [-k key] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
+            "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]"
             "\n\n"
             "WARNING: The tool needs to be run under the root user"
@@ -167,9 +166,10 @@ class CLI(object):
             "-p",
             "--password",
             help="Password for the"
-            " subscription-manager. If --password,"
-            " --password-from-file or --activationkey are not"
-            " used, the user is asked to enter the password.",
+            " subscription-manager. If --password, --config-file or --activationkey are not"
+            " used, the user is asked to enter the password."
+            " We recommend using the --config-file option instead to prevent leaking the password"
+            " through a list of running processes.",
         )
         group.add_option(
             "-f",
@@ -185,7 +185,9 @@ class CLI(object):
             help="Activation key used"
             " for the system registration by the"
             " subscription-manager. It requires to have the --org"
-            " option specified.",
+            " option specified."
+            " We recommend using the --config-file option instead to prevent leaking the activation key"
+            " through a list of running processes.",
         )
         group.add_option(
             "-o",
@@ -200,8 +202,9 @@ class CLI(object):
         group.add_option(
             "-c",
             "--config-file",
-            help="Configuration file containing"
-            " password or activation key for subscription-manager."
+            help="A configuration file to safely provide either a user password or an activation key for registering"
+            " the system through subscription-manager. Alternatively, passing these values through the"
+            " --activationkey or --password option would leak them through a list of running processes."
             " Example of this file in /etc/convert2rhel.ini",
         )
         group.add_option(
@@ -364,16 +367,33 @@ class CLI(object):
 
         # Checks of multiple authentication sources
         if tool_opts.password and tool_opts.activation_key:
-            loggerinst.warning("Set only one of password or activation key. Activation key take precedence.")
+            loggerinst.warning(
+                "Passing the RHSM password or activation key through the --activationkey or --password options is"
+                " insecure as it leaks the values through the list of running processes. We recommend using the safer"
+                " --config-file option instead."
+            )
+            loggerinst.warning(
+                "Either a password or an activation key can be used for system registration."
+                " We're going to use the activation key."
+            )
 
         if parsed_opts.password and parsed_opts.password_from_file:
-            loggerinst.warning("Password file argument take precedence over the password argument.")
+            loggerinst.warning(
+                "You have passed the RHSM password through both the --password-from-file and the --password option."
+                " We're going to use the password from file."
+            )
 
         if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
-            loggerinst.warning("Command line authentication method take precedence over method in configuration file.")
+            loggerinst.warning(
+                "You have passed either the RHSM password or activation key through both the command line and the"
+                " configuration file. We're going to use the command line values."
+            )
 
         if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
-            loggerinst.warning("Password file take precedence over the config file.")
+            loggerinst.warning(
+                "You have passed the RHSM credentials both through a config file and through a password file."
+                " We're going to use the password file."
+            )
 
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True

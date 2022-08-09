@@ -160,31 +160,36 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
             mock_cli_arguments(["-p", "password"]),
             "[subscription_manager]\nactivation_key=conf_key",
             {"password": "password", "activation_key": None},
-            "Command line authentication method take precedence over method in configuration file.",
+            "You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values.",
         ),
         (
             mock_cli_arguments(["-k", "activation_key"]),
             "[subscription_manager]\nactivation_key=conf_key",
             {"password": None, "activation_key": "activation_key"},
-            "Command line authentication method take precedence over method in configuration file.",
+            "You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values.",
         ),
         (
             mock_cli_arguments(["-k", "activation_key"]),
             "[subscription_manager]\npassword=conf_pass",
             {"password": "conf_pass", "activation_key": "activation_key"},
-            "Command line authentication method take precedence over method in configuration file.",
+            "You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values.",
         ),
         (
             mock_cli_arguments(["-k", "activation_key", "-p", "password"]),
             "[subscription_manager]\npassword=conf_pass\nactivation_key=conf_key",
             {"password": "password", "activation_key": "activation_key"},
-            "Command line authentication method take precedence over method in configuration file.",
+            "You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values.",
         ),
         (
             mock_cli_arguments([""]),
             "[subscription_manager]\npassword=conf_pass\nactivation_key=conf_key",
             {"password": "conf_pass", "activation_key": "conf_key"},
-            "Set only one of password or activation key. Activation key take precedence.",
+            "Either a password or an activation key can be used for system registration. We're going to use the"
+            " activation key.",
         ),
     ),
 )
@@ -213,13 +218,15 @@ def test_config_file(argv, content, output, message, monkeypatch, tmp_path, capl
         (
             mock_cli_arguments(["--password", "pass", "-f"]),
             "pass_file",
-            "Password file argument take precedence over the password argument.",
+            "You have passed the RHSM password through both the --password-from-file and the --password option."
+            " We're going to use the password from file.",
             {"password": "pass_file", "activation_key": None},
         ),
         (
             mock_cli_arguments(["--password", "pass", "--config-file"]),
             "[subscription_manager]\nactivation_key = key_cnf_file",
-            "Command line authentication method take precedence over method in configuration file.",
+            "You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values.",
             {"password": "pass", "activation_key": None},
         ),
     ),
@@ -249,7 +256,8 @@ def test_multiple_auth_src_combined(argv, content, message, output, caplog, monk
         (
             mock_cli_arguments(["--password", "pass", "-f", "file", "--config-file", "file"]),
             ("pass_file", "[subscription_manager]\nactivation_key = pass_cnf_file"),
-            "Password file take precedence over the config file.",
+            "You have passed the RHSM password through both the --password-from-file and the --password option."
+            " We're going to use the password from file.",
             {"password": "pass_file", "activation_key": None},
         ),
     ),
@@ -281,7 +289,8 @@ def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeyp
     (
         (
             mock_cli_arguments(["--password", "pass", "--activationkey", "key"]),
-            "Set only one of password or activation key.",
+            "Either a password or an activation key can be used for system registration."
+            " We're going to use the activation key.",
             {"password": "pass", "activation_key": "key"},
         ),
     ),
