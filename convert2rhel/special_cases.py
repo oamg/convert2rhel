@@ -19,7 +19,6 @@ import logging
 import os
 
 from convert2rhel.backup import RestorableFile
-from convert2rhel.grub import is_efi
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import mkdir_p, run_subprocess
 
@@ -112,9 +111,6 @@ def unprotect_shim_x64():
     """
     logger.info("Removing shim-x64 package yum protection.")
     if system_info.id == "oracle" and system_info.version.major == 7:
-        if not is_efi():
-            logger.info("Relevant to UEFI firmware only. Skipping.")
-            return
         shim_x64_pkg_protection_file.backup()
         try:
             os.remove(shim_x64_pkg_protection_file.filepath)

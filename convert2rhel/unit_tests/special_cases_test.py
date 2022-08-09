@@ -90,19 +90,16 @@ def test_perform_java_openjdk_workaround(
 
 
 @pytest.mark.parametrize(
-    ("sys_id", "is_efi", "removal_ok", "log_msg"),
+    ("sys_id", "removal_ok", "log_msg"),
     (
-        ("oracle", False, True, "Relevant to UEFI firmware only"),
-        ("oracle", True, True, "removed in accordance with"),
-        ("oracle", True, False, "Unable to remove"),
-        ("centos", True, True, "Relevant to Oracle Linux 7 only"),
+        ("oracle", True, "removed in accordance with"),
+        ("oracle", False, "Unable to remove"),
+        ("centos", True, "Relevant to Oracle Linux 7 only"),
     ),
 )
 @mock.patch("os.remove")
-@mock.patch("convert2rhel.special_cases.is_efi")
-def test_unprotect_shim_x64(mock_is_efi, mock_os_remove, sys_id, is_efi, removal_ok, log_msg, monkeypatch, caplog):
+def test_unprotect_shim_x64(mock_os_remove, sys_id, removal_ok, log_msg, monkeypatch, caplog):
     monkeypatch.setattr(system_info, "id", sys_id)
-    mock_is_efi.return_value = is_efi
     monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     if not removal_ok:
         mock_os_remove.side_effect = OSError()
@@ -110,7 +107,7 @@ def test_unprotect_shim_x64(mock_is_efi, mock_os_remove, sys_id, is_efi, removal
     special_cases.unprotect_shim_x64()
 
     assert log_msg in caplog.records[-1].message
-    if sys_id == "oracle" and is_efi and removal_ok:
+    if sys_id == "oracle" and removal_ok:
         mock_os_remove.assert_called_once()
 
 
