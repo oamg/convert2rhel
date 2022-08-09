@@ -188,11 +188,11 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
         ),
     ),
 )
-def test_config_file(argv, content, output, message, monkeypatch, tmp_path, caplog):
+def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog):
     # After each test there were left data from previous
     # Re-init needed delete the set data
     convert2rhel.toolopts.tool_opts.__init__()
-    path = os.path.join(str(tmp_path), "convert2rhel.ini")
+    path = os.path.join(str(tmpdir), "convert2rhel.ini")
     with open(path, "w") as file:
         file.write(content)
     os.chmod(path, 0o600)
@@ -224,10 +224,10 @@ def test_config_file(argv, content, output, message, monkeypatch, tmp_path, capl
         ),
     ),
 )
-def test_multiple_auth_src_combined(argv, content, message, output, caplog, monkeypatch, tmp_path):
+def test_multiple_auth_src_combined(argv, content, message, output, caplog, monkeypatch, tmpdir):
     """Test combination of password file or configuration file and CLI arguments."""
     convert2rhel.toolopts.tool_opts.__init__()
-    path = os.path.join(str(tmp_path), "convert2rhel.file")
+    path = os.path.join(str(tmpdir), "convert2rhel.file")
     with open(path, "w") as file:
         file.write(content)
     os.chmod(path, 0o600)
@@ -254,12 +254,12 @@ def test_multiple_auth_src_combined(argv, content, message, output, caplog, monk
         ),
     ),
 )
-def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmp_path):
+def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmpdir):
     """Test combination of password file, config file and CLI."""
-    path0 = os.path.join(str(tmp_path), "convert2rhel.password")
+    path0 = os.path.join(str(tmpdir), "convert2rhel.password")
     with open(path0, "w") as file:
         file.write(content[0])
-    path1 = os.path.join(str(tmp_path), "convert2rhel.ini")
+    path1 = os.path.join(str(tmpdir), "convert2rhel.ini")
     with open(path1, "w") as file:
         file.write(content[1])
     # Set the paths
@@ -316,9 +316,9 @@ def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch):
         (None, {"password": None, "activation_key": None}),
     ),
 )
-def test_options_from_config_files_default(content, output, monkeypatch, tmp_path, caplog):
+def test_options_from_config_files_default(content, output, monkeypatch, tmpdir, caplog):
     """Test config files in default path."""
-    path = os.path.join(str(tmp_path), "convert2rhel.ini")
+    path = os.path.join(str(tmpdir), "convert2rhel.ini")
     if content:
         with open(path, "w") as file:
             file.write(content)
@@ -357,14 +357,14 @@ def test_options_from_config_files_default(content, output, monkeypatch, tmp_pat
         ),
     ),
 )
-def test_options_from_config_files_specified(content, output, content_lower_priority, monkeypatch, tmp_path, caplog):
+def test_options_from_config_files_specified(content, output, content_lower_priority, monkeypatch, tmpdir, caplog):
     """Test user specified path for config file."""
-    path = os.path.join(str(tmp_path), "convert2rhel.ini")
+    path = os.path.join(str(tmpdir), "convert2rhel.ini")
     with open(path, "w") as file:
         file.write(content)
     os.chmod(path, 0o600)
 
-    path_lower_priority = os.path.join(str(tmp_path), "convert2rhel_lower.ini")
+    path_lower_priority = os.path.join(str(tmpdir), "convert2rhel_lower.ini")
     content_lower_priority = "[subscription_manager]\npassword = low_prior_pass"
     with open(path_lower_priority, "w") as file:
         file.write(content_lower_priority)

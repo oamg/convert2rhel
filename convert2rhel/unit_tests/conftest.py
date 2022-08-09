@@ -140,8 +140,7 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
     .. seealso::
         https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
     """
-
-    if pytest.__version__.split(".") <= ("3", "6", "0"):
+    if pytest.__version__.split(".") <= ["3", "6", "0"]:
         mark = request.node.get_marker("cert_filename")
     else:
         mark = request.node.get_closest_marker("cert_filename")
