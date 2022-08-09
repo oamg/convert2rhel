@@ -31,4 +31,4 @@ def test_remove_excluded_pkgs(shell, convert2rhel):
     assert c2r.exitstatus == 0
 
     # check excluded packages were really removed
-    assert shell(f"rpm -qi {packages}").returncode == 1
+    assert shell(f"rpm -qi {packages}").returncode != 0
