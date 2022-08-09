@@ -1,16 +1,19 @@
+import os
+
 from envparse import env
 
 
 def test_remove_excluded_pkgs(shell, convert2rhel):
-    """Ensure c2r removes pkgs, which specified as excluded_pkgs in config."""
-
-    excluded_pkg_1 = "centos-gpg-keys"
-    excluded_pkg_2 = "centos-backgrounds"
-
-    # install some of excluded packages
+    """
+    Ensure Convert2RHEL removes packages, which are specified as excluded_pkgs in config.
+    Verification scenarios cover just some packages causing major issues.
+    Those are specified in their respective test plan (remove_excluded_pkgs_epel7 and remove_excluded_pkgs_epel8).
+    Packages are set as an environment variable.
+    """
+    packages = os.environ["PACKAGES"]
     assert (
         shell(
-            f"yum install -y {excluded_pkg_1} {excluded_pkg_2}",
+            f"yum install -y {packages}",
         ).returncode
         == 0
     )
@@ -28,5 +31,4 @@ def test_remove_excluded_pkgs(shell, convert2rhel):
     assert c2r.exitstatus == 0
 
     # check excluded packages were really removed
-    assert shell(f"rpm -qi {excluded_pkg_1}").returncode == 1
-    assert shell(f"rpm -qi {excluded_pkg_2}").returncode == 1
+    assert shell(f"rpm -qi {packages}").returncode == 1
