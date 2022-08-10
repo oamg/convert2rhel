@@ -59,11 +59,29 @@ discover+:
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/remove_excluded_pkgs:
+/remove_excluded_pkgs_epel8:
   adjust:
     enabled: false
     when: >
       distro != centos-8
+  environment+:
+    PACKAGES: centos-backgrounds centos-gpg-keys
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/remove-excluded-pkgs/test_remove_excluded_pkgs.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/remove_excluded_pkgs_epel7:
+  adjust:
+    enabled: false
+    when: distro != oraclelinux-7 and distro != centos-7
+  environment+:
+        PACKAGES: gnome-documents-libs
   discover+:
     test: checks-after-conversion
   prepare+:
