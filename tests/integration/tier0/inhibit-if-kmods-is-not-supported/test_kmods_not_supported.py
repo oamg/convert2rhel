@@ -1,3 +1,4 @@
+import os
 import platform
 
 from pathlib import Path
@@ -5,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from envparse import env
+
+
+system_version = platform.platform()
 
 
 @pytest.fixture()
@@ -22,8 +26,10 @@ def insert_custom_kmod(shell):
 
 
 def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
-    # This test checks that rpmquery works correctly.
-    # If custom module is loaded the conversion has to be inhibited.
+    """
+    Test checks that check for tainted kernel modules works correctly.
+    If custom module is loaded the conversion has to be inhibited.
+    """
     insert_custom_kmod()
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
@@ -38,9 +44,13 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
 
 
 def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
+    """
+    Test removes previously loaded custom module and runs the conversion.
+    The kmod compatibility checks is right before the point of no return.
+    Abort the conversion right after the check.
+    """
     assert shell("modprobe -r -v bonding").returncode == 0
 
-    system_version = platform.platform()
     if "oracle-7" in system_version or "centos-7" in system_version:
         prompt_amount = 3
     elif "oracle-8" in system_version:
@@ -67,8 +77,29 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         assert c2r.exitstatus != 0
 
 
+def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
+    """
+    Test force loads kmod and checks for Convert2RHEL not being inhibited.
+    With the check for tainted kernel modules being at the beginning of the script, abort the conversion ASAP
+    for the sake of test speed.
+    """
+    assert shell("modprobe -f -v bonding").returncode == 0
+    # Check for force loaded modules being in /proc/modules
+    assert "(FE)" in shell("cat /proc/modules").output
+
+    with convert2rhel("--no-rpm-va --debug") as c2r:
+        assert c2r.expect("Tainted kernel module\(s\) detected") == 0
+        assert c2r.exitstatus != 0
+
+    # Clean up
+    assert shell("modprobe -r -v bonding").returncode == 0
+    assert "(FE)" not in shell("cat /proc/modules").output
+
+
 def test_tainted_kernel_inhibitor(shell, convert2rhel):
-    # This test marks the kernel as tainted which is not supported by convert2rhel.
+    """
+    This test marks the kernel as tainted which is not supported by Convert2RHEL.
+    """
 
     # We need to install specific kernel packages to build own custom kernel module.
     shell("yum -y install gcc make kernel-headers kernel-devel-$(uname -r) elfutils-libelf-devel")
