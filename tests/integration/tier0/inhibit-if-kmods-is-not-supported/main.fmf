@@ -1,4 +1,4 @@
-summary: kmods tests
+summary: Test for Convert2RHEL being able to handle custom, tainted and force loaded kernel modules.
 
 tier: 0
 
