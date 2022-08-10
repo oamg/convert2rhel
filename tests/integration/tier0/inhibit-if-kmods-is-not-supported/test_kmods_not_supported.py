@@ -43,7 +43,7 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("The following kernel modules are not supported in RHEL")
+        c2r.expect("The following loaded kernel modules are not available in RHEL")
     assert c2r.exitstatus != 0
 
 

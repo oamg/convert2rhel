@@ -315,14 +315,14 @@ def test_c2r_up_to_date(caplog, monkeypatch, convert2rhel_latest_version_test):
         (
             HOST_MODULES_STUB_GOOD,
             None,
-            "Kernel modules are compatible",
+            "loaded kernel modules are available in RHEL",
             None,
         ),
         (
             HOST_MODULES_STUB_BAD,
             SystemExit,
             None,
-            "Kernel modules are compatible",
+            "loaded kernel modules are available in RHEL",
         ),
     ),
 )
@@ -383,13 +383,13 @@ def test_validate_package_manager_transaction(monkeypatch, caplog):
         # ff-memless specified to be ignored in the config, so no exception raised
         (
             "kernel/drivers/input/ff-memless.ko.xz",
-            "Kernel modules are compatible",
-            "The following kernel modules are not supported in RHEL",
+            "loaded kernel modules are available in RHEL",
+            "The following loaded kernel modules are not available in RHEL",
             None,
         ),
         (
             "kernel/drivers/input/other.ko.xz",
-            "The following kernel modules are not supported in RHEL",
+            "The following loaded kernel modules are not available in RHEL",
             None,
             SystemExit,
         ),

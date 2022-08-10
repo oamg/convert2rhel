@@ -677,23 +677,6 @@ def string_to_version(verstring):
     return (epoch, version, release)
 
 
-def convert_to_int_or_zero(s):
-    """Convert a string to an integer.
-
-    Tries to convert a given string to it's integer counterpart. If it's not possible to convert, then it catches an
-    `ValuerError` excpetion raised by the conversion and return 0 to the caller.
-
-    :param s: The string to be converted
-    :type s: str
-    :return: Returns an int representation of the given string if possible, otherwise, returns 0.
-    :rtype: int
-    """
-    try:
-        return int(s)
-    except ValueError:
-        return 0
-
-
 def remove_orphan_folders():
     """Even after removing redhat-release-* package, some of its folders are
     still present, are empty, and that blocks us from installing centos-release

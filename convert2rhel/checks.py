@@ -48,6 +48,7 @@ KERNEL_REPO_VER_SPLIT_RE = re.compile(r"\W+")
 BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
+LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
     6: "2.6.32",
@@ -210,11 +211,13 @@ def check_tainted_kmods():
     module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
         logger.critical(
-            "Tainted kernel module(s) detected. "
+            "Tainted kernel modules detected:\n  {0}\n"
             "Third-party components are not supported per our "
-            "software support policy\n{0}\n\n"
-            "Uninstall or disable the following module(s) and run convert2rhel "
-            "again to continue with the conversion:\n  {1}".format(LINK_KMODS_RH_POLICY, module_names)
+            "software support policy:\n {1}\n"
+            "Prevent the modules from loading by following {2}"
+            " and run convert2rhel again to continue with the conversion.".format(
+                module_names, LINK_KMODS_RH_POLICY, LINK_PREVENT_KMODS_FROM_LOADING
+            )
         )
     logger.info("No tainted kernel module is loaded.")
 
@@ -288,7 +291,7 @@ def ensure_compatibility_of_kmods():
     # Validate the best case first. If we don't have any unsupported_kmods, this means
     # that everything is compatible and good to go.
     if not unsupported_kmods:
-        logger.debug("Kernel modules are compatible.")
+        logger.debug("All loaded kernel modules are available in RHEL.")
     else:
         not_supported_kmods = "\n".join(
             map(
@@ -297,11 +300,11 @@ def ensure_compatibility_of_kmods():
             )
         )
         logger.critical(
-            (
-                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-                "Make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-                "Prevent the unsupported modules from loading by following https://access.redhat.com/solutions/41278 and run convert2rhel again to continue with the conversion."
-            ).format(kmods=not_supported_kmods, system=system_info.name)
+            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
+            "Prevent the modules from loading by following {1}"
+            " and run convert2rhel again to continue with the conversion.".format(
+                "\n".join(not_supported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+            )
         )
 
 
@@ -453,11 +456,19 @@ def get_rhel_kmods_keys(rhel_kmods_str):
 
 
 def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
-    """Return a set of those installed kernel modules that are not available in RHEL repositories.
+    """Return a set of full paths to those installed kernel modules that are
+    not available in RHEL repositories.
 
-    Ignore certain kmods mentioned in the system configs. These kernel modules moved to kernel core, meaning that the
-    functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL."""
-    return host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    Ignore certain kmods mentioned in the system configs. These kernel modules
+    moved to kernel core, meaning that the functionality is retained and we
+    would be incorrectly saying that the modules are not supported in RHEL.
+    """
+    unsupported_kmods_subpaths = host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    unsupported_kmods_full_paths = [
+        "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod)
+        for kmod in unsupported_kmods_subpaths
+    ]
+    return unsupported_kmods_full_paths
 
 
 def check_rhel_compatible_kernel_is_used():
