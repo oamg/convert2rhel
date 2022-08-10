@@ -51,7 +51,10 @@ def test_user_path_cli_priority(convert2rhel):
 
     with convert2rhel(("--no-rpm-va --password password --debug")) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.expect("WARNING - Command line authentication method take precedence over method in configuration file.")
+        c2r.expect(
+            "WARNING - You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values."
+        )
         c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
@@ -68,7 +71,10 @@ def test_user_path_pswd_file_priority(convert2rhel):
     with convert2rhel(('--no-rpm-va -f "~/password_file" --debug')) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
-        c2r.expect("WARNING - Password file take precedence over the config file.")
+        c2r.expect(
+            "WARNING - You have passed the RHSM credentials both through a config file and through a password file."
+            " We're going to use the password file."
+        )
         c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
@@ -85,7 +91,15 @@ def test_std_paths_priority_diff_methods(convert2rhel):
     with convert2rhel("--no-rpm-va --debug") as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found activation_key in /etc/convert2rhel.ini")
-        c2r.expect("WARNING - Set only one of password or activation key. Activation key take precedence.")
+        c2r.expect(
+            "WARNING - Passing the RHSM password or activation key through the --activationkey or --password options"
+            " is insecure as it leaks the values through the list of running processes."
+            " We recommend using the safer --config-file option instead."
+        )
+        c2r.expect(
+            "WARNING - Either a password or an activation key can be used for system registration."
+            " We're going to use the activation key."
+        )
         c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
