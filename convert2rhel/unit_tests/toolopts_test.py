@@ -213,28 +213,28 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
             " the configuration file. We're going to use the command line values.",
         ),
         (
-            mock_cli_arguments(["-k", "activation_key"]),
+            mock_cli_arguments(["-k", "activation_key", "-o", "org"]),
             "[subscription_manager]\nactivation_key=conf_key",
             {"password": None, "activation_key": "activation_key"},
             "You have passed either the RHSM password or activation key through both the command line and"
             " the configuration file. We're going to use the command line values.",
         ),
         (
-            mock_cli_arguments(["-k", "activation_key"]),
+            mock_cli_arguments(["-k", "activation_key", "-o", "org"]),
             "[subscription_manager]\npassword=conf_pass",
             {"password": "conf_pass", "activation_key": "activation_key"},
             "You have passed either the RHSM password or activation key through both the command line and"
             " the configuration file. We're going to use the command line values.",
         ),
         (
-            mock_cli_arguments(["-k", "activation_key", "-p", "password"]),
+            mock_cli_arguments(["-k", "activation_key", "-p", "password", "-o", "org"]),
             "[subscription_manager]\npassword=conf_pass\nactivation_key=conf_key",
             {"password": "password", "activation_key": "activation_key"},
             "You have passed either the RHSM password or activation key through both the command line and"
             " the configuration file. We're going to use the command line values.",
         ),
         (
-            mock_cli_arguments([""]),
+            mock_cli_arguments(["-o", "org"]),
             "[subscription_manager]\npassword=conf_pass\nactivation_key=conf_key",
             {"password": "conf_pass", "activation_key": "conf_key"},
             "Either a password or an activation key can be used for system registration. We're going to use the"
@@ -337,7 +337,7 @@ def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeyp
     ("argv", "message", "output"),
     (
         (
-            mock_cli_arguments(["--password", "pass", "--activationkey", "key"]),
+            mock_cli_arguments(["--password", "pass", "--activationkey", "key", "-o", "org"]),
             "Either a password or an activation key can be used for system registration."
             " We're going to use the activation key.",
             {"password": "pass", "activation_key": "key"},
@@ -497,3 +497,30 @@ def test__log_command_used(caplog, monkeypatch):
     convert2rhel.toolopts._log_command_used()
 
     assert " ".join(expected_command) in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    (
+        # The message is a log of used command
+        (mock_cli_arguments(["-o", "org", "-k", "key"]), "-o org -k *****"),
+        (
+            mock_cli_arguments(["-o", "org"]),
+            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+        ),
+        (
+            mock_cli_arguments(["-k", "key"]),
+            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+        ),
+    ),
+)
+def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+
+    try:
+        convert2rhel.toolopts.CLI()
+    except SystemExit:
+        # Don't care about the exception, focus on output message
+        pass
+    assert message in caplog.text
