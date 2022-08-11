@@ -77,11 +77,11 @@ lint: images
 lint-errors: images
 	@$(DOCKER) run --rm -v $(shell pwd):/data:Z $(IMAGE)/centos8 bash -c "scripts/run_lint.sh --errors-only"
 
-tests: tests7 tests8
+tests: tests6 tests7 tests8
 
 tests6: images
 	@echo 'CentOS Linux 6 tests'
-	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --show-capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
+	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
 
 tests7: images
 	@echo 'CentOS Linux 7 tests'

@@ -172,10 +172,10 @@ def sanitize_cli_options(all_cli_options, options_to_sanitize):
                 pos = c.index("=")
 
                 if c[:pos] in options_to_sanitize:
-                    yield "{}={}".format(c[:pos], ((len(c) - pos - 1) * "*"))
+                    yield "{0}={1}".format(c[:pos], ((len(c) - pos - 1) * "*"))
                 elif " " in c[pos:]:
                     # if value contains a space we need to add quotes
-                    yield '{}="{}"'.format(c[:pos], c[pos + 1 :])
+                    yield '{0}="{1}"'.format(c[:pos], c[pos + 1 :])
             else:
                 if c in options_to_sanitize:
                     yield c
@@ -186,7 +186,7 @@ def sanitize_cli_options(all_cli_options, options_to_sanitize):
                 else:
                     if " " in c:
                         # if value contains a space we need to add quotes
-                        yield '"{}"'.format(c)
+                        yield '"{0}"'.format(c)
                     else:
                         yield c
 

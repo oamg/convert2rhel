@@ -1470,10 +1470,12 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
-            {
-                "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
-                "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
-            },
+            frozenset(
+                (
+                    "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+                    "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
+                )
+            ),
             None,
         ),
         (
@@ -1482,7 +1484,7 @@ def test_compare_package_versions(version1, version2, expected):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
-            {"convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8"},
+            frozenset(("convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",)),
             None,
         ),
         (
@@ -1492,11 +1494,13 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.0-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             ],
-            {
-                "dunst-1.7.1-1.fc35.x86_64",
-                "dunst-1.7.0-1.fc35.x86_64",
-                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
-            },
+            frozenset(
+                (
+                    "dunst-1.7.1-1.fc35.x86_64",
+                    "dunst-1.7.0-1.fc35.x86_64",
+                    "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+                )
+            ),
             None,
         ),
         (
@@ -1506,11 +1510,13 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.0-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             ],
-            {
-                "dunst-1.7.1-1.fc35.x86_64",
-                "dunst-1.7.0-1.fc35.x86_64",
-                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
-            },
+            frozenset(
+                (
+                    "dunst-1.7.1-1.fc35.x86_64",
+                    "dunst-1.7.0-1.fc35.x86_64",
+                    "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+                )
+            ),
             "test/reposdir",
         ),
         (
@@ -1520,10 +1526,12 @@ def test_compare_package_versions(version1, version2, expected):
                 "dunst-1.7.1-1.fc35.x86_64",
                 "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
             ],
-            {
-                "dunst-1.7.1-1.fc35.x86_64",
-                "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
-            },
+            frozenset(
+                (
+                    "dunst-1.7.1-1.fc35.x86_64",
+                    "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
+                )
+            ),
             "test/reposdir",
         ),
     ),

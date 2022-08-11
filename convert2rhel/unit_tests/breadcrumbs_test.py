@@ -23,7 +23,7 @@ from convert2rhel import breadcrumbs
 
 
 def test_sanitize_cli_options():
-    options_to_sanitize = {"--password", "-p", "--activationkey", "-k"}
+    options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
 
     io = [
         (

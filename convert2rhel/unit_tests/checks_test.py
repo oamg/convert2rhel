@@ -50,16 +50,20 @@ MODINFO_STUB = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/c.ko.xz\n"
 )
 
-HOST_MODULES_STUB_GOOD = {
-    "kernel/lib/a.ko.xz",
-    "kernel/lib/b.ko.xz",
-    "kernel/lib/c.ko.xz",
-}
-HOST_MODULES_STUB_BAD = {
-    "kernel/lib/d.ko.xz",
-    "kernel/lib/e.ko.xz",
-    "kernel/lib/f.ko.xz",
-}
+HOST_MODULES_STUB_GOOD = frozenset(
+    (
+        "kernel/lib/a.ko.xz",
+        "kernel/lib/b.ko.xz",
+        "kernel/lib/c.ko.xz",
+    )
+)
+HOST_MODULES_STUB_BAD = frozenset(
+    (
+        "kernel/lib/d.ko.xz",
+        "kernel/lib/e.ko.xz",
+        "kernel/lib/f.ko.xz",
+    )
+)
 
 REPOQUERY_F_STUB_GOOD = (
     "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n"
@@ -231,9 +235,30 @@ def test_convert2rhel_latest_log_check_exit(caplog, convert2rhel_latest_version_
 @pytest.mark.parametrize(
     ("convert2rhel_latest_version_test",),
     (
-        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6", "enset": "1"}],
-        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7", "enset": "1"}],
-        [{"local_version": "0.18", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "8", "enset": "1"}],
+        [
+            {
+                "local_version": "0.18",
+                "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                "pmajor": "6",
+                "enset": "1",
+            }
+        ],
+        [
+            {
+                "local_version": "0.18",
+                "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                "pmajor": "7",
+                "enset": "1",
+            }
+        ],
+        [
+            {
+                "local_version": "0.18",
+                "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                "pmajor": "8",
+                "enset": "1",
+            }
+        ],
     ),
     indirect=True,
 )
@@ -363,7 +388,9 @@ def test_ensure_compatibility_of_kmods_excluded(
     monkeypatch.setattr(
         checks,
         "get_loaded_kmods",
-        mock.Mock(return_value=HOST_MODULES_STUB_GOOD | {unsupported_pkg}),
+        mock.Mock(
+            return_value=HOST_MODULES_STUB_GOOD | frozenset((unsupported_pkg,)),
+        ),
     )
     get_unsupported_kmods_mocked = mock.Mock(wraps=checks.get_unsupported_kmods)
     run_subprocess_mock = mock.Mock(
@@ -388,6 +415,7 @@ def test_ensure_compatibility_of_kmods_excluded(
             checks.ensure_compatibility_of_kmods()
     else:
         checks.ensure_compatibility_of_kmods()
+
     get_unsupported_kmods_mocked.assert_called_with(
         # host kmods
         set(
@@ -439,7 +467,7 @@ def test_get_loaded_kmods(monkeypatch):
         "run_subprocess",
         value=run_subprocess_mocked,
     )
-    assert get_loaded_kmods() == {"kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"}
+    assert get_loaded_kmods() == frozenset(("kernel/lib/c.ko.xz", "kernel/lib/a.ko.xz", "kernel/lib/b.ko.xz"))
 
 
 @pytest.mark.parametrize(
@@ -974,7 +1002,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog):
 @pytest.mark.parametrize(
     ("packages", "exception", "expected"),
     (
-        (["package-1", "package-2"], True, "The system has {} packages not updated"),
+        (["package-1", "package-2"], True, "The system has {0} packages not updated"),
         ([], False, "System is up-to-date."),
     ),
 )
@@ -1169,9 +1197,9 @@ def test_is_loaded_kernel_latest_eus_system_no_connection(pretend_os, monkeypatc
             "1",
             "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
         ),
-        ("", 0, 8, "kernel-core", "0", "Could not find any {} from repositories"),
-        ("", 0, 7, "kernel", "0", "Could not find any {} from repositories"),
-        ("", 0, 6, "kernel", "0", "Could not find any {} from repositories"),
+        ("", 0, 8, "kernel-core", "0", "Could not find any {0} from repositories"),
+        ("", 0, 7, "kernel", "0", "Could not find any {0} from repositories"),
+        ("", 0, 6, "kernel", "0", "Could not find any {0} from repositories"),
     ),
 )
 def test_is_loaded_kernel_latest_unsupported_skip(
