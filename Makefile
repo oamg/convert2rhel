@@ -81,7 +81,11 @@ tests: tests6 tests7 tests8
 
 tests6: images
 	@echo 'CentOS Linux 6 tests'
-	@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
+ifneq ("$(SHOW_CAPTURE)", "no")
+		$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest --capture=$(SHOW_CAPTURE) $(PYTEST_ARGS)
+else
+		@$(DOCKER) run --rm --user=$(id -ur):$(id -gr) -v $(shell pwd):/data:Z $(IMAGE)/centos6 pytest $(PYTEST_ARGS)
+endif
 
 tests7: images
 	@echo 'CentOS Linux 7 tests'
