@@ -94,14 +94,17 @@ REPOQUERY_L_STUB_BAD = (
 
 
 @pytest.fixture
-def convert2rhel_latest_version_test(monkeypatch, tmpdir, request):
+def convert2rhel_latest_version_test(monkeypatch, tmpdir, request, global_system_info):
+    monkeypatch.setattr(checks, "system_info", global_system_info)
+    global_system_info.has_internet_access = True
+
     marker = request.param
-    monkeypatch.setattr(checks, "convert2rhel_version", marker["local_version"])
+    monkeypatch.setattr(checks, "installed_convert2rhel_version", marker["local_version"])
 
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(marker["package_version"], 0))
 
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(marker["pmajor"], 0))
+    monkeypatch.setattr(global_system_info, "version", namedtuple("Version", ["major", "minor"])(marker["pmajor"], 0))
     monkeypatch.setattr(utils, "TMP_DIR", str(tmpdir))
 
     return marker["local_version"], marker["package_version"]
@@ -187,36 +190,36 @@ def test_pre_ponr_checks(monkeypatch):
     create_transaction_handler_mock.assert_called_once()
 
 
-def test_repoquery__failure(caplog, monkeypatch, tmpdir, request):
-    repoquery_output = " error message"
-    return_code = 1
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(repoquery_output, return_code))
-
-    monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
-    monkeypatch.setattr(utils, "TMP_DIR", str(tmpdir))
-
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    ([{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],),
+    indirect=True,
+)
+def test_convert2rhel_latest_offline(caplog, convert2rhel_latest_version_test, global_system_info):
+    global_system_info.has_internet_access = False
     checks.check_convert2rhel_latest()
 
-    log_msg = "Couldn't check if this is the latest version of convert2rhel\n" "repoquery failed %s, %s" % (
-        return_code,
-        repoquery_output,
-    )
+    convert2rhel_latest_version_test
+    log_msg = "Skipping the check because no internet connection has been detected."
     assert log_msg in caplog.text
 
 
 @pytest.mark.parametrize(
     ("convert2rhel_latest_version_test",),
-    ([{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],),
+    (
+        [{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],
+        [{"local_version": "0.18", "package_version": "convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
+    ),
     indirect=True,
 )
 def test_convert2rhel_latest_out_of_date_el6(caplog, convert2rhel_latest_version_test):
     checks.check_convert2rhel_latest()
 
-    local_version, dummy_ = convert2rhel_latest_version_test
+    local_version, package_version = convert2rhel_latest_version_test
+    package_version = package_version[15:19]
     log_msg = (
-        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
-        "Only the latest version is supported for conversion." % (local_version)
+        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+        "We encourage you to update to the latest version." % (local_version, package_version)
     )
     assert log_msg in caplog.text
 
@@ -225,19 +228,21 @@ def test_convert2rhel_latest_out_of_date_el6(caplog, convert2rhel_latest_version
     ("convert2rhel_latest_version_test",),
     (
         [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],
-        [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "8"}],
+        [{"local_version": "0.21", "package_version": "convert2rhel-0:1.10-1.el7.noarch", "pmajor": "7"}],
     ),
     indirect=True,
 )
 def test_convert2rhel_latest_log_check_exit(caplog, convert2rhel_latest_version_test):
     with pytest.raises(SystemExit):
         checks.check_convert2rhel_latest()
-    local_version, dummy_ = convert2rhel_latest_version_test
+    local_version, package_version = convert2rhel_latest_version_test
+    package_version = package_version[15:19]
 
     log_msg = (
-        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
-        "Only the latest version is supported for conversion. If you want to ignore this you can set 'CONVERT2RHEL_UNSUPPORTED_VERSION' to continue"
-        % (local_version)
+        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+        "Only the latest version is supported for conversion. If you want to ignore"
+        " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+        % (local_version, package_version)
     )
     assert log_msg in caplog.text
 
@@ -269,18 +274,29 @@ def test_convert2rhel_latest_log_check_exit(caplog, convert2rhel_latest_version_
                 "enset": "1",
             }
         ],
+        [
+            {
+                "local_version": "0.18",
+                "package_version": "convert2rhel-0:1.10-1.el7.noarch",
+                "pmajor": "8",
+                "enset": "1",
+            }
+        ],
     ),
     indirect=True,
 )
 def test_convert2rhel_latest_log_check_env(caplog, monkeypatch, convert2rhel_latest_version_test):
-    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_VERSION": "1"})
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_OLDER_VERSION": "1"})
     checks.check_convert2rhel_latest()
 
-    local_version, dummy_ = convert2rhel_latest_version_test
+    local_version, package_version = convert2rhel_latest_version_test
+    package_version = package_version[15:19]
     log_msg = (
-        "You are currently running %s and the latest version of convert2rhel is 0.22.\n"
-        "'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion" % (local_version)
+        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+        "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
+        % (local_version, package_version)
     )
+
     assert log_msg in caplog.text
 
 
@@ -293,6 +309,7 @@ def test_convert2rhel_latest_log_check_env(caplog, monkeypatch, convert2rhel_lat
         [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "6"}],
         [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "7"}],
         [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "8"}],
+        [{"local_version": "1.10", "package_version": "convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],
     ),
     indirect=True,
 )
@@ -300,7 +317,7 @@ def test_c2r_up_to_date(caplog, monkeypatch, convert2rhel_latest_version_test):
     checks.check_convert2rhel_latest()
 
     local_version, dummy_ = convert2rhel_latest_version_test
-    log_msg = "Latest available convert2rhel version is installed.\n" "Continuing conversion."
+    log_msg = "Latest available Convert2RHEL version is installed.\n" "Continuing conversion."
     assert log_msg in caplog.text
 
 
