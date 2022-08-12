@@ -645,7 +645,7 @@ def is_loaded_kernel_latest():
     if return_code != 0:
         logger.debug("Got the following output: %s", repoquery_output)
         logger.warning(
-            "Couldn't fetch the list of the most recent kernels avaiable in the repositories. Skipping the loaded kernel check."
+            "Couldn't fetch the list of the most recent kernels available in the repositories. Skipping the loaded kernel check."
         )
         return
 
