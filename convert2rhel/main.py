@@ -17,7 +17,6 @@
 
 import logging
 import os
-import sys
 
 from convert2rhel import backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
