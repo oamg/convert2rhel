@@ -311,15 +311,17 @@ class TestYumTransactionHandler(object):
                 "python2-dnf-4.0.9.2-2.el7_9.noarch requires python2-hawkey >= 0.22.5",
                 "abrt-retrace-client-2.1.11-60.el7.centos.x86_64 requires abrt = 2.1.11-60.el7.centos",
             ],
-            {
-                "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
-                "python2-dnf-plugins-core-4.0.2.2-3.el7_6.noarch",
-                "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
-                "ldb-tools-1.5.4-2.el7.x86_64",
-                "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
-                "python2-dnf-4.0.9.2-2.el7_9.noarch",
-                "abrt-retrace-client-2.1.11-60.el7.centos.x86_64",
-            },
+            frozenset(
+                (
+                    "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
+                    "python2-dnf-plugins-core-4.0.2.2-3.el7_6.noarch",
+                    "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
+                    "ldb-tools-1.5.4-2.el7.x86_64",
+                    "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
+                    "python2-dnf-4.0.9.2-2.el7_9.noarch",
+                    "abrt-retrace-client-2.1.11-60.el7.centos.x86_64",
+                )
+            ),
         ),
         # Prevent duplicate entries
         (
@@ -330,16 +332,18 @@ class TestYumTransactionHandler(object):
                 "python2-dnf-plugins-core-4.0.2.2-3.el7_6.noarch requires python2-hawkey >= 0.7.0",
                 "abrt-retrace-client-2.1.11-60.el7.centos.x86_64 requires abrt = 2.1.11-60.el7.centos",
             ],
-            {
-                "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
-                "python2-dnf-plugins-core-4.0.2.2-3.el7_6.noarch",
-                "abrt-retrace-client-2.1.11-60.el7.centos.x86_64",
-            },
+            frozenset(
+                (
+                    "redhat-lsb-trialuse-4.1-27.el7.centos.1.x86_64",
+                    "python2-dnf-plugins-core-4.0.2.2-3.el7_6.noarch",
+                    "abrt-retrace-client-2.1.11-60.el7.centos.x86_64",
+                )
+            ),
         ),
         # Random string - This might not happen that frequently.
         (
             ["testing the test random string"],
-            {},
+            frozenset(()),
         ),
     ),
 )
