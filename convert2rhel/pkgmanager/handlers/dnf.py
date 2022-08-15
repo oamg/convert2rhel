@@ -35,23 +35,32 @@ class DnfTransactionHandler(TransactionHandlerBase):
         self._base.conf.substitutions["releasever"] = system_info.releasever
         self._base.conf.module_platform_id = "platform:el8"
 
+        # Keep the downloaded files after the transaction to prevent internet
+        # issues in the second run of this class.
+        # Ref: https://dnf.readthedocs.io/en/latest/conf_ref.html#keepcache-label
+        self._base.conf.keepcache = True
+
     def _enable_repos(self):
         """Enable a list of required repositories."""
         self._base.read_all_repos()
         repos = self._base.repos.all()
         enabled_repos = system_info.get_enabled_rhel_repos()
         loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
-        for repo in repos:
-            # We are disabling the repositories that we don't want based on
-            # this `if` condition were if the repo.id is not in the
-            # enabled_repos list, we just disable it. In the other hand, if it
-            # is a repo that we want to have enabled, let's just call
-            # repo.enable() to make sure that it will be enabled when we run
-            # the transactions.
-            repo.disable if repo.id not in enabled_repos else repo.enable()
+        try:
+            for repo in repos:
+                # We are disabling the repositories that we don't want based on
+                # this `if` condition were if the repo.id is not in the
+                # enabled_repos list, we just disable it. In the other hand, if
+                # it is a repo that we want to have enabled, let's just call
+                # repo.enable() to make sure that it will be enabled when we
+                # run the transactions.
+                repo.disable if repo.id not in enabled_repos else repo.enable()
 
-        # Fill the sack for the enabled repositories
-        self._base.fill_sack()
+            # Fill the sack for the enabled repositories
+            self._base.fill_sack()
+        except pkgmanager.exceptions.RepoError as e:
+            loggerinst.debug("Got the following exception message: %s" % e)
+            loggerinst.critical("Failed to populate repository metadata.")
 
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
