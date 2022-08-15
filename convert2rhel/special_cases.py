@@ -101,25 +101,33 @@ def perform_java_openjdk_workaround():
 
 
 def unprotect_shim_x64():
-    """Remove the shim-x64 package yum protection on UEFI-based Oracle Linux 7 systems as it causes a yum traceback.
+    """Remove the shim-x64 package protection on Oracle Linux 7 as it causes yum to traceback.
 
-    The package is protected through the /etc/yum/protected.d/shim-x64.conf file. It is installed with the
-    Oracle Linux 7 shim-x64 package. The same package on RHEL 7 does not install this file - it's OL specific - no
-    need to add it back after a successful conversion to RHEL.
+    The package is protected through the /etc/yum/protected.d/shim-x64.conf
+    file. It is installed with the Oracle Linux 7 shim-x64 package. The same
+    package on RHEL 7 does not install this file - it's OL specific - no need to
+    add it back after a successful conversion to RHEL.
 
     Related: https://bugzilla.redhat.com/show_bug.cgi?id=2009368
     """
-    logger.info("Removing shim-x64 package yum protection.")
-    if system_info.id == "oracle" and system_info.version.major == 7:
-        shim_x64_pkg_protection_file.backup()
-        try:
-            os.remove(shim_x64_pkg_protection_file.filepath)
-            logger.info(
-                "'%s' removed in accordance with https://bugzilla.redhat.com/show_bug.cgi?id=2009368."
-                % shim_x64_pkg_protection_file.filepath
-            )
-        except OSError as err:
-            # For permissions reasons (unlikely as we run as root) or because it does not exist
-            logger.error("Unable to remove '%s': %s" % (shim_x64_pkg_protection_file.filepath, err.strerror))
+
+    logger.info("Checking if shim-x64 package is installed.")
+    shim_x64 = system_info.is_rpm_installed(name="shim-x64")
+
+    if shim_x64:
+        logger.info("Removing shim-x64 package yum protection.")
+        if system_info.id == "oracle" and system_info.version.major == 7:
+            shim_x64_pkg_protection_file.backup()
+            try:
+                os.remove(shim_x64_pkg_protection_file.filepath)
+                logger.info(
+                    "'%s' removed in accordance with https://bugzilla.redhat.com/show_bug.cgi?id=2009368."
+                    % shim_x64_pkg_protection_file.filepath
+                )
+            except OSError as err:
+                # For permissions reasons (unlikely as we run as root) or because it does not exist
+                logger.error("Unable to remove '%s': %s" % (shim_x64_pkg_protection_file.filepath, err.strerror))
+        else:
+            logger.info("Relevant to Oracle Linux 7 only. Skipping.")
     else:
-        logger.info("Relevant to Oracle Linux 7 only. Skipping.")
+        logger.info("shim-x64 package is not installed. Nothing to do.")
