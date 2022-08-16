@@ -35,11 +35,14 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
-- job: tests
-  targets:
-    epel-7-x86_64:
-      distros: [centos-7, oraclelinux-7]
-    epel-8-x86_64:
-      distros: [centos-8.4, centos-8, oraclelinux-8.4, oraclelinux-8.6]
-  use_internal_tf: True
-  trigger: pull_request
+
+# Commenting this out for now as we will move the execution of the tests to a GitHub Actions workflow to prevent DDoS
+# in our internal gitlab.
+#- job: tests
+#  targets:
+#    epel-7-x86_64:
+#      distros: [centos-7, oraclelinux-7]
+#    epel-8-x86_64:
+#      distros: [centos-8.4, centos-8, oraclelinux-8.4, oraclelinux-8.6]
+#  use_internal_tf: True
+#  trigger: pull_request
