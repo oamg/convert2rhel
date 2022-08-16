@@ -2,8 +2,10 @@ name: test_coverage
 
 on:
   workflow_run:
-    workflows: [build_and_publish_images]
-    types: [completed]
+    workflows: 
+      - build_and_publish_images
+    types: 
+      - completed
 
 jobs:
   coverage:

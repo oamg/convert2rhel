@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  coverage:
+  build_and_publish:
     name: build-centos${{ matrix.centos_ver }}
     strategy:
       matrix:
