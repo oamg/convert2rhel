@@ -1,0 +1,52 @@
+name: build_and_publish_images
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    name: coverage-centos${{ matrix.centos_ver }}
+    strategy:
+      matrix:
+        centos_ver: [6, 7, 8]
+
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+        name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          load: true
+          context: .
+          file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
+          tags: ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
+          cache-to: type=inline
+          outputs: type=docker,dest=/tmp/convert2rhel-centos${{ matrix.centos_ver }}.tar
+      -
+        name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: convert2rhel-centos${{ matrix.centos_ver }}
+          path: /tmp/convert2rhel-centos${{ matrix.centos_ver }}.tar
