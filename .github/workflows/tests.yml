@@ -2,9 +2,9 @@ name: unit_tests
 
 on:
   workflow_run:
-    workflows: 
+    workflows:
       - build_and_publish_images
-    types: 
+    types:
       - completed
 
 jobs:
