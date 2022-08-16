@@ -28,11 +28,6 @@ jobs:
           name: convert2rhel-centos${{ matrix.centos_ver }}
           path: /tmp
 
-      - name: Load image
-        run: |
-          docker load --input /tmp/convert2rhel-centos${{ matrix.centos_ver }}.tar
-          docker image ls -a
-
       - name: Run pytest coverage
         run: |
           docker run --name pytest-container ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }} pytest --cov --cov-report xml --cov-report term
