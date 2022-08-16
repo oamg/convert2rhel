@@ -8,7 +8,7 @@ on:
 
 jobs:
   coverage:
-    name: coverage-centos${{ matrix.centos_ver }}
+    name: build-centos${{ matrix.centos_ver }}
     strategy:
       matrix:
         centos_ver: [6, 7, 8]
