@@ -2,7 +2,7 @@
   "extends": [
     "config:base"
   ],
-  "enabledManagers": ["dockerfile", "pip_requirements"],
+  "enabledManagers": ["dockerfile", "pip_requirements", "actions"],
   "ignorePaths": ["**/centos6*.requirements.txt"],
   "packageRules": [
     {
