@@ -207,7 +207,9 @@ def _stop_rhsm():
         # there isn't an init script to stop it.  If we find we need to stop it, because we're
         # etting "machine is already registered" errors there, then we'll need to look for
         # rhsm-service in the process list and send it the TERM signal.
-        loggerinst.info("Skipping RHSM service shutdown on {0} {1}.".format(system_info.name, system_info.version.major))
+        loggerinst.info(
+            "Skipping RHSM service shutdown on {0} {1}.".format(system_info.name, system_info.version.major)
+        )
         return
 
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
