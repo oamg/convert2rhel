@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        0.26
+Version:        1.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -124,6 +124,23 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Aug 19 2022 Michal Bocek <mbocek@redhat.com> 1.0
+- Check if a new version of convert2rhel is available
+- Update grub bootloader images
+- Warn if multiple authentication sources are specified
+- Improve log messages
+- Introduce a user-customizable config file for passing RHSM credentials safely
+- Use dbus API for RHSM registration to safely pass the activation key
+- Verify GPG key for UBI and CentOS 6 Linux repositories
+- Deprecate `-f` `--password-from-file` parameter option
+- Fix logging error with unavailable RHSM certificate
+- Fix gnome-documents-libs package conflict
+- Fix handling shim-x64 package protection on non-UEFI systems
+- Fix unknown tag in an rpm query
+- Clear yum cache before first yum call
+- Add missing eus_rhsm_repoids key into OS 6 config files
+- Fix Ansible playbook example for CentOS Linux 8 conversions
+
 * Fri Jun 3 2022 Eric Gustavsson <egustavs@redhat.com> 0.26
 - Support RHEL EUS version 8.4
 - Auto-attach subscription if only one is available
