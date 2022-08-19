@@ -57,10 +57,6 @@ on:
         type: string
         required: false
         default: "epel-8-x86_64"
-      tmt_context:
-        type: string
-        required: false
-        default: "distro=centos-8"
       distros:
         type: string
         required: true
@@ -86,7 +82,6 @@ jobs:
           input: ${{ inputs.distros }}
 
   reusable_workflow_job:
-    # This job only runs for '/rerun' pull request comments by owner, member, or collaborator of the repo/organization.
     name: Schedule regression tests on Testing Farm
     needs: [convert_distro_to_matrix]
     strategy:
@@ -95,8 +90,6 @@ jobs:
         distro: ${{fromJson(needs.convert_distro_to_matrix.outputs.matrix)}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
       - name: Schedule regression testing for ${{ inputs.pull_request_status_name }}
         uses: sclorg/testing-farm-as-github-action@v1.2.11
         with:
@@ -104,6 +97,7 @@ jobs:
           api_url: ${{ secrets.TF_ENDPOINT }}
           api_key: ${{ secrets.TF_API_KEY }}
           git_url: "https://github.com/oamg/convert2rhel"
+          git_ref: "refs/pull/${{ github.event.issue.number }}/head"
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # optional
           tf_scope: "private"

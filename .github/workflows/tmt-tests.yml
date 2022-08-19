@@ -1,18 +1,20 @@
 name: tmt@TF
 
 on:
-  issue_comment:
-    types:
-      - created
+  pull_request_target:
+    types: [
+      # Default types from `pull_request_target` event
+      opened, synchronize, reopened,
+      # Trigger on labels
+      labeled
+    ]
+    branches: [ main ]
 
 # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency.
 # This will ensure that only one commit will be running tests at a time on each PR.
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
-
-permissions:
-  checks: read
 
 jobs:
   wait_for_rpm_builds:
@@ -26,18 +28,17 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           checkNames: "rpm-build:epel-7-x86_64;rpm-build:epel-8-x86_64"
     if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      github.event.pull_request
+      && (
+        contains(fromJson('["OWNER", "MEMBER"]'), github.event.pull_request.author_association)
+        || contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+      )
 
   call_workflow_get_copr_id:
     needs: [wait_for_rpm_builds]
     uses: ./.github/workflows/reuse-get-copr-id.yml
-    if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
 
+  # Tier 0 integration tests
   call_workflow_integration_tests_epel_7_tier0:
     needs: [call_workflow_get_copr_id]
     uses: ./.github/workflows/reuse-int-tests.yml
@@ -48,10 +49,6 @@ jobs:
       distros: '["centos-7", "oraclelinux-7"]'
       pull_request_status_name: "epel-7-tier0"
     secrets: inherit
-    if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
 
   call_workflow_integration_tests_epel_8_tier0:
     needs: [call_workflow_get_copr_id]
@@ -62,11 +59,8 @@ jobs:
       distros: '["centos-8.4", "centos-8", "oraclelinux-8.4", "oraclelinux-8.6"]'
       pull_request_status_name: "epel-8-tier0"
     secrets: inherit
-    if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
 
+  # Tier 1 integration tests
   call_workflow_integration_tests_epel_7_tier1:
     needs: [call_workflow_get_copr_id]
     uses: ./.github/workflows/reuse-int-tests.yml
@@ -77,10 +71,6 @@ jobs:
       distros: '["centos-7", "oraclelinux-7"]'
       pull_request_status_name: "epel-7-tier1"
     secrets: inherit
-    if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
 
   call_workflow_integration_tests_epel_8_tier1:
     needs: [call_workflow_get_copr_id]
@@ -91,7 +81,3 @@ jobs:
       distros: '["centos-8.4", "centos-8", "oraclelinux-8.4", "oraclelinux-8.6"]'
       pull_request_status_name: "epel-8-tier1"
     secrets: inherit
-    if: |
-      github.event.issue.pull_request
-      && startsWith(github.event.comment.body, '/rerun-all')
-      && contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
