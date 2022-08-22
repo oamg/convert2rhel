@@ -1,0 +1,32 @@
+# IMPORTANT NOTE
+# In this workflow there should NOT be checkout action - because of security reasons.
+# More info:
+# https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request_target
+# https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+
+name: PR welcome message
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  pr_comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## **Thank you for contributing to the Convert2RHEL project!**
+            👋 Hello @${{ github.actor }}, thank you for submitting a PR 🚀!
+            Please note that every PR needs to comply with the [Convert2RHEL Guidelines](https://github.com/oamg/convert2rhel/blob/main/CONTRIBUTING.md) and must pass all tests in order to be mergable.
+            If you want to rebuild a package in copr, you can use following commands as a comment:
+            - **/packit copr-build** to submit a public copr build using packit
+
+            To launch regression testing public members of oamg organization can leave the following comment:
+            - **/rerun** to schedule regression tests using this pr build
+
+            Please [open ticket](https://github.com/oamg/convert2rhel/issues) in case you experience technical problem with the CI.
+
+            **Note:** In case there are problems with tests not being triggered automatically on new PR/commit or pending for a long time, please tag @oamg/convert2rhel-developers in the pr comments.
