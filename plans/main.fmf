@@ -22,6 +22,6 @@ prepare:
   - name: remove all copr repositories
     how: shell
     script: grep -l "copr:copr.fedorainfracloud.org:group_oamg:convert2rhel" /etc/yum.repos.d/* | xargs rm
-# We are commenting this out since we will pass the environment variables through the GitHub Secrets now.
-# environment-file:
-#  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
+
+environment-file:
+  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
