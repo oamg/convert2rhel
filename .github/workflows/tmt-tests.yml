@@ -21,6 +21,9 @@ jobs:
     name: Wait for CI Checks
     runs-on: ubuntu-latest
     steps:
+      - name: DEBUG ONLY
+        run: |
+          echo ${{ github.event.pull_request.author_association }}
       - name: Wait for CI Checks
         uses: r0x0d/wait-for-ci-checks@main
         id: status_check
@@ -38,46 +41,57 @@ jobs:
     needs: [wait_for_rpm_builds]
     uses: ./.github/workflows/reuse-get-copr-id.yml
 
+  convert_distros_to_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_epel7: ${{ steps.convert_distros_to_matrix.outputs.matrix_epel7 }}
+      matrix_epel8: ${{ steps.convert_distros_to_matrix.outputs.matrix_epel8 }}
+    steps:
+      - id: convert_distros_to_matrix
+        run: |
+          echo "::set-output name=matrix_epel7::'["centos-7", "oraclelinux-7"]'"
+          echo "::set-output name=matrix_epel8::'["centos-8.4", "centos-8", "oraclelinux-8.4", "oraclelinux-8.6"]'"
+
   # Tier 0 integration tests
   call_workflow_integration_tests_epel_7_tier0:
-    needs: [call_workflow_get_copr_id]
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr: "epel-7-x86_64"
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
       tmt_plan_regex: "^(?!.*tier0)"
-      distros: '["centos-7", "oraclelinux-7"]'
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel7)}}
       pull_request_status_name: "epel-7-tier0"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier0:
-    needs: [call_workflow_get_copr_id]
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
       tmt_plan_regex: "^(?!.*tier0)"
-      distros: '["centos-8.4", "centos-8", "oraclelinux-8.4", "oraclelinux-8.6"]'
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
       pull_request_status_name: "epel-8-tier0"
     secrets: inherit
 
   # Tier 1 integration tests
   call_workflow_integration_tests_epel_7_tier1:
-    needs: [call_workflow_get_copr_id]
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr: "epel-7-x86_64"
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
       tmt_plan_regex: "^(?!.*tier1)"
-      distros: '["centos-7", "oraclelinux-7"]'
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel7)}}
       pull_request_status_name: "epel-7-tier1"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier1:
-    needs: [call_workflow_get_copr_id]
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
       tmt_plan_regex: "^(?!.*tier1)"
-      distros: '["centos-8.4", "centos-8", "oraclelinux-8.4", "oraclelinux-8.6"]'
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
       pull_request_status_name: "epel-8-tier1"
     secrets: inherit

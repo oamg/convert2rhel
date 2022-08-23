@@ -23,5 +23,6 @@ prepare:
     how: shell
     script: grep -l "copr:copr.fedorainfracloud.org:group_oamg:convert2rhel" /etc/yum.repos.d/* | xargs rm
 
+# Commenting this out in favour of using a github actions with tft
 environment-file:
   - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
