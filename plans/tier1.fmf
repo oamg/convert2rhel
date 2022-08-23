@@ -59,7 +59,7 @@ discover+:
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/remove_excluded_pkgs_epel8:
+/remove_excld_pkgs_epel8:
   adjust:
     enabled: false
     when: >
@@ -71,23 +71,23 @@ discover+:
   prepare+:
   - name: main conversion preparation
     how: shell
-    script: pytest -svv tests/integration/tier1/remove-excluded-pkgs/test_remove_excluded_pkgs.py
+    script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/remove_excluded_pkgs_epel7:
+/remove_excld_pkgs_epel7:
   adjust:
     enabled: false
     when: distro != oraclelinux-7 and distro != centos-7
   environment+:
-        PACKAGES: gnome-documents-libs
+    PACKAGES: gnome-documents-libs
   discover+:
     test: checks-after-conversion
   prepare+:
   - name: main conversion preparation
     how: shell
-    script: pytest -svv tests/integration/tier1/remove-excluded-pkgs/test_remove_excluded_pkgs.py
+    script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
