@@ -21,6 +21,9 @@ jobs:
     name: Wait for CI Checks
     runs-on: ubuntu-latest
     steps:
+      - name: DEBUG ONLY
+        run: |
+          echo ${{ github.event.pull_request.author_association }}
       - name: Wait for CI Checks
         uses: r0x0d/wait-for-ci-checks@main
         id: status_check

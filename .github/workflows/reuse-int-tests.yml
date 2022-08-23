@@ -67,14 +67,14 @@ on:
 
 jobs:
   reusable_workflow_job:
-    name: Schedule regression tests on Testing Farm
+    name: Schedule integration tests on Testing Farm
     strategy:
       fail-fast: false
       matrix:
         distro: ${{ inputs.distros }}
     runs-on: ubuntu-latest
     steps:
-      - name: Schedule regression testing for ${{ inputs.pull_request_status_name }}
+      - name: Schedule integration testing for ${{ inputs.pull_request_status_name }}
         uses: sclorg/testing-farm-as-github-action@v1.2.11
         with:
           # required
@@ -94,6 +94,6 @@ jobs:
           copr_artifacts: ${{ inputs.copr_artifacts }}
           debug: ${{ secrets.DEBUG }}
           tmt_context: "distro=${{ matrix.distro }}"
-          pull_request_status_name: ${{ inputs.pull_request_status_name }}
+          pull_request_status_name: ${{ inputs.pull_request_status_name }}/${{ matrix.distro }}
           environment_settings: ${{ inputs.environment_settings }}
           secrets: "DEBUG=${{ secrets.DEBUG }};RHSM_KEY=${{ secrets.RHSM_KEY }};RHSM_ORG=${{ secrets.RHSM_ORG }};RHSM_PASSWORD=${{ secrets.RHSM_PASSWORD }};RHSM_POOL=${{ secrets.RHSM_POOL }};RHSM_SERVER_URL=${{ secrets.RHSM_SERVER_URL }};RHSM_SINGLE_SUB_PASSWORD=${{ secrets.RHSM_SINGLE_SUB_PASSWORD }};RHSM_SINGLE_SUB_POOL=${{ secrets.RHSM_SINGLE_SUB_PASSWORD }};RHSM_SINGLE_SUB_USERNAME=${{ secrets.RHSM_SINGLE_SUB_PASSWORD }};RHSM_USERNAME=${{ secrets.RHSM_USERNAME }};SATELLITE_KEY=${{ secrets.SATELLITE_KEY }};SATELLITE_KEY_EUS=${{ secrets.SATELLITE_KEY_EUS }};SATELLITE_ORG=${{ secrets.SATELLITE_ORG }}"
