@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ inputs.distros }}
+        distro: ${{ fromJson(inputs.distros) }}
     runs-on: ubuntu-latest
     steps:
       - name: Schedule integration testing for ${{ inputs.pull_request_status_name }}
