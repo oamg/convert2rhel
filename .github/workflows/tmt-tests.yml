@@ -61,34 +61,34 @@ jobs:
       pull_request_status_name: "epel-7-tier0"
     secrets: inherit
 
-  # call_workflow_integration_tests_epel_8_tier0:
-  #   needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
-  #   uses: ./.github/workflows/reuse-int-tests.yml
-  #   with:
-  #     copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-  #     tmt_plan_regex: "^(?!.*tier0)"
-  #     distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
-  #     pull_request_status_name: "epel-8-tier0"
-  #   secrets: inherit
+  call_workflow_integration_tests_epel_8_tier0:
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
+    uses: ./.github/workflows/reuse-int-tests.yml
+    with:
+      copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
+      tmt_plan_regex: "^(?!.*tier0)"
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
+      pull_request_status_name: "epel-8-tier0"
+    secrets: inherit
 
-  # # Tier 1 integration tests
-  # call_workflow_integration_tests_epel_7_tier1:
-  #   needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
-  #   uses: ./.github/workflows/reuse-int-tests.yml
-  #   with:
-  #     copr: "epel-7-x86_64"
-  #     copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-  #     tmt_plan_regex: "^(?!.*tier1)"
-  #     distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel7)}}
-  #     pull_request_status_name: "epel-7-tier1"
-  #   secrets: inherit
+  # Tier 1 integration tests
+  call_workflow_integration_tests_epel_7_tier1:
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
+    uses: ./.github/workflows/reuse-int-tests.yml
+    with:
+      copr: "epel-7-x86_64"
+      copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
+      tmt_plan_regex: "^(?!.*tier1)"
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel7)}}
+      pull_request_status_name: "epel-7-tier1"
+    secrets: inherit
 
-  # call_workflow_integration_tests_epel_8_tier1:
-  #   needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
-  #   uses: ./.github/workflows/reuse-int-tests.yml
-  #   with:
-  #     copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-  #     tmt_plan_regex: "^(?!.*tier1)"
-  #     distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
-  #     pull_request_status_name: "epel-8-tier1"
-  # secrets: inherit
+  call_workflow_integration_tests_epel_8_tier1:
+    needs: [call_workflow_get_copr_id, convert_distros_to_matrix]
+    uses: ./.github/workflows/reuse-int-tests.yml
+    with:
+      copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
+      tmt_plan_regex: "^(?!.*tier1)"
+      distros: ${{fromJson(needs.convert_distros_to_matrix.outputs.matrix_epel8)}}
+      pull_request_status_name: "epel-8-tier1"
+    secrets: inherit
