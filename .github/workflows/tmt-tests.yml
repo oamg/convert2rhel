@@ -59,6 +59,7 @@ jobs:
       tmt_plan_regex: "^(?!.*tier0)"
       distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
       pull_request_status_name: "epel-7-tier0"
+      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier0:
@@ -69,6 +70,7 @@ jobs:
       tmt_plan_regex: "^(?!.*tier0)"
       distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
       pull_request_status_name: "epel-8-tier0"
+      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
     secrets: inherit
 
   # Tier 1 integration tests
@@ -81,6 +83,7 @@ jobs:
       tmt_plan_regex: "^(?!.*tier1)"
       distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
       pull_request_status_name: "epel-7-tier1"
+      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier1:
@@ -91,4 +94,5 @@ jobs:
       tmt_plan_regex: "^(?!.*tier1)"
       distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
       pull_request_status_name: "epel-8-tier1"
+      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
     secrets: inherit

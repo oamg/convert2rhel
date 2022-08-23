@@ -64,6 +64,10 @@ on:
         type: string
         required: false
         default: "true"
+      git_ref:
+        type: string
+        required: false
+        default: "main"
 
 jobs:
   reusable_workflow_job:
@@ -81,7 +85,7 @@ jobs:
           api_url: ${{ secrets.TF_ENDPOINT }}
           api_key: ${{ secrets.TF_API_KEY }}
           git_url: "https://github.com/oamg/convert2rhel"
-          git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+          git_ref: ${{ inputs.git_ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # optional
           tf_scope: "private"
