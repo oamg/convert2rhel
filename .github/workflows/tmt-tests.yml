@@ -46,8 +46,8 @@ jobs:
     steps:
       - id: convert_distros_to_matrix
         run: |
-          echo "::set-output name=matrix_epel7::[\"centos-7\", \"oraclelinux-7\"]"
-          echo "::set-output name=matrix_epel8::[\"centos-8.4\", \"centos-8\", \"oraclelinux-8.4\", \"oraclelinux-8.6\"]"
+          echo "::set-output name=matrix_epel7::{\"include\":[{\"compose\": \"CentOS-7-latest\", \"distro\": \"centos-7\"},{\"compose\": \"Oracle-Linux-7.9\", \"distro\": \"oraclelinux-7\"}]}"
+          echo "::set-output name=matrix_epel8::{\"include\":[{\"compose\": \"CentOS-8.4\", \"distro\": \"centos-8.4\"},{\"compose\": \"CentOS-8-latest\", \"distro\": \"centos-8\"},{\"compose\": \"Oracle-Linux-8.4\", \"distro\": \"oraclelinux-8.4\"},{\"compose\": \"Oracle-Linux-8.6\", \"distro\": \"oraclelinux-8.6\"}]}"
 
   # Tier 0 integration tests
   call_workflow_integration_tests_epel_7_tier0:
@@ -56,10 +56,10 @@ jobs:
     with:
       copr: "epel-7-x86_64"
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-      tmt_plan_regex: "^(?!.*tier0)"
-      distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
+      tmt_plan_regex: "^(.*tier0)"
+      matrix: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
       pull_request_status_name: "epel-7-tier0"
-      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+      git_ref: "refs/pull/${{ github.event.number }}/head"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier0:
@@ -67,10 +67,10 @@ jobs:
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-      tmt_plan_regex: "^(?!.*tier0)"
-      distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
+      tmt_plan_regex: "^(.*tier0)"
+      matrix: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
       pull_request_status_name: "epel-8-tier0"
-      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+      git_ref: "refs/pull/${{ github.event.number }}/head"
     secrets: inherit
 
   # Tier 1 integration tests
@@ -80,10 +80,10 @@ jobs:
     with:
       copr: "epel-7-x86_64"
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-      tmt_plan_regex: "^(?!.*tier1)"
-      distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
+      tmt_plan_regex: "^(.*tier1)"
+      matrix: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel7 }}
       pull_request_status_name: "epel-7-tier1"
-      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+      git_ref: "refs/pull/${{ github.event.number }}/head"
     secrets: inherit
 
   call_workflow_integration_tests_epel_8_tier1:
@@ -91,8 +91,8 @@ jobs:
     uses: ./.github/workflows/reuse-int-tests.yml
     with:
       copr_artifacts: ${{ needs.call_workflow_get_copr_id.outputs.artifacts }}
-      tmt_plan_regex: "^(?!.*tier1)"
-      distros: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
+      tmt_plan_regex: "^(.*tier1)"
+      matrix: ${{ needs.convert_distros_to_matrix.outputs.matrix_epel8 }}
       pull_request_status_name: "epel-8-tier1"
-      git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+      git_ref: "refs/pull/${{ github.event.number }}/head"
     secrets: inherit

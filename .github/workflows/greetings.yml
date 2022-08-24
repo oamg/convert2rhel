@@ -22,7 +22,7 @@ jobs:
             👋 Hello @${{ github.actor }}, thank you for submitting a PR 🚀!
             Please note that every PR needs to comply with the [Convert2RHEL Guidelines](https://github.com/oamg/convert2rhel/blob/main/CONTRIBUTING.md) and must pass all tests in order to be mergable.
             If you want to rebuild a package in copr, you can use following commands as a comment:
-            - **/packit copr-build** to submit a public copr build using packit
+            - **/packit copr-build** to trigger a copr build using packit
 
             To launch regression testing public members of oamg organization don't need any extra step. The automation kicks that off for you!
 
