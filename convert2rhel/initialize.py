@@ -15,9 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import sys
 
-from convert2rhel import utils
+
+def set_locale():
+    """Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
+
+    The reason is to get predictable output from the executables we call, not influenced by non-default locale.
+    We need to be setting not only LC_ALL but LANG as well because subscription-manager considers LANG to have priority
+    over LC_ALL even though it goes against POSIX which specifies that LC_ALL overrides LANG.
+    """
+    os.environ.update({"LC_ALL": "C", "LANG": "C"})
 
 
 def run():
@@ -27,7 +36,7 @@ def run():
     before any other main imports.
     """
     # prepare environment
-    utils.set_locale()
+    set_locale()
 
     from convert2rhel import main
 
