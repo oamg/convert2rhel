@@ -54,9 +54,10 @@ def convert2rhel(shell):
     This fixture runs the convert2rhel with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
-    You can assert that some text is in stdout, by using:
+    You can check that some text is in stdout, by using:
     c2r.expect("Sometext here") (see bellow example)
-
+    You can also assert appearence of text by using:
+    assert c2r.expect("Sometext here") == 0 (see bellow example)
     Or check the utility exit code:
     assert c2r.exitcode == 0 (see bellow example)
 
@@ -77,7 +78,25 @@ def convert2rhel(shell):
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
+    >>>     assert c2r.expect("Continuing the conversion") == 0
     >>> assert c2r.exitstatus == 0
+
+    Use of custom timeout option for assertion of pexpect.expect() is recommended for some cases described below.
+    Because of the default option for pexpect.expect() timeout being -1
+    the timeout might take an hour at best (defined for spawned Convert2RHEL itself in factory())
+    in case the expected string is not matched and/or EOF exception is not raised.
+
+    Recommendation for the timeout usage is for cases, when the script might get stuck
+    at an interactive user prompt, when there is an expected string (not getting outputted)
+    followed by expected prompt.
+    Recommended option is timeout=300
+    Example:
+    >>> ...{output omitted}...
+    >>> as c2r:
+    >>>     assert c2r.expect("Checking for kernel compatibility", timeout=300) == 0
+    >>>     c2r.expect("Continue with the system conversion?")
+    >>>     c2r.sendline("n")
+    >>> ...{output omitted}...
 
     Unregister means that system wouldn't be unregistered
     from subscription-manager after conversion.

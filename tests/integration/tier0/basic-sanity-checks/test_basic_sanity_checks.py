@@ -65,8 +65,8 @@ def test_c2r_latest_newer(convert2rhel):
     change_c2r_version(42.0)
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
-        assert c2r.expect("Latest available convert2rhel version is installed.") == 0
-        assert c2r.expect("Continuing conversion.") == 0
+        assert c2r.expect("Latest available convert2rhel version is installed.", timeout=300) == 0
+        assert c2r.expect("Continuing conversion.", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
@@ -81,8 +81,8 @@ def test_c2r_latest_older_inhibit(convert2rhel):
     change_c2r_version(0.01)
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
-        assert c2r.expect("CRITICAL - You are currently running 0.01 ") == 0
-        assert c2r.expect("Only the latest version is supported for conversion.") == 0
+        assert c2r.expect("CRITICAL - You are currently running 0.01", timeout=300) == 0
+        assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
     assert c2r.exitstatus != 0
 
     # Clean up
@@ -101,12 +101,17 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
         if "centos-6" in booted_os or "oracle-6" in booted_os:
-            assert c2r.expect("You are currently running 0.01") == 0
-            assert c2r.expect("Only the latest version is supported for conversion.") == 0
+            assert c2r.expect("You are currently running 0.01", timeout=300) == 0
+            assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
 
         else:
-            assert c2r.expect("You are currently running 0.01") == 0
-            assert c2r.expect("'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion") == 0
+            assert c2r.expect("You are currently running 0.01", timeout=300) == 0
+            assert (
+                c2r.expect(
+                    "'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion", timeout=300
+                )
+                == 0
+            )
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("n")
     assert c2r.exitstatus != 0
@@ -117,10 +122,12 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
 
 
 def test_clean_cache(convert2rhel):
-    # Test that the yum clean is done before any other check that c2r does
+    """
+    Test that the yum clean is done before any other check that c2r does
+    """
     with convert2rhel("--no-rpm-va --debug") as c2r:
-        assert c2r.expect("Prepare: Clean yum cache metadata") == 0
-        assert c2r.expect("Cached yum metadata cleaned successfully.") == 0
+        assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
+        assert c2r.expect("Cached yum metadata cleaned successfully.", timeout=300) == 0
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
@@ -134,9 +141,42 @@ def test_rhsm_error_logged(convert2rhel):
     with convert2rhel("--debug --no-rpm-va") as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
-        assert c2r.expect("No RHSM certificates found to be removed.") == 0
+        assert c2r.expect("No RHSM certificates found to be removed.", timeout=300) == 0
 
     # Check for error not present in log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
         for line in logfile:
             assert "ERROR - OSError(2): No such file or directory" not in line
+
+
+def test_check_variant_message(convert2rhel):
+    """
+    Run Convert2RHEL with deprecated -v/--variant option and check for warning message being outputted.
+    """
+    # Run c2r with --variant option
+    with convert2rhel("--no-rpm-va --debug --variant Server") as c2r:
+        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+    assert c2r.exitstatus != 0
+
+    # Run c2r with --variant option empty
+    with convert2rhel("--no-rpm-va --debug --variant") as c2r:
+        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+    assert c2r.exitstatus != 0
+
+    # Run c2r with -v option
+    with convert2rhel("--no-rpm-va --debug -v Client") as c2r:
+        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+    assert c2r.exitstatus != 0
+
+    # Run c2r with -v option empty
+    with convert2rhel("--no-rpm-va --debug -v") as c2r:
+        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+    assert c2r.exitstatus != 0

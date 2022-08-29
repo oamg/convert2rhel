@@ -26,7 +26,7 @@ def test_handle_shim_x64_pkg(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        assert c2r.expect_exact("Removing shim-x64 package yum protection.") == 0
+        assert c2r.expect_exact("Removing shim-x64 package yum protection.", timeout=300) == 0
         c2r.expect("removed in accordance with")
     assert c2r.exitstatus == 0
 
