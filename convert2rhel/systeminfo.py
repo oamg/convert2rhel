@@ -18,7 +18,6 @@ import difflib
 import logging
 import os
 import re
-import socket
 import time
 
 from collections import namedtuple
