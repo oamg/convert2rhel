@@ -274,7 +274,7 @@ def pretend_os(request, pkg_root, monkeypatch):
         value=lambda: True,
     )
 
-    # We won't dependon a test environment having internet connection, so we
+    # We won't depend on a test environment having an internet connection, so we
     # need to disable the mock this return value for all tests
     monkeypatch.setattr(
         system_info,
