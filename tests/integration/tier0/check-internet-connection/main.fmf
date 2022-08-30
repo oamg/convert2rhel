@@ -1,6 +1,6 @@
 summary: internet connection checks
 
-tier: 1
+tier: 0
 
 test: |
   pytest -svv

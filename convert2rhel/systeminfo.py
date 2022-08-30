@@ -32,8 +32,11 @@ from convert2rhel.utils import run_subprocess
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
 
-# Number of times to retry checking if the internet connection is up
+# Number of times to retry checking if the internet connection is up.
 CHECK_INTERNET_CONNECTION_RETRIES = 3
+
+# The address that will be used to check if there is a internet connection.
+CHECK_INTERNET_CONNECTION_ADDRESS = "http://static.redhat.com/test/rhel-networkmanager.txt"
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -352,29 +355,33 @@ class SystemInfo(object):
     def _check_internet_access(self):
         """Check whether or not the machine is connected to the internet.
 
-        This method will try to estabilish a socket connection through a default
-        address (static.redhat.com). If it's we can successfully send the
-        request, validate that the status_code is 200, and assert that the
-        content of the response is the string 'OK', then it is most likely that
-        we are connected to the internet.
+        This method will try to retrieve a web page on the Red Hat network that
+        we know to exist (http://static.redhat.com/test/rhel-networkmanager.txt).
+        If we can successfully retrieve that page, validate that the status_code
+        is 200, and assert that the content of the response is the string 'OK',
+        then we decide we are connected to the internet.
+
+        We check a web page because we will need working https to retrieve
+        packages from Red Hat infrastructure during the conversion.
 
         .. warnings::
             We might have some problems with this if the host machine is using
             a NAT gateway to route the outbound requests to any other service.
 
-            It's valid to note that there are dnsmasq that can redirect the
-            content of a URL to another address.
+            DNS could also be used to redirect the URL we test to another address.
 
         :return: Return boolean indicating whether or not we have internet
             access.
         :rtype: bool
         """
-        address = "http://static.redhat.com/test/rhel-networkmanager.txt"
         retries = 0
         is_reachable = False
-        self.logger.info("Checking internet connectivity using address '%s'.", address)
+        self.logger.info(
+            "Checking internet connectivity using address '%s'.",
+            CHECK_INTERNET_CONNECTION_ADDRESS,
+        )
         while retries <= CHECK_INTERNET_CONNECTION_RETRIES:
-            response = urllib.request.urlopen(address)
+            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
             status_code = response.getcode()
             text_response = response.read().decode("utf-8")
             response.close()
@@ -390,9 +397,9 @@ class SystemInfo(object):
             retries += 1
         else:
             self.logger.warning(
-                "Couldn't connect to the address '%s', assuming no internet connection is present.", address
+                "Couldn't connect to the address '%s', assuming no internet connection is present.",
+                CHECK_INTERNET_CONNECTION_ADDRESS,
             )
-            is_reachable = False
 
         return is_reachable
 
