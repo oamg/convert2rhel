@@ -5,7 +5,7 @@ from envparse import env
 
 def test_no_sub_manager_installed(shell, convert2rhel):
     """
-    Test that no subscription manager is installed and the conversion
+    Verify the case when no subscription manager is installed and the conversion
     is able to get to the last point of the rollback.
     """
 

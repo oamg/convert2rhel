@@ -54,10 +54,10 @@ def convert2rhel(shell):
     This fixture runs the convert2rhel with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
-    You can check that some text is in stdout, by using:
+    You can verify that some text is in stdout, by using:
     c2r.expect("Sometext here") (see bellow example)
-    You can also assert appearence of text by using:
-    assert c2r.expect("Sometext here") == 0 (see bellow example)
+    You can also assert that some text is being reported by c2r by using:
+    assert c2r.expect("some text here") == 0 (see bellow example)
     Or check the utility exit code:
     assert c2r.exitcode == 0 (see bellow example)
 
@@ -83,10 +83,10 @@ def convert2rhel(shell):
 
     Use of custom timeout option for assertion of pexpect.expect() is recommended for some cases described below.
     Because of the default option for pexpect.expect() timeout being -1
-    the timeout might take an hour at best (defined for spawned Convert2RHEL itself in factory())
+    the timeout might take an hour at best (defined in spawned convert2rhel() instance),
     in case the expected string is not matched and/or EOF exception is not raised.
 
-    Recommendation for the timeout usage is for cases, when the script might get stuck
+    The usage of timeout is recommended for cases where the script might get stuck
     at an interactive user prompt, when there is an expected string (not getting outputted)
     followed by expected prompt.
     Recommended option is timeout=300

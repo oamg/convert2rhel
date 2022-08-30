@@ -3,8 +3,8 @@ from envparse import env
 
 def test_check_user_response_user_and_password(convert2rhel):
     """
-    Run c2r registration with no username and password provided
-    check for user prompt enforcing input, then continue with registration.
+    Run c2r registration with no username and password provided.
+     Verify that user has to pass non empty username/password string to continue, otherwise enforce the input prompt again.
     """
     with convert2rhel("-y --no-rpm-va --serverurl {}".format(env.str("RHSM_SERVER_URL")), unregister=True) as c2r:
         c2r.expect_exact(" ... activation key not found, username and password required")
@@ -31,7 +31,7 @@ def test_check_user_response_user_and_password(convert2rhel):
 
 def test_check_user_response_organization(convert2rhel):
     """
-    Run c2r registration with activation key provided and check for user prompt while organization left blank.
+    Run c2r registration with activation key provided and verify the organization prompt when not specified during the command call.
     """
     substitute_org = "foo"
     with convert2rhel(
@@ -56,7 +56,7 @@ def test_check_user_response_organization(convert2rhel):
 def test_auto_attach_pool_submgr(convert2rhel):
     """
     Provide Convert2RHEL with username and password with just one subscription available.
-    Check that the subscription is automatically selected.
+    Verify that the subscription is automatically selected.
     """
     single_pool_id = env.str("RHSM_SINGLE_SUB_POOL")
     with convert2rhel(

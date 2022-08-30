@@ -3,7 +3,7 @@ from envparse import env
 
 def test_bad_conversion(convert2rhel):
     """
-    Test the check for compatible kernel on Oracle Linux works.
+    Verify that the check for compatible kernel on Oracle Linux works.
     Install unsupported kernel and run the conversion.
     Expect the warning message and c2r unsuccessful exit.
     """

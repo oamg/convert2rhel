@@ -123,7 +123,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
 
 def test_clean_cache(convert2rhel):
     """
-    Test that the yum clean is done before any other check that c2r does
+    Verify that the yum clean is done before any other check that c2r does
     """
     with convert2rhel("--no-rpm-va --debug") as c2r:
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
@@ -143,7 +143,7 @@ def test_rhsm_error_logged(convert2rhel):
         c2r.sendline("n")
         assert c2r.expect("No RHSM certificates found to be removed.", timeout=300) == 0
 
-    # Check for error not present in log file
+    # Verify the error message is not present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
         for line in logfile:
             assert "ERROR - OSError(2): No such file or directory" not in line
@@ -151,7 +151,7 @@ def test_rhsm_error_logged(convert2rhel):
 
 def test_check_variant_message(convert2rhel):
     """
-    Run Convert2RHEL with deprecated -v/--variant option and check for warning message being outputted.
+    Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
     """
     # Run c2r with --variant option
     with convert2rhel("--no-rpm-va --debug --variant Server") as c2r:
