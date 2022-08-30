@@ -19,8 +19,6 @@
 import logging
 import os
 import shutil
-import socket
-import sys
 import time
 import unittest
 
@@ -37,7 +35,7 @@ from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+from six.moves import mock, urllib
 
 
 class TestSysteminfo(unittest.TestCase):
@@ -263,20 +261,39 @@ def test_get_release_ver_other(
         assert system_info.has_internet_access == has_internet
 
 
+class MockUrlOpenOutput(object):
+    def __init__(self, status_code=200, output=b"OK"):
+        self.called = 0
+        self.status_code = status_code
+        self.output = output
+
+    def getcode(self):
+        return self.status_code
+
+    def read(self):
+        return self.output
+
+    def close(self):
+        pass
+
+
 @pytest.mark.parametrize(
-    ("side_effect", "expected"),
+    ("return_value", "expected", "message"),
     (
-        (None, True),
-        (socket.error, False),
+        (MockUrlOpenOutput(), True, "Internet connection available."),
+        (MockUrlOpenOutput(status_code=400, output=b"ok"), False, "Couldn't connect to the address"),
+        (MockUrlOpenOutput(status_code=200, output=b"not ok"), False, "Couldn't connect to the address"),
     ),
 )
-def test_check_internet_access(side_effect, expected, monkeypatch):
-    monkeypatch.setattr(systeminfo.socket.socket, "connect", mock.Mock(side_effect=side_effect))
+def test_check_internet_access(return_value, expected, message, monkeypatch, caplog):
+    monkeypatch.setattr(systeminfo.urllib.request, "urlopen", mock.Mock(return_value=return_value))
+    monkeypatch.setattr(systeminfo.time, "sleep", mock.Mock())
     # Have to initialize the logger since we are not constructing the
     # system_info object properly i.e: we are not calling `resolve_system_info()`
     system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
+    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

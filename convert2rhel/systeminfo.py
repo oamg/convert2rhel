@@ -23,7 +23,7 @@ import time
 
 from collections import namedtuple
 
-from six.moves import configparser
+from six.moves import configparser, urllib
 
 from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
@@ -32,6 +32,9 @@ from convert2rhel.utils import run_subprocess
 
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
+
+# Number of times to retry checking if the internet connection is up
+CHECK_INTERNET_CONNECTION_RETRIES = 3
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -347,38 +350,52 @@ class SystemInfo(object):
         #     )
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
-    def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
+    def _check_internet_access(self):
         """Check whether or not the machine is connected to the internet.
 
-        This method will try to estabilish a socket connection through the
-        default host in the method signature (8.8.8.8). If it's connected
-        successfully, then we know that internet is accessible from the host.
+        This method will try to estabilish a socket connection through a default
+        address (static.redhat.com). If it's we can successfully send the
+        request, validate that the status_code is 200, and assert that the
+        content of the response is the string 'OK', then it is most likely that
+        we are connected to the internet.
 
         .. warnings::
             We might have some problems with this if the host machine is using
-            a NAT gateway to route the outbound requests
+            a NAT gateway to route the outbound requests to any other service.
 
-        .. seealso::
-            * Comparison of different methods to check internet connections: https://stackoverflow.com/a/33117579
-            * Redirecting IP addresses: https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+            It's valid to note that there are dnsmasq that can redirect the
+            content of a URL to another address.
 
-        :param host: The host to establish a connection to. Defaults to "8.8.8.8".
-        :type host: str
-        :param port: The port for the connection. Defaults to 53.
-        :type port: int
-        :param timeout: The timeout in seconds for the connection. Defaults to 3.
-        :type port: int
-        :return: Return boolean indicating whether or not we have internet access.
+        :return: Return boolean indicating whether or not we have internet
+            access.
         :rtype: bool
         """
-        try:
-            self.logger.info("Checking internet connectivity using host '%s' and port '%s'." % (host, port))
-            socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-            return True
-        except (socket.timeout, socket.error):
-            self.logger.warning("Couldn't connect to the host '%s'." % host)
-            return False
+        address = "http://static.redhat.com/test/rhel-networkmanager.txt"
+        retries = 0
+        is_reachable = False
+        self.logger.info("Checking internet connectivity using address '%s'.", address)
+        while retries <= CHECK_INTERNET_CONNECTION_RETRIES:
+            response = urllib.request.urlopen(address)
+            status_code = response.getcode()
+            text_response = response.read().decode("utf-8")
+            response.close()
+
+            if status_code == 200 and text_response.upper() == "OK":
+                self.logger.info("Internet connection available.")
+                is_reachable = True
+                break
+
+            # Wait for 1 second, 2 seconds, and then 4 seconds for another check.
+            # The service might be offline or with instability.
+            time.sleep(2**retries)
+            retries += 1
+        else:
+            self.logger.warning(
+                "Couldn't connect to the address '%s', assuming no internet connection is present.", address
+            )
+            is_reachable = False
+
+        return is_reachable
 
     def corresponds_to_rhel_eus_release(self):
         """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.
