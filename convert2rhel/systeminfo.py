@@ -389,7 +389,7 @@ class SystemInfo(object):
         :return: Whether or not the current system has a EUS correspondent in RHEL.
         :rtype: bool
         """
-        return self.releasever in EUS_MINOR_VERSIONS
+        return "%s.%s" % (self.version.major, self.version.minor) in EUS_MINOR_VERSIONS
 
     def _is_dbus_running(self):
         """
