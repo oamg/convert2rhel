@@ -32,9 +32,6 @@ from convert2rhel.utils import run_subprocess
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
 
-# Number of times to retry checking if the internet connection is up.
-CHECK_INTERNET_CONNECTION_RETRIES = 3
-
 # The address that will be used to check if there is a internet connection.
 CHECK_INTERNET_CONNECTION_ADDRESS = "http://static.redhat.com/test/rhel-networkmanager.txt"
 
@@ -374,34 +371,22 @@ class SystemInfo(object):
             access.
         :rtype: bool
         """
-        retries = 0
-        is_reachable = False
         self.logger.info(
             "Checking internet connectivity using address '%s'.",
             CHECK_INTERNET_CONNECTION_ADDRESS,
         )
-        while retries <= CHECK_INTERNET_CONNECTION_RETRIES:
+        try:
             response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
-            status_code = response.getcode()
-            text_response = response.read().decode("utf-8")
             response.close()
-
-            if status_code == 200 and text_response.upper() == "OK":
-                self.logger.info("Internet connection available.")
-                is_reachable = True
-                break
-
-            # Wait for 1 second, 2 seconds, and then 4 seconds for another check.
-            # The service might be offline or with instability.
-            time.sleep(2**retries)
-            retries += 1
-        else:
+            self.logger.info("Internet connection available.")
+            return True
+        except urllib.error.URLError as err:
+            self.logger.debug("Faild to retrieve data from host, reason: %s", err.reason)
             self.logger.warning(
                 "Couldn't connect to the address '%s', assuming no internet connection is present.",
                 CHECK_INTERNET_CONNECTION_ADDRESS,
             )
-
-        return is_reachable
+            return False
 
     def corresponds_to_rhel_eus_release(self):
         """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.

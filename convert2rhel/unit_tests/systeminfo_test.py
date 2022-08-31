@@ -261,33 +261,19 @@ def test_get_release_ver_other(
         assert system_info.has_internet_access == has_internet
 
 
-class MockUrlOpenOutput(object):
-    def __init__(self, status_code=200, output=b"OK"):
-        self.called = 0
-        self.status_code = status_code
-        self.output = output
-
-    def getcode(self):
-        return self.status_code
-
-    def read(self):
-        return self.output
-
-    def close(self):
-        pass
-
-
 @pytest.mark.parametrize(
-    ("return_value", "expected", "message"),
+    ("side_effect", "expected", "message"),
     (
-        (MockUrlOpenOutput(), True, "Internet connection available."),
-        (MockUrlOpenOutput(status_code=400, output=b"ok"), False, "Couldn't connect to the address"),
-        (MockUrlOpenOutput(status_code=200, output=b"not ok"), False, "Couldn't connect to the address"),
+        (urllib.error.URLError(reason="fail"), False, "Couldn't connect to the address"),
+        (None, True, "Internet connection available."),
     ),
 )
-def test_check_internet_access(return_value, expected, message, monkeypatch, caplog):
-    monkeypatch.setattr(systeminfo.urllib.request, "urlopen", mock.Mock(return_value=return_value))
-    monkeypatch.setattr(systeminfo.time, "sleep", mock.Mock())
+def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):
+    monkeypatch.setattr(
+        systeminfo.urllib.request,
+        "urlopen",
+        mock.Mock(side_effect=side_effect),
+    )
     # Have to initialize the logger since we are not constructing the
     # system_info object properly i.e: we are not calling `resolve_system_info()`
     system_info.logger = logging.getLogger(__name__)
