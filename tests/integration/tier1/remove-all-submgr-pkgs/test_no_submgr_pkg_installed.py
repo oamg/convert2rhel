@@ -4,9 +4,9 @@ from envparse import env
 
 
 def test_no_sub_manager_installed(shell, convert2rhel):
-    """Test that no subscription manager is installed and the conversion
+    """
+    Verify the case when no subscription manager is installed and the conversion
     is able to get to the last point of the rollback.
-
     """
 
     assert shell("yum remove -y subscription-manager").returncode == 0
@@ -30,8 +30,8 @@ def test_no_sub_manager_installed(shell, convert2rhel):
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
             prompt_amount -= 1
-        assert c2r.expect("The subscription-manager package is not installed.") == 0
-        assert c2r.expect("No packages related to subscription-manager installed.") == 0
+        assert c2r.expect("The subscription-manager package is not installed.", timeout=300) == 0
+        assert c2r.expect("No packages related to subscription-manager installed.", timeout=300) == 0
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")

@@ -18,14 +18,6 @@
       how: ansible
       playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
 
-/check_variant_message:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-7 and
-      distro != oraclelinux-8
-  discover+:
-    test: check-variant-message
 
 /inhibit_if_kmods_is_not_supported:
   discover+:
