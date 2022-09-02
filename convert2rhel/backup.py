@@ -202,14 +202,22 @@ class RestorableChange(object):
 
 
 class RestorableRpmKey(RestorableChange):
+    """Import a GPG key into rpm in a reversible fashion."""
+
     def __init__(self, keyfile):
+        """
+        Setup a RestorableRpmKey to reflect the GPG key in a file.
+
+        :arg keyfile: Filepath for a GPG key.  The RestorableRpmKey instance will be able to import
+            this into the rpmdb when enabled and remove it when restored.
+        """
         super(RestorableRpmKey, self).__init__()
-        self.previous_state = None
+        self.previously_installed = None
         self.keyfile = keyfile
         self.keyid = utils.find_keyid(keyfile)
 
     def enable(self):
-
+        """Ensure that the GPG key has been imported into the rpmdb."""
         # For idempotence, do not back this up if we've already done so.
         if self.enabled:
             return
@@ -219,16 +227,17 @@ class RestorableRpmKey(RestorableChange):
             if ret_code != 0:
                 raise utils.ImportGPGKeyError("Failed to import the GPG key %s: %s" % (self.keyfile, output))
 
-            self.previous_state = "not_installed"
+            self.previously_installed = False
             loggerinst.info("GPG key %s imported", self.keyid)
 
         else:
-            self.previous_state = "installed"
+            self.previously_installed = True
 
         super(RestorableRpmKey, self).enable()
 
     @property
     def installed(self):
+        """Whether the GPG key has been imported into the rpmdb."""
         output, status = utils.run_subprocess(["rpm", "-q", "gpg-pubkey-%s" % self.keyid], print_output=False)
 
         if status == 0:
@@ -242,12 +251,9 @@ class RestorableRpmKey(RestorableChange):
         )
 
     def restore(self):
-        if not self.enabled or self.previous_state in (None, "installed"):
-            self.enabled = False
-            return
-
-        # The self.previous_state == "not_installed" case
-        utils.run_subprocess(["rpm", "-e", "gpg-pubkey-%s" % self.keyid])
+        """Ensure the rpmdb has or does not have the GPG key according to the state before we ran."""
+        if self.enabled and self.previously_installed is False:
+            utils.run_subprocess(["rpm", "-e", "gpg-pubkey-%s" % self.keyid])
 
         super(RestorableRpmKey, self).restore()
 

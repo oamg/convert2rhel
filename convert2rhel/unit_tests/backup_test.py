@@ -543,7 +543,7 @@ class TestRestorableRpmKey:
     def test_init(self):
         rpm_key = backup.RestorableRpmKey(self.gpg_key)
 
-        assert rpm_key.previous_state is None
+        assert rpm_key.previously_installed is None
         assert rpm_key.enabled is False
         assert rpm_key.keyid == "fd431d51"
         assert rpm_key.keyfile.endswith("/data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
@@ -572,7 +572,7 @@ class TestRestorableRpmKey:
 
         assert rpm_key.enabled is True
         assert rpm_key.installed is True
-        assert rpm_key.previous_state == "not_installed"
+        assert rpm_key.previously_installed is False
 
     def test_enable_already_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
         rpm_key.enable()
@@ -585,7 +585,7 @@ class TestRestorableRpmKey:
         # Check that nothing has changed
         assert rpm_key.enabled is True
         assert rpm_key.installed is True
-        assert rpm_key.previous_state == "not_installed"
+        assert rpm_key.previously_installed is False
 
     def test_enable_already_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
         utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
@@ -600,7 +600,7 @@ class TestRestorableRpmKey:
         # Check that the key is installed and we show that it was previously installed
         assert rpm_key.enabled is True
         assert rpm_key.installed is True
-        assert rpm_key.previous_state == "installed"
+        assert rpm_key.previously_installed is True
 
     def test_enable_failure_to_import(self, monkeypatch, run_subprocess_with_empty_rpmdb, rpm_key):
         # Raise an error when we try to rpm --import
