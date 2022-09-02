@@ -31,7 +31,7 @@ jobs:
       github.event.pull_request
       && (
         contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
-        || contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+        || contains(github.event.pull_request.labels.*.name, 'testing')
       )
 
   call_workflow_get_copr_id:
