@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2016 Red Hat, Inc.
+# Copyright(C) 2022 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,9 +22,20 @@ import sys
 def set_locale():
     """Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
 
-    The reason is to get predictable output from the executables we call, not influenced by non-default locale.
-    We need to be setting not only LC_ALL but LANG as well because subscription-manager considers LANG to have priority
-    over LC_ALL even though it goes against POSIX which specifies that LC_ALL overrides LANG.
+    The reason is to get predictable output from the executables we call, not
+    influenced by non-default locale. We need to be setting not only LC_ALL but
+    LANG as well because subscription-manager considers LANG to have priority
+    over LC_ALL even though it goes against POSIX which specifies that LC_ALL
+    overrides LANG.
+
+    .. note::
+        Since we introduced a new way to interact with packages that is not
+        through the `yum` cli calls, but with the Python API, we had to move
+        this function to a new module to initialize all the settings in
+        Convert2RHEL before-hand as this was causing problems related to the
+        locales. The main problem that this function solves by being here is by
+        overriding any user set locale in their machine, to actually being the
+        ones we require during the process execution.
     """
     os.environ.update({"LC_ALL": "C", "LANG": "C"})
 

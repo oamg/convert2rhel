@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2020 Red Hat, Inc.
+# Copyright(C) 2022 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ try:
     from yum import *
 
     # This is added here to prevent a generic try-except in the
-    # `check_package_updates`() function.
+    # `check_package_updates()` function.
     from yum.Errors import RepoError  # lgtm[py/unused-import]
 
     TYPE = "yum"
@@ -27,7 +27,7 @@ except ImportError as e:
     from dnf import *  # pylint: disable=import-error
 
     # This is added here to prevent a generic try-except in the
-    # `check_package_updates`() function.
+    # `check_package_updates()` function.
     from dnf.exceptions import RepoError  # lgtm[py/unused-import]
 
     TYPE = "dnf"

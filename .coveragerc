@@ -4,7 +4,6 @@ source =
     convert2rhel
 omit =
     convert2rhel/unit_tests/*
-    convert2rhel/pkgmanager/handlers/base.py
 
 [paths]
 source =

@@ -163,9 +163,9 @@ def restore_varsdir():
         if not variables_is_restored:
             loggerinst.info("No varaibles files to rollback")
 
-    loggerinst.task("Rollback: Restore variable directories files to %s", DEFAULT_YUM_VARS_DIR)
+    loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_YUM_VARS_DIR)
     _restore_varsdir(DEFAULT_YUM_VARS_DIR)
 
     if system_info.version.major == 8:
-        loggerinst.task("Rollback: Restore variable directories files to %s", DEFAULT_DNF_VARS_DIR)
+        loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_DNF_VARS_DIR)
         _restore_varsdir(DEFAULT_DNF_VARS_DIR)

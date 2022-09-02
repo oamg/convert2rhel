@@ -51,7 +51,7 @@ class ChangedRPMPackagesController(object):
         pkg,
         reposdir=None,
         set_releasever=False,
-        manual_releasever=None,
+        custom_releasever=None,
         varsdir=None,
     ):
         """Add a removed RPM pkg to the list of removed pkgs."""
@@ -59,7 +59,7 @@ class ChangedRPMPackagesController(object):
         restorable_pkg.backup(
             reposdir=reposdir,
             set_releasever=set_releasever,
-            manual_releasever=manual_releasever,
+            custom_releasever=custom_releasever,
             varsdir=varsdir,
         )
         self.removed_pkgs.append(restorable_pkg)
@@ -325,7 +325,7 @@ class RestorablePackage(object):
         self,
         reposdir=None,
         set_releasever=False,
-        manual_releasever=None,
+        custom_releasever=None,
         varsdir=None,
     ):
         """Save version of RPM package.
@@ -358,7 +358,7 @@ class RestorablePackage(object):
                     self.name,
                     dest=BACKUP_DIR,
                     set_releasever=set_releasever,
-                    manual_releasever=manual_releasever,
+                    custom_releasever=custom_releasever,
                     varsdir=varsdir,
                 )
             else:
@@ -369,7 +369,7 @@ class RestorablePackage(object):
                     dest=BACKUP_DIR,
                     set_releasever=set_releasever,
                     reposdir=reposdir,
-                    manual_releasever=manual_releasever,
+                    custom_releasever=custom_releasever,
                     varsdir=varsdir,
                 )
         else:
@@ -382,7 +382,7 @@ def remove_pkgs(
     critical=True,
     reposdir=None,
     set_releasever=False,
-    manual_releasever=None,
+    custom_releasever=None,
     varsdir=None,
 ):
     """Remove packages not heeding to their dependencies."""
@@ -403,7 +403,7 @@ def remove_pkgs(
                 pkg=nvra,
                 reposdir=reposdir,
                 set_releasever=set_releasever,
-                manual_releasever=manual_releasever,
+                custom_releasever=custom_releasever,
                 varsdir=varsdir,
             )
 

@@ -404,7 +404,7 @@ def download_pkgs(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
-    manual_releasever=None,
+    custom_releasever=None,
     varsdir=None,
 ):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
@@ -416,7 +416,7 @@ def download_pkgs(
             enable_repos,
             disable_repos,
             set_releasever,
-            manual_releasever,
+            custom_releasever,
             varsdir,
         )
         for pkg in pkgs
@@ -430,7 +430,7 @@ def download_pkg(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
-    manual_releasever=None,
+    custom_releasever=None,
     varsdir=None,
 ):
     """Download an rpm using yumdownloader and return its filepath.
@@ -448,10 +448,10 @@ def download_pkg(
     :type enable_repos: list[str]
     :param disable_repos: The repositories to disable during the download.
     :type disable_repos: list[str]
-    :param set_releasever: If it's necessary to set the releasever.
-    :type set_releasever: bool
-    :param manual_releasever: The releasever to be set manually.
-    :type manual_releasever: int | str
+    :param set_systeminfo_releasever: If it's necessary to use the releasever stored in  SystemInfo.releasever.
+    :type set_systeminfo_releasever: bool
+    :param custom_releasever: A custom releasever to use. An alternative to set_systeminfo_releasever.
+    :type custom_releasever: int | str
     :param varsdir: The path to the variables directory.
     :type varsdir: str
 
@@ -475,11 +475,14 @@ def download_pkg(
         for repo in enable_repos:
             cmd.append("--enablerepo=%s" % repo)
 
-    if set_releasever and system_info.releasever:
-        cmd.append("--releasever=%s" % system_info.releasever)
+    if set_releasever:
+        if not custom_releasever and not system_info.releasever:
+            raise AssertionError("custom_releasever or system_info.releasever must be set.")
 
-    if not set_releasever and manual_releasever:
-        cmd.append("--releasever=%s" % manual_releasever)
+        if custom_releasever:
+            cmd.append("--releasever=%s" % custom_releasever)
+        elif system_info.releasever:
+            cmd.append("--releasever=%s" % system_info.releasever)
 
     if varsdir:
         cmd.append("--setopt=varsdir=%s" % varsdir)

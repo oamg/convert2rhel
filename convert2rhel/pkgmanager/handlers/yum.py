@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright(C) 2022 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 __metaclass__ = type
 
 import logging
@@ -14,7 +31,7 @@ from convert2rhel.utils import BACKUP_DIR
 
 loggerinst = logging.getLogger(__name__)
 
-# Limit the number of loops overithe yum transaction.
+# Limit the number of yum transaction retries.
 MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS = 3
 
 # Extract the first package that appears in the yum depsolve error
@@ -43,19 +60,19 @@ def _resolve_yum_problematic_dependencies(output):
     if packages_to_remove:
         packages_to_remove = set(packages_to_remove)
         loggerinst.debug(
-            "Removing problematic packages to continue with the conversion:\n%s\n", ", ".join(packages_to_remove)
+            "Removing problematic packages to continue with the conversion:\n%s", "\n".join(packages_to_remove)
         )
         remove_pkgs(
-            pkgs_to_remove=set(packages_to_remove),
+            pkgs_to_remove=packages_to_remove,
             backup=True,
             critical=False,
             set_releasever=False,
             reposdir=BACKUP_DIR,
-            manual_releasever=system_info.version.major,
-            varsdir=os.path.join(BACKUP_DIR, "yum/vars"),
+            custom_releasever=system_info.version.major,
+            varsdir=os.path.join(BACKUP_DIR, "yum", "vars"),
         )
 
-        loggerinst.info("Finished backing up and removing the packages.")
+        loggerinst.debug("Finished backing up and removing the packages.")
     else:
         loggerinst.info("No packages to remove.")
 
@@ -64,7 +81,7 @@ class YumTransactionHandler(TransactionHandlerBase):
     """Implementation of the YUM transaction handler.
 
     This class will implement and override the public methods that comes from
-    the abstractclass `TransactionHandlerBase`, whith the intention to provide
+    the abstractclass `TransactionHandlerBase`, with the intention to provide
     the defaults necessary for handling and processing the yum transactions in
     the best way possible.
 
@@ -75,9 +92,17 @@ class YumTransactionHandler(TransactionHandlerBase):
     """
 
     def __init__(self):
+        # We are initializing the `_base` property here as `None`` and not with
+        # `pkgmanager.YumBase()` because we need to re-initialize this property
+        # every time we loop through the dependency solver, this way, avoiding
+        # any caches by the `YumBase` that could cause some packages to not
+        # being processed properly. Every time we need to process the transaction
+        # (either by testing or actually consuming it), a new instance of this
+        # class needs to be instantiated through the `_set_up_base()` private
+        # method.
         self._base = None
 
-    def _setup_base(self):
+    def _set_up_base(self):
         """Create a new instance of the yum.YumBase() class."""
         pkgmanager.misc.setup_locale(override_time=True)
         self._base = pkgmanager.YumBase()
@@ -87,7 +112,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
         enabled_repos = system_info.get_enabled_rhel_repos()
-        loggerinst.info("Enabling repos: %s" % ",".join(enabled_repos))
+        loggerinst.info("Enabling repositories: %s" % ",".join(enabled_repos))
         for repo in enabled_repos:
             self._base.repos.enableRepo(repo)
 
@@ -99,11 +124,12 @@ class YumTransactionHandler(TransactionHandlerBase):
         will be executed in case of the the reinstall step raises the
         `ReinstallInstallError`.
         """
+        loggerinst.info("Performing operations on the transaction.")
         original_os_pkgs = get_system_packages_for_replacement()
-        self._setup_base()
+        self._set_up_base()
         self._enable_repos()
 
-        loggerinst.info("Performing update, reinstall and downgrade of the %s packages ..." % system_info.name)
+        loggerinst.info("Performing update, reinstall, and downgrade of the %s packages ..." % system_info.name)
         for pkg in original_os_pkgs:
             self._base.update(name=pkg)
             try:
@@ -111,9 +137,11 @@ class YumTransactionHandler(TransactionHandlerBase):
             except pkgmanager.Errors.ReinstallInstallError:
                 self._base.downgrade(name=pkg)
             except pkgmanager.Errors.ReinstallRemoveError:
-                loggerinst.info("Can't remove pkg: %s", pkg)
+                loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
-    def _resolve_dependencies(self, test_transaction):
+        loggerinst.debug("Finished update, reinstall, and downgrading of packages.")
+
+    def _resolve_dependencies(self, validate_transaction):
         """Try to resolve the transaction dependencies.
 
         This method will try to resolve the dependencies of the packages that
@@ -141,25 +169,39 @@ class YumTransactionHandler(TransactionHandlerBase):
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
-        loggerinst.info("Resolving yum dependencies for the transaction.\n")
+        loggerinst.info("Resolving yum dependencies for the transaction.")
         ret_code, msg = self._base.resolveDeps()
 
-        # For the return code 1, yum can output two kinds of error, one being
-        # that it reached the limit for depsolving, and the actual dependencies
-        # that caused an problem.
-        if ret_code == 1:
-            # We want to fail earlier in the process, so let's check for this
-            # only when testing the transaction.
-            if "Depsolving loop limit reached" not in msg and test_transaction:
-                _resolve_yum_problematic_dependencies(msg)
+        if ret_code == 0:
+            loggerinst.info("Resolved yum dependencies.")
+            return True
+        elif ret_code == 1:
+            # For the return code 1, yum can output two kinds of error, one being
+            # that it reached the limit for depsolving, and the actual dependencies
+            # that caused an problem.
+            # If we reach the limit for depsolving, just return False.
+            if "Depsolving loop limit reached" in msg:
                 return False
-        return True
+            # If the message is the not the depsolving limit, then we need to
+            # resolve the problematic dependencies.
+            else:
+                # We want to fail earlier in the process, so let's check for this
+                # only when testing the transaction.
+                if validate_transaction:
+                    _resolve_yum_problematic_dependencies(msg)
+
+                # Return False anyway because the depsolving failed.
+                return False
+        else:
+            loggerinst.debug("Got return code: '%s' and output: '%s'", ret_code, msg)
+            loggerinst.critical("Unhandled return code received while trying to resolve yum dependencies.")
 
     def _process_transaction(self):
         """Internal method to process the transaction.
 
         :raises SystemExit: If we can't process the transaction.
         """
+        loggerinst.info("Processing the transaction.")
         try:
             self._base.processTransaction()
         except (
@@ -170,10 +212,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
-        loggerinst.info("Transaction processed succesfully.")
+        loggerinst.debug("Transaction processed successfully.")
 
-    def process_transaction(self, test_transaction=False):
-        """Process the yum transaction.
+    def run_transaction(self, validate_transaction=False):
+        """Run the yum transaction.
 
         This function is supposed to be an replacement of the old
         `call_yum_cmd_w_downgrades()` function, that in the past, used to call
@@ -185,17 +227,17 @@ class YumTransactionHandler(TransactionHandlerBase):
             The implementation of this yum transaction is different from the
             dnf one, mainly because yum can raise some "exceptions" while
             trying to resolve the dependencies of the transaction. Because of
-            this, we need to loop throught a couple of times until we know that
+            this, we need to loop through a couple of times until we know that
             all of the dependencies are resolved without problems.
 
-            You might wonder "why not removing the packages that caused a
-            failure and only loop throught the dep solving again?" Well. Since
+            You might wonder "why not remove the packages that caused a
+            failure and loop through the dep solving again?" Well. Since
             we are removing the problematic packages using `rpm` and not some
             specific method in the transaction itself, yum doesn't know that
             something has changed (The resolveDeps() function doesn't refresh
             if something else happens outside the transaction), in order to
             make sure that we won't have any problems with our transaction, it
-            is easier to loop throught everything again and just recreate the
+            is easier to loop through everything again and just recreate the
             transaction, so yum will keep track of what's changed.
 
             This function should loop max 3 times to get to the point where our
@@ -203,12 +245,12 @@ class YumTransactionHandler(TransactionHandlerBase):
             subsequent transactions are "faster" because of some yum internal
             cache mechanism.
 
-            This might be optimizaed in the future, but for now, it's somewhat
+            This might be optimized in the future, but for now, it's somewhat
             reliable.
 
-        :param test_transaction: Determines if the transaction needs to be
+        :param vaidate_transaction: Determines if the transaction needs to be
         tested or not.
-        :type test_transaction: bool
+        :type valiate_transaction: bool
         :raises SystemExit: If we can't resolve the transaction dependencies.
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
@@ -219,7 +261,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         attempts = 0
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
             self._perform_operations()
-            resolved = self._resolve_dependencies(test_transaction)
+            resolved = self._resolve_dependencies(validate_transaction)
 
             if not resolved:
                 loggerinst.info("Retrying to resolve dependencies %s", attempts)
@@ -229,15 +271,16 @@ class YumTransactionHandler(TransactionHandlerBase):
                 break
 
         if not resolve_deps_finished:
-            loggerinst.critical("Failed to resolve dependencines in the transaction.")
+            loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
-        if test_transaction:
+        if validate_transaction:
             self._base.conf.tsflags.append("test")
             loggerinst.info("Validating the yum transaction.")
         else:
             loggerinst.info("Replacing the system packages.")
 
         self._process_transaction()
+
         # Because we call the same thing multiple times, the rpm database is
         # not properly closed at the end.
         # This cause problems because we have another special operation that
