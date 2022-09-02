@@ -90,17 +90,27 @@ def test_perform_java_openjdk_workaround(
 
 
 @pytest.mark.parametrize(
-    ("sys_id", "removal_ok", "log_msg"),
+    ("sys_id", "removal_ok", "log_msg", "is_rpm_installed"),
     (
-        ("oracle", True, "removed in accordance with"),
-        ("oracle", False, "Unable to remove"),
-        ("centos", True, "Relevant to Oracle Linux 7 only"),
+        ("oracle", True, "removed in accordance with", True),
+        ("oracle", False, "Unable to remove", True),
+        ("centos", True, "Relevant to Oracle Linux 7 only", True),
+        ("centos", False, "shim-x64 package is not installed. Nothing to do.", False),
     ),
 )
 @mock.patch("os.remove")
-def test_unprotect_shim_x64(mock_os_remove, sys_id, removal_ok, log_msg, monkeypatch, caplog):
+def test_unprotect_shim_x64(
+    mock_os_remove,
+    sys_id,
+    removal_ok,
+    log_msg,
+    is_rpm_installed,
+    monkeypatch,
+    caplog,
+):
     monkeypatch.setattr(system_info, "id", sys_id)
     monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    monkeypatch.setattr(special_cases.system_info, "is_rpm_installed", value=mock.Mock(return_value=is_rpm_installed))
     if not removal_ok:
         mock_os_remove.side_effect = OSError()
 
