@@ -9,6 +9,6 @@ jobs:
     name: Author Association
     runs-on: ubuntu-latest
     steps:
-      - name: What is your author association?
+      - name: What is your author association? :)
         run: |
           echo ${{ github.event.pull_request.author_association }}
