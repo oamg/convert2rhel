@@ -1,4 +1,4 @@
-# Convert2RHEL
+# Convert2RHEL - TEST
 
 Convert2RHEL is a tool to convert RHEL-like systems to their RHEL counterparts. For example, CentOS Linux 8 to Red Hat Enterprise Linux 8.
 
