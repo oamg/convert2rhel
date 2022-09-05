@@ -3,8 +3,6 @@ name: build_and_publish_images
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build_and_publish:
@@ -20,8 +18,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
