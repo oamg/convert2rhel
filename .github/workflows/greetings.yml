@@ -26,6 +26,6 @@ jobs:
 
             To execute integration tests, members of [the oamg organization](https://github.com/oamg/) don't need any extra step. The automation kicks that off for you!
 
-            If you're an external collaborator (Meaning that you're not part of oamg organization), wait for somebody from the `@oamg/convert2rhel-developers` group to add the `testing` label to the PR to trigger the tests.
+            If you're an external collaborator (meaning that you're not part of [the oamg organization](https://github.com/oamg/)), wait for somebody from the `@oamg/convert2rhel-developers` group to add the `testing` label to the PR to trigger the tests.
 
-            **Note:** In case there are problems with tests not being triggered automatically on new PR/commit or pending for a long time, please tag `@oamg/convert2rhel-developers` in the pr comments.
+            **Note:** In case there are problems with tests not being triggered automatically for a new PR/commit or pending for a long time, ping `@oamg/convert2rhel-developers` in a PR comment.
