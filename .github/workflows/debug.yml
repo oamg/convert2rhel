@@ -1,0 +1,14 @@
+name: Debug
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  debug:
+    name: Author Association
+    runs-on: ubuntu-latest
+    steps:
+      - name: What is your author association?
+        run: |
+          echo ${{ github.event.pull_request.author_association }}
