@@ -150,9 +150,10 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
     )
     output = ""
     for line in iter(process.stdout.readline, b""):
-        output += line.decode()
+        line = line.decode("utf8")
+        output += line
         if print_output:
-            loggerinst.info(line.decode().rstrip("\n"))
+            loggerinst.info(line.rstrip("\n"))
 
     # Call communicate() to wait for the process to terminate so that we can get the return code by poll().
     # It's just for py2.6, py2.7+/3 doesn't need this.
@@ -203,7 +204,11 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
     process = PexpectSpawnWithDimensions(
         cmd[0],
         cmd[1:],
-        env={"LC_ALL": i18n.SCREENSCRAPED_LOCALE, "LANG": i18n.SCREENSCRAPED_LOCALE},
+        env={
+            "LC_ALL": i18n.SCREENSCRAPED_LOCALE,
+            "LANG": i18n.SCREENSCRAPED_LOCALE,
+            "LANGUAGE": i18n.SCREENSCRAPED_LOCALE,
+        },
         timeout=None,
         dimensions=(1, columns),
     )
@@ -665,7 +670,13 @@ def set_locale():
     We need to be setting not only LC_ALL but LANG as well because subscription-manager considers LANG to have priority
     over LC_ALL even though it goes against POSIX which specifies that LC_ALL overrides LANG.
     """
-    os.environ.update({"LC_ALL": i18n.SCREENSCRAPED_LOCALE, "LANG": i18n.SCREENSCRAPED_LOCALE})
+    os.environ.update(
+        {
+            "LC_ALL": i18n.SCREENSCRAPED_LOCALE,
+            "LANG": i18n.SCREENSCRAPED_LOCALE,
+            "LANGUAGE": i18n.SCREENSCRAPED_LOCALE,
+        }
+    )
 
 
 def string_to_version(verstring):
