@@ -71,7 +71,6 @@ on:
       pr_head_sha:
         type: string
         required: true
-        default: ''
 
 jobs:
   reusable_workflow_job:
