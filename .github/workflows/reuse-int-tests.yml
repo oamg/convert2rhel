@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Schedule integration testing for ${{ inputs.pull_request_status_name }}
-        uses: sclorg/testing-farm-as-github-action@v1.2.11
+        uses: sclorg/testing-farm-as-github-action@v1.2.13
         with:
           # required
           api_url: ${{ secrets.TF_ENDPOINT }}
