@@ -68,6 +68,9 @@ on:
         type: string
         required: false
         default: "main"
+      pr_head_sha:
+        type: string
+        required: true
 
 jobs:
   reusable_workflow_job:
@@ -78,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Schedule integration testing for ${{ inputs.pull_request_status_name }}
-        uses: sclorg/testing-farm-as-github-action@v1.2.11
+        uses: sclorg/testing-farm-as-github-action@v1.2.13
         with:
           # required
           api_url: ${{ secrets.TF_ENDPOINT }}
@@ -86,9 +89,10 @@ jobs:
           git_url: "https://github.com/oamg/convert2rhel"
           git_ref: ${{ inputs.git_ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_head_sha: ${{ inputs.pr_head_sha }}
           # optional
           tf_scope: "private"
-          create_issue_comment: "true"
+          create_issue_comment: "false"
           update_pull_request_status: ${{ inputs.update_pull_request_status }}
           pull_request_status_name: ${{ inputs.pull_request_status_name }}/${{ matrix.distro }}
           tmt_plan_regex: ${{ inputs.tmt_plan_regex }}
