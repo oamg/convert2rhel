@@ -39,6 +39,8 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           env_vars: OS,PYTHON
-          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: centos${{ matrix.centos_ver }}
+          name: coverage-centos
           fail_ci_if_error: true
           files: ./coverage.xml
+          verbose: true # optional (default = false)
