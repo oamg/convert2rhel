@@ -37,7 +37,7 @@ class SystemCert(object):
     def _get_cert():
         """Return name of certificate and his directory."""
         cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs")
-        if not os.access(cert_dir, os.R_OK | os.W_OK):
+        if not os.access(cert_dir, os.R_OK | os.X_OK):
             loggerinst.critical("Error: Could not access %s." % cert_dir)
         pem_filename = None
         for filename in os.listdir(cert_dir):
