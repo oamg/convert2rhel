@@ -35,7 +35,7 @@ class SystemCert(object):
 
     @staticmethod
     def _get_cert():
-        """Return name of certificate and his directory."""
+        """Return name of certificate and this directory."""
         cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs")
         if not os.access(cert_dir, os.R_OK | os.X_OK):
             loggerinst.critical("Error: Could not access %s." % cert_dir)
