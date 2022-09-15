@@ -614,8 +614,11 @@ def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "
 
 
 def flatten(dictionary, parent_key=False, separator="."):
-    """
-    Turn a nested dictionary into a flattened dictionary
+    """Turn a nested dictionary into a flattened dictionary.
+
+    .. note::
+        If we detect a empty dictionary or list, this function will append a "null" as a value to the key.
+
     :param dictionary: The dictionary to flatten
     :param parent_key: The string to prepend to dictionary's keys
     :param separator: The string used to separate flattened keys
@@ -626,14 +629,17 @@ def flatten(dictionary, parent_key=False, separator="."):
     for key, value in dictionary.items():
         new_key = str(parent_key) + separator + key if parent_key else key
 
-        if not value:
-            value = "null"
-
-        if isinstance(value, moves.collections_abc.MutableMapping):
-            items.extend(flatten(value, new_key, separator).items())
+        if isinstance(value, dict):
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                items.extend(flatten(value, new_key, separator).items())
         elif isinstance(value, list):
-            for k, v in enumerate(value):
-                items.extend(flatten({str(k): v}, new_key).items())
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                for k, v in enumerate(value):
+                    items.extend(flatten({str(k): v}, new_key).items())
         else:
             items.append((new_key, value))
     return dict(items)

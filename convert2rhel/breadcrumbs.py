@@ -16,18 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import logging
 import os
 import re
 import sys
 
 from datetime import datetime
 
-from six.moves import zip_longest
+from convert2rhel import pkghandler, systeminfo, utils
+from convert2rhel.utils import hide_secrets
 
-from convert2rhel import pkghandler, systeminfo
 
+MIGRATION_RESULTS_FILE = "/etc/migration-results"
+RHSM_CUSTOM_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
+RHSM_CUSTOM_FACTS_NAMESPACE = "conversions"
 
-FILE = "/etc/migration-results"
+LSB_RELEASE_VERSION = re.compile(r"(.+) release ([\d.]+)\s*(?!\()(\S*)\s*[^(]*(?:\((.+)\))?")
+
+loggerinst = logging.getLogger(__name__)
 
 
 class Breadcrumbs(object):
@@ -69,18 +75,16 @@ class Breadcrumbs(object):
         self._set_source_os()
         self._set_started()
 
-    def finish_success(self):
-        """Set data accessible after successfully conversion and generate the JSON file."""
-        self._set_target_os()
-        self._set_success_ok()
-        self._set_ended()
-        self._generate_json()
+    def finish_collection(self, success=False):
+        """Set the final data for breadcrumbs after the conversion ends."""
+        self.success = success
 
-    def finish_fail(self):
-        """Generate the JSON recording the conversion failure."""
-        self._set_success_fail()
+        if success:
+            self._set_target_os()
+
         self._set_ended()
-        self._generate_json()
+        self._save_migration_results()
+        self._save_rhsm_facts()
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
@@ -91,7 +95,7 @@ class Breadcrumbs(object):
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
         cli_options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
-        self.executed = sanitize_cli_options(sys.argv, cli_options_to_sanitize)
+        self.executed = " ".join(hide_secrets(args=sys.argv, secret_args=cli_options_to_sanitize))
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
@@ -131,14 +135,14 @@ class Breadcrumbs(object):
     def _set_target_os(self):
         self.target_os = systeminfo.SystemInfo._get_system_release_file_content().strip()  # Remove newline
 
-    def _set_success_fail(self):
-        self.success = False
+    @property
+    def data(self):
+        """Property that return the current state of the breadcrumbs
 
-    def _set_success_ok(self):
-        self.success = True
-
-    def _generate_json(self):
-        data = {
+        :return: A dictionary containing the collected data through the conversion.
+        :rtype: dict[str, Any]
+        """
+        return {
             "version": self.version,
             "activity": self.activity,
             "packages": [{"nevra": self.nevra, "signature": self.signature}],
@@ -152,78 +156,99 @@ class Breadcrumbs(object):
             "run_id": self.run_id,
         }
 
-        write_obj_to_array_json(path=FILE, new_object=data, key="activities")
+    def _save_migration_results(self):
+        """Write the results of the breadcrumbs to the migration-results file."""
+        loggerinst.info("Writing breadcrumbs to '%s'.", MIGRATION_RESULTS_FILE)
+        _write_obj_to_array_json(path=MIGRATION_RESULTS_FILE, new_object=self.data, key="activities")
+
+    def _save_rhsm_facts(self):
+        """Write the results of the breadcrumbs to the rhsm custom facts file."""
+        rhsm_facts_path = os.path.dirname(RHSM_CUSTOM_FACTS_FILE)
+        if not os.path.exists(rhsm_facts_path):
+            loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
+            return
+
+        # Pass the breadcrumbs in an transformation first, and then we can
+        # flatten it.
+        formatted_breadcrumbs = _rhsm_data_transformation(self.data)
+        data = utils.flatten(dictionary=formatted_breadcrumbs, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
+        loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
+        # We don't need to use `_write_obj_to_array_json` function here, because
+        # we only care about dumping the facts without having multiple copies of
+        # it.
+        _write_obj_to_array_json(path=RHSM_CUSTOM_FACTS_FILE, new_object=data)
 
 
-def sanitize_cli_options(all_cli_options, options_to_sanitize):
-    """Change value of CLI options to asterisks to hide sensitive information.
+def _rhsm_data_transformation(data):
+    """Transform the final breadcrumbs data into the RHSM custom facts
 
-    Return back all options, but sanitized.
+    Internal function to process and transform the breadcrumbs data into the
+    RHSM custom facts format.
+
+    .. note::
+        This piece of code was taken from the subscription-manager `hwprobe` module on version 1.29.30-1
+        Source: https://github.com/candlepin/subscription-manager/blob/subscription-manager-1.29.30-1/src/rhsmlib/facts/hwprobe.py#L186-L196
+
+    :param data: A dictionary with the breadcrumbs collected through the conversion.
+    :type data: dict[str, Any]
+    :return: A modified dictionary with some keys changed.
+    :rtype: dict[str, Any]
     """
+    local_data = data
+    if "source_os" in local_data:
+        match = LSB_RELEASE_VERSION.match(local_data["source_os"])
+        if match:
+            (distname, version, tmp_modifier, dist_id) = tuple(match.groups())
+            local_data["source_os"] = {"id": dist_id, "name": distname, "version": version}
 
-    def sanitized_iterator():
-        elems = zip_longest(all_cli_options, all_cli_options[1:], fillvalue=None)
+    if "target_os" in local_data:
+        match = LSB_RELEASE_VERSION.match(local_data["target_os"])
+        if match:
+            (distname, version, tmp_modifier, dist_id) = tuple(match.groups())
+            local_data["target_os"] = {"id": dist_id, "name": distname, "version": version}
 
-        for (c, n) in elems:
-            # we need to handle 2 possible cases how arguments are specified
-            #  ['--argument=value']
-            #  ['--argument', 'value']
-            if "=" in c:
-                pos = c.index("=")
-
-                if c[:pos] in options_to_sanitize:
-                    yield "{0}={1}".format(c[:pos], ((len(c) - pos - 1) * "*"))
-                elif " " in c[pos:]:
-                    # if value contains a space we need to add quotes
-                    yield '{0}="{1}"'.format(c[:pos], c[pos + 1 :])
-            else:
-                if c in options_to_sanitize:
-                    yield c
-                    if n is not None:
-                        yield len(n) * "*"
-                    # we've already processed n, so we advance the iterator
-                    next(elems, None)
-                else:
-                    if " " in c:
-                        # if value contains a space we need to add quotes
-                        yield '"{0}"'.format(c)
-                    else:
-                        yield c
-
-    return " ".join(sanitized_iterator())
+    return local_data
 
 
-def write_obj_to_array_json(path, new_object, key):
+def _write_obj_to_array_json(path, new_object={}, key=None):
     """Write new object to array defined by key in JSON file.
 
-    If the file doesn't exist, create new one and create key for inserting.
-    If the file is corrupted, append complete object (with key) as if it was new file and the
-    original content of file stays there.
+    If the file doesn't exist, create new one and create key for inserting. If
+    the file is corrupted, append complete object (with key) as if it was new
+    file and the original content of file stays there.
     """
+    default_content = {key: []} if key else new_object
+
     if not (os.path.exists(path)):
         with open(path, "a") as file:
-            file_content = {key: []}
-            json.dump(file_content, file, indent=4)
+            json.dump(default_content, file, indent=4)
 
     with open(path, "r+") as file:
+        # Try to read the contents of the file, if that's fail, assign the
+        # default_content as being the new content of file_content.
         try:
             file_content = json.load(file)  # load data
             # valid json: update the JSON structure and rewrite the file
             file.seek(0)
-        # The file contains something that isn't json.
-        # Create activities and append to the file, JSON won't be valid, but the content of the file stays there
-        # for administrators, etc.
+        # The file contains something that isn't a valid json object. Create the
+        # `key` and append to the file, JSON won't be in the correct breadcrumbs
+        # format, but the content of the file stays there for administrators,
+        # etc.
         except ValueError:  # we cannot use json.decoder.JSONDecodeError due python 2.7 compatibility
-            file_content = {key: []}
+            file_content = default_content
 
-        try:
-            file_content[key].append(new_object)  # append new_object to activities
-        # valid json, but no 'activities' key there
-        except KeyError:
-            # create new 'activities' key which contains new_object
-            file_content[key] = [new_object]
-            # valid json: update the JSON structure and rewrite the file
-            file.seek(0)
+        # If no key is specified, then assume that the contents of the file
+        # should be the `new_object` data.
+        if not key:
+            file_content = default_content
+        else:
+            try:
+                file_content[key].append(new_object)
+            except KeyError:  # valid json, but no 'activities' key there
+                # create new 'activities' key which contains new_object
+                file_content[key] = [new_object]
+                # valid json: update the JSON structure and rewrite the file
+                file.seek(0)
 
         # write the json to the file
         json.dump(file_content, file, indent=4)

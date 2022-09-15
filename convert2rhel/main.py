@@ -125,6 +125,11 @@ def main():
         loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
         utils.remove_tmp_dir()
 
+        breadcrumbs.breadcrumbs.finish_collection(success=True)
+
+        loggerinst.task("Final: Updating RHSM custom facts")
+        subscription.update_rhsm_custom_facts()
+
         loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
@@ -136,6 +141,7 @@ def main():
 
         utils.log_traceback(toolopts.tool_opts.debug)
         no_changes_msg = "No changes were made to the system."
+        breadcrumbs.breadcrumbs.finish_collection(success=False)
 
         if is_help_msg_exit(process_phase, err):
             return 0
@@ -152,9 +158,7 @@ def main():
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
             loggerinst.warning("Conversion process interrupted and manual user intervention will be necessary.")
-
-        breadcrumbs.breadcrumbs.finish_fail()
-
+            subscription.update_rhsm_custom_facts()
         return 1
 
     return 0
@@ -242,9 +246,6 @@ def post_ponr_conversion():
     redhatrelease.YumConf().patch()
     loggerinst.task("Convert: Lock releasever in RHEL repositories")
     subscription.lock_releasever_in_rhel_repositories()
-
-    breadcrumbs.breadcrumbs.finish_success()
-
     return
 
 

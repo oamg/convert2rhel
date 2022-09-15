@@ -307,7 +307,7 @@ def test_post_ponr_conversion(monkeypatch):
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
-    finish_success_mock = mock.Mock()
+    finish_collection_mock = mock.Mock()
 
     monkeypatch.setattr(pkghandler, "install_gpg_keys", install_gpg_keys_mock)
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
@@ -316,7 +316,7 @@ def test_post_ponr_conversion(monkeypatch):
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_success", finish_success_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
 
     main.post_ponr_conversion()
 
@@ -327,7 +327,7 @@ def test_post_ponr_conversion(monkeypatch):
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
-    assert finish_success_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
 
 
 def test_main(monkeypatch):

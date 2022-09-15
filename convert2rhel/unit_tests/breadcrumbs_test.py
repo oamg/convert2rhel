@@ -22,29 +22,32 @@ import pytest
 from convert2rhel import breadcrumbs
 
 
-def test_sanitize_cli_options():
-    options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    (
+        (
+            ["/usr/bin/convert2rhel", "--username=test", "--password=nicePassword"],
+            "/usr/bin/convert2rhel --username=test --password=*****",
+        ),
+        (
+            ["/usr/bin/convert2rhel", "-u=test", "-p=nicePassword"],
+            "/usr/bin/convert2rhel -u=test -p=*****",
+        ),
+        (
+            ["/usr/bin/convert2rhel", "--activationkey=test", "--org=1234", "-y"],
+            "/usr/bin/convert2rhel --activationkey=***** --org=1234 -y",
+        ),
+        (
+            ["/usr/bin/convert2rhel", "-k=test", "-o=1234", "-y"],
+            "/usr/bin/convert2rhel -k=***** -o=1234 -y",
+        ),
+    ),
+)
+def test_set_executed(command, expected, monkeypatch):
+    monkeypatch.setattr(breadcrumbs.sys, "argv", command)
+    breadcrumbs.breadcrumbs._set_executed()
 
-    io = [
-        (
-            ["convert2rhel", "--password=123", "--another"],
-            "convert2rhel --password=*** --another",
-        ),
-        (["convert2rhel", "-p", "123", "--another"], "convert2rhel -p *** --another"),
-        (["convert2rhel", "-k", "123", "--another"], "convert2rhel -k *** --another"),
-        (["convert2rhel", "--another", "-k"], "convert2rhel --another -k"),
-        (
-            ["convert2rhel", "--argument", "with space in it", "--another"],
-            'convert2rhel --argument "with space in it" --another',
-        ),
-        (
-            ["convert2rhel", "--argument=with space in it", "--another"],
-            'convert2rhel --argument="with space in it" --another',
-        ),
-    ]
-
-    for (inp, outp) in io:
-        assert breadcrumbs.sanitize_cli_options(inp, options_to_sanitize) == outp
+    assert breadcrumbs.breadcrumbs.executed == expected
 
 
 def test_set_env(monkeypatch):

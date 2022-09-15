@@ -987,3 +987,25 @@ def lock_releasever_in_rhel_repositories():
             loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
     else:
         loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
+
+
+def update_rhsm_custom_facts():
+    """Update the RHSM custom facts in the candlepin server.
+
+    This function has the intention to synchronize the facts collected throught
+    the conversion with the candlepin server, thus, propagating the
+    "breadcrumbs" from convert2rhel as RHSM facts.
+    """
+    if not tool_opts.no_rhsm:
+        loggerinst.info("Updating RHSM custom facts collected during the conversion.")
+        cmd = ["subscription-manager", "facts", "--update"]
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+
+        if ret_code != 0:
+            loggerinst.warning(
+                "Failed to update the RHSM custom facts with return code '%s' and output '%s'.", ret_code, output
+            )
+        else:
+            loggerinst.info("RHSM custom facts uploaded successfully.")
+    else:
+        loggerinst.info("Skipping updating RHSM custom facts.")
