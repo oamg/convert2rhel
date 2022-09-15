@@ -31,4 +31,4 @@ jobs:
 
       - name: Run command
         run: |
-          docker run ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }} pytest
+          make tests${{ matrix.centos_ver }}
