@@ -437,7 +437,6 @@ def test_ensure_compatibility_of_kmods(
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
-
 @centos8
 def test_ensure_compatibility_of_kmods_check_env(
     monkeypatch,
@@ -455,13 +454,18 @@ def test_ensure_compatibility_of_kmods_check_env(
         )
     )
     monkeypatch.setattr(
-        checks.pkgmanager,
-        "create_transaction_handler",
-        value=mock.Mock(),
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mock,
     )
 
-    checks.validate_package_manager_transaction()
-
+    checks.ensure_compatibility_of_kmods()
+    should_be_in_logs = (
+        "The following kernel modules are not supported in RHEL:\n{kmods}\n"
+        "'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable detected, continuing conversion."
+    )
+    
+    assert should_be_in_logs in caplog.records[-1].message
 
 @pytest.mark.parametrize(
     (
