@@ -39,7 +39,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import all_systems, centos8
+from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -368,49 +368,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
-    class TestPkgObj(object):
-        class PkgObjHdr(object):
-            def sprintf(self, *args, **kwargs):
-                return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
-
-        hdr = PkgObjHdr()
-
-    @staticmethod
-    def create_pkg_obj(
-        name,
-        epoch=0,
-        version="",
-        release="",
-        arch="",
-        packager=None,
-        from_repo="",
-        manager="yum",
-        vendor=None,
-    ):
-        class DumbObj(object):
-            pass
-
-        obj = TestPkgHandler.TestPkgObj()
-        obj.yumdb_info = DumbObj()
-        obj.name = name
-        obj.epoch = obj.e = epoch
-        obj.version = obj.v = version
-        obj.release = obj.r = release
-        obj.evr = version + "-" + release
-        obj.arch = arch
-        obj.packager = packager
-        if vendor:
-            obj.vendor = vendor
-        if manager == "yum":
-            if from_repo:
-                obj.yumdb_info.from_repo = from_repo
-        elif manager == "dnf":
-            if from_repo:
-                obj._from_repo = from_repo
-            else:
-                obj._from_repo = "@@System"
-        return obj
-
     class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
         def prepare_test_pkg_tuples_w_fingerprints(self):
             class PkgData:
@@ -418,9 +375,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                     self.pkg_obj = pkg_obj
                     self.fingerprint = fingerprint
 
-            obj1 = TestPkgHandler.create_pkg_obj("pkg1")
-            obj2 = TestPkgHandler.create_pkg_obj("pkg2")
-            obj3 = TestPkgHandler.create_pkg_obj("gpg-pubkey")
+            obj1 = create_pkg_obj("pkg1")
+            obj2 = create_pkg_obj("pkg2")
+            obj3 = create_pkg_obj("gpg-pubkey")
             pkgs = [
                 PkgData(obj1, "199e2f91fd431d51"),  # RHEL
                 PkgData(obj2, "72f97b74ec551f03"),  # OL
@@ -455,7 +412,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def __call__(self, name=""):
             if name and name != "installed_pkg":
                 return []
-            pkg_obj = TestPkgHandler.create_pkg_obj(
+            pkg_obj = create_pkg_obj(
                 name="installed_pkg",
                 version="0.1",
                 release="1",
@@ -481,10 +438,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(
         pkghandler,
         "get_rpm_header",
-        lambda pkg: TestPkgHandler.TestPkgObj.PkgObjHdr(),
+        lambda pkg: TestPkgObj.PkgObjHdr(),
     )
     def test_get_pkg_fingerprint(self):
-        pkg = TestPkgHandler.create_pkg_obj("pkg")
+        pkg = create_pkg_obj("pkg")
 
         fingerprint = pkghandler.get_pkg_fingerprint(pkg)
 
@@ -523,7 +480,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         reason="Current test runs only on rpm based systems.",
     )
     def test_get_rpm_header(self):
-        pkg = TestPkgHandler.create_pkg_obj(name="pkg1", version="1", release="2")
+        pkg = create_pkg_obj(name="pkg1", version="1", release="2")
         hdr = pkghandler.get_rpm_header(pkg)
         self.assertEqual(
             hdr,
@@ -534,7 +491,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 rpm.RPMTAG_EVR: "1-2",
             },
         )
-        unknown_pkg = TestPkgHandler.create_pkg_obj(name="unknown", version="1", release="1")
+        unknown_pkg = create_pkg_obj(name="unknown", version="1", release="1")
         self.assertRaises(SystemExit, pkghandler.get_rpm_header, unknown_pkg)
 
     class ReturnPackagesMocked(unit_tests.MockFunction):
@@ -543,7 +500,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 patterns = []
             if patterns and patterns != ["installed_pkg"]:
                 return []
-            pkg_obj = TestPkgHandler.TestPkgObj()
+            pkg_obj = TestPkgObj()
             pkg_obj.name = "installed_pkg"
             return [pkg_obj]
 
@@ -569,7 +526,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             return self.pkg_obj
 
         def _setup_pkg(self):
-            self.pkg_obj = TestPkgHandler.TestPkgObj()
+            self.pkg_obj = TestPkgObj()
             self.pkg_obj.name = "installed_pkg"
 
         def filterm(self, empty):
@@ -659,7 +616,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @staticmethod
     def prepare_pkg_obj_for_print_with_yum():
-        obj1 = TestPkgHandler.create_pkg_obj(
+        obj1 = create_pkg_obj(
             name="pkg1",
             version="0.1",
             release="1",
@@ -667,8 +624,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             packager="Oracle",
             from_repo="anaconda",
         )
-        obj2 = TestPkgHandler.create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64")
-        obj3 = TestPkgHandler.create_pkg_obj(
+        obj2 = create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64")
+        obj3 = create_pkg_obj(
             name="gpg-pubkey",
             version="0.1",
             release="1",
@@ -706,7 +663,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @staticmethod
     def prepare_pkg_obj_for_print_with_dnf():
-        obj1 = TestPkgHandler.create_pkg_obj(
+        obj1 = create_pkg_obj(
             name="pkg1",
             version="0.1",
             release="1",
@@ -715,7 +672,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             from_repo="anaconda",
             manager="dnf",
         )
-        obj2 = TestPkgHandler.create_pkg_obj(
+        obj2 = create_pkg_obj(
             name="pkg2",
             epoch=1,
             version="0.1",
@@ -723,7 +680,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             arch="x86_64",
             manager="dnf",
         )
-        obj3 = TestPkgHandler.create_pkg_obj(
+        obj3 = create_pkg_obj(
             name="gpg-pubkey",
             version="0.1",
             release="1",
@@ -734,7 +691,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         return [obj1, obj2, obj3]
 
     def test_get_vendor(self):
-        pkg_with_vendor = TestPkgHandler.create_pkg_obj(
+        pkg_with_vendor = create_pkg_obj(
             name="pkg1",
             version="0.1",
             release="1",
@@ -743,7 +700,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             from_repo="anaconda",
             manager="dnf",
         )
-        pkg_with_packager = TestPkgHandler.create_pkg_obj(
+        pkg_with_packager = create_pkg_obj(
             name="pkg1",
             version="0.1",
             release="1",
@@ -777,7 +734,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(pkgmanager, "TYPE", "dnf")
     def test_get_pkg_nevra(self):
-        obj = TestPkgHandler.create_pkg_obj(name="pkg", epoch=1, version="2", release="3", arch="x86_64")
+        obj = create_pkg_obj(name="pkg", epoch=1, version="2", release="3", arch="x86_64")
         # The DNF style is the default
         self.assertEqual(pkghandler.get_pkg_nevra(obj), "pkg-1:2-3.x86_64")
 
@@ -823,7 +780,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             if name and name != "installed_pkg":
                 return []
             if "rhel_fingerprint" in fingerprints:
-                pkg_obj = TestPkgHandler.create_pkg_obj(
+                pkg_obj = create_pkg_obj(
                     name="installed_pkg",
                     version="0.1",
                     release="1",
@@ -832,7 +789,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                     from_repo="repoid",
                 )
             else:
-                pkg_obj = TestPkgHandler.create_pkg_obj(
+                pkg_obj = create_pkg_obj(
                     name="installed_pkg",
                     version="0.1",
                     release="1",
@@ -944,14 +901,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 return []  # No third-party kernel
             else:
                 return [
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel",
                         version="3.10.0",
                         release="1127.19.1.el7",
                         arch="x86_64",
                         packager="Oracle",
                     ),
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel-uek",
                         version="0.1",
                         release="1",
@@ -959,7 +916,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                         packager="Oracle",
                         from_repo="repoid",
                     ),
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel-headers",
                         version="0.1",
                         release="1",
@@ -967,7 +924,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                         packager="Oracle",
                         from_repo="repoid",
                     ),
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel-uek-headers",
                         version="0.1",
                         release="1",
@@ -975,7 +932,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                         packager="Oracle",
                         from_repo="repoid",
                     ),
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel-firmware",
                         version="0.1",
                         release="1",
@@ -983,7 +940,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                         packager="Oracle",
                         from_repo="repoid",
                     ),
-                    TestPkgHandler.create_pkg_obj(
+                    create_pkg_obj(
                         name="kernel-uek-firmware",
                         version="0.1",
                         release="1",

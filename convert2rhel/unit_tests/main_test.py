@@ -307,7 +307,6 @@ def test_post_ponr_conversion(monkeypatch):
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
-    finish_collection_mock = mock.Mock()
 
     monkeypatch.setattr(pkghandler, "install_gpg_keys", install_gpg_keys_mock)
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
@@ -316,8 +315,6 @@ def test_post_ponr_conversion(monkeypatch):
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-
     main.post_ponr_conversion()
 
     assert install_gpg_keys_mock.call_count == 1
@@ -327,7 +324,6 @@ def test_post_ponr_conversion(monkeypatch):
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
 
 
 def test_main(monkeypatch):
@@ -350,6 +346,8 @@ def test_main(monkeypatch):
     update_grub_after_conversion_mock = mock.Mock()
     remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
+    finish_collection_mock = mock.Mock()
+    update_rhsm_custom_facts_mock = mock.Mock()
 
     monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
@@ -370,6 +368,8 @@ def test_main(monkeypatch):
     monkeypatch.setattr(grub, "update_grub_after_conversion", update_grub_after_conversion_mock)
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
 
     assert main.main() == 0
     assert require_root_mock.call_count == 1
@@ -390,3 +390,5 @@ def test_main(monkeypatch):
     assert rpm_files_diff_mock.call_count == 1
     assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert update_rhsm_custom_facts_mock.call_count == 1

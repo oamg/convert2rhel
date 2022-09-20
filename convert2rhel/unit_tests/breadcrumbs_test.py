@@ -16,10 +16,69 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import os
+
+from datetime import datetime
 
 import pytest
+import six
 
-from convert2rhel import breadcrumbs
+from convert2rhel import breadcrumbs, pkghandler, pkgmanager, utils
+from convert2rhel.unit_tests.conftest import centos7, create_pkg_obj
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
+
+
+@pytest.fixture
+def _mock_pkg_obj():
+    return create_pkg_obj(name="convert2rhel", epoch=1, version="2", release="3", arch="x86_64")
+
+
+@centos7
+def test_collect_early_data(pretend_os, _mock_pkg_obj, monkeypatch):
+    monkeypatch.setattr(pkgmanager, "TYPE", "yum")
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
+    breadcrumbs.breadcrumbs.collect_early_data()
+
+    # Asserting that the populated fields are not null (or None), the value
+    # checks for them is actually checked in their individual unit_tests.
+    assert breadcrumbs.breadcrumbs.signature != "null"
+    assert breadcrumbs.breadcrumbs.source_os != "null"
+    assert breadcrumbs.breadcrumbs.nevra != "null"
+    assert breadcrumbs.breadcrumbs.executed != "null"
+    assert breadcrumbs.breadcrumbs.activity_started != "null"
+    assert breadcrumbs.breadcrumbs._pkg_object is not None
+
+
+@pytest.mark.parametrize(
+    ("success"),
+    (
+        (False),
+        (True),
+    ),
+)
+@centos7
+def test_finish_collection(pretend_os, success, monkeypatch):
+    save_migration_results_mock = mock.Mock()
+    save_rhsm_facts_mock = mock.Mock()
+
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_migration_results", save_migration_results_mock)
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_rhsm_facts", save_rhsm_facts_mock)
+
+    breadcrumbs.breadcrumbs.finish_collection(success=success)
+
+    if success:
+        assert breadcrumbs.breadcrumbs.success is success
+        assert breadcrumbs.breadcrumbs.target_os != "null"
+    else:
+        assert not breadcrumbs.breadcrumbs.success
+        assert breadcrumbs.breadcrumbs.target_os == "null"
+
+    assert save_migration_results_mock.call_count == 1
+    assert save_rhsm_facts_mock.call_count == 1
 
 
 @pytest.mark.parametrize(
@@ -62,24 +121,23 @@ def test_set_env(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("file", "content", "out"),
+    ("file", "content", "key", "out"),
     [
-        (False, None, '{"key":[{"some_key": "some_data"}]}'),
-        (True, '{"key":[]}', '{"key":[{"some_key": "some_data"}]}'),
-        (True, '{"diff_key":[]}', '{"diff_key":[], "key":[{"some_key": "some_data"}]}'),
-        (True, "something", False),
+        (False, None, "key", '{"key":[{"some_key": "some_data"}]}'),
+        (True, '{"key":[]}', "key", '{"key":[{"some_key": "some_data"}]}'),
+        (True, '{"diff_key":[]}', "key", '{"diff_key":[], "key":[{"some_key": "some_data"}]}'),
+        (True, "something", "key", False),
+        (True, '{"test": []}', None, '{"some_key": "some_data"}'),
     ],
 )
-def test_write_obj_to_array_json(tmpdir, file, content, out):
+def test_write_obj_to_array_json(tmpdir, file, content, key, out):
     new_obj = {"some_key": "some_data"}
     path = tmpdir.mkdir("test_write_obj_to_array_json").join("migration-results")
 
     if file:
         path.write(content)
 
-    breadcrumbs.write_obj_to_array_json(str(path), new_obj, "key")
-
-    print(path.read())
+    breadcrumbs._write_obj_to_array_json(str(path), new_obj, key)
 
     if content == "something":
         # check, if the text is still there and the json was appended
@@ -87,3 +145,146 @@ def test_write_obj_to_array_json(tmpdir, file, content, out):
         assert "key" in path.read()
     else:
         assert sorted(json.loads(path.read())) == sorted(json.loads(out))
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        (
+            {"source_os": "CentOS Linux release 7.9.2009 (Core)"},
+            {"source_os": {"id": "Core", "name": "CentOS Linux", "version": "7.9.2009"}},
+        ),
+        (
+            {"source_os": "CentOS Linux release 8.5.2111"},
+            {"source_os": {"id": None, "name": "CentOS Linux", "version": "8.5.2111"}},
+        ),
+        (
+            {"source_os": "Oracle Linux Server release 8.6"},
+            {"source_os": {"id": None, "name": "Oracle Linux Server", "version": "8.6"}},
+        ),
+        (
+            {"target_os": "Red Hat Enterprise Linux release 8.5 (Ootpa)"},
+            {"target_os": {"id": "Ootpa", "name": "Red Hat Enterprise Linux", "version": "8.5"}},
+        ),
+        (
+            {
+                "source_os": "CentOS Linux release 8.5.2111",
+                "target_os": "Red Hat Enterprise Linux release 8.5 (Ootpa)",
+            },
+            {
+                "source_os": {"id": None, "name": "CentOS Linux", "version": "8.5.2111"},
+                "target_os": {"id": "Ootpa", "name": "Red Hat Enterprise Linux", "version": "8.5"},
+            },
+        ),
+        ({"random_key": "random"}, {"random_key": "random"}),
+        (
+            {"source_os": "Random Source OS", "target_os": "Random Target OS"},
+            {"source_os": "Random Source OS", "target_os": "Random Target OS"},
+        ),
+    ),
+)
+def test_rhsm_data_transformation(data, expected):
+    assert breadcrumbs._rhsm_data_transformation(breadcrumbs=data) == expected
+
+
+def test_save_rhsm_facts(monkeypatch, tmpdir, caplog):
+    rhsm_folder = str(tmpdir.join("custom.facts"))
+    rhsm_data_transformation_mock = mock.Mock()
+    flatten_mock = mock.Mock()
+    write_obj_to_array_json_mock = mock.Mock()
+
+    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
+    monkeypatch.setattr(breadcrumbs, "_rhsm_data_transformation", rhsm_data_transformation_mock)
+    monkeypatch.setattr(utils, "flatten", flatten_mock)
+    monkeypatch.setattr(breadcrumbs, "_write_obj_to_array_json", write_obj_to_array_json_mock)
+
+    breadcrumbs.breadcrumbs._save_rhsm_facts()
+    assert "Writing RHSM custom facts to '%s'" % rhsm_folder in caplog.records[-1].message
+    assert rhsm_data_transformation_mock.call_count == 1
+    assert flatten_mock.call_count == 1
+    assert write_obj_to_array_json_mock.call_count == 1
+
+
+def test_save_rhsm_facts_no_rhsm_folder(monkeypatch, tmpdir, caplog):
+    rhsm_folder = str(tmpdir.join("invalid-path").join("custom.facts"))
+    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
+
+    breadcrumbs.breadcrumbs._save_rhsm_facts()
+    assert "Unable to find RHSM facts folder at '%s'." % os.path.dirname(rhsm_folder) in caplog.records[-1].message
+
+
+def test_save_migration_results(tmpdir, monkeypatch, caplog):
+    migration_results = str(tmpdir.join("migration-results"))
+    write_obj_to_array_json_mock = mock.Mock()
+    monkeypatch.setattr(breadcrumbs, "MIGRATION_RESULTS_FILE", migration_results)
+    monkeypatch.setattr(breadcrumbs, "_write_obj_to_array_json", write_obj_to_array_json_mock)
+
+    breadcrumbs.breadcrumbs._save_migration_results()
+
+    assert "Writing breadcrumbs to '%s'." % migration_results in caplog.records[-1].message
+    assert write_obj_to_array_json_mock.call_count == 1
+
+
+def test_set_pkg_object(_mock_pkg_obj, monkeypatch):
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
+    breadcrumbs.breadcrumbs._set_pkg_object()
+    assert breadcrumbs.breadcrumbs._pkg_object.name == "convert2rhel"
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "dnf",
+    reason="No dnf module detected on the system, skipping it.",
+)
+def test_set_nevra_dnf(monkeypatch, _mock_pkg_obj):
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    breadcrumbs.breadcrumbs._set_nevra()
+
+    assert breadcrumbs.breadcrumbs.nevra == "convert2rhel-1:2-3.x86_64"
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
+def test_set_nevra_yum(monkeypatch, _mock_pkg_obj):
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    breadcrumbs.breadcrumbs._set_nevra()
+
+    assert breadcrumbs.breadcrumbs.nevra == "1:convert2rhel-2-3.x86_64"
+
+
+def test_set_nevra_dnf(monkeypatch, _mock_pkg_obj):
+    monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    breadcrumbs.breadcrumbs._set_nevra()
+
+    assert breadcrumbs.breadcrumbs.nevra == "convert2rhel-1:2-3.x86_64"
+
+
+def test_set_signature(monkeypatch, _mock_pkg_obj):
+    monkeypatch.setattr(pkgmanager, "TYPE", "yum")
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    breadcrumbs.breadcrumbs._set_signature()
+    assert "73bde98381b46521" in breadcrumbs.breadcrumbs.signature
+
+
+def test_set_started():
+    breadcrumbs.breadcrumbs._set_started()
+    assert "Z" in breadcrumbs.breadcrumbs.activity_started
+
+
+def test_set_ended():
+    breadcrumbs.breadcrumbs._set_ended()
+    assert "Z" in breadcrumbs.breadcrumbs.activity_ended
+
+
+@centos7
+def test_set_source_os(pretend_os):
+    breadcrumbs.breadcrumbs._set_source_os()
+    assert "CentOS Linux release 7.9.1111" in breadcrumbs.breadcrumbs.source_os
+
+
+@centos7
+def test_set_target_os(pretend_os):
+    breadcrumbs.breadcrumbs._set_target_os()
+    assert "CentOS Linux release 7.9.1111" in breadcrumbs.breadcrumbs.target_os
