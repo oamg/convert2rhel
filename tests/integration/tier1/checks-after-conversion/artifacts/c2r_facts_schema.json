@@ -1,0 +1,68 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/Welcome1",
+    "title": "RHSM custom facts migrations file schema v1",
+    "type": "object",
+    "definitions": {
+        "root": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "convert2rhel.version": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "convert2rhel.activity": {
+                    "type": "string"
+                },
+                "convert2rhel.packages.0.nevra": {
+                    "type": "string"
+                },
+                "convert2rhel.packages.0.signature": {
+                    "type": "string"
+                },
+                "convert2rhel.executed": {
+                    "type": "string"
+                },
+                "convert2rhel.success": {
+                    "type": "boolean"
+                },
+                "convert2rhel.activity_started": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "convert2rhel.activity_ended": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "convert2rhel.source_os": {
+                    "type": "string"
+                },
+                "convert2rhel.target_os": {
+                    "type": "string"
+                },
+                "convert2rhel.env": {
+                    "type": "string"
+                },
+                "convert2rhel.run_id": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "convert2rhel.activity",
+                "convert2rhel.activity_ended",
+                "convert2rhel.activity_started",
+                "convert2rhel.env",
+                "convert2rhel.executed",
+                "convert2rhel.packages.0.nevra",
+                "convert2rhel.packages.0.signature",
+                "convert2rhel.run_id",
+                "convert2rhel.source_os",
+                "convert2rhel.success",
+                "convert2rhel.target_os",
+                "convert2rhel.version"
+            ],
+            "title": "root"
+        }
+    }
+}
