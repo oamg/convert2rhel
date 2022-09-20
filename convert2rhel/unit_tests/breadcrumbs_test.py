@@ -184,7 +184,7 @@ def test_write_obj_to_array_json(tmpdir, file, content, key, out):
     ),
 )
 def test_rhsm_data_transformation(data, expected):
-    assert breadcrumbs._rhsm_data_transformation(breadcrumbs=data) == expected
+    assert breadcrumbs._rhsm_data_transformation(data=data) == expected
 
 
 def test_save_rhsm_facts(monkeypatch, tmpdir, caplog):
