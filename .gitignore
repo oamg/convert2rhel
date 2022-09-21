@@ -1,5 +1,6 @@
 cover/
 .coverage
+coverage.xml
 dist/
 SRPMS/
 *.egg-info/
@@ -9,6 +10,7 @@ system_tests/vmdefs/centos*/.vagrant/
 *.copr.conf
 .vscode/*
 .venv/*
+.build-images
 .install
 .images
 .pre-commit

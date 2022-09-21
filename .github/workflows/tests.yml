@@ -31,4 +31,4 @@ jobs:
 
       - name: Run command
         run: |
-          make tests${{ matrix.centos_ver }}
+          make tests${{ matrix.centos_ver }} BUILD_IMAGES=0
