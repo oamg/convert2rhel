@@ -21,6 +21,7 @@ VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
 SHOW_CAPTURE ?= no
 PYTEST_ARGS ?=
+BUILD_IMAGES ?= 1
 
 ifdef KEEP_TEST_CONTAINER
   DOCKER_RM_CONTAINER =
@@ -83,7 +84,7 @@ clean:
 	@find . -name '*.pyc' -exec rm -f {} +
 	@find . -name '*.pyo' -exec rm -f {} +
 
-ifdef BUILD_IMAGES
+ifeq ($(BUILD_IMAGES), 1)
 images: .build-images
 IMAGE=$(IMAGE_ORG)/$(IMAGE_PREFIX)
 else
