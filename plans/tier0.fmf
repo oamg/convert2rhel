@@ -60,3 +60,10 @@
 /check_internet_connection:
   discover+:
     test: check-internet-connection
+
+/latest_kernel_check_failed_repoquery:
+  discover+:
+    test: verify-latest-kernel-check-with-failed-repoquery
+  adjust:
+    enabled: false
+    when: distro == oraclelinux-8.4

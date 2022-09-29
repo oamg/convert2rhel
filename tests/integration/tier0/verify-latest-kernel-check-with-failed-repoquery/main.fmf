@@ -1,0 +1,10 @@
+summary: Verify that failed repoquery call does not cause latest kernel check call.
+
+tier: 0
+
+tag+:
+  - kernel
+  - repo
+
+test: |
+  pytest -svv
