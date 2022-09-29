@@ -1,6 +1,9 @@
-summary: Test for Convert2RHEL being able to handle custom, tainted and force loaded kernel modules.
+summary: Verify, that Convert2RHEL is able to handle custom, tainted and force loaded kernel modules.
 
 tier: 0
+
+tags+:
+  - kernel
 
 test: |
   pytest -svv

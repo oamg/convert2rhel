@@ -31,7 +31,7 @@ def insert_custom_kmod(shell):
 
 def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
     """
-    Test checks that check for tainted kernel modules works correctly.
+    This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
     If custom module is loaded the conversion has to be inhibited.
     """
     insert_custom_kmod()
@@ -85,22 +85,23 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
 
 def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     """
-    Test force loads kmod and checks for Convert2RHEL not being inhibited.
-    With the check for tainted kernel modules being at the beginning of the script, abort the conversion ASAP
-    for the sake of test speed.
+    Test force loads kmod and verifies that Convert2RHEL run is being inhibited.
+    Force loaded kmods are denoted (FE) for F = module was force loaded E = unsigned module was loaded.
+    Convert2RHEL sees force loaded kmod as tainted.
     """
-    # Force load the kernel module
-    assert shell("modprobe -f -v bonding").returncode == 0
-    # Check for force loaded modules being flagged FE in /proc/modules
-    assert "(FE)" in shell("cat /proc/modules").output
+    if "oracle-7" not in system_version and "centos-7" not in system_version:
+        # Force load the kernel module
+        assert shell("modprobe -f -v bonding").returncode == 0
+        # Check for force loaded modules being flagged FE in /proc/modules
+        assert "(FE)" in shell("cat /proc/modules").output
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
-        assert c2r.expect("Tainted kernel module\(s\) detected") == 0
-        assert c2r.exitstatus != 0
+        with convert2rhel("--no-rpm-va --debug") as c2r:
+            assert c2r.expect("Tainted kernel modules detected") == 0
+            assert c2r.exitstatus != 0
 
-    # Clean up - unload kmod and check for force loaded modules not being in /proc/modules
-    assert shell("modprobe -r -v bonding").returncode == 0
-    assert "(FE)" not in shell("cat /proc/modules").output
+        # Clean up - unload kmod and check for force loaded modules not being in /proc/modules
+        assert shell("modprobe -r -v bonding").returncode == 0
+        assert "(FE)" not in shell("cat /proc/modules").output
 
 
 def test_tainted_kernel_inhibitor(shell, convert2rhel):
