@@ -150,7 +150,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
     )
     output = ""
     for line in iter(process.stdout.readline, b""):
-        line.decode("utf8")
+        line = line.decode("utf8")
         output += line
         if print_output:
             loggerinst.info(line.rstrip("\n"))
