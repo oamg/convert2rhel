@@ -1,0 +1,17 @@
+[rhel-7-server-rpms]
+name=RHEL 7.9 for $basearch
+baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/os/
+gpgcheck=0
+enabled=0
+
+[rhel-7-server-optional-rpms]
+name=RHEL 7.9 Optional for $basearch
+baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os/
+gpgcheck=0
+enabled=0
+
+[rhel-7-server-extras-rpms]
+name=RHEL 7 Extras for $basearch
+baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/extras/os/
+gpgcheck=0
+enabled=0

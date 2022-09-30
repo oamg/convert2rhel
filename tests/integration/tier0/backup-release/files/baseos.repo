@@ -1,0 +1,5 @@
+[baseos]
+name=CentOS Linux 8 BaseOS
+baseurl=https://vault.centos.org/centos/8/BaseOS/x86_64/os/
+gpgcheck=0
+enabled=1

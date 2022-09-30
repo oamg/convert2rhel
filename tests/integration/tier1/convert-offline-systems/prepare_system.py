@@ -8,6 +8,9 @@ from envparse import env
 # Replace urls in rhsm.conf file to the satellite server
 # Without doing this we get obsolete dogfood server as source of repositories
 def replace_urls_rhsm():
+    """
+    Replace urls in rhsm.conf file to the dogfood satellite server
+    """
     with open("/etc/rhsm/rhsm.conf", "r+") as f:
         file = f.read()
         # Replacing the urls
@@ -20,8 +23,10 @@ def replace_urls_rhsm():
         f.truncate()
 
 
-# Configure and limit connection to the satellite server only
 def configure_connection():
+    """
+    Configure and limit connection to the satellite server only
+    """
     satellite_ip = socket.gethostbyname(SATELLITE_URL)
 
     with open("/etc/dnsmasq.conf", "a") as f:
@@ -36,16 +41,13 @@ def configure_connection():
 
 
 def test_prepare_system(shell):
-    assert shell("yum install dnsmasq wget -y").returncode == 0
+    assert shell("yum install dnsmasq wget iptables -y").returncode == 0
 
     # Install katello package
-    assert (
-        shell(
-            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
-        ).returncode
-        == 0
-    )
-    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
+    pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
+    pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+    assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
+    assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
 
     replace_urls_rhsm()
     shell("rm -rf /etc/yum.repos.d/*")
@@ -61,5 +63,9 @@ def test_prepare_system(shell):
     )
 
     configure_connection()
+
+    # c2r checks the internet connectivity against the 8.8.8.8 DNS server
+    # pinging specific IP address is still possible, so we need to block this as well
+    assert shell("iptables -I OUTPUT -d 8.8.8.8 -j DROP").returncode == 0
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0

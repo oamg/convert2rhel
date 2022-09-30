@@ -5,55 +5,111 @@ from collections import namedtuple
 import pytest
 
 
-def get_system_version(system_release_content=None):
-    """Return a namedtuple with major and minor elements, both of an int type.
+# TODO move to conftest
+class GetSystemInformation:
+    """
+    Helper class.
+    Assign a namedtuple with major and minor elements, both of an int type.
+    Assign a distribution (e.g. centos, oracle, rocky, alma0
+    Assign a system release.
 
     Examples:
     Oracle Linux Server release 7.8
     CentOS Linux release 7.6.1810 (Core)
     CentOS Linux release 8.1.1911 (Core)
     """
-    match = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
-    if not match:
-        return "not match"
-    version = namedtuple("Version", ["major", "minor"])(int(match.group(1)), int(match.group(2)))
 
-    return version
+    with open("/etc/system-release", "r") as file:
+        system_release_content = file.read()
+        match_version = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
+        if not match_version:
+            print("not match")
+        version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), int(match_version.group(2)))
+        distribution = system_release_content.split()[0].lower()
+        system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
 
 
-@pytest.mark.good_tests
-def test_good_convertion_without_rhsm(shell, convert2rhel):
+class AssignRepositoryVariables:
     """
-    Test if --enablerepo are not skipped when  subscription-manager are disabled and test if repo passed are valid.
+    Helper class.
+    Assign correct repofile content, name and enable_repo_opt to their respective major/eus system verison.
     """
+
+    repofile_epel7 = "rhel7"
+    repofile_epel8 = "rhel8"
+    repofile_epel8_eus = "rhel8-eus"
+    enable_repo_opt_epel7 = (
+        "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms "
+        "--enablerepo rhel-7-server-extras-rpms"
+    )
+    enable_repo_opt_epel8 = "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
+    enable_repo_opt_epel8_eus = (
+        "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
+    )
+
     with open("/etc/system-release", "r") as file:
         system_release = file.read()
-        system_version = get_system_version(system_release_content=system_release)
+        system_version = GetSystemInformation.version
+
         if system_version.major == 7:
-            enable_repo_opt = "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms --enablerepo rhel-7-server-extras-rpms"
+            repofile = repofile_epel7
+            enable_repo_opt = enable_repo_opt_epel7
         elif system_version.major == 8:
             if system_version.minor in (4, 6):
-                enable_repo_opt = (
-                    "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
-                )
+                repofile = repofile_epel8_eus
+                enable_repo_opt = enable_repo_opt_epel8_eus
             else:
-                enable_repo_opt = (
-                    "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
-                )
+                repofile = repofile_epel8
+                enable_repo_opt = enable_repo_opt_epel8
 
-    with convert2rhel("-y --no-rpm-va --disable-submgr {} --debug".format(enable_repo_opt)) as c2r:
+
+def prepare_custom_repository(shell):
+    """
+    Helper function.
+    Set up custom repositories.
+    """
+    assert shell(f"cp files/{AssignRepositoryVariables.repofile}.repo /etc/yum.repos.d/")
+
+
+def teardown_custom_repositories(shell):
+    """
+    Helper function.
+    Clean up all custom repositories.
+    """
+    assert shell(f"rm -f /etc/yum.repos.d/{AssignRepositoryVariables.repofile}.repo").returncode == 0
+
+
+@pytest.mark.valid_repo_provided
+def test_good_conversion_without_rhsm(shell, convert2rhel):
+    """
+    Verify, that --enablerepo is not skipped when subscription-manager is disabled.
+    Verify, that the passed repositories are accessible.
+    """
+    prepare_custom_repository(shell)
+
+    with convert2rhel(
+        "-y --no-rpm-va --disable-submgr {} --debug".format(AssignRepositoryVariables.enable_repo_opt), unregister=True
+    ) as c2r:
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
-        # send Ctrl-C
+        # Send Ctrl-C
         c2r.send(chr(3))
 
+    # Clean up
+    teardown_custom_repositories(shell)
 
-@pytest.mark.bad_tests
-def test_bad_convertion_without_rhsm(shell, convert2rhel):
+
+@pytest.mark.invalid_repo_provided
+def test_bad_conversion_without_rhsm(shell, convert2rhel):
     """
-    Test if --enablerepo are not skipped when  subscription-manager are disabled and test the convertion will stop
-    with non-valid repo. Make sure that after failed repo check there is a kernel installed.
+    Verify, that --enablerepo is not skipped when subscription-manager is disabled.
+    Verify the conversion will inhibit with invalid repository passed.
+    Make sure that after failed repo check there is a kernel installed.
     """
-    with convert2rhel("-y --no-rpm-va --disable-submgr --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug") as c2r:
+    prepare_custom_repository(shell)
+
+    with convert2rhel(
+        "-y --no-rpm-va --disable-submgr --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True
+    ) as c2r:
         c2r.expect(
             "CRITICAL - Unable to access the repositories passed through the --enablerepo option. "
             "For more details, see YUM/DNF output"
@@ -62,3 +118,6 @@ def test_bad_convertion_without_rhsm(shell, convert2rhel):
     assert c2r.exitstatus == 1
 
     assert shell("rpm -qi kernel").returncode == 0
+
+    # Clean up
+    teardown_custom_repositories(shell)

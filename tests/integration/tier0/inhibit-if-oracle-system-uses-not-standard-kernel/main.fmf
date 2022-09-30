@@ -1,6 +1,21 @@
-summary: inhibit-if-oracle-system-uses-not-standard-kernel
+summary: Oracle Linux unsupported kernel
+description: |
+    Install unsupported unbreakable kernel (uek) on an Oracle Linux machine and verify, that the conversion is inhibited.
 
 tier: 0
 
-test: |
-    pytest -svv
+tag+:
+    - kernel
+    - inhibit-if-oracle-system-uses-not-standard-kernel
+
+adjust+:
+    - enabled: false
+      when: >
+          distro != oraclelinux-7 and
+          distro != oraclelinux-8
+
+/unsupported_kernel:
+    tag+:
+        - unsupported-kernel
+    test: |
+        pytest -svv -m unsupported_kernel

@@ -1,6 +1,22 @@
-summary: releasever-as-mapping
+summary: Modified releasever
+description: |
+    Modify the releasever in config file and verify it taking precedence.
+    Verify that setting releasever to unknown value inhibits the conversion.
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - nondestructive
+    - releasever-as-mapping
+
+/modified_config:
+    tag+:
+        - modified-config
+    test: |
+      pytest -svv -m modified_config
+
+/unknown_release:
+    tag+:
+        - unknown-release
+    test: |
+      pytest -svv -m unknown_release

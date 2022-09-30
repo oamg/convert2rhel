@@ -56,9 +56,9 @@ def shell(tmp_path):
 
 @pytest.fixture()
 def convert2rhel(shell):
-    """Context manager to run convert2rhel utility.
+    """Context manager to run Convert2RHEL utility.
 
-    This fixture runs the convert2rhel with the specified options and
+    This fixture runs the Convert2RHEL with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
     You can verify that some text is in stdout, by using:
@@ -161,7 +161,7 @@ class OsRelease:
                 try:
                     param, value = line.strip().split("=")
                 except ValueError:
-                    # we're skipping lines which can't be splitted based on =
+                    # we're skipping lines which can't be split based on =
                     pass
                 else:
                     if param.lower() in cls.__annotations__:
@@ -178,7 +178,7 @@ class ConfigUtils:
     """Convenient features to work with configs (or any other text files).
 
     Created specifically to simplify writing integration tests, which requires
-    adusting some configs.
+    adjusting some configs.
     """
 
     def __init__(self, config_path: Path):
@@ -217,7 +217,7 @@ class ConfigUtils:
 
 @pytest.fixture()
 def c2r_config(os_release):
-    """ConfigUtils object with already loaded convert2rhel config."""
+    """ConfigUtils object with already loaded Convert2RHEL config."""
     release_id2conf = {"centos": "centos", "ol": "oracle"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")

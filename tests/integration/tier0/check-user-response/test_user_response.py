@@ -1,10 +1,13 @@
+import pytest
+
 from envparse import env
 
 
+@pytest.mark.empty_username_and_password
 def test_check_user_response_user_and_password(convert2rhel):
     """
     Run c2r registration with no username and password provided.
-     Verify that user has to pass non empty username/password string to continue, otherwise enforce the input prompt again.
+    Verify that user has to pass non empty username/password string to continue, otherwise enforce the input prompt again.
     """
     with convert2rhel("-y --no-rpm-va --serverurl {}".format(env.str("RHSM_SERVER_URL")), unregister=True) as c2r:
         c2r.expect_exact(" ... activation key not found, username and password required")
@@ -42,6 +45,7 @@ def test_check_user_response_user_and_password(convert2rhel):
     assert c2r.exitstatus != 0
 
 
+@pytest.mark.auto_attach_pool
 def test_auto_attach_pool_submgr(convert2rhel):
     """
     Provide Convert2RHEL with username and password with just one subscription available.
@@ -56,9 +60,12 @@ def test_auto_attach_pool_submgr(convert2rhel):
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect(
-            f"{single_pool_id} is the only subscription available, it will automatically be selected for the conversion."
-        )
-        c2r.sendcontrol("d")
+        if (
+            c2r.expect(
+                f"{single_pool_id} is the only subscription available, it will automatically be selected for the conversion."
+            )
+            == 0
+        ):
+            c2r.send(chr(3))
 
         assert c2r.exitstatus != 0

@@ -1,6 +1,24 @@
-summary: check user response during registration
+summary: Verify behavior when user response is empty
+description: |
+    Verify the user response is enforced when username, password or organization prompts are passed as empty strings.
+    Verify, that passing username and password with just one subscription attached automatically selects the subscription.
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - nondestructive
+    - registration
+    - rhsm
+    - check-user-response
+
+/empty_username_and_password:
+    tag+:
+        - empty-username-and-password
+    test: |
+      pytest -svv -m empty_username_and_password
+
+/auto_attach_pool:
+    tag+:
+        - auto-attach-pool
+    test: |
+      pytest -svv -m auto_attach_pool

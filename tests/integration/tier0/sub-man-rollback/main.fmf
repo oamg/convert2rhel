@@ -6,6 +6,11 @@ description: |
 
 tier: 0
 
+adjust+:
+    - enabled: false
+      when: >
+          distro != centos-8-latest
+
 tag+:
     - certificate
     - subscription-manager

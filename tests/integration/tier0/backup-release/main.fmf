@@ -1,6 +1,41 @@
 summary: Verify that c2r correctly restores the os-release file during different scenarios.
+description: |
+    Install subscription-manager and katello package from Satellite.
+    Remove all repositories from the system.
+    Verify, that missing /etc/system-release inhibits the conversion.
+    Verify, that running the conversion with no repositories available disables the package backup, thus warns user
+    and inhibits the conversion.
+    For that, provide "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
+    Verify, that passing "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" warns user, but continues the conversion.
+
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - repo
+    - backup-release
+
+/no_envar:
+    tag+:
+        - no-envar
+    test: |
+        pytest -svv -m no_envar
+
+/with_envar:
+    tag+:
+        - with-envar
+    test: |
+        pytest -svv -m with_envar
+
+/missing_system_release:
+    tag+:
+        - missing-system-release
+    test: |
+        pytest -svv -m missing_system_release
+
+/unsuccessful_satellite_registration:
+    tag+:
+        -unsuccessful-satellite-registration
+    test: |
+        pytest -svv -m unsuccessful_satellite_registration
+

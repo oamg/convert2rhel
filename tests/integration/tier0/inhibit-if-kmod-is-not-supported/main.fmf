@@ -1,0 +1,39 @@
+summary: Unsupported kmod behavior
+description: |
+    Load kernel module that is not supported in RHEL and verify the conversion is inhibited.
+    Verify, that removing this kmod does not interfere with new conversion run.
+    Verify that loading custom kernel module, that marks the kernel as "tainted", inhibits the conversion.
+
+tier: 0
+
+tag+:
+    - kmod
+    - kernel
+    - inhibit-if-kmod-is-not-supported
+
+/custom_module_loaded:
+    tag+:
+        - custom-module-loaded
+    test: |
+        pytest -svv -m custom_module_loaded
+
+/custom_module_not_loaded:
+    tag+:
+        - custom-module-not-loaded
+    test: |
+        pytest -svv -m custom_module_not_loaded
+
+/force_loaded_kmod:
+    adjust+:
+        - enabled: false
+          when: distro == centos-7 or distro == oraclelinux-7
+    tag+:
+        - force-loaded-kmod
+    test: |
+        pytest -svv -m force_loaded_kmod
+
+/tainted_kernel:
+    tag+:
+        - tainted-kernel
+    test: |
+        pytest -svv -m tainted_kernel

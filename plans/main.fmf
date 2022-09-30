@@ -50,4 +50,4 @@ prepare:
 
 # Commenting this out in favour of using a github actions with tft
 environment-file:
-  - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
+    - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env

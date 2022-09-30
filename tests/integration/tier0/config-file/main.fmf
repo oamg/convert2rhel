@@ -1,0 +1,47 @@
+summary: Config file
+description: |
+    Verify, that different methods of using a config file work as expected.
+    Config file at custom path, custom filename, CLI values take preference, password file takes preference,
+    activation key takes preference when used with password, priorities of standard paths.
+
+tier: 0
+
+tag+:
+    - sanity
+    - config-file
+
+/config_custom_path_custom_filename:
+    tag+:
+        - config-custom-path-custom-filename
+    test: |
+        pytest -svv -m config_custom_path_custom_filename
+
+/config_custom_path_standard_filename:
+    tag+:
+        - config-custom-path-standard-filename
+    test: |
+        pytest -svv -m config_custom_path_standard_filename
+
+/config_cli_priority:
+    tag+:
+        - config-cli-priority
+    test: |
+        pytest -svv -m config_cli_priority
+
+/config_password_file_priority:
+    tag+:
+        - config-password-file-priority
+    test: |
+        pytest -svv -m config_password_file_priority
+
+/config_standard_paths_priority_diff_methods:
+    tag+:
+        - config-standard-paths-priority-diff-methods
+    test: |
+        pytest -svv -m config_standard_paths_priority_diff_methods
+
+/config_standard_paths_priority:
+    tag+:
+        - config-standard-paths-priority
+    test: |
+        pytest -svv -m config_standard_paths_priority

@@ -9,7 +9,7 @@ tag+:
 
 /available_connection:
     tag+:
-        - available_connection
+        - available-connection
     test: |
         pytest -svv -m available_connection
 

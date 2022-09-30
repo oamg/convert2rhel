@@ -1,3 +1,4 @@
+import platform
 import re
 
 from collections import namedtuple

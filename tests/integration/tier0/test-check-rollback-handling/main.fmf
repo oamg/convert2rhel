@@ -1,4 +1,7 @@
-summary: check-if-rollback-is-finishing-up-properly
+summary: Verify rollback correct behavior
+description: |
+    Terminate conversion at various points and verify that the rollback finishes successfully.
+    Verify that packages unnecessary packages are backed up and not removed.
 
 adjust+:
     - environment+:
@@ -12,4 +15,49 @@ adjust+:
 
 tier: 0
 
-test: pytest -svv
+tag+:
+    - nondestructive
+    - rollback
+    - check-rollback-handling
+
+/rhsm_cleanup:
+    tag+:
+        - rhsm-cleanup
+    test: |
+        pytest -svv -m rhsm_cleanup
+
+/packages_untracked_graceful_rollback:
+    tag+:
+        - packages-untracked-graceful-rollback
+    test: |
+        pytest -svv -m packages_untracked_graceful_rollback
+
+/packages_untracked_forced_rollback:
+    tag+:
+        - packages-untracked-forced-rollback
+    test: |
+        pytest -svv -m packages_untracked_forced_rollback
+
+/terminate_on_registration:
+    tag+:
+        - terminate-on-registration
+    test: |
+        pytest -svv -m terminate_on_registration
+
+/terminate_on_username:
+    tag+:
+        - terminate-on-username
+    test: |
+        pytest -svv -m terminate_on_username
+
+/terminate_on_password:
+    tag+:
+        - terminate-on-password
+    test: |
+        pytest -svv -m terminate_on_password
+
+/terminate_on_subscription:
+    tag+:
+        - terminate-on-subscription
+    test: |
+        pytest -svv -m terminate_on_subscription

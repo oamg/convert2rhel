@@ -1,6 +1,70 @@
-summary: user privileges, manpage exists, basic smoke
+summary: Basic sanity checks
+description: |
+    Verify basic sanity behavior.
+        - Man page exists
+        - Display help
+        - Enforce root privileges
+        - Only last version of Convert2RHEL supported
+        - Yum cache cleaned before any other check
+        - Missing RHSM certificates logged properly
+        - Deprecated --variant message displayed
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - nondestructive
+    - sanity
+
+/root_privileges:
+    tag+:
+        - root-privileges
+    test: |
+      pytest -svv -m root_privileges
+
+/manpage:
+    tag+:
+        - manpage
+    test: |
+      pytest -svv -m manpage
+
+/smoke:
+    tag+:
+        - smoke
+    test: |
+      pytest -svv -m smoke
+
+/version_latest_or_newer:
+    tag+:
+        - version-latest-or-newer
+    test: |
+      pytest -svv -m version_latest_or_newer
+
+/version_older_no_envar:
+    tag+:
+        - version-older-no-envar
+    test: |
+      pytest -svv -m version_older_no_envar
+
+/version_older_with_envar:
+    tag+:
+        - version-older-with-envar
+    test: |
+      pytest -svv -m version_older_with_envar
+
+/clean_cache:
+    tag+:
+        - clean-cache
+    test: |
+      pytest -svv -m clean_cache
+
+/log_rhsm_error:
+    tag+:
+        - log-rhsm-error
+    test: |
+      pytest -svv -m log_rhsm_error
+
+/variant_message:
+    tag+:
+        - variant-message
+    test: |
+      pytest -svv -m variant_message

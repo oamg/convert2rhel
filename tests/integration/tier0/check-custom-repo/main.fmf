@@ -1,15 +1,23 @@
-summary: check-custom-repo
+summary: Verify enabling custom repositories
+description: |
+    Enable custom repositories with subscription-manager disabled.
+    Provide valid and invalid options and verify correct behavior.
+    Valid option should pass, invalid should inhibit the conversion.
 
 tier: 0
 
-/good:
-  tag+:
-    - good_test
-  test: |
-    pytest -svv -m good_tests
+tag+:
+    - repository
+    - check-custom-repo
 
-/bad:
+/valid_repo_provided:
   tag+:
-    - bad_test
+    - valid-repo-provided
   test: |
-    pytest -svv -m bad_tests
+    pytest -svv -m valid_repo_provided
+
+/invalid_repo_provided:
+  tag+:
+    - invalid-repo-provided
+  test: |
+    pytest -svv -m invalid_repo_provided
