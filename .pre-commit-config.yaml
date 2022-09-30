@@ -23,3 +23,8 @@ repos:
       - id: "check-toml"
       - id: "check-yaml"
       - id: "check-merge-conflict"
+
+  - repo: "https://github.com/teemtee/tmt"
+    rev: main
+    hooks:
+      - id: tmt-lint
