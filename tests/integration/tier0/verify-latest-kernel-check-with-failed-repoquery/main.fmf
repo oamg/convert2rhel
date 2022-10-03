@@ -4,7 +4,14 @@ tier: 0
 
 tag+:
   - kernel
-  - repo
+  - repository
 
-test: |
-  pytest -svv
+adjust+:
+    enabled: false
+    when: distro == oraclelinux-8.4
+
+/latest_kernel_check_with_failed_repoquery:
+    tag+:
+        - latest_kernel_check_with_failed_repoquery
+    test: |
+        pytest -svv -m latest_kernel_check_with_failed_repoquery
