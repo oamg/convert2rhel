@@ -23,15 +23,14 @@ import sys
 
 from datetime import datetime
 
-from convert2rhel import pkghandler, systeminfo, utils
+from convert2rhel import pkghandler, utils
+from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import hide_secrets
 
 
 MIGRATION_RESULTS_FILE = "/etc/migration-results"
 RHSM_CUSTOM_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 RHSM_CUSTOM_FACTS_NAMESPACE = "conversions"
-
-LSB_RELEASE_VERSION = re.compile(r"(.+) release ([\d.]+)\s*(?!\()(\S*)\s*[^(]*(?:\((.+)\))?")
 
 loggerinst = logging.getLogger(__name__)
 
@@ -105,9 +104,6 @@ class Breadcrumbs(object):
         """Set signature of installed Convert2RHEL"""
         self.signature = pkghandler.get_pkg_signature(self._pkg_object)
 
-    def _set_source_os(self):
-        self.source_os = systeminfo.SystemInfo._get_system_release_file_content().strip()  # Remove newline
-
     def _set_started(self):
         """Set start time of activity"""
         self.activity_started = self._get_formated_time()
@@ -132,8 +128,15 @@ class Breadcrumbs(object):
 
         self.env = env_c2r
 
+    def _set_source_os(self):
+        """Set the source os release information."""
+        self.source_os = system_info.get_system_release_info()
+
     def _set_target_os(self):
-        self.target_os = systeminfo.SystemInfo._get_system_release_file_content().strip()  # Remove newline
+        """Set the target os release information."""
+        # Reading the system-release file again to get the target os information.
+        system_release_content = system_info._get_system_release_file_content()
+        self.target_os = system_info.get_system_release_info(system_release_content)
 
     @property
     def data(self):
@@ -168,46 +171,12 @@ class Breadcrumbs(object):
             loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
             return
 
-        # Pass the breadcrumbs in an transformation first, and then we can
-        # flatten it.
-        formatted_breadcrumbs = _rhsm_data_transformation(self.data)
-        data = utils.flatten(dictionary=formatted_breadcrumbs, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
+        data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
         loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
         # We don't need to use `_write_obj_to_array_json` function here, because
         # we only care about dumping the facts without having multiple copies of
         # it.
         _write_obj_to_array_json(path=RHSM_CUSTOM_FACTS_FILE, new_object=data)
-
-
-def _rhsm_data_transformation(data):
-    """Transform the final breadcrumbs data into the RHSM custom facts
-
-    Internal function to process and transform the breadcrumbs data into the
-    RHSM custom facts format.
-
-    .. note::
-        This piece of code was taken from the subscription-manager `hwprobe` module on version 1.29.30-1
-        Source: https://github.com/candlepin/subscription-manager/blob/subscription-manager-1.29.30-1/src/rhsmlib/facts/hwprobe.py#L186-L196
-
-    :param data: A dictionary with the breadcrumbs collected through the conversion.
-    :type data: dict[str, Any]
-    :return: A modified dictionary with some keys changed.
-    :rtype: dict[str, Any]
-    """
-    local_data = data
-    if "source_os" in local_data:
-        match = LSB_RELEASE_VERSION.match(local_data["source_os"])
-        if match:
-            (distname, version, tmp_modifier, dist_id) = tuple(match.groups())
-            local_data["source_os"] = {"id": dist_id, "name": distname, "version": version}
-
-    if "target_os" in local_data:
-        match = LSB_RELEASE_VERSION.match(local_data["target_os"])
-        if match:
-            (distname, version, tmp_modifier, dist_id) = tuple(match.groups())
-            local_data["target_os"] = {"id": dist_id, "name": distname, "version": version}
-
-    return local_data
 
 
 def _write_obj_to_array_json(path, new_object={}, key=None):
