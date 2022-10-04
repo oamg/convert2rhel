@@ -384,9 +384,9 @@ class SystemInfo(object):
             return True
         except urllib.error.URLError as err:
             self.logger.warning(
-                "There was a problem while trying to connect to '%s' to check internet connectivity, "
-                "it seems that the host appears to be offline or not responding. Convert2RHEL will continue the conversion "
-                "but without support for online resources.",
+                "There was a problem while trying to connect to '%s' to check internet connectivity. "
+                "This could be due to the host being offline, or the network blocking access to the endpoint... "
+                "Some checks and actions will be skipped.",
                 CHECK_INTERNET_CONNECTION_ADDRESS,
             )
             self.logger.debug("Failed to retrieve data from host, reason: %s", err.reason)
