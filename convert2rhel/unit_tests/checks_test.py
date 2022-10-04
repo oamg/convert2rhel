@@ -462,11 +462,10 @@ def test_ensure_compatibility_of_kmods_check_env(
 
     checks.ensure_compatibility_of_kmods()
     should_be_in_logs = (
-        "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-        "'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable detected, continuing conversion."
+        ".*Detected 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable."
+        " We will continue the conversion, with the following kernel modules that are not supported:.*"
     )
-    
-    assert should_be_in_logs in caplog.records[-1].message
+    assert re.match(should_be_in_logs in caplog.records[-1].message, re.MULTILINE, re.DOTALL)
 
 @pytest.mark.parametrize(
     (
