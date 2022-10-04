@@ -143,7 +143,15 @@ class BackupController(object):
         :returns: RestorableChange object that was last added.
         :raises IndexError: If there are no RestorableChanges currently known to the Controller.
         """
-        restorable = self._restorables.pop()
+        try:
+            restorable = self._restorables.pop()
+        except IndexError as e:
+            # Use a more specific error message
+            args = list(e.args)
+            args[0] = "No backups to restore"
+            e.args = tuple(args)
+            raise e
+
         restorable.restore()
 
         return restorable
@@ -160,7 +168,7 @@ class BackupController(object):
         restorables = self._restorables
 
         if not restorables:
-            raise IndexError("pop from empty list")
+            raise IndexError("No backups to restore")
 
         # We want to restore in the reverse order the changes were enabled.
         for restorable in reversed(restorables):

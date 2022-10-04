@@ -465,7 +465,7 @@ class TestBackupController:
         assert restorable3.called["restore"] == 1
 
     def test_pop_when_empty(self, backup_controller):
-        with pytest.raises(IndexError, match="pop from empty list"):
+        with pytest.raises(IndexError, match="No backups to restore"):
             backup_controller.pop()
 
     def test_pop_all(self, backup_controller):
@@ -502,7 +502,7 @@ class TestBackupController:
         assert backup_controller._restorables[0] is restorable2
 
     def test_pop_all_when_empty(self, backup_controller):
-        with pytest.raises(IndexError, match="pop from empty list"):
+        with pytest.raises(IndexError, match="No backups to restore"):
             backup_controller.pop_all()
 
 

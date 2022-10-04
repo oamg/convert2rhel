@@ -272,7 +272,13 @@ def rollback_changes():
     pkghandler.versionlock_file.restore()
     system_cert = cert.SystemCert()
     system_cert.remove()
-    backup.backup_control.pop_all()
+    try:
+        backup.backup_control.pop_all()
+    except IndexError as e:
+        if e.args[0] == "No backups to restore":
+            loggerinst.info("During rollback there were no backups to restore")
+        else:
+            raise
 
     return
 
