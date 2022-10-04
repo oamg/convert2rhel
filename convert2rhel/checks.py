@@ -410,7 +410,7 @@ def validate_package_manager_transaction():
                 "Make sure you have updated the kernel to the latest available version and rebooted the system. "
                 "Only kernel modules supported in RHEL are preferred for conversion, if you want to ignore this "
                 " check, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS=1' to continue".format(
-                    kmods=not_supported_kmods, system=system_info.name
+                    kmods=not_supported_kmods
                 )
             )
 
