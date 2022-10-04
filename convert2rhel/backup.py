@@ -116,8 +116,10 @@ class BackupController(object):
     convert2rhel will change on the system which it can restore in case of a failure before the
     Point-of-no-return (PONR).
 
-    The basic interface to this is a stack.  When a Restorable is pushed onto the stack, it is
-    backed up.  When it is popped off of the stack, it is restored.
+    The basic interface to this is a LIFO stack.  When a Restorable is pushed
+    onto the stack, it is backed up.  When it is popped off of the stack, it is
+    restored.  Changes are restored in the reverse order that that they were
+    added.  Changes cannot be retrieved and restored out of order.
     """
 
     def __init__(self):
