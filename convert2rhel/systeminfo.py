@@ -354,9 +354,8 @@ class SystemInfo(object):
 
         This method will try to retrieve a web page on the Red Hat network that
         we know to exist (http://static.redhat.com/test/rhel-networkmanager.txt).
-        If we can successfully retrieve that page, validate that the status_code
-        is 200, and assert that the content of the response is the string 'OK',
-        then we decide we are connected to the internet.
+        If we can successfully access that page, then we decide we are connected
+        to the internet.
 
         We check a web page because we will need working https to retrieve
         packages from Red Hat infrastructure during the conversion.
