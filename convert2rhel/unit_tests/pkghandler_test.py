@@ -1900,7 +1900,7 @@ def test_find_pkg_names_no_names(output, message):
 
 
 class TestInstallGpgKeys(object):
-    data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
+    data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/version-independent"))
     gpg_keys_dir = os.path.join(data_dir, "gpg-keys")
 
     def test_install_gpg_keys(self, monkeypatch, global_backup_control):

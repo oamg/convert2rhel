@@ -138,7 +138,7 @@ class BackupController(object):
 
     def pop(self):
         """
-        Restore and then return the last RestorableiChange added to the Controller.
+        Restore and then return the last RestorableChange added to the Controller.
 
         :returns: RestorableChange object that was last added.
         :raises IndexError: If there are no RestorableChanges currently known to the Controller.
