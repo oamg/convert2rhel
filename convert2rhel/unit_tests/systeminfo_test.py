@@ -264,8 +264,8 @@ def test_get_release_ver_other(
 @pytest.mark.parametrize(
     ("side_effect", "expected", "message"),
     (
-        (urllib.error.URLError(reason="fail"), False, "Couldn't connect to the address"),
-        (None, True, "Internet connection available."),
+        (urllib.error.URLError(reason="fail"), False, "Faild to retrieve data from host"),
+        (None, True, "internet connection seems to be available"),
     ),
 )
 def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):

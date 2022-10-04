@@ -377,14 +377,19 @@ class SystemInfo(object):
         try:
             response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
             response.close()
-            self.logger.info("Internet connection available.")
+            self.logger.info(
+                "Successfully connected to address '%s', internet connection seems to be available."
+                % CHECK_INTERNET_CONNECTION_ADDRESS
+            )
             return True
         except urllib.error.URLError as err:
-            self.logger.debug("Faild to retrieve data from host, reason: %s", err.reason)
             self.logger.warning(
-                "Couldn't connect to the address '%s', assuming no internet connection is present.",
+                "There was a problem while trying to connect to '%s' to check internet connectivity, "
+                "it seems that the host appears to be offline or not responding. Convert2RHEL will continue the conversion "
+                "but without support for online resources.",
                 CHECK_INTERNET_CONNECTION_ADDRESS,
             )
+            self.logger.debug("Faild to retrieve data from host, reason: %s", err.reason)
             return False
 
     def corresponds_to_rhel_eus_release(self):
