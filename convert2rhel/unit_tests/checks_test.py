@@ -961,14 +961,14 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
     (
         (
             "4.18.0-240.22.1.el8_3.x86_64",
-            "kernel-core",
+            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
             "05b555b38483c65d",
             "yajl.x86_64",
             False,
         ),
         (
             "4.18.0-240.22.1.el8_3.x86_64",
-            "kernel-core",
+            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
             "somebadsig",
             "somepkgobj",
             True,
@@ -998,11 +998,13 @@ def test_bad_kernel_package_signature(
     monkeypatch.setattr(checks, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
     assert _bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{NAME}", "/boot/vmlinuz-%s" % kernel_release], print_output=False
+        ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],
+        print_output=False,
     )
 
 
-def test_kernel_not_installed(caplog, monkeypatch):
+@centos8
+def test_kernel_not_installed(pretend_os, caplog, monkeypatch):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(" ", 1))
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
     assert _bad_kernel_package_signature("4.18.0-240.22.1.el8_3.x86_64")

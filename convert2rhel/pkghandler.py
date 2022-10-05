@@ -355,36 +355,52 @@ def get_rpm_header(pkg_obj):
         loggerinst.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
 
 
-def get_installed_pkg_objects(name=""):
+def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
     """Return list with installed package objects. The packages can be
     optionally filtered by name.
     """
     if pkgmanager.TYPE == "yum":
-        return _get_installed_pkg_objects_yum(name)
+        return _get_installed_pkg_objects_yum(name, version, release, arch)
     elif pkgmanager.TYPE == "dnf":
-        return _get_installed_pkg_objects_dnf(name)
+        return _get_installed_pkg_objects_dnf(name, version, release, arch)
 
 
-def _get_installed_pkg_objects_yum(name):
+def _get_installed_pkg_objects_yum(name, version, release, arch):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
     yum_base.doConfigSetup(init_plugins=False)
+
     if name:
-        return yum_base.rpmdb.returnPackages(patterns=[name])
+        pattern = name
+        if version:
+            pattern += "-%s" % version
+
+        if release:
+            pattern += "-%s" % release
+
+        if arch:
+            pattern += ".%s" % arch
+
+        return yum_base.rpmdb.returnPackages(patterns=[pattern])
+
     return yum_base.rpmdb.returnPackages()
 
 
-def _get_installed_pkg_objects_dnf(name):
+def _get_installed_pkg_objects_dnf(name, version, release, arch):
     dnf_base = pkgmanager.Base()
-    conf = dnf_base.conf
-    conf.module_platform_id = "platform:el8"
+    dnf_base.conf.module_platform_id = "platform:el8"
     dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
     query = dnf_base.sack.query()
     installed = query.installed()
     if name:
         # name__glob provides "shell-style wildcard match" per
         # https://dnf.readthedocs.io/en/latest/api_queries.html#dnf.query.Query.filter
-        installed = installed.filter(name__glob=name)
+        installed = installed.filter(
+            version__glob=version,
+            release__glob=release,
+            arch__glob=arch,
+            name__glob=name,
+        )
     return list(installed)
 
 
