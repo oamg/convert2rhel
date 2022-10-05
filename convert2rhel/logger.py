@@ -32,8 +32,6 @@ import sys
 
 from time import gmtime, strftime
 
-from convert2rhel.toolopts import tool_opts
-
 
 LOG_DIR = "/var/log/convert2rhel"
 
