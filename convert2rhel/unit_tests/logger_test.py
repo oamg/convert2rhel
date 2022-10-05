@@ -119,14 +119,7 @@ def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
 
 @pytest.mark.parametrize(
     ("no_color_value", "should_disable_color"),
-    (
-        ("0", True),
-        ("False", True),
-        (None, True),
-        ("1", False),
-        ("True", False),
-        ("foobar", False)
-    )
+    (("0", True), ("False", True), (None, True), ("1", False), ("True", False), ("foobar", False)),
 )
 def test_should_disable_color_output(monkeypatch, no_color_value, should_disable_color):
     monkeypatch.setattr(os, "environ", {"NO_COLOR": no_color_value})
