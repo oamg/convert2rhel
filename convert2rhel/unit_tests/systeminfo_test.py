@@ -264,7 +264,7 @@ def test_get_release_ver_other(
 @pytest.mark.parametrize(
     ("side_effect", "expected", "message"),
     (
-        (urllib.error.URLError(reason="fail"), False, "Faild to retrieve data from host"),
+        (urllib.error.URLError(reason="fail"), False, "Failed to retrieve data from host"),
         (None, True, "internet connection seems to be available"),
     ),
 )

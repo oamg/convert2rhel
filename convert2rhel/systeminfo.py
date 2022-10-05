@@ -389,7 +389,7 @@ class SystemInfo(object):
                 "but without support for online resources.",
                 CHECK_INTERNET_CONNECTION_ADDRESS,
             )
-            self.logger.debug("Faild to retrieve data from host, reason: %s", err.reason)
+            self.logger.debug("Failed to retrieve data from host, reason: %s", err.reason)
             return False
 
     def corresponds_to_rhel_eus_release(self):
