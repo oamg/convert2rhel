@@ -116,6 +116,7 @@ def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
 
     assert not os.path.exists(log_file)
 
+
 @pytest.mark.parametrize(
     ("0", True),
     ("False", True),

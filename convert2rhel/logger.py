@@ -136,6 +136,7 @@ def should_disable_color_output():
 
     return False
 
+
 def archive_old_logger_files(log_name, log_dir):
     """Archive the old log files to not mess with multiple runs outputs.
     Every time a new run begins, this method will be called to archive the previous logs
