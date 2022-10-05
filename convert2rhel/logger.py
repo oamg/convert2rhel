@@ -113,7 +113,7 @@ def setup_logger_handler(log_name, log_dir):
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
     formatter = CustomFormatter("%(message)s")
-    formatter.disable_colors(tool_opts.disable_colors)
+    formatter.disable_colors(should_disable_color_output())
     stdout_handler.setFormatter(formatter)
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
@@ -128,6 +128,13 @@ def setup_logger_handler(log_name, log_dir):
     handler.setLevel(LogLevelFile.level)
     logger.addHandler(handler)
 
+
+def should_disable_color_output():
+    if "NO_COLOR" in os.environ:
+        NO_COLOR = os.environ["NO_COLOR"]
+        return NO_COLOR != None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
+
+    return False
 
 def archive_old_logger_files(log_name, log_dir):
     """Archive the old log files to not mess with multiple runs outputs.

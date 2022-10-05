@@ -54,7 +54,6 @@ class ToolOpts(object):
         self.org = None
         self.arch = None
         self.no_rpm_va = False
-        self.disable_colors = False
         self.keep_rhsm = False
 
         # set True when credentials (username & password) are given through CLI
@@ -307,9 +306,6 @@ class CLI(object):
         # password from CLI has precedence and activation-key must be deleted (unused)
         if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
             tool_opts.activation_key = None
-
-        if parsed_opts.disable_colors:
-            tool_opts.disable_colors = True
 
         if parsed_opts.no_rpm_va:
             tool_opts.no_rpm_va = True
