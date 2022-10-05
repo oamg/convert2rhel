@@ -128,6 +128,11 @@ def setup_logger_handler(log_name, log_dir):
 
 
 def should_disable_color_output():
+    """
+    Return whether NO_COLOR exists in environment parameter and is true.
+
+    See http://no-color.org/
+    """
     if "NO_COLOR" in os.environ:
         NO_COLOR = os.environ["NO_COLOR"]
         return NO_COLOR != None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
