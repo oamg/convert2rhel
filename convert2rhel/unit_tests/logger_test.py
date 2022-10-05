@@ -49,7 +49,7 @@ def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_t
 
 
 def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opts, clear_loggers):
-    monkeypatch.setattr(logger_module, "tool_opts", global_tool_opts)
+    monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
