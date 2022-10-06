@@ -365,7 +365,7 @@ def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
         return _get_installed_pkg_objects_dnf(name, version, release, arch)
 
 
-def _get_installed_pkg_objects_yum(name, version, release, arch):
+def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=None):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
     yum_base.doConfigSetup(init_plugins=False)
@@ -386,21 +386,36 @@ def _get_installed_pkg_objects_yum(name, version, release, arch):
     return yum_base.rpmdb.returnPackages()
 
 
-def _get_installed_pkg_objects_dnf(name, version, release, arch):
+def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=None):
     dnf_base = pkgmanager.Base()
     dnf_base.conf.module_platform_id = "platform:el8"
     dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
     query = dnf_base.sack.query()
     installed = query.installed()
+
     if name:
-        # name__glob provides "shell-style wildcard match" per
+        # Appending the kwargs here dynamically based if they exist or not
+        # because the query filter cannot handle properly the situation where
+        # any of those parameters are "empty". Basically, dnf thinks that if you
+        # specified an empty string in any of those parameters, then it should
+        # "match" exactly that, and then to avoid extra logic to play with
+        # `__glob`, `__neq` and so on, it's easier to build the `kwargs`
+        # dinamycally.
+        kwargs = {}
+
+        if version:
+            kwargs.update({"version__glob": version})
+
+        if release:
+            kwargs.update({"release__glob": release})
+
+        if arch:
+            kwargs.update({"arch__glob": arch})
+
+        # name provides "shell-style wildcard match" per
         # https://dnf.readthedocs.io/en/latest/api_queries.html#dnf.query.Query.filter
-        installed = installed.filter(
-            version__glob=version,
-            release__glob=release,
-            arch__glob=arch,
-            name__glob=name,
-        )
+        installed = installed.filter(name__glob=name, **kwargs)
+
     return list(installed)
 
 

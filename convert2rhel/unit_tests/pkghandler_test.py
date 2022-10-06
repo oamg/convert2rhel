@@ -75,7 +75,7 @@ class QueryMocked(unit_tests.MockFunction):
         self.installed_called += 1
         return self
 
-    def filter(self, version__glob, release__glob, arch__glob, name__glob):
+    def filter(self, name__glob, **kwargs):
         self.filter_called += 1
         if name__glob and name__glob == "installed_pkg":
             self._setup_pkg()
