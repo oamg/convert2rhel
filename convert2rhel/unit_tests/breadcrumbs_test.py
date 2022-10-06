@@ -23,7 +23,7 @@ from datetime import datetime
 import pytest
 import six
 
-from convert2rhel import breadcrumbs, pkghandler, pkgmanager, utils
+from convert2rhel import breadcrumbs, pkghandler, pkgmanager
 from convert2rhel.unit_tests.conftest import centos7, create_pkg_obj
 
 
@@ -71,7 +71,7 @@ def test_finish_collection(pretend_os, success, monkeypatch):
     breadcrumbs.breadcrumbs.finish_collection(success=success)
 
     if success:
-        assert breadcrumbs.breadcrumbs.success is success
+        assert breadcrumbs.breadcrumbs.success
         assert breadcrumbs.breadcrumbs.target_os != "null"
     else:
         assert not breadcrumbs.breadcrumbs.success
@@ -149,7 +149,6 @@ def test_write_obj_to_array_json(tmpdir, file, content, key, out):
 @centos7
 def test_save_rhsm_facts(pretend_os, monkeypatch, tmpdir, caplog):
     rhsm_folder = str(tmpdir.join("custom.facts"))
-    write_obj_to_array_json_mock = mock.Mock()
 
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
 
