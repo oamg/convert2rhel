@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import getpass
+import json
 import logging
 import os
 import sys
@@ -658,3 +659,20 @@ def test_hide_secret_unexpected_input(caplog):
 )
 def test_flatten(nested_dict, expected):
     assert utils.flatten(dictionary=nested_dict) == expected
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        ({"test": 1}, {"test": 1}),
+        ({"nested": {"test": 1}}, {"nested": {"test": 1}}),
+    ),
+)
+def test_write_json_object_to_file(data, expected, tmpdir):
+    json_file_path = str(tmpdir.join("test_json.json"))
+    utils.write_json_object_to_file(json_file_path, data)
+
+    with open(json_file_path, mode="r") as handler:
+        json.load(handler) == expected
+
+    assert oct(os.stat(json_file_path).st_mode)[-4:].endswith("00")

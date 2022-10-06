@@ -992,7 +992,7 @@ def lock_releasever_in_rhel_repositories():
 def update_rhsm_custom_facts():
     """Update the RHSM custom facts in the candlepin server.
 
-    This function has the intention to synchronize the facts collected throught
+    This function has the intention to synchronize the facts collected throughout
     the conversion with the candlepin server, thus, propagating the
     "breadcrumbs" from convert2rhel as RHSM facts.
     """

@@ -166,64 +166,53 @@ class Breadcrumbs(object):
 
     def _save_rhsm_facts(self):
         """Write the results of the breadcrumbs to the rhsm custom facts file."""
-        rhsm_facts_path = os.path.dirname(RHSM_CUSTOM_FACTS_FILE)
-        if not os.path.exists(rhsm_facts_path):
-            loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
-            return
-
         data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
-        loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
-        # We don't need to use `_write_obj_to_array_json` function here, because
-        # we only care about dumping the facts without having multiple copies of
-        # it.
-        _write_obj_to_array_json(path=RHSM_CUSTOM_FACTS_FILE, new_object=data)
+        try:
+            loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
+            # We don't need to use `_write_obj_to_array_json` function here, because
+            # we only care about dumping the facts without having multiple copies of
+            # it.
+            utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data, mode="w")
+        except (IOError, OSError):
+            rhsm_facts_path = os.path.dirname(RHSM_CUSTOM_FACTS_FILE)
+            loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
 
 
-def _write_obj_to_array_json(path, new_object={}, key=None):
+def _write_obj_to_array_json(path, new_object, key):
     """Write new object to array defined by key in JSON file.
-
-    If the file doesn't exist, create new one and create key for inserting. If
-    the file is corrupted, append complete object (with key) as if it was new
-    file and the original content of file stays there.
+    If the file doesn't exist, create new one and create key for inserting.
+    If the file is corrupted, append complete object (with key) as if it was new file and the
+    original content of file stays there.
     """
-    default_content = {key: []} if key else new_object
-
     if not (os.path.exists(path)):
         with open(path, "a") as file:
-            json.dump(default_content, file, indent=4)
+            file_content = {key: []}
+            json.dump(file_content, file, indent=4)
+            # the file can be changed just by root
+            os.chmod(path, 0o600)
 
     with open(path, "r+") as file:
-        # Try to read the contents of the file, if that's fail, assign the
-        # default_content as being the new content of file_content.
         try:
             file_content = json.load(file)  # load data
             # valid json: update the JSON structure and rewrite the file
             file.seek(0)
-        # The file contains something that isn't a valid json object. Create the
-        # `key` and append to the file, JSON won't be in the correct breadcrumbs
-        # format, but the content of the file stays there for administrators,
-        # etc.
+        # The file contains something that isn't json.
+        # Create activities and append to the file, JSON won't be valid, but the content of the file stays there
+        # for administrators, etc.
         except ValueError:  # we cannot use json.decoder.JSONDecodeError due python 2.7 compatibility
-            file_content = default_content
+            file_content = {key: []}
 
-        # If no key is specified, then assume that the contents of the file
-        # should be the `new_object` data.
-        if not key:
-            file_content = default_content
-        else:
-            try:
-                file_content[key].append(new_object)
-            except KeyError:  # valid json, but no 'activities' key there
-                # create new 'activities' key which contains new_object
-                file_content[key] = [new_object]
-                # valid json: update the JSON structure and rewrite the file
-                file.seek(0)
+        try:
+            file_content[key].append(new_object)  # append new_object to activities
+        # valid json, but no 'activities' key there
+        except KeyError:
+            # create new 'activities' key which contains new_object
+            file_content[key] = [new_object]
+            # valid json: update the JSON structure and rewrite the file
+            file.seek(0)
 
         # write the json to the file
         json.dump(file_content, file, indent=4)
-
-    # the file can be changed just by root
-    os.chmod(path, 0o600)
 
 
 # Code to be executed upon module import

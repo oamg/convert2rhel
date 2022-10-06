@@ -18,6 +18,7 @@
 import errno
 import getpass
 import inspect
+import json
 import logging
 import os
 import re
@@ -574,12 +575,12 @@ def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "
     """
     Replace secret values with asterisks.
 
-    This function takes a list of arguments which will be passed to
-    subscription-manager on the command line and returns a new list
-    that has any secret values obscured with asterisks.
+    This function takes a list of arguments which will be passed
+    in a transformation process where we will replace any secret values
+    with an fixed size of asterisks (*) and returns a new list containing
+     the arguments with this transformation.
 
-    :arg args: An argument list for subscription-manager which may contain
-        secret values.
+    :arg args: An argument list which may contain secret values.
     :returns: A new list of arguments with secret values hidden.
     """
     obfuscation_string = "*" * 5
@@ -643,3 +644,18 @@ def flatten(dictionary, parent_key=False, separator="."):
         else:
             items.append((new_key, value))
     return dict(items)
+
+
+def write_json_object_to_file(path, data, mode="w"):
+    """Write a JSOn object to a file in the system.
+
+    :param path: The path of the file to be written.
+    :type path: str
+    :param data: The JSON data that will be written.
+    :type data: dict[str, Any]
+    :param mode: How to write the file to the system.
+    :type mode: str
+    """
+    with open(path, mode=mode) as handler:
+        json.dump(data, handler, indent=4)
+        os.chmod(path, 0o600)

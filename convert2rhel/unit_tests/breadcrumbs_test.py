@@ -127,7 +127,6 @@ def test_set_env(monkeypatch):
         (True, '{"key":[]}', "key", '{"key":[{"some_key": "some_data"}]}'),
         (True, '{"diff_key":[]}', "key", '{"diff_key":[], "key":[{"some_key": "some_data"}]}'),
         (True, "something", "key", False),
-        (True, '{"test": []}', None, '{"some_key": "some_data"}'),
     ],
 )
 def test_write_obj_to_array_json(tmpdir, file, content, key, out):
@@ -147,62 +146,15 @@ def test_write_obj_to_array_json(tmpdir, file, content, key, out):
         assert sorted(json.loads(path.read())) == sorted(json.loads(out))
 
 
-@pytest.mark.parametrize(
-    ("data", "expected"),
-    (
-        (
-            {"source_os": "CentOS Linux release 7.9.2009 (Core)"},
-            {"source_os": {"id": "Core", "name": "CentOS Linux", "version": "7.9.2009"}},
-        ),
-        (
-            {"source_os": "CentOS Linux release 8.5.2111"},
-            {"source_os": {"id": None, "name": "CentOS Linux", "version": "8.5.2111"}},
-        ),
-        (
-            {"source_os": "Oracle Linux Server release 8.6"},
-            {"source_os": {"id": None, "name": "Oracle Linux Server", "version": "8.6"}},
-        ),
-        (
-            {"target_os": "Red Hat Enterprise Linux release 8.5 (Ootpa)"},
-            {"target_os": {"id": "Ootpa", "name": "Red Hat Enterprise Linux", "version": "8.5"}},
-        ),
-        (
-            {
-                "source_os": "CentOS Linux release 8.5.2111",
-                "target_os": "Red Hat Enterprise Linux release 8.5 (Ootpa)",
-            },
-            {
-                "source_os": {"id": None, "name": "CentOS Linux", "version": "8.5.2111"},
-                "target_os": {"id": "Ootpa", "name": "Red Hat Enterprise Linux", "version": "8.5"},
-            },
-        ),
-        ({"random_key": "random"}, {"random_key": "random"}),
-        (
-            {"source_os": "Random Source OS", "target_os": "Random Target OS"},
-            {"source_os": "Random Source OS", "target_os": "Random Target OS"},
-        ),
-    ),
-)
-def test_rhsm_data_transformation(data, expected):
-    assert breadcrumbs._rhsm_data_transformation(data=data) == expected
-
-
-def test_save_rhsm_facts(monkeypatch, tmpdir, caplog):
+@centos7
+def test_save_rhsm_facts(pretend_os, monkeypatch, tmpdir, caplog):
     rhsm_folder = str(tmpdir.join("custom.facts"))
-    rhsm_data_transformation_mock = mock.Mock()
-    flatten_mock = mock.Mock()
     write_obj_to_array_json_mock = mock.Mock()
 
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
-    monkeypatch.setattr(breadcrumbs, "_rhsm_data_transformation", rhsm_data_transformation_mock)
-    monkeypatch.setattr(utils, "flatten", flatten_mock)
-    monkeypatch.setattr(breadcrumbs, "_write_obj_to_array_json", write_obj_to_array_json_mock)
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
     assert "Writing RHSM custom facts to '%s'" % rhsm_folder in caplog.records[-1].message
-    assert rhsm_data_transformation_mock.call_count == 1
-    assert flatten_mock.call_count == 1
-    assert write_obj_to_array_json_mock.call_count == 1
 
 
 def test_save_rhsm_facts_no_rhsm_folder(monkeypatch, tmpdir, caplog):
@@ -281,10 +233,10 @@ def test_set_ended():
 @centos7
 def test_set_source_os(pretend_os):
     breadcrumbs.breadcrumbs._set_source_os()
-    assert "CentOS Linux release 7.9.1111" in breadcrumbs.breadcrumbs.source_os
+    assert {"id": None, "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.source_os
 
 
 @centos7
 def test_set_target_os(pretend_os):
     breadcrumbs.breadcrumbs._set_target_os()
-    assert "CentOS Linux release 7.9.1111" in breadcrumbs.breadcrumbs.target_os
+    assert {"id": None, "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.target_os
