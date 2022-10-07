@@ -135,7 +135,7 @@ class Breadcrumbs(object):
     def _set_target_os(self):
         """Set the target os release information."""
         # Reading the system-release file again to get the target os information.
-        system_release_content = system_info._get_system_release_file_content()
+        system_release_content = system_info.get_system_release_file_content()
         self.target_os = system_info.get_system_release_info(system_release_content)
 
     @property

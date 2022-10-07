@@ -104,7 +104,7 @@ class SystemInfo(object):
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
-        self.system_release_file_content = self._get_system_release_file_content()
+        self.system_release_file_content = self.get_system_release_file_content()
         self.name = self._get_system_name()
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
@@ -125,7 +125,7 @@ class SystemInfo(object):
         self.dbus_running = self._is_dbus_running()
 
     @staticmethod
-    def _get_system_release_file_content():
+    def get_system_release_file_content():
         from convert2rhel import redhatrelease
 
         return redhatrelease.get_system_release_content()
