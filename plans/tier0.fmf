@@ -85,3 +85,6 @@
   - name: install custom kernel
     how: shell
     script: pytest -svv tests/integration/tier0/custom-kernel/install_custom_kernel.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
