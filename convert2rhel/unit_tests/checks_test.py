@@ -438,6 +438,10 @@ def test_ensure_compatibility_of_kmods(
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> f6871e0 (Changed the log messages for the envar case)
 @centos8
 def test_ensure_compatibility_of_kmods_check_env(
     monkeypatch,
