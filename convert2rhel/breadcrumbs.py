@@ -172,7 +172,7 @@ class Breadcrumbs(object):
             # We don't need to use `_write_obj_to_array_json` function here, because
             # we only care about dumping the facts without having multiple copies of
             # it.
-            utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data, mode="w")
+            utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data)
         except (IOError, OSError):
             rhsm_facts_path = os.path.dirname(RHSM_CUSTOM_FACTS_FILE)
             loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
@@ -188,6 +188,7 @@ def _write_obj_to_array_json(path, new_object, key):
         with open(path, "a") as file:
             file_content = {key: []}
             json.dump(file_content, file, indent=4)
+
     # the file can be changed just by root
     os.chmod(path, 0o600)
 

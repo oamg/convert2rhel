@@ -173,7 +173,7 @@ class SystemInfo(object):
         CentOS Linux release 8.1.1911 (Core) <- Core
 
         :returns: The distribution id from the system release file if any.
-        :rtype: str
+        :rtype: str | None
         """
         content = self.system_release_file_content if not system_release_content else system_release_content
         match = re.search(r"(?<=\()[^)]*(?=\))", content)

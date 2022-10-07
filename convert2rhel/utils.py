@@ -646,7 +646,7 @@ def flatten(dictionary, parent_key=False, separator="."):
     return dict(items)
 
 
-def write_json_object_to_file(path, data, mode="0o600"):
+def write_json_object_to_file(path, data, mode=0o600):
     """Write a JSOn object to a file in the system.
 
     :param path: The path of the file to be written.
@@ -654,7 +654,7 @@ def write_json_object_to_file(path, data, mode="0o600"):
     :param data: The JSON data that will be written.
     :type data: dict[str, Any]
     :param mode: The permissions for the file.
-    :type mode: str
+    :type mode: int
     """
     with open(path, mode="w") as handler:
         os.chmod(path, mode)
