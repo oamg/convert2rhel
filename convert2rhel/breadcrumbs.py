@@ -188,8 +188,8 @@ def _write_obj_to_array_json(path, new_object, key):
         with open(path, "a") as file:
             file_content = {key: []}
             json.dump(file_content, file, indent=4)
-            # the file can be changed just by root
-            os.chmod(path, 0o600)
+    # the file can be changed just by root
+    os.chmod(path, 0o600)
 
     with open(path, "r+") as file:
         try:
