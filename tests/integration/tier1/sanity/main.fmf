@@ -1,0 +1,11 @@
+summary: Conversion sanity test
+description: Verify basic conversion with no preparation phase as a sanity test.
+
+tier: 1
+
+tag+:
+    - sanity
+    - basic-conversion
+
+test: |
+    pytest -svv

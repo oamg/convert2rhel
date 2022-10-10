@@ -328,3 +328,7 @@
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/sanity:
+    discover+:
+        test: sanity
