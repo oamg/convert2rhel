@@ -30,6 +30,7 @@ import dbus.exceptions
 from six.moves import urllib
 
 from convert2rhel import backup, i18n, pkghandler, utils
+from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -185,7 +186,15 @@ def register_system():
         registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
 
         try:
+            # The file /etc/os-release is needed for subscribing the system and is being removed with
+            # <system-name>-release package in one of the steps before
+            # RHELC-16
+            os_release_file.restore(rollback=False)
             registration_cmd()
+            # Need to remove the file, if it would stay there would be leftover /etc/os-release.rpmorig
+            # after conversion
+            # RHELC-16
+            os_release_file.remove()
             loggerinst.info("System registration succeeded.")
         except KeyboardInterrupt:
             # When the user hits Control-C to exit, we shouldn't retry
