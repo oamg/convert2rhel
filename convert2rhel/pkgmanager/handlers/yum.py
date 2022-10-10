@@ -112,7 +112,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
         enabled_repos = system_info.get_enabled_rhel_repos()
-        loggerinst.info("Enabling repositories: %s" % ",".join(enabled_repos))
+        loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
         for repo in enabled_repos:
             self._base.repos.enableRepo(repo)
 
@@ -124,22 +124,21 @@ class YumTransactionHandler(TransactionHandlerBase):
         will be executed in case of the the reinstall step raises the
         `ReinstallInstallError`.
         """
-        loggerinst.info("Performing operations on the transaction.")
         original_os_pkgs = get_system_packages_for_replacement()
         self._set_up_base()
         self._enable_repos()
 
-        loggerinst.info("Performing update, reinstall, and downgrade of the %s packages ..." % system_info.name)
+        loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
+
         for pkg in original_os_pkgs:
             self._base.update(name=pkg)
             try:
                 self._base.reinstall(name=pkg)
             except pkgmanager.Errors.ReinstallInstallError:
-                self._base.downgrade(name=pkg)
-            except pkgmanager.Errors.ReinstallRemoveError:
-                loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
-
-        loggerinst.debug("Finished update, reinstall, and downgrading of packages.")
+                try:
+                    self._base.downgrade(name=pkg)
+                except pkgmanager.Errors.ReinstallRemoveError:
+                    loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
     def _resolve_dependencies(self, validate_transaction):
         """Try to resolve the transaction dependencies.
@@ -169,13 +168,10 @@ class YumTransactionHandler(TransactionHandlerBase):
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
-        loggerinst.info("Resolving yum dependencies for the transaction.")
+        loggerinst.info("Resolving the dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()
 
-        if ret_code == 0:
-            loggerinst.info("Resolved yum dependencies.")
-            return True
-        elif ret_code == 1:
+        if ret_code == 1:
             # For the return code 1, yum can output two kinds of error, one being
             # that it reached the limit for depsolving, and the actual dependencies
             # that caused an problem.
@@ -192,16 +188,24 @@ class YumTransactionHandler(TransactionHandlerBase):
 
                 # Return False anyway because the depsolving failed.
                 return False
-        else:
-            loggerinst.debug("Got return code: '%s' and output: '%s'", ret_code, msg)
-            loggerinst.critical("Unhandled return code received while trying to resolve yum dependencies.")
 
-    def _process_transaction(self):
+        return True
+
+    def _process_transaction(self, validate_transaction):
         """Internal method to process the transaction.
 
+        :param validate_transaction: Determines if the transaction needs to be
+        validated or not.
+        :type validate_transaction: bool
         :raises SystemExit: If we can't process the transaction.
         """
-        loggerinst.info("Processing the transaction.")
+
+        if validate_transaction:
+            self._base.conf.tsflags.append("test")
+            loggerinst.info("Validating the yum transaction set, no modifications to the system will happen this time.")
+        else:
+            loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
+
         try:
             self._base.processTransaction()
         except (
@@ -212,7 +216,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
-        loggerinst.debug("Transaction processed successfully.")
+        if validate_transaction:
+            loggerinst.info("Successfully validated the yum transaction set.")
+        else:
+            loggerinst.info("System packages replaced successfully.")
 
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
@@ -249,15 +256,13 @@ class YumTransactionHandler(TransactionHandlerBase):
             reliable.
 
         :param vaidate_transaction: Determines if the transaction needs to be
-        tested or not.
+        validated or not.
         :type valiate_transaction: bool
         :raises SystemExit: If we can't resolve the transaction dependencies.
-        :return: A boolean indicating if it was successful or not.
-        :rtype: bool
         """
         resolve_deps_finished = False
 
-        # Do not allow this to loop till eternity.
+        # Do not allow this to loop until eternity.
         attempts = 0
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
             self._perform_operations()
@@ -273,13 +278,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         if not resolve_deps_finished:
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
-        if validate_transaction:
-            self._base.conf.tsflags.append("test")
-            loggerinst.info("Validating the yum transaction.")
-        else:
-            loggerinst.info("Replacing the system packages.")
-
-        self._process_transaction()
+        self._process_transaction(validate_transaction)
 
         # Because we call the same thing multiple times, the rpm database is
         # not properly closed at the end.

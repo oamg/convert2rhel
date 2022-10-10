@@ -76,7 +76,7 @@ class TestYumTransactionHandler(object):
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
         instance._enable_repos()
 
-        assert "Enabling repositories: %s" % ",".join(enabled_rhel_repos) in caplog.records[-1].message
+        assert "Enabling RHEL repositories:\n%s" % "\n".join(enabled_rhel_repos) in caplog.records[-1].message
         assert pkgmanager.RepoStorage.disableRepo.called_once()
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_rhel_repos)
 
@@ -90,7 +90,9 @@ class TestYumTransactionHandler(object):
         instance = YumTransactionHandler()
         instance._perform_operations()
 
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.YumBase.update.call_count == len(system_packages)
+        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
+        assert pkgmanager.YumBase.downgrade.call_count == 0
 
     @centos7
     @pytest.mark.parametrize(
@@ -105,7 +107,9 @@ class TestYumTransactionHandler(object):
         instance = YumTransactionHandler()
         instance._perform_operations()
 
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
+        assert pkgmanager.YumBase.downgrade.call_count == len(system_packages)
+        assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos7
     @pytest.mark.parametrize(
@@ -116,12 +120,14 @@ class TestYumTransactionHandler(object):
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
     ):
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
-        pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallRemoveError
+        pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
+        pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
         instance = YumTransactionHandler()
         instance._perform_operations()
 
-        assert "not available in RHEL repositories." in caplog.records[-3].message
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
+        assert pkgmanager.YumBase.downgrade.call_count == len(system_packages)
+        assert "not available in RHEL repositories." in caplog.records[-1].message
 
     @centos7
     @pytest.mark.parametrize(
@@ -150,35 +156,23 @@ class TestYumTransactionHandler(object):
         result = instance._resolve_dependencies(validate_transaction)
 
         if expected:
-            assert "Resolved yum dependencies." in caplog.records[-1].message
-
+            assert pkgmanager.handlers.yum._resolve_yum_problematic_dependencies.call_count == 0
         assert result == expected
 
+    @pytest.mark.parametrize(
+        ("validate_transaction", "expected"),
+        (
+            (True, "Successfully validated the yum transaction set."),
+            (False, "System packages replaced successfully."),
+        ),
+    )
     @centos7
-    def test_resolve_dependencies_unhandled_return_code(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
-        monkeypatch.setattr(
-            pkgmanager.YumBase,
-            "resolveDeps",
-            lambda _: (
-                3,
-                "error",
-            ),
-        )
+    def test_process_transaction(self, pretend_os, validate_transaction, expected, _mock_yum_api_calls, caplog):
         instance = YumTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(SystemExit):
-            instance._resolve_dependencies(False)
-
-        assert "Unhandled return code received while trying to resolve yum dependencies." in caplog.records[-1].message
-
-    @centos7
-    def test_process_transaction(self, pretend_os, _mock_yum_api_calls, caplog):
-        instance = YumTransactionHandler()
-        instance._set_up_base()
-
-        instance._process_transaction()
-        assert "Transaction processed successfully." in caplog.records[-1].message
+        instance._process_transaction(validate_transaction)
+        assert expected in caplog.records[-1].message
 
     @centos7
     def test_process_transaction_with_exceptions(self, pretend_os, _mock_yum_api_calls, caplog):
@@ -192,28 +186,32 @@ class TestYumTransactionHandler(object):
         pkgmanager.YumBase.processTransaction.side_effect = side_effects
 
         with pytest.raises(SystemExit):
-            instance._process_transaction()
+            instance._process_transaction(validate_transaction=False)
 
         assert "Failed to validate the yum transaction." in caplog.records[-1].message
 
     @centos7
     @pytest.mark.parametrize(
         ("validate_transaction", "expected"),
-        ((True, "Validating the yum transaction"), (False, "Replacing the system packages.")),
+        (
+            (True, "Validating the yum transaction set, no modifications to the system will happen this time."),
+            (False, "Replacing CentOS Linux packages."),
+        ),
     )
     def test_run_transaction(
         self, pretend_os, validate_transaction, expected, _mock_yum_api_calls, caplog, monkeypatch
     ):
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked()
+            pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
         )
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_process_transaction", mock.Mock())
         instance = YumTransactionHandler()
         instance._set_up_base()
         instance.run_transaction(validate_transaction=validate_transaction)
 
-        assert expected in caplog.records[-1].message
+        assert pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.call_count == 1
+        assert pkgmanager.handlers.yum.YumTransactionHandler._process_transaction.call_count == 1
 
     @centos7
     @pytest.mark.parametrize(("start_at", "loop_until"), ((0, 99), (4, 99)))
@@ -285,7 +283,7 @@ class TestYumTransactionHandler(object):
         ),
     ),
 )
-def test__resolve_yum_problematic_dependencies(
+def test_resolve_yum_problematic_dependencies(
     pretend_os,
     output,
     expected_remove_pkgs,

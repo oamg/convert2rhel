@@ -113,7 +113,7 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
         instance._enable_repos()
 
-        assert "Enabling repositories:\n%s" % "\n".join(enabled_rhel_repos) in caplog.records[-1].message
+        assert "Enabling RHEL repositories:\n%s" % "\n".join(enabled_rhel_repos) in caplog.records[-1].message
 
         for repo in enabled_repos:
             assert repo.enabled == is_enabled
@@ -152,43 +152,58 @@ class TestDnfTransactionHandler:
         assert "Failed to populate repository metadata." in caplog.records[-1].message
 
     @centos8
-    def test_perform_operations(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    @pytest.mark.parametrize(
+        ("system_packages"),
+        ((["pkg-1", "pkg-2", "pkg-3"]),),
+    )
+    def test_perform_operations(self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(
             pkgmanager.handlers.dnf,
             "get_system_packages_for_replacement",
-            value=lambda: ["pkg-1", "pkg-2"],
+            value=lambda: system_packages,
         )
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.upgrade.call_count == 2
-        assert pkgmanager.Base.reinstall.call_count == 2
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.Base.upgrade.call_count == len(system_packages)
+        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
+        assert pkgmanager.Base.downgrade.call_count == 0
 
     @centos8
-    def test_perform_operations_reinstall_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    @pytest.mark.parametrize(
+        ("system_packages"),
+        ((["pkg-1", "pkg-2", "pkg-3"]),),
+    )
+    def test_perform_operations_reinstall_exception(
+        self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch
+    ):
         monkeypatch.setattr(
             pkgmanager.handlers.dnf,
             "get_system_packages_for_replacement",
-            value=lambda: ["pkg-1", "pkg-2"],
+            value=lambda: system_packages,
         )
         pkgmanager.Base.reinstall.side_effect = pkgmanager.exceptions.PackagesNotAvailableError
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.upgrade.call_count == 2
-        assert pkgmanager.Base.reinstall.call_count == 2
-        assert pkgmanager.Base.downgrade.call_count == 2
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
+        assert pkgmanager.Base.downgrade.call_count == len(system_packages)
+        assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos8
-    def test_perform_operations_downgrade_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    @pytest.mark.parametrize(
+        ("system_packages"),
+        ((["pkg-1", "pkg-2", "pkg-3"]),),
+    )
+    def test_perform_operations_downgrade_exception(
+        self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch
+    ):
         monkeypatch.setattr(
             pkgmanager.handlers.dnf,
             "get_system_packages_for_replacement",
-            value=lambda: ["pkg-1", "pkg-2"],
+            value=lambda: system_packages,
         )
         pkgmanager.Base.reinstall.side_effect = pkgmanager.exceptions.PackagesNotAvailableError
         pkgmanager.Base.downgrade.side_effect = pkgmanager.exceptions.PackagesNotInstalledError
@@ -197,10 +212,9 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.upgrade.call_count == 2
-        assert pkgmanager.Base.reinstall.call_count == 2
-        assert pkgmanager.Base.downgrade.call_count == 2
-        assert "Finished update, reinstall, and downgrading of packages." in caplog.records[-1].message
+        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
+        assert pkgmanager.Base.downgrade.call_count == len(system_packages)
+        assert "not available in RHEL repositories" in caplog.records[-1].message
 
     @centos8
     def test_resolve_dependencies(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
@@ -210,7 +224,7 @@ class TestDnfTransactionHandler:
 
         assert pkgmanager.Base.resolve.call_count == 1
         assert pkgmanager.Base.download_packages.call_count == 1
-        assert "Dependencies resolved successfully." in caplog.records[-1].message
+        assert "Resolving the dependencies of the packages in the dnf transaction set." in caplog.records[-2].message
 
     @centos8
     def test_resolve_dependencies_resolve_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
@@ -237,14 +251,21 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.download_packages.call_count == 1
         assert "Failed to download the transaction packages." in caplog.records[-1].message
 
+    @pytest.mark.parametrize(
+        ("validate_transaction", "expected"),
+        (
+            (True, "Successfully validated the dnf transaction set."),
+            (False, "System packages replaced successfully."),
+        ),
+    )
     @centos8
-    def test_process_transaction(self, pretend_os, _mock_dnf_api_calls, caplog):
+    def test_process_transaction(self, pretend_os, validate_transaction, expected, _mock_dnf_api_calls, caplog):
         instance = DnfTransactionHandler()
         instance._set_up_base()
-        instance._process_transaction()
+        instance._process_transaction(validate_transaction)
 
         assert pkgmanager.Base.do_transaction.called_once()
-        assert "Transaction processed successfully." in caplog.records[-1].message
+        assert expected in caplog.records[-1].message
 
     @centos8
     def test_process_transaction_exceptions(self, pretend_os, _mock_dnf_api_calls, caplog):
@@ -257,7 +278,7 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
 
         with pytest.raises(SystemExit):
-            instance._process_transaction()
+            instance._process_transaction(validate_transaction=False)
 
         assert pkgmanager.Base.do_transaction.called_once()
         assert "Failed to validate the dnf transaction." in caplog.records[-1].message
@@ -285,4 +306,3 @@ class TestDnfTransactionHandler:
         assert instance._perform_operations.call_count == 1
         assert instance._resolve_dependencies.call_count == 1
         assert instance._process_transaction.call_count == 1
-        assert expected in caplog.records[-1].message

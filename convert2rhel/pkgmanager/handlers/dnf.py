@@ -68,7 +68,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         self._base.read_all_repos()
         repos = self._base.repos.all()
         enabled_repos = system_info.get_enabled_rhel_repos()
-        loggerinst.info("Enabling repositories:\n%s" % "\n".join(enabled_repos))
+        loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
         try:
             for repo in repos:
                 # Disable the repositories that we don't want if the `repo.id`
@@ -89,12 +89,11 @@ class DnfTransactionHandler(TransactionHandlerBase):
         transaction: update, reinstall and downgrade. The downgrade
         will be executed only when the reinstall step raises
         `PackagesNotAvailableError`.
-
-        :raises SystemExit: In case the dependency solving fails.
         """
-        loggerinst.info("Performing operations on the transaction.")
         original_os_pkgs = get_system_packages_for_replacement()
-        loggerinst.info("Performing update, reinstall and downgrade of the %s packages ..." % system_info.name)
+
+        loggerinst.info("Adding %s packages to the dnf transaction set.", system_info.name)
+
         for pkg in original_os_pkgs:
             self._base.upgrade(pkg_spec=pkg)
             try:
@@ -104,8 +103,6 @@ class DnfTransactionHandler(TransactionHandlerBase):
                     self._base.downgrade(pkg_spec=pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
-
-        loggerinst.debug("Finished update, reinstall, and downgrading of packages.")
 
     def _resolve_dependencies(self):
         """Resolve the dependencies for the transaction.
@@ -117,27 +114,35 @@ class DnfTransactionHandler(TransactionHandlerBase):
         :raises SystemExit: If we fail to resolve the dependencies or
             downloading the packages.
         """
-        loggerinst.info("Resolving dependencies.")
+        loggerinst.info("Resolving the dependencies of the packages in the dnf transaction set.")
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
+        loggerinst.info("Downloading the packages that were added to the dnf transaction set.")
         try:
             self._base.download_packages(self._base.transaction.install_set)
         except pkgmanager.exceptions.DownloadError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to download the transaction packages.")
 
-        loggerinst.debug("Dependencies resolved successfully.")
-
-    def _process_transaction(self):
+    def _process_transaction(self, validate_transaction):
         """Internal method that will process the transaction.
 
+        :param validate_transaction: Determines if the transaction needs to be
+        validated or not.
+        :type validate_transaction: bool
         :raises SystemExit: If we can't process the transaction.
         """
-        loggerinst.info("Processing the transaction.")
+
+        if validate_transaction:
+            self._base.conf.tsflags.append("test")
+            loggerinst.info("Validating the dnf transaction set, no modifications to the system will happen this time.")
+        else:
+            loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
+
         try:
             self._base.do_transaction()
         except (
@@ -147,7 +152,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the dnf transaction.")
 
-        loggerinst.debug("Transaction processed successfully.")
+        if validate_transaction:
+            loggerinst.info("Successfully validated the dnf transaction set.")
+        else:
+            loggerinst.info("System packages replaced successfully.")
 
     def run_transaction(self, validate_transaction=False):
         """Run the dnf transaction.
@@ -157,31 +165,21 @@ class DnfTransactionHandler(TransactionHandlerBase):
         and do an early return.
 
         :param validate_transaction: Determines if the transaction needs to be
-        tested or not.
+        validated or not.
         :type validate_transaction: bool
-        :return: A boolean indicating if it was successful or not.
-        :rtype: bool
+        :raises SystemExit: If there was any problem during the
         """
         self._set_up_base()
         self._enable_repos()
 
         self._perform_operations()
         self._resolve_dependencies()
+        self._process_transaction(validate_transaction)
 
-        # If we need to verify the transaction the first time, we need to
-        # append the "test" flag to the `tsflags`.
-        if validate_transaction:
-            self._base.conf.tsflags.append("test")
-            loggerinst.info("Validating the dnf transaction.")
-        else:
-            loggerinst.info("Replacing the system packages.")
-
-        self._process_transaction()
-
-        # Because we call the same thing multiple times, the rpm database is
-        # not properly closed at the end of it, thus, having the need to call
-        # `self._base.close()` explicitly before we delete the object.
-        # If we use only `del self._base`, it seems that dnf is not able to properly clean
+        # Because we call the same thing multiple times, the rpm database is not
+        # properly closed at the end of it, thus, having the need to call
+        # `self._base.close()` explicitly before we delete the object. If we use
+        # only `del self._base`, it seems that dnf is not able to properly clean
         # everything in the database. We were seeing some problems in the next
         # steps with the rpmdb, as the history had changed.
         self._base.close()
