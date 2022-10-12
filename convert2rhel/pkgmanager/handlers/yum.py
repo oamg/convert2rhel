@@ -134,10 +134,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             self._base.update(name=pkg)
             try:
                 self._base.reinstall(name=pkg)
-            except pkgmanager.Errors.ReinstallInstallError:
+            except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
                 try:
                     self._base.downgrade(name=pkg)
-                except pkgmanager.Errors.ReinstallRemoveError:
+                except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
     def _resolve_dependencies(self, validate_transaction):
