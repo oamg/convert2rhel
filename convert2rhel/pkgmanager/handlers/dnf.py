@@ -74,7 +74,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 # Disable the repositories that we don't want if the `repo.id`
                 # is not in the `enabled_repos` list, otherwise explicitly enable it
                 # to make sure that it will be available when we run the transactions.
-                repo.disable if repo.id not in enabled_repos else repo.enable()
+                repo.disable() if repo.id not in enabled_repos else repo.enable()
 
             # Load metadata of the enabled repositories
             self._base.fill_sack()
