@@ -1005,7 +1005,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog):
 @pytest.mark.parametrize(
     ("packages", "exception", "expected"),
     (
-        (["package-1", "package-2"], True, "The system has {0} packages not updated"),
+        (["package-1", "package-2"], True, "The system has {0} package(s) not updated"),
         ([], False, "System is up-to-date."),
     ),
 )

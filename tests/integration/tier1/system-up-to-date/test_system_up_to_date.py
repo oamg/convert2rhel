@@ -88,5 +88,5 @@ def test_system_not_updated(shell, convert2rhel):
         )
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
-        c2r.expect(r"WARNING - The system has \d+ packages not updated.")
+        c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
     assert c2r.exitstatus == 0

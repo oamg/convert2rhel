@@ -592,7 +592,7 @@ def check_package_updates():
             else "on repositories defined in the %s folder" % reposdir
         )
         logger.warning(
-            "The system has %s packages not updated based %s.\n"
+            "The system has %s package(s) not updated based %s.\n"
             "List of packages to update: %s.\n\n"
             "Not updating the packages may cause the conversion to fail.\n"
             "Consider stopping the conversion and update the packages before re-running convert2rhel."
