@@ -156,7 +156,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
     return output, return_code
 
 
-def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, columns=120):
+def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, columns=150):
     """Similar to run_subprocess(), but the command is executed in a pseudo-terminal.
 
     The pseudo-terminal can be useful when a command prints out a different output with or without an active terminal
