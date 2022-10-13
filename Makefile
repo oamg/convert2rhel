@@ -1,5 +1,4 @@
 .PHONY: \
-	force-rebuild \
 	install \
 	tests-locally \
 	lint-locally \
@@ -57,7 +56,7 @@ endif
 
 all: clean images tests
 
-install: .install .images .env .pre-commit
+install: .install .build-images .env .pre-commit
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
