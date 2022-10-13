@@ -20,7 +20,17 @@ import os
 
 from convert2rhel import backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, systeminfo, toolopts, utils
+from convert2rhel import (
+    pkghandler,
+    pkgmanager,
+    redhatrelease,
+    repo,
+    special_cases,
+    subscription,
+    systeminfo,
+    toolopts,
+    utils,
+)
 
 
 loggerinst = logging.getLogger(__name__)
@@ -231,9 +241,9 @@ def pre_ponr_conversion():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-
+    transaction_handler = pkgmanager.create_transaction_handler()
     loggerinst.task("Convert: Replace system packages")
-    pkghandler.transaction_handler.run_transaction()
+    transaction_handler.run_transaction()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")

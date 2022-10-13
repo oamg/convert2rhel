@@ -34,7 +34,6 @@ class RepoDict:
         self.disabled = False
         self.enabled = False
 
-    @property
     def disable(self):
         self.disabled = True
         self.enabled = False

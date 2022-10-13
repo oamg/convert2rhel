@@ -171,20 +171,20 @@ def test_perform_pre_checks(monkeypatch):
 
 def test_pre_ponr_checks(monkeypatch):
     ensure_compatibility_of_kmods_mock = mock.Mock()
-    run_transaction_mock = mock.Mock()
+    create_transaction_handler_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
         "ensure_compatibility_of_kmods",
         value=ensure_compatibility_of_kmods_mock,
     )
     monkeypatch.setattr(
-        checks.pkghandler.transaction_handler,
-        "run_transaction",
-        value=run_transaction_mock,
+        checks.pkgmanager,
+        "create_transaction_handler",
+        value=create_transaction_handler_mock,
     )
     checks.perform_pre_ponr_checks()
     ensure_compatibility_of_kmods_mock.assert_called_once()
-    run_transaction_mock.assert_called_once()
+    create_transaction_handler_mock.assert_called_once()
 
 
 def test_repoquery__failure(caplog, monkeypatch, tmpdir, request):
@@ -362,25 +362,16 @@ def test_ensure_compatibility_of_kmods(
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
 
-@pytest.mark.parametrize(
-    ("validate_transaction", "expected"),
-    (
-        (
-            True,
-            "Transaction validated successfully.",
-        ),
-    ),
-)
-def test_validate_package_manager_transaction(validate_transaction, expected, monkeypatch, caplog):
+def test_validate_package_manager_transaction(monkeypatch, caplog):
     monkeypatch.setattr(
-        checks.pkghandler.transaction_handler,
-        "run_transaction",
-        value=lambda validate_transaction: validate_transaction,
+        checks.pkgmanager,
+        "create_transaction_handler",
+        value=mock.Mock(),
     )
 
     checks.validate_package_manager_transaction()
 
-    assert expected in caplog.records[-1].message
+    assert "Transaction validated successfully." in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

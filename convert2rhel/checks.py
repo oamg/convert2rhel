@@ -26,7 +26,7 @@ import tempfile
 import rpm
 
 from convert2rhel import __version__ as convert2rhel_version
-from convert2rhel import grub, pkghandler, pkgmanager, utils
+from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
     call_yum_cmd,
     compare_package_versions,
@@ -299,8 +299,8 @@ def ensure_compatibility_of_kmods():
 def validate_package_manager_transaction():
     """Validate the package manager transaction is passing the tests."""
     logger.task("Validate the %s transaction", pkgmanager.TYPE)
-
-    pkghandler.transaction_handler.run_transaction(
+    transaction_handler = pkgmanager.create_transaction_handler()
+    transaction_handler.run_transaction(
         validate_transaction=True,
     )
 

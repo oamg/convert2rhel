@@ -1102,6 +1102,3 @@ def clean_yum_metadata():
         return
 
     loggerinst.info("Cached yum metadata cleaned successfully.")
-
-
-transaction_handler = pkgmanager.create_transaction_handler()
