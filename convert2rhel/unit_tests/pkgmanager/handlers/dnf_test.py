@@ -284,15 +284,10 @@ class TestDnfTransactionHandler:
 
     @centos8
     @pytest.mark.parametrize(
-        ("validate_transaction", "expected"),
-        (
-            (True, "Validating the dnf transaction."),
-            (False, "Replacing the system packages."),
-        ),
+        ("validate_transaction"),
+        ((True), (False)),
     )
-    def test_run_transaction(
-        self, pretend_os, validate_transaction, expected, _mock_dnf_api_calls, caplog, monkeypatch
-    ):
+    def test_run_transaction(self, pretend_os, validate_transaction, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_enable_repos", mock.Mock())
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_resolve_dependencies", mock.Mock())

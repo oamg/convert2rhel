@@ -65,8 +65,8 @@ def _resolve_yum_problematic_dependencies(output):
         remove_pkgs(
             pkgs_to_remove=packages_to_remove,
             backup=True,
-            critical=False,
-            set_releasever=False,
+            critical=True,
+            set_releasever=True,
             reposdir=BACKUP_DIR,
             custom_releasever=system_info.version.major,
             varsdir=os.path.join(BACKUP_DIR, "yum", "vars"),

@@ -481,7 +481,7 @@ def download_pkg(
 
         if custom_releasever:
             cmd.append("--releasever=%s" % custom_releasever)
-        elif system_info.releasever:
+        else:
             cmd.append("--releasever=%s" % system_info.releasever)
 
     if varsdir:
