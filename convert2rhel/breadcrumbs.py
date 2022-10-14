@@ -131,12 +131,18 @@ class Breadcrumbs(object):
     def _set_source_os(self):
         """Set the source os release information."""
         self.source_os = system_info.get_system_release_info()
+        if self.source_os["id"] is None:
+            # rhsm facts can only be strings or booleans
+            self.source_os["id"] = "null"
 
     def _set_target_os(self):
         """Set the target os release information."""
         # Reading the system-release file again to get the target os information.
         system_release_content = system_info.get_system_release_file_content()
         self.target_os = system_info.get_system_release_info(system_release_content)
+        if self.target_os["id"] is None:
+            # rhsm facts can only be strings or booleans
+            self.target_os["id"] = "null"
 
     @property
     def data(self):

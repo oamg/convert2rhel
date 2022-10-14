@@ -1,7 +1,7 @@
 {
     "definitions": {},
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://example.com/object1628676489.json",
+    "$id": "https://github.com/oamg/convert2rhel/c2r-migration-results-schema-1.json",
     "title": "Migrations file schema v1",
     "type": "object",
     "required": [
@@ -113,18 +113,84 @@
                     "source_os": {
                         "$id": "#root/activities/items/source_os",
                         "description": "Source operating system where the activity was started",
-                        "type": "string",
-                        "examples": [
-                            "Red Hat Enterprise Linux 7.9"
-                        ]
+                        "type": "object",
+                        "required": [
+                            "id",
+                            "name",
+                            "version"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$id": "#/root/activities/items/source_os/id",
+                                "description": "Id of the source operating system release.  It will be the string 'null' if no id is present.",
+                                "type": "string",
+                                "examples": [
+                                    "Final",
+                                    "Core",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "$id": "#/root/activities/items/source_os/name",
+                                "description": "Name of the source operating system.",
+                                "type": "string",
+                                "examples": [
+                                    "Oracle Linux Server",
+                                    "CentOS Linux"
+                                ]
+                            },
+                            "version": {
+                                "$id": "#/root/activities/items/source_os/version",
+                                "description": "Version of the source operating system release. Only the Major and, if provided, minor.  CentOS build number is not included.",
+                                "type": "string",
+                                "examples": [
+                                    "7.8",
+                                    "8.1"
+                                ]
+                            }
+                        }
                     },
                     "target_os": {
                         "$id": "#root/activities/items/target_os",
-                        "description": "Target operating system where the migration ended",
-                        "type": "string",
-                        "examples": [
-                            "Red Hat Enterprise Linux 8.3"
-                        ]
+                        "description": "Target operating system that the activity converts to.",
+                        "type": [
+                            "object",
+                            "string"
+                        ],
+                        "pattern":  "null",
+                        "required": [
+                            "id",
+                            "name",
+                            "version"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$id": "#/root/activities/items/target_os/id",
+                                "description": "Id of the target operating system release.  It will be the string 'null' if no id is present.",
+                                "type": "string",
+                                "examples": [
+                                    "Ootpa",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "$id": "#/root/activities/items/target_os/name",
+                                "description": "Name of the target operating system.",
+                                "type": "string",
+                                "examples": [
+                                    "Red Hat Enterprise Linux"
+                                ]
+                            },
+                            "version": {
+                                "$id": "#/root/activities/items/target_os/version",
+                                "description": "Version of the target operating system release.",
+                                "type": "string",
+                                "examples": [
+                                    "7.8",
+                                    "8.1"
+                                ]
+                            }
+                        }
                     },
                     "env": {
                         "$id": "#root/activities/items/env",

@@ -18,15 +18,20 @@ def test_correct_distro():
         destination_distro = sys_release.read()
 
     if "Red Hat Enterprise Linux Server release 7.9 (Maipo)" in destination_distro:
-        assert (
-            source_distro == "CentOS Linux release 7.9.2009 (Core)"
-            or source_distro == "Oracle Linux Server release 7.9"
-        )
+        assert source_distro == {"id": "Core", "name": "CentOS Linux", "version": "7.9"} or source_distro == {
+            "id": "null",
+            "name": "Oracle Linux Server",
+            "version": "7.9",
+        }
     elif "Red Hat Enterprise Linux release 8.4 (Ootpa)" in destination_distro:
-        assert source_distro == "CentOS Linux release 8.4.2105" or source_distro == "Oracle Linux Server release 8.4"
+        assert source_distro == {"id": "null", "name": "CentOS Linux", "version": "8.4"} or source_distro == {
+            "id": "null",
+            "name": "Oracle Linux Server",
+            "version": "8.4",
+        }
     elif "Red Hat Enterprise Linux release 8.5 (Ootpa)" in destination_distro:
-        assert source_distro == "CentOS Linux release 8.5.2111"
+        assert source_distro == {"id": "null", "name": "CentOS Linux", "version": "8.5"}
     elif "Red Hat Enterprise Linux release 8.6 (Ootpa)" in destination_distro:
-        assert source_distro == "Oracle Linux Server release 8.6"
+        assert source_distro == {"id": "null", "name": "Oracle Linux Server", "version": "8.6"}
     else:
         assert False, "Unknown destination distro"

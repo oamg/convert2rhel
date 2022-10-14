@@ -232,10 +232,10 @@ def test_set_ended():
 @centos7
 def test_set_source_os(pretend_os):
     breadcrumbs.breadcrumbs._set_source_os()
-    assert {"id": None, "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.source_os
+    assert {"id": "null", "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.source_os
 
 
 @centos7
 def test_set_target_os(pretend_os):
     breadcrumbs.breadcrumbs._set_target_os()
-    assert {"id": None, "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.target_os
+    assert {"id": "null", "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.target_os
