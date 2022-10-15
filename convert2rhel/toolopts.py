@@ -83,11 +83,11 @@ class CLI(object):
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
-            " [--disable-colors] [-y]\n"
+            " [-y]\n"
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]\n"
+            " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [--disable-colors] [-y]"
+            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]"
             "\n\n"
             "WARNING: The tool needs to be run under the root user"
         )
@@ -115,11 +115,6 @@ class CLI(object):
             "--debug",
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
-        )
-        self._parser.add_option(
-            "--disable-colors",
-            action="store_true",
-            help="Disable color output",
         )
         # Importing here instead of on top of the file to avoid cyclic dependency
         from convert2rhel.systeminfo import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
