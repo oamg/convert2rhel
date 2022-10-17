@@ -24,8 +24,8 @@ from convert2rhel import logger as logger_module
 
 
 def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_tool_opts, clear_loggers):
-    """Test if the logger handlers emmits the events to the file and stdout."""
-    monkeypatch.setattr(logger_module, "tool_opts", global_tool_opts)
+    """Test if the logger handlers emits the events to the file and stdout."""
+    monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
 
     # initializing the logger first
     log_fname = "convert2rhel.log"
@@ -49,7 +49,7 @@ def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_t
 
 
 def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opts, clear_loggers):
-    monkeypatch.setattr(logger_module, "tool_opts", global_tool_opts)
+    monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
     log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
@@ -115,3 +115,12 @@ def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
             assert archive_f.read() == test_data
 
     assert not os.path.exists(log_file)
+
+
+@pytest.mark.parametrize(
+    ("no_color_value", "should_disable_color"),
+    (("0", False), ("False", False), (None, False), ("1", True), ("True", True), ("foobar", True)),
+)
+def test_should_disable_color_output(monkeypatch, no_color_value, should_disable_color):
+    monkeypatch.setattr(os, "environ", {"NO_COLOR": no_color_value})
+    assert logger_module.should_disable_color_output() == should_disable_color
