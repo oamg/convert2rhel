@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from envparse import env
+import pytest
 
 
 # The original dnsmasq.conf file
@@ -42,17 +42,19 @@ def _restore_configuration_files():
         shutil.copy(RESOLV_CONF_BACKUP_FILE, RESOLV_CONF_FILE)
 
 
+@pytest.mark.available_connection
 def test_check_if_internet_connection_is_reachable(convert2rhel):
     """Test if convert2rhel can access the internet."""
-    with convert2rhel(("--no-rpm-va --debug")) as c2r:
+    with convert2rhel("--no-rpm-va --debug") as c2r:
         c2r.expect("Checking internet connectivity using address")
-        assert c2r.expect_exact("Internet connection available.") == 0
+        assert c2r.expect("internet connection seems to be available", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
     assert c2r.exitstatus == 1
 
 
+@pytest.mark.unavailable_connection
 def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell):
     """Test a case where the internet connection is not reachable by any means."""
     assert shell("yum install dnsmasq -y").returncode == 0
@@ -61,9 +63,9 @@ def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell):
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
 
-    with convert2rhel(("--no-rpm-va --debug")) as c2r:
+    with convert2rhel("--no-rpm-va --debug") as c2r:
         c2r.expect("Checking internet connectivity using address")
-        c2r.expect("Couldn't connect to the address")
+        assert c2r.expect("There was a problem while trying to connect to", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
