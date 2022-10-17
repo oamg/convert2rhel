@@ -86,7 +86,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
 def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     """
     Test force loads kmod and verifies that Convert2RHEL run is being inhibited.
-    Force loaded kmods are denoted (FE) for F = module was force loaded E = unsigned module was loaded.
+    Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
     if "oracle-7" not in system_version and "centos-7" not in system_version:
