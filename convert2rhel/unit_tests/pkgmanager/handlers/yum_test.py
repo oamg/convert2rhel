@@ -298,11 +298,11 @@ def test_resolve_yum_problematic_dependencies(
         pkgmanager.handlers.yum.remove_pkgs.assert_called_with(
             pkgs_to_remove=expected_remove_pkgs,
             backup=True,
-            critical=False,
+            critical=True,
             reposdir=utils.BACKUP_DIR,
-            set_releasever=False,
+            set_releasever=True,
             custom_releasever=7,
             varsdir=os.path.join(utils.BACKUP_DIR, "yum/vars"),
         )
     else:
-        assert "No packages to remove." in caplog.records[-1].message
+        assert "No dependency issues reported by yum." in caplog.records[-1].message

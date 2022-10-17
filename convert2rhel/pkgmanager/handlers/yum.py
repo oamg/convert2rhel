@@ -51,6 +51,10 @@ def _resolve_yum_problematic_dependencies(output):
     :type output: list[str]
     """
     packages_to_remove = []
+    if output:
+        loggerinst.debug("Dependency resolution failed:\n- %s" % "\n- ".join(output))
+    else:
+        loggerinst.debug("Dependency resolution failed with no detailed message reported by yum.")
     for package in output:
         resolve_error = re.findall(EXTRACT_PKG_FROM_YUM_DEPSOLVE, str(package))
         if resolve_error:
@@ -74,7 +78,7 @@ def _resolve_yum_problematic_dependencies(output):
 
         loggerinst.debug("Finished backing up and removing the packages.")
     else:
-        loggerinst.info("No packages to remove.")
+        loggerinst.info("No dependency issues reported by yum.")
 
 
 class YumTransactionHandler(TransactionHandlerBase):
