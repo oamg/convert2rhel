@@ -68,9 +68,6 @@ install: .install .build-images .env .pre-commit
 	$(PRE_COMMIT) install --install-hooks
 	touch $@
 
-.env:
-	cp .env.example .env
-
 tests-locally: install
 	. $(VENV)/bin/activate; pytest $(PYTEST_ARGS)
 
