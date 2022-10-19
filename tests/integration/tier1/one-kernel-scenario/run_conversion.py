@@ -3,7 +3,12 @@ import platform
 
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
-    "TODO better description and function name"
+    """TODO better description and function name"""
+
+    # We need to skip check for collected rhsm custom facts after the conversion
+    # due to disabled submgr, thus adding envar
+    submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
+    shell(f"echo '{submgr_disabled_var}' >> /etc/profile")
 
     system_distro = platform.platform()
 

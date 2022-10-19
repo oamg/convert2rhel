@@ -22,18 +22,25 @@ C2R_MIGRATION_RESULTS = "/etc/migration-results"
 C2R_RHSM_CUSTOM_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
-def test_flag_system_as_converted():
+def test_flag_system_as_converted(shell):
     """Test if the breadcrumbs file was created and corresponds to the JSON schema."""
 
+    # We need to skip check for collected rhsm custom facts after the conversion
+    # due to disabled submgr, thus adding envar
+    submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
+    query = shell(f"set | grep {submgr_disabled_var}").output
+
     assert os.path.exists(C2R_MIGRATION_RESULTS)
-    assert os.path.exists(C2R_RHSM_CUSTOM_FACTS)
 
     with open(C2R_MIGRATION_RESULTS, "r") as data:
         data_json = json.load(data)
         # If some difference between generated json and its schema invoke exception
         jsonschema.validate(instance=data_json, schema=C2R_MIGRATION_RESULTS_SCHEMA)
 
-    with open(C2R_RHSM_CUSTOM_FACTS, "r") as data:
-        data_json = json.load(data)
-        # If some difference between generated json and its schema invoke exception
-        jsonschema.validate(instance=data_json, schema=C2R_RHSM_CUSTOM_FACTS_SCHEMA)
+    if submgr_disabled_var not in query:
+        assert os.path.exists(C2R_RHSM_CUSTOM_FACTS)
+
+        with open(C2R_RHSM_CUSTOM_FACTS, "r") as data:
+            data_json = json.load(data)
+            # If some difference between generated json and its schema invoke exception
+            jsonschema.validate(instance=data_json, schema=C2R_RHSM_CUSTOM_FACTS_SCHEMA)
