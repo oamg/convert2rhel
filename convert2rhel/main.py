@@ -152,7 +152,10 @@ def main():
             # solution is necessary it will need to be future implemented here
             # or with the use of other backup tools.
             loggerinst.warning(
-                "Conversion process was unsuccessful. System is left in a undetermined state that convert2rhel can not fix by itself. This might mean that the system reports it being a Red Hat Enterprise Linux machine and might not be fully converted. It is strongly recommended to store the logs to investigate and restore the system to a backup in the meantime."
+                "Conversion process was unsuccessful. System is left in a undetermined state that convert2rhel can"
+                " not fix by itself. This might mean that the system reports it being a Red Hat Enterprise Linux"
+                " machine and might not be fully converted. It is strongly recommended to store the logs to"
+                " investigate and restore the system to a backup in the meantime."
             )
 
         breadcrumbs.breadcrumbs.finish_fail()
