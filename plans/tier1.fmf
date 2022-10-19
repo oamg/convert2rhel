@@ -28,9 +28,17 @@ description+: |
         adjust+:
             - enabled: false
               when: >
-                distro != centos-8
-        environment+:
-            PACKAGES: centos-backgrounds centos-gpg-keys
+                distro == oraclelinux, centos-7
+            - environment+:
+                PACKAGES: centos-backgrounds centos-gpg-keys
+              when: distro == centos-8
+            - environment+:
+                PACKAGES: almalinux-backgrounds
+              when: distro == AlmaLinux
+              because: No almalinux-gpg-keys package for release 8 available
+            - environment+:
+                PACKAGES: rocky-backgrounds rocky-gpg-keys
+              when: distro == rocky
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -163,7 +171,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify grub config file with valid changes
+            - name: modify the grub config with valid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_valid_changed_grub.py
             - name: reboot after conversion
@@ -174,7 +182,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify grub config with invalid changes
+            - name: modify the grub config with invalid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_invalid_changed_grub.py
             - name: reboot after conversion
@@ -219,9 +227,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /detect_correct_boot_partition:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: trigger == commit
+            - enabled: true
+              when: initiator == human
               because: There are no UEFI images available on the Testing Farm yet.
         discover+:
             filter: tag:checks-after-conversion

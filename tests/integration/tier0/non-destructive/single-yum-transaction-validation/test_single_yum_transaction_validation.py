@@ -15,6 +15,10 @@ FINAL_MESSAGE = "Diagnosis: There are no suitable mirrors available for the load
 
 if "oracle" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "Oracle Linux Server"
+elif "alma" in SYSTEM_RELEASE_ENV:
+    SERVER_SUB = "AlmaLinux"
+elif "rocky" in SYSTEM_RELEASE_ENV:
+    SERVER_SUB = "Rocky Linux"
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"

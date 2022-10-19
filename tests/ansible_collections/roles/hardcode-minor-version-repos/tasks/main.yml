@@ -1,0 +1,8 @@
+---
+- name: Hardcode Alma Linux repositories to vault
+  include_tasks: alma-86-repos.yml
+  when: ansible_facts['distribution'] == "AlmaLinux"
+
+- name: Hardcode RockyLinux repositories to vault
+  include_tasks: rocky-86-repos.yml
+  when: ansible_facts['distribution'] == "Rocky"
