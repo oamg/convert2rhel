@@ -163,6 +163,10 @@ description+: |
                     playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /resolve_dependency:
+            adjust+:
+                - enabled: false
+                  when: distro == AlmaLinux, rocky
+                  because: We do not have any tracked packages with Rocky and Alma for this test case
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:

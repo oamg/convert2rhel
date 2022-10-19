@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 
@@ -12,9 +13,9 @@ def custom_subman(shell, repository=None):
     # Setup repositories to install the subscription-manager from.
     epel7_repository = "ubi"
     epel8_repository = "baseos"
-    if SYSTEM_RELEASE_ENV in ("oracle-7", "centos-7"):
+    if re.match(r"^(centos|oracle)-7$", SYSTEM_RELEASE_ENV):
         repository = epel7_repository
-    elif "oracle-8" in SYSTEM_RELEASE_ENV or "centos-8" in SYSTEM_RELEASE_ENV:
+    elif re.match(r"^(centos|oracle|alma|rocky)-8", SYSTEM_RELEASE_ENV):
         repository = epel8_repository
 
     # On Oracle Linux 7 a "rhn-client-tools" package may be present on
@@ -42,6 +43,8 @@ def custom_subman(shell, repository=None):
         shell("yum install -y centos-gpg-keys centos-logos")
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
         shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8* redhat-release-8*")
+    elif "alma-8" in SYSTEM_RELEASE_ENV:
+        shell("yum install -y --enablerepo=baseos --releasever=8.7 almalinux-release-8*")
 
     # Some packages might get downgraded during the setup; update just to be sure the system is fine
     shell("yum update -y")
@@ -105,13 +108,13 @@ def system_release_missing(shell):
     # Make backup copy of the file
     backup_folder = "/tmp/missing-system-release_sysrelease_backup/"
     assert shell(f"mkdir {backup_folder}").returncode == 0
-    assert shell(f"mv /etc/system-release {backup_folder}").returncode == 0
+    assert shell(f"mv -v /etc/system-release {backup_folder}").returncode == 0
 
     yield
 
     # Restore the system
     assert shell(f"mv -v {backup_folder}system-release /etc/").returncode == 0
-    assert shell(f"rm -rf {backup_folder}").returncode == 0
+    assert shell(f"rm -rf -v {backup_folder}").returncode == 0
 
 
 @pytest.mark.test_missing_system_release

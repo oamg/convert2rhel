@@ -1,6 +1,6 @@
 - hosts: all
   tasks:
-    - name: Add CentOS extras repo to OL7
+    - name: Add CentOS extras repo
       yum_repository:
         name: centos7-extras
         description: CentOS extras for $basearch
