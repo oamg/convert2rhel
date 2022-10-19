@@ -1,2 +1,10 @@
 ---
+- hosts: all
+  gather_facts: yes
+  become: false
 - include_tasks: centos-repos.yml
+  when: ansible_facts["distribution"] == "CentOS" and ansible_facts['distribution_version'] == "8.4"
+- include_tasks: alma-repos.yml
+  when: ansible_facts["distribution"] == "AlmaLinux" and ansible_facts['distribution_version'] == "8.4"
+- include_tasks: rocky-repos.yml
+  when: ansible_facts["distribution"] == "Rocky" and ansible_facts['distribution_version'] == "8.4"

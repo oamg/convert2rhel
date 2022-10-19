@@ -43,7 +43,7 @@ jobs:
         #TODO bump distro context to 8.7 when the image is available on the testing farm
         # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE_ENV to 8.7
         # to tag the updated system correctly
-      distros: [centos-8.4, centos-8-latest, oraclelinux-8.6]
+      distros: [alma-linux-8.6, centos-8.4, centos-8-latest, oraclelinux-8.6, rocky-linux-8.6]
   use_internal_tf: True
   trigger: pull_request
   identifier: "tier0"

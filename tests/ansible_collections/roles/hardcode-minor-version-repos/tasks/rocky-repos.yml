@@ -1,0 +1,32 @@
+- name: Overwrite AppStream repository (Rocky 8.4)
+  yum_repository:
+    name: appstream
+    description: AppStream repo
+    baseurl: https://dl.rockylinux.org/vault/rocky/8.4/AppStream/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+    file: Rocky-AppStream
+
+- name: Overwrite BaseOS repository (Rocky 8.4)
+  yum_repository:
+    name: baseos
+    description: BaseOS repo
+    baseurl: https://dl.rockylinux.org/vault/rocky/8.4/BaseOS/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+    file: Rocky-BaseOS
+
+- name: Overwrite Extras repository (Rocky 8.4)
+  yum_repository:
+    name: extras
+    description: Extras repo
+    baseurl: https://dl.rockylinux.org/vault/rocky/8.4/extras/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+    file: Rocky-Extras
