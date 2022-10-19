@@ -30,6 +30,26 @@ DISTRO_KERNEL_MAPPING = {
         "custom_kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-348.7.1.el8_5.x86_64.rpm",
         "grub_substring": "CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8",
     },
+    "alma-8.6": {
+        "original_kernel": f"{ORIGINAL_KERNEL}",
+        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
+    },
+    "alma-8.8": {
+        "original_kernel": f"{ORIGINAL_KERNEL}",
+        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
+    },
+    "rocky-8.6": {
+        "original_kernel": f"{ORIGINAL_KERNEL}",
+        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
+    },
+    "rocky-8.8": {
+        "original_kernel": f"{ORIGINAL_KERNEL}",
+        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
+    },
 }
 
 _, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
@@ -71,13 +91,17 @@ def clean_up_custom_kernel(shell):
 
 
 @pytest.mark.test_custom_kernel
-def test_custom_kernel(convert2rhel, shell):
+def test_custom_kernel(convert2rhel, shell, hybrid_rocky_image):
     """
     Run the conversion with custom kernel installed on the system.
     """
     os_vendor = "CentOS"
     if "oracle" in SYSTEM_RELEASE_ENV:
         os_vendor = "Oracle"
+    elif "alma" in SYSTEM_RELEASE_ENV:
+        os_vendor = "AlmaLinux"
+    elif "rocky" in SYSTEM_RELEASE_ENV:
+        os_vendor = "Rocky"
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         install_custom_kernel(shell)

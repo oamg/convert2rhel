@@ -56,9 +56,9 @@ def shell(tmp_path):
 
 @pytest.fixture()
 def convert2rhel(shell):
-    """Context manager to run Convert2RHEL utility.
+    """Context manager to run convert2rhel utility.
 
-    This fixture runs the Convert2RHEL with the specified options and
+    This fixture runs the convert2rhel with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
     You can verify that some text is in stdout, by using:
@@ -224,8 +224,8 @@ class ConfigUtils:
 
 @pytest.fixture()
 def c2r_config(os_release):
-    """ConfigUtils object with already loaded Convert2RHEL config."""
-    release_id2conf = {"centos": "centos", "ol": "oracle"}
+    """ConfigUtils object with already loaded convert2rhel config."""
+    release_id2conf = {"centos": "centos", "ol": "oracle", "almalinux": "almalinux", "rocky": "rocky"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")
         / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
@@ -459,3 +459,20 @@ def disabled_telemetry(shell):
 
     if os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]:
         del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
+
+
+@pytest.fixture()
+def hybrid_rocky_image(shell, system_release):
+    """
+    Fixture to detect a hybrid Rocky Linux cloud image.
+    Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
+    The symlink prevents grub to read the grubenv and boot to a different
+    kernel than the last selected.
+    """
+    grubenv_file = "/boot/grub2/grubenv"
+    if "rocky" in system_release:
+        if os.path.islink(grubenv_file):
+            target_grubenv_file = os.path.realpath(grubenv_file)
+
+            os.remove(grubenv_file)
+            shutil.copy2(target_grubenv_file, grubenv_file)
