@@ -305,4 +305,4 @@ def test_resolve_yum_problematic_dependencies(
             varsdir=os.path.join(utils.BACKUP_DIR, "yum/vars"),
         )
     else:
-        assert "No dependency issues reported by yum." in caplog.records[-1].message
+        assert "Unable to resolve dependency issues." in caplog.records[-1].message

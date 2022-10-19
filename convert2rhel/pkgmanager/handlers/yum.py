@@ -78,7 +78,7 @@ def _resolve_yum_problematic_dependencies(output):
 
         loggerinst.debug("Finished backing up and removing the packages.")
     else:
-        loggerinst.info("No dependency issues reported by yum.")
+        loggerinst.warning("Unable to resolve dependency issues.")
 
 
 class YumTransactionHandler(TransactionHandlerBase):
