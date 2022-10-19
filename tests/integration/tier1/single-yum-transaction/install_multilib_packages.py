@@ -5,7 +5,7 @@ system_version = platform.platform()
 
 
 def test_install_multilib_packages(shell):
-    """Install NTP package and remove one dependency."""
+    """Install NTP package."""
 
     if "oracle-8" in system_version or "centos-8" in system_version:
         assert (
