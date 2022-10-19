@@ -24,6 +24,6 @@ repos:
       - id: "check-yaml"
       - id: "check-merge-conflict"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.17.0"
+    rev: "1.18.0"
     hooks:
       - id: "tmt-tests-lint"
