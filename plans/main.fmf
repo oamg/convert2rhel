@@ -1,27 +1,29 @@
 execute:
-  how: tmt
+    how: tmt
 discover:
-  how: fmf
+    how: fmf
+environment:
+    NO_COLOR: 1
 prepare:
-  - name: main preparation step
-    how: ansible
-    playbook: tests/ansible_collections/main.yml
-  - name: reboot system after update
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
-  - name: install latest copr build
-    how: install
-    copr: '@oamg/convert2rhel'
-    package: convert2rhel
-    missing: fail
+    - name: main preparation step
+      how: ansible
+      playbook: tests/ansible_collections/main.yml
+    - name: reboot system after update
+      how: ansible
+      playbook: tests/ansible_collections/roles/reboot/main.yml
+    - name: install latest copr build
+      how: install
+      copr: '@oamg/convert2rhel'
+      package: convert2rhel
+      missing: fail
 
-  # We need to remove all the repositories that were used to install c2r package.
-  # The updated packages check may find that installed c2r is not latest and it then
-  # ask for one more interactive prompt to continue. This could be incosistent in some tests
-  # that are doing the interactive run of c2r.
-  - name: remove all copr repositories
-    how: shell
-    script: grep -l "copr:copr.fedorainfracloud.org:group_oamg:convert2rhel" /etc/yum.repos.d/* | xargs rm
+    # We need to remove all the repositories that were used to install c2r package.
+    # The updated packages check may find that installed c2r is not latest and it then
+    # ask for one more interactive prompt to continue. This could be incosistent in some tests
+    # that are doing the interactive run of c2r.
+    - name: remove all copr repositories
+      how: shell
+      script: grep -l "copr:copr.fedorainfracloud.org:group_oamg:convert2rhel" /etc/yum.repos.d/* | xargs rm
 
 # Commenting this out in favour of using a github actions with tft
 environment-file:
