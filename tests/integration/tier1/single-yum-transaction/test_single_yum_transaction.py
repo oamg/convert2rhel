@@ -14,7 +14,7 @@ def test_single_yum_transaction(convert2rhel, shell):
     """
     pkgmanager = "yum"
 
-    if system_version in ("centos-8", "oracle-8"):
+    if "centos-8" in system_version or "oracle-8" in system_version:
         pkgmanager = "dnf"
 
     with convert2rhel(

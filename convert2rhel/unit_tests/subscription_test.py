@@ -1061,11 +1061,13 @@ Version = namedtuple("Version", ["major", "minor"])
 @pytest.mark.parametrize(
     (
         "version",
+        "json_c_i686_installed",
         "pkgs_to_download",
     ),
     (
         (
             (6, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1076,6 +1078,7 @@ Version = namedtuple("Version", ["major", "minor"])
         ),
         (
             (7, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1087,6 +1090,7 @@ Version = namedtuple("Version", ["major", "minor"])
         ),
         (
             (8, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1099,10 +1103,27 @@ Version = namedtuple("Version", ["major", "minor"])
                 )
             ),
         ),
+        (
+            (8, 0),
+            True,
+            frozenset(
+                (
+                    "subscription-manager",
+                    "subscription-manager-rhsm-certificates",
+                    "python3-subscription-manager-rhsm",
+                    "dnf-plugin-subscription-manager",
+                    "python3-syspurpose",
+                    "python3-cloud-what",
+                    "json-c.x86_64",
+                    "json-c.i686",
+                )
+            ),
+        ),
     ),
 )
-def test_download_rhsm_pkgs(version, pkgs_to_download, monkeypatch):
+def test_download_rhsm_pkgs(version, json_c_i686_installed, pkgs_to_download, monkeypatch):
     monkeypatch.setattr(system_info, "version", Version(*version))
+    monkeypatch.setattr(system_info, "is_rpm_installed", lambda _: json_c_i686_installed)
     monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
     monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
     subscription.download_rhsm_pkgs()

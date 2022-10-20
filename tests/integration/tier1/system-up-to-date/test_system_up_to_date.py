@@ -74,7 +74,7 @@ def test_system_not_updated(shell, convert2rhel):
         oldest_kernel = shell(
             "rpm -q --qf '%{BUILDTIME}\t%{EVR}.%{ARCH}\n' kernel | sort -n | head -1 | cut -f2"
         ).output.strip()
-        assert shell("yum remove -y kernel-{0}".format(oldest_kernel)).returncode == 0
+        assert shell("yum remove -y kernel*{0}".format(oldest_kernel)).returncode == 0
 
     # Try to downgrade two packages.
     # On CentOS-8 we cannot do the downgrade as the repos contain only the latest package version.
