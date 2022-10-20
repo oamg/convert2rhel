@@ -3,7 +3,7 @@
   roles:
 
     - role: hardcode-minor-version-repos
-      when: ansible_facts['distribution_version'] == "8.4" and ansible_facts['distribution'] == "CentOS"
+      when: ansible_facts['distribution_version'] == "8.4" and ansible_facts['distribution'] != "OracleLinux"
 
     - role: update-system
 
