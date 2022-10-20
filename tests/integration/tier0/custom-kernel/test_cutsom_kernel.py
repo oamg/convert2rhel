@@ -9,9 +9,9 @@ def test_custom_kernel(convert2rhel):
     """
     system_version = platform.platform()
 
-    if "centos-7" in system_version:
+    if "centos" in system_version:
         string = "CentOS"
-    elif "oracle-7" in system_version:
+    elif "oracle" in system_version:
         string = "Oracle"
 
     with convert2rhel(("--no-rpm-va --debug")) as c2r:
