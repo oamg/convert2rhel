@@ -209,6 +209,7 @@ def _write_obj_to_array_json(path, new_object, key):
         except ValueError:  # we cannot use json.decoder.JSONDecodeError due python 2.7 compatibility
             file_content = {key: []}
 
+        loggerinst.debug("Prior migration log: %s", json.dumps(file_content))
         try:
             file_content[key].append(new_object)  # append new_object to activities
         # valid json, but no 'activities' key there
@@ -219,6 +220,7 @@ def _write_obj_to_array_json(path, new_object, key):
             file.seek(0)
 
         # write the json to the file
+        loggerinst.debug("Updated migration log: %s", json.dumps(file_content))
         json.dump(file_content, file, indent=4)
 
 

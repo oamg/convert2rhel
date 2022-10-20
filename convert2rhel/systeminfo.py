@@ -438,11 +438,19 @@ class SystemInfo(object):
         distribution_name = self._get_system_name(system_release_content)
         distribution_version = self._get_system_version(system_release_content)
 
-        return {
+        release_info = {
             "id": distribution_id,
             "name": distribution_name,
             "version": "%s.%s" % (distribution_version.major, distribution_version.minor),
         }
+
+        printable_release_info = []
+        for key, value in release_info.items():
+            printable_release_info.append("%s: %s" % (key, value))
+
+        self.logger.info("Release Info: %s", " ".join(printable_release_info))
+
+        return release_info
 
 
 def _is_sysv_managed_dbus_running():
