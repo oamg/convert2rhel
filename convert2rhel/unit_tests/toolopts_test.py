@@ -494,6 +494,6 @@ def test__log_command_used(caplog, monkeypatch):
         ]
     )
     monkeypatch.setattr(sys, "argv", input_command)
-    toolopts._log_command_used()
+    convert2rhel.toolopts._log_command_used()
 
     assert expected_command in caplog.records[-1].message

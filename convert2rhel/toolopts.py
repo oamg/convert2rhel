@@ -439,7 +439,7 @@ def _log_command_used():
     and the logfile
     """
     command = " ".join(sys.argv)
-    loggerinst.info("convert2rhel command used:\n{}".format(utils.hide_secrets(command)))
+    loggerinst.info("convert2rhel command used:\n{0}".format(utils.hide_secrets(command)))
 
 
 def options_from_config_files(cfg_path=None):
