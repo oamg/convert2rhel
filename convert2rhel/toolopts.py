@@ -438,8 +438,8 @@ def _log_command_used():
     when debugging the log files. Since we can't differenciate between the handlers we log to both stdout
     and the logfile
     """
-    command = " ".join(sys.argv)
-    loggerinst.info("convert2rhel command used:\n{0}".format(utils.hide_secrets(command)))
+    command = " ".join(utils.hide_secrets(sys.argv))
+    loggerinst.info("convert2rhel command used:\n{0}".format(command))
 
 
 def options_from_config_files(cfg_path=None):
