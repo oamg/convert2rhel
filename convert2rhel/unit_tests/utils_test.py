@@ -712,12 +712,16 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
             ),
             ["--password", ""],
         ),
+        (
+            ["--password", ("\\)(*&^%f %##@^%&*&^(",)],
+            frozenset("--password"),
+            ["--password", "*****"]
+        )
     ),
 )
 def test_hide_secrets(arguments, secret_args, expected):
     sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
     assert sanitazed_cmd == expected
-
 
 def test_hide_secrets_no_secrets():
     """Test that a list with no secrets to hide is not modified."""
@@ -760,7 +764,6 @@ def test_hide_secret_unexpected_input(caplog):
     assert len(caplog.records) == 1
     assert caplog.records[-1].levelname == "FILE"
     assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
-
 
 @pytest.mark.parametrize(
     ("nested_dict", "expected"),
