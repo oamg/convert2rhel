@@ -104,7 +104,7 @@ class SystemInfo(object):
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
-        self.system_release_file_content = self._get_system_release_file_content()
+        self.system_release_file_content = self.get_system_release_file_content()
         self.name = self._get_system_name()
         self.id = self.name.split()[0].lower()
         self.version = self._get_system_version()
@@ -125,17 +125,18 @@ class SystemInfo(object):
         self.dbus_running = self._is_dbus_running()
 
     @staticmethod
-    def _get_system_release_file_content():
+    def get_system_release_file_content():
         from convert2rhel import redhatrelease
 
         return redhatrelease.get_system_release_content()
 
-    def _get_system_name(self):
-        name = re.search(r"(.+?)\s?(?:release\s?)?\d", self.system_release_file_content).group(1)
+    def _get_system_name(self, system_release_content=None):
+        content = self.system_release_file_content if not system_release_content else system_release_content
+        name = re.search(r"(.+?)\s?(?:release\s?)?\d", content).group(1)
         self.logger.info("%-20s %s" % ("Name:", name))
         return name
 
-    def _get_system_version(self):
+    def _get_system_version(self, system_release_content=None):
         """Return a namedtuple with major and minor elements, both of an int type.
 
         Examples:
@@ -145,7 +146,8 @@ class SystemInfo(object):
         CentOS Linux release 7.6.1810 (Core)
         CentOS Linux release 8.1.1911 (Core)
         """
-        match = re.search(r".+?(\d+)\.(\d+)\D?", self.system_release_file_content)
+        content = self.system_release_file_content if not system_release_content else system_release_content
+        match = re.search(r".+?(\d+)\.(\d+)\D?", content)
         if not match:
             from convert2rhel import redhatrelease
 
@@ -154,6 +156,31 @@ class SystemInfo(object):
 
         self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
         return version
+
+    def _get_system_distribution_id(self, system_release_content=None):
+        """Return the distribution id from the system release file.
+
+            .. note::
+                This distribution id differs from the property `id` we have in the SystemInfo class
+                as this id is the last thing that appears on the system-release file as noted by
+                the example below.
+
+        Examples:
+        Oracle Linux Server release 6.10     <- None
+        Oracle Linux Server release 7.8      <- None
+        CentOS release 6.10 (Final)          <- Final
+        CentOS Linux release 7.6.1810 (Core) <- Core
+        CentOS Linux release 8.1.1911 (Core) <- Core
+
+        :returns: The distribution id from the system release file if any.
+        :rtype: str | None
+        """
+        content = self.system_release_file_content if not system_release_content else system_release_content
+        match = re.search(r"(?<=\()[^)]*(?=\))", content)
+        if not match:
+            return None
+
+        return match.group()
 
     def _get_architecture(self):
         arch, _ = utils.run_subprocess(["uname", "-i"], print_output=False)
@@ -394,6 +421,36 @@ class SystemInfo(object):
             status = False
 
         return status
+
+    def get_system_release_info(self, system_release_content=None):
+        """Return the system release information as an dictionary
+
+        This function aims to retrieve the system release information in an dictionary format.
+        This can be used before and after we modify the system-release file on the system,
+        as it have a parameter to to read from the contents of a system-release file (if called from somewhere else).
+
+        :param system_release_content: The contents of the system_release file if needed.
+        :type refresh_system_release_content: str
+        :returns: A dictionary containing the system release information
+        :rtype: dict[str, str]
+        """
+        distribution_id = self._get_system_distribution_id(system_release_content)
+        distribution_name = self._get_system_name(system_release_content)
+        distribution_version = self._get_system_version(system_release_content)
+
+        release_info = {
+            "id": distribution_id,
+            "name": distribution_name,
+            "version": "%s.%s" % (distribution_version.major, distribution_version.minor),
+        }
+
+        printable_release_info = []
+        for key, value in release_info.items():
+            printable_release_info.append("%s: %s" % (key, value))
+
+        self.logger.info("Release Info: %s", " ".join(printable_release_info))
+
+        return release_info
 
 
 def _is_sysv_managed_dbus_running():

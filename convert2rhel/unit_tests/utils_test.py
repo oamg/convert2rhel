@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import getpass
+import json
 import logging
 import os
 import sys
@@ -460,3 +461,218 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
 
     utils.remove_orphan_folders()
     assert os_remove_mock.call_count == expected
+
+    io = [
+        (
+            ["convert2rhel", "--argument=with space in it", "--another"],
+            'convert2rhel --argument="with space in it" --another',
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "secret_args", "expected"),
+    (
+        # No sanitization is being used here
+        (["-h"], frozenset(), ["-h"]),
+        # Random parameter
+        (["--password=123", "--another"], frozenset(("--password",)), ["--password=*****", "--another"]),
+        (["-p", "123", "--another"], frozenset(("-p",)), ["-p", "*****", "--another"]),
+        (["-k", "123", "--another"], frozenset(("-k",)), ["-k", "*****", "--another"]),
+        (
+            ["--argument", "with space in it", "--another"],
+            frozenset(),
+            ["--argument", "with space in it", "--another"],
+        ),
+        (
+            ["--argument=with space in it", "--another"],
+            frozenset(),
+            ["--argument=with space in it", "--another"],
+        ),
+        # Single parameter being passed
+        (
+            ["--activationkey=123"],
+            frozenset(("--activationkey",)),
+            ["--activationkey=*****"],
+        ),
+        # Multiple parameters and hide the secrets only for activation key
+        (
+            ["--activationkey=123", "--org=1234", "-y"],
+            frozenset(
+                ("--activationkey",),
+            ),
+            ["--activationkey=*****", "--org=1234", "-y"],
+        ),
+        # Hide the secrets for activationkey in it's short form
+        (
+            ["-k=123"],
+            frozenset(("-k",)),
+            ["-k=*****"],
+        ),
+        # Hide the secrets for password only
+        (
+            ["--username=test", "--password=Super@Secret@Password"],
+            frozenset(("--password",)),
+            ["--username=test", "--password=*****"],
+        ),
+        # Multiple sanitizations should occur in the next test
+        (
+            ["--username=test", "--password=Super@Secret@Password", "--activationkey=123", "--org=1234", "-y"],
+            frozenset(("--password", "--activationkey")),
+            ["--username=test", "--password=*****", "--activationkey=*****", "--org=1234", "-y"],
+        ),
+        # Test the same sanitization but without the equal sign ("=") in the arguments
+        (
+            [
+                "--username",
+                "test",
+                "--password",
+                "Super@Secret@Password",
+                "--activationkey",
+                "123",
+                "--org",
+                "1234",
+                "-y",
+            ],
+            frozenset(("--password", "--activationkey")),
+            ["--username", "test", "--password", "*****", "--activationkey", "*****", "--org", "1234", "-y"],
+        ),
+        # A real world example of how the tool would be used
+        (
+            [
+                "/usr/bin/convert2rhel",
+                "--username=test",
+                "--password=Super@Secret@Password",
+                "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
+                "--no-rpm-va",
+                "--debug",
+                "-y",
+            ],
+            frozenset(("--password", "-p", "--activationkey", "-k")),
+            [
+                "/usr/bin/convert2rhel",
+                "--username=test",
+                "--password=*****",
+                "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
+                "--no-rpm-va",
+                "--debug",
+                "-y",
+            ],
+        ),
+        # Test password with special strings
+        (
+            ["--password", "\\)(*&^%f %##@^%&*&^("],
+            frozenset(("--password",)),
+            [
+                "--password",
+                "*****",
+            ],
+        ),
+        (
+            ["--password", " "],
+            frozenset(
+                "--password",
+            ),
+            ["--password", " "],
+        ),
+        (
+            ["--password", ""],
+            frozenset(
+                "--password",
+            ),
+            ["--password", ""],
+        ),
+    ),
+)
+def test_hide_secrets(arguments, secret_args, expected):
+    sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
+    assert sanitazed_cmd == expected
+
+
+def test_hide_secrets_no_secrets():
+    """Test that a list with no secrets to hide is not modified."""
+    test_cmd = [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--org=0123",
+    ]
+    sanitized_cmd = utils.hide_secrets(test_cmd)
+    assert sanitized_cmd == [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--org=0123",
+    ]
+
+
+def test_hide_secret_unexpected_input(caplog):
+    test_cmd = [
+        "register",
+        "--force",
+        "--password=SECRETS",
+        "--username=jdoe",
+        "--org=0123",
+        "--activationkey",
+        # This is missing the activationkey as the second argument
+    ]
+
+    sanitized_cmd = utils.hide_secrets(test_cmd)
+
+    assert sanitized_cmd == [
+        "register",
+        "--force",
+        "--password=*****",
+        "--username=jdoe",
+        "--org=0123",
+        "--activationkey",
+    ]
+    assert len(caplog.records) == 1
+    assert caplog.records[-1].levelname == "FILE"
+    assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("nested_dict", "expected"),
+    (
+        (
+            {"test": 1, "nested": {"if": True}},
+            {"test": 1, "nested.if": True},
+        ),
+        (
+            {"test": 1, "nested": {}},
+            {"test": 1, "nested": "null"},
+        ),
+        (
+            {"test": 1, "nested": []},
+            {"test": 1, "nested": "null"},
+        ),
+        (
+            {"test": 1, "list": [1, "2", 3.4]},
+            {"test": 1, "list.0": 1, "list.1": "2", "list.2": 3.4},
+        ),
+        (
+            {"test": 1, "level_1": {"level_2": {"works": True}, "test": 2}},
+            {"test": 1, "level_1.level_2.works": True, "level_1.test": 2},
+        ),
+    ),
+)
+def test_flatten(nested_dict, expected):
+    assert utils.flatten(dictionary=nested_dict) == expected
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        ({"test": 1}, {"test": 1}),
+        ({"nested": {"test": 1}}, {"nested": {"test": 1}}),
+    ),
+)
+def test_write_json_object_to_file(data, expected, tmpdir):
+    json_file_path = str(tmpdir.join("test_json.json"))
+    utils.write_json_object_to_file(json_file_path, data)
+
+    with open(json_file_path, mode="r") as handler:
+        json.load(handler) == expected
+
+    assert oct(os.stat(json_file_path).st_mode)[-4:].endswith("00")

@@ -307,3 +307,47 @@ oracle8 = pytest.mark.parametrize(
     (("8.4.1111", "Oracle Linux Server"),),
     indirect=True,
 )
+
+
+class TestPkgObj(object):
+    class PkgObjHdr(object):
+        def sprintf(self, *args, **kwargs):
+            return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
+
+    hdr = PkgObjHdr()
+
+
+def create_pkg_obj(
+    name,
+    epoch=0,
+    version="",
+    release="",
+    arch="",
+    packager=None,
+    from_repo="",
+    manager="yum",
+    vendor=None,
+):
+    class DumbObj(object):
+        pass
+
+    obj = TestPkgObj()
+    obj.yumdb_info = DumbObj()
+    obj.name = name
+    obj.epoch = obj.e = epoch
+    obj.version = obj.v = version
+    obj.release = obj.r = release
+    obj.evr = version + "-" + release
+    obj.arch = arch
+    obj.packager = packager
+    if vendor:
+        obj.vendor = vendor
+    if manager == "yum":
+        if from_repo:
+            obj.yumdb_info.from_repo = from_repo
+    elif manager == "dnf":
+        if from_repo:
+            obj._from_repo = from_repo
+        else:
+            obj._from_repo = "@@System"
+    return obj

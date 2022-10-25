@@ -18,6 +18,7 @@
 import errno
 import getpass
 import inspect
+import json
 import logging
 import os
 import re
@@ -568,3 +569,93 @@ def remove_orphan_folders():
     for path in rh_release_paths:
         if os.path.exists(path) and is_dir_empty(path):
             os.rmdir(path)
+
+
+def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "--token"))):
+    """
+    Replace secret values with asterisks.
+
+    This function takes a list of arguments which will be passed
+    in a transformation process where we will replace any secret values
+    with an fixed size of asterisks (*) and returns a new list containing
+     the arguments with this transformation.
+
+    :arg args: An argument list which may contain secret values.
+    :returns: A new list of arguments with secret values hidden.
+    """
+    obfuscation_string = "*" * 5
+
+    sanitized_list = []
+    hide_next = False
+    for arg in args:
+        if hide_next:
+            # Second part of a two part secret argument (like --password *SECRET*)
+            arg = obfuscation_string
+            hide_next = False
+
+        elif arg in secret_args:
+            # First part of a two part secret argument (like *--password* SECRET)
+            hide_next = True
+
+        else:
+            # A secret argument in one part (like --password=SECRET)
+            for problem_arg in secret_args:
+                if arg.startswith(problem_arg + "="):
+                    arg = "{0}={1}".format(problem_arg, obfuscation_string)
+
+        sanitized_list.append(arg)
+
+    if hide_next:
+        loggerinst.debug(
+            "Passed arguments had unexpected secret argument,"
+            " '{0}', without a secret".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
+        )
+
+    return sanitized_list
+
+
+def flatten(dictionary, parent_key=False, separator="."):
+    """Turn a nested dictionary into a flattened dictionary.
+
+    .. note::
+        If we detect a empty dictionary or list, this function will append a "null" as a value to the key.
+
+    :param dictionary: The dictionary to flatten
+    :param parent_key: The string to prepend to dictionary's keys
+    :param separator: The string used to separate flattened keys
+    :return: A flattened dictionary
+    """
+
+    items = []
+    for key, value in dictionary.items():
+        new_key = str(parent_key) + separator + key if parent_key else key
+
+        if isinstance(value, dict):
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                items.extend(flatten(value, new_key, separator).items())
+        elif isinstance(value, list):
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                for k, v in enumerate(value):
+                    items.extend(flatten({str(k): v}, new_key).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)
+
+
+def write_json_object_to_file(path, data, mode=0o600):
+    """Write a JSOn object to a file in the system.
+
+    :param path: The path of the file to be written.
+    :type path: str
+    :param data: The JSON data that will be written.
+    :type data: dict[str, Any]
+    :param mode: The permissions for the file.
+    :type mode: int
+    """
+    with open(path, mode="w") as handler:
+        os.chmod(path, mode)
+        json.dump(data, handler, indent=4)
