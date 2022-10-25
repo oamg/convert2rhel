@@ -37,8 +37,10 @@ from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos7, centos8, create_pkg_obj
 
+
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
     class GetInstalledPkgsWithFingerprintMocked(unit_tests.MockFunction):

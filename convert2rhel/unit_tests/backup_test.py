@@ -649,6 +649,8 @@ class TestRestorableRpmKey:
         assert status == 0
         assert output.startswith("gpg-pubkey-fd431d51")
         assert rpm_key.enabled is False
+
+
 @pytest.mark.parametrize(
     ("pkg_nevra", "nvra_without_epoch"),
     (
