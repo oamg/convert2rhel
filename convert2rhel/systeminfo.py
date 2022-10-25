@@ -419,7 +419,12 @@ def _is_systemd_managed_dbus_running():
     # Reloading, activating, etc will return None which means to retry
     running = None
 
-    output, ret_code = utils.run_subprocess(["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"])
+    output, ret_code = utils.run_subprocess(["/usr/bin/systemctl",
+                                             "show",
+                                             "-p",
+                                             "ActiveState",
+                                             "dbus"],
+                                            print_output=False)
     for line in output.splitlines():
         # Note: systemctl seems to always emit an ActiveState line (ActiveState=inactive if
         # the service doesn't exist).  So this check is just defensive coding.
