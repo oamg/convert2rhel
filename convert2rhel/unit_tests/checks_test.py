@@ -371,8 +371,6 @@ def test_validate_package_manager_transaction(monkeypatch, caplog):
 
     checks.validate_package_manager_transaction()
 
-    assert "Transaction validated successfully." in caplog.records[-1].message
-
 
 @pytest.mark.parametrize(
     (

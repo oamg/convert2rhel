@@ -304,8 +304,6 @@ def validate_package_manager_transaction():
         validate_transaction=True,
     )
 
-    logger.debug("Transaction validated successfully.\n")
-
 
 def get_loaded_kmods():
     """Get a set of kernel modules loaded on host.
