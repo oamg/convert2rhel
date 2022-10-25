@@ -1,4 +1,3 @@
-#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
@@ -17,32 +16,54 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from setuptools import setup, find_packages
+import re
+
+from setuptools import setup
 
 from man.build_manpage import build_manpage
 
 
 # Utility function to read content of a file.
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
+
+
+def get_version():
+    version_source = "convert2rhel/__init__.py"
+    with open(version_source) as f:
+        try:
+            return re.findall(
+                r'^__version__ = "([^"]+)"$',
+                f.read(),
+                re.M,
+            )[0]
+        except IndexError:
+            raise ValueError(
+                (
+                    "Unable to extract the version from %s file. Make sure the "
+                    "first line has the following form: `__version__ = "
+                    '"some.version.here"`'
+                )
+                % version_source
+            )
 
 
 setup(
-    name='convert2rhel',
-    version='0.11',
-    description='Automates the conversion of Red Hat Enterprise Linux'
-                ' derivative distributions to Red Hat Enterprise Linux.',
-    long_description=read('README.md'),
-    author='Michal Bocek',
-    author_email='mbocek@redhat.com',
-    url='www.redhat.com',
-    license='GNU General Public License v3 or later (GPLv3+)',
-    packages=['convert2rhel'],
+    name="convert2rhel",
+    version=get_version(),
+    description="Automates the conversion of Red Hat Enterprise Linux"
+    " derivative distributions to Red Hat Enterprise Linux.",
+    long_description=read("README.md"),
+    author="Michal Bocek",
+    author_email="mbocek@redhat.com",
+    url="www.redhat.com",
+    license="GNU General Public License v3 or later (GPLv3+)",
+    packages=["convert2rhel"],
     entry_points={
-        'console_scripts': [
-            'convert2rhel = convert2rhel.main:main',
+        "console_scripts": [
+            "convert2rhel = convert2rhel.main:main",
         ]
     },
-    cmdclass={'build_manpage': build_manpage},
-    include_package_data=True
+    cmdclass={"build_manpage": build_manpage},
+    include_package_data=True,
 )

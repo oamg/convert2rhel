@@ -1,0 +1,72 @@
+- name: Run setup tasks
+  import_playbook: setup-convert2rhel.yml
+
+- hosts: all
+  become: yes
+  strategy: free
+
+  # Modify these to be your red hat subscription manager username and password
+  # or override them via ansible-playbook --extra-vars
+  vars:
+    rhsm_username: redhat-user-name
+    rhsm_password: redhat-users-password
+
+  tasks:
+
+    - name: Running convert2rhel with password file
+      block:
+        # Put the password into a file as arguments on the commandline can be
+        # seen in the process list.
+        - name: Create a temporary file to hold the password
+          # Note: Temporary files are always created with a secure mode, 0600
+          tempfile:
+            state: file
+            suffix: .temp
+            path: ~/
+          register: password_file
+
+        - name: Save password in the temporary file
+          lineinfile:
+            path: "{{ password_file.path }}"
+            line: "{{ rhsm_password }}"
+            insertafter: EOF
+          no_log: True  # Contains a secret
+
+        # NOTE 1: use the -y option to answer yes to all yes/no questions the
+        # tool asks carefully and only after you have tested interactively to
+        # ensure that there are not surprises within your environment.  Also
+        # take care to read and follow all prerequisites and backup guidance documented at
+        # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index
+
+        # NOTE 2: the following command may take 20-40 minutes on average to
+        # complete, depending on quantity of packages installed and speed of
+        # network and storage.  This will need to be run in parallel from the
+        # control node or Tower to effectively run against many systems.
+
+        - name: Run Convert2RHEL
+          command: >
+            convert2rhel
+            -u "{{ rhsm_username }}"
+            --password-from-file "{{ password_file.path }}"
+            --auto-attach
+            --debug
+            # -y
+
+      always:
+        - name: Remove the temporary file
+          file:
+            path: "{{ password_file.path }}"
+            state: absent
+          when: password_file.path is defined
+
+    - name: reboot
+      reboot:
+
+    - name: recollect ansible facts on running distribution on system
+      setup:
+        gather_subset: 'distribution'
+
+    - name: Verify system is converted to Red Hat Enterprise Linux (RHEL)
+      assert:
+        that: ansible_distribution == 'RedHat'
+        msg: "OS conversion failed. OS is NOT Red Hat"

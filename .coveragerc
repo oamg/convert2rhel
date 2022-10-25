@@ -1,0 +1,15 @@
+[run]
+branch = True
+source =
+    convert2rhel
+omit =
+    convert2rhel/unit_tests/*
+
+[paths]
+source =
+    convert2rhel/
+
+[report]
+fail_under = 80
+skip_covered = True
+show_missing = True

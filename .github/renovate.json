@@ -1,0 +1,19 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "enabledManagers": ["dockerfile", "pip_requirements", "github-actions"],
+  "ignorePaths": [
+    "**/centos6.Dockerfile",
+    "**/centos7.Dockerfile",
+    "**/rpmbuild.centos7.Dockerfile",
+    "**/centos6*.requirements.txt"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["pytest"],
+      "matchFiles": ["requirements/centos8.requirements.txt"],
+      "allowedVersions": "<=7.0"
+    }
+  ]
+}

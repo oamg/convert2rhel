@@ -1,0 +1,28 @@
+---
+- name: Ensure python3
+  yum:
+    # gcc and python3-devel are needed for psutil
+    name:
+      - python3
+      - gcc
+      - python3-devel
+    state: present
+
+- name: Install pip if not present
+  # ensurepip is available in python-3.4+
+  # ensurepip won't install pip if it is already installed
+  command: python3 -m ensurepip --default-pip
+
+- name: Install pytest framework dependencies
+  pip:
+    name:
+      - "pytest"
+      - "pytest-cov"
+      - "envparse"
+      - "click"
+      - "pexpect"
+      - "dataclasses"
+      - "jsonschema"
+      - "psutil"
+    # Use pip3 in case pip was installed via rpm package on this system
+    executable: pip3

@@ -1,10 +1,20 @@
-# convert2rhel
+# Convert2RHEL
+
+Convert2RHEL is a tool to convert RHEL-like systems to their RHEL counterparts. For example, CentOS Linux 8 to Red Hat Enterprise Linux 8.
 
 ## Usage
-For details about this tool, please consult one of the following sources:
+For details about the utility and its usage, consult one of the following sources:
 
-1. [Red Hat Knowledgebase article](https://access.redhat.com/articles/2360841)
-1. Run `man convert2rhel` once the tool is installed on your system
+1. [Converting from an RPM-based Linux distribution to RHEL](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index)
+1. Run `man convert2rhel` once the utility is installed on your system
 
 ## Contributing
-Contributions are welcome, please look over [CONTRIBUTING.md](https://github.com/oamg/convert2rhel/blob/master/CONTRIBUTING.md) for more information on how to get started.
+
+Contributions are welcome. Take a look at [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to get started.
+
+## Contact
+
+For questions, troubleshooting, bug reports and feature requests:
+
+* Create [an issue](https://github.com/oamg/convert2rhel/issues/new) here on GitHub.
+* Ask a question through [GitHub Discussions](https://github.com/oamg/convert2rhel/discussions).

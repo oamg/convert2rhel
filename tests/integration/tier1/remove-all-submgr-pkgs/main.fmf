@@ -1,0 +1,5 @@
+summary: Remove all subscription-manager pkgs first
+
+tier: 1
+
+test: pytest -svv

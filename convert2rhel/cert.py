@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2016 Red Hat, Inc.
+# Copyright(C) 2020 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,25 +15,67 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import glob
+import errno
+import logging
+import os
 import shutil
 
-from convert2rhel.systeminfo import system_info
 from convert2rhel import utils
 
-_REDHAT_RELEASE_CERT_DIR = "/etc/pki/product-default/"
-_SUBSCRIPTION_MANAGER_CERT_DIR = "/etc/pki/product/"
+
+loggerinst = logging.getLogger(__name__)
 
 
-def copy_cert_for_rhel_5():
-    """RHEL certificate (.pem) is used by subscription-manager to determine
-    the running system type/version. On RHEL 5, subscription-manager looks for
-    the certificates in /etc/pki/product/ even though the redhat-release
-    package installs it in /etc/pki/product-default/. This discrepancy has been
-    reported in https://bugzilla.redhat.com/show_bug.cgi?id=1321012 with
-    WONTFIX status.
-    """
-    if system_info.version == "5":
-        for cert in glob.glob(_REDHAT_RELEASE_CERT_DIR + "*.pem"):
-            utils.mkdir_p(_SUBSCRIPTION_MANAGER_CERT_DIR)
-            shutil.copy(cert, _SUBSCRIPTION_MANAGER_CERT_DIR)
+class SystemCert(object):
+    def __init__(self):
+        self._target_cert_dir = "/etc/pki/product-default/"
+        self._cert_filename, self._source_cert_dir = self._get_cert()
+        self._source_cert_path = self._get_source_cert_path()
+        self._target_cert_path = self._get_target_cert_path()
+
+    @staticmethod
+    def _get_cert():
+        """Return name of certificate and this directory."""
+        cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs")
+        if not os.access(cert_dir, os.R_OK | os.X_OK):
+            loggerinst.critical("Error: Could not access %s." % cert_dir)
+        pem_filename = None
+        for filename in os.listdir(cert_dir):
+            if filename.endswith(".pem"):
+                pem_filename = filename
+                break
+        if not pem_filename:
+            loggerinst.critical("Error: System certificate (.pem) not found in %s." % cert_dir)
+        return pem_filename, cert_dir
+
+    def _get_source_cert_path(self):
+        return os.path.join(self._source_cert_dir, self._cert_filename)
+
+    def _get_target_cert_path(self):
+        return os.path.join(self._target_cert_dir, self._cert_filename)
+
+    def install(self):
+        """RHEL certificate (.pem) is used by subscription-manager to
+        determine the running system type/version.
+        """
+        try:
+            utils.mkdir_p(self._target_cert_dir)
+            shutil.copy(self._source_cert_path, self._target_cert_dir)
+        except OSError as err:
+            loggerinst.critical("OSError({0}): {1}".format(err.errno, err.strerror))
+
+        loggerinst.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
+
+    def remove(self):
+        """Remove certificate (.pem), which was copied to system's cert dir."""
+        loggerinst.task("Rollback: Removing installed RHSM certificate")
+
+        try:
+            os.remove(self._target_cert_path)
+            loggerinst.info("Certificate %s removed" % self._target_cert_path)
+        except OSError as err:
+            if err.errno == errno.ENOENT:
+                # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
+                loggerinst.info("No RHSM certificates found to be removed.")
+            else:
+                loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))

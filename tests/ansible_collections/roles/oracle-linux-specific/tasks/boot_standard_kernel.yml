@@ -1,0 +1,12 @@
+---
+- name: Install standard kernel
+  yum:
+    name: "kernel.*"
+    state: latest
+
+- name: Get installed kernel version
+  shell: rpm -q --last kernel | head -1 | cut -d " " -f1 | sed 's/kernel-//'
+  register: kernel_ver
+
+- name: Set default kernel to Red Hat compatible kernel
+  shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"

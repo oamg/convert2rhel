@@ -1,0 +1,19 @@
+---
+- hosts: all
+  tasks:
+
+    - name: Install unbreakable kernel
+      yum:
+        name: "kernel-uek"
+        state: latest
+
+    - name: Get installed kernel version
+      shell: rpm -q --last kernel-uek | head -1 | cut -d " " -f1 | sed 's/kernel-uek-//'
+      register: kernel_ver
+
+    - name: Set default kernel to the unbreakable kernel
+      shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
+
+    - name: Reboot
+      reboot:
+        reboot_timeout: 600

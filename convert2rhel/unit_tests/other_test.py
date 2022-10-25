@@ -14,27 +14,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import re
 
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
-from convert2rhel import cert
-from convert2rhel import pkghandler
-from convert2rhel import utils
-from convert2rhel import logger
+from convert2rhel import __version__, logger, pkghandler, utils
 
 
-class TestOther(unittest.TestCase):
+RPM_SPEC_VERSION_RE = re.compile(r"^Version: +(.+)$")
 
-    def test_correct_constants(self):
-        # Prevents unintentional change of constants
-        self.assertEqual(utils.TMP_DIR, "/tmp/convert2rhel/")
-        self.assertEqual(utils.DATA_DIR, "/usr/share/convert2rhel/")
-        self.assertEqual(cert._REDHAT_RELEASE_CERT_DIR,
-                         "/etc/pki/product-default/")
-        self.assertEqual(cert._SUBSCRIPTION_MANAGER_CERT_DIR,
-                         "/etc/pki/product/")
-        self.assertEqual(pkghandler.MAX_YUM_CMD_CALLS, 2)
-        self.assertEqual(logger.LOG_DIR, "/var/log/convert2rhel")
+
+def test_correct_constants():
+    # Prevents unintentional change of constants
+    assert utils.TMP_DIR == "/var/lib/convert2rhel/"
+    assert utils.DATA_DIR == "/usr/share/convert2rhel/"
+    assert pkghandler.MAX_YUM_CMD_CALLS == 3
+    assert logger.LOG_DIR == "/var/log/convert2rhel"
+
+
+def test_package_version(pkg_root):
+    # version should be a string
+    assert isinstance(__version__, str)
+    # version should be separated with dots, i.e. "1.1.1b"
+    assert len(__version__.split(".")) > 1
+    # versions specified in rpm spec and convert2rhel.__init__ should match
+    with open(str(pkg_root / "packaging/convert2rhel.spec")) as spec_f:
+        for line in spec_f:
+            if RPM_SPEC_VERSION_RE.match(line):
+                assert __version__ == RPM_SPEC_VERSION_RE.findall(line)[0]
+                break

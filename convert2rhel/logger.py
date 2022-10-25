@@ -25,95 +25,191 @@ TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
 FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
 """
-from convert2rhel.toolopts import tool_opts
 import logging
 import os
+import shutil
 import sys
-from utils import format_msg_with_datetime
+
+from time import gmtime, strftime
+
 
 LOG_DIR = "/var/log/convert2rhel"
 
 
-class LogLevelTask:
+#
+# Pre-dbus import initialization
+#
+
+# We need to initialize the root logger with the NullHandler before dbus is imported.
+# Otherwise, dbus will install Handlers on the root logger which can end up printing
+# our log messages an additional time.  Additionally, bad user data could end up
+# causing the dbus logging to log rhsm passwords and other credentials.
+#
+# Right now we do this here, at the toplevel of logger.py.  In the future we should
+# have a dedicated module for initializing convert2rhel prior to importing other
+# libraries and we can do this step there.
+
+if hasattr(logging, "NullHandler"):
+    NullHandler = logging.NullHandler
+else:
+    # Python 2.6 compatibility.
+    # This code is copied from Pthon-3.10's logging module,
+    # licensed under the Python Software Foundation License, version 2
+    class NullHandler(logging.Handler):
+        def handle(self, record):
+            """Stub."""
+
+        def emit(self, record):
+            """Stub."""
+
+        def createLock(self):
+            self.lock = None
+
+        def _at_fork_reinit(self):
+            pass
+
+    # End of PSF Licensed code
+
+logging.getLogger().addHandler(NullHandler())
+
+# End pre-DBus initialization code
+
+
+class LogLevelTask(object):
     level = 15
     label = "TASK"
 
 
-class LogLevelFile:
+class LogLevelFile(object):
     level = 5
     label = "FILE"
 
 
-def initialize_logger(log_name):
-    """Initialize custom logging levels, handlers, and so on. Call this method
+def setup_logger_handler(log_name, log_dir):
+    """Setup custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
         log_name = the name for the log file
+        log_dir = path to the dir where log file will be presented
     """
-    # check if already initialized with custom class
-    if logging.getLoggerClass() == CustomLogger:
-        return
-    # set custom class
-    logging.setLoggerClass(CustomLogger)
     # set custom labels
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
+    logging.Logger.task = _task
+    logging.Logger.file = _file
+    logging.Logger.debug = _debug
+    logging.Logger.critical = _critical
+
     # enable raising exceptions
     logging.raiseExceptions = True
     # get root logger
     logger = logging.getLogger("convert2rhel")
     # propagate
-    logger.propagate = False
+    logger.propagate = True
     # set default logging level
     logger.setLevel(LogLevelFile.level)
 
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
     formatter = CustomFormatter("%(message)s")
+    formatter.disable_colors(should_disable_color_output())
     stdout_handler.setFormatter(formatter)
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
 
     # create file handler
-    if not os.path.isdir(LOG_DIR):
-        os.makedirs(LOG_DIR)
-    handler = logging.FileHandler(os.path.join(LOG_DIR, log_name), "w")
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)  # pragma: no cover
+    handler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
     formatter = CustomFormatter("%(message)s")
+    formatter.disable_colors(True)
     handler.setFormatter(formatter)
     handler.setLevel(LogLevelFile.level)
     logger.addHandler(handler)
 
 
-class CustomLogger(logging.Logger, object):
-    """Customized Logger class
+def should_disable_color_output():
+    """
+    Return whether NO_COLOR exists in environment parameter and is true.
 
-    Python 2.6 workaround - logging.Formatter class does not use new-style
-        class and causes 'TypeError: super() argument 1 must be type, not
-        classobj' so we use multiple inheritance to get around the problem.
+    See http://no-color.org/
+    """
+    if "NO_COLOR" in os.environ:
+        NO_COLOR = os.environ["NO_COLOR"]
+        return NO_COLOR != None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
+
+    return False
+
+
+def archive_old_logger_files(log_name, log_dir):
+    """Archive the old log files to not mess with multiple runs outputs.
+    Every time a new run begins, this method will be called to archive the previous logs
+    if there is a `convert2rhel.log` file there, it will be archived using
+    the same name for the log file, but having an appended timestamp to it.
+        log_name = the name for the log file
+        log_dir = path to the dir where log file will be presented
+
+    For example:
+        /var/log/convert2rhel/archive/convert2rhel-1635162445070567607.log
+        /var/log/convert2rhel/archive/convert2rhel-1635162478219820043.log
+
+    This way, the user can track the logs for each run individually based on the timestamp.
     """
 
-    def task(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelTask.level, msg, *args,
-                                      **kwargs)
+    current_log_file = os.path.join(log_dir, log_name)
+    archive_log_dir = os.path.join(log_dir, "archive")
 
-    def file(self, msg, *args, **kwargs):
-        super(CustomLogger, self).log(LogLevelFile.level, msg, *args,
-                                      **kwargs)
+    if not os.path.exists(current_log_file):
+        # No log file found, that means it's a first run or it was manually deleted
+        return
 
-    def critical(self, msg, *args, **kwargs):
-        super(CustomLogger, self).critical(msg, *args, **kwargs)
-        sys.exit(1)
+    stat = os.stat(current_log_file)
 
-    def debug(self, msg, *args, **kwargs):
+    # Get the last modified time in UTC
+    last_modified_at = gmtime(stat.st_mtime)
+
+    # Format time to a human-readable format
+    formatted_time = strftime("%Y%m%dT%H%M%SZ", last_modified_at)
+
+    # Create the directory if it don't exist
+    if not os.path.exists(archive_log_dir):
+        os.makedirs(archive_log_dir)
+
+    file_name, suffix = tuple(log_name.rsplit(".", 1))
+    archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, formatted_time, suffix)
+    shutil.move(current_log_file, archive_log_file)
+
+
+def _task(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelTask.level):
+        self._log(LogLevelTask.level, msg, args, **kwargs)
+
+
+def _file(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelFile.level):
+        self._log(LogLevelFile.level, msg, args, **kwargs)
+
+
+def _critical(self, msg, *args, **kwargs):
+    if self.isEnabledFor(logging.CRITICAL):
+        self._log(logging.CRITICAL, msg, args, **kwargs)
+        sys.exit(msg)
+
+
+def _debug(self, msg, *args, **kwargs):
+    if self.isEnabledFor(logging.DEBUG):
         from convert2rhel.toolopts import tool_opts
-        if tool_opts.debug:
-            super(CustomLogger, self).debug(msg, *args, **kwargs)
-        else:
-            super(CustomLogger, self).log(LogLevelFile.level,
-                                          format_msg_with_datetime(msg, "debug"),
-                                          *args, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
-        super(CustomLogger, self).info(msg, *args, **kwargs)
+        if tool_opts.debug:
+            self._log(logging.DEBUG, msg, args, **kwargs)
+        else:
+            self._log(LogLevelFile.level, msg, args, **kwargs)
+
+
+class bcolors:
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
 
 
 class CustomFormatter(logging.Formatter, object):
@@ -124,19 +220,38 @@ class CustomFormatter(logging.Formatter, object):
         classobj' so we use multiple inheritance to get around the problem.
     """
 
+    color_disabled = False
+
+    def disable_colors(self, value):
+        self.color_disabled = value
+
     def format(self, record):
         if record.levelno == LogLevelTask.level:
-            temp = '*' * (90 - len(record.msg) - 25)
-            self._fmt = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
+            temp = "*" * (90 - len(record.msg) - 25)
+            fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
+            new_fmt = fmt_orig if self.color_disabled else bcolors.OKGREEN + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
             self.datefmt = "%m/%d/%Y %H:%M:%S"
-        elif record.levelno in [logging.INFO, LogLevelFile.level]:
+        elif record.levelno in [logging.INFO]:
             self._fmt = "%(message)s"
             self.datefmt = ""
         elif record.levelno in [logging.WARNING]:
-            self._fmt = "%(levelname)s - %(message)s"
+            fmt_orig = "%(levelname)s - %(message)s"
+            new_fmt = fmt_orig if self.color_disabled else bcolors.WARNING + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
+            self.datefmt = ""
+        elif record.levelno in [logging.CRITICAL, logging.ERROR]:
+            fmt_orig = "%(levelname)s - %(message)s"
+            new_fmt = fmt_orig if self.color_disabled else bcolors.FAIL + fmt_orig + bcolors.ENDC
+            self._fmt = new_fmt
             self.datefmt = ""
         else:
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
             self.datefmt = "%m/%d/%Y %H:%M:%S"
+
+        if hasattr(self, "_style"):
+            # Python 3 has _style for formatter
+            # Overwriting the style _fmt gets the result we want
+            self._style._fmt = self._fmt
 
         return super(CustomFormatter, self).format(record)

@@ -1,0 +1,87 @@
+# We don't want to run tier2 tests under each commit/PR
+adjust:
+  enabled: false
+  when:
+    trigger == commit
+
+environment+:
+  morf__stage: dst
+
+prepare+:
+  - name: Enable beaker-tasks repo
+    how: ansible
+    playbook: ./tests/ansible_collections/enable_beakertasks.yml
+  - name: Update beakerlib
+    how: shell
+    script: "yum install beakerlib -y"
+    order: 90
+  - name: Copy the secrets file
+    how: shell
+    script: curl https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env --create-dirs -o ./tests/convert2rhel/.env
+  - name: Upgrade playbook - set everything up
+    how: ansible
+    playbook: ./tests/ansible_collections/main.yml
+    order: 82
+  - name: Do the conversion
+    how: shell
+    script: pytest -svv ./tests/integration/conversion/run_conversion.py
+    order: 83
+  - name: reboot machine
+    how: ansible
+    playbook: ./tests/ansible_collections/reboot.yml
+    order: 84
+
+
+# is it relevant for conversion
+/chrony:
+  discover:
+    - name: upgrade_test_from_SST
+      how: fmf
+      url: git://pkgs.devel.redhat.com/tests/chrony
+      filter: 'tag: upgrade'
+# missing tag in test fmf metadata
+/NetworkManager:
+  discover:
+    - name: upgrade_test_from_SST
+      how: fmf
+      url: git://pkgs.devel.redhat.com/tests/NetworkManager
+      filter: 'name: upgrade'
+#one succesful run, fails now
+/bind:
+  discover:
+    - name: upgrade_test_from_SST
+      how: fmf
+      url: git://pkgs.devel.redhat.com/tests/bind
+      filter: 'tag: upgrade'
+  prepare+:
+    # XXX FIXME Refactor Once https://github.com/psss/tmt/issues/694 is there
+    - name: Run test on src vm
+      how: shell
+      script: "export morf__stage=src; export BEAKERLIB_DIR=/tmp/upgrade_test_from_SST; cd ../discover/upgrade_test_from_SST/tests/preupgrade && ./runtest.sh"
+      order: 80
+
+/ac2as_nis:
+  discover:
+    - name: upgrade_test_from_SST
+      how: fmf
+      url: git://pkgs.devel.redhat.com/tests/authselect
+      filter: 'tier: ac2as-nis'
+  prepare+:
+    # XXX FIXME Refactor Once https://github.com/psss/tmt/issues/694 is there
+    - name: Run test on src vm
+      how: shell
+      script: "export morf__stage=src; export BEAKERLIB_DIR=/tmp/upgrade_test_from_SST; cd ../discover/upgrade_test_from_SST/tests/Upgrade/ac2as-nis/ && ./runtest.sh"
+      order: 80
+
+/ac2as_noop:
+  discover:
+    - name: upgrade_test_from_SST
+      how: fmf
+      url: git://pkgs.devel.redhat.com/tests/authselect
+      filter: 'tier: ac2as-noop'
+  prepare+:
+    # XXX FIXME Refactor Once https://github.com/psss/tmt/issues/694 is there
+    - name: Run test on src vm
+      how: shell
+      script: "export morf__stage=src; export BEAKERLIB_DIR=/tmp/upgrade_test_from_SST; cd ../discover/upgrade_test_from_SST/tests/Upgrade/ac2as-noop/ && ./runtest.sh"
+      order: 80

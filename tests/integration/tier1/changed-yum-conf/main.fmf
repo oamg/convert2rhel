@@ -1,0 +1,4 @@
+summary: changed-yum-conf
+
+tier: 1
+test: pytest -svv

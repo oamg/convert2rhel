@@ -2,25 +2,45 @@ name: test_coverage
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
-jobs:        
-  test_coverage:
-    runs-on: ubuntu-latest
-    container: marceloagmelo/centos7:latest
+jobs:
+  coverage:
+    name: coverage-centos${{ matrix.centos_ver }}
+    strategy:
+      matrix:
+        centos_ver: [6, 7, 8]
 
+    runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v1
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-    - name: Install Requirements
-      run: |
-        yum --enablerepo=extras install -y epel-release
-        yum install -y python-coverage
-        yum install -y python-pip
-        pip install nose
-        
-    - name: Check test coverage
-      run: |
-        nosetests --with-coverage convert2rhel/
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run pytest coverage
+        run: |
+          make tests${{ matrix.centos_ver }} PYTEST_ARGS="--cov --cov-report xml --cov-report term" KEEP_TEST_CONTAINER=1 BUILD_IMAGES=0
+          podman cp pytest-container:/data/coverage.xml .
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          env_vars: OS,PYTHON
+          flags: centos-linux-${{ matrix.centos_ver }}
+          name: coverage-centos
+          fail_ci_if_error: true
+          files: ./coverage.xml
+          verbose: true # optional (default = false)

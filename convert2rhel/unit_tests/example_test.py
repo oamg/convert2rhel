@@ -19,37 +19,28 @@
 This is an example test file containing a simple test.
 """
 
-# Required imports:
-
-
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
-
-from nose.tools import timed
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import utils
 
 
-class TestExample(unittest.TestCase):
+class RunSubprocessMocked(unit_tests.MockFunction):
+    def __call__(self, *args, **kwargs):
+        """
+        Implementation of the simplest behavior of a mocked function -
+        ignore the input parameters and just return fake value.
+        """
+        self.prefix = "this ain't "
+        self.ret = (self.prefix + self.ret[0], self.ret[1])
+        return self.ret
 
-    class RunSubprocessMocked(unit_tests.MockFunction):
-        def __call__(self, *args, **kwargs):
-            """
-            Implementation of the simplest behavior of a mocked function -
-            ignore the input parameters and just return fake value.
-            """
-            self.prefix = "this ain't "
-            self.ret = (self.prefix + self.ret[0], self.ret[1])
-            return self.ret
 
-    @timed(2)  # Check that the test function does not last more than 2 sec
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_example(self):
-        # Set a tuple to be returned by the RunSubprocessMocked function
-        utils.run_subprocess.ret = ("ls output", 0)
-        output, ret_code = utils.run_subprocess("ls -l")
-        self.assertEqual(output, "this ain't ls output")
-        self.assertEqual(ret_code, 0)
-        self.assertEqual(utils.run_subprocess.prefix, "this ain't ")
+def test_example(monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    # Set a tuple to be returned by the RunSubprocessMocked function
+    utils.run_subprocess.ret = ("ls output", 0)
+
+    output, ret_code = utils.run_subprocess("ls -l")
+
+    assert output == "this ain't ls output"
+    assert ret_code == 0
+    assert utils.run_subprocess.prefix == "this ain't "

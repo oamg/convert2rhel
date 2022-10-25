@@ -1,0 +1,6 @@
+summary: kmods tests
+
+tier: 0
+
+test: |
+  pytest -svv

@@ -1,0 +1,15 @@
+- hosts: all
+  tasks:
+    - name: Add the CentOS Linux 8 BaseOS repo
+      yum_repository:
+        name: baseos
+        description: CentOS Linux 8 BaseOS
+        baseurl: https://vault.centos.org/centos/8/BaseOS/x86_64/os/
+        gpgcheck: no
+
+    - name: Install subscription-manager from the CentOS Linux 8 BaseOS repo (signed by CentOS)
+      yum:
+        name: subscription-manager
+        disablerepo: "*"
+        enablerepo: "baseos"
+        state: present

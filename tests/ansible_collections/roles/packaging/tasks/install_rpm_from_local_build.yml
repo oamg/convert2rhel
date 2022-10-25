@@ -1,0 +1,36 @@
+---
+- name: Get convert2rhel version
+  delegate_to: localhost
+  shell: python scripts/extract_version_from_rpm_spec.py packaging/convert2rhel.spec
+  args:
+    chdir: ../..
+  register: pkg_version
+
+- name: Copying rpms to docker remote
+  delegate_to: localhost
+  shell: "docker cp .rpms {{ inventory_hostname }}:/data/"
+  args:
+    chdir: ../..
+  when: ansible_facts['virtualization_type'] == "docker"
+
+- name: Copying rpms to kvm remote
+  copy:
+    dest: ".rpms"
+    src: ../../.rpms/
+  when: ansible_facts['virtualization_type'] == "kvm"
+
+- name: Install el8 convert2rhel package
+  yum:
+    name: ".rpms/convert2rhel-{{ pkg_version.stdout }}.el8.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+  when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8") or
+        (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "8")
+
+- name: Install el7 convert2rhel package
+  yum:
+    name: ".rpms/convert2rhel-{{ pkg_version.stdout }}.el7.noarch.rpm"
+    state: present
+    disable_gpg_check: true
+  when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7") or
+        (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "7")

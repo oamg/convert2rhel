@@ -16,10 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-try:
-    import unittest2 as unittest  # Python 2.6 support
-except ImportError:
-    import unittest
+import unittest
+
+from functools import wraps
+
+import pytest
+
+from convert2rhel.utils import run_subprocess
 
 
 TMP_DIR = "/tmp/convert2rhel_test/"
@@ -28,64 +31,6 @@ NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
-
-try:
-    from functools import wraps
-except ImportError:
-    """ functools.wrap is not available on Python 2.4
-
-    On Centos/OL/RHEL 5 the available version of Python is 2.4 which does not have
-    functools.wrap decorator used on our tests. Following the solution described
-    here[0], following code is a copy from functools code from Python official
-    repo[1]. Only the use of partial func was changed as described.
-
-    [0] https://stackoverflow.com/questions/12274814/functools-wraps-for-python-2-4
-    [1] https://hg.python.org/cpython/file/b48e1b48e670/Lib/functools.py
-    """
-
-    WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__doc__')
-    WRAPPER_UPDATES = ('__dict__',)
-    def update_wrapper(wrapper,
-                       wrapped,
-                       assigned=WRAPPER_ASSIGNMENTS,
-                       updated=WRAPPER_UPDATES):
-        """Update a wrapper function to look like the wrapped function
-
-           wrapper is the function to be updated
-           wrapped is the original function
-           assigned is a tuple naming the attributes assigned directly
-           from the wrapped function to the wrapper function (defaults to
-           functools.WRAPPER_ASSIGNMENTS)
-           updated is a tuple naming the attributes off the wrapper that
-           are updated with the corresponding attribute from the wrapped
-           function (defaults to functools.WRAPPER_UPDATES)
-        """
-        for attr in assigned:
-            setattr(wrapper, attr, getattr(wrapped, attr))
-        for attr in updated:
-            getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
-        # Return the wrapper so this can be used as a decorator via partial()
-        return wrapper
-
-
-    def partial(func, *args, **kwds):
-        "Emulate Python2.6's functools.partial"
-        return lambda *fargs, **fkwds: func(*(args+fargs), **dict(kwds, **fkwds))
-
-
-    def wraps(wrapped,
-              assigned=WRAPPER_ASSIGNMENTS,
-              updated=WRAPPER_UPDATES):
-        """Decorator factory to apply update_wrapper() to a wrapper function
-
-           Returns a decorator that invokes update_wrapper() with the decorated
-           function as the wrapper argument and the arguments to wraps() as the
-           remaining arguments. Default arguments are as for update_wrapper().
-           This is a convenience function to simplify applying partial() to
-           update_wrapper().
-        """
-        return partial(update_wrapper, wrapped=wrapped,
-                       assigned=assigned, updated=updated)
 
 
 def mock(class_or_module, orig_obj, mock_obj):
@@ -114,6 +59,7 @@ def mock(class_or_module, orig_obj, mock_obj):
     -- replaces the gpgkey module-scoped variable gpg_key_system_dir with the
        "/nonexisting_dir/" string
     """
+
     def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
@@ -143,13 +89,15 @@ def mock(class_or_module, orig_obj, mock_obj):
                 # Remove the temporary attribute holding the original object
                 delattr(class_or_module, orig_obj_attr)
             return return_value
+
         return wrapped_fn
+
     return wrap
 
 
 def safe_repr(obj, short=False):
     """
-    Safetly calls repr(). 
+    Safetly calls repr().
     Returns a truncated string if repr message is too long.
     """
     try:
@@ -158,39 +106,61 @@ def safe_repr(obj, short=False):
         result = object.__repr__(obj)
     if not short or len(result) < _MAX_LENGTH:
         return result
-    return result[:_MAX_LENGTH] + ' [truncated]...'
+    return result[:_MAX_LENGTH] + " [truncated]..."
+
+
+def get_pytest_marker(request, mark_name):
+    """
+    Get a pytest mark from a request.
+
+    The pytest API to retrieve a mark changed between RHEL6 and RHEL7.  This function is
+    a compatibility shim to retrieve the value.
+
+    Use this function instead of pytest's `request.node.get_closest_marker(mark_name)` so that it will work on all versions of RHEL that we are targeting.
+    .. seealso::
+        * `pytest's get_closest_marker() function which this function wraps <https://docs.pytest.org/en/stable/reference/reference.html#pytest.nodes.Node.get_closest_marker>`_
+        * `A technique you might use where you would need to use this function to retrieve a mark's value. <https://docs.pytest.org/en/stable/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures>`_
+    """
+    if pytest.__version__.split(".") <= ["3", "6", "0"]:
+        mark = request.node.get_marker(mark_name)
+    else:
+        mark = request.node.get_closest_marker(mark_name)
+
+    return mark
 
 
 class ExtendedTestCase(unittest.TestCase):
     """
     Extends Nose test case with more helpers.
-    Most of these functions are taken from newer versions of Nose 
+    Most of these functions are taken from newer versions of Nose
     test and can be removed when we upgrade Nose test.
     """
+
     def assertIn(self, member, container, msg=None):
-        """ 
+        """
         Taken from newer nose test version.
         Just like self.assertTrue(a in b), but with a nicer default message.
         """
         if member not in container:
-            standardMsg = '%s not found in %s' % (safe_repr(member),
-                                                    safe_repr(container))
-            self.fail(self._formatMessage(msg, standardMsg))
+            standard_msg = "%s not found in %s" % (
+                safe_repr(member),
+                safe_repr(container),
+            )
+            self.fail(self._formatMessage(msg, standard_msg))
 
-
-    def _formatMessage(self, msg, standardMsg):
-        """ 
+    def _formatMessage(self, msg, standard_msg):
+        """
         Taken from newer nose test version.
         Formats the message in a safe manner for better readability.
         """
         if msg is None:
-            return standardMsg
+            return standard_msg
         try:
             # don't switch to '{}' formatting in Python 2.X
             # it changes the way unicode input is handled
-            return '%s : %s' % (standardMsg, msg)
+            return "%s : %s" % (standard_msg, msg)
         except UnicodeDecodeError:
-            return  '%s : %s' % (safe_repr(standardMsg), safe_repr(msg))
+            return "%s : %s" % (safe_repr(standard_msg), safe_repr(msg))
 
 
 class MockFunction(object):
@@ -218,3 +188,99 @@ class MockFunction(object):
         def __call__(self, *args, **kwargs):
             pass
         """
+
+
+class CountableMockObject(MockFunction):
+    def __init__(self, *args, **kwargs):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return
+
+
+def is_rpm_based_os():
+    """Check if the OS is rpm based."""
+    try:
+        run_subprocess(["rpm"])
+    except EnvironmentError:
+        return False
+    else:
+        return True
+
+
+class GetLoggerMocked(MockFunction):
+    def __init__(self):
+        self.task_msgs = []
+        self.info_msgs = []
+        self.warning_msgs = []
+        self.critical_msgs = []
+        self.error_msgs = []
+        self.debug_msgs = []
+
+    def __call__(self, msg):
+        return self
+
+    def critical(self, msg, *args):
+        self.critical_msgs.append(msg)
+        raise SystemExit(1)
+
+    def error(self, msg, *args):
+        self.error_msgs.append(msg)
+
+    def task(self, msg, *args):
+        self.task_msgs.append(msg)
+
+    def info(self, msg, *args):
+        self.info_msgs.append(msg)
+
+    def warn(self, msg, *args):
+        self.warning_msgs.append(msg)
+
+    def warning(self, msg, *args):
+        self.warn(msg, *args)
+
+    def debug(self, msg, *args):
+        self.debug_msgs.append(msg)
+
+
+class GetFileContentMocked(MockFunction):
+    def __init__(self, data, as_list=True):
+        self.data = data
+        self.as_list = as_list
+        self.called = 0
+
+    def __call__(self, filename, as_list):
+        self.called += 1
+        self.as_list = as_list
+        return [x.strip() for x in self.data] if self.as_list else self.data
+
+
+def run_subprocess_side_effect(*stubs):
+    """Side effect function for utils.run_subprocess.
+    :type stubs: Tuple[Tuple[command, ...], Tuple[command_stdout, exit_code]]
+
+    Allows you to parametrize the mocking by providing list of stubs
+
+    if run_subprocess called with args, which are not specified in
+    stubs, then no mocking happening and a real subprocess call will be made.
+
+    Example:
+    >>> run_subprocess_mock = mock.Mock(
+    >>>     side_effect=run_subprocess_side_effect(
+    >>>         (("uname",), ("5.8.0-7642-generic\n", 0)),
+    >>>         (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+    >>>         (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
+    >>>     )
+    >>> )
+
+    """
+
+    def factory(*args, **kwargs):
+        for kws, result in stubs:
+            if all(kw in args[0] for kw in kws):
+                return result
+        else:
+            return run_subprocess(*args, **kwargs)
+
+    return factory

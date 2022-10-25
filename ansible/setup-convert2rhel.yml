@@ -1,0 +1,85 @@
+- hosts: all
+  become: yes
+  strategy: free
+
+  # You may modify these to fit your environment or use ansible-playbook --extra-vars
+  # to override them if needed.
+  vars:
+    skip_os_version_check: false
+    # added for RHELDST-7822
+    SSLCACERT: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
+    centos8_repos:
+      - CentOS-Linux-AppStream.repo
+      - CentOS-Linux-BaseOS.repo
+      - CentOS-Linux-ContinuousRelease.repo
+      - CentOS-Linux-Devel.repo
+      - CentOS-Linux-Extras.repo
+      - CentOS-Linux-FastTrack.repo
+      - CentOS-Linux-HighAvailability.repo
+      - CentOS-Linux-Plus.repo
+      - CentOS-Linux-PowerTools.repo
+
+  tasks:
+
+    - name: Validate Distribution (CentOS or Oracle Linux) and version
+      fail:
+        msg: "Distribution must be CentOS or Oracle Linux"
+      when: ansible_distribution != 'CentOS' and ansible_distribution != 'OracleLinux'
+
+    - name: Validate Release Version (6.10, 7.9, 8.5)
+      fail:
+        msg: "Distribution version must be 6.10, 7.9, or 8.5"
+      when: (ansible_distribution_version != '6.10' and ansible_distribution_version != '7.9'
+             and ansible_distribution_version != '8.5') and skip_os_version_check|bool
+
+    - name: Patch repositories if dealing with CentOS8.
+      block:
+      - name: Comment mirrorlist in all repos.
+        replace:
+          path: /etc/yum.repos.d/{{ item }}
+          regexp: ^mirrorlist
+          replace: "#mirrorlist"
+        loop: "{{ centos8_repos }}"
+
+      - name: Switch repo to vault.centos.org.
+        replace:
+          path: /etc/yum.repos.d/{{ item }}
+          regexp: "#baseurl=http://mirror.centos.org"
+          replace: baseurl=https://vault.centos.org
+        loop: "{{ centos8_repos }}"
+      when: ansible_distribution == 'CentOS' and ansible_distribution_major_version | int == 8
+
+    - name: Download Red Hat GPG key
+      get_url:
+        url:  https://www.redhat.com/security/data/fd431d51.txt
+        dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+
+    # added for RHELDST-7822
+    - name: Create rhsm/ca directory
+      file:
+        path: "/etc/rhsm/ca"
+        state: directory
+        owner: "root"
+        group: "root"
+        mode: '755'
+        setype: "rhsmcertd_config_t"
+
+    # added for RHELDST-7822
+    - name: Download Red Hat SSL CA Cert
+      get_url:
+        url: "{{ SSLCACERT }}"
+        dest: "/etc/rhsm/ca/redhat-uep.pem"
+
+    - name: Add Convert2RHEL yum repository from Red Hat
+      yum_repository:
+        name: convert2rhel
+        description: Convert2RHEL for OS {{ ansible_distribution_major_version }}
+        baseurl: "https://cdn.redhat.com/content/public/convert2rhel/{{ ansible_distribution_major_version }}/x86_64/os/"
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+        sslcacert: "/etc/rhsm/ca/redhat-uep.pem"
+
+    - name: Install Convert2RHEL
+      yum:
+        name: convert2rhel

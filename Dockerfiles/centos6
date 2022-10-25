@@ -1,9 +1,0 @@
-FROM centos:6
-
-VOLUME /data
-
-WORKDIR /data
-
-RUN yum update -y && \
-    yum install -y python-nose gnupg &&\
-    yum clean all
