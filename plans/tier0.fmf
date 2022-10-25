@@ -76,3 +76,13 @@
 /custom_kernel:
   discover+:
     test: custom-kernel
+    adjust+:
+        enabled: false
+        when: >
+            distro != centos-8-latest
+    discover+:
+        test: sub-man-rollback
+        
+/log_command_verification:
+  discover+:
+    test: log-command

@@ -43,6 +43,13 @@ def test_smoke_basic(shell):
     assert shell("convert2rhel <<< n").returncode != 0
 
 
+def test_log_file_verification():
+    """
+    Verify that the log file was created by the previous test.
+    """
+    assert os.path.exists("/var/log/convert2rhel/convert2rhel.log")
+
+
 # Find where the site packages for Convert2RHEL are and backup the original version.
 PATH_TO_VERSION = subprocess.check_output(
     ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
