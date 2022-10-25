@@ -722,6 +722,59 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
 def test_hide_secrets(arguments, secret_args, expected):
     sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
     assert sanitazed_cmd == expected
+    
+def test_hide_secrets_explicit(secret):
+    test_cmd = [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--password",
+        secret,
+        "--org=0123",
+        "--activationkey=%s" % secret,
+    ]
+    sanitized_cmd = utils.hide_secrets(test_cmd)
+    assert sanitized_cmd == [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--password",
+        "*****",
+        "--org=0123",
+        "--activationkey=*****",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("secret",),
+    (
+        ("my favourite password",),
+        ("\\)(*&^%f %##@^%&*&^(",),
+        (" ",),
+        ("",),
+    ),
+)
+def test_hide_secrets_shorthand(secret):
+    test_cmd = [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "-p",
+        secret,
+        "--org=0123",
+        "-k=%s" % secret,
+    ]
+    sanitized_cmd = utils.hide_secrets(test_cmd)
+    assert sanitized_cmd == [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--password",
+        "*****",
+        "--org=0123",
+        "--activationkey=*****",
+    ]
+
 
 def test_hide_secrets_no_secrets():
     """Test that a list with no secrets to hide is not modified."""

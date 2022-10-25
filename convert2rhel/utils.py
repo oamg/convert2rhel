@@ -707,7 +707,7 @@ def remove_orphan_folders():
             os.rmdir(path)
 
 
-def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "--token"))):
+def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "--token", "-p", "-k"))):
     """
     Replace secret values with asterisks.
 
