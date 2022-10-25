@@ -7,7 +7,7 @@ system_version = platform.platform()
 def test_remove_excluded_pkgs_from_config(shell):
     """Remove some excluded packages from the CentOS Linux 7 config file.
 
-    That means Convert2RHEL won't remove them before these before the main conversion transaction.
+    That means Convert2RHEL won't remove them before the main conversion transaction.
     """
 
     if "centos-7" in system_version:

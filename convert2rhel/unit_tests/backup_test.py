@@ -658,5 +658,5 @@ class TestRestorableRpmKey:
         ("httpd-tools-2.4.6-97.el7.centos.5.x86_64", "httpd-tools-2.4.6-97.el7.centos.5.x86_64"),
     ),
 )
-def remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
-    assert backup.remove_epoch(pkg_nevra) == nvra_without_epoch
+def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
+    assert backup.remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch
