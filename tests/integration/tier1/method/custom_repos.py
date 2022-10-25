@@ -22,6 +22,11 @@ def get_system_version(system_release_content=None):
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
 
+    # We need to skip check for collected rhsm custom facts after the conversion
+    # due to disabled submgr, thus adding envar
+    submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
+    shell(f"echo '{submgr_disabled_var}' >> /etc/profile")
+
     with open("/etc/system-release", "r") as file:
         system_release = file.read()
         system_version = get_system_version(system_release_content=system_release)

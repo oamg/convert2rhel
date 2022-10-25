@@ -16,18 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import logging
 import os
 import re
 import sys
 
 from datetime import datetime
 
-from six.moves import zip_longest
+from convert2rhel import pkghandler, utils
+from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import hide_secrets
 
-from convert2rhel import pkghandler, systeminfo
 
+MIGRATION_RESULTS_FILE = "/etc/migration-results"
+RHSM_CUSTOM_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
+RHSM_CUSTOM_FACTS_NAMESPACE = "conversions"
 
-FILE = "/etc/migration-results"
+loggerinst = logging.getLogger(__name__)
 
 
 class Breadcrumbs(object):
@@ -69,18 +74,16 @@ class Breadcrumbs(object):
         self._set_source_os()
         self._set_started()
 
-    def finish_success(self):
-        """Set data accessible after successfully conversion and generate the JSON file."""
-        self._set_target_os()
-        self._set_success_ok()
-        self._set_ended()
-        self._generate_json()
+    def finish_collection(self, success=False):
+        """Set the final data for breadcrumbs after the conversion ends."""
+        self.success = success
 
-    def finish_fail(self):
-        """Generate the JSON recording the conversion failure."""
-        self._set_success_fail()
+        if success:
+            self._set_target_os()
+
         self._set_ended()
-        self._generate_json()
+        self._save_migration_results()
+        self._save_rhsm_facts()
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
@@ -91,7 +94,7 @@ class Breadcrumbs(object):
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
         cli_options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
-        self.executed = sanitize_cli_options(sys.argv, cli_options_to_sanitize)
+        self.executed = " ".join(hide_secrets(args=sys.argv, secret_args=cli_options_to_sanitize))
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
@@ -100,9 +103,6 @@ class Breadcrumbs(object):
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""
         self.signature = pkghandler.get_pkg_signature(self._pkg_object)
-
-    def _set_source_os(self):
-        self.source_os = systeminfo.SystemInfo._get_system_release_file_content().strip()  # Remove newline
 
     def _set_started(self):
         """Set start time of activity"""
@@ -128,17 +128,30 @@ class Breadcrumbs(object):
 
         self.env = env_c2r
 
+    def _set_source_os(self):
+        """Set the source os release information."""
+        self.source_os = system_info.get_system_release_info()
+        if self.source_os["id"] is None:
+            # rhsm facts can only be strings or booleans
+            self.source_os["id"] = "null"
+
     def _set_target_os(self):
-        self.target_os = systeminfo.SystemInfo._get_system_release_file_content().strip()  # Remove newline
+        """Set the target os release information."""
+        # Reading the system-release file again to get the target os information.
+        system_release_content = system_info.get_system_release_file_content()
+        self.target_os = system_info.get_system_release_info(system_release_content)
+        if self.target_os["id"] is None:
+            # rhsm facts can only be strings or booleans
+            self.target_os["id"] = "null"
 
-    def _set_success_fail(self):
-        self.success = False
+    @property
+    def data(self):
+        """Property that return the current state of the breadcrumbs
 
-    def _set_success_ok(self):
-        self.success = True
-
-    def _generate_json(self):
-        data = {
+        :return: A dictionary containing the collected data through the conversion.
+        :rtype: dict[str, Any]
+        """
+        return {
             "version": self.version,
             "activity": self.activity,
             "packages": [{"nevra": self.nevra, "signature": self.signature}],
@@ -152,50 +165,27 @@ class Breadcrumbs(object):
             "run_id": self.run_id,
         }
 
-        write_obj_to_array_json(path=FILE, new_object=data, key="activities")
+    def _save_migration_results(self):
+        """Write the results of the breadcrumbs to the migration-results file."""
+        loggerinst.info("Writing breadcrumbs to '%s'.", MIGRATION_RESULTS_FILE)
+        _write_obj_to_array_json(path=MIGRATION_RESULTS_FILE, new_object=self.data, key="activities")
+
+    def _save_rhsm_facts(self):
+        """Write the results of the breadcrumbs to the rhsm custom facts file."""
+        data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
+        try:
+            loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
+            # We don't need to use `_write_obj_to_array_json` function here, because
+            # we only care about dumping the facts without having multiple copies of
+            # it.
+            utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data)
+        except (IOError, OSError):
+            rhsm_facts_path = os.path.dirname(RHSM_CUSTOM_FACTS_FILE)
+            loggerinst.warning("Unable to find RHSM facts folder at '%s'.", rhsm_facts_path)
 
 
-def sanitize_cli_options(all_cli_options, options_to_sanitize):
-    """Change value of CLI options to asterisks to hide sensitive information.
-
-    Return back all options, but sanitized.
-    """
-
-    def sanitized_iterator():
-        elems = zip_longest(all_cli_options, all_cli_options[1:], fillvalue=None)
-
-        for (c, n) in elems:
-            # we need to handle 2 possible cases how arguments are specified
-            #  ['--argument=value']
-            #  ['--argument', 'value']
-            if "=" in c:
-                pos = c.index("=")
-
-                if c[:pos] in options_to_sanitize:
-                    yield "{0}={1}".format(c[:pos], ((len(c) - pos - 1) * "*"))
-                elif " " in c[pos:]:
-                    # if value contains a space we need to add quotes
-                    yield '{0}="{1}"'.format(c[:pos], c[pos + 1 :])
-            else:
-                if c in options_to_sanitize:
-                    yield c
-                    if n is not None:
-                        yield len(n) * "*"
-                    # we've already processed n, so we advance the iterator
-                    next(elems, None)
-                else:
-                    if " " in c:
-                        # if value contains a space we need to add quotes
-                        yield '"{0}"'.format(c)
-                    else:
-                        yield c
-
-    return " ".join(sanitized_iterator())
-
-
-def write_obj_to_array_json(path, new_object, key):
+def _write_obj_to_array_json(path, new_object, key):
     """Write new object to array defined by key in JSON file.
-
     If the file doesn't exist, create new one and create key for inserting.
     If the file is corrupted, append complete object (with key) as if it was new file and the
     original content of file stays there.
@@ -204,6 +194,9 @@ def write_obj_to_array_json(path, new_object, key):
         with open(path, "a") as file:
             file_content = {key: []}
             json.dump(file_content, file, indent=4)
+
+    # the file can be changed just by root
+    os.chmod(path, 0o600)
 
     with open(path, "r+") as file:
         try:
@@ -216,6 +209,7 @@ def write_obj_to_array_json(path, new_object, key):
         except ValueError:  # we cannot use json.decoder.JSONDecodeError due python 2.7 compatibility
             file_content = {key: []}
 
+        loggerinst.debug("Prior migration log: %s", json.dumps(file_content))
         try:
             file_content[key].append(new_object)  # append new_object to activities
         # valid json, but no 'activities' key there
@@ -226,10 +220,8 @@ def write_obj_to_array_json(path, new_object, key):
             file.seek(0)
 
         # write the json to the file
+        loggerinst.debug("Updated migration log: %s", json.dumps(file_content))
         json.dump(file_content, file, indent=4)
-
-    # the file can be changed just by root
-    os.chmod(path, 0o600)
 
 
 # Code to be executed upon module import

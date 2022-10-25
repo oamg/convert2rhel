@@ -6,6 +6,22 @@ def test_basic_conversion(shell):
     assert "Red Hat Enterprise Linux" in os_release
 
 
+# Maps destination distro names to the source distro information we expect
+# to have converted from.
+DISTRO_CONVERSION_MAPPING = {
+    "Red Hat Enterprise Linux Server release 7.9 (Maipo)": (
+        {"id": "Core", "name": "CentOS Linux", "version": "7.9"},
+        {"id": "null", "name": "Oracle Linux Server", "version": "7.9"},
+    ),
+    "Red Hat Enterprise Linux release 8.4 (Ootpa)": (
+        {"id": "null", "name": "CentOS Linux", "version": "8.4"},
+        {"id": "null", "name": "Oracle Linux Server", "version": "8.4"},
+    ),
+    "Red Hat Enterprise Linux release 8.5 (Ootpa)": ({"id": "null", "name": "CentOS Linux", "version": "8.5"},),
+    "Red Hat Enterprise Linux release 8.6 (Ootpa)": ({"id": "null", "name": "Oracle Linux Server", "version": "8.6"},),
+}
+
+
 def test_correct_distro():
     """ "
     Check that we landed on the correct version
@@ -17,16 +33,10 @@ def test_correct_distro():
     with open("/etc/system-release", "r") as sys_release:
         destination_distro = sys_release.read()
 
-    if "Red Hat Enterprise Linux Server release 7.9 (Maipo)" in destination_distro:
-        assert (
-            source_distro == "CentOS Linux release 7.9.2009 (Core)"
-            or source_distro == "Oracle Linux Server release 7.9"
-        )
-    elif "Red Hat Enterprise Linux release 8.4 (Ootpa)" in destination_distro:
-        assert source_distro == "CentOS Linux release 8.4.2105" or source_distro == "Oracle Linux Server release 8.4"
-    elif "Red Hat Enterprise Linux release 8.5 (Ootpa)" in destination_distro:
-        assert source_distro == "CentOS Linux release 8.5.2111"
-    elif "Red Hat Enterprise Linux release 8.6 (Ootpa)" in destination_distro:
-        assert source_distro == "Oracle Linux Server release 8.6"
+    for destination_distro_name, possible_source_distros in DISTRO_CONVERSION_MAPPING.items():
+        if destination_distro_name in destination_distro:
+            assert source_distro in possible_source_distros
+            break
     else:
-        assert False, "Unknown destination distro"
+        # We did not find a known destination_distro
+        assert False, "Unknown destination distro '%s'" % destination_distro

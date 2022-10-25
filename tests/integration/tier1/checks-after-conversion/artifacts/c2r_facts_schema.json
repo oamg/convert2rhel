@@ -1,0 +1,79 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/oamg/convert2rhel/c2r-facts-schema-1.0.json",
+    "title": "RHSM custom facts migrations file schema v1.0",
+    "type": "object",
+    "required": [
+        "conversions.activity",
+        "conversions.activity_ended",
+        "conversions.activity_started",
+        "conversions.env",
+        "conversions.executed",
+        "conversions.packages.0.nevra",
+        "conversions.packages.0.signature",
+        "conversions.run_id",
+        "conversions.source_os.id",
+        "conversions.source_os.name",
+        "conversions.source_os.version",
+        "conversions.success",
+        "conversions.target_os.id",
+        "conversions.target_os.name",
+        "conversions.target_os.version",
+        "conversions.version"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "conversions.version": {
+            "type": "string",
+            "format": "integer"
+        },
+        "conversions.activity": {
+            "type": "string"
+        },
+        "conversions.packages.0.nevra": {
+            "type": "string"
+        },
+        "conversions.packages.0.signature": {
+            "type": "string"
+        },
+        "conversions.executed": {
+            "type": "string"
+        },
+        "conversions.success": {
+            "type": "boolean"
+        },
+        "conversions.activity_started": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "conversions.activity_ended": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "conversions.source_os.id": {
+            "type": "string"
+        },
+        "conversions.source_os.name": {
+            "type": "string"
+        },
+        "conversions.source_os.version": {
+            "type": "string"
+        },
+        "conversions.target_os.id": {
+            "type": "string"
+        },
+        "conversions.target_os.name": {
+            "type": "string"
+        },
+        "conversions.target_os.version": {
+            "type": "string"
+        },
+        "conversions.env": {
+            "type": "string"
+        },
+        "conversions.run_id": {
+            "type": "string"
+        }
+    }
+}
