@@ -194,6 +194,10 @@ def pre_ponr_conversion():
     loggerinst.task("Convert: Resolve possible edge cases")
     special_cases.check_and_resolve()
 
+    # Import the Red Hat GPG Keys for installing Subscription-manager and for later.
+    loggerinst.task("Convert: Import Red Hat GPG keys")
+    pkghandler.install_gpg_keys()
+
     rhel_repoids = []
     if not toolopts.tool_opts.no_rhsm:
         loggerinst.task("Convert: Subscription Manager - Download packages")
@@ -232,8 +236,6 @@ def pre_ponr_conversion():
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
 
-    loggerinst.task("Convert: Import Red Hat GPG keys")
-    pkghandler.install_gpg_keys()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: Replace packages")
@@ -271,6 +273,13 @@ def rollback_changes():
     pkghandler.versionlock_file.restore()
     system_cert = cert.SystemCert()
     system_cert.remove()
+    try:
+        backup.backup_control.pop_all()
+    except IndexError as e:
+        if e.args[0] == "No backups to restore":
+            loggerinst.info("During rollback there were no backups to restore")
+        else:
+            raise
 
     return
 
