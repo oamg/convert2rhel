@@ -290,7 +290,16 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     filtered by name.
     """
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
-    return [pkg.pkg_obj.name for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints]
+
+    # We have a problem regarding the package names not being converted and
+    # causing duplicate problems if they are both installed on their i686 and
+    # x86_64 versions on the system. To fix this, we return the package_name +
+    # architecture to make sure both of them will be passed to dnf and, if
+    # possible, converted. This issue does not happen on yum, so we can still
+    # use only the package name for it.
+    return [
+        "%s.%s" % (pkg.pkg_obj.name, pkg.pkg_obj.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
+    ]
 
 
 def get_installed_pkgs_w_fingerprints(name=""):

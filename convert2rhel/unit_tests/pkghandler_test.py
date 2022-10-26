@@ -394,9 +394,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
+        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
         pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
 
-        self.assertEqual(pkgs_by_fingerprint, ["pkg1", "gpg-pubkey"])
+        self.assertEqual(pkgs_by_fingerprint, ["pkg1.", "gpg-pubkey."])
 
     @unit_tests.mock(
         pkghandler,
@@ -1928,7 +1929,9 @@ def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
 
 @all_systems
 def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
-    monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", value=lambda _: ["pkg-1", "pkg-2"])
+    pkgs = ["pkg-1", "pkg-2"]
+    monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", value=lambda _: pkgs)
 
-    packages = pkghandler.get_system_packages_for_replacement()
-    assert ["pkg-1", "pkg-2" in packages]
+    result = pkghandler.get_system_packages_for_replacement()
+    for pkg in pkgs:
+        assert pkg in result

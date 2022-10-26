@@ -135,13 +135,17 @@ class YumTransactionHandler(TransactionHandlerBase):
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
 
         for pkg in original_os_pkgs:
-            self._base.update(name=pkg)
+            self._base.update(pattern=pkg)
             try:
-                self._base.reinstall(name=pkg)
+                self._base.reinstall(pattern=pkg)
             except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
                 try:
-                    self._base.downgrade(name=pkg)
-                except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
+                    self._base.downgrade(pattern=pkg)
+                except (
+                    pkgmanager.Errors.ReinstallInstallError,
+                    pkgmanager.Errors.ReinstallRemoveError,
+                    pkgmanager.Errors.DowngradeError,
+                ):
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
     def _resolve_dependencies(self, validate_transaction):
