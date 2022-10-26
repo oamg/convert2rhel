@@ -402,7 +402,8 @@ def test_get_system_distribution_id(system_release_content, expected):
 def test_get_system_distribution_id_default_system_release_content(pretend_os):
     assert system_info._get_system_distribution_id() == None
 
-@pytest.mark.parametrize( 
+
+@pytest.mark.parametrize(
     (
         "submgr_enabled_repos",
         "tool_opts_no_rhsm",
