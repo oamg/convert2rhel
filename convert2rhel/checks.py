@@ -622,7 +622,8 @@ def _bad_kernel_package_signature(kernel_release):
     kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
     bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
 
-    # e.g. Oracle Linux Server -> Oracle
+    # e.g. Oracle Linux Server -> Oracle or
+    #      Oracle Linux Server -> CentOS Linux
     if bad_signature:
         logger.warning("Custom kernel detected. The booted kernel needs to be signed by %s." % os_vendor)
         return True

@@ -64,7 +64,7 @@ class QueryMocked(unit_tests.MockFunction):
         return self.pkg_obj
 
     def _setup_pkg(self):
-        self.pkg_obj = TestPkgHandler.TestPkgObj()
+        self.pkg_obj = TestPkgObj()
         self.pkg_obj.name = "installed_pkg"
 
     def filterm(self, empty):
@@ -90,7 +90,7 @@ class ReturnPackagesMocked(unit_tests.MockFunction):
             if "non_existing" in patterns:
                 return []
 
-        pkg_obj = TestPkgHandler.TestPkgObj()
+        pkg_obj = TestPkgObj()
         pkg_obj.name = "installed_pkg"
         return [pkg_obj]
 

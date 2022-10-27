@@ -987,7 +987,6 @@ def test_bad_kernel_package_signature(
 ):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
     get_pkg_fingerprint_mocked = mock.Mock(spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint)
-    monkeypatch.setattr(system_info, "name", "CentOS Linux")
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
     get_installed_pkg_objects_mocked = mock.Mock(spec=get_installed_pkg_objects, return_value=[kernel_pkg])
     monkeypatch.setattr(
