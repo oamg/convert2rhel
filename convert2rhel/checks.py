@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import functools
 import itertools
 import logging
 import os
@@ -55,6 +54,44 @@ COMPATIBLE_KERNELS_VERS = {
     7: "3.10.0",
     8: "4.18.0",
 }
+
+# Python 2.6 compatibility.
+# This code is copied from Pthon-3.10's functools module,
+# licensed under the Python Software Foundation License, version 2
+try:
+    from functools import cmp_to_key
+except ImportError:
+
+    def cmp_to_key(mycmp):
+        """Convert a cmp= function into a key= function"""
+
+        class K(object):
+            __slots__ = ["obj"]
+
+            def __init__(self, obj):
+                self.obj = obj
+
+            def __lt__(self, other):
+                return mycmp(self.obj, other.obj) < 0
+
+            def __gt__(self, other):
+                return mycmp(self.obj, other.obj) > 0
+
+            def __eq__(self, other):
+                return mycmp(self.obj, other.obj) == 0
+
+            def __le__(self, other):
+                return mycmp(self.obj, other.obj) <= 0
+
+            def __ge__(self, other):
+                return mycmp(self.obj, other.obj) >= 0
+
+            __hash__ = None
+
+        return K
+
+
+# End of PSF Licensed code
 
 
 def perform_system_checks():
@@ -438,7 +475,7 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
             list_of_sorted_pkgs.append(
                 max(
                     distinct_kernel_pkgs[1],
-                    key=functools.cmp_to_key(_package_version_cmp),
+                    key=cmp_to_key(_package_version_cmp),
                 )
             )
 

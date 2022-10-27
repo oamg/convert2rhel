@@ -1926,6 +1926,7 @@ def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
     pkghandler.clean_yum_metadata()
     assert expected in caplog.records[-1].message
 
+
 @all_systems
 def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     pkgs = ["pkg-1", "pkg-2"]
@@ -1934,6 +1935,7 @@ def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     result = pkghandler.get_system_packages_for_replacement()
     for pkg in pkgs:
         assert pkg in result
+
 
 @pytest.mark.parametrize(
     ("pkg_1", "pkg_2", "expected"),
