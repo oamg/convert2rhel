@@ -430,9 +430,12 @@ def test_get_enabled_rhel_repos(
     tool_opts_no_rhsm,
     tool_opts_enablerepo,
     expected,
+    global_tool_opts,
+    monkeypatch,
 ):
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     system_info.submgr_enabled_repos = submgr_enabled_repos
-    tool_opts.enablerepo = tool_opts_enablerepo
-    tool_opts.no_rhsm = tool_opts_no_rhsm
+    global_tool_opts.enablerepo = tool_opts_enablerepo
+    global_tool_opts.no_rhsm = tool_opts_no_rhsm
 
     assert system_info.get_enabled_rhel_repos() == expected
