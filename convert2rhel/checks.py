@@ -72,6 +72,7 @@ def perform_pre_checks():
 def perform_pre_ponr_checks():
     """Late checks before ponr should be added here."""
     ensure_compatibility_of_kmods()
+    validate_package_manager_transaction()
 
 
 def check_convert2rhel_latest():
@@ -293,6 +294,15 @@ def ensure_compatibility_of_kmods():
         )
     else:
         logger.info("Kernel modules are compatible.")
+
+
+def validate_package_manager_transaction():
+    """Validate the package manager transaction is passing the tests."""
+    logger.task("Validate the %s transaction", pkgmanager.TYPE)
+    transaction_handler = pkgmanager.create_transaction_handler()
+    transaction_handler.run_transaction(
+        validate_transaction=True,
+    )
 
 
 def get_loaded_kmods():

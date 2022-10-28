@@ -19,7 +19,6 @@ import glob
 import logging
 import os
 import re
-import sys
 
 import rpm
 
@@ -34,6 +33,7 @@ loggerinst = logging.getLogger(__name__)
 # Limit the number of loops over yum command calls for the case there was
 # an error.
 MAX_YUM_CMD_CALLS = 3
+
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
@@ -72,6 +72,7 @@ def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
     dependencies, especially when it tries to downgrade pkgs. This function
     tries to resolve the dependency errors where yum is not able to.
     """
+    # TODO(r0x0d): Verify if we need to remove this specific function.
 
     if retries <= 0:
         loggerinst.critical("Could not resolve yum errors.")
@@ -289,7 +290,16 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     filtered by name.
     """
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
-    return [pkg.pkg_obj.name for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints]
+
+    # We have a problem regarding the package names not being converted and
+    # causing duplicate problems if they are both installed on their i686 and
+    # x86_64 versions on the system. To fix this, we return the package_name +
+    # architecture to make sure both of them will be passed to dnf and, if
+    # possible, converted. This issue does not happen on yum, so we can still
+    # use only the package name for it.
+    return [
+        "%s.%s" % (pkg.pkg_obj.name, pkg.pkg_obj.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
+    ]
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
@@ -609,36 +619,27 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
-def replace_non_red_hat_packages():
-    """Wrapper for yum commands that replace the non-Red Hat packages with
-    the Red Hat ones.
+def get_system_packages_for_replacement():
+    """Get a list of packages in the system to be replaced.
+
+    This function will return a list of packages installed on the system by
+    using the `system_info.fingerprint_ori_os` signature.
+
+    ..notes::
+        This function will append `subscription-manager*` packages if the
+        current system if Oracle Linux 6.
+
+    :return: A list of packages installed on the system.
+    :rtype: list[str]
     """
-
-    # The subscription-manager packages on Oracle Linux 6 are installed from CentOS Linux 6 repositories. They are
-    # not replaced during the system conversion with the RHEL ones because convert2rhel replaces only packages
+    # The subscription-manager packages on Oracle Linux 6 are installed from
+    # CentOS Linux 6 repositories. They are not replaced during the system
+    # conversion with the RHEL ones because convert2rhel replaces only packages
     # signed by the original system vendor (Oracle).
-
-    submgr_pkgs = []
-    if system_info.id == "oracle" and system_info.version.major == 6:
-        submgr_pkgs += ["subscription-manager*"]
-
-    # TODO: run yum commands with --assumeno first and show the user what will
-    # be done and then ask if we should continue the operation
-
-    loggerinst.info("Performing update of the %s packages ..." % system_info.name)
+    submgr_pkgs = ["subscription-manager*"] if system_info.id == "oracle" and system_info.version.major == "6" else []
     orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades("update", orig_os_pkgs + submgr_pkgs)
-
-    loggerinst.info("Performing reinstallation of the %s packages ..." % system_info.name)
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades("reinstall", orig_os_pkgs + submgr_pkgs)
-
-    # distro-sync (downgrade) the packages that had the following:
-    #  'Installed package <package> not available.'
-    cmd = "distro-sync"
-    loggerinst.info("Performing %s of the packages left ..." % cmd)
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    call_yum_cmd_w_downgrades(cmd, orig_os_pkgs + submgr_pkgs)
+    orig_os_pkgs += submgr_pkgs
+    return orig_os_pkgs
 
 
 def install_gpg_keys():
@@ -1073,7 +1074,7 @@ def _get_packages_to_update_dnf(reposdir):
     # replacement in repo files.
     # See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
-    base.conf.read(priority=pkgmanager.dnf.conf.PRIO_MAINCONFIG)
+    base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
     base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()

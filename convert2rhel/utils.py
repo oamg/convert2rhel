@@ -404,9 +404,23 @@ def download_pkgs(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    custom_releasever=None,
+    varsdir=None,
 ):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
-    return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
+    return [
+        download_pkg(
+            pkg,
+            dest,
+            reposdir,
+            enable_repos,
+            disable_repos,
+            set_releasever,
+            custom_releasever,
+            varsdir,
+        )
+        for pkg in pkgs
+    ]
 
 
 def download_pkg(
@@ -416,13 +430,33 @@ def download_pkg(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    custom_releasever=None,
+    varsdir=None,
 ):
-    """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
+    """Download an rpm using yumdownloader and return its filepath.
 
-    The enable_repos and disable_repos function parameters accept lists. If used, the repos are passed to the
-    --enablerepo and --disablerepo yumdownloader options, respectively.
+    This function accepts a single rpm name as a string to be downloaded through
+    the yumdownloader binary.
 
-    Pass just a single rpm name as a string to the pkg parameter.
+    :param pkg: The packaged that will be downloaded.
+    :type pkg: str
+    :param dest: The destination to download te package. Defaults to `TMP_DIR`
+    :type dest: str
+    :param reposdir: The folder with custom repositories to download.
+    :type reposdir: str
+    :param enable_repos: The repositories to enabled during the download.
+    :type enable_repos: list[str]
+    :param disable_repos: The repositories to disable during the download.
+    :type disable_repos: list[str]
+    :param set_systeminfo_releasever: If it's necessary to use the releasever stored in  SystemInfo.releasever.
+    :type set_systeminfo_releasever: bool
+    :param custom_releasever: A custom releasever to use. An alternative to set_systeminfo_releasever.
+    :type custom_releasever: int | str
+    :param varsdir: The path to the variables directory.
+    :type varsdir: str
+
+    :return: The filepath of the downloaded package.
+    :rtype: str | None
     """
     from convert2rhel.systeminfo import system_info
 
@@ -441,8 +475,17 @@ def download_pkg(
         for repo in enable_repos:
             cmd.append("--enablerepo=%s" % repo)
 
-    if set_releasever and system_info.releasever:
-        cmd.append("--releasever=%s" % system_info.releasever)
+    if set_releasever:
+        if not custom_releasever and not system_info.releasever:
+            raise AssertionError("custom_releasever or system_info.releasever must be set.")
+
+        if custom_releasever:
+            cmd.append("--releasever=%s" % custom_releasever)
+        else:
+            cmd.append("--releasever=%s" % system_info.releasever)
+
+    if varsdir:
+        cmd.append("--setopt=varsdir=%s" % varsdir)
 
     if system_info.version.major == 8:
         cmd.append("--setopt=module_platform_id=platform:el8")

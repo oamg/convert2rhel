@@ -58,10 +58,10 @@ setup(
     author_email="mbocek@redhat.com",
     url="www.redhat.com",
     license="GNU General Public License v3 or later (GPLv3+)",
-    packages=["convert2rhel"],
+    packages=["convert2rhel", "convert2rhel/pkgmanager", "convert2rhel/pkgmanager/handlers"],
     entry_points={
         "console_scripts": [
-            "convert2rhel = convert2rhel.main:main",
+            "convert2rhel = convert2rhel.initialize:run",
         ]
     },
     cmdclass={"build_manpage": build_manpage},

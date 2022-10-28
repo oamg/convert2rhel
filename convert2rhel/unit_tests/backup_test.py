@@ -649,3 +649,16 @@ class TestRestorableRpmKey:
         assert status == 0
         assert output.startswith("gpg-pubkey-fd431d51")
         assert rpm_key.enabled is False
+
+
+@pytest.mark.parametrize(
+    ("pkg_nevra", "nvra_without_epoch"),
+    (
+        ("7:oraclelinux-release-7.9-1.0.9.el7.x86_64", "oraclelinux-release-7.9-1.0.9.el7.x86_64"),
+        ("oraclelinux-release-8:8.2-1.0.8.el8.x86_64", "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"),
+        ("1:mod_proxy_html-2.4.6-97.el7.centos.5.x86_64", "mod_proxy_html-2.4.6-97.el7.centos.5.x86_64"),
+        ("httpd-tools-2.4.6-97.el7.centos.5.x86_64", "httpd-tools-2.4.6-97.el7.centos.5.x86_64"),
+    ),
+)
+def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
+    assert backup.remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch

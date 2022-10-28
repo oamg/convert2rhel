@@ -26,10 +26,6 @@ import pytest
 import rpm
 import six
 
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
-
 from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.pkghandler import (
     _get_packages_to_update_dnf,
@@ -39,7 +35,11 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
+from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos7, centos8, create_pkg_obj
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -394,9 +394,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
+        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
         pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
 
-        self.assertEqual(pkgs_by_fingerprint, ["pkg1", "gpg-pubkey"])
+        self.assertEqual(pkgs_by_fingerprint, ["pkg1.", "gpg-pubkey."])
 
     @unit_tests.mock(
         pkghandler,
@@ -822,30 +823,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         def __call__(self, cmd, pkgs):
             self.cmd += "%s\n" % cmd
             self.pkgs += [pkgs]
-
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades", CallYumCmdWDowngradesMocked())
-    def test_replace_non_red_hat_packages_distrosync_execution_order(self):
-        pkghandler.replace_non_red_hat_packages()
-
-        output = "update\nreinstall\ndistro-sync\n"
-        self.assertTrue(pkghandler.call_yum_cmd_w_downgrades.cmd == output)
-
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x: ["pkg"])
-    @unit_tests.mock(system_info, "id", "oracle")
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(6, 0))
-    @unit_tests.mock(pkghandler, "call_yum_cmd_w_downgrades", CallYumCmdWDowngradesMocked())
-    def test_replace_non_red_hat_packages_distrosync_on_ol6(self):
-        pkghandler.replace_non_red_hat_packages()
-
-        for i in range(0, 3):
-            self.assertEqual(
-                ["pkg", "subscription-manager*"],
-                pkghandler.call_yum_cmd_w_downgrades.pkgs[i],
-            )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
@@ -1948,3 +1925,13 @@ def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
 
     pkghandler.clean_yum_metadata()
     assert expected in caplog.records[-1].message
+
+
+@all_systems
+def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
+    pkgs = ["pkg-1", "pkg-2"]
+    monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", value=lambda _: pkgs)
+
+    result = pkghandler.get_system_packages_for_replacement()
+    for pkg in pkgs:
+        assert pkg in result
