@@ -18,6 +18,7 @@
 import abc
 import logging
 import os
+import re
 import shutil
 
 import six
@@ -46,10 +47,22 @@ class ChangedRPMPackagesController(object):
         """Track packages installed before the PONR to be able to remove them later (roll them back) if needed."""
         self.installed_pkgs += pkgs
 
-    def backup_and_track_removed_pkg(self, pkg):
+    def backup_and_track_removed_pkg(
+        self,
+        pkg,
+        reposdir=None,
+        set_releasever=False,
+        custom_releasever=None,
+        varsdir=None,
+    ):
         """Add a removed RPM pkg to the list of removed pkgs."""
         restorable_pkg = RestorablePackage(pkg)
-        restorable_pkg.backup()
+        restorable_pkg.backup(
+            reposdir=reposdir,
+            set_releasever=set_releasever,
+            custom_releasever=custom_releasever,
+            varsdir=varsdir,
+        )
         self.removed_pkgs.append(restorable_pkg)
 
     def _remove_installed_pkgs(self):
@@ -309,58 +322,101 @@ class RestorablePackage(object):
         self.name = pkgname
         self.path = None
 
-    def backup(self):
-        """Save version of RPM package"""
+    def backup(
+        self,
+        reposdir=None,
+        set_releasever=False,
+        custom_releasever=None,
+        varsdir=None,
+    ):
+        """Save version of RPM package.
+
+        :param reposdir: Custom repositories directory to be used in the backup.
+        :type reposdir: str
+        """
         loggerinst.info("Backing up %s." % self.name)
         if os.path.isdir(BACKUP_DIR):
-            reposdir = get_hardcoded_repofiles_dir()
+            # If we detect that the current system is an EUS release, then we
+            # proceed to use the hardcoded_repofiles, otherwise, we use the
+            # custom reposdir that comes from the method parameter. This is
+            # mainly because of CentOS Linux which we have hardcoded repofiles.
+            # If we ever put Oracle Linux repofiles to ship with convert2rhel,
+            # them the second part of this condition can be dropped.
+            if system_info.corresponds_to_rhel_eus_release() and system_info.id == "centos":
+                reposdir = get_hardcoded_repofiles_dir()
 
-            # One of the reasons we hardcode repofiles pointing to archived repositories of older system
-            # minor versions is that we need to be able to download an older package version as a backup.
-            # Because for example the default repofiles on CentOS Linux 8.4 point only to 8.latest repositories
-            # that already don't contain 8.4 packages.
+            # One of the reasons we hardcode repofiles pointing to archived
+            # repositories of older system minor versions is that we need to be
+            # able to download an older package version as a backup. Because for
+            # example the default repofiles on CentOS Linux 8.4 point only to
+            # 8.latest repositories that already don't contain 8.4 packages.
             if not system_info.has_internet_access:
                 if reposdir:
                     loggerinst.debug(
                         "Not using repository files stored in %s due to the absence of internet access." % reposdir
                     )
-                self.path = download_pkg(self.name, dest=BACKUP_DIR, set_releasever=False)
+                self.path = download_pkg(
+                    self.name,
+                    dest=BACKUP_DIR,
+                    set_releasever=set_releasever,
+                    custom_releasever=custom_releasever,
+                    varsdir=varsdir,
+                )
             else:
                 if reposdir:
                     loggerinst.debug("Using repository files stored in %s." % reposdir)
                 self.path = download_pkg(
                     self.name,
                     dest=BACKUP_DIR,
-                    set_releasever=False,
+                    set_releasever=set_releasever,
                     reposdir=reposdir,
+                    custom_releasever=custom_releasever,
+                    varsdir=varsdir,
                 )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
 
-def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
+def remove_pkgs(
+    pkgs_to_remove,
+    backup=True,
+    critical=True,
+    reposdir=None,
+    set_releasever=False,
+    custom_releasever=None,
+    varsdir=None,
+):
     """Remove packages not heeding to their dependencies."""
-
-    # NOTE(r0x0d): This function is tied to the class ChangedRPMPackagesController and
-    # a couple of other places too, ideally, we should decide if we want to use
-    # this function as an entrypoint or the variable `changed_pkgs_control`, so
-    # we can move this piece of code to the `pkghandler.py` where it should be.
-    # Right now, if we move this code to the `pkghandler.py`, we have a
-    # *circular import dependency error*.
-    # @abadger has an implementation in mind to address some of those issues
-    # and actually place a controller in front of classes like this.
-    if backup:
-        # Some packages, when removed, will also remove repo files, making it
-        # impossible to access the repositories to download a backup. For this
-        # reason we first backup all packages and only after that we remove
-        for nvra in pkgs_to_remove:
-            changed_pkgs_control.backup_and_track_removed_pkg(nvra)
+    # NOTE(r0x0d): This function is tied to the class
+    # ChangedRPMPackagesController and a couple of other places too, ideally, we
+    # should decide if we want to use this function as an entrypoint or the
+    # variable `changed_pkgs_control`, so we can move this piece of code to the
+    # `pkghandler.py` where it should be. Right now, if we move this code to the
+    # `pkghandler.py`, we have a *circular import dependency error*. @abadger
+    # has an implementation in mind to address some of those issues and actually
+    # place a controller in front of classes like this.
 
     if not pkgs_to_remove:
         loggerinst.info("No package to remove")
         return
 
-    for nvra in pkgs_to_remove:
+    if backup:
+        # Some packages, when removed, will also remove repo files, making it
+        # impossible to access the repositories to download a backup. For this
+        # reason we first back up *all* packages and only after that we remove them.
+        for nevra in pkgs_to_remove:
+            changed_pkgs_control.backup_and_track_removed_pkg(
+                pkg=nevra,
+                reposdir=reposdir,
+                set_releasever=set_releasever,
+                custom_releasever=custom_releasever,
+                varsdir=varsdir,
+            )
+    for nevra in pkgs_to_remove:
+        # It's necessary to remove an epoch from the NEVRA string returned by yum because the rpm command does not
+        # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
+        # epoch in NEVRA returned by dnf is handled by rpm just fine.
+        nvra = remove_epoch_from_yum_nevra_notation(nevra)
         loggerinst.info("Removing package: %s" % nvra)
         _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
@@ -368,6 +424,23 @@ def remove_pkgs(pkgs_to_remove, backup=True, critical=True):
                 loggerinst.critical("Error: Couldn't remove %s." % nvra)
             else:
                 loggerinst.warning("Couldn't remove %s." % nvra)
+
+
+def remove_epoch_from_yum_nevra_notation(package_nevra):
+    """Remove epoch from the NEVRA string returned by yum.
+
+    Yum prints epoch only when it's non-zero. It's printed differently by yum and dnf:
+      yum - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
+      dnf - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+
+    This function removes the epoch from the yum notation only.
+    It's safe to pass the dnf notation string with an epoch. This function will return it as is.
+    """
+    epoch_match = re.search(r"^\d+:(.*)", package_nevra)
+    if epoch_match:
+        # Return NVRA without the found epoch
+        return epoch_match.group(1)
+    return package_nevra
 
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103

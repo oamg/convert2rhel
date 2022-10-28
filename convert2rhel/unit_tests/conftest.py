@@ -259,6 +259,11 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_get_architecture",
         value=lambda: "x86_64",
     )
+    monkeypatch.setattr(
+        system_info,
+        "_check_internet_access",
+        value=lambda: True,
+    )
     tool_opts.no_rpm_va = True
 
     # We can't depend on a test environment (containers) having an init system so we have to

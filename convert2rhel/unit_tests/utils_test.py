@@ -101,16 +101,18 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(
         utils,
         "download_pkg",
-        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever: "/filepath/",
+        lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever, custom_releasever, varsdir: "/filepath/",
     )
     def test_download_pkgs(self):
         paths = utils.download_pkgs(
-            ["pkg1", "pkg2"],
-            "/dest/",
-            "/reposdir/",
-            ["repo1"],
-            ["repo2"],
-            False,
+            pkgs=["pkg1", "pkg2"],
+            dest="/dest/",
+            reposdir="/reposdir/",
+            enable_repos=["repo1"],
+            disable_repos=["repo2"],
+            set_releasever=False,
+            custom_releasever=8,
+            varsdir="/tmp",
         )
 
         self.assertEqual(paths, ["/filepath/", "/filepath/"])
@@ -130,12 +132,14 @@ class TestUtils(unittest.TestCase):
         disable_repos = ["*"]
 
         path = utils.download_pkg(
-            "kernel",
+            pkg="kernel",
             dest=dest,
             reposdir=reposdir,
             enable_repos=enable_repos,
             disable_repos=disable_repos,
             set_releasever=True,
+            custom_releasever="8",
+            varsdir="/tmp",
         )
 
         self.assertEqual(
@@ -148,6 +152,7 @@ class TestUtils(unittest.TestCase):
                 "--enablerepo=repo1",
                 "--enablerepo=repo2",
                 "--releasever=8",
+                "--setopt=varsdir=/tmp",
                 "--setopt=module_platform_id=platform:el8",
                 "kernel",
             ],
@@ -155,6 +160,16 @@ class TestUtils(unittest.TestCase):
         )
         self.assertTrue(path)  # path is not None (which is the case of unsuccessful download)
 
+    @unit_tests.mock(system_info, "releasever", None)
+    def test_download_pkg_assertion_error(self):
+        with pytest.raises(AssertionError, match="custom_releasever or system_info.releasever must be set."):
+            utils.download_pkg(
+                pkg="kernel",
+                set_releasever=True,
+                custom_releasever=None,
+            )
+
+    @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
     @unit_tests.mock(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
@@ -163,12 +178,14 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(path, None)
 
+    @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
     @unit_tests.mock(os, "environ", {})
     def test_download_pkg_failed_download_exit(self):
         self.assertRaises(SystemExit, utils.download_pkg, "kernel")
 
+    @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
     def test_download_pkg_incorrect_output(self):

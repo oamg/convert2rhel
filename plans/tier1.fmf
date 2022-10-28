@@ -328,3 +328,58 @@
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/single_yum_transaction_all_errors:
+  adjust:
+    enabled: false
+    when: >
+      distro != oraclelinux-7
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: install ntp package and remove one dependency
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/install_ntp_and_remove_dependency.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/single_yum_transaction_excluded_pkgs:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-7
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: remove some pkgs from the excluded pkgs config list
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/remove_excluded_pkgs_from_config.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/single_yum_transaction_mismatch_errors:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8 and
+      distro != oraclelinux-8.6
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: install multilib packages with dnf
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/install_multilib_packages.py
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml

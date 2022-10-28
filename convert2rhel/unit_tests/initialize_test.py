@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2020 Red Hat, Inc.
+# Copyright(C) 2022 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,19 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-try:
-    from yum import *
+import pytest
 
-    # This is added here to prevent a generic try-except in the
-    # `check_package_updates`() function.
-    from yum.Errors import RepoError  # lgtm[py/unused-import]
+from convert2rhel import initialize, main
 
-    TYPE = "yum"
-except ImportError:
-    from dnf import *  # pylint: disable=import-error
 
-    # This is added here to prevent a generic try-except in the
-    # `check_package_updates`() function.
-    from dnf.exceptions import RepoError  # lgtm[py/unused-import]
-
-    TYPE = "dnf"
+@pytest.mark.parametrize(
+    ("exit_code"),
+    (
+        (0),
+        (1),
+    ),
+)
+def test_run(monkeypatch, exit_code):
+    monkeypatch.setattr(main, "main", value=lambda: exit_code)
+    with pytest.raises(SystemExit):
+        initialize.run()

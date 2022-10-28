@@ -934,8 +934,12 @@ def download_rhsm_pkgs():
             "dnf-plugin-subscription-manager",
             "python3-syspurpose",
             "python3-cloud-what",
-            "json-c.x86_64",  # there's also an i686 version which we don't need
+            "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
         ]
+        if system_info.is_rpm_installed("json-c.i686"):
+            # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
+            # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
+            pkgs_to_download.append("json-c.i686")
         _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 
 

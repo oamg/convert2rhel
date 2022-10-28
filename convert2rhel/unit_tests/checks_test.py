@@ -171,13 +171,20 @@ def test_perform_pre_checks(monkeypatch):
 
 def test_pre_ponr_checks(monkeypatch):
     ensure_compatibility_of_kmods_mock = mock.Mock()
+    create_transaction_handler_mock = mock.Mock()
     monkeypatch.setattr(
         checks,
         "ensure_compatibility_of_kmods",
         value=ensure_compatibility_of_kmods_mock,
     )
+    monkeypatch.setattr(
+        checks.pkgmanager,
+        "create_transaction_handler",
+        value=create_transaction_handler_mock,
+    )
     checks.perform_pre_ponr_checks()
     ensure_compatibility_of_kmods_mock.assert_called_once()
+    create_transaction_handler_mock.assert_called_once()
 
 
 def test_repoquery__failure(caplog, monkeypatch, tmpdir, request):
@@ -353,6 +360,16 @@ def test_ensure_compatibility_of_kmods(
         assert should_be_in_logs in caplog.records[-1].message
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
+
+
+def test_validate_package_manager_transaction(monkeypatch, caplog):
+    monkeypatch.setattr(
+        checks.pkgmanager,
+        "create_transaction_handler",
+        value=mock.Mock(),
+    )
+
+    checks.validate_package_manager_transaction()
 
 
 @pytest.mark.parametrize(
