@@ -435,7 +435,7 @@ def warn_on_unsupported_options():
 
 def _log_command_used():
     """We want to log the command used for convert2rhel to make it easier to know what command was used
-    when debugging the log files. Since we can't differenciate between the handlers we log to both stdout
+    when debugging the log files. Since we can't differentiate between the handlers we log to both stdout
     and the logfile
     """
     command = " ".join(utils.hide_secrets(sys.argv))
