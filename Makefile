@@ -56,7 +56,7 @@ endif
 
 all: clean images tests
 
-install: .install .build-images .env .pre-commit
+install: .install .build-images .pre-commit
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
