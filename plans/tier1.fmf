@@ -278,7 +278,7 @@
   adjust:
     enabled: false
     when: >
-      distro != centos-8
+      distro != centos-8-latest
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -318,7 +318,7 @@
   adjust:
       enabled: false
       when: >
-        distro != centos-8
+        distro != centos-8-latest
   discover+:
     test: checks-after-conversion
   prepare+:
