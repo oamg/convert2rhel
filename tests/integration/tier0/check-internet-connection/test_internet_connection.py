@@ -27,7 +27,8 @@ def _modify_configuration_files():
         # Everything is resolved to localhost
         f.write("address=/#/127.0.0.1")
 
-    with open(RESOLV_CONF_FILE, "a") as f:
+    # Overwrite the file instead of appending a new line.
+    with open(RESOLV_CONF_FILE, "w") as f:
         f.write("nameserver 127.0.0.1")
 
 
