@@ -1007,80 +1007,6 @@ class TestRegistrationCommand(object):
             reg_cmd()
 
 
-@pytest.mark.parametrize(
-    ("secret",),
-    (
-        ("my favourite password",),
-        ("\\)(*&^%f %##@^%&*&^(",),
-        (" ",),
-        ("",),
-    ),
-)
-def test_hide_secrets(secret):
-    test_cmd = [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--password",
-        secret,
-        "--org=0123",
-        "--activationkey=%s" % secret,
-    ]
-    sanitized_cmd = subscription.hide_secrets(test_cmd)
-    assert sanitized_cmd == [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--password",
-        "*****",
-        "--org=0123",
-        "--activationkey=*****",
-    ]
-
-
-def test_hide_secrets_no_secrets():
-    """Test that a list with no secrets to hide is not modified."""
-    test_cmd = [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--org=0123",
-    ]
-    sanitized_cmd = subscription.hide_secrets(test_cmd)
-    assert sanitized_cmd == [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--org=0123",
-    ]
-
-
-def test_hide_secret_unexpected_input(caplog):
-    test_cmd = [
-        "register",
-        "--force",
-        "--password=SECRETS",
-        "--username=jdoe",
-        "--org=0123",
-        "--activationkey",
-        # This is missing the activationkey as the second argument
-    ]
-
-    sanitized_cmd = subscription.hide_secrets(test_cmd)
-
-    assert sanitized_cmd == [
-        "register",
-        "--force",
-        "--password=*****",
-        "--username=jdoe",
-        "--org=0123",
-        "--activationkey",
-    ]
-    assert len(caplog.records) == 1
-    assert caplog.records[-1].levelname == "FILE"
-    assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
-
-
 class TestReplaceSubscriptionManager(object):
     def test_replace_subscription_manager_skipped(self, monkeypatch, caplog, tool_opts):
         tool_opts.keep_rhsm = True
@@ -1135,11 +1061,13 @@ Version = namedtuple("Version", ["major", "minor"])
 @pytest.mark.parametrize(
     (
         "version",
+        "json_c_i686_installed",
         "pkgs_to_download",
     ),
     (
         (
             (6, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1150,6 +1078,7 @@ Version = namedtuple("Version", ["major", "minor"])
         ),
         (
             (7, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1161,6 +1090,7 @@ Version = namedtuple("Version", ["major", "minor"])
         ),
         (
             (8, 0),
+            False,
             frozenset(
                 (
                     "subscription-manager",
@@ -1173,10 +1103,27 @@ Version = namedtuple("Version", ["major", "minor"])
                 )
             ),
         ),
+        (
+            (8, 0),
+            True,
+            frozenset(
+                (
+                    "subscription-manager",
+                    "subscription-manager-rhsm-certificates",
+                    "python3-subscription-manager-rhsm",
+                    "dnf-plugin-subscription-manager",
+                    "python3-syspurpose",
+                    "python3-cloud-what",
+                    "json-c.x86_64",
+                    "json-c.i686",
+                )
+            ),
+        ),
     ),
 )
-def test_download_rhsm_pkgs(version, pkgs_to_download, monkeypatch):
+def test_download_rhsm_pkgs(version, json_c_i686_installed, pkgs_to_download, monkeypatch):
     monkeypatch.setattr(system_info, "version", Version(*version))
+    monkeypatch.setattr(system_info, "is_rpm_installed", lambda _: json_c_i686_installed)
     monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
     monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
     subscription.download_rhsm_pkgs()
@@ -1556,3 +1503,35 @@ def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, 
 def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
     subscription.lock_releasever_in_rhel_repositories()
     assert "Skipping locking RHEL repositories to a specific EUS minor version." in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("subprocess", "expected"),
+    (
+        (("output", 0), "RHSM custom facts uploaded successfully."),
+        (("output", 1), "Failed to update the RHSM custom facts with return code '1' and output 'output'."),
+    ),
+)
+@centos7
+def test_update_rhsm_custom_facts(subprocess, expected, pretend_os, monkeypatch, caplog):
+    cmd = ["subscription-manager", "facts", "--update"]
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect(
+            (cmd, subprocess),
+        ),
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    subscription.update_rhsm_custom_facts()
+    assert expected in caplog.records[-1].message
+
+
+def test_update_rhsm_custom_facts_no_rhsm(global_tool_opts, caplog, monkeypatch):
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = True
+
+    subscription.update_rhsm_custom_facts()
+    assert "Skipping updating RHSM custom facts." in caplog.records[-1].message

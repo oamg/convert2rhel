@@ -100,6 +100,8 @@ def perform_java_openjdk_workaround():
         logger.info("java-1.7.0-openjdk not installed.")
 
 
+# TODO(r0x0d): Remove this special case as it probably is not needed anymore since we are removing the package in the
+#  oracle-7 config file.
 def unprotect_shim_x64():
     """Remove the shim-x64 package protection on Oracle Linux 7 as it causes yum to traceback.
 

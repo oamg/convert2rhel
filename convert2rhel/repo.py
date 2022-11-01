@@ -24,6 +24,9 @@ from convert2rhel.utils import BACKUP_DIR, DATA_DIR
 
 
 DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d/"
+DEFAULT_YUM_VARS_DIR = "/etc/yum/vars"
+DEFAULT_DNF_VARS_DIR = "/etc/dnf/vars"
+
 loggerinst = logging.getLogger(__name__)
 
 
@@ -99,3 +102,70 @@ def get_hardcoded_repofiles_dir():
         return hardcoded_repofiles
 
     return None
+
+
+def backup_varsdir():
+    """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
+
+    def _backup_variables(path):
+        """Helper internal function to backup the variables.
+
+        :parameter path: The path for the original variable.
+        :type path: str
+        """
+        variable_files_backed_up = False
+        backup_dir = os.path.join(BACKUP_DIR, path.rsplit("/etc/")[-1])
+        for variable in os.listdir(path):
+            variable_path = os.path.join(path, variable)
+            # Create the directory if it doesn't exist
+            if not os.path.exists(backup_dir):
+                os.makedirs(backup_dir)
+            shutil.copy2(variable_path, backup_dir)
+            loggerinst.debug("Backed up variable file: %s" % variable_path)
+            variable_files_backed_up = True
+
+        if not variable_files_backed_up:
+            loggerinst.info("No variables files backed up.")
+
+    loggerinst.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
+    _backup_variables(path=DEFAULT_YUM_VARS_DIR)
+
+    if system_info.version.major == 8:
+        loggerinst.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
+        _backup_variables(path=DEFAULT_DNF_VARS_DIR)
+    return
+
+
+def restore_varsdir():
+    """Rollback all variables files in /etc/{yum,dnf}/vars that were backed up."""
+
+    def _restore_varsdir(path):
+        """Helper internal function to restore the variables.
+
+        :parameter path: The path for the original variable.
+        :type path: str
+        """
+        variables_is_restored = False
+        backup_dir = os.path.join(BACKUP_DIR, path.rsplit("/etc/")[-1])
+
+        if not os.path.exists(backup_dir):
+            loggerinst.warning("Couldn't find backup directory at %s.", backup_dir)
+            return
+
+        for variable in os.listdir(backup_dir):
+            variable_path_from = os.path.join(backup_dir, variable)
+            variable_path_to = os.path.join(path, variable)
+
+            shutil.move(variable_path_from, variable_path_to)
+            loggerinst.info("Restored variable file: %s" % (variable))
+            variables_is_restored = True
+
+        if not variables_is_restored:
+            loggerinst.info("No varaibles files to rollback")
+
+    loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_YUM_VARS_DIR)
+    _restore_varsdir(DEFAULT_YUM_VARS_DIR)
+
+    if system_info.version.major == 8:
+        loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_DNF_VARS_DIR)
+        _restore_varsdir(DEFAULT_DNF_VARS_DIR)

@@ -1,0 +1,218 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/oamg/convert2rhel/c2r-migration-results-schema-1.json",
+    "title": "Migrations file schema v1",
+    "type": "object",
+    "required": [
+        "activities"
+    ],
+    "properties": {
+        "activities": {
+            "$id": "#root/activities",
+            "title": "Activities",
+            "type": "array",
+            "description": "A collection of all migration activities performed on this system",
+            "default": [],
+            "items": {
+                "$id": "#root/activities/items",
+                "description": "Migration item",
+                "type": "object",
+                "required": [
+                    "activity",
+                    "packages",
+                    "executed",
+                    "success",
+                    "activity_started",
+                    "activity_ended",
+                    "source_os",
+                    "target_os",
+                    "env",
+                    "run_id",
+                    "version"
+                ],
+                "properties": {
+                    "activity": {
+                        "$id": "#root/activities/items/activity",
+                        "type": "string",
+                        "enum": [
+                            "conversion",
+                            "upgrade"
+                        ],
+                        "description": "Type of migration activity"
+                    },
+                    "version": {
+                        "$id": "#root/activities/items/version",
+                        "type": "string",
+                        "description": "Version of the activity object"
+                    },
+                    "packages": {
+                        "$id": "#root/activities/items/packages",
+                        "description": "List of packages that directly facilitate the activity",
+                        "type": "array",
+                        "default": [],
+                        "items": {
+                            "$id": "#root/activities/items/packages/items",
+                            "type": "object",
+                            "required": [
+                                "nevra",
+                                "signature"
+                            ],
+                            "properties": {
+                                "nevra": {
+                                    "$id": "#root/activities/items/packages/items/nevra",
+                                    "description": "RPM NEVRA of the package",
+                                    "type": "string",
+                                    "examples": [
+                                        "leapp-0.12.0-1.el7_9.noarch"
+                                    ]
+                                },
+                                "signature": {
+                                    "$id": "#root/activities/items/packages/items/signature",
+                                    "description": "RPM Signature of the package",
+                                    "type": "string",
+                                    "examples": [
+                                        "RSA/SHA256, Mon 29 Mar 2021 03:05:37 PM UTC, Key ID 199e2f91fd431d51"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "executed": {
+                        "$id": "#root/activities/items/executed",
+                        "description": "Complete command line with which the migration activity was started",
+                        "type": "string",
+                        "examples": [
+                            "leapp upgrade --debug"
+                        ]
+                    },
+                    "success": {
+                        "$id": "#root/activities/items/success",
+                        "description": "Indicates whether the migration activity completed successfully",
+                        "type": "boolean",
+                        "examples": [
+                            true
+                        ]
+                    },
+                    "activity_started": {
+                        "$id": "#root/activities/items/activity_started",
+                        "description": "ISO 8601 timestamp of when the activity was started",
+                        "type": "string",
+                        "examples": [
+                            "202104220800Z"
+                        ]
+                    },
+                    "activity_ended": {
+                        "$id": "#root/activities/items/activity_ended",
+                        "description": "ISO 8601 timestamp of when the activity ended",
+                        "type": "string",
+                        "examples": [
+                            "202104220800Z"
+                        ]
+                    },
+                    "source_os": {
+                        "$id": "#root/activities/items/source_os",
+                        "description": "Source operating system where the activity was started",
+                        "type": [
+                            "object",
+                            "string"
+                        ],
+                        "required": [
+                            "id",
+                            "name",
+                            "version"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$id": "#/root/activities/items/source_os/id",
+                                "description": "Id of the source operating system release.  It will be the string 'null' if no id is present.",
+                                "type": "string",
+                                "examples": [
+                                    "Final",
+                                    "Core",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "$id": "#/root/activities/items/source_os/name",
+                                "description": "Name of the source operating system.",
+                                "type": "string",
+                                "examples": [
+                                    "Oracle Linux Server",
+                                    "CentOS Linux"
+                                ]
+                            },
+                            "version": {
+                                "$id": "#/root/activities/items/source_os/version",
+                                "description": "Version of the source operating system release. Only the Major and, if provided, minor.  CentOS build number is not included.",
+                                "type": "string",
+                                "examples": [
+                                    "7.8",
+                                    "8.1"
+                                ]
+                            }
+                        }
+                    },
+                    "target_os": {
+                        "$id": "#root/activities/items/target_os",
+                        "description": "Target operating system that the activity converts to.",
+                        "type": [
+                            "object",
+                            "string"
+                        ],
+                        "pattern":  "null",
+                        "required": [
+                            "id",
+                            "name",
+                            "version"
+                        ],
+                        "properties": {
+                            "id": {
+                                "$id": "#/root/activities/items/target_os/id",
+                                "description": "Id of the target operating system release.  It will be the string 'null' if no id is present.",
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"}
+                                ],
+                                "examples": [
+                                    "Ootpa",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "$id": "#/root/activities/items/target_os/name",
+                                "description": "Name of the target operating system.",
+                                "type": "string",
+                                "examples": [
+                                    "Red Hat Enterprise Linux"
+                                ]
+                            },
+                            "version": {
+                                "$id": "#/root/activities/items/target_os/version",
+                                "description": "Version of the target operating system release.",
+                                "type": "string",
+                                "examples": [
+                                    "7.8",
+                                    "8.1"
+                                ]
+                            }
+                        }
+                    },
+                    "env": {
+                        "$id": "#root/activities/items/env",
+                        "description": "List of migration specific environment variables",
+                        "type": "object"
+                    },
+                    "run_id": {
+                        "$id": "#root/activities/items/run_id",
+                        "description": "Connects invocation to implementation defined identifier",
+                        "type": "string",
+                        "examples": [
+                            "a91dccab-84e8-4a28-b28e-102b073200a9"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

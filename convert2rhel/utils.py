@@ -18,12 +18,14 @@
 import errno
 import getpass
 import inspect
+import json
 import logging
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import traceback
 
 import pexpect
@@ -35,6 +37,10 @@ from convert2rhel import i18n
 
 
 loggerinst = logging.getLogger(__name__)
+
+
+class ImportGPGKeyError(Exception):
+    """Raised for failures during the rpm import of gpg keys."""
 
 
 class Color(object):
@@ -398,9 +404,23 @@ def download_pkgs(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    custom_releasever=None,
+    varsdir=None,
 ):
     """A wrapper for the download_pkg function allowing to download multiple packages."""
-    return [download_pkg(pkg, dest, reposdir, enable_repos, disable_repos, set_releasever) for pkg in pkgs]
+    return [
+        download_pkg(
+            pkg,
+            dest,
+            reposdir,
+            enable_repos,
+            disable_repos,
+            set_releasever,
+            custom_releasever,
+            varsdir,
+        )
+        for pkg in pkgs
+    ]
 
 
 def download_pkg(
@@ -410,13 +430,33 @@ def download_pkg(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    custom_releasever=None,
+    varsdir=None,
 ):
-    """Download an rpm using yumdownloader and return its filepath. If not successful, return None.
+    """Download an rpm using yumdownloader and return its filepath.
 
-    The enable_repos and disable_repos function parameters accept lists. If used, the repos are passed to the
-    --enablerepo and --disablerepo yumdownloader options, respectively.
+    This function accepts a single rpm name as a string to be downloaded through
+    the yumdownloader binary.
 
-    Pass just a single rpm name as a string to the pkg parameter.
+    :param pkg: The packaged that will be downloaded.
+    :type pkg: str
+    :param dest: The destination to download te package. Defaults to `TMP_DIR`
+    :type dest: str
+    :param reposdir: The folder with custom repositories to download.
+    :type reposdir: str
+    :param enable_repos: The repositories to enabled during the download.
+    :type enable_repos: list[str]
+    :param disable_repos: The repositories to disable during the download.
+    :type disable_repos: list[str]
+    :param set_systeminfo_releasever: If it's necessary to use the releasever stored in  SystemInfo.releasever.
+    :type set_systeminfo_releasever: bool
+    :param custom_releasever: A custom releasever to use. An alternative to set_systeminfo_releasever.
+    :type custom_releasever: int | str
+    :param varsdir: The path to the variables directory.
+    :type varsdir: str
+
+    :return: The filepath of the downloaded package.
+    :rtype: str | None
     """
     from convert2rhel.systeminfo import system_info
 
@@ -435,8 +475,17 @@ def download_pkg(
         for repo in enable_repos:
             cmd.append("--enablerepo=%s" % repo)
 
-    if set_releasever and system_info.releasever:
-        cmd.append("--releasever=%s" % system_info.releasever)
+    if set_releasever:
+        if not custom_releasever and not system_info.releasever:
+            raise AssertionError("custom_releasever or system_info.releasever must be set.")
+
+        if custom_releasever:
+            cmd.append("--releasever=%s" % custom_releasever)
+        else:
+            cmd.append("--releasever=%s" % system_info.releasever)
+
+    if varsdir:
+        cmd.append("--setopt=varsdir=%s" % varsdir)
 
     if system_info.version.major == 8:
         cmd.append("--setopt=module_platform_id=platform:el8")
@@ -521,6 +570,82 @@ def get_rpm_header(rpm_path, _open=open):
     return rpmhdr
 
 
+def find_keyid(keyfile):
+    """
+    Find the keyid as used by rpm from a gpg key file.
+
+    :arg keyfile: The filename that contains the gpg key.
+
+    .. note:: rpm doesn't use the full gpg fingerprint so don't use that even though it would be
+        more secure.
+    """
+    # Newer gpg versions have several easier ways to do this:
+    # gpg --with-colons --show-keys keyfile (Can pipe keyfile)
+    # gpg --with-colons --import-options show-only --import keyfile  (Can pipe keyfile)
+    # gpg --with-colons --import-options import-show --dry-run --import keyfile (Can pipe keyfile)
+    # But as long as we need to work on RHEL7 we can't use those.
+
+    # GPG needs a writable diretory to put default config files
+    temporary_dir = tempfile.mkdtemp()
+    temporary_keyring = os.path.join(temporary_dir, "keyring")
+
+    try:
+        # Step 1: Import the key into a temporary keyring (the list-keys command can't operate on
+        # a single asciiarmored key)
+        output, ret_code = run_subprocess(
+            [
+                "gpg",
+                "--no-default-keyring",
+                "--keyring",
+                temporary_keyring,
+                "--homedir",
+                temporary_dir,
+                "--import",
+                keyfile,
+            ],
+            print_output=False,
+        )
+        if ret_code != 0:
+            raise ImportGPGKeyError("Failed to import the rpm gpg key into a temporary keyring: %s" % output)
+
+        # Step 2: Print the information about the keys in the temporary keyfile.
+        # --with-colons give us guaranteed machine parsable, stable output.
+        output, ret_code = run_subprocess(
+            [
+                "gpg",
+                "--no-default-keyring",
+                "--keyring",
+                temporary_keyring,
+                "--homedir",
+                temporary_dir,
+                "--list-keys",
+                "--with-colons",
+            ],
+            print_output=False,
+        )
+        if ret_code != 0:
+            raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: %s" % output)
+    finally:
+        # Remove the temporary keyring.  We can't use the context manager for this because it isn't
+        # available on Python-2.7 (RHEL7)
+        shutil.rmtree(temporary_dir)
+
+    keyid = None
+    for line in output.splitlines():
+        if line.startswith("pub"):
+            fields = line.split(":")
+            fingerprint = fields[4]
+            # The keyid as represented in rpm's fake packagename is only the last 8 hex digits
+            # Example: gpg-pubkey-d651ff2e-5dadbbc1
+            keyid = fingerprint[-8:]
+            break
+
+    if not keyid:
+        raise ImportGPGKeyError("Unable to determine the gpg keyid for the rpm key file: %s" % keyfile)
+
+    return keyid.lower()
+
+
 def set_locale():
     """Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
 
@@ -568,3 +693,93 @@ def remove_orphan_folders():
     for path in rh_release_paths:
         if os.path.exists(path) and is_dir_empty(path):
             os.rmdir(path)
+
+
+def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "--token"))):
+    """
+    Replace secret values with asterisks.
+
+    This function takes a list of arguments which will be passed
+    in a transformation process where we will replace any secret values
+    with an fixed size of asterisks (*) and returns a new list containing
+     the arguments with this transformation.
+
+    :arg args: An argument list which may contain secret values.
+    :returns: A new list of arguments with secret values hidden.
+    """
+    obfuscation_string = "*" * 5
+
+    sanitized_list = []
+    hide_next = False
+    for arg in args:
+        if hide_next:
+            # Second part of a two part secret argument (like --password *SECRET*)
+            arg = obfuscation_string
+            hide_next = False
+
+        elif arg in secret_args:
+            # First part of a two part secret argument (like *--password* SECRET)
+            hide_next = True
+
+        else:
+            # A secret argument in one part (like --password=SECRET)
+            for problem_arg in secret_args:
+                if arg.startswith(problem_arg + "="):
+                    arg = "{0}={1}".format(problem_arg, obfuscation_string)
+
+        sanitized_list.append(arg)
+
+    if hide_next:
+        loggerinst.debug(
+            "Passed arguments had unexpected secret argument,"
+            " '{0}', without a secret".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
+        )
+
+    return sanitized_list
+
+
+def flatten(dictionary, parent_key=False, separator="."):
+    """Turn a nested dictionary into a flattened dictionary.
+
+    .. note::
+        If we detect a empty dictionary or list, this function will append a "null" as a value to the key.
+
+    :param dictionary: The dictionary to flatten
+    :param parent_key: The string to prepend to dictionary's keys
+    :param separator: The string used to separate flattened keys
+    :return: A flattened dictionary
+    """
+
+    items = []
+    for key, value in dictionary.items():
+        new_key = str(parent_key) + separator + key if parent_key else key
+
+        if isinstance(value, dict):
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                items.extend(flatten(value, new_key, separator).items())
+        elif isinstance(value, list):
+            if not value:
+                items.append((new_key, "null"))
+            else:
+                for k, v in enumerate(value):
+                    items.extend(flatten({str(k): v}, new_key).items())
+        else:
+            items.append((new_key, value))
+    return dict(items)
+
+
+def write_json_object_to_file(path, data, mode=0o600):
+    """Write a JSOn object to a file in the system.
+
+    :param path: The path of the file to be written.
+    :type path: str
+    :param data: The JSON data that will be written.
+    :type data: dict[str, Any]
+    :param mode: The permissions for the file.
+    :type mode: int
+    """
+    with open(path, mode="w") as handler:
+        os.chmod(path, mode)
+        json.dump(data, handler, indent=4)

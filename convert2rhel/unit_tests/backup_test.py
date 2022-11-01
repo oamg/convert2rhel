@@ -1,3 +1,4 @@
+import collections
 import os
 import sys
 import unittest
@@ -5,7 +6,7 @@ import unittest
 import pytest
 import six
 
-from convert2rhel import backup, repo, unit_tests  # Imports unit_tests/__init__.py
+from convert2rhel import backup, repo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
@@ -398,3 +399,266 @@ def test_restorable_package_backup(pretend_os, is_eus_system, has_internet_acces
     rp = backup.RestorablePackage(pkgname=pkg_to_backup)
     rp.backup()
     assert download_pkg_mock.call_count == 1
+
+
+@pytest.fixture
+def backup_controller():
+    return backup.BackupController()
+
+
+@pytest.fixture
+def restorable():
+    return MinimalRestorable()
+
+
+class MinimalRestorable(backup.RestorableChange):
+    def __init__(self):
+        self.called = collections.defaultdict(int)
+        super(MinimalRestorable, self).__init__()
+
+    def enable(self):
+        self.called["enable"] += 1
+        super(MinimalRestorable, self).enable()
+
+    def restore(self):
+        self.called["restore"] += 1
+        super(MinimalRestorable, self).restore()
+
+
+class TestBackupController:
+    def test_push(self, backup_controller, restorable):
+        backup_controller.push(restorable)
+
+        assert restorable.called["enable"] == 1
+        assert restorable in backup_controller._restorables
+
+    def test_push_invalid(self, backup_controller):
+        with pytest.raises(TypeError, match="`1` is not a RestorableChange object"):
+            backup_controller.push(1)
+
+    def test_pop(self, backup_controller, restorable):
+        backup_controller.push(restorable)
+        popped_restorable = backup_controller.pop()
+
+        assert popped_restorable is restorable
+        assert restorable.called["restore"] == 1
+
+    def test_pop_multiple(self, backup_controller):
+        restorable1 = MinimalRestorable()
+        restorable2 = MinimalRestorable()
+        restorable3 = MinimalRestorable()
+
+        backup_controller.push(restorable1)
+        backup_controller.push(restorable2)
+        backup_controller.push(restorable3)
+
+        popped_restorable3 = backup_controller.pop()
+        popped_restorable2 = backup_controller.pop()
+        popped_restorable1 = backup_controller.pop()
+
+        assert popped_restorable1 is restorable1
+        assert popped_restorable2 is restorable2
+        assert popped_restorable3 is restorable3
+
+        assert restorable1.called["restore"] == 1
+        assert restorable2.called["restore"] == 1
+        assert restorable3.called["restore"] == 1
+
+    def test_pop_when_empty(self, backup_controller):
+        with pytest.raises(IndexError, match="No backups to restore"):
+            backup_controller.pop()
+
+    def test_pop_all(self, backup_controller):
+        restorable1 = MinimalRestorable()
+        restorable2 = MinimalRestorable()
+        restorable3 = MinimalRestorable()
+
+        backup_controller.push(restorable1)
+        backup_controller.push(restorable2)
+        backup_controller.push(restorable3)
+
+        restorables = backup_controller.pop_all()
+
+        assert len(restorables) == 3
+        assert restorables[0] is restorable3
+        assert restorables[1] is restorable2
+        assert restorables[2] is restorable1
+
+        assert restorable1.called["restore"] == 1
+        assert restorable2.called["restore"] == 1
+        assert restorable3.called["restore"] == 1
+
+    def test_ready_to_push_after_pop_all(self, backup_controller):
+        restorable1 = MinimalRestorable()
+        restorable2 = MinimalRestorable()
+
+        backup_controller.push(restorable1)
+        popped_restorables = backup_controller.pop_all()
+        backup_controller.push(restorable2)
+
+        assert len(popped_restorables) == 1
+        assert popped_restorables[0] == restorable1
+        assert len(backup_controller._restorables) == 1
+        assert backup_controller._restorables[0] is restorable2
+
+    def test_pop_all_when_empty(self, backup_controller):
+        with pytest.raises(IndexError, match="No backups to restore"):
+            backup_controller.pop_all()
+
+
+@pytest.fixture
+def run_subprocess_with_empty_rpmdb(monkeypatch, tmpdir):
+    """When we use rpm, inject our fake rpmdb instead of the system one."""
+    rpmdb = os.path.join(str(tmpdir), "rpmdb")
+    os.mkdir(rpmdb)
+
+    class RunSubprocessWithEmptyRpmdb(object):
+        def __init__(self):
+            self.called_with = []
+
+        def __call__(self, *args, **kwargs):
+            self.called_with.append((args, kwargs))
+
+            if args[0][0] == "rpm":
+                args[0].extend(["--dbpath", rpmdb])
+
+            return real_run_subprocess(*args, **kwargs)
+
+    real_run_subprocess = utils.run_subprocess
+    instrumented_run_subprocess = RunSubprocessWithEmptyRpmdb()
+    monkeypatch.setattr(utils, "run_subprocess", instrumented_run_subprocess)
+
+    return instrumented_run_subprocess
+
+
+class TestRestorableRpmKey:
+    gpg_key = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
+    )
+
+    @pytest.fixture
+    def rpm_key(self):
+        return backup.RestorableRpmKey(self.gpg_key)
+
+    def test_init(self):
+        rpm_key = backup.RestorableRpmKey(self.gpg_key)
+
+        assert rpm_key.previously_installed is None
+        assert rpm_key.enabled is False
+        assert rpm_key.keyid == "fd431d51"
+        assert rpm_key.keyfile.endswith("/data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
+
+    def test_installed_yes(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
+
+        assert rpm_key.installed is True
+
+    def test_installed_not_yet(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        assert rpm_key.installed is False
+
+    def test_installed_generic_failure(self, monkeypatch, rpm_key):
+        def run_subprocess_fail(*args, **kwargs):
+            return "Unknown error", 1
+
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_fail)
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Searching the rpmdb for the gpg key fd431d51 failed: Code 1: Unknown error"
+        ):
+            rpm_key.installed
+
+    def test_enable(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        rpm_key.enable()
+
+        assert rpm_key.enabled is True
+        assert rpm_key.installed is True
+        assert rpm_key.previously_installed is False
+
+    def test_enable_already_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        rpm_key.enable()
+        previous_number_of_calls = len(run_subprocess_with_empty_rpmdb.called_with)
+        rpm_key.enable()
+
+        # Check that we do not double enable
+        assert len(run_subprocess_with_empty_rpmdb.called_with) == previous_number_of_calls
+
+        # Check that nothing has changed
+        assert rpm_key.enabled is True
+        assert rpm_key.installed is True
+        assert rpm_key.previously_installed is False
+
+    def test_enable_already_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
+        previous_number_of_calls = len(run_subprocess_with_empty_rpmdb.called_with)
+        rpm_key.enable()
+
+        # Check that we did not call rpm to import the key
+        # Omit the first call because that is the call we performed to setup the test.
+        for call in run_subprocess_with_empty_rpmdb.called_with[1:]:
+            assert not (call[0][0] == "rpm" and "--import" in call[0])
+
+        # Check that the key is installed and we show that it was previously installed
+        assert rpm_key.enabled is True
+        assert rpm_key.installed is True
+        assert rpm_key.previously_installed is True
+
+    def test_enable_failure_to_import(self, monkeypatch, run_subprocess_with_empty_rpmdb, rpm_key):
+        # Raise an error when we try to rpm --import
+        def run_subprocess_error(*args, **kwargs):
+            if args[0][0] == "rpm" and "--import" in args[0]:
+                return "Error importing", 1
+            return run_subprocess_with_empty_rpmdb(*args, **kwargs)
+
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_error)
+
+        with pytest.raises(utils.ImportGPGKeyError, match="Failed to import the GPG key [^ ]+: Error importing"):
+            rpm_key.enable()
+
+    def test_restore_uninstall(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        rpm_key.enable()
+
+        rpm_key.restore()
+
+        # Check that the beginning of the run_subprocess call starts with the command to remove
+        # the key (The arguments our fixture has added to use the empty rpmdb come after that)
+        assert run_subprocess_with_empty_rpmdb.called_with[-1][0][0][0:3] == ["rpm", "-e", "gpg-pubkey-fd431d51"]
+
+        # Check that we actually removed the key from the rpmdb
+        output, status = run_subprocess_with_empty_rpmdb(["rpm", "-qa", "gpg-pubkey"])
+        assert output == ""
+
+    def test_restore_not_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        called_previously = len(run_subprocess_with_empty_rpmdb.called_with)
+        rpm_key.restore()
+
+        assert len(run_subprocess_with_empty_rpmdb.called_with) == called_previously
+        assert rpm_key.enabled is False
+
+    def test_restore_previously_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
+        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
+        rpm_key.enable()
+        called_previously = len(run_subprocess_with_empty_rpmdb.called_with)
+
+        rpm_key.restore()
+
+        # run_subprocess has not been called again
+        assert len(run_subprocess_with_empty_rpmdb.called_with) == called_previously
+
+        # Check that the key is still in the rpmdb
+        output, status = run_subprocess_with_empty_rpmdb(["rpm", "-q", "gpg-pubkey-fd431d51"])
+        assert status == 0
+        assert output.startswith("gpg-pubkey-fd431d51")
+        assert rpm_key.enabled is False
+
+
+@pytest.mark.parametrize(
+    ("pkg_nevra", "nvra_without_epoch"),
+    (
+        ("7:oraclelinux-release-7.9-1.0.9.el7.x86_64", "oraclelinux-release-7.9-1.0.9.el7.x86_64"),
+        ("oraclelinux-release-8:8.2-1.0.8.el8.x86_64", "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"),
+        ("1:mod_proxy_html-2.4.6-97.el7.centos.5.x86_64", "mod_proxy_html-2.4.6-97.el7.centos.5.x86_64"),
+        ("httpd-tools-2.4.6-97.el7.centos.5.x86_64", "httpd-tools-2.4.6-97.el7.centos.5.x86_64"),
+    ),
+)
+def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
+    assert backup.remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch

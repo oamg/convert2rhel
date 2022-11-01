@@ -372,3 +372,20 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 def test_corresponds_to_rhel_eus_release(releasever, expected):
     system_info.releasever = releasever
     assert system_info.corresponds_to_rhel_eus_release() == expected
+
+
+@pytest.mark.parametrize(
+    ("system_release_content", "expected"),
+    (
+        ("CentOS Linux release 8.1.1911 (Core)", "Core"),
+        ("CentOS release 6.10 (Final)", "Final"),
+        ("Oracle Linux Server release 7.8", None),
+    ),
+)
+def test_get_system_distribution_id(system_release_content, expected):
+    assert system_info._get_system_distribution_id(system_release_content) == expected
+
+
+@centos8
+def test_get_system_distribution_id_default_system_release_content(pretend_os):
+    assert system_info._get_system_distribution_id() == None

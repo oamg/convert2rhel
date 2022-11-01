@@ -27,7 +27,7 @@ import six
 
 from convert2rhel import backup, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, redhatrelease, repo, special_cases, subscription, toolopts, utils
+from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, special_cases, subscription, toolopts, utils
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.systeminfo import system_info
@@ -161,6 +161,8 @@ class TestMain(unittest.TestCase):
     )
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
+    @unit_tests.mock(backup.backup_control, "pop_all", unit_tests.CountableMockObject())
+    @unit_tests.mock(repo, "restore_varsdir", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
@@ -171,11 +173,14 @@ class TestMain(unittest.TestCase):
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)
+        self.assertEqual(backup.backup_control.pop_all.called, 1)
+        self.assertEqual(repo.restore_varsdir.called, 1)
 
     @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
@@ -190,6 +195,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
     @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
@@ -199,6 +205,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["check_and_resolve"] = 1
+        intended_call_order["install_gpg_keys"] = 1
         intended_call_order["download_rhsm_pkgs"] = 1
         intended_call_order["replace_subscription_manager"] = 1
         intended_call_order["verify_rhsm_installed"] = 1
@@ -222,6 +229,7 @@ class TestMain(unittest.TestCase):
     @unit_tests.mock(tool_opts, "no_rhsm", False)
     @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @mock_calls(main.special_cases, "check_and_resolve", CallOrderMocked)
+    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_checks", CallOrderMocked)
     @mock_calls(main.checks, "perform_pre_ponr_checks", CallOrderMocked)
     @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
@@ -236,6 +244,7 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
+    @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
     @unit_tests.mock(checks, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
@@ -246,6 +255,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["list_third_party_pkgs"] = 1
         intended_call_order["remove_excluded_pkgs"] = 1
         intended_call_order["check_and_resolve"] = 1
+        intended_call_order["install_gpg_keys"] = 1
 
         # Do not expect this one to be called - related to RHSM
         intended_call_order["download_rhsm_pkgs"] = 0
@@ -260,7 +270,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["remove_repofile_pkgs"] = 1
 
         intended_call_order["enable_repos"] = 0
-
         intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
@@ -300,34 +309,27 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
 
 
 def test_post_ponr_conversion(monkeypatch):
-    install_gpg_keys_mock = mock.Mock()
     perserve_only_rhel_kernel_mock = mock.Mock()
-    replace_non_red_hat_pkgs_left_mock = mock.Mock()
+    create_transaction_handler_mock = mock.Mock()
     list_non_red_hat_pkgs_left_mock = mock.Mock()
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
-    finish_success_mock = mock.Mock()
 
-    monkeypatch.setattr(pkghandler, "install_gpg_keys", install_gpg_keys_mock)
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
-    monkeypatch.setattr(pkghandler, "replace_non_red_hat_packages", replace_non_red_hat_pkgs_left_mock)
+    monkeypatch.setattr(pkgmanager, "create_transaction_handler", create_transaction_handler_mock)
     monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_success", finish_success_mock)
-
     main.post_ponr_conversion()
 
-    assert install_gpg_keys_mock.call_count == 1
     assert perserve_only_rhel_kernel_mock.call_count == 1
-    assert replace_non_red_hat_pkgs_left_mock.call_count == 1
+    assert create_transaction_handler_mock.call_count == 1
     assert list_non_red_hat_pkgs_left_mock.call_count == 1
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
-    assert finish_success_mock.call_count == 1
 
 
 def test_main(monkeypatch):
@@ -341,6 +343,7 @@ def test_main(monkeypatch):
     perform_pre_checks_mock = mock.Mock()
     system_release_file_mock = mock.Mock()
     os_release_file_mock = mock.Mock()
+    backup_varsdir_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     pre_ponr_conversion_mock = mock.Mock()
@@ -350,6 +353,8 @@ def test_main(monkeypatch):
     update_grub_after_conversion_mock = mock.Mock()
     remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
+    finish_collection_mock = mock.Mock()
+    update_rhsm_custom_facts_mock = mock.Mock()
 
     monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
@@ -363,6 +368,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
     monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
@@ -370,6 +376,8 @@ def test_main(monkeypatch):
     monkeypatch.setattr(grub, "update_grub_after_conversion", update_grub_after_conversion_mock)
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
 
     assert main.main() == 0
     assert require_root_mock.call_count == 1
@@ -383,6 +391,7 @@ def test_main(monkeypatch):
     assert system_release_file_mock.call_count == 1
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1
+    assert backup_varsdir_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert pre_ponr_conversion_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
@@ -390,3 +399,150 @@ def test_main(monkeypatch):
     assert rpm_files_diff_mock.call_count == 1
     assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert update_rhsm_custom_facts_mock.call_count == 1
+
+
+def test_main_rollback_post_cli_phase(monkeypatch, caplog):
+    require_root_mock = mock.Mock()
+    initialize_logger_mock = mock.Mock()
+    toolopts_cli_mock = mock.Mock()
+    show_eula_mock = mock.Mock(side_effect=Exception)
+
+    # Mock the rollback calls
+    finish_collection_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(main, "show_eula", show_eula_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+
+    assert main.main() == 1
+    assert require_root_mock.call_count == 1
+    assert initialize_logger_mock.call_count == 1
+    assert toolopts_cli_mock.call_count == 1
+    assert show_eula_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert "No changes were made to the system." in caplog.records[-1].message
+
+
+def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
+    require_root_mock = mock.Mock()
+    initialize_logger_mock = mock.Mock()
+    toolopts_cli_mock = mock.Mock()
+    show_eula_mock = mock.Mock()
+    resolve_system_info_mock = mock.Mock()
+    collect_early_data_mock = mock.Mock()
+    clean_yum_metadata_mock = mock.Mock()
+    perform_pre_checks_mock = mock.Mock()
+    system_release_file_mock = mock.Mock()
+    os_release_file_mock = mock.Mock()
+    backup_yum_repos_mock = mock.Mock()
+    backup_varsdir_mock = mock.Mock()
+    clear_versionlock_mock = mock.Mock()
+    pre_ponr_conversion_mock = mock.Mock(side_effect=Exception)
+
+    # Mock the rollback calls
+    finish_collection_mock = mock.Mock()
+    rollback_changes_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(main, "show_eula", show_eula_mock)
+    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+    monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
+    monkeypatch.setattr(checks, "perform_pre_checks", perform_pre_checks_mock)
+    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
+    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
+
+    assert main.main() == 1
+    assert require_root_mock.call_count == 1
+    assert initialize_logger_mock.call_count == 1
+    assert toolopts_cli_mock.call_count == 1
+    assert show_eula_mock.call_count == 1
+    assert resolve_system_info_mock.call_count == 1
+    assert collect_early_data_mock.call_count == 1
+    assert clean_yum_metadata_mock.call_count == 1
+    assert perform_pre_checks_mock.call_count == 1
+    assert system_release_file_mock.call_count == 1
+    assert os_release_file_mock.call_count == 1
+    assert backup_yum_repos_mock.call_count == 1
+    assert backup_varsdir_mock.call_count == 1
+    assert clear_versionlock_mock.call_count == 1
+    assert pre_ponr_conversion_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert rollback_changes_mock.call_count == 1
+
+
+def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
+    require_root_mock = mock.Mock()
+    initialize_logger_mock = mock.Mock()
+    toolopts_cli_mock = mock.Mock()
+    show_eula_mock = mock.Mock()
+    resolve_system_info_mock = mock.Mock()
+    collect_early_data_mock = mock.Mock()
+    clean_yum_metadata_mock = mock.Mock()
+    perform_pre_checks_mock = mock.Mock()
+    system_release_file_mock = mock.Mock()
+    os_release_file_mock = mock.Mock()
+    backup_yum_repos_mock = mock.Mock()
+    backup_varsdir_mock = mock.Mock()
+    clear_versionlock_mock = mock.Mock()
+    pre_ponr_conversion_mock = mock.Mock()
+    ask_to_continue_mock = mock.Mock()
+    post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
+
+    # Mock the rollback calls
+    finish_collection_mock = mock.Mock()
+    update_rhsm_custom_facts_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(main, "show_eula", show_eula_mock)
+    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+    monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
+    monkeypatch.setattr(checks, "perform_pre_checks", perform_pre_checks_mock)
+    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
+    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
+    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+    monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
+
+    assert main.main() == 1
+    assert require_root_mock.call_count == 1
+    assert initialize_logger_mock.call_count == 1
+    assert toolopts_cli_mock.call_count == 1
+    assert show_eula_mock.call_count == 1
+    assert resolve_system_info_mock.call_count == 1
+    assert collect_early_data_mock.call_count == 1
+    assert clean_yum_metadata_mock.call_count == 1
+    assert perform_pre_checks_mock.call_count == 1
+    assert system_release_file_mock.call_count == 1
+    assert os_release_file_mock.call_count == 1
+    assert backup_yum_repos_mock.call_count == 1
+    assert backup_varsdir_mock.call_count == 1
+    assert clear_versionlock_mock.call_count == 1
+    assert pre_ponr_conversion_mock.call_count == 1
+    assert ask_to_continue_mock.call_count == 1
+    assert post_ponr_conversion_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert (
+        "Conversion process interrupted and manual user intervention will be necessary." in caplog.records[-1].message
+    )
+    assert update_rhsm_custom_facts_mock.call_count == 1

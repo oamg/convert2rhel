@@ -1,6 +1,7 @@
 from envparse import env
 
 
+# TODO(r0x0d): Remove this integration test as it probably is not needed anymore.
 def test_handle_shim_x64_pkg(shell, convert2rhel):
     """Ensure c2r handle the shim-x64 package.
 
@@ -26,11 +27,8 @@ def test_handle_shim_x64_pkg(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        assert c2r.expect_exact("Removing shim-x64 package yum protection.", timeout=300) == 0
-        c2r.expect("removed in accordance with")
+        pass
     assert c2r.exitstatus == 0
 
     # Check that the package is still present on the system
-    assert shell(f"rpm -qi {shim_x64_pkg}").returncode == 0
-    # Check that the package is converted
-    assert "Red Hat" in shell(f"rpm -qi {shim_x64_pkg} | grep 'Vendor'").output
+    assert shell(f"rpm -qi {shim_x64_pkg}").returncode != 0

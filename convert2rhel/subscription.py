@@ -450,7 +450,7 @@ class RegistrationCommand(object):
 
             try:
                 if self.password:
-                    loggerinst.info("Registering via username/password: %s" % " ".join(hide_secrets(self.args)))
+                    loggerinst.info("Registering via username/password: %s" % " ".join(utils.hide_secrets(self.args)))
                     args = (
                         self.org or "",
                         self.username,
@@ -470,7 +470,7 @@ class RegistrationCommand(object):
                     )
 
                 else:
-                    loggerinst.info("Registering via org/activation_key: %s" % " ".join(hide_secrets(self.args)))
+                    loggerinst.info("Registering via org/activation_key: %s" % " ".join(utils.hide_secrets(self.args)))
                     args = (
                         self.org,
                         [self.activation_key],
@@ -564,50 +564,6 @@ def _is_registered():
     # This system is not yet registered. Try 'subscription-manager register --help' for more information.
     loggerinst.debug("Host was not registered.")
     return False
-
-
-def hide_secrets(args):
-    """
-    Replace secret values with asterisks.
-
-    This function takes a list of arguments which will be passed to
-    subscription-manager on the command line and returns a new list
-    that has any secret values obscured with asterisks.
-
-    :arg args: An argument list for subscription-manager which may contain
-        secret values.
-    :returns: A new list of arguments with secret values hidden.
-    """
-    obfuscation_string = "*" * 5
-    secret_args = frozenset(("--password", "--activationkey", "--token"))
-
-    sanitized_list = []
-    hide_next = False
-    for arg in args:
-        if hide_next:
-            # Second part of a two part secret argument (like --password *SECRET*)
-            arg = obfuscation_string
-            hide_next = False
-
-        elif arg in secret_args:
-            # First part of a two part secret argument (like *--password* SECRET)
-            hide_next = True
-
-        else:
-            # A secret argument in one part (like --password=SECRET)
-            for problem_arg in secret_args:
-                if arg.startswith(problem_arg + "="):
-                    arg = "{0}={1}".format(problem_arg, obfuscation_string)
-
-        sanitized_list.append(arg)
-
-    if hide_next:
-        loggerinst.debug(
-            "Passed arguments had unexpected secret argument,"
-            " '{0}', without a secret".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
-        )
-
-    return sanitized_list
 
 
 def replace_subscription_manager():
@@ -978,8 +934,12 @@ def download_rhsm_pkgs():
             "dnf-plugin-subscription-manager",
             "python3-syspurpose",
             "python3-cloud-what",
-            "json-c.x86_64",  # there's also an i686 version which we don't need
+            "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
         ]
+        if system_info.is_rpm_installed("json-c.i686"):
+            # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
+            # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
+            pkgs_to_download.append("json-c.i686")
         _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 
 
@@ -1031,3 +991,25 @@ def lock_releasever_in_rhel_repositories():
             loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
     else:
         loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
+
+
+def update_rhsm_custom_facts():
+    """Update the RHSM custom facts in the candlepin server.
+
+    This function has the intention to synchronize the facts collected throughout
+    the conversion with the candlepin server, thus, propagating the
+    "breadcrumbs" from convert2rhel as RHSM facts.
+    """
+    if not tool_opts.no_rhsm:
+        loggerinst.info("Updating RHSM custom facts collected during the conversion.")
+        cmd = ["subscription-manager", "facts", "--update"]
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+
+        if ret_code != 0:
+            loggerinst.warning(
+                "Failed to update the RHSM custom facts with return code '%s' and output '%s'.", ret_code, output
+            )
+        else:
+            loggerinst.info("RHSM custom facts uploaded successfully.")
+    else:
+        loggerinst.info("Skipping updating RHSM custom facts.")
