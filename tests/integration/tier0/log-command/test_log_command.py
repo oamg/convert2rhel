@@ -7,8 +7,8 @@ def test_verify_logfile_starts_with_command(shell):
     Also verify, that the passed password is obfuscated.
     """
     serverurl = "subscription.pls.register.me"
-    username = "mr-anderson"
-    password = "redpill"
+    username = "jdoe"
+    password = "foobar"
     activationkey = "a-map-of-a-key"
 
     command_long = (
