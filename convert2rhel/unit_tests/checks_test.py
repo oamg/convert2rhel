@@ -1201,6 +1201,9 @@ def test_is_loaded_kernel_latest_eus_system(
 ):
     fake_reposdir_path = str(tmpdir)
     monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: fake_reposdir_path)
+
+    monkeypatch.setattr(checks.system_info, "has_internet_access", True)
+
     run_subprocess_mocked = mock.Mock(
         spec=run_subprocess,
         side_effect=run_subprocess_side_effect(
