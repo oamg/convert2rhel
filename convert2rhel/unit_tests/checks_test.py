@@ -322,6 +322,50 @@ def test_c2r_up_to_date(caplog, monkeypatch, convert2rhel_latest_version_test):
 
 
 @pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    ([{"local_version": "1.10", "package_version": "convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],),
+    indirect=True,
+)
+def test_c2r_up_to_date_repoquery_error(caplog, convert2rhel_latest_version_test, monkeypatch):
+    monkeypatch.setattr(checks, "run_subprocess", mock.Mock(return_value=("Repoquery did not run", 1)))
+
+    checks.check_convert2rhel_latest()
+
+    log_msg = (
+        "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
+        "repoquery failed with the following output:\nRepoquery did not run"
+    )
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("convert2rhel_latest_version_test",),
+    (
+        [
+            {
+                "local_version": "0.19",
+                "package_version": "convert2rhel-0:0.18-1.el7.noarch\nconvert2rhel-0:0.17-1.el7.noarch\nconvert2rhel-0:0.20-1.el7.noarch",
+                "pmajor": "8",
+            }
+        ],
+    ),
+    indirect=True,
+)
+def test_c2r_up_to_date_multiple_packages(caplog, convert2rhel_latest_version_test, monkeypatch):
+
+    with pytest.raises(SystemExit):
+        checks.check_convert2rhel_latest()
+
+    log_msg = (
+        "You are currently running 0.19 and the latest version of Convert2RHEL is 0.20.\n"
+        "Only the latest version is supported for conversion. If you want to ignore"
+        " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+    )
+
+    assert log_msg in caplog.text
+
+
+@pytest.mark.parametrize(
     (
         "host_kmods",
         "exception",
