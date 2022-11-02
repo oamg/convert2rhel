@@ -156,7 +156,16 @@ def check_convert2rhel_latest():
     # and latest_available_version respectively, to compare **just** the version field.
     ver_compare = rpm.labelCompare(("0", installed_convert2rhel_version, "0"), ("0", latest_available_version[1], "0"))
     if ver_compare < 0:
-        if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
+        # Current and deprecated env var names
+        allow_older_envvar_names = ("CONVERT2RHEL_ALLOW_OLDER_VERSION", "CONVERT2RHEL_UNSUPPORTED_VERSION")
+        if any(envvar in os.environ for envvar in allow_older_envvar_names):
+            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" not in os.environ:
+                logger.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
+                    " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
+                    " instead."
+                )
+
             logger.warning(
                 "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                 "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
