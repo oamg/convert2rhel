@@ -32,8 +32,10 @@ def test_verify_logfile_starts_with_command(shell):
 
         with open(C2R_LOG, "r") as logfile:
             for line_count in range(2):
-                line = logfile.readline().strip()
                 line_count += 1
+                # The actual command gets printed to a second line of a logfile.
+                if line_count == 1:
+                    line = logfile.readline().strip()
 
                 assert command_verification in line
                 assert password not in line
