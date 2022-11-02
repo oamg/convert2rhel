@@ -65,8 +65,9 @@ def test_c2r_latest_newer(convert2rhel):
     change_c2r_version(42.0)
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
-        assert c2r.expect("Latest available convert2rhel version is installed.", timeout=300) == 0
+        assert c2r.expect("Latest available Convert2RHEL version is installed.", timeout=300) == 0
         assert c2r.expect("Continuing conversion.", timeout=300) == 0
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
@@ -92,12 +93,12 @@ def test_c2r_latest_older_inhibit(convert2rhel):
 def test_c2r_latest_older_unsupported_version(convert2rhel):
     """
     Check if running older version with the environment
-    variable "CONVERT2RHEL_UNSUPPORTED_VERSION" continues the conversion.
+    variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
     Running older version of Convert2RHEL on epel major version 6 or older should inhibit either way.
     """
     change_c2r_version(0.01)
 
-    os.environ["CONVERT2RHEL_UNSUPPORTED_VERSION"] = "1"
+    os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
         if "centos-6" in booted_os or "oracle-6" in booted_os:
@@ -108,7 +109,8 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
             assert c2r.expect("You are currently running 0.01", timeout=300) == 0
             assert (
                 c2r.expect(
-                    "'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion", timeout=300
+                    "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion",
+                    timeout=300,
                 )
                 == 0
             )
@@ -118,7 +120,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
 
     # Clean up
     os.system(f"cp /tmp/__init__.py {PATH_TO_VERSION}")
-    del os.environ["CONVERT2RHEL_UNSUPPORTED_VERSION"]
+    del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
 
 
 def test_clean_cache(convert2rhel):

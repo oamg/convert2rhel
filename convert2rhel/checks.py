@@ -21,11 +21,12 @@ import logging
 import os
 import os.path
 import re
+import shutil
 import tempfile
 
 import rpm
 
-from convert2rhel import __version__ as convert2rhel_version
+from convert2rhel import __version__ as installed_convert2rhel_version
 from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
     call_yum_cmd,
@@ -45,6 +46,25 @@ logger = logging.getLogger(__name__)
 KERNEL_REPO_RE = re.compile(r"^.+:(?P<version>.+).el.+$")
 KERNEL_REPO_VER_SPLIT_RE = re.compile(r"\W+")
 BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
+
+RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
+# The SSL certificate of the https://cdn.redhat.com/ server
+SSL_CERT_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
+CDN_URL = "https://cdn.redhat.com/content/public/convert2rhel/$releasever/$basearch/os/"
+CONVERT2RHEL_REPO_CONTENT = """\
+[convert2rhel]
+name=Convert2RHEL Repository
+baseurl=%s
+gpgcheck=1
+enabled=1
+sslcacert=%s
+gpgkey=file://%s""" % (
+    CDN_URL,
+    SSL_CERT_PATH,
+    RPM_GPG_KEY_PATH,
+)
+
+PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 # The kernel version stays the same throughout a RHEL major version
@@ -76,81 +96,91 @@ def perform_pre_ponr_checks():
 
 
 def check_convert2rhel_latest():
-    """Make sure that we are running the latest version of convert2rhel"""
-    gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
-    ssl_cert_path = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
-    repo_content = (
-        "[convert2rhel]\n"
-        "name=Convert2RHEL Repository\n"
-        "baseurl=https://cdn.redhat.com/content/public/convert2rhel/$releasever/x86_64/os/\n"
-        "gpgcheck=1\n"
-        "enabled=1\n"
-        "sslcacert=%s\n"
-        "gpgkey=file://%s\n" % (ssl_cert_path, gpg_path)
-    )
+    """Make sure that we are running the latest downstream version of convert2rhel"""
+    logger.task("Prepare: Checking if this is the latest version of Convert2RHEL")
+
+    if not system_info.has_internet_access:
+        logger.warning("Skipping the check because no internet connection has been detected.")
+        return
+
+    repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
+    repo_path = os.path.join(repo_dir, "convert2rhel.repo")
+    store_content_to_file(filename=repo_path, content=CONVERT2RHEL_REPO_CONTENT)
 
     cmd = [
         "repoquery",
+        "--disablerepo=*",
+        "--enablerepo=convert2rhel",
         "--releasever=%s" % system_info.version.major,
+        "--setopt=reposdir=%s" % repo_dir,
+        "convert2rhel",
     ]
 
-    repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
+    # Note: This is safe because we're creating in utils.TMP_DIR which is hardcoded to
+    # /var/lib/convert2rhel which does not have any world-writable directory components.
     utils.mkdir_p(repo_dir)
-    repo_path = os.path.join(repo_dir, "convert2rhel.repo")
-    store_content_to_file(filename=repo_path, content=repo_content)
 
-    cmd.append("--setopt=reposdir=%s" % repo_dir)
-    cmd.append("convert2rhel")
-
-    raw_output_convert2rhel_versions, return_code = run_subprocess(cmd, print_output=False)
+    try:
+        raw_output_convert2rhel_versions, return_code = run_subprocess(cmd, print_output=False)
+    finally:
+        shutil.rmtree(repo_dir)
 
     if return_code != 0:
         logger.warning(
-            "Couldn't check if this is the latest version of convert2rhel\n"
-            "repoquery failed %s, %s" % (return_code, raw_output_convert2rhel_versions)
+            "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
+            "repoquery failed with the following output:\n%s" % (raw_output_convert2rhel_versions)
         )
         return
 
-    PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
     convert2rhel_versions = re.findall(PKG_NEVR, raw_output_convert2rhel_versions, re.MULTILINE)
-    latest_version = ("0", "0.00", "0")
+    logger.debug("Found %s convert2rhel package(s)" % len(convert2rhel_versions))
+    latest_available_version = ("0", "0.00", "0")
 
+    # This loop will determine the latest available convert2rhel version in the yum repo.
+    # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
     for package_version in convert2rhel_versions:
-        # rpm.lableCompare(pkg1, pkg2) compare two kernel version strings and return
-        # -1 if str2 is greater then str1, 0 if they are equal, 1 if str1 is greater the str2
-        ver_compare = rpm.labelCompare(package_version[1:], latest_version)
+        # rpm.labelCompare(pkg1, pkg2) compare two package version strings and return
+        # -1 if latest_version is greater than package_version, 0 if they are equal, 1 if package_version is greater than latest_version
+        ver_compare = rpm.labelCompare(package_version[1:], latest_available_version)
         if ver_compare > 0:
-            latest_version = package_version[1:]
+            logger.debug(
+                "...convert2rhel version %s is newer than %s, updating latest_available_version variable"
+                % (package_version[1:][1], latest_available_version[1])
+            )
+            latest_available_version = package_version[1:]
 
-    # After the for loop latest_version will have the epoch ,version, and release ex:("0" "0.26" "1.el7") information from convert2rhel yum repo.
-    # the release for latest_verion will be "1.el7" and the relase for convert2rhel_version will be hard coded as "0" below,
-    # therefore when the versions are the same the latest_version's release field will cause it to evaluate as later
-    ver_compare = rpm.labelCompare(("0", convert2rhel_version, "0"), ("0", latest_version[1], "0"))
+    # After the for loop, the latest_available_version variable will gain the epoch, version, and release
+    # (e.g. ("0" "0.26" "1.el7")) information from the Convert2RHEL yum repo
+    # when the versions are the same the latest_available_version's release field will cause it to evaluate as a later version.
+    # Therefore we need to hardcode "0" for both the epoch and release below for installed_convert2rhel_version
+    # and latest_available_version respectively, to compare **just** the version field.
+    ver_compare = rpm.labelCompare(("0", installed_convert2rhel_version, "0"), ("0", latest_available_version[1], "0"))
     if ver_compare < 0:
-        if "CONVERT2RHEL_UNSUPPORTED_VERSION" in os.environ:
+        if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
             logger.warning(
-                "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                "'CONVERT2RHEL_UNSUPPORTED_VERSION' environment detected, continuing conversion"
-                % (convert2rhel_version, latest_version[1])
+                "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
+                % (installed_convert2rhel_version, latest_available_version[1])
             )
 
         else:
             if int(system_info.version.major) <= 6:
                 logger.warning(
-                    "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                    "Only the latest version is supported for conversion." % (convert2rhel_version, latest_version[1])
+                    "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                    "We encourage you to update to the latest version."
+                    % (installed_convert2rhel_version, latest_available_version[1])
                 )
 
             else:
                 logger.critical(
-                    "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                    "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                     "Only the latest version is supported for conversion. If you want to ignore"
-                    " this you can set 'CONVERT2RHEL_UNSUPPORTED_VERSION' to continue"
-                    % (convert2rhel_version, latest_version[1])
+                    " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+                    % (installed_convert2rhel_version, latest_available_version[1])
                 )
 
     else:
-        logger.debug("Latest available convert2rhel version is installed.\n" "Continuing conversion.")
+        logger.debug("Latest available Convert2RHEL version is installed.\n" "Continuing conversion.")
 
 
 def check_efi():
