@@ -178,16 +178,17 @@ def check_convert2rhel_latest():
     # This loop will determine the latest available convert2rhel version in the yum repo.
     # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
     for package_version in convert2rhel_versions:
+        logger.debug("...comparing version %s" % latest_available_version[1])
         # rpm.labelCompare(pkg1, pkg2) compare two package version strings and return
         # -1 if latest_version is greater than package_version, 0 if they are equal, 1 if package_version is greater than latest_version
         ver_compare = rpm.labelCompare(package_version[1:], latest_available_version)
         if ver_compare > 0:
             logger.debug(
-                "...convert2rhel version %s is newer than %s, updating latest_available_version variable"
-                % (package_version[1:][1], latest_available_version[1])
+                "...found %s to be newer than %s, updating" % (package_version[1:][1], latest_available_version[1])
             )
             latest_available_version = package_version[1:]
 
+    logger.debug("Found %s to be latest available version" % (latest_available_version[1]))
     # After the for loop, the latest_available_version variable will gain the epoch, version, and release
     # (e.g. ("0" "0.26" "1.el7")) information from the Convert2RHEL yum repo
     # when the versions are the same the latest_available_version's release field will cause it to evaluate as a later version.
@@ -219,7 +220,7 @@ def check_convert2rhel_latest():
                 )
 
     else:
-        logger.debug("Latest available Convert2RHEL version is installed.\n" "Continuing conversion.")
+        logger.info("Latest available Convert2RHEL version is installed.\n" "Continuing conversion.")
 
 
 def check_efi():
