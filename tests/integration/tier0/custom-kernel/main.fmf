@@ -1,7 +1,15 @@
-summary: Install custom kernel (with different signature than that is allowed on the
-  on the running system) and verify that c2r inhibits the conversion
+summary: Install custom kernel
+description: |
+    Install custom kernel with different signature than that is allowed on the on the running system.
+    Verify that c2r inhibits the conversion.
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - kernel
+
+/custom_kernel:
+    tag+:
+        - custom-kernel
+    test: |
+        pytest -svv -m custom_kernel

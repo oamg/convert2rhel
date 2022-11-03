@@ -81,10 +81,3 @@
 /custom_kernel:
   discover+:
     test: custom-kernel
-  prepare+:
-  - name: install custom kernel
-    how: shell
-    script: pytest -svv tests/integration/tier0/custom-kernel/install_custom_kernel.py
-  - name: reboot after kernel installation
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
