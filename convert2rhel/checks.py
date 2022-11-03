@@ -660,7 +660,7 @@ def is_loaded_kernel_latest():
         logger.warning("Skipping the check as no internet connection has been detected.")
         return
 
-    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
+    cmd = ["repoquery", '--setopt=exclude=""', "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
 
     # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
     # instead of the system repositories located under /etc/yum.repos.d
