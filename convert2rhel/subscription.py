@@ -592,6 +592,10 @@ def remove_original_subscription_manager():
     loggerinst.info("Removing installed subscription-manager/katello-ca-consumer packages.")
     # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkg_objects("*subscription-manager*")
+    # The python-syspurpose, python3-syspurpose, and python3-cloud-what packages are also built out of
+    # the subscription-manager SRPM.
+    submgr_pkgs += pkghandler.get_installed_pkg_objects("python*-syspurpose")
+    submgr_pkgs += pkghandler.get_installed_pkg_objects("python3-cloud-what")
     # Satellite-server related package
     submgr_pkgs += pkghandler.get_installed_pkg_objects("katello-ca-consumer*")
     if not submgr_pkgs:
