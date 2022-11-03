@@ -20,7 +20,6 @@
 
 import os
 import sys
-import unittest
 
 from collections import namedtuple
 
@@ -30,7 +29,6 @@ import six
 import convert2rhel.toolopts
 import convert2rhel.utils
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel.toolopts import tool_opts
 
 

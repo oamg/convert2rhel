@@ -160,7 +160,7 @@ def test_perform_pre_checks(monkeypatch):
     monkeypatch.setattr(checks, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
     monkeypatch.setattr(checks, "check_dbus_is_running", value=check_dbus_is_running_mock)
 
-    checks.perform_pre_checks()
+    checks.perform_system_checks()
 
     check_convert2rhel_latest_mock.assert_called_once()
     check_thirdparty_kmods_mock.assert_called_once()
@@ -172,7 +172,7 @@ def test_perform_pre_checks(monkeypatch):
     check_dbus_is_running_mock.assert_called_once()
 
 
-def test_pre_ponr_checks(monkeypatch):
+def test_perform_pre_ponr_checks(monkeypatch):
     ensure_compatibility_of_kmods_mock = mock.Mock()
     create_transaction_handler_mock = mock.Mock()
     monkeypatch.setattr(
@@ -376,14 +376,14 @@ def test_c2r_up_to_date_multiple_packages(caplog, convert2rhel_latest_version_te
         (
             HOST_MODULES_STUB_GOOD,
             None,
-            "Kernel modules are compatible",
+            "loaded kernel modules are available in RHEL",
             None,
         ),
         (
             HOST_MODULES_STUB_BAD,
             SystemExit,
             None,
-            "Kernel modules are compatible",
+            "loaded kernel modules are available in RHEL",
         ),
     ),
 )
@@ -444,13 +444,13 @@ def test_validate_package_manager_transaction(monkeypatch, caplog):
         # ff-memless specified to be ignored in the config, so no exception raised
         (
             "kernel/drivers/input/ff-memless.ko.xz",
-            "Kernel modules are compatible",
-            "The following kernel modules are not supported in RHEL",
+            "loaded kernel modules are available in RHEL",
+            "The following loaded kernel modules are not available in RHEL",
             None,
         ),
         (
             "kernel/drivers/input/other.ko.xz",
-            "The following kernel modules are not supported in RHEL",
+            "The following loaded kernel modules are not available in RHEL",
             None,
             SystemExit,
         ),
@@ -538,9 +538,18 @@ def test_get_loaded_kmods(monkeypatch):
                     0,
                 ),
             ),
-            (("modinfo", "-F", "filename", "a"), (MODINFO_STUB.split()[0] + "\n", 0)),
-            (("modinfo", "-F", "filename", "b"), (MODINFO_STUB.split()[1] + "\n", 0)),
-            (("modinfo", "-F", "filename", "c"), (MODINFO_STUB.split()[2] + "\n", 0)),
+            (
+                ("modinfo", "-F", "filename", "a"),
+                (MODINFO_STUB.split()[0] + "\n", 0),
+            ),
+            (
+                ("modinfo", "-F", "filename", "b"),
+                (MODINFO_STUB.split()[1] + "\n", 0),
+            ),
+            (
+                ("modinfo", "-F", "filename", "c"),
+                (MODINFO_STUB.split()[2] + "\n", 0),
+            ),
         ),
     )
     monkeypatch.setattr(
@@ -552,10 +561,10 @@ def test_get_loaded_kmods(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("repoquery_f_stub", "repoquery_l_stub", "exception"),
+    ("repoquery_f_stub", "repoquery_l_stub"),
     (
-        (REPOQUERY_F_STUB_GOOD, REPOQUERY_L_STUB_GOOD, None),
-        (REPOQUERY_F_STUB_BAD, REPOQUERY_L_STUB_GOOD, SystemExit),
+        (REPOQUERY_F_STUB_GOOD, REPOQUERY_L_STUB_GOOD),
+        (REPOQUERY_F_STUB_BAD, REPOQUERY_L_STUB_GOOD),
     ),
 )
 @centos8
@@ -564,7 +573,6 @@ def test_get_rhel_supported_kmods(
     pretend_os,
     repoquery_f_stub,
     repoquery_l_stub,
-    exception,
 ):
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
@@ -583,24 +591,21 @@ def test_get_rhel_supported_kmods(
         "run_subprocess",
         value=run_subprocess_mock,
     )
-    if exception:
-        with pytest.raises(exception):
-            checks.get_rhel_supported_kmods()
-    else:
-        res = checks.get_rhel_supported_kmods()
-        assert res == set(
-            (
-                "kernel/lib/a.ko",
-                "kernel/lib/a.ko.xz",
-                "kernel/lib/b.ko.xz",
-                "kernel/lib/c.ko.xz",
-                "kernel/lib/c.ko",
-            )
+
+    res = checks.get_rhel_supported_kmods()
+    assert res == set(
+        (
+            "kernel/lib/a.ko",
+            "kernel/lib/a.ko.xz",
+            "kernel/lib/b.ko.xz",
+            "kernel/lib/c.ko.xz",
+            "kernel/lib/c.ko",
         )
+    )
 
 
 @pytest.mark.parametrize(
-    ("pkgs", "exp_res", "exception"),
+    ("pkgs", "exp_res"),
     (
         (
             (
@@ -613,7 +618,6 @@ def test_get_rhel_supported_kmods(
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
                 "kernel-debug-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
-            None,
         ),
         (
             (
@@ -621,7 +625,6 @@ def test_get_rhel_supported_kmods(
                 "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             ("kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",),
-            None,
         ),
         (
             (
@@ -629,7 +632,6 @@ def test_get_rhel_supported_kmods(
                 "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             ("kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",),
-            None,
         ),
         (
             (
@@ -637,7 +639,6 @@ def test_get_rhel_supported_kmods(
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             ("kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",),
-            None,
         ),
         (
             (
@@ -645,7 +646,6 @@ def test_get_rhel_supported_kmods(
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             ("kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",),
-            None,
         ),
         (
             (
@@ -653,27 +653,23 @@ def test_get_rhel_supported_kmods(
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
             ("kernel-core-0:4.18.0-240.16.beta5.1.el8_3.x86_64",),
-            None,
         ),
-        (("kernel_bad_package:111111",), (), SystemExit),
+        (("kernel_bad_package:111111",), ("kernel_bad_package:111111",)),
         (
             (
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
                 "kernel_bad_package:111111",
                 "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),
-            (),
-            SystemExit,
+            (
+                "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
+                "kernel_bad_package:111111",
+            ),
         ),
     ),
 )
-def test_get_most_recent_unique_kernel_pkgs(pkgs, exp_res, exception):
-    if not exception:
-        most_recent_pkgs = tuple(checks.get_most_recent_unique_kernel_pkgs(pkgs))
-        assert exp_res == most_recent_pkgs
-    else:
-        with pytest.raises(exception):
-            tuple(checks.get_most_recent_unique_kernel_pkgs(pkgs))
+def test_get_most_recent_unique_kernel_pkgs(pkgs, exp_res):
+    assert tuple(checks.get_most_recent_unique_kernel_pkgs(pkgs)) == exp_res
 
 
 @pytest.mark.parametrize(
@@ -794,7 +790,11 @@ class TestEFIChecks(unittest.TestCase):
     @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: not x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    @unit_tests.mock(
+        grub,
+        "EFIBootInfo",
+        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+    )
     def test_check_efi_efi_detected_without_efibootmgr(self):
         self._check_efi_critical("Install efibootmgr to continue converting the UEFI-based system.")
 
@@ -804,7 +804,11 @@ class TestEFIChecks(unittest.TestCase):
     @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    @unit_tests.mock(
+        grub,
+        "EFIBootInfo",
+        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+    )
     def test_check_efi_efi_detected_non_intel(self):
         self._check_efi_critical("Only x86_64 systems are supported for UEFI conversions.")
 
@@ -814,7 +818,11 @@ class TestEFIChecks(unittest.TestCase):
     @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    @unit_tests.mock(
+        grub,
+        "EFIBootInfo",
+        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+    )
     def test_check_efi_efi_detected_secure_boot(self):
         self._check_efi_critical(
             "The conversion with secure boot is currently not possible.\n"
@@ -828,7 +836,11 @@ class TestEFIChecks(unittest.TestCase):
     @unit_tests.mock(checks.system_info, "version", _gen_version(7, 9))
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")))
+    @unit_tests.mock(
+        grub,
+        "EFIBootInfo",
+        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+    )
     def test_check_efi_efi_detected_bootloader_error(self):
         self._check_efi_critical("errmsg")
 
@@ -1047,7 +1059,11 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
             return self.return_string, self.return_code
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=0, ret_string="Abcdef"))
+    @unit_tests.mock(
+        checks,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
+    )
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", True)
     def test_custom_repos_are_valid(self):
@@ -1059,7 +1075,11 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(checks, "call_yum_cmd", CallYumCmdMocked(ret_code=1, ret_string="Abcdef"))
+    @unit_tests.mock(
+        checks,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
+    )
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", True)
     def test_custom_repos_are_invalid(self):
