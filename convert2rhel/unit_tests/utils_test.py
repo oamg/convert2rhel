@@ -868,7 +868,7 @@ class DummyPopenOutput(unit_tests.MockFunction):
             return b""
 
         self.call_count += 1
-        return next_line
+        return next_line + b""
 
     def communicate(self):
         pass
