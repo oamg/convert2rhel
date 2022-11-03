@@ -1,6 +1,7 @@
 import platform
 
 
+@pytest.mark.custom_kernel
 def test_custom_kernel(convert2rhel):
     """
 
