@@ -1935,3 +1935,37 @@ def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     result = pkghandler.get_system_packages_for_replacement()
     for pkg in pkgs:
         assert pkg in result
+
+
+@pytest.mark.parametrize(
+    ("pkg_1", "pkg_2", "expected"),
+    (
+        (
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64",
+            "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            -1,
+        ),
+        (
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0:4.18.0-240.10.1.el8_3.x86_64",
+            1,
+        ),
+        (
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
+            0,
+        ),
+        (
+            "no-arch-0:4.18.0-240.15.1.el8_3",
+            "no-arch-0:4.18.0-240.15.1.el8_3",
+            0,
+        ),
+        (
+            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
+            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
+            0,
+        ),
+    ),
+)
+def test__package_version_cmp(pkg_1, pkg_2, expected):
+    assert pkghandler._package_version_cmp(pkg_1, pkg_2) == expected

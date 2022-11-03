@@ -1111,3 +1111,54 @@ def clean_yum_metadata():
         return
 
     loggerinst.info("Cached yum metadata cleaned successfully.")
+
+
+def _package_version_cmp(pkg_1, pkg_2):
+    """Compare the version key in a given package name.
+
+    Consider the following variables that will be passed to this function::
+
+        pkg_1 = 'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64'
+        pkg_2 = 'kernel-core-0:4.18.0-239.0.0.el8_3.x86_64'
+
+    The output of this will be a tuple containing the package version in a
+    tuple::
+
+        result = _package_version_cmp(pkg_1, pkg_2)
+        print("Result is: %s" % result)
+        # Result is: -1
+
+    The function will ignore the package name as it is not an important
+    information here and will only care about the version that is tied to it's
+    name.
+
+    :param pkg_1: The first package to extract the version
+    :type pkg_1: str
+    :param pkg_2: The second package to extract the version
+    :type pkg_2: str
+    :return: An integer resulting in the package comparision
+    :rtype: int
+    """
+
+    # TODO(r0x0d): This function still needs some enhancements code-wise, it
+    # workes perfectly, but the way we are handling the versions is not 100%
+    # complete yet.  will be done in a future work. Right now, all the list of
+    # changes are listed in this comment:
+    # https://github.com/oamg/convert2rhel/pull/469#discussion_r873971400
+    pkg_ver_components = []
+    for pkg in pkg_1, pkg_2:
+        # Remove the package name and split the rest between epoch + version
+        # and release + arch
+        epoch_version, release_arch = pkg.rsplit("-", 2)[-2:]
+        # Separate the (optional) epoch from the version
+        epoch_version = epoch_version.split(":", 1)
+        if len(epoch_version) == 1:
+            epoch = "0"
+            version = epoch_version[0]
+        else:
+            epoch, version = epoch_version
+        # Discard the arch
+        release = release_arch.rsplit(".", 1)[0]
+        pkg_ver_components.append((epoch, version, release))
+
+    return rpm.labelCompare(pkg_ver_components[0], pkg_ver_components[1])

@@ -1,6 +1,11 @@
-summary: kmods tests
+summary: Handle custom, tainted and force loaded kernel modules.
+description: |
+    Verify, that Convert2RHEL is able to handle custom, tainted and force loaded kernel modules.
 
 tier: 0
+
+tag+:
+  - kernel
 
 test: |
   pytest -svv
