@@ -35,7 +35,7 @@ def configure_connection():
 
 
 def test_prepare_system(shell):
-    assert shell("yum install dnsmasq wget iptables -y").returncode == 0
+    assert shell("yum install dnsmasq wget -y").returncode == 0
 
     # Install katello package
     pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
@@ -46,10 +46,6 @@ def test_prepare_system(shell):
     replace_urls_rhsm()
 
     configure_connection()
-
-    # c2r checks the internet connectivity against the 8.8.8.8 DNS server
-    # pinging specific IP address is still possible so we need to block this as well
-    assert shell("iptables -I OUTPUT -d 8.8.8.8 -j DROP").returncode == 0
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
 
