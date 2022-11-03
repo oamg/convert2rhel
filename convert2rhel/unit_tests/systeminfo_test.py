@@ -18,8 +18,6 @@
 import logging
 import os
 import shutil
-import socket
-import sys
 import time
 import unittest
 
@@ -36,7 +34,7 @@ from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+from six.moves import mock, urllib
 
 
 class TestSysteminfo(unittest.TestCase):
@@ -276,19 +274,24 @@ def test_get_release_ver_other(
 
 
 @pytest.mark.parametrize(
-    ("side_effect", "expected"),
+    ("side_effect", "expected", "message"),
     (
-        (None, True),
-        (socket.error, False),
+        (urllib.error.URLError(reason="fail"), False, "Failed to retrieve data from host"),
+        (None, True, "internet connection seems to be available"),
     ),
 )
-def test_check_internet_access(side_effect, expected, monkeypatch):
-    monkeypatch.setattr(systeminfo.socket.socket, "connect", mock.Mock(side_effect=side_effect))
+def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):
+    monkeypatch.setattr(
+        systeminfo.urllib.request,
+        "urlopen",
+        mock.Mock(side_effect=side_effect),
+    )
     # Have to initialize the logger since we are not constructing the
     # system_info object properly i.e: we are not calling `resolve_system_info()`
     system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
+    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

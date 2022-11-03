@@ -1,0 +1,20 @@
+summary: Internet connection checks
+description: |
+    Verify, that internet connection check works as expected for both available and unavailable connection.
+
+tier: 0
+
+tag+:
+    - internet-connection
+
+/available_connection:
+    tag+:
+        - available_connection
+    test: |
+        pytest -svv -m available_connection
+
+/unavailable_connection:
+    tag+:
+        - unavailable-connection
+    test: |
+        pytest -svv -m unavailable_connection
