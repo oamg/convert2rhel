@@ -33,7 +33,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardoced repos from c2r as well
-    if "centos-8" in system or "oracle-8.4" in system:
+    if "centos-8" in system:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -83,7 +83,7 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     # Return repositories to their original location
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
-    if "centos-8" in system or "oracle-8.4" in system:
+    if "centos-8" in system:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Clean up
