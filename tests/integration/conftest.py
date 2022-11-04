@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import pathlib
 import re
 import subprocess
 import sys
@@ -222,6 +223,53 @@ def c2r_config(os_release):
     )
     assert config_path.exists(), f"Can't find Convert2RHEL config file.\n{str(config_path)} - does not exist."
     return ConfigUtils(config_path)
+
+
+@pytest.fixture
+def get_system_release(shell):
+    """
+    This fixture returns a string of ID and VERSION_ID from /etc/os-release.
+    If /etc/os-release is not available, /etc/system-release is read instead.
+    These could be in generally used for OS specific conditioning.
+    Mapping of OS to ID:
+        {
+            "Centos Linux": "centos",\n
+            "Oracle Linux": "oracle",\n
+            "Alma Linux": "almalinux",\n
+            "Rocky Linux": "rocky"
+        }
+    Examples:
+        Centos Linux 7.9 => centos-7.9\n
+        Oracle Linux 8.6 => oracle-8.6\n
+        Alma Linux 8.4 => almalinux-8.4\n
+        Rocky Linux 8.5 => rocky-8.5
+    """
+    path = pathlib.Path("/etc/system-release")
+
+    if not path.exists():
+        path = pathlib.Path("/etc/os-release")
+        with open(path) as osrelease:
+            os_release = {}
+            for line in osrelease:
+                if not re.match(line, "\n"):
+                    key, value = line.rstrip().split("=")
+                    os_release[key] = value
+            system_name = os_release.get("ID").strip('"')
+            system_version = os_release.get("VERSION_ID").strip('"')
+
+    else:
+        with open(path) as sysrelease:
+            sysrelease_as_list = sysrelease.readline().rstrip().split(" ")
+            system_name = sysrelease_as_list[0].lower()
+            for i in sysrelease_as_list:
+                if re.match(r"\d", i):
+                    system_version = i
+
+    if system_name == "ol":
+        system_name = "oracle"
+    system_release = f"{system_name}-{system_version}"
+
+    return system_release
 
 
 @pytest.fixture()

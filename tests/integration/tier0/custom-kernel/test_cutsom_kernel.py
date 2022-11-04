@@ -33,13 +33,11 @@ DISTRO_KERNEL_MAPPING = {
 }
 
 
-def install_custom_kernel(shell):
+def install_custom_kernel(shell, get_system_release):
     """
     Install CentOS kernel on Oracle Linux and vice versa to mimic the custom
     kernel that is not signed by the running OS official vendor.
     """
-    get_system_release = platform.platform()
-
     yum_install_cmd, grub_cmd = DISTRO_KERNEL_MAPPING[get_system_release].values()
 
     # Setup for CentOS 8.5
