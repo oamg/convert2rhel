@@ -31,12 +31,13 @@ def test_verify_logfile_starts_with_command(shell):
         assert shell(f"{command} <<< n").returncode != 0
 
         with open(C2R_LOG, "r") as logfile:
-            for line_count in range(2):
-                line_count += 1
-                # The actual command gets printed to a second line of a logfile.
-                if line_count == 1:
-                    line = logfile.readline().strip()
+            command_line = None
+            for i, line in enumerate(logfile):
+                # The actual command is logged to a second line
+                if i == 1:
+                    command_line = line.strip()
+                    break
 
-                assert command_verification in line
-                assert password not in line
-                assert activationkey not in line
+            assert command_verification in command_line
+            assert password not in command_line
+            assert activationkey not in command_line
