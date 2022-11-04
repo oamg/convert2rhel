@@ -371,27 +371,33 @@ def ensure_compatibility_of_kmods():
         logger.debug("All loaded kernel modules are available in RHEL.")
     else:
         not_supported_kmods = "\n".join(
-            map(
-                lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod),
-                unsupported_kmods,
+            "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod) for kmod in unsupported_kmods
+        )
+
+        logger.critical(
+            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
+            "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
+            "If this message appears again after doing the above, prevent the modules from loading by following {1}"
+            " and run convert2rhel again to continue with the conversion.".format(
+                not_supported_kmods, LINK_PREVENT_KMODS_FROM_LOADING
             )
         )
 
         if "CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS" in os.environ:
             logger.warning(
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable."
-                " We will continue the conversion, with the following kernel modules that are not supported:\n{kmods}\n".format(
+                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
+                "'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable detected, continuing conversion.".format(
                     kmods=not_supported_kmods
                 )
             )
 
         else:
             logger.critical(
-                "The following loaded kernel modules are not available in RHEL:\n{0}\n"
-                "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-                "If this message appears again after doing the above, prevent the modules from loading by following {1}"
-                " and run convert2rhel again to continue with the conversion.".format(
-                    "\n".join(not_supported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
+                "Make sure you have updated the kernel to the latest available version and rebooted the system. "
+                "Only kernel modules supported in RHEL are preferred for conversion, if you want to ignore this "
+                " check, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS=1' to continue".format(
+                    kmods=not_supported_kmods, system=system_info.name
                 )
             )
 
