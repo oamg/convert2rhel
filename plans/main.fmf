@@ -4,6 +4,27 @@ discover:
     how: fmf
 environment:
     NO_COLOR: 1
+
+adjust+:
+    - environment+:
+        SYSTEM_RELEASE: centos-7
+      when: distro == centos-7
+    - environment+:
+        SYSTEM_RELEASE: oracle-7
+      when: distro == oraclelinux-7
+    - environment+:
+        SYSTEM_RELEASE: centos-8.4
+      when: distro == centos-8.4
+    - environment+:
+        SYSTEM_RELEASE: centos-8
+      when: distro == centos-8-latest
+    - environment+:
+        SYSTEM_RELEASE: oracle-8.4
+      when: distro == oraclelinux-8.4
+    - environment+:
+        SYSTEM_RELEASE: oracle-8.6
+      when: distro == oraclelinux-8.6
+
 prepare:
     - name: main preparation step
       how: ansible
