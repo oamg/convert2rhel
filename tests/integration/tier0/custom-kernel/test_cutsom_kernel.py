@@ -21,8 +21,12 @@ DISTRO_KERNEL_MAPPING = {
         "yum_install_cmd": "yum install http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm -y",
         "grub_cmd": "grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'",
     },
+    "oracle-8.4": {
+        "yum_install_cmd": "yum install https://vault.centos.org/centos/8.4.2105/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-305.25.1.el8_4.x86_64.rpm -y",
+        "grub_cmd": "",
+    },
     # Install CentOS 8.5 kernel
-    "oracle-8": {
+    "oracle-8.6": {
         "yum_install_cmd": "yum install https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-348.7.1.el8_5.x86_64.rpm -y",
         "grub_cmd": "grub2-set-default 'CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8'",
     },
