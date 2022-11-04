@@ -361,8 +361,7 @@ def ensure_compatibility_of_kmods():
         logger.debug("All loaded kernel modules are available in RHEL.")
     else:
         not_supported_kmods = "\n".join(
-            "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod)
-            for kmod in unsupported_kmods
+            "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod) for kmod in unsupported_kmods
         )
         logger.critical(
             "The following loaded kernel modules are not available in RHEL:\n{0}\n"
