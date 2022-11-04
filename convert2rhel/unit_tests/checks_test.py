@@ -438,7 +438,22 @@ def test_ensure_compatibility_of_kmods(
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
 
-def test_validate_package_manager_transaction(monkeypatch, caplog):
+@centos8
+def test_ensure_compatibility_of_kmods_check_env(
+    monkeypatch,
+    pretend_os,
+    caplog,
+):
+
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS": "1"})
+    monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=HOST_MODULES_STUB_BAD))
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+            (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
+        )
+    )
     monkeypatch.setattr(
         checks.pkgmanager,
         "create_transaction_handler",
