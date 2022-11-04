@@ -200,7 +200,6 @@ class TestCheckConvert2rhelLatest(object):
         global_system_info.has_internet_access = False
         checks.check_convert2rhel_latest()
 
-        convert2rhel_latest_version_test
         log_msg = "Skipping the check because no internet connection has been detected."
         assert log_msg in caplog.text
 
