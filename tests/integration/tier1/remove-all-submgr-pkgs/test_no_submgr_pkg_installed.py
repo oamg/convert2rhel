@@ -1,4 +1,4 @@
-import platform
+import os
 
 from envparse import env
 
@@ -10,13 +10,7 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     """
 
     assert shell("yum remove -y subscription-manager python3-syspurpose").returncode == 0
-    system_version = platform.platform()
-    if "oracle-7" in system_version or "centos-7" in system_version:
-        prompt_amount = 2
-    elif "oracle-8" in system_version:
-        prompt_amount = 1
-    elif "centos-8" in system_version:
-        prompt_amount = 2
+    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     with convert2rhel(
         ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(

@@ -2,6 +2,7 @@ from envparse import env
 
 
 def test_activation_key_conversion(convert2rhel):
+    # noinspection PyRedundantParentheses
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} -k {} -o {} --debug").format(
             env.str("RHSM_SERVER_URL"),

@@ -1,4 +1,4 @@
-import platform
+import os
 
 from pathlib import Path
 
@@ -7,7 +7,7 @@ import pytest
 from envparse import env
 
 
-system_version = platform.platform()
+system_release = os.environ["SYSTEM_RELEASE"]
 
 
 @pytest.fixture()
@@ -54,13 +54,8 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     Abort the conversion right after the check.
     """
     assert shell("modprobe -r -v bonding").returncode == 0
+    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
-    if "oracle-7" in system_version or "centos-7" in system_version:
-        prompt_amount = 3
-    elif "oracle-8" in system_version:
-        prompt_amount = 2
-    elif "centos-8" in system_version:
-        prompt_amount = 4
     # If custom module is not loaded the conversion is not inhibited.
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -89,7 +84,7 @@ def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
-    if "oracle-7" not in system_version and "centos-7" not in system_version:
+    if "oracle-7" not in system_release and "centos-7" not in system_release:
         # Force load the kernel module
         assert shell("modprobe -f -v bonding").returncode == 0
         # Check for force loaded modules being flagged FE in /proc/modules

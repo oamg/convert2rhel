@@ -2,6 +2,14 @@ summary: Handle custom, tainted and force loaded kernel modules.
 description: |
     Verify, that Convert2RHEL is able to handle custom, tainted and force loaded kernel modules.
 
+adjust+:
+    - environment+:
+        PROMPT_AMOUNT: 3
+      when: distro == centos-7, oraclelinux-7, centos-8-latest
+    - environment+:
+        PROMPT_AMOUNT: 2
+      when: distro == oraclelinux-8
+
 tier: 0
 
 tag+:

@@ -1,5 +1,8 @@
 summary: check-if-rollback-is-finishing-up-properly
 
+environment+:
+    PROMPT_AMOUNT: 3
+
 tier: 0
 
 test: pytest -svv

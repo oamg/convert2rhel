@@ -1,4 +1,4 @@
-import platform
+import os
 
 
 def test_use_non_english_language(shell):
@@ -8,7 +8,7 @@ def test_use_non_english_language(shell):
     Ref bug: https://bugzilla.redhat.com/show_bug.cgi?id=2022854
     """
     # install Chinese language pack for CentOS-8 and Oracle Linux 8
-    os = platform.platform()
+    system_release = os.environ["SYSTEM_RELEASE"]
     if "centos-8" in os or "oracle-8" in os:
         assert shell("dnf install glibc-langpack-zh -y").returncode == 0
 
@@ -19,5 +19,5 @@ def test_use_non_english_language(shell):
     # Testing farm is returning an error on CentOS7 mentioning
     # setting incompatible LC_CTYPE C.UTF-8.
     # However the C.UTF-8 was added on RHEL-8 like distros.
-    if "centos-7" in os:
+    if "centos-7" in system_release:
         assert shell("localectl set-locale LC_CTYPE=zh_CN.utf8").returncode == 0

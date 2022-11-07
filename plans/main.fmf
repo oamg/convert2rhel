@@ -2,7 +2,8 @@ execute:
     how: tmt
 discover:
     how: fmf
-environment:
+
+environment+:
     NO_COLOR: 1
 
 adjust+:

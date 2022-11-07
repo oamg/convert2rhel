@@ -1,4 +1,4 @@
-import platform
+import os
 import re
 
 from collections import namedtuple
@@ -44,7 +44,7 @@ def test_install_dependency_packages(shell):
                 "python-requests",  # OAMG-4936
             ]
         elif system_version.major == 8:
-            if "oracle-8" in platform.platform():
+            if "oracle-8" in os.environ["SYSTEM_RELEASE"]:
                 dependency_pkgs = [
                     "iwl7260-firmware",  # RHELC-567
                     "iwlax2xx-firmware",  # RHELC-567 - causing problems during the conversion on OL8

@@ -1,13 +1,14 @@
-import platform
+import os
 
 
 def test_install_one_kernel(shell):
+    system_release = os.environ["SYSTEM_RELEASE"]
     # installing kernel package
     assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-    # set deafault kernel
-    if "centos-7" in platform.platform():
+    # set default kernel
+    if "centos-7" in system_release:
         assert shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'").returncode == 0
-    elif "oracle-7" in platform.platform():
+    elif "oracle-7" in system_release:
         assert shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'").returncode == 0
 
     # replace url in yum.repos.d rhel repo

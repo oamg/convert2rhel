@@ -1,5 +1,4 @@
 import os
-import platform
 
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
@@ -10,7 +9,7 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
     submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
     shell(f"echo '{submgr_disabled_var}' >> /etc/profile")
 
-    system_distro = platform.platform()
+    system_release = os.environ["SYSTEM_RELEASE"]
 
     enable_repo_opt = """
         --enablerepo rhel-7-server-rpms
@@ -25,9 +24,9 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
     # contains higher version of kernel, so the update would get inhibited due to
     # the kernel not being at the latest version installed on the system.
     # We also need to enable env variable to allow unsupported rollback.
-    if "centos" in system_distro:
+    if "centos" in system_release:
         assert shell("yum-config-manager --disable updates").returncode == 0
-    elif "oracle" in system_distro:
+    elif "oracle" in system_release:
         assert shell("yum-config-manager --disable ol7_latest").returncode == 0
         # This internal repo breaks the conversion on the instances we are getting
         # from Testing Farm

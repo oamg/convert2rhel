@@ -1,4 +1,6 @@
 from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
+import os
+
 from envparse import env
 
 
