@@ -4,6 +4,6 @@ adjust:
   enabled: false
   when: >
     distro != centos-7 and
-    distro != oracle-7
+    distro != oraclelinux-7
 test: |
   pytest -svv

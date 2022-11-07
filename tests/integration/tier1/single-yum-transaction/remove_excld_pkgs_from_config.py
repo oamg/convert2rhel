@@ -1,7 +1,4 @@
-import os
-
-
-system_release = os.environ["SYSTEM_RELEASE"]
+from conftest import SYSTEM_RELEASE
 
 
 def test_remove_excluded_pkgs_from_config(shell):
@@ -10,7 +7,7 @@ def test_remove_excluded_pkgs_from_config(shell):
     That means Convert2RHEL won't remove them before the main conversion transaction.
     """
 
-    if "centos-7" in system_release:
+    if "centos-7" in SYSTEM_RELEASE:
         assert shell("sed -i '/mod_ldap/d' /usr/share/convert2rhel/configs/centos-7-x86_64.cfg").returncode == 0
         assert shell("sed -i '/mod_proxy_html/d' /usr/share/convert2rhel/configs/centos-7-x86_64.cfg").returncode == 0
 

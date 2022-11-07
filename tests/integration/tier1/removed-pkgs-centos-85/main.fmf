@@ -10,7 +10,7 @@ tier: 1
 
 adjust+:
     - enabled: false
-        when: >
-      distro != centos-8-latest
+      when: >
+        distro != centos-8-latest
 
 test: pytest -svv

@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -29,6 +30,8 @@ logger = logging.getLogger(__name__)
 SATELLITE_URL = "satellite.sat.engineering.redhat.com"
 SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
 SATELLITE_PKG_DST = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+
+SYSTEM_RELEASE = os.environ["SYSTEM_RELEASE"]
 
 
 @pytest.fixture()

@@ -9,7 +9,11 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     is able to get to the last point of the rollback.
     """
 
-    assert shell("yum remove -y subscription-manager python3-syspurpose").returncode == 0
+    packages_to_remove = ["subscription-manager", "python3-syspurpose"]
+    for package in packages_to_remove:
+        if package in shell(f"rpm -qi {package}").output:
+            assert shell(f"yum remove -y {package}").returncode == 0
+
     prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     with convert2rhel(

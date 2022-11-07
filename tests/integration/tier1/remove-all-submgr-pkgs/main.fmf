@@ -5,10 +5,10 @@ description: |
 
 adjust+:
     - environment+:
-        - PROMPT_AMOUNT: 2
-      when: distro == centos-7, oraclelinux-7, oraclelinux-8
+        PROMPT_AMOUNT: 2
+      when: distro == centos-7, oraclelinux
     - environment+:
-        - PROMPT_AMOUNT: 1
+        PROMPT_AMOUNT: 1
       when: distro == centos-8-latest
 
 tier: 1

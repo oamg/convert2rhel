@@ -1,4 +1,5 @@
 import os.path
+import platform
 
 
 def _check_enabled_repos_rhel8(enabled_repos):
@@ -21,7 +22,7 @@ def _check_eus_enabled_repos_rhel8(enabled_repos):
 
 def test_enabled_repositories(shell):
     """Testing, if the EUS repostitories are enabled after conversion"""
-    system_release = os.environ["SYSTEM_RELEASE"]
+    system_release = platform.platform()
     enabled_repos = shell("yum repolist").output
 
     try:

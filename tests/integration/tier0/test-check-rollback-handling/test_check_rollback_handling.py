@@ -1,9 +1,9 @@
 import os
 
+from conftest import SYSTEM_RELEASE
 from envparse import env
 
 
-system_release = os.environ["SYSTEM_RELEASE"]
 OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
 OL_8_PKGS = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
 COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
@@ -18,13 +18,13 @@ def install_pkg(shell, pkgs=None):
     Install packages that cause trouble/needs to be checked during/after rollback.
     Some packages were removed during the conversion and were not backed up/installed back when the rollback occurred.
     """
-    if "centos-7" in system_release:
+    if "centos-7" in SYSTEM_RELEASE:
         pkgs = COS_7_PKGS
-    elif "centos-8" in system_release:
+    elif "centos-8" in SYSTEM_RELEASE:
         pkgs = COS_8_PKGS
-    elif "oracle-7" in system_release:
+    elif "oracle-7" in SYSTEM_RELEASE:
         pkgs = OL_7_PKGS
-    elif "oracle-8" in system_release:
+    elif "oracle-8" in SYSTEM_RELEASE:
         pkgs = OL_8_PKGS
     for pkg in pkgs:
         print(f"PREP: Setting up {pkg}")
@@ -47,13 +47,13 @@ def post_rollback_check(shell):
     Helper function.
     Provide respective packages to the is_installed() helper function.
     """
-    if "centos-7" in system_release:
+    if "centos-7" in SYSTEM_RELEASE:
         is_installed(shell, COS_7_PKGS)
-    elif "centos-8" in system_release:
+    elif "centos-8" in SYSTEM_RELEASE:
         is_installed(shell, COS_8_PKGS)
-    elif "oracle-7" in system_release:
+    elif "oracle-7" in SYSTEM_RELEASE:
         is_installed(shell, OL_7_PKGS)
-    elif "oracle-8" in system_release:
+    elif "oracle-8" in SYSTEM_RELEASE:
         is_installed(shell, OL_8_PKGS)
 
 
@@ -62,7 +62,7 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    if "oracle-7" in system_release or "centos-7" in system_release:
+    if "oracle-7" in SYSTEM_RELEASE or "centos-7" in SYSTEM_RELEASE:
         # Use 'Ctrl + c' first to check for unexpected behaviour
         # of the rollback feature after process termination
         c2r.sendcontrol("c")
@@ -88,7 +88,6 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     """
     install_pkg(shell)
     prompt_amount = int(os.environ["PROMPT_AMOUNT"])
-
     with convert2rhel(
         ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
             env.str("RHSM_SERVER_URL"),
