@@ -26,10 +26,10 @@ env.read_envfile(str(Path(__file__).parents[2] / ".env"))
 logging.basicConfig(level="DEBUG" if env.str("DEBUG") else "INFO", stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
-
 SATELLITE_URL = "satellite.sat.engineering.redhat.com"
 SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
 SATELLITE_PKG_DST = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+
 
 @pytest.fixture()
 def shell(tmp_path):
