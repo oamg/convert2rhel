@@ -9,4 +9,4 @@
 - import_playbook: rhel8-repos.yml
   when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.6"
 - import_playbook: rhel8-eus-repos.yml
-  when: ansible_facts['distribution_version'] == "8.4"
+  when: ansible_facts['distribution_version'] == "8.4" or ansible_facts['distribution_version'] == "8.6"
