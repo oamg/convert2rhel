@@ -1,11 +1,9 @@
-import os
+from conftest import SATELLITE_URL, SATELLITE_PKG_URL, SATELLITE_PKG_DST
 import re
 import socket
 
 
-SATELLITE_URL = "dogfood.sat.engineering.redhat.com"
-
-# Replace urls in rhsm.conf file to the dogfood satellite server
+# Replace urls in rhsm.conf file to the satellite server
 def replace_urls_rhsm():
     with open("/etc/rhsm/rhsm.conf", "r+") as f:
         file = f.read()
@@ -38,10 +36,8 @@ def test_prepare_system(shell):
     assert shell("yum install dnsmasq wget -y").returncode == 0
 
     # Install katello package
-    pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-    pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
-    assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
-    assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
+    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
+    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     replace_urls_rhsm()
 

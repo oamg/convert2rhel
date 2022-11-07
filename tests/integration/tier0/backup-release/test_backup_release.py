@@ -1,7 +1,8 @@
+from conftest import SATELLITE_PKG_URL, SATELLITE_PKG_DST
+from envparse import env
+
 import os
 import platform
-
-from envparse import env
 
 
 system = platform.platform()
@@ -19,10 +20,8 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("yum install wget -y").returncode == 0
 
     # Install katello package for satellite
-    pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-    pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
-    assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
-    assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
+    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
+    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup").returncode == 0

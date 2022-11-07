@@ -1,3 +1,4 @@
+from conftest import SATELLITE_PKG_URL, SATELLITE_PKG_DST
 from envparse import env
 
 
@@ -16,9 +17,7 @@ def test_missing_os_release(shell, convert2rhel):
     assert shell("yum install wget -y").returncode == 0
 
     # Install katello package
-    pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-    pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
-    assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
+    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
 
     with convert2rhel(
         ("-y --no-rpm-va -k {} -o {} --debug").format(
