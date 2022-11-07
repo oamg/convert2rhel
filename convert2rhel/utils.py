@@ -626,9 +626,21 @@ def find_keyid(keyfile):
         if ret_code != 0:
             raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: %s" % output)
     finally:
-        # Remove the temporary keyring.  We can't use the context manager for this because it isn't
-        # available on Python-2.7 (RHEL7)
-        shutil.rmtree(temporary_dir)
+        try:
+            # Remove the temporary keyring.  We can't use the context manager
+            # for this because it isn't available on Python-2.7 (RHEL7)
+            shutil.rmtree(temporary_dir)
+        except OSError as e:
+            # Gpg writes a temporary socket file for a gpg-agent into
+            # --homedir.  Sometimes gpg removes that socket file after rmtree
+            # has determined it should delete that file but before the deletion
+            # occurs. This will cause a FileNotFoundError (OSError on Python
+            # 2).  If we encounter that, try to run shutil.rmtree again since
+            # we should now be able to remove all the files that were left.
+            if e.errno == 2:
+                shutil.rmtree(temporary_dir)
+            else:
+                raise
 
     keyid = None
     for line in output.splitlines():
