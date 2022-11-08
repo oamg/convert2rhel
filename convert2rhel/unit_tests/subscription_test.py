@@ -308,54 +308,6 @@ class TestSubscription(unittest.TestCase):
     def test_install_rhel_subscription_manager_unable_to_install(self):
         self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
 
-    class StoreContentMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.filename = None
-            self.content = None
-
-        def __call__(self, filename, content):
-            self.called += 1
-            self.filename = filename
-            self.content = content
-            return True
-
-    class DownloadPkgsMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.to_return = ["/path/to.rpm"]
-
-        def __call__(self, pkgs, dest, reposdir=None):
-            self.called += 1
-            self.pkgs = pkgs
-            self.dest = dest
-            self.reposdir = reposdir
-            return self.to_return
-
-    @unit_tests.mock(utils, "store_content_to_file", StoreContentMocked())
-    @unit_tests.mock(utils, "download_pkgs", DownloadPkgsMocked())
-    def test__download_rhsm_pkgs(self):
-        subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
-
-        self.assertTrue("/path/to.repo" in utils.store_content_to_file.filename)
-        self.assertEqual(utils.download_pkgs.called, 1)
-
-        utils.download_pkgs.to_return.append(None)
-
-        self.assertRaises(SystemExit, subscription._download_rhsm_pkgs, ["testpkg"], "/path/to.repo", "content")
-
-    class DownloadPkgMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.to_return = "/path/to.rpm"
-
-        def __call__(self, pkg, dest, reposdir=None):
-            self.called += 1
-            self.pkg = pkg
-            self.dest = dest
-            self.reposdir = reposdir
-            return self.to_return
-
 
 @pytest.fixture
 def tool_opts(global_tool_opts, monkeypatch):
@@ -1044,6 +996,22 @@ class TestReplaceSubscriptionManager(object):
         assert caplog.records[-1].message == "Unregister failed"
 
 
+class DownloadPkgsMocked(unit_tests.MockFunction):
+    def __init__(self, destdir=None):
+        self.called = 0
+        self.to_return = ["/path/to.rpm"]
+        self.destdir = destdir
+
+    def __call__(self, pkgs, dest, reposdir=None):
+        self.called += 1
+        self.pkgs = pkgs
+        self.dest = dest
+        self.reposdir = reposdir
+        if self.destdir and not os.path.exists(self.destdir):
+            os.mkdir(self.destdir, 0o700)
+        return self.to_return
+
+
 class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
     def __init__(self):
         self.called = 0
@@ -1055,81 +1023,129 @@ class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
         self.repo_content = repo_content
 
 
+class StoreContentMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.filename = None
+        self.content = None
+
+    def __call__(self, filename, content):
+        self.called += 1
+        self.filename = filename
+        self.content = content
+        return True
+
+
 Version = namedtuple("Version", ["major", "minor"])
 
 
-@pytest.mark.parametrize(
-    (
-        "version",
-        "json_c_i686_installed",
-        "pkgs_to_download",
-    ),
-    (
+class TestDownloadRHSMPkgs(object):
+    @pytest.mark.parametrize(
         (
-            (6, 0),
-            False,
-            frozenset(
-                (
-                    "subscription-manager",
-                    "subscription-manager-rhsm-certificates",
-                    "subscription-manager-rhsm",
-                )
-            ),
+            "version",
+            "json_c_i686_installed",
+            "pkgs_to_download",
         ),
         (
-            (7, 0),
-            False,
-            frozenset(
-                (
-                    "subscription-manager",
-                    "subscription-manager-rhsm-certificates",
-                    "subscription-manager-rhsm",
-                    "python-syspurpose",
-                )
+            (
+                (6, 0),
+                False,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "subscription-manager-rhsm",
+                    )
+                ),
+            ),
+            (
+                (7, 0),
+                False,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "subscription-manager-rhsm",
+                        "python-syspurpose",
+                    )
+                ),
+            ),
+            (
+                (8, 0),
+                False,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "python3-subscription-manager-rhsm",
+                        "dnf-plugin-subscription-manager",
+                        "python3-syspurpose",
+                        "python3-cloud-what",
+                        "json-c.x86_64",
+                    )
+                ),
+            ),
+            (
+                (8, 0),
+                True,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "python3-subscription-manager-rhsm",
+                        "dnf-plugin-subscription-manager",
+                        "python3-syspurpose",
+                        "python3-cloud-what",
+                        "json-c.x86_64",
+                        "json-c.i686",
+                    )
+                ),
             ),
         ),
-        (
-            (8, 0),
-            False,
-            frozenset(
-                (
-                    "subscription-manager",
-                    "subscription-manager-rhsm-certificates",
-                    "python3-subscription-manager-rhsm",
-                    "dnf-plugin-subscription-manager",
-                    "python3-syspurpose",
-                    "python3-cloud-what",
-                    "json-c.x86_64",
-                )
-            ),
-        ),
-        (
-            (8, 0),
-            True,
-            frozenset(
-                (
-                    "subscription-manager",
-                    "subscription-manager-rhsm-certificates",
-                    "python3-subscription-manager-rhsm",
-                    "dnf-plugin-subscription-manager",
-                    "python3-syspurpose",
-                    "python3-cloud-what",
-                    "json-c.x86_64",
-                    "json-c.i686",
-                )
-            ),
-        ),
-    ),
-)
-def test_download_rhsm_pkgs(version, json_c_i686_installed, pkgs_to_download, monkeypatch):
-    monkeypatch.setattr(system_info, "version", Version(*version))
-    monkeypatch.setattr(system_info, "is_rpm_installed", lambda _: json_c_i686_installed)
-    monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
-    monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
-    subscription.download_rhsm_pkgs()
+    )
+    def test_download_rhsm_pkgs(self, version, json_c_i686_installed, pkgs_to_download, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(*version))
+        monkeypatch.setattr(system_info, "is_rpm_installed", lambda _: json_c_i686_installed)
+        monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
+        monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
+        subscription.download_rhsm_pkgs()
 
-    assert subscription._download_rhsm_pkgs.called == 1
-    assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == pkgs_to_download
+        assert subscription._download_rhsm_pkgs.called == 1
+        assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == pkgs_to_download
+
+    def test_download_rhsm_pkgs_skipped(self, monkeypatch, tool_opts, caplog):
+        monkeypatch.setattr(subscription, "_download_rhsm_pkgs", mock.Mock())
+        tool_opts.keep_rhsm = True
+
+        subscription.download_rhsm_pkgs()
+
+        assert "Skipping due to the use of --keep-rhsm." in caplog.text
+        subscription._download_rhsm_pkgs.assert_not_called()
+
+    def test__download_rhsm_pkgs(self, monkeypatch, tmpdir):
+        """Smoketest that _download_rhsm_pkgs works in the happy path"""
+        download_rpms_directory = tmpdir.join("submgr-downloads")
+        monkeypatch.setattr(subscription, "SUBMGR_RPMS_DIR", str(download_rpms_directory))
+
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(str(download_rpms_directory)))
+
+        subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
+
+        assert "/path/to.repo" in utils.store_content_to_file.filename
+        assert utils.download_pkgs.called == 1
+
+    def test__download_rhsm_pkgs_one_package_failed_to_download(self, monkeypatch):
+        """
+        Test that _download_rhsm_pkgs() aborts when one of the subscription-manager packages fails to download.
+        """
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked())
+
+        utils.download_pkgs.to_return.append(None)
+
+        with pytest.raises(SystemExit):
+            subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
 
 
 class TestUnregisteringSystem(object):
@@ -1200,14 +1216,6 @@ class TestUnregisteringSystem(object):
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
         subscription.unregister_system()
         assert "The subscription-manager package is not installed." in caplog.records[-1].message
-
-
-@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", True)
-def test_download_rhsm_pkgs_skipped(monkeypatch, caplog):
-    monkeypatch.setattr(subscription, "_download_rhsm_pkgs", mock.Mock())
-    subscription.download_rhsm_pkgs()
-    assert "Skipping due to the use of --keep-rhsm." in caplog.text
-    subscription._download_rhsm_pkgs.assert_not_called()
 
 
 @pytest.mark.parametrize(

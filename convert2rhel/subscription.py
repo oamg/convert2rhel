@@ -919,6 +919,7 @@ def download_rhsm_pkgs():
         loggerinst.info("Skipping due to the use of --keep-rhsm.")
         return
     utils.mkdir_p(_RHSM_TMP_DIR)
+
     pkgs_to_download = [
         "subscription-manager",
         "subscription-manager-rhsm-certificates",
@@ -948,9 +949,20 @@ def download_rhsm_pkgs():
 
 
 def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
+    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
+
     utils.store_content_to_file(filename=repo_path, content=repo_content)
     paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
+
+    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")
     exit_on_failed_download(paths)
+
+
+def _log_rhsm_download_directory_contents(directory, when_message):
+    pkgs = ["<download directory does not exist>"]
+    if os.path.isdir(SUBMGR_RPMS_DIR):
+        pkgs = os.listdir(SUBMGR_RPMS_DIR)
+    loggerinst.debug("Contents of %s directory %s:\n%s", SUBMGR_RPMS_DIR, when_message, "\n".join(pkgs))
 
 
 def exit_on_failed_download(paths):
