@@ -1,7 +1,7 @@
 <!-- Write a description of what the PR solves and how -->
 
 <!-- Link to relevant Jira issue, add multiple if necessary -->
-Jira Issue: [RHELC-]()
+Jira Issue: [RHELC-](https://issues.redhat.com/browse/RHELC-)
 
 Checklist
 - [ ] PR meets acceptance criteria specified in the Jira issue
