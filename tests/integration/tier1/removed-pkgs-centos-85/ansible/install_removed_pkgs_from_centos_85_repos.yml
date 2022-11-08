@@ -10,7 +10,7 @@
     - name: Add Centos 8.4.2105 AppStream repo
       yum_repository:
         name: appstream-84
-        description: CentOS Linux 8.4.2105 - AppStream
+        description: CentOS Linux 8.4.ex2105 - AppStream
         baseurl: https://vault.centos.org/$contentdir/8.4.2105/AppStream/$basearch/os/
         enabled: no
         gpgcheck: no
