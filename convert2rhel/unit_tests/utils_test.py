@@ -410,7 +410,7 @@ class TestFindKeys:
         def __init__(self, exception, real_rmtree):
             self.called = 0
             self.exception = exception
-            self.real_rmtree =real_rmtree
+            self.real_rmtree = real_rmtree
 
         def __call__(self, *args, **kwargs):
             # Fail on the first call
@@ -514,7 +514,7 @@ class TestFindKeys:
         (
             (OSError(13, "Permission denied"), "Errno 13.*Permission denied"),
             (Exception("Unanticipated problem"), "Unanticipated problem"),
-        )
+        ),
     )
     def test_find_keyid_problem_removing_directory(self, exception, exception_msg, monkeypatch):
         real_rmtree = shutil.rmtree
