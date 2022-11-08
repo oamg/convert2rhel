@@ -9,7 +9,8 @@ def test_rhsm_non_eus_account(convert2rhel):
     """
 
     # Mark the system so the check for the enabled repos after the conversion handles this special case
-    with open('/non_eus_repos_used', mode='a'): pass
+    with open("/non_eus_repos_used", mode="a"):
+        pass
 
     with convert2rhel(
         ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(

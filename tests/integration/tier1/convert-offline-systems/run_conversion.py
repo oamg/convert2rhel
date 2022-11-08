@@ -1,6 +1,6 @@
-from envparse import env
 import os
 
+from envparse import env
 
 
 def test_convert_offline_systems(convert2rhel):

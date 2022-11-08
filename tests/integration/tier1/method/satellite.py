@@ -1,4 +1,4 @@
-from conftest import SATELLITE_PKG_URL, SATELLITE_PKG_DST
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
 from envparse import env
 
 
@@ -8,7 +8,12 @@ def test_satellite_conversion(shell, convert2rhel):
 
     assert shell("yum install wget -y").returncode == 0
 
-    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
+    assert (
+        shell(
+            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
+        ).returncode
+        == 0
+    )
 
     with convert2rhel(
         ("-y --no-rpm-va -k {} -o {} --debug").format(

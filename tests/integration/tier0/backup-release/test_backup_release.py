@@ -1,8 +1,8 @@
-from conftest import SATELLITE_PKG_URL, SATELLITE_PKG_DST
-from envparse import env
-
 import os
 import platform
+
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
+from envparse import env
 
 
 system = platform.platform()
@@ -20,7 +20,12 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("yum install wget -y").returncode == 0
 
     # Install katello package for satellite
-    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
+    assert (
+        shell(
+            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
+        ).returncode
+        == 0
+    )
     assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     # Move all repos to other location, so it is not being used

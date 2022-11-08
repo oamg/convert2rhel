@@ -1,6 +1,7 @@
-from conftest import SATELLITE_URL, SATELLITE_PKG_URL, SATELLITE_PKG_DST
 import re
 import socket
+
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL
 
 
 # Replace urls in rhsm.conf file to the satellite server
@@ -36,7 +37,12 @@ def test_prepare_system(shell):
     assert shell("yum install dnsmasq wget -y").returncode == 0
 
     # Install katello package
-    assert shell("wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)).returncode == 0
+    assert (
+        shell(
+            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
+        ).returncode
+        == 0
+    )
     assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     replace_urls_rhsm()
