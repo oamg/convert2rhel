@@ -20,6 +20,22 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
+/rhsm_non_eus:
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8.4 and
+      distro != oraclelinux-8.4
+  discover+:
+    test: checks-after-conversion
+  prepare+:
+  - name: main conversion preparation
+    how: shell
+    script: pytest -svv tests/integration/tier1/method/rhsm_non_eus.py
+  - name: reboot after conversion
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
+
 /satellite:
   discover+:
     test: checks-after-conversion
@@ -275,22 +291,6 @@
     - name: reboot after conversion
       how: ansible
       playbook: tests/ansible_collections/roles/reboot/main.yml
-
-/satellite_non_eus_repos:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-8.4 and
-      distro != oraclelinux-8.4
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/satellite_non_eus_repos/satellite_non_eus_repos.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /changed_grub_valid:
   discover+:
