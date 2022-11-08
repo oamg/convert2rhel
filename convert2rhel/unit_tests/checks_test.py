@@ -438,10 +438,7 @@ def test_ensure_compatibility_of_kmods(
     if shouldnt_be_in_logs:
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
-<<<<<<< HEAD
-=======
 
->>>>>>> f6871e0 (Changed the log messages for the envar case)
 @centos8
 def test_ensure_compatibility_of_kmods_check_env(
     monkeypatch,
@@ -470,6 +467,7 @@ def test_ensure_compatibility_of_kmods_check_env(
         " We will continue the conversion, with the following kernel modules that are not supported:.*"
     )
     assert re.match(should_be_in_logs in caplog.records[-1].message, re.MULTILINE, re.DOTALL)
+
 
 @pytest.mark.parametrize(
     (
