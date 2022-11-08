@@ -385,14 +385,16 @@ def ensure_compatibility_of_kmods():
                 )
             )
 
-        logger.critical(
-            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
-            "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-            "If this message appears again after doing the above, prevent the modules from loading by following {1}"
-            " and run convert2rhel again to continue with the conversion.".format(
-                "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+        else:
+            logger.critical(
+                "The following loaded kernel modules are not available in RHEL:\n{0}\n"
+                "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
+                "If this message appears again after doing the above, prevent the modules from loading by following {1}"
+                " and run convert2rhel again to continue with the conversion.".format(
+                    "\n".join(not_supported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+                )
             )
-        )
+
 
 def validate_package_manager_transaction():
     """Validate the package manager transaction is passing the tests."""
@@ -401,21 +403,7 @@ def validate_package_manager_transaction():
     transaction_handler.run_transaction(
         validate_transaction=True,
     )
-                "Only kernel modules supported in RHEL are preferd for conversion, if you want to ignor this "
-                " check, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' to continue"
-            ).format(kmods=not_supported_kmods, system=system_info.name)
-        else:
-            logger.critical(
-                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-                "Make sure you have updated the kernel to the latest available version and rebooted the system. "
-                "Only kernel modules supported in RHEL are preferred for conversion, if you want to ignore this "
-                " check, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS=1' to continue".format(
-                    kmods=not_supported_kmods
-                )
-            )
 
-    else:
-        logger.info("Kernel modules are compatible.")
 
 def get_loaded_kmods():
     """Get a set of kernel modules loaded on host.
