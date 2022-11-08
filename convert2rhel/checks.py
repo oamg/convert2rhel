@@ -382,23 +382,14 @@ def ensure_compatibility_of_kmods():
                 )
             )
 
-<<<<<<< HEAD
-        logger.critical(
-            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
-            "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-            "If this message appears again after doing the above, prevent the modules from loading by following {1}"
-            " and run convert2rhel again to continue with the conversion.".format(
-                not_supported_kmods, LINK_PREVENT_KMODS_FROM_LOADING
-=======
         else:
             logger.critical(
                 "The following loaded kernel modules are not available in RHEL:\n{0}\n"
                 "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
                 "If this message appears again after doing the above, prevent the modules from loading by following {1}"
                 " and run convert2rhel again to continue with the conversion.".format(
-                    "\n".join(not_supported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+                    not_supported_kmods, LINK_PREVENT_KMODS_FROM_LOADING
                 )
->>>>>>> cab81a7 (Changed the added code that came from my PR)
             )
 
 
