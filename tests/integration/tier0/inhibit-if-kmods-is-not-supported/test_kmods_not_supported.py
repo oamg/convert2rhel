@@ -55,10 +55,8 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     """
     assert shell("modprobe -r -v bonding").returncode == 0
 
-    if "oracle-7" in system_version:
+    if "oracle-7" in system_version or "centos-7" in system_version:
         prompt_amount = 3
-    elif "centos-7" in system_version:
-        prompt_amount = 4
     elif "oracle-8" in system_version:
         prompt_amount = 2
     elif "centos-8" in system_version:
