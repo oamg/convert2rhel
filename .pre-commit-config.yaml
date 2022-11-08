@@ -1,12 +1,14 @@
 minimum_pre_commit_version: "2.9.0"
 repos:
-  - repo: "https://github.com/psf/black"
-    rev: "21.12b0"
+  - repo: local
     hooks:
-      - id: "black"
-        name: "Format code (black)"
+      - id: black
+        name: black
+        entry: black
+        types: [python]
+        language: python
         language_version: "python3"
-        additional_dependencies: [click==7.1.2]
+        additional_dependencies: [click==7.1.2, black==21.12b0]
         args:
           - "--target-version=py27"
           - "--target-version=py36"
