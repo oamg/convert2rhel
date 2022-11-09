@@ -9,7 +9,7 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     is able to get to the last point of the rollback.
     """
 
-    assert shell("yum remove -y subscription-manager").returncode == 0
+    assert shell("yum remove -y subscription-manager python3-syspurpose").returncode == 0
     system_version = platform.platform()
     if "oracle-7" in system_version or "centos-7" in system_version:
         prompt_amount = 2
