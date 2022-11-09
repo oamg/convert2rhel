@@ -3,7 +3,7 @@ import os
 import pytest
 
 
-SYSTEM_RELEASE = os.environ["SYSTEM_RELEASE"]
+SYSTEM_RELEASE = os.environ.get("SYSTEM_RELEASE")
 
 DISTRO_KERNEL_MAPPING = {
     "centos-7": {

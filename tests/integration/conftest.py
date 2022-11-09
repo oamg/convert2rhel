@@ -1,6 +1,5 @@
 import dataclasses
 import logging
-import pathlib
 import re
 import subprocess
 import sys
@@ -244,10 +243,10 @@ def get_system_release(shell):
         Alma Linux 8.4 => almalinux-8.4\n
         Rocky Linux 8.5 => rocky-8.5
     """
-    path = pathlib.Path("/etc/system-release")
+    path = Path("/etc/system-release")
 
     if not path.exists():
-        path = pathlib.Path("/etc/os-release")
+        path = Path("/etc/os-release")
         with open(path) as osrelease:
             os_release = {}
             for line in osrelease:
