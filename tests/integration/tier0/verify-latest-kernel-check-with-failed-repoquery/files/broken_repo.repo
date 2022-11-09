@@ -1,0 +1,5 @@
+[broken_repo]
+name=Broken repository for verification test purposes
+baseurl=http://download.eng.bos.redhat.com/beakerrepos/client/Fedor36/
+enabled=1
+gpgcheck=0
