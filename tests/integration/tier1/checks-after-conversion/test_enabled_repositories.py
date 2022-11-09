@@ -3,24 +3,39 @@ import platform
 from os.path import exists
 
 
+def _check_enabled_repos_rhel8(enabled_repos):
+    """Helper function to assert RHEL repositories."""
+    baseos_repo = "rhel-8-for-x86_64-baseos-rpms"
+    appstream_repo = "rhel-8-for-x86_64-appstream-rpms"
+
+    assert baseos_repo in enabled_repos
+    assert appstream_repo in enabled_repos
+
+
+def _check_eus_enabled_repos_rhel8(enabled_repos):
+    """Helper function to assert EUS repositories."""
+    baseos_repo = "rhel-8-for-x86_64-baseos-eus-rpms"
+    appstream_repo = "rhel-8-for-x86_64-appstream-eus-rpms"
+
+    assert baseos_repo in enabled_repos
+    assert appstream_repo in enabled_repos
+
+
 def test_enabled_repositories(shell):
     """Testing, if the EUS repostitories are enabled after conversion"""
     system_version = platform.platform()
     enabled_repos = shell("yum repolist").output
 
-    # Once we will decide to use EUS 8.6 we have to add them here as well
     try:
-        if "redhat-8.4" in system_version:
-            # Handle the special test case scenario where we do not use the premium account with EUS repositories
+        if "redhat-8.4" in system_version or "redhat-8.6" in system_version:
+            # Handle the special test case scenario where we do not use the
+            # premium account with EUS repositories
             if exists("/non_eus_repos_used"):
-                assert "rhel-8-for-x86_64-baseos-rpms" in enabled_repos
-                assert "rhel-8-for-x86_64-appstream-rpms" in enabled_repos
+                _check_enabled_repos_rhel8(enabled_repos)
             else:
-                assert "rhel-8-for-x86_64-appstream-eus-rpms" in enabled_repos
-                assert "rhel-8-for-x86_64-baseos-eus-rpms" in enabled_repos
-        elif "redhat-8.5" in system_version or "redhat-8.6" in system_version:
-            assert "rhel-8-for-x86_64-baseos-rpms" in enabled_repos
-            assert "rhel-8-for-x86_64-appstream-rpms" in enabled_repos
+                _check_eus_enabled_repos_rhel8(enabled_repos)
+        elif "redhat-8.5" in system_version:
+            _check_enabled_repos_rhel8(enabled_repos)
         elif "redhat-7.9" in system_version:
             assert "rhel-7-server-rpms/7Server/x86_64" in enabled_repos
     finally:

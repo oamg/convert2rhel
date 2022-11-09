@@ -56,7 +56,7 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
 # List of EUS minor versions supported
-EUS_MINOR_VERSIONS = ["8.4"]
+EUS_MINOR_VERSIONS = ["8.4", "8.6"]
 
 Version = namedtuple("Version", ["major", "minor"])
 

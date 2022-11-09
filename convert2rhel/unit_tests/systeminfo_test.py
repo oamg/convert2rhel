@@ -378,10 +378,11 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
         ("7.9", False),
         ("8.4", True),
         ("8.5", False),
-        ("8.6", False),
+        ("8.6", True),
         ("8.7", False),
         ("8.8", False),
         ("8.9", False),
+        ("8.10", False),
     ),
 )
 def test_corresponds_to_rhel_eus_release(releasever, expected):
