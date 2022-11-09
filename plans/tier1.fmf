@@ -251,7 +251,7 @@
   adjust:
     enabled: false
     when: >
-      distro == oraclelinux-8.4
+      distro == oraclelinux-8.4, oraclelinux-8.6
   discover+:
     test: checks-after-conversion
   prepare+:
