@@ -18,6 +18,7 @@ import getpass
 import json
 import logging
 import os
+import shutil
 import sys
 import unittest
 
@@ -405,11 +406,31 @@ def test_get_rpm_header(monkeypatch):
 
 
 class TestFindKeys:
+    class MockedRmtree(object):
+        def __init__(self, exception, real_rmtree):
+            self.called = 0
+            self.exception = exception
+            self.real_rmtree = real_rmtree
+
+        def __call__(self, *args, **kwargs):
+            # Fail on the first call
+            self.called += 1
+            if self.called == 1:
+                raise self.exception
+
+            return self.real_rmtree(*args, **kwargs)
+
     gpg_key = os.path.realpath(
         os.path.join(os.path.dirname(__file__), "../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
     )
 
     def test_find_keyid(self):
+        assert utils.find_keyid(self.gpg_key) == "fd431d51"
+
+    def test_find_keyid_race_in_gpg_cleanup(self, monkeypatch):
+        real_rmtree = shutil.rmtree
+        monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(OSError(2, "File not found"), real_rmtree))
+
         assert utils.find_keyid(self.gpg_key) == "fd431d51"
 
     def test_find_keyid_bad_file(self, tmpdir):
@@ -443,6 +464,30 @@ class TestFindKeys:
         ):
             utils.find_keyid(self.gpg_key)
 
+    def test_find_keyid_gpg_bad_keyring_and_race_deleting_tmp_dir(self, monkeypatch):
+        class MockedRunSubProcess(object):
+            def __init__(self):
+                self.called = 0
+
+            def __call__(self, *args, **kwargs):
+                # Fail on the second call
+                self.called += 1
+                if self.called == 2:
+                    return ("", 1)
+
+                return real_run_subprocess(*args, **kwargs)
+
+        real_run_subprocess = utils.run_subprocess
+        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+
+        real_rmtree = shutil.rmtree
+        monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(OSError(2, "File not found"), real_rmtree))
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Failed to read the temporary keyring with the rpm gpg key:.*"
+        ):
+            utils.find_keyid(self.gpg_key)
+
     def test_find_keyid_no_gpg_output(self, monkeypatch):
         class MockedRunSubProcess(object):
             def __init__(self):
@@ -462,6 +507,20 @@ class TestFindKeys:
         with pytest.raises(
             utils.ImportGPGKeyError, match="Unable to determine the gpg keyid for the rpm key file: %s" % self.gpg_key
         ):
+            utils.find_keyid(self.gpg_key)
+
+    @pytest.mark.parametrize(
+        ("exception", "exception_msg"),
+        (
+            (OSError(13, "Permission denied"), "Errno 13.*Permission denied"),
+            (Exception("Unanticipated problem"), "Unanticipated problem"),
+        ),
+    )
+    def test_find_keyid_problem_removing_directory(self, exception, exception_msg, monkeypatch):
+        real_rmtree = shutil.rmtree
+        monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(exception, real_rmtree))
+
+        with pytest.raises(exception.__class__, match=exception_msg):
             utils.find_keyid(self.gpg_key)
 
 
