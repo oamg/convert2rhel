@@ -1,6 +1,7 @@
 import os
 import platform
 
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
 from envparse import env
 
 
@@ -19,17 +20,20 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("yum install wget -y").returncode == 0
 
     # Install katello package for satellite
-    pkg_url = "https://dogfood.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-    pkg_dst = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
-    assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
-    assert shell("rpm -i {}".format(pkg_dst)).returncode == 0
+    assert (
+        shell(
+            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
+        ).returncode
+        == 0
+    )
+    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup").returncode == 0
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardoced repos from c2r as well
-    if "centos-8" in system or "oracle-8.4" in system:
+    if "centos-8" in system:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -79,7 +83,7 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     # Return repositories to their original location
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
-    if "centos-8" in system or "oracle-8.4" in system:
+    if "centos-8" in system:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Clean up

@@ -33,14 +33,13 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
         if system_version.major == 7:
             enable_repo_opt = "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms --enablerepo rhel-7-server-extras-rpms"
         elif system_version.major == 8:
-            if system_version.minor != 4:
-                enable_repo_opt = (
-                    "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
-                )
-            # for the future releases we will have to enable this also for the 8.6 versions
-            elif system_version.minor == 4:
+            if system_version.minor in (4, 6):
                 enable_repo_opt = (
                     "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
+                )
+            else:
+                enable_repo_opt = (
+                    "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
                 )
 
     with convert2rhel("-y --no-rpm-va --disable-submgr {} --debug".format(enable_repo_opt)) as c2r:
@@ -53,8 +52,9 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
             "--enable rhel-7-server-rpms --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms"
         )
     elif system_version.major == 8:
-        if system_version.minor != 4:
-            enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-rpms --enable rhel-8-for-x86_64-appstream-rpms"
-        elif system_version.minor == 4:
+        if system_version.minor in (4, 6):
             enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-eus-rpms --enable rhel-8-for-x86_64-appstream-eus-rpms"
+        else:
+            enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-rpms --enable rhel-8-for-x86_64-appstream-rpms"
+
     shell("yum-config-manager {}".format(enable_repo_opt))

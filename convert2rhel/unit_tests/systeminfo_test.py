@@ -15,12 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Required imports:
 import logging
 import os
 import shutil
-import socket
-import sys
 import time
 import unittest
 
@@ -37,7 +34,7 @@ from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+from six.moves import mock, urllib
 
 
 class TestSysteminfo(unittest.TestCase):
@@ -247,10 +244,23 @@ def test_get_release_ver_other(
 ):
     monkeypatch.setattr(systeminfo.SystemInfo, "_get_cfg_opt", mock.Mock(return_value=releasever_val))
     monkeypatch.setattr(systeminfo.SystemInfo, "_check_internet_access", mock.Mock(return_value=has_internet))
+    monkeypatch.setattr(
+        systeminfo.SystemInfo,
+        "_get_cfg_opt",
+        mock.Mock(return_value=releasever_val),
+    )
     if self_name:
-        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_name", mock.Mock(return_value=self_name))
+        monkeypatch.setattr(
+            systeminfo.SystemInfo,
+            "_get_system_name",
+            mock.Mock(return_value=self_name),
+        )
     if self_version:
-        monkeypatch.setattr(systeminfo.SystemInfo, "_get_system_version", mock.Mock(return_value=self_version))
+        monkeypatch.setattr(
+            systeminfo.SystemInfo,
+            "_get_system_version",
+            mock.Mock(return_value=self_version),
+        )
     # calling resolve_system_info one more time to enable our monkeypatches
     if exception:
         with pytest.raises(exception):
@@ -264,19 +274,24 @@ def test_get_release_ver_other(
 
 
 @pytest.mark.parametrize(
-    ("side_effect", "expected"),
+    ("side_effect", "expected", "message"),
     (
-        (None, True),
-        (socket.error, False),
+        (urllib.error.URLError(reason="fail"), False, "Failed to retrieve data from host"),
+        (None, True, "internet connection seems to be available"),
     ),
 )
-def test_check_internet_access(side_effect, expected, monkeypatch):
-    monkeypatch.setattr(systeminfo.socket.socket, "connect", mock.Mock(side_effect=side_effect))
+def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):
+    monkeypatch.setattr(
+        systeminfo.urllib.request,
+        "urlopen",
+        mock.Mock(side_effect=side_effect),
+    )
     # Have to initialize the logger since we are not constructing the
     # system_info object properly i.e: we are not calling `resolve_system_info()`
     system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
+    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
@@ -363,7 +378,7 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
         (7, 9, False),
         (8, 4, True),
         (8, 5, False),
-        (8, 6, False),
+        (8, 6, True),
         (8, 7, False),
         (8, 8, False),
         (8, 9, False),
@@ -390,3 +405,41 @@ def test_get_system_distribution_id(system_release_content, expected):
 @centos8
 def test_get_system_distribution_id_default_system_release_content(pretend_os):
     assert system_info._get_system_distribution_id() == None
+
+
+@pytest.mark.parametrize(
+    (
+        "submgr_enabled_repos",
+        "tool_opts_no_rhsm",
+        "tool_opts_enablerepo",
+        "expected",
+    ),
+    (
+        (
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+            False,
+            [],
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+        ),
+        (
+            ["rhel-repo1.repo", "rhel-repo2.repo"],
+            True,
+            ["cli-rhel-repo1.repo", "cli-rhel-repo2.repo"],
+            ["cli-rhel-repo1.repo", "cli-rhel-repo2.repo"],
+        ),
+    ),
+)
+def test_get_enabled_rhel_repos(
+    submgr_enabled_repos,
+    tool_opts_no_rhsm,
+    tool_opts_enablerepo,
+    expected,
+    global_tool_opts,
+    monkeypatch,
+):
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+    system_info.submgr_enabled_repos = submgr_enabled_repos
+    global_tool_opts.enablerepo = tool_opts_enablerepo
+    global_tool_opts.no_rhsm = tool_opts_no_rhsm
+
+    assert system_info.get_enabled_rhel_repos() == expected

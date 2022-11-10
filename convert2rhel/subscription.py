@@ -944,9 +944,8 @@ def download_rhsm_pkgs():
 
 
 def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
-    downloaddir = os.path.join(utils.DATA_DIR, "subscription-manager")
     utils.store_content_to_file(filename=repo_path, content=repo_content)
-    paths = utils.download_pkgs(pkgs_to_download, dest=downloaddir, reposdir=_RHSM_TMP_DIR)
+    paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
     exit_on_failed_download(paths)
 
 

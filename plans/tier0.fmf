@@ -56,3 +56,14 @@
   - name: install subscription manager
     how: ansible
     playbook: tests/ansible_collections/roles/install-submgr/main.yml
+
+/check_internet_connection:
+  discover+:
+    test: check-internet-connection
+
+/latest_kernel_check_failed_repoquery:
+    adjust+:
+        enabled: false
+        when: distro == oraclelinux-8.4
+    discover+:
+        test: verify-latest-kernel-check-with-failed-repoquery

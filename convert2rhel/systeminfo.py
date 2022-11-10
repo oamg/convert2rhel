@@ -18,12 +18,11 @@ import difflib
 import logging
 import os
 import re
-import socket
 import time
 
 from collections import namedtuple
 
-from six.moves import configparser
+from six.moves import configparser, urllib
 
 from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
@@ -32,6 +31,9 @@ from convert2rhel.utils import run_subprocess
 
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
+
+# The address that will be used to check if there is a internet connection.
+CHECK_INTERNET_CONNECTION_ADDRESS = "http://static.redhat.com/test/rhel-networkmanager.txt"
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -54,7 +56,7 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
 # List of EUS minor versions supported
-EUS_MINOR_VERSIONS = ["8.4"]
+EUS_MINOR_VERSIONS = ["8.4", "8.6"]
 
 Version = namedtuple("Version", ["major", "minor"])
 
@@ -332,12 +334,18 @@ class SystemInfo(object):
         _, return_code = run_subprocess(["rpm", "-q", name], print_cmd=False, print_output=False)
         return return_code == 0
 
-    # TODO write unit tests
     def get_enabled_rhel_repos(self):
-        """Return a tuple of repoids containing RHEL packages.
+        """Get a list of enabled repositories containing RHEL packages.
 
-        These are either the repos enabled through RHSM or the custom
-        repositories passed though CLI.
+        This function can return either the repositories enabled throught the RHSM tool during the conversion or, if
+        the user manually specified the repositories throught the CLI, it will return them based on the
+        `tool_opts.enablerepo` option.
+
+        .. note::
+            The repositories passed through the CLI have more priority than the ones get get from RHSM.
+
+        :return: A list of enabled repos to use during the conversion
+        :rtype: list[str]
         """
         # TODO:
         # if not self.submgr_enabled_repos:
@@ -347,37 +355,47 @@ class SystemInfo(object):
         #     )
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
-    def _check_internet_access(self, host="8.8.8.8", port=53, timeout=3):
+    def _check_internet_access(self):
         """Check whether or not the machine is connected to the internet.
 
-        This method will try to estabilish a socket connection through the
-        default host in the method signature (8.8.8.8). If it's connected
-        successfully, then we know that internet is accessible from the host.
+        This method will try to retrieve a web page on the Red Hat network that
+        we know to exist (http://static.redhat.com/test/rhel-networkmanager.txt).
+        If we can successfully access that page, then we decide we are connected
+        to the internet.
+
+        We check a web page because we will need working https to retrieve
+        packages from Red Hat infrastructure during the conversion.
 
         .. warnings::
             We might have some problems with this if the host machine is using
-            a NAT gateway to route the outbound requests
+            a NAT gateway to route the outbound requests to any other service.
 
-        .. seealso::
-            * Comparison of different methods to check internet connections: https://stackoverflow.com/a/33117579
-            * Redirecting IP addresses: https://superuser.com/questions/954665/how-to-redirect-route-ip-address-to-another-ip-address
+            DNS could also be used to redirect the URL we test to another address.
 
-        :param host: The host to establish a connection to. Defaults to "8.8.8.8".
-        :type host: str
-        :param port: The port for the connection. Defaults to 53.
-        :type port: int
-        :param timeout: The timeout in seconds for the connection. Defaults to 3.
-        :type port: int
-        :return: Return boolean indicating whether or not we have internet access.
+        :return: Return boolean indicating whether or not we have internet
+            access.
         :rtype: bool
         """
+        self.logger.info(
+            "Checking internet connectivity using address '%s'.",
+            CHECK_INTERNET_CONNECTION_ADDRESS,
+        )
         try:
-            self.logger.info("Checking internet connectivity using host '%s' and port '%s'." % (host, port))
-            socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
+            response.close()
+            self.logger.info(
+                "Successfully connected to address '%s', internet connection seems to be available."
+                % CHECK_INTERNET_CONNECTION_ADDRESS
+            )
             return True
-        except (socket.timeout, socket.error):
-            self.logger.warning("Couldn't connect to the host '%s'." % host)
+        except urllib.error.URLError as err:
+            self.logger.warning(
+                "There was a problem while trying to connect to '%s' to check internet connectivity. "
+                "This could be due to the host being offline, or the network blocking access to the endpoint... "
+                "Some checks and actions will be skipped.",
+                CHECK_INTERNET_CONNECTION_ADDRESS,
+            )
+            self.logger.debug("Failed to retrieve data from host, reason: %s", err.reason)
             return False
 
     def corresponds_to_rhel_eus_release(self):

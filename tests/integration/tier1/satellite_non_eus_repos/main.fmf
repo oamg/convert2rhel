@@ -1,6 +1,0 @@
-summary: test using satellite with non eus account for the EUS distro
-
-tier: 1
-
-test: |
-  pytest -svv

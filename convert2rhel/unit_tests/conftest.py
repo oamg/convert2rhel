@@ -274,6 +274,14 @@ def pretend_os(request, pkg_root, monkeypatch):
         value=lambda: True,
     )
 
+    # We won't depend on a test environment having an internet connection, so we
+    # need to mock _check_internet_access() for all tests
+    monkeypatch.setattr(
+        system_info,
+        "_check_internet_access",
+        value=lambda: True,
+    )
+
     system_info.resolve_system_info()
 
 

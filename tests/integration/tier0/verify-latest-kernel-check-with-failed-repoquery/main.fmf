@@ -1,0 +1,13 @@
+summary: Verify that failed repoquery call does not cause latest kernel check call.
+
+tier: 0
+
+tag+:
+  - kernel
+  - repository
+
+/latest_kernel_check_with_failed_repoquery:
+    tag+:
+        - latest_kernel_check_with_failed_repoquery
+    test: |
+        pytest -svv -m latest_kernel_check_with_failed_repoquery

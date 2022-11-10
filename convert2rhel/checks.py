@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 import itertools
 import logging
 import os
@@ -29,6 +28,7 @@ import rpm
 from convert2rhel import __version__ as installed_convert2rhel_version
 from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
+    _package_version_cmp,
     call_yum_cmd,
     compare_package_versions,
     get_installed_pkg_objects,
@@ -67,6 +67,7 @@ gpgkey=file://%s""" % (
 PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
+LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
     6: "2.6.32",
@@ -74,8 +75,46 @@ COMPATIBLE_KERNELS_VERS = {
     8: "4.18.0",
 }
 
+# Python 2.6 compatibility.
+# This code is copied from Pthon-3.10's functools module,
+# licensed under the Python Software Foundation License, version 2
+try:
+    from functools import cmp_to_key
+except ImportError:
 
-def perform_pre_checks():
+    def cmp_to_key(mycmp):
+        """Convert a cmp= function into a key= function"""
+
+        class K(object):
+            __slots__ = ["obj"]
+
+            def __init__(self, obj):
+                self.obj = obj
+
+            def __lt__(self, other):
+                return mycmp(self.obj, other.obj) < 0
+
+            def __gt__(self, other):
+                return mycmp(self.obj, other.obj) > 0
+
+            def __eq__(self, other):
+                return mycmp(self.obj, other.obj) == 0
+
+            def __le__(self, other):
+                return mycmp(self.obj, other.obj) <= 0
+
+            def __ge__(self, other):
+                return mycmp(self.obj, other.obj) >= 0
+
+            __hash__ = None
+
+        return K
+
+
+# End of PSF Licensed code
+
+
+def perform_system_checks():
     """Early checks after system facts should be added here."""
 
     check_custom_repos_are_valid()
@@ -156,7 +195,16 @@ def check_convert2rhel_latest():
     # and latest_available_version respectively, to compare **just** the version field.
     ver_compare = rpm.labelCompare(("0", installed_convert2rhel_version, "0"), ("0", latest_available_version[1], "0"))
     if ver_compare < 0:
-        if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
+        # Current and deprecated env var names
+        allow_older_envvar_names = ("CONVERT2RHEL_ALLOW_OLDER_VERSION", "CONVERT2RHEL_UNSUPPORTED_VERSION")
+        if any(envvar in os.environ for envvar in allow_older_envvar_names):
+            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" not in os.environ:
+                logger.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
+                    " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
+                    " instead."
+                )
+
             logger.warning(
                 "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                 "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
@@ -232,18 +280,20 @@ def check_tainted_kmods():
         multipath 20480 0 - Live 0x0000000000000000
         linear 20480 0 - Live 0x0000000000000000
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
-        system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<< Tainted
+        system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<<< Tainted
     """
     logger.task("Prepare: Checking if loaded kernel modules are not tainted")
     unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
     module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
         logger.critical(
-            "Tainted kernel module(s) detected. "
+            "Tainted kernel modules detected:\n  {0}\n"
             "Third-party components are not supported per our "
-            "software support policy\n{0}\n\n"
-            "Uninstall or disable the following module(s) and run convert2rhel "
-            "again to continue with the conversion:\n  {1}".format(LINK_KMODS_RH_POLICY, module_names)
+            "software support policy:\n {1}\n"
+            "Prevent the modules from loading by following {2}"
+            " and run convert2rhel again to continue with the conversion.".format(
+                module_names, LINK_KMODS_RH_POLICY, LINK_PREVENT_KMODS_FROM_LOADING
+            )
         )
     logger.info("No tainted kernel module is loaded.")
 
@@ -291,7 +341,9 @@ def check_custom_repos_are_valid():
         return
 
     output, ret_code = call_yum_cmd(
-        command="makecache", args=["-v", "--setopt=*.skip_if_unavailable=False"], print_output=False
+        command="makecache",
+        args=["-v", "--setopt=*.skip_if_unavailable=False"],
+        print_output=False,
     )
     if ret_code != 0:
         logger.critical(
@@ -304,26 +356,27 @@ def check_custom_repos_are_valid():
 
 
 def ensure_compatibility_of_kmods():
-    """Ensure if the host kernel modules are compatible with RHEL."""
+    """Ensure that the host kernel modules are compatible with RHEL.
+
+    :raises SystemExit: Interrupts the conversion because some kernel modules are not supported in RHEL.
+    """
     host_kmods = get_loaded_kmods()
     rhel_supported_kmods = get_rhel_supported_kmods()
     unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
-    if unsupported_kmods:
-        not_supported_kmods = "\n".join(
-            map(
-                lambda kmod: "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod),
-                unsupported_kmods,
+
+    # Validate the best case first. If we don't have any unsupported_kmods, this means
+    # that everything is compatible and good to go.
+    if not unsupported_kmods:
+        logger.debug("All loaded kernel modules are available in RHEL.")
+    else:
+        logger.critical(
+            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
+            "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
+            "If this message appears again after doing the above, prevent the modules from loading by following {1}"
+            " and run convert2rhel again to continue with the conversion.".format(
+                "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
             )
         )
-        logger.critical(
-            (
-                "The following kernel modules are not supported in RHEL:\n{kmods}\n"
-                "Make sure you have updated the kernel to the latest available version and rebooted the system. "
-                "Remove the unsupported modules and run convert2rhel again to continue with the conversion."
-            ).format(kmods=not_supported_kmods, system=system_info.name)
-        )
-    else:
-        logger.info("Kernel modules are compatible.")
 
 
 def validate_package_manager_transaction():
@@ -421,64 +474,46 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     kernel pkg do not deprecate kernel modules we only select
     the most recent ones.
 
-    All RHEL kmods packages starts with kernel* or kmod*
+    .. note::
+        All RHEL kmods packages starts with kernel* or kmod*
 
-    For example, we have the following packages list:
-        kernel-core-0:4.18.0-240.10.1.el8_3.x86_64
-        kernel-core-0:4.19.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
-    ==> (output of this function will be)
-        kernel-core-0:4.19.0-240.10.1.el8_3.x86_64
-        kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
+    For example, consider the following list of packages::
 
-    _repos_version_key extract the version of a package
-        into the tuple, i.e.
-        kernel-core-0:4.18.0-240.10.1.el8_3.x86_64 ==>
-        (4, 15, 0, 240, 10, 1)
-
-
-    :type pkgs: Iterable[str]
-    :type pkgs_groups:
-        Iterator[
-            Tuple[
-                package_name_without_version,
-                Iterator[package_name, ...],
-                ...,
-            ]
+        list_of_pkgs = [
+            'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64',
+            'kernel-core-0:4.19.0-240.10.1.el8_3.x86_64',
+            'kmod-debug-core-0:4.18.0-240.10.1.el8_3.x86_64',
+            'kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64
         ]
+
+    And when this function gets called with that same list of packages,
+    we have the following output::
+
+        result = get_most_recent_unique_kernel_pkgs(pkgs=list_of_pkgs)
+        print(result)
+        # (
+        #   'kernel-core-0:4.19.0-240.10.1.el8_3.x86_64',
+        #   'kmod-debug-core-0:4.18.0-245.10.1.el8_3.x86_64'
+        # )
+
+    :param pkgs: A list of package names to be analyzed.
+    :type pkgs: list[str]
+    :return: A tuple of packages name sorted and normalized
+    :rtype: tuple[str]
     """
 
     pkgs_groups = itertools.groupby(sorted(pkgs), lambda pkg_name: pkg_name.split(":")[0])
-    return tuple(
-        max(distinct_kernel_pkgs[1], key=_repos_version_key)
-        for distinct_kernel_pkgs in pkgs_groups
-        if distinct_kernel_pkgs[0].startswith(("kernel", "kmod"))
-    )
-
-
-def _repos_version_key(pkg_name):
-    try:
-        rpm_version = KERNEL_REPO_RE.search(pkg_name).group("version")
-    except AttributeError:
-        logger.critical(
-            "Unexpected package:\n%s\n is a source of kernel modules.",
-            pkg_name,
-        )
-    else:
-        return tuple(
-            map(
-                _convert_to_int_or_zero,
-                KERNEL_REPO_VER_SPLIT_RE.split(rpm_version),
+    list_of_sorted_pkgs = []
+    for distinct_kernel_pkgs in pkgs_groups:
+        if distinct_kernel_pkgs[0].startswith(("kernel", "kmod")):
+            list_of_sorted_pkgs.append(
+                max(
+                    distinct_kernel_pkgs[1],
+                    key=cmp_to_key(_package_version_cmp),
+                )
             )
-        )
 
-
-def _convert_to_int_or_zero(s):
-    try:
-        return int(s)
-    except ValueError:
-        return 0
+    return tuple(list_of_sorted_pkgs)
 
 
 def get_rhel_kmods_keys(rhel_kmods_str):
@@ -492,11 +527,19 @@ def get_rhel_kmods_keys(rhel_kmods_str):
 
 
 def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
-    """Return a set of those installed kernel modules that are not available in RHEL repositories.
+    """Return a set of full paths to those installed kernel modules that are
+    not available in RHEL repositories.
 
-    Ignore certain kmods mentioned in the system configs. These kernel modules moved to kernel core, meaning that the
-    functionality is retained and we would be incorrectly saying that the modules are not supported in RHEL."""
-    return host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    Ignore certain kmods mentioned in the system configs. These kernel modules
+    moved to kernel core, meaning that the functionality is retained and we
+    would be incorrectly saying that the modules are not supported in RHEL.
+    """
+    unsupported_kmods_subpaths = host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    unsupported_kmods_full_paths = [
+        "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod)
+        for kmod in unsupported_kmods_subpaths
+    ]
+    return unsupported_kmods_full_paths
 
 
 def check_rhel_compatible_kernel_is_used():
@@ -557,7 +600,10 @@ def _bad_kernel_version(kernel_release):
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
-    kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path], print_output=False)
+    kernel_pkg, return_code = run_subprocess(
+        ["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path],
+        print_output=False,
+    )
     logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
 
     os_vendor = system_info.name.split()[0]
@@ -660,7 +706,7 @@ def is_loaded_kernel_latest():
         logger.warning("Skipping the check as no internet connection has been detected.")
         return
 
-    cmd = ["repoquery", "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
+    cmd = ["repoquery", '--setopt=exclude=""', "--quiet", "--qf", '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"']
 
     # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
     # instead of the system repositories located under /etc/yum.repos.d
