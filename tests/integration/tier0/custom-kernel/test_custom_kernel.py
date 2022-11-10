@@ -39,14 +39,15 @@ def install_custom_kernel(shell):
     Install CentOS kernel on Oracle Linux and vice versa to mimic the custom
     kernel that is not signed by the running OS official vendor.
     """
-    original_kernel, custom_kernel = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
+    _, custom_kernel = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
     kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
     if "centos-8.5" in SYSTEM_RELEASE:
-        # We have to remove this kernel-core package first, as the ones we try
-        # to install from Oracle Linux are the same version.
-        assert shell("yum remove %s -y" % original_kernel) == 0
+        # Reinstall the kernel custom kernel replacing the one that is installed
+        # on CentOS 8.5 that has the same version.
+        assert shell("dnf reinstall  %s -y" % custom_kernel) == 0
+    else:
+        assert shell("yum install %s -y" % custom_kernel).returncode == 0
 
-    assert shell("yum install %s -y" % custom_kernel).returncode == 0
     assert (
         shell(
             "grubby --set-default=/boot/vmlinuz-%s" % kernel_release,
@@ -72,7 +73,7 @@ def clean_up_custom_kernel(shell):
 
     assert (
         shell(
-            "grubby --set-default /boot/vmlinuz-%s" % original_kernel_release,
+            "grubby --set-default=/boot/vmlinuz-%s" % original_kernel_release,
         ).returncode
         == 0
     )
