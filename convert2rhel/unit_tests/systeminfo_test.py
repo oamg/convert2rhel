@@ -27,7 +27,7 @@ import pytest
 import six
 
 from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
-from convert2rhel.systeminfo import RELEASE_VER_MAPPING, system_info
+from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
 from convert2rhel.unit_tests.conftest import all_systems, centos8
@@ -373,20 +373,20 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 
 
 @pytest.mark.parametrize(
-    ("releasever", "expected"),
+    ("major", "minor", "expected"),
     (
-        ("7.9", False),
-        ("8.4", True),
-        ("8.5", False),
-        ("8.6", True),
-        ("8.7", False),
-        ("8.8", False),
-        ("8.9", False),
-        ("8.10", False),
+        (7, 9, False),
+        (8, 4, True),
+        (8, 5, False),
+        (8, 6, True),
+        (8, 7, False),
+        (8, 8, False),
+        (8, 9, False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(releasever, expected):
-    system_info.releasever = releasever
+def test_corresponds_to_rhel_eus_release(major, minor, expected):
+    version = Version(major, minor)
+    system_info.version = version
     assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
