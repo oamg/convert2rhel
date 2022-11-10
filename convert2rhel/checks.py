@@ -369,15 +369,12 @@ def ensure_compatibility_of_kmods():
     if not unsupported_kmods:
         logger.debug("All loaded kernel modules are available in RHEL.")
     else:
-        not_supported_kmods = "\n".join(
-            "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod) for kmod in unsupported_kmods
-        )
         logger.critical(
             "The following loaded kernel modules are not available in RHEL:\n{0}\n"
             "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
             "If this message appears again after doing the above, prevent the modules from loading by following {1}"
             " and run convert2rhel again to continue with the conversion.".format(
-                not_supported_kmods, LINK_PREVENT_KMODS_FROM_LOADING
+                "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
             )
         )
 
