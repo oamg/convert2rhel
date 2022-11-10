@@ -49,7 +49,7 @@ def install_custom_kernel(shell):
     assert shell("yum install %s -y" % custom_kernel).returncode == 0
     assert (
         shell(
-            "grubby --set-default /boot/vmlinuz-%s" % kernel_release,
+            "grubby --set-default=/boot/vmlinuz-%s" % kernel_release,
         ).returncode
         == 0
     )
