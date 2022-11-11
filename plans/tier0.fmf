@@ -61,18 +61,19 @@
   discover+:
     test: check-internet-connection
 
-/latest_kernel_check_failed_repoquery:
+
+/latest_kernel_check:
     discover+:
-        test: verify-latest-kernel-check-with-failed-repoquery
+        test: latest-kernel-check
 
 /sub_man_rollback:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-8-latest and
-      distro != centos-8.4
-  discover+:
-      test: sub-man-rollback
+    adjust+:
+        - enabled: false
+          when: >
+            distro != centos-8-latest and
+            distro != centos-8.4
+    discover+:
+        test: sub-man-rollback
 
 /custom_kernel:
   discover+:
