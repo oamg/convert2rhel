@@ -71,12 +71,12 @@
         test: verify-latest-kernel-check-with-failed-repoquery
 
 /sub_man_rollback:
-    adjust+:
-        enabled: false
-        when: >
-            distro != centos-8-latest
-    discover+:
-        test: sub-man-rollback
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-8-latest
+  discover+:
+      test: sub-man-rollback
 
 /custom_kernel:
   discover+:
