@@ -9,33 +9,33 @@ DISTRO_KERNEL_MAPPING = {
     "centos-7": {
         "original_kernel": "kernel-3.10.0-1160.80.1.el7.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.76.1.0.1.el7.x86_64.rpm",
-        "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)"
+        "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)",
     },
     "centos-8.4": {
         "original_kernel": "kernel-core-4.18.0-305.25.1.el8_4.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/4/baseos/base/x86_64/getPackage/kernel-core-4.18.0-305.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-305.el8.x86_64) 8.4"
+        "grub_substring": "Oracle Linux Server (4.18.0-305.el8.x86_64) 8.4",
     },
     "centos-8.5": {
         "original_kernel": "kernel-core-4.18.0-348.7.1.el8_5.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5"
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
     },
     "oracle-7": {
         "original_kernel": "kernel-3.10.0-1160.80.1.0.1.el7.x86_64",
         "custom_kernel": "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64"
+        "grub_substring": "Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64",
     },
     "oracle-8.4": {
         "original_kernel": "kernel-uek-5.4.17-2102.204.4.4.el8uek.x86_64",
         "custom_kernel": " https://vault.centos.org/centos/8.4.2105/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-305.25.1.el8_4.x86_64.rpm",
-        "grub_substring": "CentOS Linux (4.18.0-305.25.1.el8_4.x86_64) 8"
+        "grub_substring": "CentOS Linux (4.18.0-305.25.1.el8_4.x86_64) 8",
     },
     # Install CentOS 8.5 kernel
     "oracle-8.6": {
         "original_kernel": "kernel-uek-5.4.17-2136.307.3.1.el8uek.x86_64",
         "custom_kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-348.7.1.el8_5.x86_64.rpm",
-        "grub_substring": "CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8"
+        "grub_substring": "CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8",
     },
 }
 
@@ -47,17 +47,17 @@ def install_custom_kernel(shell):
     """
 
     _, custom_kernel, grub_substring = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
-    #kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
-    #if "centos-8.5" in SYSTEM_RELEASE:
-        # Reinstall the kernel custom kernel replacing the one that is installed
-        # on CentOS 8.5 that has the same version.
-        #assert shell("dnf reinstall  %s -y" % custom_kernel) == 0
-    #else:
-        #The reinstall did not work as it said that package is not installed thus cannot uninstall it
-        # We have to remove this kernel-core package first, as the ones we try
-        # to install from Oracle Linux are the same version.
-        # weird..
-        #assert shell("yum remove %s -y" % original_kernel) == 0
+    # kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
+    # if "centos-8.5" in SYSTEM_RELEASE:
+    # Reinstall the kernel custom kernel replacing the one that is installed
+    # on CentOS 8.5 that has the same version.
+    # assert shell("dnf reinstall  %s -y" % custom_kernel) == 0
+    # else:
+    # The reinstall did not work as it said that package is not installed thus cannot uninstall it
+    # We have to remove this kernel-core package first, as the ones we try
+    # to install from Oracle Linux are the same version.
+    # weird..
+    # assert shell("yum remove %s -y" % original_kernel) == 0
 
     assert shell("yum install %s -y" % custom_kernel).returncode == 0
 
@@ -81,7 +81,6 @@ def clean_up_custom_kernel(shell, original_kernel_uname):
     original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
     custom_kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "")
     assert shell("rpm -e %s" % custom_kernel_release).returncode == 0
-
 
     # Install back the CentOS 8.5 original kernel
     if "centos-8.5" in SYSTEM_RELEASE:
