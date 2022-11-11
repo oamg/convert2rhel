@@ -667,8 +667,7 @@ def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
 @pytest.mark.parametrize(
     ("file", "filepath", "message"),
     (
-        (False, None, "Could't remove restored file"),
-        (False, "/invalid/path", "Could't remove restored file /invalid/path"),
+        (False, "/invalid/path", "Couldn't remove restored file /invalid/path"),
         (True, "filename", "File %s removed."),
     ),
 )

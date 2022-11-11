@@ -2,20 +2,7 @@ import re
 import socket
 
 from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL
-
-
-# Replace urls in rhsm.conf file to the satellite server
-def replace_urls_rhsm():
-    with open("/etc/rhsm/rhsm.conf", "r+") as f:
-        file = f.read()
-        # Replacing the urls
-        file = re.sub("hostname = .*", "hostname = {}".format(SATELLITE_URL), file)
-        file = re.sub("baseurl = .*", "baseurl = https://{}/pulp/repos".format(SATELLITE_URL), file)
-
-        # Setting the position to the top of the page to insert data
-        f.seek(0)
-        f.write(file)
-        f.truncate()
+from envparse import env
 
 
 # Configure and limit connection to the satellite server only
@@ -45,10 +32,16 @@ def test_prepare_system(shell):
     )
     assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
-    replace_urls_rhsm()
+    shell("rm -rf /etc/yum.repos.d/*")
+
+    # Subscribe system
+    assert (
+        shell(
+            ("subscription-manager register --org={} --activationkey={}").format(env.str("SATELLITE_ORG"), "centos7")
+        ).returncode
+        == 0
+    )
 
     configure_connection()
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
-
-    shell("rm -rf /etc/yum.repos.d/*")

@@ -328,8 +328,8 @@ class RestorableFile(object):
         try:
             os.remove(self.filepath)
             loggerinst.debug("File %s removed." % self.filepath)
-        except (OSError, IOError, TypeError):
-            loggerinst.debug("Could't remove restored file %s" % self.filepath)
+        except (OSError, IOError):
+            loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
 
 
 class RestorablePackage(object):

@@ -314,7 +314,6 @@ class TestMain(unittest.TestCase):
         intended_call_order["replace_subscription_manager"] = 0
         intended_call_order["verify_rhsm_installed"] = 0
         intended_call_order["install"] = 0
-
         intended_call_order["remove_repofile_pkgs"] = 1
 
         # Do not expect this one to be called - related to RHSM
@@ -322,9 +321,7 @@ class TestMain(unittest.TestCase):
         intended_call_order["get_rhel_repoids"] = 0
         intended_call_order["check_needed_repos_availability"] = 0
         intended_call_order["disable_repos"] = 0
-
         intended_call_order["enable_repos"] = 0
-
         intended_call_order["perform_pre_ponr_checks"] = 1
 
         # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
