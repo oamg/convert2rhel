@@ -443,3 +443,13 @@ def test_get_enabled_rhel_repos(
     global_tool_opts.no_rhsm = tool_opts_no_rhsm
 
     assert system_info.get_enabled_rhel_repos() == expected
+
+
+@centos8
+def test_print_system_information(pretend_os, caplog):
+    system_info.print_system_information()
+
+    assert "CentOS Linux" in caplog.records[-4].message
+    assert "8.4" in caplog.records[-3].message
+    assert "x86_64" in caplog.records[-2].message
+    assert "centos-8-x86_64.cfg" in caplog.records[-1].message

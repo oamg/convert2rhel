@@ -126,6 +126,8 @@ class SystemInfo(object):
         self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
 
+    def print_system_information(self):
+        """Print system related information."""
         self.logger.info("%-20s %s" % ("Name:", self.name))
         self.logger.info("%-20s %d.%d" % ("OS version:", self.version.major, self.version.minor))
         self.logger.info("%-20s %s" % ("Architecture:", self.arch))
