@@ -713,67 +713,20 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
             ["--password", ""],
         ),
         (
-            ["--password", ("\\)(*&^%f %##@^%&*&^(",)],
-            frozenset("--password"),
-            ["--password", "*****"]
-        )
+            ["--password", "\\)(*&^%f %##@^%&*&^(", "--activationkey", "\\)(*&^%f %##@^%&*&^("],
+            frozenset(("--password", "--activationkey")),
+            ["--password", "*****", "--activationkey", "*****"],
+        ),
+        (
+            ["-p", "\\)(*&^%f %##@^%&*&^(", "-k", "\\)(*&^%f %##@^%&*&^("],
+            frozenset(("-p", "-k")),
+            ["-p", "*****", "-k", "*****"],
+        ),
     ),
 )
 def test_hide_secrets(arguments, secret_args, expected):
     sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
     assert sanitazed_cmd == expected
-    
-def test_hide_secrets_explicit(secret):
-    test_cmd = [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--password",
-        secret,
-        "--org=0123",
-        "--activationkey=%s" % secret,
-    ]
-    sanitized_cmd = utils.hide_secrets(test_cmd)
-    assert sanitized_cmd == [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--password",
-        "*****",
-        "--org=0123",
-        "--activationkey=*****",
-    ]
-
-
-@pytest.mark.parametrize(
-    ("secret",),
-    (
-        ("my favourite password",),
-        ("\\)(*&^%f %##@^%&*&^(",),
-        (" ",),
-        ("",),
-    ),
-)
-def test_hide_secrets_shorthand(secret):
-    test_cmd = [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "-p",
-        secret,
-        "--org=0123",
-        "-k=%s" % secret,
-    ]
-    sanitized_cmd = utils.hide_secrets(test_cmd)
-    assert sanitized_cmd == [
-        "register",
-        "--force",
-        "--username=jdoe",
-        "--password",
-        "*****",
-        "--org=0123",
-        "--activationkey=*****",
-    ]
 
 
 def test_hide_secrets_default():
@@ -848,6 +801,7 @@ def test_hide_secret_unexpected_input(caplog):
     assert len(caplog.records) == 1
     assert caplog.records[-1].levelname == "FILE"
     assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
+
 
 @pytest.mark.parametrize(
     ("nested_dict", "expected"),
