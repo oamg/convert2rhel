@@ -67,3 +67,11 @@
         when: distro == oraclelinux-8.4
     discover+:
         test: verify-latest-kernel-check-with-failed-repoquery
+
+/sub_man_rollback:
+    adjust+:
+        enabled: false
+        when: >
+            distro != centos-8-latest
+    discover+:
+        test: sub-man-rollback

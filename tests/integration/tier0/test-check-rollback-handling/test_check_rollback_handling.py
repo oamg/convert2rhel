@@ -87,12 +87,16 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     Verify that usermode, rhn-setup and os-release packages are not removed.
     """
     install_pkg(shell)
-    if "oracle-7" in booted_os or "centos-7" in booted_os:
+    if "oracle-7" in booted_os:
         prompt_amount = 3
+    elif "centos-7" in booted_os:
+        # additional question about the removal of python-syspurpose
+        prompt_amount = 4
     elif "oracle-8" in booted_os:
         prompt_amount = 3
     elif "centos-8" in booted_os:
-        prompt_amount = 3
+        # additional question about the removal of python3-syspurpose
+        prompt_amount = 4
 
     with convert2rhel(
         ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(

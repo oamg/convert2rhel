@@ -60,7 +60,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     elif "oracle-8" in system_version:
         prompt_amount = 2
     elif "centos-8" in system_version:
-        prompt_amount = 3
+        prompt_amount = 4
     # If custom module is not loaded the conversion is not inhibited.
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
