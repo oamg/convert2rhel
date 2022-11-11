@@ -1,0 +1,20 @@
+summary: Rollback of the removed subscription-manager packages
+description: |
+    When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+    removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+    backed up and re-installed during the rollback together with the certificate.
+
+tier: 0
+
+tag+:
+    - certificate
+    - subscription-manager
+
+require:
+    - subscription-manager
+
+/sub_man_rollback:
+    tag+:
+        - sub-man-rollback
+    test: |
+      pytest -svv -m sub_man_rollback
