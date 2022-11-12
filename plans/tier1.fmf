@@ -23,9 +23,11 @@
 /rhsm_non_eus:
   adjust:
     enabled: false
+    # TODO EUS Bump disabled version
     when: >
       distro != centos-8.4 and
-      distro != oraclelinux-8.4
+      distro != oraclelinux-8.4 and
+      distro != oraclelinux-8.6
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -245,17 +247,18 @@
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /system_up_to_date:
-  # On Oracle Linux 8.4 we do not have minor version repositories so we skip the check for up-to-date system.
+  # There are no minor version repositories for Oracle Linux EUS releases, so we skip the check for up-to-date system.
   # The other distributions (including latest Oracle Linux 8 ) have all the necessary repositories
   # to make the check possible.
   adjust:
     enabled: false
+    # TODO EUS Bump disabled version
     when: >
-      distro == oraclelinux-8.4
+      distro == oraclelinux-8.4, oraclelinux-8.6
   discover+:
     test: checks-after-conversion
   prepare+:
-  - name: preapre non latest kernel
+  - name: prepare non latest kernel
     how: shell
     script: pytest -svv tests/integration/tier1/system-up-to-date/install_non_latest_kernel.py
   - name: reboot machine
@@ -368,9 +371,10 @@
 /single_yum_transaction_mismatch_errors:
   adjust:
     enabled: false
+    # TODO EUS Bump disabled version
     when: >
-      distro != centos-8 and
-      distro != oraclelinux-8.6
+      distro != centos-8-latest and
+      distro != oraclelinux-8.7
   discover+:
     test: checks-after-conversion
   prepare+:

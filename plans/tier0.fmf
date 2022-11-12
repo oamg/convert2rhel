@@ -62,9 +62,11 @@
     test: check-internet-connection
 
 /latest_kernel_check_failed_repoquery:
-    adjust+:
+    adjust:
         enabled: false
-        when: distro == oraclelinux-8.4
+        # TODO EUS Bump disabled version
+        when: >
+            distro == oraclelinux-8.4, oraclelinux-8.6
     discover+:
         test: verify-latest-kernel-check-with-failed-repoquery
 
