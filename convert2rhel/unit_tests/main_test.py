@@ -593,7 +593,5 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
-    assert (
-        "Conversion process interrupted and manual user intervention will be necessary." in caplog.records[-1].message
-    )
+    assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-1].message
     assert update_rhsm_custom_facts_mock.call_count == 1
