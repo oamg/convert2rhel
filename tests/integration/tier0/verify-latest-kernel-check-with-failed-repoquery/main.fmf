@@ -1,6 +1,15 @@
-summary: Verify that failed repoquery call does not cause latest kernel check call.
+summary: Latest kernel check with failed repoquery
+description: |
+    Verify that failed repoquery call does not cause the latest kernel check to fail.
+
 
 tier: 0
+
+adjust+:
+    enabled: false
+    # TODO EUS Bump disabled version
+    when: >
+        distro == oraclelinux-8.4, oraclelinux-8.6
 
 tag+:
   - kernel
@@ -8,6 +17,6 @@ tag+:
 
 /latest_kernel_check_with_failed_repoquery:
     tag+:
-        - latest_kernel_check_with_failed_repoquery
+        - latest-kernel-check-with-failed-repoquery
     test: |
         pytest -svv -m latest_kernel_check_with_failed_repoquery
