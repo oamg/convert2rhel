@@ -126,6 +126,13 @@ class SystemInfo(object):
         self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
 
+    def print_system_information(self):
+        """Print system related information."""
+        self.logger.info("%-20s %s" % ("Name:", self.name))
+        self.logger.info("%-20s %d.%d" % ("OS version:", self.version.major, self.version.minor))
+        self.logger.info("%-20s %s" % ("Architecture:", self.arch))
+        self.logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
+
     @staticmethod
     def get_system_release_file_content():
         from convert2rhel import redhatrelease
@@ -135,7 +142,6 @@ class SystemInfo(object):
     def _get_system_name(self, system_release_content=None):
         content = self.system_release_file_content if not system_release_content else system_release_content
         name = re.search(r"(.+?)\s?(?:release\s?)?\d", content).group(1)
-        self.logger.info("%-20s %s" % ("Name:", name))
         return name
 
     def _get_system_version(self, system_release_content=None):
@@ -156,7 +162,6 @@ class SystemInfo(object):
             self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
         version = Version(int(match.group(1)), int(match.group(2)))
 
-        self.logger.info("%-20s %d.%d" % ("OS version:", version.major, version.minor))
         return version
 
     def _get_system_distribution_id(self, system_release_content=None):
@@ -187,7 +192,6 @@ class SystemInfo(object):
     def _get_architecture(self):
         arch, _ = utils.run_subprocess(["uname", "-i"], print_output=False)
         arch = arch.strip()  # Remove newline
-        self.logger.info("%-20s %s" % ("Architecture:", arch))
         return arch
 
     def _get_cfg_filename(self):
@@ -196,7 +200,6 @@ class SystemInfo(object):
             self.version.major,
             self.arch,
         )
-        self.logger.info("%-20s %s" % ("Config filename:", cfg_filename))
         return cfg_filename
 
     def _get_cfg_content(self):
@@ -461,12 +464,6 @@ class SystemInfo(object):
             "name": distribution_name,
             "version": "%s.%s" % (distribution_version.major, distribution_version.minor),
         }
-
-        printable_release_info = []
-        for key, value in release_info.items():
-            printable_release_info.append("%s: %s" % (key, value))
-
-        self.logger.info("Release Info: %s", " ".join(printable_release_info))
 
         return release_info
 
