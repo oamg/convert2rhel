@@ -35,6 +35,7 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+
 - &tests
   job: tests
   targets:
@@ -45,6 +46,16 @@ jobs:
       distros: [centos-8.4, centos-8-latest]
   use_internal_tf: True
   trigger: pull_request
-- <<: *tests
+  identifier: "tier0"
+  tmt_plan: "^(?!.*tier0)"
+
+- &tier1
+  <<: *tests
+  identifier: "tier1"
+  tmt_plan: "^(?!.*tier1)"
+
+- &main
+  <<: *tests
   trigger: commit
   branch: main
+
