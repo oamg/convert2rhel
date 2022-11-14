@@ -47,15 +47,14 @@ jobs:
   use_internal_tf: True
   trigger: pull_request
   identifier: "tier0"
-  tmt_plan: "^(?!.*tier0)"
+  tmt_plan: "tier0"
 
 - &tier1
   <<: *tests
   identifier: "tier1"
-  tmt_plan: "^(?!.*tier1)"
+  tmt_plan: "tier1"
 
 - &main
   <<: *tests
   trigger: commit
   branch: main
-
