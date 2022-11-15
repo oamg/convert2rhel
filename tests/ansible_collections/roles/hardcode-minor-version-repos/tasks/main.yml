@@ -1,2 +1,2 @@
 ---
-- include: centos-repos.yml
+- include_tasks: centos-repos.yml
