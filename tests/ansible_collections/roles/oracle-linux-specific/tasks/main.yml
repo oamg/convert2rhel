@@ -1,9 +1,13 @@
 ---
-- include: boot_standard_kernel.yml
+- include_tasks: boot_standard_kernel.yml
   when:
-    - not ansible_facts['distribution_version'] == "8.4"
+    - not ansible_facts['distribution_version'] == "8.4" and ansible_facts['distribution_version'] == "8.6"
 
-# For Oracle Linux 8.4 we need to install the kernel from the 8.4 repository
-- include: boot_standard_kernel_84.yml
+# For Oracle Linux EUS (8.4, 8.6, ..) we need to install the kernel from the respective repository
+- include_tasks: boot_standard_kernel_84.yml
   when:
     - ansible_facts['distribution_version'] == "8.4"
+
+- include_tasks: boot_standard_kernel_86.yml
+  when:
+    - ansible_facts['distribution_version'] == "8.6"
