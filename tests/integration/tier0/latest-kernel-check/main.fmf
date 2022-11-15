@@ -2,12 +2,6 @@ summary: Verify that failed repoquery call does not cause latest kernel check ca
 
 tier: 0
 
-adjust+:
-    enabled: false
-    # TODO EUS Bump disabled version
-    when: >
-        distro == oraclelinux-8.4, oraclelinux-8.6
-
 tag+:
     - latest-kernel-check
     - kernel

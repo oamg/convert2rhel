@@ -61,8 +61,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     backup_dir = "/tmp/config-backup"
     config = configparser.ConfigParser()
     config.read(yum_config)
-    #
-    exclude_option = r"exclude=.*kernel\n"
+    exclude_option = r"exclude=.*kernel kernel-core\n"
 
     assert shell(f"mkdir {backup_dir}").returncode == 0
 
@@ -70,9 +69,9 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     # If there is already an `exclude` section, append to the existing value
     if config.has_option("main", "exclude"):
         pre_existing_value = config.get("main", "exclude")
-        config.set("main", "exclude", f"{pre_existing_value} kernel")
+        config.set("main", "exclude", f"{pre_existing_value} kernel kernel-core")
     else:
-        config.set("main", "exclude", "kernel")
+        config.set("main", "exclude", "kernel kernel-core")
 
     with open(yum_config, "w") as configfile:
         config.write(configfile, space_around_delimiters=False)
