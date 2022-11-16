@@ -7,6 +7,6 @@
   # When Oracle Linux 8.7 is released, the "8.6" needs to change to "8.7" and the
   # "8.6" is to be moved to the condition below related to enabling RHEL 8 EUS repos
 - import_playbook: rhel8-repos.yml
-  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.6"
+  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.7"
 - import_playbook: rhel8-eus-repos.yml
-  when: ansible_facts['distribution_version'] == "8.4" or ansible_facts['distribution_version'] == "8.6"
+  when: ansible_facts['distribution_version'] == "8.4"

@@ -16,8 +16,6 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
 
     # Add a tainted repository with intentionally bad baseurl so the repoquery fails successfully.
     # For CentOS we are working with hardcoded repos in /usr/share/convert2rhel/repos/centos-8.{4,5}
-    # We are skipping (at the test metadata level) the test for Oracle Linux EUS version,
-    # as the repositories are not available at all
 
     # TODO after the #619 gets merged, squash condition to centos-8 only
     # TODO and copy to {centos_custom_reposdir}/{get_system_release}/
