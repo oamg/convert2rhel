@@ -601,11 +601,10 @@ def _bad_kernel_version(kernel_release):
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
+
     kernel_pkg, return_code = run_subprocess(
-        ["rpm", "-qf", "--qf", "%{NAME}", vmlinuz_path],
-        print_output=False,
+        ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", vmlinuz_path], print_output=False
     )
-    logger.debug("Booted kernel package name: {0}".format(kernel_pkg))
 
     os_vendor = system_info.name.split()[0]
     if return_code == 1:
@@ -616,13 +615,19 @@ def _bad_kernel_package_signature(kernel_release):
 
         return True
 
-    kernel_pkg_obj = get_installed_pkg_objects(kernel_pkg)[0]
+    version, release, arch, name = tuple(kernel_pkg.split("&"))
+    logger.debug("Booted kernel package name: {0}".format(name))
+
+    kernel_pkg_obj = get_installed_pkg_objects(name, version, release, arch)[0]
     kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
     bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
-    # e.g. Oracle Linux Server -> Oracle
+
+    # e.g. Oracle Linux Server -> Oracle or
+    #      Oracle Linux Server -> CentOS Linux
     if bad_signature:
         logger.warning("Custom kernel detected. The booted kernel needs to be signed by %s." % os_vendor)
         return True
+
     logger.debug("The booted kernel is signed by %s." % os_vendor)
     return False
 
