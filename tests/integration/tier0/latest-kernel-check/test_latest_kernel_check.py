@@ -1,6 +1,5 @@
 import configparser
 import platform
-import re
 
 import pytest
 
@@ -61,7 +60,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     backup_dir = "/tmp/config-backup"
     config = configparser.ConfigParser()
     config.read(yum_config)
-    exclude_option = r"exclude=.*kernel kernel-core\n"
+    exclude_option = "kernel kernel-core"
 
     assert shell(f"mkdir {backup_dir}").returncode == 0
 
@@ -76,7 +75,8 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     with open(yum_config, "w") as configfile:
         config.write(configfile, space_around_delimiters=False)
 
-    assert re.search(exclude_option, shell(f"cat {yum_config}").output)
+    assert config.has_option("main", "exclude")
+    assert exclude_option in config.get("main", "exclude")
 
     # Run the conversion and verify, that it goes past the latest kernel check
     # if so, inhibit the conversion
@@ -91,4 +91,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     assert shell(f"mv {backup_dir}/yum.conf {yum_config}").returncode == 0
     assert shell(f"rm -r {backup_dir}").returncode == 0
 
-    assert not re.search(exclude_option, shell(f"cat {yum_config}").output)
+    verify_config = configparser.ConfigParser()
+    verify_config.read(yum_config)
+    if verify_config.has_option("main", "exclude"):
+        assert exclude_option not in verify_config.get("main", "exclude")

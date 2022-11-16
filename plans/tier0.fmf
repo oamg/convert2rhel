@@ -1,65 +1,64 @@
 /basic_sanity_checks:
-  discover+:
-    test: basic-sanity-checks
+    discover+:
+        test: basic-sanity-checks
 
 /check_cve:
-  discover+:
-    test: check-cve-2022-1662
+    discover+:
+        test: check-cve-2022-1662
 
 /check_user_response:
-  discover+:
-    test: check-user-response
+    discover+:
+        test: check-user-response
 
 /check_custom_repo:
-  discover+:
-    test: check-custom-repo
-  prepare+:
-    - name: add custom repos
-      how: ansible
-      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+    discover+:
+        test: check-custom-repo
+    prepare+:
+        - name: add custom repos
+          how: ansible
+          playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
 
 
 /inhibit_if_kmods_is_not_supported:
-  discover+:
-    test: inhibit-if-kmods-is-not-supported
-  prepare+:
-  - name: copy kmod files to the test machine
-    how: ansible
-    playbook: tests/integration/tier0/inhibit-if-kmods-is-not-supported/ansible/main.yml
+    discover+:
+        test: inhibit-if-kmods-is-not-supported
+    prepare+:
+        - name: copy kmod files to the test machine
+          how: ansible
+          playbook: tests/integration/tier0/inhibit-if-kmods-is-not-supported/ansible/main.yml
 
 
 /inhibit_if_oracle_system_uses_not_standard_kernel:
-  adjust:
-    enabled: false
-    when: >
-      distro != oraclelinux-7 and
-      distro != oraclelinux-8
-  prepare+:
-    - name: install unsupported unbreakable kernel
-      how: ansible
-      playbook: tests/integration/tier0/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/install_unbreakable_kernel.yml
-  discover+:
-    test: inhibit-if-oracle-system-uses-not-standard-kernel
+    adjust+:
+        - enabled: false
+          when: >
+            distro != oraclelinux
+    prepare+:
+        - name: install unsupported unbreakable kernel
+          how: ansible
+          playbook: tests/integration/tier0/inhibit-if-oracle-system-uses-not-standard-kernel/ansible/install_unbreakable_kernel.yml
+    discover+:
+        test: inhibit-if-oracle-system-uses-not-standard-kernel
 
 /releasever_as_mapping:
-  discover+:
-    test: releasever-as-mapping
+    discover+:
+        test: releasever-as-mapping
 
 /check_rollback_handling:
-  discover+:
-    test: test-check-rollback-handling
+    discover+:
+        test: test-check-rollback-handling
 
 /backup_release:
-  discover+:
-    test: backup-release
-  prepare+:
-  - name: install subscription manager
-    how: ansible
-    playbook: tests/ansible_collections/roles/install-submgr/main.yml
+    discover+:
+        test: backup-release
+    prepare+:
+        - name: install subscription manager
+          how: ansible
+          playbook: tests/ansible_collections/roles/install-submgr/main.yml
 
 /check_internet_connection:
-  discover+:
-    test: check-internet-connection
+    discover+:
+        test: check-internet-connection
 
 
 /latest_kernel_check:
@@ -70,15 +69,14 @@
     adjust+:
         - enabled: false
           when: >
-            distro != centos-8-latest and
-            distro != centos-8.4
+            distro != centos-8
     discover+:
         test: sub-man-rollback
 
 /custom_kernel:
-  discover+:
-    test: custom-kernel
+    discover+:
+        test: custom-kernel
 
 /log_command_verification:
-  discover+:
-    test: log-command
+    discover+:
+        test: log-command
