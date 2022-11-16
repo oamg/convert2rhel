@@ -25,9 +25,7 @@
     enabled: false
     # TODO EUS Bump disabled version
     when: >
-      distro != centos-8.4 and
-      distro != oraclelinux-8.4 and
-      distro != oraclelinux-8.6
+      distro != centos-8.4
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -250,11 +248,6 @@
   # There are no minor version repositories for Oracle Linux EUS releases, so we skip the check for up-to-date system.
   # The other distributions (including latest Oracle Linux 8 ) have all the necessary repositories
   # to make the check possible.
-  adjust:
-    enabled: false
-    # TODO EUS Bump disabled version
-    when: >
-      distro == oraclelinux-8.4, oraclelinux-8.6
   discover+:
     test: checks-after-conversion
   prepare+:

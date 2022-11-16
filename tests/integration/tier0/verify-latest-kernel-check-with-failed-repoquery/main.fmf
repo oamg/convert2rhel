@@ -5,12 +5,6 @@ description: |
 
 tier: 0
 
-adjust+:
-    enabled: false
-    # TODO EUS Bump disabled version
-    when: >
-        distro == oraclelinux-8.4, oraclelinux-8.6
-
 tag+:
   - kernel
   - repository
