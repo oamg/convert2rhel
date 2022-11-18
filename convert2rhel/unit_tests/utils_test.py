@@ -712,11 +712,52 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
             ),
             ["--password", ""],
         ),
+        (
+            ["--password", "\\)(*&^%f %##@^%&*&^(", "--activationkey", "\\)(*&^%f %##@^%&*&^("],
+            frozenset(("--password", "--activationkey")),
+            ["--password", "*****", "--activationkey", "*****"],
+        ),
+        (
+            ["-p", "\\)(*&^%f %##@^%&*&^(", "-k", "\\)(*&^%f %##@^%&*&^("],
+            frozenset(("-p", "-k")),
+            ["-p", "*****", "-k", "*****"],
+        ),
     ),
 )
 def test_hide_secrets(arguments, secret_args, expected):
     sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
     assert sanitazed_cmd == expected
+
+
+def test_hide_secrets_default():
+    """Test that the default secret_args are sound."""
+    test_cmd = [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--password=Super@Secret@Password",
+        "-p=Super@Secret@Password",
+        "--activationkey=123",
+        "-k=123",
+        "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
+        "--no-rpm-va",
+        "--debug",
+        "--org=0123",
+    ]
+    sanitized_cmd = utils.hide_secrets(test_cmd)
+    assert sanitized_cmd == [
+        "register",
+        "--force",
+        "--username=jdoe",
+        "--password=*****",
+        "-p=*****",
+        "--activationkey=*****",
+        "-k=*****",
+        "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
+        "--no-rpm-va",
+        "--debug",
+        "--org=0123",
+    ]
 
 
 def test_hide_secrets_no_secrets():

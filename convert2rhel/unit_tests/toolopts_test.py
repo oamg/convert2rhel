@@ -474,3 +474,26 @@ UrlParts = namedtuple("UrlParts", ("scheme", "hostname", "port"))
 def test_validate_serverurl_parsing(url_parts, message):
     with pytest.raises(ValueError, match=message):
         convert2rhel.toolopts._validate_serverurl_parsing(url_parts)
+
+
+def test__log_command_used(caplog, monkeypatch):
+    obfuscation_string = "*" * 5
+    input_command = mock_cli_arguments(
+        ["--username", "uname", "--password", "123", "--activationkey", "456", "--token", "789"]
+    )
+    expected_command = mock_cli_arguments(
+        [
+            "--username",
+            "uname",
+            "--password",
+            obfuscation_string,
+            "--activationkey",
+            obfuscation_string,
+            "--token",
+            obfuscation_string,
+        ]
+    )
+    monkeypatch.setattr(sys, "argv", input_command)
+    convert2rhel.toolopts._log_command_used()
+
+    assert " ".join(expected_command) in caplog.records[-1].message
