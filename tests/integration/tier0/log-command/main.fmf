@@ -1,0 +1,12 @@
+summary: Passed command at the top of a log file
+description: |
+    Verify log file is generated and the passed command is in first line of the log file.
+
+tier: 0
+
+tag+:
+    - log-file
+    - log-command
+
+test: |
+  pytest -svv

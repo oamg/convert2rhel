@@ -283,6 +283,8 @@ class CLI(object):
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
+        _log_command_used()
+
         warn_on_unsupported_options()
 
         parsed_opts, _ = self._parser.parse_args()
@@ -429,6 +431,15 @@ def warn_on_unsupported_options():
             "See help (convert2rhel -h) for more information."
         )
         utils.ask_to_continue()
+
+
+def _log_command_used():
+    """We want to log the command used for convert2rhel to make it easier to know what command was used
+    when debugging the log files. Since we can't differentiate between the handlers we log to both stdout
+    and the logfile
+    """
+    command = " ".join(utils.hide_secrets(sys.argv))
+    loggerinst.info("convert2rhel command used:\n{0}".format(command))
 
 
 def options_from_config_files(cfg_path=None):
