@@ -1,7 +1,12 @@
 summary: check-if-rollback-is-finishing-up-properly
 
-environment+:
-    PROMPT_AMOUNT: 3
+adjust+:
+    - environment+:
+        PROMPT_AMOUNT: 3
+      when: distro == oraclelinux-7
+    - environment+:
+        PROMPT_AMOUNT: 4
+      when: distro == centos, oraclelinux-8
 
 tier: 0
 

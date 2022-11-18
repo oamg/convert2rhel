@@ -21,14 +21,14 @@ def test_skip_kernel_check(shell, convert2rhel):
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        if "centos-7" in SYSTEM_RELEASE or "oracle-7" in SYSTEM_RELEASE:
+        if SYSTEM_RELEASE in ("centos-7", "oracle-7"):
             c2r.expect("Could not find any kernel from repositories to compare against the loaded kernel.")
         else:
             c2r.expect("Could not find any kernel-core from repositories to compare against the loaded kernel.")
@@ -37,7 +37,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
     with convert2rhel(
-        ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -87,7 +87,7 @@ def test_system_not_updated(shell, convert2rhel):
 
     # Run utility until the reboot
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

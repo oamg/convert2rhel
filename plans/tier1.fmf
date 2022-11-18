@@ -121,28 +121,24 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_all_submgr_pkgs:
-    discover+:
-        test: checks-after-conversion
-    adjust+:
-        - environment+:
-            PROMPT_AMOUNT: 2
-          when: distro == centos-7, oraclelinux
-        - environment+:
-            PROMPT_AMOUNT: 1
-          when: distro == centos-8-latest
-    prepare+:
-        - name: test no sub manager installed
-          how: shell
-          script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
-        - name: install subscription manager
-          how: ansible
-          playbook: tests/ansible_collections/roles/install-submgr/main.yml
-        - name: main conversion preparation
-          how: shell
-          script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
-        - name: reboot after conversion
-          how: ansible
-          playbook: tests/ansible_collections/roles/reboot/main.yml
+      discover+:
+          test: checks-after-conversion
+      adjust+:
+          - environment+:
+              PROMPT_AMOUNT: 2
+      prepare+:
+          - name: test no sub manager installed
+            how: shell
+            script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
+          - name: install subscription manager
+            how: ansible
+            playbook: tests/ansible_collections/roles/install-submgr/main.yml
+          - name: main conversion preparation
+            how: shell
+            script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
+          - name: reboot after conversion
+            how: ansible
+            playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /resolve_dependency:
     discover+:

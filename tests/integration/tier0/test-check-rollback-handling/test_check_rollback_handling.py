@@ -62,7 +62,7 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    if "oracle-7" in SYSTEM_RELEASE or "centos-7" in SYSTEM_RELEASE:
+    if SYSTEM_RELEASE in ("oracle-7", "centos-7"):
         # Use 'Ctrl + c' first to check for unexpected behaviour
         # of the rollback feature after process termination
         c2r.sendcontrol("c")
@@ -89,7 +89,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     install_pkg(shell)
     prompt_amount = int(os.environ["PROMPT_AMOUNT"])
     with convert2rhel(
-        ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
+        "--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -144,7 +144,7 @@ def test_terminate_registration_start(convert2rhel):
     Verify that c2r goes successfully through the rollback.
     """
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -169,7 +169,7 @@ def test_terminate_on_password_prompt(convert2rhel):
     Send termination signal on the user prompt for password.
     Verify that c2r goes successfully through the rollback.
     """
-    with convert2rhel(("-y --no-rpm-va --username {}").format(env.str("RHSM_USERNAME"))) as c2r:
+    with convert2rhel("-y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
         c2r.expect("Password:")
         terminate_and_assert_good_rollback(c2r)
 
@@ -180,7 +180,7 @@ def test_terminate_on_subscription_prompt(convert2rhel):
     Verify that c2r goes successfully through the rollback.
     """
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

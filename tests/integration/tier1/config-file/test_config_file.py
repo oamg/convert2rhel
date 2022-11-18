@@ -49,7 +49,7 @@ def test_user_path_cli_priority(convert2rhel):
     config = [Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]
     create_files(config)
 
-    with convert2rhel(("--no-rpm-va --password password --debug")) as c2r:
+    with convert2rhel("--no-rpm-va --password password --debug") as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect(
             "WARNING - You have passed either the RHSM password or activation key through both the command line and"
@@ -68,7 +68,7 @@ def test_user_path_pswd_file_priority(convert2rhel):
     ]
     create_files(config)
 
-    with convert2rhel(('--no-rpm-va -f "~/password_file" --debug')) as c2r:
+    with convert2rhel('--no-rpm-va -f "~/password_file" --debug') as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
         c2r.expect(
@@ -122,14 +122,12 @@ def test_std_paths_priority(convert2rhel):
 
 
 def test_conversion(convert2rhel):
-    activation_key = ("[subscription_manager]\nactivation_key = {}").format(env.str("RHSM_KEY"))
-    config = [
-        Config("~/.convert2rhel.ini", ("[subscription_manager]\nactivation_key = {}").format(env.str("RHSM_KEY")))
-    ]
+    activation_key = "[subscription_manager]\nactivation_key = {}".format(env.str("RHSM_KEY"))
+    config = [Config("~/.convert2rhel.ini", "[subscription_manager]\nactivation_key = {}".format(env.str("RHSM_KEY")))]
     create_files(config)
 
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} -o {} --debug").format(
+        "-y --no-rpm-va --serverurl {} -o {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_ORG"),
         )

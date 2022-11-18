@@ -1,5 +1,7 @@
 import os
 
+from conftest import SYSTEM_RELEASE
+
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
     """TODO better description and function name"""

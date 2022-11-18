@@ -17,7 +17,7 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     with convert2rhel(
-        ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

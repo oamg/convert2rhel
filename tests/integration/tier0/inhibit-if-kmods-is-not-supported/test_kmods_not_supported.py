@@ -82,7 +82,7 @@ def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
-    if "oracle-7" not in SYSTEM_RELEASE and "centos-7" not in SYSTEM_RELEASE:
+    if SYSTEM_RELEASE in ("oracle-7", "centos-7"):
         # Force load the kernel module
         assert shell("modprobe -f -v bonding").returncode == 0
         # Check for force loaded modules being flagged FE in /proc/modules

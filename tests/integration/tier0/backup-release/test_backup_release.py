@@ -38,7 +38,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )
@@ -63,7 +63,7 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
 
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         ),
@@ -111,7 +111,7 @@ def test_missing_system_release(shell, convert2rhel):
     assert shell("mv /etc/system-release /tmp/s_backup/").returncode == 0
 
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug").format(
+        "-y --no-rpm-va -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )

@@ -19,6 +19,9 @@
           playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
 
 /inhibit_if_kmods_is_not_supported:
+    adjust+:
+        - enabled: false
+          when: distro == centos-7, oraclelinux-7
     prepare+:
         - name: copy kmod files to the test machine
           how: ansible
