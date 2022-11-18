@@ -42,8 +42,9 @@ jobs:
     epel-7-x86_64:
       distros: [centos-7, oraclelinux-7]
     epel-8-x86_64:
-      # TODO add oraclelinux-8.6 when the 8.7 is officially out
-      distros: [centos-8.4, centos-8-latest]
+      # TODO switch oraclelinux-8.6 to oraclelinux-8.7,
+      # when the image is available on TF
+      distros: [centos-8.4, centos-8-latest, oraclelinux-8.6]
   use_internal_tf: True
   trigger: pull_request
   identifier: "tier0"
