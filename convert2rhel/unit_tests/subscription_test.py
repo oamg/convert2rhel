@@ -271,48 +271,78 @@ class TestSubscription(unittest.TestCase):
             "No packages related to subscription-manager installed." in subscription.loggerinst.info_msgs[-1]
         )
 
-    @unit_tests.mock(logging.Logger, "info", LogMocked())
-    @unit_tests.mock(os.path, "isdir", lambda x: True)
-    @unit_tests.mock(os, "listdir", lambda x: ["filename"])
-    @unit_tests.mock(
-        pkghandler,
-        "call_yum_cmd",
-        lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 0),
-    )
-    @unit_tests.mock(pkghandler, "filter_installed_pkgs", DumbCallable())
-    @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
-    @unit_tests.mock(backup.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
-    @unit_tests.mock(subscription, "track_installed_submgr_pkgs", DumbCallable())
-    def test_install_rhel_subscription_manager(self):
-        subscription.install_rhel_subscription_manager()
-        self.assertEqual(pkghandler.get_pkg_names_from_rpm_paths.called, 1)
-        self.assertTrue("\nPackages installed:\n" in logging.Logger.info.msg)
-        self.assertEqual(subscription.track_installed_submgr_pkgs.called, 1)
-
-    @unit_tests.mock(logging.Logger, "warning", LogMocked())
-    @unit_tests.mock(os.path, "isdir", lambda x: True)
-    @unit_tests.mock(os, "listdir", lambda x: "")
-    @unit_tests.mock(subscription, "SUBMGR_RPMS_DIR", "")
-    def test_install_rhel_subscription_manager_without_packages(self):
-        subscription.install_rhel_subscription_manager()
-        self.assertTrue("No RPMs found" in logging.Logger.warning.msg)
-
-    @unit_tests.mock(os, "listdir", lambda x: [":w"])
-    @unit_tests.mock(
-        pkghandler,
-        "call_yum_cmd",
-        lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 1),
-    )
-    @unit_tests.mock(pkghandler, "filter_installed_pkgs", lambda x: ["test"])
-    @unit_tests.mock(pkghandler, "get_pkg_names_from_rpm_paths", lambda x: ["test"])
-    def test_install_rhel_subscription_manager_unable_to_install(self):
-        self.assertRaises(SystemExit, subscription.install_rhel_subscription_manager)
-
 
 @pytest.fixture
 def tool_opts(global_tool_opts, monkeypatch):
     monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
     return global_tool_opts
+
+
+class TestInstallSubscriptionManager(object):
+    @pytest.mark.parametrize(
+        ("cafile_installed",),
+        (
+            (True,),
+            (False,),
+        ),
+    )
+    def test_install_rhel_subscription_manager(self, cafile_installed, caplog, monkeypatch, tmpdir):
+        monkeypatch.setattr(os.path, "exists", lambda x: cafile_installed)
+        monkeypatch.setattr(os.path, "isdir", lambda x: True)
+        monkeypatch.setattr(os, "listdir", lambda x: ["filename"])
+        monkeypatch.setattr(pkghandler, "filter_installed_pkgs", DumbCallable())
+        monkeypatch.setattr(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
+        monkeypatch.setattr(
+            pkghandler,
+            "call_yum_cmd",
+            lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 0),
+        )
+        monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
+        monkeypatch.setattr(subscription, "track_installed_submgr_pkgs", DumbCallable())
+
+        rhsm_ca_dir = tmpdir.join("rhsm-ca")
+        monkeypatch.setattr(subscription, "_RHSM_REPO_CAFILE_DIR", str(rhsm_ca_dir))
+
+        cert_in_source = os.path.join(
+            os.path.dirname(subscription.__file__), "data", "version-independent", "redhat-uep.pem"
+        )
+        monkeypatch.setattr(subscription, "_CONVERT2RHEL_REPO_CAFILE_PATH", cert_in_source)
+
+        subscription.install_rhel_subscription_manager()
+
+        assert pkghandler.get_pkg_names_from_rpm_paths.called == 1
+        assert "\nPackages installed:\n" in caplog.text
+        assert subscription.track_installed_submgr_pkgs.called == 1
+
+    def test_install_rhel_subscription_manager_without_packages(self, caplog, monkeypatch):
+        monkeypatch.setattr(os.path, "isdir", lambda x: True)
+        monkeypatch.setattr(os, "listdir", lambda x: "")
+        monkeypatch.setattr(subscription, "SUBMGR_RPMS_DIR", "")
+
+        subscription.install_rhel_subscription_manager()
+
+        assert "No RPMs found" in caplog.text
+
+    def test_install_rhel_subscription_manager_unable_to_install(self, monkeypatch, tmpdir):
+        monkeypatch.setattr(os, "listdir", lambda x: [":w"])
+        monkeypatch.setattr(
+            pkghandler,
+            "call_yum_cmd",
+            lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 1),
+        )
+        monkeypatch.setattr(pkghandler, "filter_installed_pkgs", lambda x: ["test"])
+        monkeypatch.setattr(pkghandler, "get_pkg_names_from_rpm_paths", lambda x: ["test"])
+
+        rhsm_ca_dir = tmpdir.join("rhsm-ca")
+        monkeypatch.setattr(subscription, "_RHSM_REPO_CAFILE_DIR", str(rhsm_ca_dir))
+
+        cert_in_source = os.path.join(
+            os.path.dirname(subscription.__file__), "data", "version-independent", "redhat-uep.pem"
+        )
+        monkeypatch.setattr(subscription, "_CONVERT2RHEL_REPO_CAFILE_PATH", cert_in_source)
+
+        with pytest.raises(SystemExit):
+            subscription.install_rhel_subscription_manager()
 
 
 class TestSubscribeSystem(object):

@@ -18,6 +18,7 @@
 import logging
 import os
 import re
+import shutil
 
 from collections import namedtuple
 from time import sleep
@@ -63,6 +64,11 @@ _UBI_8_REPO_CONTENT = (
     "enabled=1\n"
 )
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
+
+# Directory and file that is used for the convert2rhel.repo ssl cert that we
+# tell customers to use to install convert2rhel:
+_RHSM_REPO_CAFILE_DIR = "/etc/rhsm/ca/"
+_CONVERT2RHEL_REPO_CAFILE_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
 
 # We need to translate config settings between names used for the subscription-manager DBus API and
 # names used for the RHSM config file.  This is the mapping for the settings we care about.
@@ -629,6 +635,10 @@ def install_rhel_subscription_manager():
         loggerinst.warning("No RPMs found in %s." % SUBMGR_RPMS_DIR)
         return
 
+    # We need to make sure the redhat-uep.pem file exists since the convert2rhel
+    # yum repo file uses it.
+    _check_and_install_redhat_uep_pem()
+
     # These functions have to be called before installation of the
     # subscription-manager packages, otherwise
     # `pkghandler.filter_installed_pkgs()` would return every single package
@@ -658,6 +668,30 @@ def install_rhel_subscription_manager():
     loggerinst.info("\nPackages installed:\n%s" % "\n".join(rpms_to_install))
 
     track_installed_submgr_pkgs(pkg_names, pkgs_to_not_track)
+
+
+def _check_and_install_redhat_uep_pem():
+    """
+    Install the redhat-uep.pem certificate if it is needed.
+
+    We need this for the convert2rhel repo if the user installed using the
+    convert2rhel.repo file:
+    https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo
+
+    This is a workaround for https://issues.redhat.com/browse/RHELC-744
+    When we make uninstalling and reinstalling the RHEL subscription-manager
+    packages a single step process, we will no longer need this as there will
+    always be a redhat-uep.pem available from a package.
+    """
+    rhsm_ca_file = os.path.join(_RHSM_REPO_CAFILE_DIR, "redhat-uep.pem")
+    if not os.path.exists(rhsm_ca_file):
+        # Note: this mkdir_p is secure because CONVERT2RHEL_REPO_CAFILE_DIR is
+        # a constant that does not have any world-writable components.
+        utils.mkdir_p(_RHSM_REPO_CAFILE_DIR)
+
+        # Copy the CA file into place because the convert2rhel repo
+        # configuration needs it.
+        shutil.copy2(_CONVERT2RHEL_REPO_CAFILE_PATH, _RHSM_REPO_CAFILE_DIR)
 
 
 def track_installed_submgr_pkgs(installed_pkg_names, pkgs_to_not_track):
