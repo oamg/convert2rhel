@@ -750,11 +750,14 @@ def is_loaded_kernel_latest():
         # appears in the repoquery output. If it does, we ignore it.
         # This later check is supposed to avoid duplicate repofiles being defined in the system,
         # this is a super corner case and should not happen everytime, but if it does, we are aware now.
-        packages = [
+        packages = (
             tuple(str(line).replace('"', "").split("\t"))
             for line in repoquery_output.split("\n")
             if (line.strip() and "listed more than once in the configuration" not in line.lower())
-        ]
+        )
+        # Filter out any error messages (things that do not have the three
+        # fields which we expect)
+        packages = [pkg for pkg in packages if len(pkg) == 3]
 
         # Sort out for the most recent kernel with reverse order
         # In case `repoquery` returns more than one kernel in the output

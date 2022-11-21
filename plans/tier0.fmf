@@ -69,7 +69,8 @@
   adjust:
     enabled: false
     when: >
-      distro != centos-8-latest
+      distro != centos-8-latest and
+      distro != centos-8.4
   discover+:
       test: sub-man-rollback
 
