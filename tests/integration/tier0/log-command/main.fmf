@@ -8,5 +8,8 @@ tag+:
     - log-file
     - log-command
 
-test: |
-  pytest -svv
+/logfile_starts_with_command:
+    tag+:
+        - logfile-starts-with-command
+    test: |
+        pytest -svv -m logfile_starts_with_command

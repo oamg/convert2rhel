@@ -9,16 +9,15 @@ tier: 0
 adjust+:
     - enabled: false
       when: >
-          distro != centos-8-latest
+          distro != centos-8
 
 tag+:
     - certificate
     - subscription-manager
 
-require:
-    - subscription-manager
-
 /sub_man_rollback:
+    environment+:
+        TEST_REQUIRES: subscription-manager
     tag+:
         - sub-man-rollback
     test: |

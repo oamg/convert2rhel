@@ -35,7 +35,6 @@ tag+:
 
 /unsuccessful_satellite_registration:
     tag+:
-        -unsuccessful-satellite-registration
+        - unsuccessful-satellite-registration
     test: |
         pytest -svv -m unsuccessful_satellite_registration
-

@@ -94,6 +94,7 @@ def teardown_repositories_and_cleanup(shell):
     # Install back previously removed client tools
     if "oracle-7" in SYSTEM_RELEASE_ENV:
         shell("yum install -y rhn-client-tools")
+        shell("yum remove -y python-syspurpose")
     # The termination of the conversion does not happen fast enough, so same packages can get removed
     # Install the package back to avoid leaving the system in tainted state
     elif "centos-8" in SYSTEM_RELEASE_ENV:
@@ -111,6 +112,7 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel):
     Verify that the os-release file is restored when the satellite registration fails.
     Reference issue: RHELC-51
     """
+    prepare_and_install_subscription_manager(shell)
     assert shell("find /etc/os-release").returncode == 0
 
     with convert2rhel("-y --no-rpm-va -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
@@ -118,6 +120,17 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel):
         c2r.expect("Restore /etc/os-release from backup")
 
     assert shell("find /etc/os-release").returncode == 0
+
+    # Clean up
+    assert shell(f"rm -f /etc/yum.repos.d/{REPOSITORY}.repo").returncode == 0
+    assert shell("yum remove -y subscription-manager").returncode == 0
+    # Install back problematic ol7 package
+    if "oracle-7" in SYSTEM_RELEASE_ENV:
+        shell("yum install -y rhn-client-tools")
+        shell("yum remove -y python-syspurpose")
+    # Update packages downgraded during subman installation
+    elif "oracle-8" in SYSTEM_RELEASE_ENV:
+        shell("yum update -y librepo libxml2")
 
 
 @pytest.mark.missing_system_release

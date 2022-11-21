@@ -11,8 +11,7 @@ tag+:
 adjust+:
     - enabled: false
       when: >
-          distro != oraclelinux-7 and
-          distro != oraclelinux-8
+          distro != oraclelinux
 
 /unsupported_kernel:
     tag+:

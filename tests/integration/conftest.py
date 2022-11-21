@@ -305,3 +305,15 @@ def log_file_data():
         log_data = logfile.read()
 
         return log_data
+
+
+@pytest.fixture(scope="function")
+def required_packages(shell):
+    try:
+        required_packages = os.environ.get("TEST_REQUIRES").split(" ")
+        for package in required_packages:
+            print(f"\nPREPARE: Installing required {package}")
+            assert shell(f"yum install -y {package}")
+
+    except KeyError:
+        raise
