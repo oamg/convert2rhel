@@ -73,10 +73,9 @@ def test_system_not_updated(shell, convert2rhel):
         ).output.strip()
         assert shell("yum remove -y kernel*{0}".format(oldest_kernel)).returncode == 0
 
-    # Try to downgrade two packages.
-    # On CentOS-8 we cannot do the downgrade as the repos contain only the latest package version.
-    # We need to install package from older repository as a workaround.
-    if "centos-8" in SYSTEM_RELEASE:
+        # Try to downgrade two packages.
+        # On CentOS-8 we cannot do the downgrade as the repos contain only the latest package version.
+        # We need to install package from older repository as a workaround.
         assert shell("yum install -y {}".format(centos_8_pkg_url)).returncode == 0
     else:
         assert shell("yum install openldap wpa_supplicant -y").returncode == 0

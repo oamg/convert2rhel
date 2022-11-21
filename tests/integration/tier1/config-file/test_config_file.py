@@ -123,7 +123,7 @@ def test_std_paths_priority(convert2rhel):
 
 def test_conversion(convert2rhel):
     activation_key = "[subscription_manager]\nactivation_key = {}".format(env.str("RHSM_KEY"))
-    config = [Config("~/.convert2rhel.ini", "[subscription_manager]\nactivation_key = {}".format(env.str("RHSM_KEY")))]
+    config = [Config("~/.convert2rhel.ini", activation_key)]
     create_files(config)
 
     with convert2rhel(
