@@ -367,7 +367,7 @@
     # TODO EUS Bump disabled version
     when: >
       distro != centos-8-latest and
-      distro != oraclelinux-8.7
+      distro != oraclelinux-8.6
   discover+:
     test: checks-after-conversion
   prepare+:
