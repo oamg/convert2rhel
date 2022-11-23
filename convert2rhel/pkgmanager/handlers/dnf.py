@@ -53,7 +53,19 @@ class DnfTransactionHandler(TransactionHandlerBase):
         self._base = None
 
     def _set_up_base(self):
-        """Create a new instance of the dnf.Base() class."""
+        """Create a new instance of the dnf.Base() class
+
+        We create a new instance of the Base() inside this internal method
+        with the intention of being able to re-initialize the base class
+        whenever we need during the class workflow.
+
+        .. note::
+            Since we need have to delete the base class at the end of the
+            `run_transaction` workflow so we can close the RPM database, preventing
+            leaks or transaction mismatches between the validation and replacement
+            of the packages, we use this internal method to make it easier to
+            re-initialize it again.
+        """
         self._base = pkgmanager.Base()
         self._base.conf.substitutions["releasever"] = system_info.releasever
         self._base.conf.module_platform_id = "platform:el8"
@@ -138,8 +150,8 @@ class DnfTransactionHandler(TransactionHandlerBase):
         """
 
         if validate_transaction:
-            self._base.conf.tsflags.append("test")
             loggerinst.info("Validating the dnf transaction set, no modifications to the system will happen this time.")
+            self._base.conf.tsflags.append("test")
         else:
             loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
 
@@ -161,8 +173,8 @@ class DnfTransactionHandler(TransactionHandlerBase):
         """Run the dnf transaction.
 
         Perform the transaction. If the `validate_transaction` parameter set to
-        true, it means the transaction will not be executed, but rather verify everything
-        and do an early return.
+        true, it means the transaction will not be executed, but rather verify
+        everything and do an early return.
 
         :param validate_transaction: Determines if the transaction needs to be
         validated or not.

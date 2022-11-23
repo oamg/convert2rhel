@@ -256,22 +256,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y"])
 
-    @pytest.mark.skipif(
-        not is_rpm_based_os(),
-        reason="Current test runs only on rpm based systems.",
-    )
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_call_yum_cmd_w_downgrades_continuous_fail(self):
-        pkghandler.call_yum_cmd.return_code = 1
-
-        self.assertRaises(
-            SystemExit,
-            pkghandler.call_yum_cmd_w_downgrades,
-            "test_cmd",
-            ["pkg"],
-        )
-        self.assertEqual(pkghandler.call_yum_cmd.called, pkghandler.MAX_YUM_CMD_CALLS)
-
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -333,45 +317,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 "pkg",
             ],
         )
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(system_info, "releasever", None)
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_call_yum_cmd_w_downgrades_correct_cmd(self):
-        pkghandler.call_yum_cmd_w_downgrades("update", ["pkg1", "pkg2"])
-
-        self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "pkg1", "pkg2"])
-
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_call_yum_cmd_w_downgrades_one_fail(self):
-        pkghandler.call_yum_cmd.fail_once = True
-
-        pkghandler.call_yum_cmd_w_downgrades("test_cmd", ["pkg"])
-
-        self.assertEqual(pkghandler.call_yum_cmd.called, 2)
-
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    @unit_tests.mock(pkghandler, "get_installed_pkgs_by_fingerprint", lambda _: ["pkg"])
-    @unit_tests.mock(pkghandler, "resolve_dep_errors", lambda output: output)
-    @unit_tests.mock(
-        pkghandler,
-        "get_problematic_pkgs",
-        lambda pkg: {"errors": set([pkg]), "mismatches": set()},
-    )
-    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
-    def test_call_yum_cmd_w_downgrades_remove_problematic_pkgs(self):
-        pkghandler.call_yum_cmd.return_code = 1
-        pkghandler.MAX_YUM_CMD_CALLS = 1
-
-        self.assertRaises(
-            SystemExit,
-            pkghandler.call_yum_cmd_w_downgrades,
-            "test_cmd",
-            ["fingerprint"],
-        )
-
-        self.assertIn(pkghandler.call_yum_cmd.return_string, pkghandler.remove_pkgs.pkgs)
-        self.assertEqual(pkghandler.remove_pkgs.critical, False)
 
     def test_get_pkgs_to_distro_sync(self):
         problematic_pkgs = {
@@ -1370,42 +1315,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
         self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
-
-
-@pytest.mark.parametrize(
-    ("retcode", "output"),
-    (
-        (
-            1,
-            "Updating Subscription Management repositories.\n"
-            "Repository rhel-8-for-x86_64-baseos-rpms is listed more than once in the configuration\n"
-            "Repository rhel-8-for-x86_64-appstream-rpms is listed more than once in the configuration\n"
-            "Last metadata expiration check: 0:12:45 ago on Wed 01 Sep 2021 01:57:50 PM UTC.\n"
-            "No package vlc installed.\nError: No packages marked for distribution synchronization.\n",
-        ),
-        (
-            0,
-            "Updating Subscription Management repositories.\n"
-            "Repository rhel-8-for-x86_64-baseos-rpms is listed more than once in the configuration\n"
-            "Repository rhel-8-for-x86_64-appstream-rpms is listed more than once in the configuration\n"
-            "Last metadata expiration check: 0:15:23 ago on Mon 06 Sep 2021 08:27:13 AM UTC.\n"
-            "No package cpaste installed.\nDependencies resolved.\nNothing to do.\nComplete!\n",
-        ),
-    ),
-)
-def test_call_yum_cmd_w_downgrades(monkeypatch, retcode, output):
-    monkeypatch.setattr(
-        pkghandler,
-        "call_yum_cmd",
-        value=mock.Mock(return_value=(output, retcode)),
-    )
-    resolve_dep_errors = mock.Mock()
-    monkeypatch.setattr(pkghandler, "resolve_dep_errors", value=resolve_dep_errors)
-    monkeypatch.setattr(pkghandler, "get_problematic_pkgs", value=mock.Mock())
-
-    pkghandler.call_yum_cmd_w_downgrades("anything", ["anything"])
-
-    resolve_dep_errors.assert_not_called()
 
 
 @pytest.mark.parametrize(
