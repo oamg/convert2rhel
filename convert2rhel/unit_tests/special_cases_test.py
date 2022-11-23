@@ -18,7 +18,7 @@ from six.moves import mock
 def test_check_and_resolve(remove_iwlax2xx_firmware_mock, perform_java_openjdk_workaround_mock, monkeypatch):
     special_cases.check_and_resolve()
     perform_java_openjdk_workaround_mock.assert_called()
-    remove_iwlax2xx_firmware.assert_called()
+    remove_iwlax2xx_firmware_mock.assert_called()
 
 
 @pytest.mark.parametrize(

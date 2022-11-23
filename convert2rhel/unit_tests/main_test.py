@@ -146,11 +146,6 @@ class TestMain(unittest.TestCase):
         "restore",
         unit_tests.CountableMockObject(),
     )
-    @unit_tests.mock(
-        special_cases.shim_x64_pkg_protection_file,
-        "restore",
-        unit_tests.CountableMockObject(),
-    )
     @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
     @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
     @unit_tests.mock(
@@ -168,7 +163,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(repo.restore_yum_repos.called, 1)
         self.assertEqual(redhatrelease.system_release_file.restore.called, 1)
         self.assertEqual(redhatrelease.os_release_file.restore.called, 1)
-        self.assertEqual(special_cases.shim_x64_pkg_protection_file.restore.called, 1)
         self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
         self.assertEqual(cert.SystemCert.remove.called, 1)
