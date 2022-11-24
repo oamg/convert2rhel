@@ -4,7 +4,7 @@ ENV PYTHON python2
 ENV PIP pip2
 ENV PYTHONDONTWRITEBYTECODE 1
 
-ENV URL_GET_PIP "https://fedora-archive.ip-connect.vn.ua/epel/6/x86_64/Packages/p/python-pip-7.1.0-2.el6.noarch.rpm"
+ENV URL_GET_PIP "https://archives.fedoraproject.org/pub/archive/epel/6/x86_64/Packages/p/python-pip-7.1.0-2.el6.noarch.rpm"
 ENV APP_DEV_DEPS "requirements/centos6.requirements.txt"
 ENV APP_PRE_DEV_DEPS "requirements/centos6_pre.requirements.txt"
 ENV PREP_PIP_DEPS "scripts/centos6_pip_prep.sh"
