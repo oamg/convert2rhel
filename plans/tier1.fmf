@@ -228,6 +228,11 @@
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /convert_offline_systems:
+  # At the moment we have only CentOS7 repos available on Satellite server
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-7
   discover+:
     test: checks-after-conversion
   prepare+:
