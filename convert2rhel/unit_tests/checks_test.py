@@ -1243,9 +1243,10 @@ def test_is_loaded_kernel_latest(
             (
                 (
                     "repoquery",
+                    "--setopt=exclude=",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
+                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                     package_name,
                 ),
                 (
@@ -1307,9 +1308,10 @@ def test_is_loaded_kernel_latest_eus_system(
             (
                 (
                     "repoquery",
+                    "--setopt=exclude=",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
+                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                     "--setopt=reposdir=%s" % fake_reposdir_path,
                     package_name,
                 ),
@@ -1380,9 +1382,10 @@ def test_is_loaded_kernel_latest_unsupported_skip(
             (
                 (
                     "repoquery",
+                    "--setopt=exclude=",
                     "--quiet",
                     "--qf",
-                    '"%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"',
+                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                     package_name,
                 ),
                 (

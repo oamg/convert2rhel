@@ -1,9 +1,10 @@
+import configparser
 import platform
 
 import pytest
 
 
-@pytest.mark.latest_kernel_check_with_failed_repoquery
+@pytest.mark.failed_repoquery
 def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2rhel):
     """
     This test verifies, that failed repoquery is handled correctly.
@@ -46,3 +47,51 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
     if "centos-8.5" in get_system_release:
         assert shell(f"rm -f {centos_custom_reposdir}/centos-8.5/{repofile}.repo").returncode == 0
     assert shell(f"rm -f /etc/yum.repos.d/{repofile}.repo").returncode == 0
+
+
+@pytest.mark.yum_exclude_kernel
+def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
+    """
+    Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
+    'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
+    """
+
+    yum_config = "/etc/yum.conf"
+    backup_dir = "/tmp/config-backup"
+    config = configparser.ConfigParser()
+    config.read(yum_config)
+    exclude_option = "kernel kernel-core"
+
+    assert shell(f"mkdir {backup_dir}").returncode == 0
+
+    assert shell(f"cp {yum_config} {backup_dir}").returncode == 0
+    # If there is already an `exclude` section, append to the existing value
+    if config.has_option("main", "exclude"):
+        pre_existing_value = config.get("main", "exclude")
+        config.set("main", "exclude", f"{pre_existing_value} kernel kernel-core")
+    else:
+        config.set("main", "exclude", "kernel kernel-core")
+
+    with open(yum_config, "w") as configfile:
+        config.write(configfile, space_around_delimiters=False)
+
+    assert config.has_option("main", "exclude")
+    assert exclude_option in config.get("main", "exclude")
+
+    # Run the conversion and verify, that it goes past the latest kernel check
+    # if so, inhibit the conversion
+    with convert2rhel("-y --debug --no-rpm-va") as c2r:
+        c2r.expect("Prepare: Checking if the loaded kernel version is the most recent")
+        assert c2r.expect("Convert: List third-party packages", timeout=300) == 0
+        c2r.sendcontrol("c")
+
+    assert c2r.exitstatus != 0
+
+    # Clean up
+    assert shell(f"mv {backup_dir}/yum.conf {yum_config}").returncode == 0
+    assert shell(f"rm -r {backup_dir}").returncode == 0
+
+    verify_config = configparser.ConfigParser()
+    verify_config.read(yum_config)
+    if verify_config.has_option("main", "exclude"):
+        assert exclude_option not in verify_config.get("main", "exclude")
