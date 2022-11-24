@@ -236,6 +236,12 @@
   discover+:
     test: checks-after-conversion
   prepare+:
+  - name: workaround_kernel
+    how: shell
+    script: "yum install kernel-3.10.0-1160.76.1.el7 -y && yum remove kernel-3.10.0-1160.80.1.el7 -y"
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
   - name: install subscription manager
     how: ansible
     playbook: tests/ansible_collections/roles/install-submgr/main.yml
