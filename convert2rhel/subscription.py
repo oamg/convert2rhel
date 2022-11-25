@@ -89,6 +89,9 @@ REGISTRATION_TIMEOUT = 180
 
 _SUBMGR_PKG_REMOVED_IN_CL_85 = "subscription-manager-initial-setup-addon"
 
+# Path to the releasever variable file for dnf.
+DNF_RELEASEVER_FILE = "/etc/yum/vars/releasever"
+
 
 class UnregisterError(Exception):
     """Raised with problems unregistering a system."""
@@ -455,7 +458,8 @@ class RegistrationCommand(object):
         register_server = system_bus.get_object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
         loggerinst.debug("Starting a private DBus to talk to subscription-manager")
         address = register_server.Start(
-            i18n.SUBSCRIPTION_MANAGER_LOCALE, dbus_interface="com.redhat.RHSM1.RegisterServer"
+            i18n.SUBSCRIPTION_MANAGER_LOCALE,
+            dbus_interface="com.redhat.RHSM1.RegisterServer",
         )
 
         try:
@@ -525,7 +529,10 @@ class RegistrationCommand(object):
         finally:
             # Always shut down the private bus
             loggerinst.debug("Shutting down private DBus instance")
-            register_server.Stop(i18n.SUBSCRIPTION_MANAGER_LOCALE, dbus_interface="com.redhat.RHSM1.RegisterServer")
+            register_server.Stop(
+                i18n.SUBSCRIPTION_MANAGER_LOCALE,
+                dbus_interface="com.redhat.RHSM1.RegisterServer",
+            )
 
     def _set_connection_opts_in_config(self):
         """
@@ -776,10 +783,33 @@ def attach_subscription():
 def get_avail_subs():
     """Get list of all the subscriptions available to the user so they are
     accessible by index once the user chooses one.
+
+    .. note::
+        Get multiline string holding all the subscriptions available to the
+        logged-in user
     """
-    # Get multiline string holding all the subscriptions available to the
-    # logged-in user
+    # With the current changes introduced in PR#627, we needed to remove the
+    # non-RHEL packages that contain repofiles before we do any call to
+    # subscription-manager, and since we are doing that, this function starts to
+    # fail because it doesn't have the package that sets the releasever anymore.
+    # For some reason, subscription-manager needs to call libdnf internally to
+    # read the repositories on the system, and since libdnf needs to do
+    # substitutions on those repofiles, mainly the releasever and any other file
+    # placed in /etc/dnf/vars, this command call fails as it cannot replace the
+    # releasever variable anymore.
+    releaver_created = False
+    if system_info.version.major >= 8:
+        if not os.path.exists(DNF_RELEASEVER_FILE):
+            with open(DNF_RELEASEVER_FILE, "w") as handler:
+                handler.write(system_info.original_releasever)
+
+            releaver_created = True
+
     subs_raw, ret_code = utils.run_subprocess(["subscription-manager", "list", "--available"], print_output=False)
+
+    if releaver_created:
+        os.remove(DNF_RELEASEVER_FILE)
+
     if ret_code != 0:
         loggerinst.critical("Unable to get list of available subscriptions:\n%s" % subs_raw)
     return list(get_sub(subs_raw))
@@ -1005,7 +1035,12 @@ def _log_rhsm_download_directory_contents(directory, when_message):
     pkgs = ["<download directory does not exist>"]
     if os.path.isdir(SUBMGR_RPMS_DIR):
         pkgs = os.listdir(SUBMGR_RPMS_DIR)
-    loggerinst.debug("Contents of %s directory %s:\n%s", SUBMGR_RPMS_DIR, when_message, "\n".join(pkgs))
+    loggerinst.debug(
+        "Contents of %s directory %s:\n%s",
+        SUBMGR_RPMS_DIR,
+        when_message,
+        "\n".join(pkgs),
+    )
 
 
 def exit_on_failed_download(paths):
@@ -1036,7 +1071,11 @@ def lock_releasever_in_rhel_repositories():
             "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
             % system_info.releasever
         )
-        cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+        cmd = [
+            "subscription-manager",
+            "release",
+            "--set=%s" % system_info.releasever,
+        ]
 
         output, ret_code = utils.run_subprocess(cmd, print_output=False)
         if ret_code != 0:
@@ -1065,7 +1104,9 @@ def update_rhsm_custom_facts():
 
         if ret_code != 0:
             loggerinst.warning(
-                "Failed to update the RHSM custom facts with return code '%s' and output '%s'.", ret_code, output
+                "Failed to update the RHSM custom facts with return code '%s' and output '%s'.",
+                ret_code,
+                output,
             )
         else:
             loggerinst.info("RHSM custom facts uploaded successfully.")
