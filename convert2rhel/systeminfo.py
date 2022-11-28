@@ -24,7 +24,7 @@ from collections import namedtuple
 
 from six.moves import configparser, urllib
 
-from convert2rhel import logger, pkgmanager, utils
+from convert2rhel import logger, utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
 
@@ -472,6 +472,8 @@ class SystemInfo(object):
 
 def _get_original_releasever():
     """Get the original value for releasever using either YUM or DNF."""
+    from convert2rhel import pkgmanager
+
     original_releasever = ""
     if pkgmanager.TYPE == "yum":
         yb = pkgmanager.YumBase()
