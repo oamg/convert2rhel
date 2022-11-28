@@ -373,9 +373,9 @@ def ensure_compatibility_of_kmods():
 
         unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
 
-        if "CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS" in os.environ:
+        if "CONVERT2RHEL_ALLOW_UNCHECKED_KMODS" in os.environ:
             logger.warning(
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable."
+                "Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
                 " We will continue the conversion, with the following kernel modules:\n{kmods}\n".format(
                     kmods="\n".join(unsupported_kmods)
                 )

@@ -463,7 +463,7 @@ def test_ensure_compatibility_of_kmods_check_env(
 
     checks.ensure_compatibility_of_kmods()
     should_be_in_logs = (
-        ".*Detected 'CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS' environment variable."
+        ".*Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
         " We will continue the conversion, with the following kernel modules:.*"
     )
     assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
