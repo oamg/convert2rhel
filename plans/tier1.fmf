@@ -205,7 +205,7 @@
     script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
   - name: main conversion preparation
     how: shell
-    script: pytest -svv tests/integration/tier1/method/satellite.py
+    script: pytest -svv tests/integration/tier1/method/rhsm.py
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml

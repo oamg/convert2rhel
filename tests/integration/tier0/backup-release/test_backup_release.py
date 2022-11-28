@@ -91,6 +91,20 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     del os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"]
 
 
+def test_backup_os_release_wrong_registartion(shell, convert2rhel):
+    """
+    Verify that the os-release file is restored when the satellite registartion fails.
+    Refrence issue: RHELC-51
+    """
+    assert shell("find /etc/os-release").returncode == 0
+
+    with convert2rhel("-y --no-rpm-va -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
+        c2r.expect("Unable to register the system through subscription-manager.")
+        c2r.expect("Restoring /etc/os-release from backup")
+
+    assert shell("find /etc/os-release").returncode == 0
+
+
 def test_missing_system_release(shell, convert2rhel):
     """
     It is required to have /etc/system-release file present on the system.
