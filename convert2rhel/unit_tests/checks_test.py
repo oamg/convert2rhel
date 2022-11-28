@@ -446,7 +446,7 @@ def test_ensure_compatibility_of_kmods_check_env(
     caplog,
 ):
 
-    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_UNCHECKED_KMODS": "1"})
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_UNCHECKED_KMODS": "1"})
     monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=HOST_MODULES_STUB_BAD))
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
