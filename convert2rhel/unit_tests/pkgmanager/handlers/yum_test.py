@@ -180,6 +180,9 @@ class TestYumTransactionHandler(object):
             pkgmanager.Errors.YumRPMCheckError,
             pkgmanager.Errors.YumTestTransactionError,
             pkgmanager.Errors.YumRPMTransError,
+            pkgmanager.Errors.YumDownloadError,
+            pkgmanager.Errors.YumBaseError,
+            pkgmanager.Errors.YumGPGCheckError,
         )
         instance = YumTransactionHandler()
         instance._set_up_base()

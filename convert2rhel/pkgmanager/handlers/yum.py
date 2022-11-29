@@ -220,6 +220,9 @@ class YumTransactionHandler(TransactionHandlerBase):
             pkgmanager.Errors.YumRPMCheckError,
             pkgmanager.Errors.YumTestTransactionError,
             pkgmanager.Errors.YumRPMTransError,
+            pkgmanager.Errors.YumDownloadError,
+            pkgmanager.Errors.YumBaseError,
+            pkgmanager.Errors.YumGPGCheckError,
         ) as e:
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
