@@ -216,14 +216,21 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         try:
             self._base.processTransaction()
-        except (
-            pkgmanager.Errors.YumRPMCheckError,
-            pkgmanager.Errors.YumTestTransactionError,
-            pkgmanager.Errors.YumRPMTransError,
-            pkgmanager.Errors.YumDownloadError,
-            pkgmanager.Errors.YumBaseError,
-            pkgmanager.Errors.YumGPGCheckError,
-        ) as e:
+        except pkgmanager.Errors.YumBaseError as e:
+            # We are catching only `pkgmanager.Errors.YumBaseError` as the base
+            # exception here because all of the other exceptions that can be
+            # raised during the transaction process inherit it from
+            # YumBaseError.
+
+            # The following exceptions is the ones we are actually looking for,
+            # but simplified to only catch the YumBaseError:
+            #  - pkgmanager.Errors.YumRPMCheckError
+            #  - pkgmanager.Errors.YumTestTransactionError
+            #  - pkgmanager.Errors.YumRPMTransError
+            #  - pkgmanager.Errors.YumDownloadError
+            #  - pkgmanager.Errors.YumBaseError
+            #  - pkgmanager.Errors.YumGPGCheckError
+
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
