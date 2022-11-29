@@ -4,7 +4,7 @@ from conftest import SYSTEM_RELEASE
 def test_install_multilib_packages(shell):
     """Install NTP package."""
 
-    if SYSTEM_RELEASE in ("oracle-8.7", "centos-8.5", "centos-8.4"):
+    if "centos-8" in SYSTEM_RELEASE or "oracle-8" in SYSTEM_RELEASE:
         assert (
             shell(
                 "yum install iwl7260-firmware accel-config*.i686 libreport-cli ModemManager* ModemManager*.i686 -y"

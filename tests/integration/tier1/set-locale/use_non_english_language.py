@@ -9,7 +9,7 @@ def test_use_non_english_language(shell):
     """
     # install Chinese language pack for CentOS-8 and Oracle Linux 8
 
-    if SYSTEM_RELEASE in ("centos-8.5", "centos-8.4", "oracle-8.7"):
+    if "centos-8" in SYSTEM_RELEASE or "oracle-8" in SYSTEM_RELEASE:
         assert shell("dnf install glibc-langpack-zh -y").returncode == 0
 
     # set locale variables that affect translations to Chinese

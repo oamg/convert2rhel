@@ -354,8 +354,8 @@
 
 /single_yum_transaction_excld_pkgs:
     adjust+:
-        enabled: false
-        when: >
+        - enabled: false
+          when: >
             distro != centos-7
     discover+:
         test: checks-after-conversion
@@ -375,7 +375,7 @@
         - enabled: false
           when: >
               distro != centos-8-latest and
-              distro != oraclelinux-8.6
+              distro != oraclelinux-8
     discover+:
         test: checks-after-conversion
     prepare+:
