@@ -176,11 +176,7 @@ class TestYumTransactionHandler(object):
 
     @centos7
     def test_process_transaction_with_exceptions(self, pretend_os, _mock_yum_api_calls, caplog):
-        side_effects = (
-            pkgmanager.Errors.YumRPMCheckError,
-            pkgmanager.Errors.YumTestTransactionError,
-            pkgmanager.Errors.YumRPMTransError,
-        )
+        side_effects = pkgmanager.Errors.YumBaseError
         instance = YumTransactionHandler()
         instance._set_up_base()
         pkgmanager.YumBase.processTransaction.side_effect = side_effects
