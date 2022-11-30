@@ -298,10 +298,13 @@ class RestorableFile(object):
         else:
             loggerinst.info("Can't find %s.", self.filepath)
 
-    def restore(self):
+    def restore(self, rollback=True):
         """Restore a previously backed up file"""
         backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
-        loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
+        if rollback:
+            loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
+        else:
+            loggerinst.info("Restoring %s from backup" % self.filepath)
 
         if not os.path.isfile(backup_filepath):
             loggerinst.info("%s hasn't been backed up." % self.filepath)
@@ -314,7 +317,19 @@ class RestorableFile(object):
             # IOError for py2 and OSError for py3
             loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
             return
-        loggerinst.info("File %s restored." % self.filepath)
+
+        if rollback:
+            loggerinst.info("File %s restored." % self.filepath)
+        else:
+            loggerinst.debug("File %s restored." % self.filepath)
+
+    def remove(self):
+        """Remove restored file from original place, backup isn't removed"""
+        try:
+            os.remove(self.filepath)
+            loggerinst.debug("File %s removed." % self.filepath)
+        except (OSError, IOError):
+            loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
 
 
 class RestorablePackage(object):

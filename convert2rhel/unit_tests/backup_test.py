@@ -662,3 +662,25 @@ class TestRestorableRpmKey:
 )
 def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
     assert backup.remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch
+
+
+@pytest.mark.parametrize(
+    ("file", "filepath", "message"),
+    (
+        (False, "/invalid/path", "Couldn't remove restored file /invalid/path"),
+        (True, "filename", "File %s removed."),
+    ),
+)
+def test_restorable_file_remove(tmpdir, caplog, file, filepath, message):
+    if file:
+        path = tmpdir.join(filepath)
+        path.write("content")
+        path = str(path)
+        message = message % path
+    else:
+        path = filepath
+
+    restorable_file = backup.RestorableFile(path)
+    restorable_file.remove()
+
+    assert message in caplog.text

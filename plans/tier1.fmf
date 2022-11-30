@@ -205,7 +205,7 @@
     script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
   - name: main conversion preparation
     how: shell
-    script: pytest -svv tests/integration/tier1/method/satellite.py
+    script: pytest -svv tests/integration/tier1/method/rhsm.py
   - name: reboot after conversion
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -228,9 +228,20 @@
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /convert_offline_systems:
+  # At the moment we have only CentOS7 repos available on Satellite server
+  adjust:
+    enabled: false
+    when: >
+      distro != centos-7
   discover+:
     test: checks-after-conversion
   prepare+:
+  - name: workaround_kernel
+    how: shell
+    script: "yum install kernel-3.10.0-1160.76.1.el7 -y && yum remove kernel-3.10.0-1160.80.1.el7 -y"
+  - name: reboot machine
+    how: ansible
+    playbook: tests/ansible_collections/roles/reboot/main.yml
   - name: install subscription manager
     how: ansible
     playbook: tests/ansible_collections/roles/install-submgr/main.yml

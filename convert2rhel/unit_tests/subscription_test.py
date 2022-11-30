@@ -24,7 +24,6 @@ from collections import namedtuple
 import dbus
 import dbus.connection
 import dbus.exceptions
-import pexpect
 import pytest
 import six
 
@@ -1573,3 +1572,84 @@ def test_update_rhsm_custom_facts_no_rhsm(global_tool_opts, caplog, monkeypatch)
 
     subscription.update_rhsm_custom_facts()
     assert "Skipping updating RHSM custom facts." in caplog.records[-1].message
+
+
+MOCK_LIST_AVAILABLE_SUBS_OUTPUT = """\
+Subscription Name:   Red Hat\n
+Provides:            Test\n
+SKU:                 RHTEST\n
+Contract:            123456\n
+Pool ID:             096fbb526ce611ed-97076c9466263bdf\n
+Provides Management: No\n
+Available:           Unlimited\n
+Suggested:           1\n
+Service Type:        L1-L3\n
+Roles:               \n
+Service Level:       Self-Support\n
+Usage:               \n
+Add-ons:             \n
+Subscription Type:   Standard\n
+Starts:              03/29/2000\n
+Ends:                03/29/2003\n
+Entitlement Type:    Physical\n
+"""
+
+
+@centos8
+def test_get_avail_subs(pretend_os, tmpdir, monkeypatch):
+    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 0)
+    cmd = ["subscription-manager", "list", "--available"]
+    tmpdir.join("releasever").write("8")
+    dnf_releasever_file = str(tmpdir)
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
+
+    result = subscription.get_avail_subs()
+    assert result[0].pool_id == "096fbb526ce611ed-97076c9466263bdf"
+
+
+@centos8
+def test_get_avail_subs_failed_command(pretend_os, tmpdir, monkeypatch, caplog):
+    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 1)
+    cmd = ["subscription-manager", "list", "--available"]
+    tmpdir.join("releasever").write("8")
+    dnf_releasever_file = str(tmpdir)
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
+
+    with pytest.raises(SystemExit):
+        subscription.get_avail_subs()
+    assert "Unable to get list of available subscriptions:" in caplog.records[-1].message
+
+
+@centos8
+def test_get_avail_subs_no_releasever_file(pretend_os, tmpdir, monkeypatch):
+    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 0)
+    cmd = ["subscription-manager", "list", "--available"]
+    dnf_releasever_file = str(tmpdir.join("releasever"))
+    run_subprocess_mock = mock.Mock(
+        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
+    )
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
+
+    result = subscription.get_avail_subs()
+    assert result[0].pool_id == "096fbb526ce611ed-97076c9466263bdf"
