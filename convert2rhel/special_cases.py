@@ -16,9 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 
-from convert2rhel.backup import RestorableFile
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import mkdir_p, run_subprocess
 

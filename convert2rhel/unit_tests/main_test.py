@@ -24,20 +24,15 @@ from collections import OrderedDict
 import pytest
 import six
 
-from convert2rhel import backup, grub
-from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, special_cases, subscription, toolopts, utils
-from convert2rhel.breadcrumbs import breadcrumbs
-from convert2rhel.redhatrelease import os_release_file, system_release_file
-from convert2rhel.systeminfo import system_info
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import cert, checks
+from convert2rhel import backup, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, redhatrelease, repo, special_cases, subscription, unit_tests, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
+from convert2rhel.breadcrumbs import breadcrumbs
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
@@ -410,8 +405,8 @@ def test_main(monkeypatch):
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
-    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(redhatrelease.system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(checks, "perform_system_checks", perform_system_checks_mock)
@@ -501,8 +496,8 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
     monkeypatch.setattr(checks, "perform_system_checks", perform_system_checks_mock)
-    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
-    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(redhatrelease.system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
@@ -559,8 +554,8 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkghandler, "clean_yum_metadata", clean_yum_metadata_mock)
     monkeypatch.setattr(checks, "perform_system_checks", perform_system_checks_mock)
-    monkeypatch.setattr(system_release_file, "backup", system_release_file_mock)
-    monkeypatch.setattr(os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(redhatrelease.system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)

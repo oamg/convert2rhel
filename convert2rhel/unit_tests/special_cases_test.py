@@ -1,10 +1,7 @@
-from collections import namedtuple
-
 import pytest
 import six
 
 from convert2rhel import special_cases
-from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 
