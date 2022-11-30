@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.0
+Version:        1.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -124,6 +124,34 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed Nov 30 2022 Eric Gustavsson <egustavs@redhat.com> 1.1
+- Add RHEL 8.6 among the supported EUS minor versions
+- Merge yum transactions into a single one to improve stability
+- Collect breadcrumbs through RHSM custom facts
+- Do not disable RHSM repos before pkg backup
+- Handle unsuccessful repoquery call in kernel check
+- Improve GPG key import and repository-related messages
+- Check if shim-x64 package is present in the system
+- Fix permissions check for certificates
+- Increase the line length in a pseudo-terminal to handle long-named packages
+- Do not use plural "packages" in logs when there's just one
+- Allow systems to disable colored output
+- Do not show output from systemctl show during systeminfo gathering
+- Omit exclude= options from repoquery to properly verify kernel package being up-to-date
+- Clean up kmods functionality
+- Improve internet connection check
+- Fix the format of the message about unavailable kernel modules
+- Fix duplicated path in logs
+- Skip check of latest kernel on Oracle Linux 8.4
+- Fix for temporary GPG home dir race
+- Backup all CentOS Linux subscription-manager packages
+- Improve latest version logs
+- Improve failed conversion message
+- Move system info logs to happen after the data collection
+- Fix incorrect kernel signature check
+- Securely log convert2rhel command used
+- Install the redhat-uep.pem certificate if it is needed
+
 * Fri Aug 19 2022 Michal Bocek <mbocek@redhat.com> 1.0
 - Check if a new version of convert2rhel is available
 - Update grub bootloader images
