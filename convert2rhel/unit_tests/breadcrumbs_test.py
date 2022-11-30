@@ -16,9 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import os
-
-from datetime import datetime
 
 import pytest
 import six
