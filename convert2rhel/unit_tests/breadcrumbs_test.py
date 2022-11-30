@@ -68,7 +68,7 @@ def test_finish_collection(pretend_os, success, monkeypatch):
     monkeypatch.setattr(
         breadcrumbs.breadcrumbs,
         "_save_migration_results",
-        save_migration_results_mock,
+        save_migration_results_mock
     )
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_rhsm_facts", save_rhsm_facts_mock)
 

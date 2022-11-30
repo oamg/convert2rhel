@@ -183,6 +183,8 @@ class Breadcrumbs(object):
             # Usually this can happen if we fail in the first run and we want to
             # save the custom facts gathered so far, or, if the --norhsm option
             # is provided.
+            # This is safe as the RHSM_CUSTOM_FACTS_FOLDER, /etc/rhsm/facts, and its parents
+            # are only writable by root
             utils.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
 
         data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
