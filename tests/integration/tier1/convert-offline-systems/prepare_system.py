@@ -2,9 +2,11 @@ import re
 import socket
 
 from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL
+from envparse import env
 
 
 # Replace urls in rhsm.conf file to the satellite server
+# Without doing this we get obsolete dogfood server as source of repositories
 def replace_urls_rhsm():
     with open("/etc/rhsm/rhsm.conf", "r+") as f:
         file = f.read()
@@ -46,9 +48,18 @@ def test_prepare_system(shell):
     assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
 
     replace_urls_rhsm()
+    shell("rm -rf /etc/yum.repos.d/*")
+
+    # Subscribe system
+    assert (
+        shell(
+            ("subscription-manager register --org={} --activationkey={}").format(
+                env.str("SATELLITE_ORG"), env.str("SATELLITE_KEY_CENTOS7")
+            )
+        ).returncode
+        == 0
+    )
 
     configure_connection()
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
-
-    shell("rm -rf /etc/yum.repos.d/*")

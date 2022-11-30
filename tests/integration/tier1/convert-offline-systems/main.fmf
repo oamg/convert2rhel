@@ -1,4 +1,6 @@
-summary: Convert systems that have no access to the Internet
+summary: |
+    Convert systems that have no access to the Internet. This test require having the repositories of original
+    distro available in the satellite server. As of now we only have CentOS7 repositories available.
 
 tier: 1
 

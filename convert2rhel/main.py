@@ -222,6 +222,14 @@ def pre_ponr_conversion():
         loggerinst.task("Convert: Install RHEL certificates for RHSM")
         system_cert = cert.SystemCert()
         system_cert.install()
+
+    # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
+    # This needs to be before attempt to unregister the system because after unregistration can be lost
+    # access to repositories needed for backuping removed packages
+    loggerinst.task("Convert: Remove packages containing .repo files")
+    pkghandler.remove_repofile_pkgs()
+
+    if not toolopts.tool_opts.no_rhsm:
         loggerinst.task("Convert: Subscription Manager - Subscribe system")
         subscription.subscribe_system()
         loggerinst.task("Convert: Get RHEL repository IDs")
@@ -230,10 +238,6 @@ def pre_ponr_conversion():
         subscription.check_needed_repos_availability(rhel_repoids)
         loggerinst.task("Convert: Subscription Manager - Disable all repositories")
         subscription.disable_repos()
-
-    # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
-    loggerinst.task("Convert: Remove packages containing .repo files")
-    pkghandler.remove_repofile_pkgs()
 
     # we need to enable repos after removing repofile pkgs, otherwise we don't get backups
     # to restore from on a rollback
