@@ -1,0 +1,26 @@
+summary: Single Yum Transaction Validation
+description: >
+    Verify that we are doing a proper rollback during (and before) the
+    validation phase in our transactions.
+
+tier: 0
+
+tag+:
+    - yum
+    - dnf
+    - transaction
+
+/transaction_validation_error:
+    adjust+:
+        - enabled: false
+          when: distro == centos-8 or distro == oraclelinux-8
+    tag+:
+        - transaction-validation-error
+    test: |
+        pytest -svv -m transaction_validation_error
+
+/package_download_error:
+    tag+:
+        - package-download-error
+    test: |
+        pytest -svv -m package_download_error

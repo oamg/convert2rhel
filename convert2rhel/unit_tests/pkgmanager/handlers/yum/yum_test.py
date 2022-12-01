@@ -130,6 +130,15 @@ class TestYumTransactionHandler(object):
         assert "not available in RHEL repositories." in caplog.records[-1].message
 
     @centos7
+    def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, _mock_yum_api_calls, monkeypatch):
+        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: ["pkg-1"])
+        pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
+        instance = YumTransactionHandler()
+
+        with pytest.raises(SystemExit, match="There are no suitable mirrors available for the loaded repositories."):
+            instance._perform_operations()
+
+    @centos7
     @pytest.mark.parametrize(
         ("ret_code", "message", "validate_transaction", "expected"),
         (

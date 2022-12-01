@@ -126,7 +126,11 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
-        """Enable a list of required repositories."""
+        """Enable a list of required repositories.
+
+        :raises SystemInfo: If there is no way to connect to the mirrors in the
+            repos.
+        """
         self._base.repos.disableRepo("*")
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
@@ -149,22 +153,23 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
 
-        for pkg in original_os_pkgs:
-            self._base.update(pattern=pkg)
-            try:
-                self._base.reinstall(pattern=pkg)
-            except (
-                pkgmanager.Errors.ReinstallInstallError,
-                pkgmanager.Errors.ReinstallRemoveError,
-            ):
+        try:
+            for pkg in original_os_pkgs:
+                self._base.update(pattern=pkg)
                 try:
-                    self._base.downgrade(pattern=pkg)
-                except (
-                    pkgmanager.Errors.ReinstallInstallError,
-                    pkgmanager.Errors.ReinstallRemoveError,
-                    pkgmanager.Errors.DowngradeError,
-                ):
-                    loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
+                    self._base.reinstall(pattern=pkg)
+                except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
+                    try:
+                        self._base.downgrade(pattern=pkg)
+                    except (
+                        pkgmanager.Errors.ReinstallInstallError,
+                        pkgmanager.Errors.ReinstallRemoveError,
+                        pkgmanager.Errors.DowngradeError,
+                    ):
+                        loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
+        except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
+            loggerinst.debug("Got the following exception message: %s", e)
+            loggerinst.critical("There are no suitable mirrors available for the loaded repositories.")
 
     def _resolve_dependencies(self, validate_transaction):
         """Try to resolve the transaction dependencies.
