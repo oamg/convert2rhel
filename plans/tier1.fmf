@@ -354,7 +354,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/single_yum_transaction_excluded_pkgs:
+/single_yum_transaction_excld_pkgs:
   adjust:
     enabled: false
     when: >
@@ -362,9 +362,9 @@
   discover+:
     test: checks-after-conversion
   prepare+:
-  - name: remove some pkgs from the excluded pkgs config list
+  - name: remove some pkgs from the excld pkgs config list
     how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/remove_excluded_pkgs_from_config.py
+    script: pytest -svv tests/integration/tier1/single-yum-transaction/remove_excld_pkgs_from_config.py
   - name: main conversion preparation
     how: shell
     script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py

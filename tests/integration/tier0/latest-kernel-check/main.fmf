@@ -13,8 +13,8 @@ tag+:
     test: |
         pytest -svv -m failed_repoquery
 
-/yum_exclude_kernel:
+/yum_excld_kernel:
     tag+:
-        - yum-exclude-kernel
+        - yum-excld-kernel
     test: |
-        pytest -svv -m yum_exclude_kernel
+        pytest -svv -m yum_excld_kernel
