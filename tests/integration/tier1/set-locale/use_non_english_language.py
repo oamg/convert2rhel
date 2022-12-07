@@ -12,9 +12,9 @@ def test_use_non_english_language(shell):
     if "centos-8" in os or "oracle-8" in os:
         assert shell("dnf install glibc-langpack-zh -y").returncode == 0
 
-    # set LANG to Chinese
+    # set locale variables that affect translations to Chinese
     assert shell("localectl list-locales | grep zh_CN.utf8").returncode == 0
-    assert shell("localectl set-locale LANG=zh_CN.utf8").returncode == 0
+    assert shell("localectl set-locale LANG=zh_CN.utf8 LC_MESSAGES=zh_CN.utf8 LANGUAGE=zh_CN").returncode == 0
 
     # Testing farm is returning an error on CentOS7 mentioning
     # setting incompatible LC_CTYPE C.UTF-8.
