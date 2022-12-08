@@ -27,8 +27,6 @@ import dbus
 import dbus.connection
 import dbus.exceptions
 
-from six.moves import urllib
-
 from convert2rhel import backup, i18n, pkghandler, utils
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.systeminfo import system_info
@@ -368,42 +366,6 @@ class RegistrationCommand(object):
         return cls(**registration_attributes)
 
     @property
-    def args(self):
-        """
-        This property is a list of the command-line arguments that will be passed to
-        subscription-manager to register the system. Set the individual attributes for
-        :attr:`server_url`, :attr:`activation_key`, etc to affect the values here.
-
-        .. note:: :attr:`password` is not passed on the command line. Instead,
-            it is sent to the running subscription-manager process via pexpect.
-        """
-        args = ["register", "--force"]
-
-        if self.connection_opts:
-            if self.rhsm_port:
-                netloc = "%s:%s" % (self.rhsm_hostname, self.rhsm_port)
-            else:
-                netloc = self.rhsm_hostname
-
-            prefix = self.rhsm_prefix if self.rhsm_prefix else ""
-            if prefix.startswith("/"):
-                prefix = prefix[1:]
-
-            server_url = urllib.parse.urlunsplit(("https", netloc, prefix, "", ""))
-            args.append("--serverurl=%s" % server_url)
-
-        if self.activation_key:
-            args.append("--activationkey=%s" % self.activation_key)
-
-        if self.org:
-            args.append("--org=%s" % self.org)
-
-        if self.username:
-            args.append("--username=%s" % self.username)
-
-        return args
-
-    @property
     def connection_opts(self):
         """
         This property is a dbus.Dictionary that contains the connection options for RHSM
@@ -469,7 +431,12 @@ class RegistrationCommand(object):
 
             try:
                 if self.password:
-                    loggerinst.info("Registering via username/password: %s" % " ".join(utils.hide_secrets(self.args)))
+                    if self.org:
+                        loggerinst.info("Organization: %s", self.org)
+                    loggerinst.info("Username: %s", self.username)
+                    loggerinst.info("Password: %s", "*" * 5)
+                    loggerinst.info("Connection Options: %s", self.connection_opts)
+                    loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (
                         self.org or "",
                         self.username,
@@ -489,7 +456,10 @@ class RegistrationCommand(object):
                     )
 
                 else:
-                    loggerinst.info("Registering via org/activation_key: %s" % " ".join(utils.hide_secrets(self.args)))
+                    loggerinst.info("Organization: %s", self.org)
+                    loggerinst.info("Activation Key: %s", "*" * 5)
+                    loggerinst.info("Connection Options: %s", self.connection_opts)
+                    loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (
                         self.org,
                         [self.activation_key],
