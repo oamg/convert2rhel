@@ -370,9 +370,6 @@ def ensure_compatibility_of_kmods():
     if not unsupported_kmods:
         logger.debug("All loaded kernel modules are available in RHEL.")
     else:
-
-        unsupported_kmods = get_unsupported_kmods(host_kmods, rhel_supported_kmods)
-
         if "CONVERT2RHEL_ALLOW_UNCHECKED_KMODS" in os.environ:
             logger.warning(
                 "Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
@@ -380,7 +377,6 @@ def ensure_compatibility_of_kmods():
                     kmods="\n".join(unsupported_kmods)
                 )
             )
-
         else:
             logger.critical(
                 "The following loaded kernel modules are not available in RHEL:\n{0}\n"
