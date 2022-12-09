@@ -298,10 +298,10 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         self._process_transaction(validate_transaction)
 
-        # Because we call the same thing multiple times, the rpm database is
-        # not properly closed at the end.
-        # This cause problems because we have another special operation that
-        # happen in the middle of all of this, that is preserving the rhel
-        # kernel. In the YumBase() class there is a special __del__() method
-        # that resolves all of the locks that it places during the transaction.
+        # Because we call the same thing multiple times, the rpm database is not
+        # properly closed at the end of it, thus, having the need to call
+        # `self._base.close()` explicitly before we delete the object. If we use
+        # only `del self._base`, it seems that yum is not able to properly clean
+        # everything in the database.
+        self._base.close()
         del self._base
