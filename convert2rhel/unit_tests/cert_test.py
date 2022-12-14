@@ -16,77 +16,109 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import shutil
-import unittest
 
 import pytest
 import six
 
-from convert2rhel import unit_tests
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-
-from convert2rhel import cert, utils
+from convert2rhel import cert, unit_tests, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
-class TestCert(unittest.TestCase):
+# Directory with all the tool data
+BASE_DATA_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/"))
 
-    # Certificates for all the supported RHEL variants
-    certs = {
-        "x86_64": {"6": "69.pem", "7": "69.pem", "8": "479.pem"},
-        "ppc64": {
-            "7": "74.pem",
-        },
-    }
 
-    # Directory with all the tool data
-    base_data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/"))
+@pytest.fixture
+def cert_dir(monkeypatch, request):
+    if request.param["data_dir"] is None:
+        data_dir = unit_tests.NONEXISTING_DIR
+        rhel_cert_dir = os.path.join(data_dir, "rhel-certs")
+    else:
+        data_dir = request.param["data_dir"]
+        rhel_cert_dir = os.path.join(data_dir, "rhel-certs")
 
-    @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
-    def test_get_cert_path(self):
-        # Check there are certificates for all the supported RHEL variants
-        for arch, rhel_versions in self.certs.items():
-            for rhel_version, pem in rhel_versions.items():
-                utils.DATA_DIR = os.path.join(self.base_data_dir, rhel_version, arch)
-                system_cert = cert.SystemCert()
-                cert_path = system_cert._source_cert_path
-                self.assertEqual(cert_path, "{0}/rhel-certs/{1}".format(utils.DATA_DIR, pem))
-
-    @unit_tests.mock(cert, "loggerinst", unit_tests.GetLoggerMocked())
-    @unit_tests.mock(utils, "DATA_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(system_info, "arch", "arch")
-    def test_get_cert_path_missing_cert(self):
         # Create temporary directory that has no certificate
-        cert_dir = os.path.join(utils.DATA_DIR, "rhel-certs", system_info.arch)
+        cert_dir = os.path.join(rhel_cert_dir, request.param["arch"])
         utils.mkdir_p(cert_dir)
-        # Check response for the non-existing certificate in the temporary dir
-        self.assertRaises(SystemExit, cert.SystemCert._get_cert)
-        self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
-        # Remove the temporary directory tree
+
+    monkeypatch.setattr(utils, "DATA_DIR", data_dir)
+    monkeypatch.setattr(system_info, "arch", request.param["arch"])
+
+    yield rhel_cert_dir
+
+    # Remove the temporary directory tree if we created it earlier
+    if request.param["data_dir"] is not None:
         shutil.rmtree(os.path.join(utils.DATA_DIR, "rhel-certs"))
 
-    @unit_tests.mock(cert, "loggerinst", unit_tests.GetLoggerMocked())
-    @unit_tests.mock(utils, "DATA_DIR", unit_tests.NONEXISTING_DIR)
-    @unit_tests.mock(system_info, "arch", "nonexisting_arch")
-    def test_get_cert_path_nonexisting_dir(self):
-        self.assertRaises(SystemExit, cert.SystemCert._get_cert)
-        self.assertEqual(len(cert.loggerinst.critical_msgs), 1)
 
-    @unit_tests.mock(tool_opts, "arch", "x86_64")
-    @unit_tests.mock(utils, "DATA_DIR", os.path.join(base_data_dir, "6", "x86_64"))
-    def test_install_cert(self):
-        # By initializing the cert object we get a path to an existing
-        # certificate based on the mocked parameters above
-        system_cert = cert.SystemCert()
-        system_cert._target_cert_dir = unit_tests.TMP_DIR
+@pytest.mark.parametrize(
+    (
+        "message",
+        "cert_dir",
+    ),
+    (
+        # Missing certificate
+        (
+            "Error: System certificate (.pem) not found in %(cert_dir)s.",
+            {
+                "data_dir": unit_tests.TMP_DIR,
+                "arch": "arch",
+            },
+        ),
+        # Missing cert dir
+        (
+            "Error: Could not access %(cert_dir)s.",
+            {
+                "data_dir": None,
+                "arch": "nonexisting_arch",
+            },
+        ),
+    ),
+    indirect=("cert_dir",),
+)
+def test_get_cert_path_missing_cert(message, caplog, cert_dir):
+    # Check response for the non-existing certificate in the temporary dir
+    with pytest.raises(SystemExit):
+        cert.SystemCert._get_cert()
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "CRITICAL"
+    assert caplog.records[0].message == message % {"cert_dir": cert_dir}
 
-        system_cert.install()
 
-        installed_cert_path = os.path.join(system_cert._target_cert_dir, system_cert._cert_filename)
-        self.assertTrue(os.path.exists(installed_cert_path))
-        shutil.rmtree(unit_tests.TMP_DIR)
+@pytest.mark.parametrize(
+    ("arch", "rhel_version", "pem"),
+    (
+        ("x86_64", "6", "69.pem"),
+        ("x86_64", "7", "69.pem"),
+        ("x86_64", "8", "479.pem"),
+        ("ppc64", "7", "74.pem"),
+    ),
+)
+def test_get_cert_path(arch, rhel_version, pem, monkeypatch):
+    monkeypatch.setattr(utils, "DATA_DIR", unit_tests.TMP_DIR)
+    # Check there are certificates for all the supported RHEL variants
+    utils.DATA_DIR = os.path.join(BASE_DATA_DIR, rhel_version, arch)
+
+    system_cert = cert.SystemCert()
+
+    cert_path = system_cert._source_cert_path
+    assert cert_path == "{0}/rhel-certs/{1}".format(utils.DATA_DIR, pem)
+
+
+def test_install_cert(monkeypatch, tmpdir):
+    monkeypatch.setattr(tool_opts, "arch", "x86_64")
+    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, "6", "x86_64"))
+
+    # By initializing the cert object we get a path to an existing
+    # certificate based on the mocked parameters above
+    system_cert = cert.SystemCert()
+    system_cert._target_cert_dir = str(tmpdir)
+
+    system_cert.install()
+
+    installed_cert_path = os.path.join(system_cert._target_cert_dir, system_cert._cert_filename)
+    assert os.path.exists(installed_cert_path)
 
 
 @pytest.mark.cert_filename("filename")
