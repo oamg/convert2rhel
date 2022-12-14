@@ -58,21 +58,21 @@ def cert_dir(monkeypatch, request):
         "cert_dir",
     ),
     (
-        # Missing certificate
-        (
+        pytest.param(
             "Error: System certificate (.pem) not found in %(cert_dir)s.",
             {
                 "data_dir": unit_tests.TMP_DIR,
                 "arch": "arch",
             },
+            id="missing-certificate",
         ),
-        # Missing cert dir
-        (
+        pytest.param(
             "Error: Could not access %(cert_dir)s.",
             {
                 "data_dir": None,
                 "arch": "nonexisting_arch",
             },
+            id="missing-cert-dir",
         ),
     ),
     indirect=("cert_dir",),
