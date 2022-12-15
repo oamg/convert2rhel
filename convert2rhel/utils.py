@@ -748,16 +748,21 @@ def report_on_a_download_error(output, pkg):
     from convert2rhel.systeminfo import system_info
 
     if toolopts.tool_opts.activity == "conversion":
-        if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
-            loggerinst.critical(
-                "Couldn't download the %s package. This means we will not be able to do a"
-                " complete rollback and may put the system in a broken state.\n"
-                "Check to make sure that the %s repositories are enabled"
-                " and the package is updated to its latest version.\n"
-                "If you would rather ignore this check set the environment variable"
-                " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1'." % (pkg, system_info.name)
-            )
-        else:
+        # add in the new envar that should be changed to along with the old one
+        allow_old_envar_names = ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
+
+        # search for either envar in the system to see if it has been set
+        if any(envvar in os.environ for envvar in allow_old_envar_names):
+
+            # check to see which envar was used
+            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+                # give the warning about the old envar not being used anymore if it is used
+                loggerinst.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                    " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
+                )
+
+            # give regular warning if the new envar is used
             loggerinst.warning(
                 "Couldn't download the %s package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"

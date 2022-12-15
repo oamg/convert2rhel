@@ -128,7 +128,7 @@ def test_is_rpm_based_os():
 class TestDownloadPkg(object):
     @centos7
     def test_download_pkg_failed_download_overridden(self, pretend_os, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", TestUtils.RunSubprocessMocked(ret_code=1))
         expected_log = (
             "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
             "there is no guarantee that the packages will be restored on rollback, which"
@@ -196,7 +196,7 @@ class TestDownloadPkg(object):
         monkeypatch,
         caplog,
     ):
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", TestUtils.RunSubprocessMocked(ret_code=1))
 
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
 
