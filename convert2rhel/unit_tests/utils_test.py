@@ -125,6 +125,93 @@ def test_is_rpm_based_os():
     assert is_rpm_based_os() in (True, False)
 
 
+class TestDownloadPkg(object):
+    @centos7
+    def test_download_pkg_failed_download_overridden(self, pretend_os, monkeypatch, caplog):
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        expected_log = (
+            "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
+            "there is no guarantee that the packages will be restored on rollback, which"
+            "could put the system in a broken state.\nCheck to ensure that the None "
+            "repositories are enabled, and the packages are updated to their latest "
+            "versions.\nIf this error still occurs after re-running the conversion, "
+            "you can set the environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK=1"
+            "to ignore this check."
+        )
+
+        with pytest.raises(SystemExit):
+            utils.download_pkg("kernel")
+
+            assert expected_log in caplog.records[-1].message
+
+    @centos7
+    @pytest.mark.parametrize(
+        (
+            "package_name",
+            "unsupported_rollback",
+            "incomplete_rollback",
+            "expected_log",
+            "unsupported_log",
+        ),
+        (
+            (
+                "kernel",
+                "1",
+                "0",
+                "Couldn't download the kernel package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
+            ),
+            (
+                "kernel",
+                "0",
+                "1",
+                "Couldn't download the kernel package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                None,
+            ),
+            (
+                "kernel",
+                "1",
+                "1",
+                "Couldn't download the kernel package. This means we will not be able to do a"
+                " complete rollback and may put the system in a broken state.\n"
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
+            ),
+        ),
+    )
+    def test_download_pkg_failed_download_unsupported_env_var(
+        self,
+        package_name,
+        unsupported_rollback,
+        incomplete_rollback,
+        expected_log,
+        unsupported_log,
+        pretend_os,
+        monkeypatch,
+        caplog,
+    ):
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+
+        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
+
+        if unsupported_rollback == 1:
+            monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": unsupported_rollback})
+            utils.download_pkg(package_name)
+
+            assert unsupported_log in caplog.records[-1].message
+
+        path = utils.download_pkg(package_name)
+        assert path is None
+
+        assert expected_log in caplog.records[-1].message
+
+
 @pytest.mark.parametrize(
     "command, expected_output, expected_code",
     (
