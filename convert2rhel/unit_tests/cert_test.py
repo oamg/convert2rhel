@@ -18,7 +18,6 @@ import os
 import shutil
 
 import pytest
-import six
 
 from convert2rhel import cert, unit_tests, utils
 from convert2rhel.systeminfo import system_info
