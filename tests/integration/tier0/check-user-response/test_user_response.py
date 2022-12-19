@@ -16,13 +16,26 @@ def test_check_user_response_user_and_password(convert2rhel):
         # "Password" and raises the assertion error.
         assert c2r.expect_exact(["Username", "Password"], timeout=300) == 0
         # Provide username, expect password prompt
-        c2r.sendline(env.str("RHSM_USERNAME"))
-        c2r.expect_exact("Password: ")
-        c2r.sendline()
-        assert c2r.expect_exact(["Password", "Enter number of the chosen subscription"], timeout=300) == 0
-        # Provide password, expect successful registration and subscription prompt
-        c2r.sendline(env.str("RHSM_PASSWORD"))
-        c2r.expect_exact("Enter number of the chosen subscription: ")
+
+        retries = 0
+        while True:
+            c2r.sendline(env.str("RHSM_USERNAME"))
+            print("Sending username:", env.str("RHSM_USERNAME"))
+            c2r.expect_exact("Password: ")
+            c2r.sendline()
+            try:
+                assert c2r.expect_exact(["Password", "Enter number of the chosen subscription"], timeout=300) == 0
+                # Provide password, expect successful registration and subscription prompt
+                c2r.sendline(env.str("RHSM_PASSWORD"))
+                print("Sending password")
+                c2r.expect_exact("Enter number of the chosen subscription: ")
+                break
+            except Exception:
+                retries = retries + 1
+                if retries == 3:
+                    raise
+                continue
+
         # Due to inconsistent behavior of Ctrl+c
         # the Ctrl+d is used to terminate the process instead
         c2r.sendcontrol("d")
