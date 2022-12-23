@@ -435,7 +435,7 @@ class SystemInfo(object):
 
             # Wait for 1 second, 2 seconds, and then 4 seconds for dbus to be running
             # (In case it was started before convert2rhel but it is slow to start)
-            time.sleep(2**retries)
+            time.sleep(2 ** retries)
             retries += 1
 
         else:  # while-else
