@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - no-changelog
+    authors:
+      - dependabot
+      - pre-commit-ci
+  categories:
+    - title: Breaking Changes 🛠
+      labels:
+        - breaking-change
+    - title: Enhancements 🎉
+      labels:
+        - enhancement
+        - "*"
+    - title: Security Hardening 🔒
+      labels:
+        - security-hardening
+    - title: Bug Fixes 🐛
+      labels:
+        - bug-fix
