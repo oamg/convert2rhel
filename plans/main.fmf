@@ -36,6 +36,7 @@ prepare:
       how: ansible
       playbook: tests/ansible_collections/roles/reboot/main.yml
     - name: install latest copr build
+      when: type != redhat-brew-build
       how: install
       copr: '@oamg/convert2rhel'
       package: convert2rhel
