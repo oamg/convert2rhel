@@ -35,7 +35,7 @@ from convert2rhel.pkghandler import (
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos7, centos8, create_pkg_obj
+from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -1314,7 +1314,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
         self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
-        self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs) == 0)
+        self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
 
 
 @pytest.mark.parametrize(
