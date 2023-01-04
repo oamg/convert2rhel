@@ -116,7 +116,6 @@ except ImportError:
 
 def perform_system_checks():
     """Early checks after system facts should be added here."""
-
     check_custom_repos_are_valid()
     check_convert2rhel_latest()
     check_efi()
@@ -715,105 +714,121 @@ def is_loaded_kernel_latest():
         )
         return
 
-    reposdir = get_hardcoded_repofiles_dir()
+    cmd = [
+        "repoquery",
+        "--setopt=exclude=",
+        "--quiet",
+        "--qf",
+        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+    ]
 
+    reposdir = get_hardcoded_repofiles_dir()
     if reposdir and not system_info.has_internet_access:
         logger.warning("Skipping the check as no internet connection has been detected.")
         return
 
-    cmd = ["repoquery", "--setopt=exclude=", "--quiet", "--qf", "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"]
-
-    # If the reposdir variable is not empty, meaning that it detected the hardcoded repofiles, we should use that
+    # If the reposdir variable is not empty, meaning that it detected the
+    # hardcoded repofiles, we should use that
     # instead of the system repositories located under /etc/yum.repos.d
     if reposdir:
         cmd.append("--setopt=reposdir=%s" % reposdir)
 
-    # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead, we check for `kernel-core`.
-    # But for 6 and 7 releases, the correct way to check is using `kernel`.
+    # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
+    # we check for `kernel-core`. But for 6 and 7 releases, the correct way to
+    # check is using `kernel`.
     package_to_check = "kernel-core" if system_info.version.major >= 8 else "kernel"
 
     # Append the package name as the last item on the list
     cmd.append(package_to_check)
 
-    # Search for available kernel package versions available in different
-    # repositories using the `repoquery` command.  If convert2rhel is running
-    # on a EUS system, then repoquery will use the hardcoded repofiles
-    # available under /usr/share/convert2rhel/repos, meaning that the tool will
-    # fetch only the latest kernels available for that EUS version, and not the
-    # most updated version from other newer versions.  If the case is that
-    # convert2rhel is not running on a EUS system, for example, Oracle Linux
-    # 8.5, then it will use the system repofiles.
+    # Look up for available kernel (or kernel-core) packages versions available
+    # in different repositories using the `repoquery` command.  If convert2rhel
+    # detects that it is running on a EUS system, then repoquery will use the
+    # hardcoded repofiles available under `/usr/share/convert2rhel/repos`,
+    # meaning that the tool will fetch only the latest kernels available for
+    # that EUS version, and not the most updated version from other newer
+    # versions.
     repoquery_output, return_code = run_subprocess(cmd, print_output=False)
-
     if return_code != 0:
         logger.debug("Got the following output: %s", repoquery_output)
         logger.warning(
-            "Couldn't fetch the list of the most recent kernels available in the repositories. Skipping the loaded kernel check."
+            "Couldn't fetch the list of the most recent kernels available in "
+            "the repositories. Skipping the loaded kernel check."
         )
         return
 
-    # Repoquery doesn't return any text at all when it can't find any matches for the query (when used with --quiet)
-    if len(repoquery_output) > 0:
-        # Convert to an tuple split with `buildtime` and `kernel` version.
-        # We are also detecting if the sentence "listed more than once in the configuration"
-        # appears in the repoquery output. If it does, we ignore it.
-        # This later check is supposed to avoid duplicate repofiles being defined in the system,
-        # this is a super corner case and should not happen everytime, but if it does, we are aware now.
-        packages = [
-            tuple(str(line).split("\t"))
-            for line in repoquery_output.split("\n")
-            if (line.strip() and "listed more than once in the configuration" not in line.lower())
-        ]
-        # Filter out any error messages (things that do not have the three
-        # fields which we expect)
-        packages = [pkg for pkg in packages if len(pkg) == 3]
-
-        # Sort out for the most recent kernel with reverse order
-        # In case `repoquery` returns more than one kernel in the output
-        # We display the latest one to the user.
-        packages.sort(key=lambda x: x[0], reverse=True)
-
-        _, latest_kernel, repoid = packages[0]
-
-        # The loaded kernel version
-        uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
-        loaded_kernel = uname_output.rsplit(".", 1)[0]
-        match = compare_package_versions(latest_kernel, str(loaded_kernel))
-
-        if match == 0:
-            logger.info("The currently loaded kernel is at the latest version.")
-        else:
-            repos_message = (
-                "in the enabled system repositories"
-                if not reposdir
-                else "in repositories defined in the %s folder" % reposdir
-            )
-            logger.critical(
-                "The version of the loaded kernel is different from the latest version %s.\n"
-                " Latest kernel version available in %s: %s\n"
-                " Loaded kernel version: %s\n\n"
-                "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
-                "1. yum install %s-%s -y\n"
-                "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
-            )
-    else:
-        # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
-        # we allow the user to provide a environment variable to override the functionality and proceed
-        # with the conversion, otherwise, we just throw an critical logging to them.
-        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", "0")
-        if unsupported_skip == "1":
-            logger.warning(
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                "the %s comparison.\n"
-                "Beware, this could leave your system in a broken state. " % package_to_check
-            )
-        else:
+    # If repoquery output is empty, then something went wrong, we need to
+    # decide wether to bail out or output a warning (only if the user used the
+    # special environment variable for it.
+    if len(repoquery_output) <= 0:
+        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
+        if not unsupported_skip:
             logger.critical(
                 "Could not find any %s from repositories to compare against the loaded kernel.\n"
                 "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
                 "If you wish to ignore this message, set the environment variable "
                 "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
             )
+
+        logger.warning(
+            "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+            "the %s comparison.\n"
+            "Beware, this could leave your system in a broken state. " % package_to_check
+        )
+        return
+
+    packages = []
+    # We are expecting an repoquery output to be similar to this:
+    #   C2R     1671212820      3.10.0-1160.81.1.el7    updates
+    # We need the `C2R` identifier to be present on the line so we can know for
+    # sure that the line we are working with is the a line that contains
+    # relevant repoquery information to our check, otherwise, we just log the
+    # information as debug and do nothing with it.
+    for line in repoquery_output.split("\n"):
+        if line.strip() and "C2R" in line:
+            _, build_time, latest_kernel, repoid = tuple(str(line).split("\t"))
+            packages.append((build_time, latest_kernel, repoid))
+        else:
+            # Mainly for debugging purposes to see what is happening if we got
+            # anything else that does not have the C2R identifier at the start
+            # of the line.
+            logger.debug("Got a line without the C2R identifier: %s" % line)
+
+    # Empty packages list, that means that repoquery probably failed to find
+    # the kernel (or kernel-core) packages, let's just print a warning and
+    # return.
+    if not packages:
+        logger.warning(
+            "Could not find any %s in the available repositories. "
+            "This could mean that the repositories are not enabled, acessible, "
+            "or missing some important information to progress.\n"
+            "Skipping this check as we can't progress with further verification." % package_to_check
+        )
+        return
+
+    packages.sort(key=lambda x: x[0], reverse=True)
+    _, latest_kernel, repoid = packages[0]
+
+    uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
+    loaded_kernel = uname_output.rsplit(".", 1)[0]
+    match = compare_package_versions(latest_kernel, str(loaded_kernel))
+
+    if match != 0:
+        repos_message = (
+            "in the enabled system repositories"
+            if not reposdir
+            else "in repositories defined in the %s folder" % reposdir
+        )
+        logger.critical(
+            "The version of the loaded kernel is different from the latest version %s.\n"
+            " Latest kernel version available in %s: %s\n"
+            " Loaded kernel version: %s\n\n"
+            "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
+            "1. yum install %s-%s -y\n"
+            "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+        )
+
+    logger.info("The currently loaded kernel is at the latest version.")
 
 
 def check_dbus_is_running():
