@@ -757,26 +757,6 @@ def is_loaded_kernel_latest():
         )
         return
 
-    # If repoquery output is empty, then something went wrong, we need to
-    # decide wether to bail out or output a warning (only if the user used the
-    # special environment variable for it.
-    if len(repoquery_output) <= 0:
-        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
-        if not unsupported_skip:
-            logger.critical(
-                "Could not find any %s from repositories to compare against the loaded kernel.\n"
-                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
-                "If you wish to ignore this message, set the environment variable "
-                "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
-            )
-
-        logger.warning(
-            "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-            "the %s comparison.\n"
-            "Beware, this could leave your system in a broken state. " % package_to_check
-        )
-        return
-
     packages = []
     # We are expecting an repoquery output to be similar to this:
     #   C2R     1671212820      3.10.0-1160.81.1.el7    updates
@@ -794,15 +774,23 @@ def is_loaded_kernel_latest():
             # of the line.
             logger.debug("Got a line without the C2R identifier: %s" % line)
 
-    # Empty packages list, that means that repoquery probably failed to find
-    # the kernel (or kernel-core) packages, let's just print a warning and
-    # return.
+    # If we don't have any packages, then something went wrong, we need to
+    # decide wether to bail out or output a warning (only if the user used the
+    # special environment variable for it.
     if not packages:
+        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
+        if not unsupported_skip:
+            logger.critical(
+                "Could not find any %s from repositories to compare against the loaded kernel.\n"
+                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                "If you wish to ignore this message, set the environment variable "
+                "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
+            )
+
         logger.warning(
-            "Could not find any %s in the available repositories. "
-            "This could mean that the repositories are not enabled, acessible, "
-            "or missing some important information to progress.\n"
-            "Skipping this check as we can't progress with further verification." % package_to_check
+            "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+            "the %s comparison.\n"
+            "Beware, this could leave your system in a broken state. " % package_to_check
         )
         return
 

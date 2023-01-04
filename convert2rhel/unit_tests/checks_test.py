@@ -1573,39 +1573,6 @@ class TestIsLoadedKernelLatest:
         assert "Latest kernel version available in baseos: %s" % repoquery_kernel_version in caplog.records[-1].message
         assert "Loaded kernel version: %s\n\n" % uname_kernel_version in caplog.records[-1].message
 
-    @centos8
-    def test_is_loaded_kernel_latest_no_packages_found(self, pretend_os, monkeypatch, caplog):
-        run_subprocess_mocked = mock.Mock(
-            spec=run_subprocess,
-            side_effect=run_subprocess_side_effect(
-                (
-                    (
-                        "repoquery",
-                        "--setopt=exclude=",
-                        "--quiet",
-                        "--qf",
-                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                        "kernel-core",
-                    ),
-                    (
-                        "test output",
-                        0,
-                    ),
-                ),
-                (("uname", "-r"), ("3.10.0-1160.42.2.el7.x86_64", 0)),
-            ),
-        )
-        monkeypatch.setattr(
-            checks,
-            "run_subprocess",
-            value=run_subprocess_mocked,
-        )
-
-        is_loaded_kernel_latest()
-
-        assert "Got a line without the C2R identifier: test output" in caplog.records[-2].message
-        assert "Could not find any kernel-core in the available repositories." in caplog.records[-1].message
-
 
 @pytest.mark.parametrize(
     ("no_rhsm", "dbus_running", "log_msg"),
