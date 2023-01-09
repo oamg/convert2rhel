@@ -48,6 +48,41 @@ requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-reque
 
 ## Getting started with development
 
+### Develop in a container through VS Code
+
+> **Note**
+>
+> This likely does not work with Docker as it has been exclusively tested with Podman
+
+For an easy setup where you can get up and running within a minute, we have a dedicated development container setup with
+VS Code. This creates a container with extensions and allows you to run convert2rhel and tests without drawbacks.
+
+This does not work with VSCodium as Dev Container is deliberately limited to only work with Microsoft VS Code binaries.
+This also might not work with Docker as it has fixes for Podman that might not exist in Docker.
+
+Note: we need to run tests in a container as convert2rhel is volatile, a small mistake in tests can make modifications
+on your system.
+
+To get started with a Dev Container, you need to install the [Dev Container extensions in VS Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). You can follow the link or install this ID
+```
+ms-vscode-remote.remote-containers
+```
+
+Once the extension is installed, all you need to do is open up the repository inside a container, pressing `F1` or
+`Ctrl-Shift-P` and starting the following will open up the container for you
+```
+Dev Containers: Open Folder in Container
+```
+
+You are now inside a container as indicated by the bottom left box. There is an extension for tests in the left
+navigation that auto-discovers tests that you can run. This will be much faster than developing using `make tests`
+
+#### Known issues
+##### Debugging just loads and does nothing
+Versions newer than `2022.8.1` of extension `ms-python.python` will not work when debugging code. We have pinned the version but VS Code might auto-update the extension.
+
+To work around this, go to extensions tab and select Ignore Updates on the extension, thereafter select install a new version and install `2022.8.1`. It will prompt to reload the window, make sure the right version is installed after reload. Now debugging should work
+
 ### Dependencies for local development
 
 We have some required dependencies you should have installed on your system
@@ -69,8 +104,7 @@ Optional dependencies:
 ### Setting up the environment
 
 The commands below will create a python3 virtual environment with all the
-necessary dependencies installed, images built, `.env` file created, and setup
-`pre-commit` hooks.
+necessary dependencies installed, images built, and setup `pre-commit` hooks.
 
 Beware this command can take a while to finish, depending on your internet
 connection.
