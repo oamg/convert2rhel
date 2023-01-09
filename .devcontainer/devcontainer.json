@@ -1,0 +1,46 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/docker-existing-dockerfile
+{
+	"name": "CentOS Linux 8",
+	// Sets the run context to one level up instead of the .devcontainer folder.
+	"context": "..",
+	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+	"dockerFile": "centos8-development.Dockerfile",
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Uncomment the next line to run commands after the container is created - for example installing curl.
+	"postCreateCommand": "pre-commit install",
+	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
+	// "runArgs": [ "--security-opt", "label=disable" ],
+	"runArgs": [
+		"--userns=keep-id"
+	],
+	// Need to mount manually as we run into SELinux issues otherwise
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,Z",
+	// Need to change home to avoid errors in Podman
+	"containerEnv": {
+		"HOME": "/home/vscode"
+	},
+	// Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker
+	// "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+	// Uncommented to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root
+	"remoteUser": "vscode",
+	"containerUser": "vscode",
+	"settings": {
+		"extensions.autoUpdate": false,
+		"extensions.autoCheckUpdates": false
+	},
+	// Extensions that are handy when developing
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.vscode-pylance",
+				"eamodio.gitlens",
+				"GitHub.vscode-pull-request-github",
+				"Cameron.vscode-pytest",
+				"njpwerner.autodocstring",
+				"ms-python.python@2022.8.1"
+			]
+		}
+	}
+}

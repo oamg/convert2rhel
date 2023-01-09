@@ -8,7 +8,6 @@ SRPMS/
 *.pyc
 system_tests/vmdefs/centos*/.vagrant/
 *.copr.conf
-.vscode/*
 .venv/*
 .build-images
 .install
@@ -17,3 +16,5 @@ system_tests/vmdefs/centos*/.vagrant/
 .srpms/*
 .idea/
 .cache/
+.pytest_cache/*
+.mypy_cache/*
