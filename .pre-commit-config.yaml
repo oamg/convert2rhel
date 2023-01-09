@@ -18,14 +18,14 @@ repos:
             - "--target-version=py310"
 
   - repo: "https://github.com/timothycrosley/isort"
-    rev: 5.10.1
+    rev: 5.11.4
     hooks:
       - id: isort
         language_version: "python3"
         additional_dependencies: [toml]
 
   - repo: "https://github.com/pre-commit/pre-commit-hooks"
-    rev: "v4.1.0"
+    rev: "v4.4.0"
     hooks:
       - id: "end-of-file-fixer"
       - id: "trailing-whitespace"
@@ -37,6 +37,6 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.19.0"
+    rev: "1.20.0"
     hooks:
       - id: "tmt-tests-lint"
