@@ -3,8 +3,8 @@ description: |
     Verify, that Convert2RHEL is able to handle custom, tainted and force loaded kernel modules.
 
 adjust+:
-    # TODO disable for epel7 due to the impossibility of forceloading the kmod
-    # TODO after the merge of the tier0 refactor disable just the force load kmod test
+    # TODO (danmyway) disable for epel7 due to the impossibility of force loading the kmod
+    # TODO (danmyway) after the merge of the tier0 refactor disable just the force load kmod test
     - environment+:
         PROMPT_AMOUNT: 4
       when: distro == centos-8

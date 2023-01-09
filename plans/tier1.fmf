@@ -105,21 +105,6 @@
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/handle_special_pkgs_case:
-    adjust+:
-        - enabled: false
-          when: >
-            distro != oraclelinux-7
-    discover+:
-        test: checks-after-conversion
-    prepare+:
-        - name: main conversion preparation
-          how: shell
-          script: pytest -svv tests/integration/tier1/handle-special-pkgs-case/test_handle_shim_x64_pkg.py
-        - name: reboot after conversion
-          how: ansible
-          playbook: tests/ansible_collections/roles/reboot/main.yml
-
 /remove_all_submgr_pkgs:
     discover+:
         test: checks-after-conversion

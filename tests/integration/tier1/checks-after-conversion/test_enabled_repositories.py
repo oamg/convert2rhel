@@ -1,5 +1,4 @@
 import os.path
-import platform
 
 
 def _check_enabled_repos_rhel8(enabled_repos):
