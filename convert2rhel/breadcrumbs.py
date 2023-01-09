@@ -181,7 +181,7 @@ class Breadcrumbs(object):
             loggerinst.debug("No RHSM facts folder found at '%s'. Creating a new one..." % RHSM_CUSTOM_FACTS_FOLDER)
             # Using mkdir_p here as the `/etc/rhsm` might not exist at all.
             # Usually this can happen if we fail in the first run and we want to
-            # save the custom facts gathered so far, or, if the --norhsm option
+            # save the custom facts gathered so far, or, if the `--no-rhsm` option
             # is provided.
             # This is safe as the RHSM_CUSTOM_FACTS_FOLDER, /etc/rhsm/facts, and its parents
             # are only writable by root
