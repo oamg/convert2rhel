@@ -48,7 +48,7 @@ def cert_dir(monkeypatch, request):
 
     # Remove the temporary directory tree if we created it earlier
     if request.param["data_dir"] is not None:
-        shutil.rmtree(os.path.join(utils.DATA_DIR, "rhel-certs"))
+        shutil.rmtree(data_dir)
 
 
 @pytest.mark.parametrize(
@@ -95,10 +95,8 @@ def test_get_cert_path_missing_cert(message, caplog, cert_dir):
     ),
 )
 def test_get_cert_path(arch, rhel_version, pem, monkeypatch):
-    monkeypatch.setattr(utils, "DATA_DIR", unit_tests.TMP_DIR)
+    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, rhel_version, arch))
     # Check there are certificates for all the supported RHEL variants
-    utils.DATA_DIR = os.path.join(BASE_DATA_DIR, rhel_version, arch)
-
     system_cert = cert.SystemCert()
 
     cert_path = system_cert._source_cert_path
