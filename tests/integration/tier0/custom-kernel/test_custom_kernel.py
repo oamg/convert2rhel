@@ -15,7 +15,7 @@ DISTRO_KERNEL_MAPPING = {
     },
     # We hardcode original kernel for both CentOS 8.4 and CentOS 8.5 as it won't receive any updates anymore
     "centos-8.4": {
-        "original_kernel": f"kernel-core-4.18.0-305.25.1.el8_4.x86_64",
+        "original_kernel": "kernel-core-4.18.0-305.25.1.el8_4.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/4/baseos/base/x86_64/getPackage/kernel-core-4.18.0-305.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-305.el8.x86_64) 8.4",
     },
@@ -37,6 +37,8 @@ DISTRO_KERNEL_MAPPING = {
     },
 }
 
+_, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
+
 
 def install_custom_kernel(shell):
     """
@@ -44,11 +46,9 @@ def install_custom_kernel(shell):
     kernel that is not signed by the running OS official vendor.
     """
 
-    _, custom_kernel, grub_substring = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
+    assert shell("yum install %s -y" % CUSTOM_KERNEL).returncode == 0
 
-    assert shell("yum install %s -y" % custom_kernel).returncode == 0
-
-    assert shell("grub2-set-default '%s'" % grub_substring).returncode == 0
+    assert shell("grub2-set-default '%s'" % GRUB_SUBSTRING).returncode == 0
 
     shell("tmt-reboot -t 600")
 
@@ -57,10 +57,11 @@ def clean_up_custom_kernel(shell):
     """
     Remove the current installed kernel and install the machine default kernel.
     """
-    original_kernel, custom_kernel, _ = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
-    original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
-    custom_kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "")
+    custom_kernel_release = CUSTOM_KERNEL.rsplit("/")[-1].replace(".rpm", "")
     assert shell("rpm -e %s" % custom_kernel_release).returncode == 0
+
+    original_kernel = os.popen("rpm -q --last kernel | head -1 | cut -d ' ' -f1").read()
+    original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-")[-1]
 
     # Install back the CentOS 8.5 original kernel
     if "centos-8.5" in SYSTEM_RELEASE_ENV:
