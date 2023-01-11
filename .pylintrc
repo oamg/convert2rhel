@@ -6,35 +6,86 @@ function-rgx=[a-z_][a-z0-9_]{2,50}$
 [MESSAGES CONTROL]
 
 disable=
-# "E" Error for important programming issues (likely bugs)
-# skip redefined function false positive
- E0102,
- no-member,
- arguments-differ,
-# we can drop this when we drop py2.4 support
- broad-except,
- fixme,
-# we can discuss this if we find an easy alternative to the "globale" use
- global-statement,
- no-init,
- protected-access,
-# "C" Coding convention violations
- missing-docstring,
-# we can drop this when we drop py2.4 support
- old-style-class,
-# "R" Refactor recommendations
- too-few-public-methods,
 # do not warn about pylint checks being disabled through comments in the code
  locally-disabled,
-# For some reason, pylint doesn't get right instance members, and some types could not be inferred
-# Eg: [E1103 maybe-no-member] Instance of 'RootLogger' has no 'task' member File: convert2rhel/main.py, line 60, in main
-# we have several logger task, and s good approach to disable here, instead of each line
- maybe-no-member,
-# Disable these Refactor message since most of our tests use more then 20 public methods, and we are not refactor all
-# of our tests right now
- too-many-public-methods,
+# These are our current failures 2023-01-11.  We can go through them and either
+# fix them or add a comment to say why we are leaving it disabled.
+ anomalous-backslash-in-string,
+ arguments-renamed,
+ attribute-defined-outside-init,
+ broad-except,
+ consider-using-dict-items,
+ consider-using-f-string,
+ consider-using-with,
+ cyclic-import,
+ deprecated-module,
+ duplicate-code,
+ empty-docstring,
+ expression-not-assigned,
+ f-string-without-interpolation,
+ fixme,
+ function-redefined,
+ global-variable-not-assigned,
+ implicit-str-concat,
+ import-error,
+ import-outside-toplevel,
+ inconsistent-return-statements,
+ invalid-name,
+ line-too-long,
+ logging-format-interpolation,
+ logging-fstring-interpolation,
+ logging-not-lazy,
+ missing-class-docstring,
+ missing-function-docstring,
+ missing-module-docstring,
+ no-else-break,
+ no-else-raise,
+ no-else-return,
+ no-member,
+ no-self-use,
+ no-value-for-parameter,
+ pointless-statement,
+ protected-access,
+ raise-missing-from,
+ redefined-builtin,
+ redefined-outer-name,
+ redundant-unittest-assert,
+ reimported,
+ simplifiable-if-expression,
+ simplifiable-if-statement,
+ singleton-comparison,
+ superfluous-parens,
+ super-init-not-called,
+ super-with-arguments,
+ suppressed-message,
+ too-few-public-methods,
+ too-many-arguments,
  too-many-branches,
  too-many-instance-attributes,
+ too-many-lines,
+ too-many-locals,
+ too-many-nested-blocks,
+ too-many-public-methods,
+ too-many-statements,
+ try-except-raise,
+ ungrouped-imports,
+ unknown-option-value,
+ unnecessary-dunder-call,
+ unnecessary-lambda,
+ unnecessary-pass,
+ unspecified-encoding,
+ unused-argument,
+ unused-import,
+ unused-variable,
+ useless-else-on-loop,
+ useless-object-inheritance,
+ useless-option-value,
+ useless-return,
+ useless-suppression,
+ use-symbolic-message-instead,
+ wrong-import-order,
+ wrong-import-position
+
 [REPORTS]
 
 msg-template='[{msg_id} {symbol}] {msg} File: {path}, line {line}, in {obj}'
