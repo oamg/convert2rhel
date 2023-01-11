@@ -11,7 +11,6 @@ jobs:
   owner: "@oamg"
   project: convert2rhel
   targets:
-  - epel-6-x86_64
   - epel-7-x86_64
   - epel-8-x86_64
   actions:
@@ -24,7 +23,6 @@ jobs:
   owner: "@oamg"
   project: convert2rhel
   targets:
-  - epel-6-x86_64
   - epel-7-x86_64
   - epel-8-x86_64
   actions:
