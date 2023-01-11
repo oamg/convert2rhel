@@ -37,8 +37,9 @@ repos:
     - id: pylint
       name: pylint
       entry: pylint
-      language: system
       types: [python]
+      language: python
+      additional_dependencies: [pylint==2.13.4]
       args:
         [
           "-sn", # Don't display the score
