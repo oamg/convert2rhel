@@ -1,4 +1,13 @@
-summary: one-kernel-scenario
+summary: One kernel scenario
+
+description: |
+  Test the edge-case scenario where the installed
+  kernel is the same version as the one in enabled RHEL repositories.
+  The RHEL repositories contain only this one kernel. The test verifies
+  that C2R is able to replace the installed kernel with the RHEL one correctly.
+
+link: https://issues.redhat.com/browse/RHELC-37
+
 tier: 1
 adjust+:
     - enabled: false
