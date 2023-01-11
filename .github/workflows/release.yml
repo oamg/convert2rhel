@@ -6,30 +6,6 @@ on:
     types: [published]
 
 jobs:
-  build_el6_rpm:
-    name: Build EL6 RPM
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Build RPM package for EL6
-        id: rpm_build_el6
-        uses: bocekm/rpmbuild@el6
-        with:
-          spec_path: "packaging/convert2rhel.spec"
-
-      - name: Upload EL6 RPM as release asset
-        id: upload_release_asset_el6
-        uses: actions/upload-release-asset@v1
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-            upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ${{ steps.rpm_build_el6.outputs.rpm_path }}
-            asset_name: ${{ steps.rpm_build_el6.outputs.rpm_name }}
-            asset_content_type: ${{ steps.rpm_build_el6.outputs.content_type }}
-
   build_el7_rpm:
     name: Build EL7 RPM
     runs-on: ubuntu-latest
