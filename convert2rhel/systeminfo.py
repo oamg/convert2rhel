@@ -46,7 +46,6 @@ RELEASE_VER_MAPPING = {
     "8.5": "8.5",
     "8.4": "8.4",
     "7.9": "7Server",
-    "6.10": "6Server",
 }
 
 # For a list of modified rpm files before the conversion starts

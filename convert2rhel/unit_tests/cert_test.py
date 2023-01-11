@@ -88,10 +88,9 @@ def test_get_cert_path_missing_cert(message, caplog, cert_dir):
 @pytest.mark.parametrize(
     ("arch", "rhel_version", "pem"),
     (
-        ("x86_64", "6", "69.pem"),
+        ("ppc64", "7", "74.pem"),
         ("x86_64", "7", "69.pem"),
         ("x86_64", "8", "479.pem"),
-        ("ppc64", "7", "74.pem"),
     ),
 )
 def test_get_cert_path(arch, rhel_version, pem, monkeypatch):
@@ -105,7 +104,7 @@ def test_get_cert_path(arch, rhel_version, pem, monkeypatch):
 
 def test_install_cert(monkeypatch, tmpdir):
     monkeypatch.setattr(tool_opts, "arch", "x86_64")
-    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, "6", "x86_64"))
+    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, "7", "x86_64"))
 
     # By initializing the cert object we get a path to an existing
     # certificate based on the mocked parameters above
