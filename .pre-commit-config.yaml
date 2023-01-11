@@ -1,21 +1,32 @@
 minimum_pre_commit_version: "2.9.0"
 repos:
-  -   repo: local
-      hooks:
-      -   id: black
-          name: black
-          entry: black
-          types: [python]
-          language: python
-          language_version: "python3"
-          additional_dependencies: [click==7.1.2, black==21.12b0]
-
+  - repo: local
+    hooks:
+    - id: black
+      name: black
+      entry: black
+      types: [python]
+      language: python
+      language_version: "python3"
+      additional_dependencies: [click==7.1.2, black==21.12b0]
+  - repo: local
+    hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      types: [python]
+      language: python
+      additional_dependencies: [pylint==2.13.4]
+      args:
+        [
+          "-sn", # Don't display the score
+          "--rcfile=.pylintrc", # Link to your config file
+        ]
   - repo: "https://github.com/timothycrosley/isort"
     rev: 5.11.4
     hooks:
       - id: isort
         additional_dependencies: [toml]
-
   - repo: "https://github.com/pre-commit/pre-commit-hooks"
     rev: "v4.4.0"
     hooks:
@@ -32,16 +43,3 @@ repos:
     rev: "1.20.0"
     hooks:
       - id: "tmt-tests-lint"
-  - repo: local
-    hooks:
-    - id: pylint
-      name: pylint
-      entry: pylint
-      types: [python]
-      language: python
-      additional_dependencies: [pylint==2.13.4]
-      args:
-        [
-          "-sn", # Don't display the score
-          "--rcfile=.pylintrc", # Link to your config file
-        ]
