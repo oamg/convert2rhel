@@ -96,15 +96,12 @@ endif
 	@echo "or login first with '$(DOCKER) login ghcr.io -u $$github_username'"
 	@echo "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry"
 	@echo
-	@echo "Pulling $(IMAGE)-centos6"
-	@$(DOCKER) pull $(IMAGE)-centos6
 	@echo "Pulling $(IMAGE)-centos7"
 	@$(DOCKER) pull $(IMAGE)-centos7
 	@echo "Pulling $(IMAGE)-centos8"
 	@$(DOCKER) pull $(IMAGE)-centos8
 .build-images:
 	@echo "Building images"
-	@$(DOCKER) build -f Dockerfiles/centos6.Dockerfile -t $(IMAGE)-centos6 .
 	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)-centos7 .
 	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)-centos8 .
 	touch $@
@@ -115,19 +112,12 @@ lint: images
 lint-errors: images
 	@$(DOCKER) run $(DOCKER_RM_CONTAINER) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "scripts/run_lint.sh --errors-only"
 
-tests: tests6 tests7 tests8
+tests: tests7 tests8
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
 DOCKER_TEST_FUNC=echo $(DOCKER_TEST_WARNING) ; $(DOCKER) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(DOCKER_RM_CONTAINER) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; DOCKER_RETURN=$${?} ; $(DOCKER_CLEANUP) ; exit $${DOCKER_RETURN}
 
-tests6: images
-	@echo 'CentOS Linux 6 tests'
-ifneq ("$(SHOW_CAPTURE)", "no")
-		@$(call DOCKER_TEST_FUNC,centos6,--show-capture=$(SHOW_CAPTURE))
-else
-		@$(call DOCKER_TEST_FUNC,centos6,)
-endif
 
 tests7: images
 	@echo 'CentOS Linux 7 tests'
