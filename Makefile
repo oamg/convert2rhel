@@ -4,7 +4,11 @@
 	lint-locally \
 	clean \
 	images \
+	image7 \
+	image8 \
 	tests \
+	tests7 \
+	tests8 \
 	lint \
 	lint-errors \
 	tests8 \
@@ -81,28 +85,38 @@ clean:
 	@find . -name '*.pyo' -exec rm -f {} +
 
 ifeq ($(BUILD_IMAGES), 1)
-images: .build-images
+images: .build-image-message .build-image7 .build-image8
+image7: .build-image-message .build-image7
+image8: .build-image-message .build-image8
 IMAGE=$(IMAGE_ORG)/$(IMAGE_PREFIX)
 else
-images: .fetch-images
+images: .fetch-image-message .fetch-image7 .fetch-image8
+image7: .fetch-image-message .fetch-image7
+image8: .fetch-image-message .fetch-image8
 IMAGE=$(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)
 endif
 
-.fetch-images:
-	@echo "Fetching images from github."
+.fetch-image-message:
+	@echo "Fetching image(s) from github."
 	@echo
 	@echo "If this fails, on authentication,"
 	@echo "either build the images locally using 'make BUILD_IMAGES=1 $$make_target'"
 	@echo "or login first with '$(DOCKER) login ghcr.io -u $$github_username'"
 	@echo "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry"
 	@echo
+.fetch-image7:
 	@echo "Pulling $(IMAGE)-centos7"
 	@$(DOCKER) pull $(IMAGE)-centos7
+.fetch-image8:
 	@echo "Pulling $(IMAGE)-centos8"
 	@$(DOCKER) pull $(IMAGE)-centos8
-.build-images:
+
+.build-image-message:
 	@echo "Building images"
+.build-image7:
 	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)-centos7 .
+	touch $@
+.build-image8:
 	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)-centos8 .
 	touch $@
 
@@ -119,11 +133,11 @@ WRITABLE_FILES=. .coverage coverage.xml
 DOCKER_TEST_FUNC=echo $(DOCKER_TEST_WARNING) ; $(DOCKER) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(DOCKER_RM_CONTAINER) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; DOCKER_RETURN=$${?} ; $(DOCKER_CLEANUP) ; exit $${DOCKER_RETURN}
 
 
-tests7: images
+tests7: image7
 	@echo 'CentOS Linux 7 tests'
 	@$(call DOCKER_TEST_FUNC,centos7,--show-capture=$(SHOW_CAPTURE))
 
-tests8: images
+tests8: image8
 	@echo 'CentOS Linux 8 tests'
 	@$(call DOCKER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
 
