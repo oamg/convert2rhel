@@ -1,7 +1,14 @@
-summary: Single Yum Transaction Validation
+summary: Verify single yum transaction validation
+
 description: >
-    Verify that we are doing a proper rollback during (and before) the
-    validation phase in our transactions.
+    Verify that we are doing a proper rollback during the validation phase in
+    our transactions.
+
+    If any errors occurs during the transaction resolution, either by
+    downloading a package, dependency resolver and etc... A rollback should
+    start and revert the changes to the system.
+
+link: https://issues.redhat.com/browse/RHELC-576
 
 tier: 0
 
