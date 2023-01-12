@@ -77,7 +77,6 @@ def main():
 
     # handle command line arguments
     toolopts.CLI()
-
     try:
         process_phase = ConversionPhase.POST_CLI
 
