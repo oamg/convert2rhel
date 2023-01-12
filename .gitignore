@@ -9,7 +9,8 @@ SRPMS/
 system_tests/vmdefs/centos*/.vagrant/
 *.copr.conf
 .venv/*
-.build-images
+.build-image7
+.build-image8
 .install
 .pre-commit
 .rpms/*
