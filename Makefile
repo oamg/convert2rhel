@@ -47,7 +47,7 @@ endif
 
 all: clean images tests
 
-install: .install .build-images .pre-commit
+install: .install .pre-commit
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
@@ -66,7 +66,7 @@ lint-locally: install
 	. $(VENV)/bin/activate; ./scripts/run_lint.sh
 
 clean:
-	@rm -rf build/ dist/ *.egg-info .pytest_cache/ .build-images
+	@rm -rf build/ dist/ *.egg-info .pytest_cache/
 	@find . -name '__pycache__' -exec rm -fr {} +
 	@find . -name '*.pyc' -exec rm -f {} +
 	@find . -name '*.pyo' -exec rm -f {} +
