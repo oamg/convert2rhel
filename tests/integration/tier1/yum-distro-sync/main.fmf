@@ -1,4 +1,9 @@
-summary: yum-distro-sync
+summary: yum distro-sync edge-cases
+
+description: |
+    Test yum distro-sync command edge-cases when given packages aren't in enabled repositories.
+
+link: https://issues.redhat.com/browse/RHELC-150
 
 tier: 1
 
