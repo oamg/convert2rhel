@@ -1,9 +1,9 @@
-summary: Removed packages from CentOS 8.5
+summary: Remove packages from CentOS 8.5
 description: |
     Verify that Convert2RHEL can handle correctly the package removal from the
-    excluded list that are listed under the configuration files. This test will
-    call an ansible playbook to install the packages that needs to be removed,
-    and then, call the integration tests that first assert that those packages
+    excluded list that is listed under the configuration files. This test
+    calls an ansible playbook to install the packages that needs to be removed,
+    and then, calls the integration tests that first assert that those packages
     exists, and proceeds to the conversion.
 
 tier: 1
