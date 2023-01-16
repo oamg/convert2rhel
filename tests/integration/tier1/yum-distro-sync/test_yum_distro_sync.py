@@ -13,10 +13,10 @@ def test_yum_distro_sync(convert2rhel, shell):
         4) Do the same checks and conditions as is in convert2rhel/pkghandler.py in call_yum_cmd_w_downgrades.
 
     Another problem is, that yum behaves differently on Centos 7 and Centos 8
-        - on Centos 7 returns 0 and any error in both cases
-        - on Centos 8  returns 0 and any error if in list of packages for distro-sync is at least
+        - on CentOS Linux 7 returns 0 and any error in both cases
+        - on CentOS Linux 8 returns 0 and any error if in list of packages for distro-sync is at least
           one, which can be successfully distro synced. If all of the given cannot be synced, there
-          is an error, which caused problems: https://issues.redhat.com/browse/OAMG-4600. But
+          is an error, which caused problems: https://issues.redhat.com/browse/RHELC-150. But
           the error isn't in fact error, the package stays there
           and just isn't supported by Red Hat.
     """
