@@ -191,6 +191,14 @@ class TestDnfPackageDownloadCallback:
             assert expected in caplog.records[-1].message
             package_count += 1
 
+    def test_end_no_status_and_not_enough_files(self, caplog):
+        instance = PackageDownloadCallback()
+        instance.start(0, 0, 0)
+        payload = PackageDownloadPayload("", 0)
+        instance.end(payload, None, None)
+
+        assert not caplog.records
+
 
 @pytest.mark.skipif(
     pkgmanager.TYPE != "dnf",
@@ -202,6 +210,15 @@ class TestDnfTransactionDisplayCallback:
             package="libicu-60.3-2.el8_1.x86_64.rpm", action=103, ti_done=1, ti_total=1, ts_done=1, ts_total=1
         )
 
+        assert "Running scriptlet: libicu-60.3-2.el8_1.x86_64.rpm [1/1]" in caplog.records[-1].message
+
+    def test_duplicate_package(self, caplog):
+        instance = TransactionDisplayCallback()
+        packages = ["libicu-60.3-2.el8_1.x86_64.rpm", "libicu-60.3-2.el8_1.x86_64.rpm"]
+        for package in packages:
+            instance.progress(package=package, action=103, ti_done=1, ti_total=1, ts_done=1, ts_total=1)
+
+        assert len(caplog.records) == 1
         assert "Running scriptlet: libicu-60.3-2.el8_1.x86_64.rpm [1/1]" in caplog.records[-1].message
 
     def test_no_action_and_package(self, caplog):

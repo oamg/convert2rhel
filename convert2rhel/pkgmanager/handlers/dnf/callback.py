@@ -180,8 +180,6 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
             self.done_files += 1
             self.done_size += size
 
-        # Just declaring the variable before the if-statements, we will always
-        # have something to print, no further check is needed.
         message = None
 
         if status:
@@ -207,7 +205,8 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
             if self.total_files > 1:
                 message = "(%d/%d): %s" % (self.done_files, self.total_files, package)
 
-        loggerinst.info(message)
+        if message:
+            loggerinst.info(message)
 
 
 class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
