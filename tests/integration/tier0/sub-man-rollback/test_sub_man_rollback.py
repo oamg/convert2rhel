@@ -1,4 +1,4 @@
-from os import path
+import os
 
 import pytest
 
@@ -33,7 +33,7 @@ def test_sub_man_rollback(convert2rhel, shell):
         ).returncode
         == 0
     )
-    assert path.exists("/etc/yum.repos.d/convert2rhel.repo") is True
+    assert os.path.exists("/etc/yum.repos.d/convert2rhel.repo") is True
 
     for run in range(2):
         with convert2rhel(

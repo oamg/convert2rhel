@@ -18,7 +18,6 @@
 import itertools
 import logging
 import os
-import os.path
 import re
 import shutil
 import tempfile

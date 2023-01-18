@@ -1,6 +1,5 @@
+import os
 import platform
-
-from os.path import exists
 
 
 def _check_enabled_repos_rhel8(enabled_repos):
@@ -30,7 +29,7 @@ def test_enabled_repositories(shell):
         if "redhat-8.4" in system_version or "redhat-8.6" in system_version:
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories
-            if exists("/non_eus_repos_used"):
+            if os.path.exists("/non_eus_repos_used"):
                 _check_enabled_repos_rhel8(enabled_repos)
             else:
                 _check_eus_enabled_repos_rhel8(enabled_repos)
