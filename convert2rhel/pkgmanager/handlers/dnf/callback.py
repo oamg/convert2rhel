@@ -180,10 +180,14 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
             self.done_files += 1
             self.done_size += size
 
+        # Just declaring the variable before the if-statements, we will always
+        # have something to print, no further check is needed.
+        message = None
+
         if status:
             # the error message, no trimming
             if status is pkgmanager.callback.STATUS_DRPM and self.total_drpm > 1:
-                msg = "(%d/%d) [%s %d/%d]: %s" % (
+                message = "(%d/%d) [%s %d/%d]: %s" % (
                     self.done_files,
                     self.total_files,
                     self._STATUS_MAPPING[status],
@@ -191,9 +195,9 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                     self.total_drpm,
                     package,
                 )
-                msg = "%s - %s" % (msg, err_msg)
+                message = "%s - %s" % (message, err_msg)
             else:
-                msg = "(%d/%d) [%s]: %s" % (
+                message = "(%d/%d) [%s]: %s" % (
                     self.done_files,
                     self.total_files,
                     self._STATUS_MAPPING.get(status, "Unknow"),
@@ -201,9 +205,9 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                 )
         else:
             if self.total_files > 1:
-                msg = "(%d/%d): %s" % (self.done_files, self.total_files, package)
+                message = "(%d/%d): %s" % (self.done_files, self.total_files, package)
 
-        loggerinst.info(msg)
+        loggerinst.info(message)
 
 
 class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
