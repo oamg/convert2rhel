@@ -20,10 +20,16 @@ import logging
 from convert2rhel import pkgmanager
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
+from convert2rhel.pkgmanager.handlers.dnf.callback import (
+    DependencySolverProgressIndicatorCallback,
+    PackageDownloadCallback,
+    TransactionDisplayCallback,
+)
 from convert2rhel.systeminfo import system_info
 
 
 loggerinst = logging.getLogger(__name__)
+"""Instance of the logger used in this module."""
 
 
 class DnfTransactionHandler(TransactionHandlerBase):
@@ -36,8 +42,6 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
     _base: dnf.Base()
         The actual instance of the `dnf.Base()` class.
-    _enabled_repos: list[str]
-        A list of packages that are used during the transaction.
     """
 
     def __init__(self):
@@ -75,6 +79,9 @@ class DnfTransactionHandler(TransactionHandlerBase):
         # Ref: https://dnf.readthedocs.io/en/latest/conf_ref.html#keepcache-label
         self._base.conf.keepcache = True
 
+        # Override the original depsolver callback to use our own.
+        self._base._ds_callback = DependencySolverProgressIndicatorCallback()
+
     def _enable_repos(self):
         """Enable a list of required repositories."""
         self._base.read_all_repos()
@@ -104,7 +111,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         """
         original_os_pkgs = get_system_packages_for_replacement()
 
-        loggerinst.info("Adding %s packages to the dnf transaction set.", system_info.name)
+        loggerinst.info("\nAdding %s packages to the dnf transaction set.", system_info.name)
 
         for pkg in original_os_pkgs:
             self._base.upgrade(pkg_spec=pkg)
@@ -133,9 +140,9 @@ class DnfTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
-        loggerinst.info("Downloading the packages that were added to the dnf transaction set.")
+        loggerinst.info("\nDownloading the packages that were added to the dnf transaction set.")
         try:
-            self._base.download_packages(self._base.transaction.install_set)
+            self._base.download_packages(self._base.transaction.install_set, PackageDownloadCallback())
         except pkgmanager.exceptions.DownloadError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to download the transaction packages.")
@@ -153,10 +160,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
             loggerinst.info("Validating the dnf transaction set, no modifications to the system will happen this time.")
             self._base.conf.tsflags.append("test")
         else:
-            loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
+            loggerinst.info("\nReplacing %s packages. This process may take some time to finish." % system_info.name)
 
         try:
-            self._base.do_transaction()
+            self._base.do_transaction(display=TransactionDisplayCallback())
         except (
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
@@ -165,9 +172,9 @@ class DnfTransactionHandler(TransactionHandlerBase):
             loggerinst.critical("Failed to validate the dnf transaction.")
 
         if validate_transaction:
-            loggerinst.info("Successfully validated the dnf transaction set.")
+            loggerinst.info("\nSuccessfully validated the dnf transaction set.\n")
         else:
-            loggerinst.info("System packages replaced successfully.")
+            loggerinst.info("\nSystem packages replaced successfully.")
 
     def run_transaction(self, validate_transaction=False):
         """Run the dnf transaction.
@@ -177,7 +184,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         everything and do an early return.
 
         :param validate_transaction: Determines if the transaction needs to be
-        validated or not.
+            validated or not.
         :type validate_transaction: bool
         :raises SystemExit: If there was any problem during the
         """
