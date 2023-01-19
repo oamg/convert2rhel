@@ -9,7 +9,7 @@
   ],
   "ignorePaths": [
     "**/centos7.Dockerfile",
-    "**/rpmbuild.centos7.Dockerfile",
+    "**/rpmbuild.centos7.Dockerfile"
   ],
   "packageRules": [
     {
