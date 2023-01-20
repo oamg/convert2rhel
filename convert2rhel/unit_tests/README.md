@@ -11,7 +11,7 @@ unit tests in Convert2RHEL, such as:
 
 To start interacting with the project's unit tests, you first need to do a
 simple setup on your machine, this setup is basically to install some
-dependencies on your `virtualenv` and build the docker images.
+dependencies on your `virtualenv` and build the container images.
 
 The only thing you have to do is run the following command in your terminal
 (You must be inside the project's root directory):
@@ -97,7 +97,7 @@ isolated running test case, without interference from your machine.
 
 ### Container
 
-To run the tests using a docker container, you can do so with the below command.
+To run the tests using a container, you can do so with the below command.
 
 This command will run the full tests suit in both CentOS Linux 7 and 8.
 

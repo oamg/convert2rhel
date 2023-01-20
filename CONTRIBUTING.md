@@ -52,13 +52,12 @@ requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-reque
 
 > **Note**
 >
-> This likely does not work with Docker as it has been exclusively tested with Podman
+> This has only been tested with Podman
 
 For an easy setup where you can get up and running within a minute, we have a dedicated development container setup with
 VS Code. This creates a container with extensions and allows you to run convert2rhel and tests without drawbacks.
 
 This does not work with VSCodium as Dev Container is deliberately limited to only work with Microsoft VS Code binaries.
-This also might not work with Docker as it has fixes for Podman that might not exist in Docker.
 
 Note: we need to run tests in a container as convert2rhel is volatile, a small mistake in tests can make modifications
 on your system.
@@ -86,7 +85,7 @@ To work around this, go to extensions tab and select Ignore Updates on the exten
 ### Dependencies for local development
 
 We have some required dependencies you should have installed on your system
-(either your local computer or a docker container) to get ready to write some
+(either your local computer or a container) to get ready to write some
 code:
 
 Required dependencies:
@@ -95,7 +94,7 @@ Required dependencies:
 - python
 - pre-commit
 - git
-- podman or docker
+- podman
 
 Optional dependencies:
 
@@ -237,7 +236,7 @@ function is used for.
 
 For building the rpms locally, you will need:
 
-- podman or a docker
+- podman
 
 ```bash
 make rpms
@@ -247,7 +246,7 @@ make rpms
 
 For building the copr locally, you will need:
 
-- podman or a docker installed
+- podman installed
 - have an account at https://copr.fedorainfracloud.org/api/, copy copr config
   and paste it to the repo root as .copr.conf
 - request build permissions at

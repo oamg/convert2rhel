@@ -27,40 +27,27 @@ PYTEST_ARGS ?=
 BUILD_IMAGES ?= 1
 
 ifdef KEEP_TEST_CONTAINER
-  DOCKER_RM_CONTAINER =
+	CONTAINER_RM =
 else
-  DOCKER_RM_CONTAINER = --rm
+	CONTAINER_RM = --rm
 endif
 
-# Let the user specify DOCKER at the CLI, otherwise try to autodetect a working podman or docker
-ifndef DOCKER
-  DOCKER := $(shell podman run --rm alpine echo podman 2> /dev/null)
-  ifndef DOCKER
-    DOCKER := $(shell docker run --rm alpine echo docker 2> /dev/null)
-    ifndef DOCKER
-      DUMMY := $(warning Many of the make targets require a working podman or docker.  Please install one of those and check that `podman run alpine echo hello` or `docker run alpine echo hello` work)
-    endif
-  endif
+# Let the user specify PODMAN at the CLI, otherwise try to autodetect a working podman
+ifndef PODMAN
+	PODMAN := $(shell podman run --rm alpine echo podman 2> /dev/null)
+	ifndef PODMAN
+		DUMMY := $(warning podman is not detected. Majority of commands will not work. Please install and verify that podman --version works.)
+	endif
 endif
 
-ifdef DOCKER
-  ifeq ($(DOCKER), podman)
-    DOCKER_TEST_WARNING := "*** convert2rhel directory will be read-only while tests are executing ***"
-    DOCKER_CLEANUP := podman unshare chown -R 0:0 $(shell pwd)
-  else
-    # Docker
-    DOCKER_TEST_WARNING := -n
-    DOCKER_CLEANUP := echo -n
-  endif
-else
-  # No docker found
-  DOCKER_TEST_WARNING ?= -n
-  DOCKER_CLEANUP ?= echo -n
+ifdef PODMAN
+	CONTAINER_TEST_WARNING := "*** convert2rhel directory will be read-only while tests are executing ***"
+	CONTAINER_CLEANUP := podman unshare chown -R 0:0 $(shell pwd)
 endif
 
 all: clean images tests
 
-install: .install .build-images .pre-commit
+install: .install .pre-commit
 
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
@@ -79,7 +66,7 @@ lint-locally: install
 	. $(VENV)/bin/activate; ./scripts/run_lint.sh
 
 clean:
-	@rm -rf build/ dist/ *.egg-info .pytest_cache/ .build-images
+	@rm -rf build/ dist/ *.egg-info .pytest_cache/
 	@find . -name '__pycache__' -exec rm -fr {} +
 	@find . -name '*.pyc' -exec rm -f {} +
 	@find . -name '*.pyo' -exec rm -f {} +
@@ -101,59 +88,58 @@ endif
 	@echo
 	@echo "If this fails, on authentication,"
 	@echo "either build the images locally using 'make BUILD_IMAGES=1 $$make_target'"
-	@echo "or login first with '$(DOCKER) login ghcr.io -u $$github_username'"
+	@echo "or login first with '$(PODMAN) login ghcr.io -u $$github_username'"
 	@echo "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry"
 	@echo
 .fetch-image7:
 	@echo "Pulling $(IMAGE)-centos7"
-	@$(DOCKER) pull $(IMAGE)-centos7
+	@$(PODMAN) pull $(IMAGE)-centos7
 .fetch-image8:
 	@echo "Pulling $(IMAGE)-centos8"
-	@$(DOCKER) pull $(IMAGE)-centos8
+	@$(PODMAN) pull $(IMAGE)-centos8
 
 .build-image-message:
 	@echo "Building images"
 .build-image7:
-	@$(DOCKER) build -f Dockerfiles/centos7.Dockerfile -t $(IMAGE)-centos7 .
+	@$(PODMAN) build -f Containerfiles/centos7.Containerfile -t $(IMAGE)-centos7 .
 	touch $@
 .build-image8:
-	@$(DOCKER) build -f Dockerfiles/centos8.Dockerfile -t $(IMAGE)-centos8 .
+	@$(PODMAN) build -f Containerfiles/centos8.Containerfile -t $(IMAGE)-centos8 .
 	touch $@
 
 lint: images
-	@$(DOCKER) run $(DOCKER_RM_CONTAINER) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "scripts/run_lint.sh"
+	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "scripts/run_lint.sh"
 
 lint-errors: images
-	@$(DOCKER) run $(DOCKER_RM_CONTAINER) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "scripts/run_lint.sh --errors-only"
+	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "scripts/run_lint.sh --errors-only"
 
 tests: tests7 tests8
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
-DOCKER_TEST_FUNC=echo $(DOCKER_TEST_WARNING) ; $(DOCKER) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(DOCKER_RM_CONTAINER) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; DOCKER_RETURN=$${?} ; $(DOCKER_CLEANUP) ; exit $${DOCKER_RETURN}
-
+CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
 
 tests7: image7
 	@echo 'CentOS Linux 7 tests'
-	@$(call DOCKER_TEST_FUNC,centos7,--show-capture=$(SHOW_CAPTURE))
+	@$(call CONTAINER_TEST_FUNC,centos7,--show-capture=$(SHOW_CAPTURE))
 
 tests8: image8
 	@echo 'CentOS Linux 8 tests'
-	@$(call DOCKER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
+	@$(call CONTAINER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
 
 rpms:
 	mkdir -p .rpms
 	rm -frv .rpms/*
-	$(DOCKER) build -f Dockerfiles/rpmbuild.centos8.Dockerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
-	$(DOCKER) build -f Dockerfiles/rpmbuild.centos7.Dockerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
-	$(DOCKER) cp $$($(DOCKER) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
-	$(DOCKER) cp $$($(DOCKER) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.rpms .
-	$(DOCKER) rm $$($(DOCKER) ps -aq) -f
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos7.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.rpms .
+	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
 
 copr-build: rpms
 	mkdir -p .srpms
 	rm -frv .srpms/*
-	$(DOCKER) cp $$($(DOCKER) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.srpms .
-	$(DOCKER) cp $$($(DOCKER) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.srpms .
-	$(DOCKER) rm $$($(DOCKER) ps -aq) -f
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.srpms .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.srpms .
+	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
 	copr-cli --config .copr.conf build --nowait @oamg/convert2rhel .srpms/*
