@@ -2,7 +2,7 @@ name: build_and_publish_images
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build_and_publish:
@@ -34,7 +34,7 @@ jobs:
         with:
           push: true
           context: .
-          file: ./Dockerfiles/centos${{ matrix.centos_ver }}.Dockerfile
+          file: ./Containerfiles/centos${{ matrix.centos_ver }}.Containerfile
           tags: ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
           cache-to: type=inline
