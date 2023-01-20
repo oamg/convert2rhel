@@ -199,10 +199,14 @@ class CLI(object):
         group.add_option(
             "-c",
             "--config-file",
-            help="A configuration file to safely provide either a user password or an activation key for registering"
-            " the system through subscription-manager. Alternatively, passing these values through the"
-            " --activationkey or --password option would leak them through a list of running processes."
-            " Example of this file in /etc/convert2rhel.ini",
+            help="The configuration file is an optional way to safely pass either a user password or an activation key"
+            " to the subscription-manager to register the system. This is more secure than passing these values"
+            " through the --activationkey or --password option, which might leak the values"
+            " through a list of running processes."
+            " You can edit the pre-installed configuration file template at /etc/convert2rhel.ini or create a new"
+            " configuration file at ~/.convert2rhel.ini. The convert2rhel utility loads the configuration from either"
+            " of those locations, the latter having preference over the former. Alternatively, you can specify a path"
+            " to the configuration file using the --config-file option to override other configurations.",
         )
         group.add_option(
             "-a",
