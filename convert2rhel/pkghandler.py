@@ -1106,15 +1106,16 @@ def parse_pkg_string(pkg):
     else:
         pkg_ver_components = _parse_pkg_with_dnf(pkg)
 
-    _validate_parsed_fields(*pkg_ver_components)
-
+    _validate_parsed_fields(pkg, *pkg_ver_components)
     return pkg_ver_components
 
 
-def _validate_parsed_fields(name, epoch, version, release, arch):
+def _validate_parsed_fields(package, name, epoch, version, release, arch):
     """
     Validation for each field contained in pkg_ver_components from the
     package parsing functions. If one of the fields are invalid then a ValueError is raised
+    :param name: unparsed package
+    :type name: str
     :param name: parsed package name
     :type name: str
     :param epoch: parsed package epoch
@@ -1128,6 +1129,8 @@ def _validate_parsed_fields(name, epoch, version, release, arch):
     """
 
     errors = []
+    pkg_length = len(package)
+    seperators = 4
 
     if name is None or not PKG_NAME.match(name):
         errors.append("name : %s" % name if name else "name : [None]")
@@ -1142,6 +1145,25 @@ def _validate_parsed_fields(name, epoch, version, release, arch):
 
     if errors:
         raise ValueError("The following field(s) are invalid - %s" % ", ".join(errors))
+
+    pkg_fields = [name, epoch, version, release, arch]
+    # this loop determines the number of separators required for each package type. The separators
+    # variable starts at 4 since a package with no None fields has 4 seperator characters, 1 None fields
+    # means there will be 3 separator characters and 2 None fields means there will be 2 seperator characters
+
+    for field in pkg_fields:
+        if field is None:
+            seperators -= 1
+
+    # convert None fields to empty strings for concatenation
+    pkg_fields = [(i or "") for i in (name, epoch, version, release, arch)]
+    # check to see if the package length is equalivalent to the length of parsed fields + separators
+    parsed_pkg_length = len("".join(pkg_fields)) + seperators
+    if pkg_length != parsed_pkg_length:
+        raise ValueError(
+            "Invalid package - %s, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
+            " Reason: The total length of the parsed package fields does not equal the package length," % package
+        )
 
 
 def _parse_pkg_with_yum(pkg):
@@ -1243,5 +1265,4 @@ def _parse_pkg_with_dnf(pkg):
         epoch = str(epoch)
 
     pkg_ver_components = (name, epoch, version, release, arch)
-
     return pkg_ver_components
