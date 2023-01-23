@@ -23,6 +23,8 @@ from convert2rhel import utils
 loggerinst = logging.getLogger(__name__)
 
 try:
+    # this is used in pkghandler.py to parse version strings in the _parse_pkg_with_yum function
+    from rpmUtils.miscutils import splitFilename
     from yum import *
     from yum.callbacks import DownloadBaseCallback as DownloadProgress
 
@@ -32,9 +34,15 @@ try:
     from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay
 
     TYPE = "yum"
+
+# WARNING: if there is a bug in the yum import section, we might try to import dnf incorrectly
 except ImportError as e:
-    from dnf import *
+
+    import hawkey
+
+    from dnf import *  # pylint: disable=import-error
     from dnf.callback import Depsolve, DownloadProgress
+
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.

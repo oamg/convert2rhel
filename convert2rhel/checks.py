@@ -26,7 +26,6 @@ import rpm
 from convert2rhel import __version__ as installed_convert2rhel_version
 from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
-    _package_version_cmp,
     call_yum_cmd,
     compare_package_versions,
     get_installed_pkg_objects,
@@ -476,7 +475,7 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
             list_of_sorted_pkgs.append(
                 max(
                     distinct_kernel_pkgs[1],
-                    key=cmp_to_key(_package_version_cmp),
+                    key=cmp_to_key(compare_package_versions),
                 )
             )
 
@@ -716,10 +715,10 @@ def is_loaded_kernel_latest():
         return
 
     packages = []
-    # We are expecting an repoquery output to be similar to this:
+    # We are expecting a repoquery output to be similar to this:
     #   C2R     1671212820      3.10.0-1160.81.1.el7    updates
     # We need the `C2R` identifier to be present on the line so we can know for
-    # sure that the line we are working with is the a line that contains
+    # sure that the line we are working with is a line that contains
     # relevant repoquery information to our check, otherwise, we just log the
     # information as debug and do nothing with it.
     for line in repoquery_output.split("\n"):
@@ -757,7 +756,11 @@ def is_loaded_kernel_latest():
 
     uname_output, _ = run_subprocess(["uname", "-r"], print_output=False)
     loaded_kernel = uname_output.rsplit(".", 1)[0]
-    match = compare_package_versions(latest_kernel, str(loaded_kernel))
+    # append the package name to loaded_kernel and latest_kernel so they can be properly processed by
+    # compare_package_versions()
+    latest_kernel_pkg = "%s-%s" % (package_to_check, latest_kernel)
+    loaded_kernel_pkg = "%s-%s" % (package_to_check, loaded_kernel)
+    match = compare_package_versions(latest_kernel_pkg, loaded_kernel_pkg)
 
     if match != 0:
         repos_message = (
