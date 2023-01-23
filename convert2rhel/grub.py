@@ -152,15 +152,13 @@ def _get_blk_device(device):
 
 def _get_device_number(device):
     """Return dict with 'major' and 'minor' number of the specified device/partition."""
-    output, ecode = utils.run_subprocess(["lsblk", "-spnlo", "MAJ:MIN", device], print_output=False)
+    output, ecode = utils.run_subprocess(["blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False)
     if ecode:
-        logger.debug("lsblk output:\n-----\n%s\n-----" % output)
+        logger.debug("blkid output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
-    # for partitions the output contains multiple lines (for the partition
-    # and all parents till the devices itself). We want maj:min number just
-    # for the specified device/partition, so take the first line only
-    majmin = output.splitlines()[0].strip().split(":")
-    return {"major": int(majmin[0]), "minor": int(majmin[1])}
+    # We are spliting the partition entry number, and we are just taking that output as our desired partition number
+    parttition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
+    return int(parttition_number)
 
 
 def get_grub_device():
@@ -414,7 +412,7 @@ def _add_rhel_boot_entry(efibootinfo_orig):
         "--disk",
         blk_dev,
         "--part",
-        str(dev_number["minor"]),
+        str(dev_number),
         "--loader",
         efi_path,
         "--label",
