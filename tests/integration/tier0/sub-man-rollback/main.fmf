@@ -1,4 +1,4 @@
-summary: Rollback of the removed subscription-manager packages
+summary: Rollback of the removed sub-man packages
 description: |
     When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
     removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
