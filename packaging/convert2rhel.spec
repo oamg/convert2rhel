@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.2
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
