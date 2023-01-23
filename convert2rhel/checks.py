@@ -734,8 +734,8 @@ def is_loaded_kernel_latest():
         cmd.append("--setopt=reposdir=%s" % reposdir)
 
     # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
-    # we check for `kernel-core`. But for 6 and 7 releases, the correct way to
-    # check is using `kernel`.
+    # we check for `kernel-core`. But 7 releases, the correct way to check is
+    # using `kernel`.
     package_to_check = "kernel-core" if system_info.version.major >= 8 else "kernel"
 
     # Append the package name as the last item on the list
