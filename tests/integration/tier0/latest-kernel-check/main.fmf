@@ -1,4 +1,10 @@
-summary: Verify that failed repoquery call does not cause latest kernel check call.
+summary: Verify repoquery call on latest kernel
+description: |
+    This test assert if the repoquery call does not affect the latest kernel
+    available on the system, the test consists of (but not limited to):
+        * Test if the C2R checks continue even with repoquery call failure.
+        * Test if the repoquery call succeeds with a `exclude` present in the
+          config.
 
 tier: 0
 
