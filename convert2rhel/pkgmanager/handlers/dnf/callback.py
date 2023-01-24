@@ -76,6 +76,7 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
         "e": "%s will be erased.",
         "r": "%s will be reinstalled.",
         "d": "%s will be an downgrade.",
+        "dd": "%s will be downgraded.",
         "o": "%s will obsolete another package.",
         "ud": "%s will be updated.",
         "od": "%s will be obsoleted.",
@@ -139,9 +140,17 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
     def start(self, total_files, total_size, total_drpms=0):
         """Indicate that a new progress metering started.
 
-        In this method, we populate and upadte a few properties of this class
-        with the information that is sent from the DNF API. This method is vital
-        if we want to keep the tracking of how many needs to be processed.
+        This method will handle the initialization of a few properties before
+        starting to output log messages to the user regarding the package
+        download progress. Those properties are necessary to keep track of the
+        progress of the downloaded packages, without them, we lose the
+        information about how many packages needs to be downloaded, and where
+        the count starts.
+
+        .. note::
+            This method is also viable to send any message that indicates that
+            the download progress will start happening, but it's not
+            necessarily used for that.
 
         :param total_files: The total amount of files that will be downloaded.
         :type total_files: int
@@ -251,7 +260,9 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
 
         message = "%s: %s [%s/%s]" % (pkgmanager.transaction.ACTIONS.get(action), package, ts_done, ts_total)
 
-        # Prevent the same package being present in the logs.
+        # The base API will call this callback class on every package update,
+        # not matter if it is the same update or not, so, the below statement
+        # prevents the same message being sent more than once to the user.
         if self.last_package_seen != package:
             loggerinst.info(message)
 

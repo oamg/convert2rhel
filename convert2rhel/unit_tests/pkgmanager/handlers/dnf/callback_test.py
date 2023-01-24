@@ -37,6 +37,7 @@ class TestDependencySolverProgressIndicatorCallback:
             ("package-1", "o", "package-1 will obsolete another package."),
             ("package-1", "ud", "package-1 will be updated."),
             ("package-1", "od", "package-1 will be obsoleted."),
+            ("package-1", "dd", "package-1 will be downgraded."),
         ),
     )
     def test_pkg_added(self, package, mode, expected, caplog):
@@ -49,7 +50,7 @@ class TestDependencySolverProgressIndicatorCallback:
         instance = DependencySolverProgressIndicatorCallback()
         instance.pkg_added(pkg="package-1", mode="x")
 
-        assert "Unknow operation (x) for package 'package-1'." in caplog.records[-1].message
+        assert "Unknown operation (x) for package 'package-1'." in caplog.records[-1].message
 
     def test_start(self, caplog):
         instance = DependencySolverProgressIndicatorCallback()

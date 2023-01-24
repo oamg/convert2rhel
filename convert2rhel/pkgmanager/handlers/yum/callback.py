@@ -98,6 +98,9 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
         :param ftime: String that contains the remaining time for te package to be finish the download.
         :type ftime: str
         """
+        # The base API will call this callback class on every package update,
+        # not matter if it is the same update or not, so, the below statement
+        # prevents the same message being sent more than once to the user.
         if self.last_package_seen != name:
             # Metadata download abut repositories will be sent to this class too.
             if name.endswith(".rpm"):
@@ -153,7 +156,9 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
 
         message = message % (self.action[action], package, ts_current, ts_total)
 
-        # Prevent the same package being present in the logs.
+        # The base API will call this callback class on every package update,
+        # not matter if it is the same update or not, so, the below statement
+        # prevents the same message being sent more than once to the user.
         if self.last_package_seen != package:
             loggerinst.info(message)
 
