@@ -98,7 +98,7 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
             message = self._DEPSOLVE_MODES[mode]
         except KeyError:
             message = None
-            loggerinst.debug("Unknow operation (%s) for package '%s'." % (mode, pkg))
+            loggerinst.debug("Unknown operation (%s) for package '%s'." % (mode, pkg))
 
         if message:
             loggerinst.info(message, pkg)
@@ -162,7 +162,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
             we can print this status to the user, as a way of them knowing that
             the file was skipped due a cache or any other status.
 
-        :param payload: The payload snet in the callback.
+        :param payload: The payload sent in the callback.
         :type payload: dnf.repo.RPMPayload
         :param status: A constant denoting the type of outcome.
         :type status: int
@@ -198,7 +198,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                 message = "(%d/%d) [%s]: %s" % (
                     self.done_files,
                     self.total_files,
-                    self._STATUS_MAPPING.get(status, "Unknow"),
+                    self._STATUS_MAPPING.get(status, "Unknown"),
                     package,
                 )
         else:
@@ -230,10 +230,10 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         :type ti_done: int
         :param ti_total: How much work in total is present in the transaction.
         :type ti_total: int
-        :param ts_done: Number, in order, of the current transaction in the transaction set.
-        :type ts_done: int
         :param ts_total: How much transactions are present in the transaction set.
         :type ts_total: int
+        :param ts_done: Number, in order, of the current transaction in the transaction set.
+        :type ts_done: int
         """
         # We don't have any package or action (actually, it's probably that it
         # will be all empty), let's just return earlier.

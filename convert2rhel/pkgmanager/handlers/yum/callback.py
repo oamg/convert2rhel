@@ -136,8 +136,8 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
         :type te_current: int
         :param te_total: How much work in total is present in the transaction.
         :type te_total: int
-        :param ts_done: Number, in order, of the current transaction in the transaction set.
-        :type ts_done: int
+        :param ts_current: Number, in order, of the current transaction in the transaction set.
+        :type ts_current: int
         :param ts_total: How much transactions are present in the transaction set.
         :type ts_total: int
         """

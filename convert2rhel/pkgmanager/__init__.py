@@ -18,22 +18,22 @@
 
 try:
     from yum import *
-    from yum.callbacks import DownloadBaseCallback as DownloadProgress  # lgtm[py/unused-import]
+    from yum.callbacks import DownloadBaseCallback as DownloadProgress
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from yum.Errors import RepoError  # lgtm[py/unused-import]
-    from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay  # lgtm[py/unused-import]
+    from yum.Errors import RepoError
+    from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay
 
     TYPE = "yum"
 except ImportError as e:
-    from dnf import *  # pylint: disable=import-error
-    from dnf.callback import Depsolve, DownloadProgress  # lgtm[py/unused-import]
+    from dnf import *
+    from dnf.callback import Depsolve, DownloadProgress
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from dnf.exceptions import RepoError  # lgtm[py/unused-import]
-    from dnf.yum.rpmtrans import TransactionDisplay  # lgtm[py/unused-import]
+    from dnf.exceptions import RepoError
+    from dnf.yum.rpmtrans import TransactionDisplay
 
     TYPE = "dnf"
 
