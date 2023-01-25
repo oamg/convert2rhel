@@ -8,6 +8,10 @@ function-rgx=[a-z_][a-z0-9_]{2,50}$
 disable=
 # do not warn about pylint checks being disabled through comments in the code
  locally-disabled,
+# These are false positives because they refer to features which are unusable
+# on the versions of python we support.
+ redundant-u-string-prefix,  # Python 3.0+
+ consider-using-f-string,  # Python 3.6+
 # These are our current failures 2023-01-11.  We can go through them and either
 # fix them or add a comment to say why we are leaving it disabled.
  anomalous-backslash-in-string,
