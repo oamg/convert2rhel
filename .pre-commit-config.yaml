@@ -16,7 +16,7 @@ repos:
       entry: pylint
       types: [python]
       language: python
-      additional_dependencies: [pylint==2.13.4]
+      additional_dependencies: [pylint==2.15.10]
       args:
         [
           "-sn", # Don't display the score
