@@ -283,7 +283,7 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
                 super(PexpectSpawnWithDimensions, self).setwinsize(dimensions[0], dimensions[1])
 
             # Save the real setwinsize and monkeypatch our kludge in
-            real_setwinsize = self.setwinsize
+            real_setwinsize = self.setwinsize  # pylint: disable=access-member-before-definition
             self.setwinsize = _setwinsize
 
             # Call pexpect.spawn.__init__() which will use the monkeypatched setwinsize()
