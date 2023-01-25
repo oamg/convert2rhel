@@ -112,9 +112,6 @@ endif
 lint: images
 	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "$(PYLINT) --rcfile=.pylintrc $(PYLINT_ARGS) convert2rhel/"
 
-lint-errors: images
-	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "run_lint.sh --errors-only"
-
 tests: tests7 tests8
 
 # These files need to be made writable for pytest to run
