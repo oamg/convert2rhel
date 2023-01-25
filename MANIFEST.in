@@ -3,3 +3,4 @@ include man/*
 include LICENSE
 include README.md
 include config/convert2rhel.ini
+exclude pyproject.toml
