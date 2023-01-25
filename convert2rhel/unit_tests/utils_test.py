@@ -847,3 +847,40 @@ def test_write_json_object_to_file(data, expected, tmpdir):
         json.load(handler) == expected
 
     assert oct(os.stat(json_file_path).st_mode)[-4:].endswith("00")
+
+
+class DummyPopenOutput(unit_tests.MockFunction):
+    def __init__(self, output):
+        self.call_count = 0
+        self.output = output
+
+    def __call__(self, args, stdout, stderr, bufsize):
+        return self
+
+    @property
+    def stdout(self):
+        return self
+
+    def readline(self):
+        try:
+            next_line = self.output[self.call_count]
+        except IndexError:
+            return b""
+
+        self.call_count += 1
+        return next_line
+
+    def communicate(self):
+        pass
+
+    def poll(self):
+        return 0
+
+
+def test_run_subprocess_env(monkeypatch):
+    test_output = DummyPopenOutput([u"test of nonascii output: café".encode("utf-8")])
+    monkeypatch.setattr(utils.subprocess, "Popen", test_output)
+
+    output, rc = utils.run_subprocess(["echo", "foobar"])
+    assert u"test of nonascii output: café" == output
+    assert 0 == rc
