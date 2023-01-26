@@ -51,8 +51,8 @@ jobs:
 
 - &tier1
   <<: *tests
-  identifier: "tier1-critical"
-  tmt_plan: "tier1/critical"
+  identifier: "tier1-essential"
+  tmt_plan: "tier1/essential"
 
 - &main
   <<: *tests
