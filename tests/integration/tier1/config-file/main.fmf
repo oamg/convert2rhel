@@ -1,5 +1,5 @@
 summary: config file
 
-tier: 0
+tier: 1
 
 test: pytest -svv

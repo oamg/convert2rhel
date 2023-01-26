@@ -120,7 +120,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/remove_all_submgr_pkgs:
+/critical/remove_all_submgr_pkgs:
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -137,7 +137,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/resolve_dependency:
+/critical/resolve_dependency:
   discover+:
     test: checks-after-conversion
   prepare+:
@@ -227,7 +227,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/convert_offline_systems:
+/critical/convert_offline_systems:
   # At the moment we have only CentOS7 repos available on Satellite server
   adjust:
     enabled: false
@@ -336,7 +336,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/single_yum_transaction_all_errors:
+/critical/single_yum_transaction_all_errors:
   adjust:
     enabled: false
     when: >
@@ -354,7 +354,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/single_yum_transaction_excld_pkgs:
+/critical/single_yum_transaction_excld_pkgs:
   adjust:
     enabled: false
     when: >
@@ -372,7 +372,7 @@
     how: ansible
     playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/single_yum_transaction_mismatch_errors:
+/critical/single_yum_transaction_mismatch_errors:
   adjust:
     enabled: false
     # TODO EUS Bump disabled version

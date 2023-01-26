@@ -51,10 +51,11 @@ jobs:
 
 - &tier1
   <<: *tests
-  identifier: "tier1"
-  tmt_plan: "tier1"
+  identifier: "tier1-critical"
+  tmt_plan: "tier1/critical"
 
 - &main
   <<: *tests
   trigger: commit
   branch: main
+  tmt_plan: "tier1"
