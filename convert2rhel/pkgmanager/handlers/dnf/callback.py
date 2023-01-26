@@ -225,7 +225,6 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         """Constructor for the transaction display progress in DNF."""
         super(TransactionDisplayCallback, self).__init__()
         self.last_package_seen = None
-        self.output = True
 
     def progress(self, package, action, ti_done, ti_total, ts_done, ts_total):
         """Process and output the RPM operations in the transaction.
