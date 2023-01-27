@@ -266,3 +266,27 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
             loggerinst.info(message)
 
         self.last_package_seen = package
+
+    def scriptout(self, msgs):
+        """Hook for reporting an rpm scriptlet output.
+
+        .. note::
+            If there is no problem reported buring the scriptlet execution,
+            then this method will receive a None instead of the normal message.
+
+        :param msgs: The scriptlet output
+        :type msgs: bytes | None
+        """
+        # The base API will call this callback class on every package update,
+        # not matter if the messages are empty or not, so, the below statement
+        # prevents the same message being sent to the user with empty strings.
+        if msgs:
+            loggerinst.warning("Scriptlet output: %s", msgs.decode())
+
+    def error(self, message):
+        """Report an error that occurred during the transaction.
+
+        :param message: The error message sent by the API.
+        :type message: str
+        """
+        loggerinst.error("Transaction error: %s", message)

@@ -225,3 +225,21 @@ class TestDnfTransactionDisplayCallback:
     def test_no_action_and_package(self, caplog):
         TransactionDisplayCallback().progress(None, None, None, None, None, None)
         assert "No action or package was provided in the callback." in caplog.records[-1].message
+
+    @pytest.mark.parametrize(
+        ("msgs", "expected"),
+        (
+            (b"Test output scriptlet", "Scriptlet output: Test output scriptlet"),
+            (None, None),
+        ),
+    )
+    def test_scriptout(self, msgs, expected, caplog):
+        TransactionDisplayCallback().scriptout(msgs)
+
+        if expected:
+            assert expected in caplog.records[-1].message
+
+    def test_error(self, caplog):
+        TransactionDisplayCallback().error("Something went wrong with the transaction.")
+
+        assert "Transaction error: Something went wrong with the transaction." in caplog.records[-1].message

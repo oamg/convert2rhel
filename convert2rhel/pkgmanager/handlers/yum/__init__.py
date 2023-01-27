@@ -147,7 +147,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._set_up_base()
         self._enable_repos()
 
-        loggerinst.info("\nAdding %s packages to the yum transaction set.", system_info.name)
+        loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
 
         for pkg in original_os_pkgs:
             self._base.update(pattern=pkg)
@@ -198,7 +198,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
-        loggerinst.info("\nResolving the dependencies of the packages in the yum transaction set.")
+        loggerinst.info("Resolving the dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()
 
         if ret_code == 1:
@@ -265,9 +265,9 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.critical("Failed to validate the yum transaction.")
 
         if validate_transaction:
-            loggerinst.info("\nSuccessfully validated the yum transaction set.\n")
+            loggerinst.info("Successfully validated the yum transaction set.")
         else:
-            loggerinst.info("\nSystem packages replaced successfully.")
+            loggerinst.info("System packages replaced successfully.")
 
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.

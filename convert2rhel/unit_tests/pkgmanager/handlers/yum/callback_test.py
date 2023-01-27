@@ -78,3 +78,21 @@ class TestTransactionDisplayCallback(object):
             assert "Installing: %s [1/1]" % package in caplog.records[-1].message
 
         assert len(caplog.records) == 2
+
+    @pytest.mark.parametrize(
+        ("package", "msgs", "expected"),
+        (
+            ("package-1", "Test output scriptlet", "Scriptlet output package-1: Test output scriptlet"),
+            (None, None, None),
+        ),
+    )
+    def test_scriptout(self, package, msgs, expected, caplog):
+        TransactionDisplayCallback().scriptout(package, msgs)
+
+        if expected:
+            assert expected in caplog.records[-1].message
+
+    def test_errorlog(self, caplog):
+        TransactionDisplayCallback().errorlog("Something went wrong with the transaction.")
+
+        assert "Transaction error: Something went wrong with the transaction." in caplog.records[-1].message
