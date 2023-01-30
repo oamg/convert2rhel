@@ -370,14 +370,23 @@ def ensure_compatibility_of_kmods():
     if not unsupported_kmods:
         logger.debug("All loaded kernel modules are available in RHEL.")
     else:
-        logger.critical(
-            "The following loaded kernel modules are not available in RHEL:\n{0}\n"
-            "First, make sure you have updated the kernel to the latest available version and rebooted the system.\n"
-            "If this message appears again after doing the above, prevent the modules from loading by following {1}"
-            " and run convert2rhel again to continue with the conversion.".format(
-                "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+        if "CONVERT2RHEL_ALLOW_UNCHECKED_KMODS" in os.environ:
+            logger.warning(
+                "Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
+                " We will continue the conversion, with the following kernel modules:\n{kmods}\n".format(
+                    kmods="\n".join(unsupported_kmods)
+                )
             )
-        )
+        else:
+            logger.critical(
+                "The following loaded kernel modules are not available in RHEL:\n{0}\n"
+                "Kernel modules need to be up-to-date to minimize the risk for issues occurring related to first-party kernel modules.\n"
+                "Ensure you have updated the kernel to the latest available version and rebooted the system.\n"
+                "If this message persists, you can prevent the modules from loading by following {1} and rerun convert2rhel.\n"
+                "To circumvent this check and allow the risk you can set environment variable 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS=1'.".format(
+                    "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
+                )
+            )
 
 
 def validate_package_manager_transaction():
