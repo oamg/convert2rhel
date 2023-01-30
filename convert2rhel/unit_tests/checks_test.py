@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
+import re
 import unittest
 
 from collections import namedtuple
@@ -438,14 +439,34 @@ def test_ensure_compatibility_of_kmods(
         assert shouldnt_be_in_logs not in caplog.records[-1].message
 
 
-def test_validate_package_manager_transaction(monkeypatch, caplog):
+@centos8
+def test_ensure_compatibility_of_kmods_check_env(
+    monkeypatch,
+    pretend_os,
+    caplog,
+):
+
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_UNCHECKED_KMODS": "1"})
+    monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=HOST_MODULES_STUB_BAD))
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+            (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
+        )
+    )
     monkeypatch.setattr(
-        checks.pkgmanager,
-        "create_transaction_handler",
-        value=mock.Mock(),
+        checks,
+        "run_subprocess",
+        value=run_subprocess_mock,
     )
 
-    checks.validate_package_manager_transaction()
+    checks.ensure_compatibility_of_kmods()
+    should_be_in_logs = (
+        ".*Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
+        " We will continue the conversion, with the following kernel modules:.*"
+    )
+    assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
 
 
 @pytest.mark.parametrize(
