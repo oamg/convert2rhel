@@ -947,12 +947,12 @@ def rollback():
     """Rollback subscription related changes"""
     # Systems using Satellite 6.10 need to stay registered otherwise admins
     # will lose remote access from the Satellite server.
+    loggerinst.task("Rollback: RHSM-related actions")
     if tool_opts.keep_rhsm:
         loggerinst.info("Skipping due to the use of --keep-rhsm.")
         return
 
     try:
-        loggerinst.task("Rollback: RHSM-related actions")
         unregister_system()
     except UnregisterError as e:
         loggerinst.warning(str(e))
