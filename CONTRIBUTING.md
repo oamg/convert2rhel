@@ -145,6 +145,10 @@ Check Yaml...............................................................Passed
 Check for merge conflicts................................................Passed
 ```
 
+We automatically run `pre-commit` as part of our CI infrastructure as well. If you have a PR it will run and see if everything passes. Sometimes there may be an outage or unexpected result from `pre-commit`, if that happens you can create a new comment on the PR saying:
+
+> pre-commit.ci run 
+
 Install `pre-commit` hooks to automatically run when doing `git commit`.
 
 ```bash
