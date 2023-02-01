@@ -395,6 +395,7 @@ def test_main(monkeypatch):
     remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
     finish_collection_mock = mock.Mock()
+    check_kernel_boot_files_mock = mock.Mock()
     update_rhsm_custom_facts_mock = mock.Mock()
 
     monkeypatch.setattr(utils, "require_root", require_root_mock)
@@ -418,6 +419,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
     monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
 
     assert main.main() == 0
@@ -440,6 +442,7 @@ def test_main(monkeypatch):
     assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
+    assert check_kernel_boot_files_mock.call_count == 1
     assert update_rhsm_custom_facts_mock.call_count == 1
 
 

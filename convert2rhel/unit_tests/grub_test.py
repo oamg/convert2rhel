@@ -602,3 +602,13 @@ def test_update_grub_after_conversion(
     grub.update_grub_after_conversion()
     if expected is not None:
         assert expected in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("is_efi", "config_path"), ((False, "/boot/grub2/grub.cfg"), (True, "/boot/efi/EFI/redhat/grub.cfg"))
+)
+def test_get_grub_config_file(is_efi, config_path, monkeypatch):
+    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    config_file = grub.get_grub_config_file()
+
+    assert config_file == config_path
