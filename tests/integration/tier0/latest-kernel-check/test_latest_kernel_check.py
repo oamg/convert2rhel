@@ -26,6 +26,10 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
 
     # Run the conversion just past the latest kernel check, if successful, end the conversion there.
     with convert2rhel("--debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Continue with the system conversion?", timeout=300) == 0
         c2r.sendline("y")
         assert (

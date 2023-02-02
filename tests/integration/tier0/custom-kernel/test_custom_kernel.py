@@ -87,6 +87,10 @@ def test_custom_kernel(convert2rhel, shell):
         install_custom_kernel(shell)
     elif os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel("--no-rpm-va --debug") as c2r:
+            # We need to get past the data collection acknowledgement.
+            c2r.expect("Continue with the system conversion?")
+            c2r.sendline("y")
+
             c2r.expect("WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor))
             c2r.expect("CRITICAL - The booted kernel version is incompatible with the standard RHEL kernel.")
         assert c2r.exitstatus != 0

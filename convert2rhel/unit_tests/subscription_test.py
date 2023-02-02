@@ -1519,6 +1519,15 @@ def test_update_rhsm_custom_facts_no_rhsm(global_tool_opts, caplog, monkeypatch)
     assert "Skipping updating RHSM custom facts." in caplog.records[-1].message
 
 
+def test_update_rhsm_custom_facts_disable_telemetry(monkeypatch, caplog):
+    message = "Telemetry disabled, skipping RHSM facts upload."
+    monkeypatch.setenv("CONVERT2RHEL_DISABLE_TELEMETRY", "1")
+
+    subscription.update_rhsm_custom_facts()
+
+    assert message in caplog.records[-1].message
+
+
 MOCK_LIST_AVAILABLE_SUBS_OUTPUT = """\
 Subscription Name:   Red Hat\n
 Provides:            Test\n
