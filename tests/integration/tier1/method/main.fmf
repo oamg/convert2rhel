@@ -6,3 +6,20 @@ description: |
     Tested methods: satellite, RHSM, non-EUS RHSM, activation key and custom repos.
 
 tier: 1
+
+
+/activation_key_conversion:
+    tag+: activation-key-conversion
+    test: pytest -svv -m activation_key_conversion
+
+/custom_repos_conversion:
+    test: pytest -svv -m custom_repos_conversion
+
+/rhsm_conversion:
+    test: pytest -svv -m rhsm_conversion
+
+/rhsm_non_eus_account_conversion:
+    test: pytest -svv -m rhsm_non_eus_account_conversion
+
+/satellite_conversion:
+    test: pytest -svv -m satellite_conversion

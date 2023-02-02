@@ -1,7 +1,10 @@
+import pytest
+
 from envparse import env
 
 
-def test_run_convertion(convert2rhel):
+@pytest.mark.rhsm_conversion
+def test_run_conversion(convert2rhel):
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),

@@ -1,6 +1,9 @@
+import pytest
+
 from envparse import env
 
 
+@pytest.mark.rhsm_non_eus_account_conversion
 def test_rhsm_non_eus_account(convert2rhel):
     """
     Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions

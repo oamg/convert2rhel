@@ -1,6 +1,9 @@
 /activation_key:
+    adjust+:
+        - environment+:
+            CONVERT2RHEL_DISABLE_TELEMETRY: 1
     discover+:
-        filter: tag:checks-after-conversion
+        filter: tag:checks-after-conversion | tag:CONVERT2RHEL_DISABLE_TELEMETRY
     prepare+:
         - name: main conversion preparation
           how: shell
@@ -27,7 +30,7 @@
           when: >
             distro != centos-8.4
     discover+:
-      filter: tag:checks-after-conversion
+        filter: tag:checks-after-conversion
     prepare+:
         - name: main conversion preparation
           how: shell
@@ -110,10 +113,10 @@
         filter: tag:checks-after-conversion
     adjust+:
         - environment+:
-            PROMPT_AMOUNT: 2
+            PROMPT_AMOUNT: 3
           when: distro != oraclelinux-8
         - environment+:
-            PROMPT_AMOUNT: 1
+            PROMPT_AMOUNT: 2
           when: distro == oraclelinux-8
     prepare+:
         - name: test no sub manager installed

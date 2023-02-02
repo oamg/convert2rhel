@@ -14,6 +14,10 @@ link:
   - https://issues.redhat.com/browse/RHELC-411
   - https://issues.redhat.com/browse/RHELC-291
 
+/disable_data_collection:
+    tag: CONVERT2RHEL_DISABLE_TELEMETRY
+    test: pytest -svv -m disable_data_collection
+
 /delete_temporary_folder:
     test: pytest -svv -m delete_temporary_folder
 

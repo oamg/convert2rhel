@@ -84,10 +84,14 @@ def main():
         loggerinst.task("Prepare: Show Red Hat software EULA")
         show_eula()
 
+        loggerinst.task("Prepare: Inform about telemetry")
+        breadcrumbs.breadcrumbs.print_data_collection()
+
         # gather system information
         loggerinst.task("Prepare: Gather system information")
         systeminfo.system_info.resolve_system_info()
         systeminfo.system_info.print_system_information()
+
         breadcrumbs.breadcrumbs.collect_early_data()
 
         loggerinst.task("Prepare: Clear YUM/DNF version locks")

@@ -1,7 +1,12 @@
 import os
 import subprocess
 
-from conftest import SYSTEM_RELEASE_ENV
+from os import getenv
+
+import pytest
+
+
+CONVERT2RHEL_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 
 
 def test_check_user_privileges(shell):
@@ -55,7 +60,7 @@ PATH_TO_VERSION = subprocess.check_output(
 os.system(f"cp {PATH_TO_VERSION} /tmp/")
 
 
-def change_c2r_version(version):
+def _change_c2r_version(version):
     """
     Modify the __init__.py in which the version is stored.
     """
@@ -67,9 +72,13 @@ def test_c2r_latest_newer(convert2rhel):
     """
     Check if running latest or newer version continues the conversion.
     """
-    change_c2r_version(42.0)
+    _change_c2r_version(42.0)
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Latest available Convert2RHEL version is installed.", timeout=300) == 0
 
         c2r.expect("Continue with the system conversion?")
@@ -83,9 +92,13 @@ def test_c2r_latest_older_inhibit(convert2rhel):
     """
     Check if running older version inhibits the conversion.
     """
-    change_c2r_version(0.01)
+    _change_c2r_version(0.01)
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("CRITICAL - You are currently running 0.01", timeout=300) == 0
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
     assert c2r.exitstatus != 0
@@ -100,26 +113,25 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
     Running older version of Convert2RHEL on epel major version 6 or older should inhibit either way.
     """
-    change_c2r_version(0.01)
+    _change_c2r_version(0.01)
 
     os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
-        if SYSTEM_RELEASE_ENV in ("centos-6", "oracle-6"):
-            assert c2r.expect("You are currently running 0.01", timeout=300) == 0
-            assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
 
-        else:
-            assert c2r.expect("You are currently running 0.01", timeout=300) == 0
-            assert (
-                c2r.expect(
-                    "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion",
-                    timeout=300,
-                )
-                == 0
+        assert c2r.expect("You are currently running 0.01", timeout=300) == 0
+        assert (
+            c2r.expect(
+                "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion",
+                timeout=300,
             )
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("n")
+            == 0
+        )
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
     assert c2r.exitstatus != 0
 
     # Clean up
@@ -132,6 +144,10 @@ def test_clean_cache(convert2rhel):
     Verify that the yum clean is done before any other check that c2r does
     """
     with convert2rhel("--no-rpm-va --debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
         assert c2r.expect("Cached repositories metadata cleaned successfully.", timeout=300) == 0
 
@@ -145,6 +161,10 @@ def test_rhsm_error_logged(convert2rhel):
     is not being logged in cases the certificate is not installed yet.
     """
     with convert2rhel("--debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
         assert c2r.expect("No RHSM certificates found to be removed.", timeout=300) == 0
@@ -186,3 +206,58 @@ def test_check_variant_message(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
     assert c2r.exitstatus != 0
+
+
+@pytest.mark.data_collection_acknowledgement
+def test_data_collection_acknowledgement(shell, convert2rhel):
+    """
+    This test verifies, that information about data collection is printed out
+    and user is asked for acknowledgement to continue.
+    Verify, that without acknowledgement the convert2rhel.facts file is not created.
+    """
+    # Remove facts from previous runs.
+    shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
+    # Remove envar disabling telemetry just in case.
+    if getenv("CONVERT2RHEL_DISABLE_TELEMETRY"):
+        del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
+
+    with convert2rhel("--no-rpm-va --debug") as c2r:
+        assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
+        assert (
+            c2r.expect("The convert2rhel utility uploads the following data about the system conversion", timeout=300)
+            == 0
+        )
+        c2r.expect("Continue with the system conversion", timeout=300)
+        c2r.sendline("n")
+
+        # Verify the file is not created if user refuses the collection.
+        assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
+
+    assert c2r.exitstatus != 0
+
+
+@pytest.mark.disable_data_collection
+def test_disable_data_collection(shell, convert2rhel):
+    """
+    This test verifies functionality of CONVERT2RHEL_DISABLE_TELEMETRY envar.
+    The data collection should be disabled, therefore convert2rhel.facts file should not get created.
+    """
+    # Remove facts from previous runs.
+    shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
+    # Set envar to disable data collection
+    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
+
+    with convert2rhel("--no-rpm-va --debug") as c2r:
+        assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
+        assert c2r.expect("Skipping, telemetry disabled.", timeout=300) == 0
+
+        c2r.expect("Continue with the system conversion", timeout=300)
+        c2r.sendline("n")
+
+        # Verify the file is not created if CONVERT2RHEL_DISABLE_TELEMETRY is set.
+        assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
+
+    assert c2r.exitstatus != 0
+
+    # Remove envar disabling telemetry.
+    del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]

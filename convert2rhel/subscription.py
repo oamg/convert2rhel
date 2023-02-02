@@ -1054,6 +1054,10 @@ def update_rhsm_custom_facts():
     the conversion with the candlepin server, thus, propagating the
     "breadcrumbs" from convert2rhel as RHSM facts.
     """
+    if "CONVERT2RHEL_DISABLE_TELEMETRY" in os.environ:
+        loggerinst.info("Telemetry disabled, skipping RHSM facts upload.")
+        return
+
     if not tool_opts.no_rhsm:
         loggerinst.info("Updating RHSM custom facts collected during the conversion.")
         cmd = ["subscription-manager", "facts", "--update"]

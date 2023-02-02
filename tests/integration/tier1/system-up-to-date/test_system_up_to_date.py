@@ -44,6 +44,10 @@ def test_skip_kernel_check(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable")
         c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
