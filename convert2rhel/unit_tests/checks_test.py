@@ -23,7 +23,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests, utils
+from convert2rhel import checks, grub, pkgmanager, unit_tests, utils
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
