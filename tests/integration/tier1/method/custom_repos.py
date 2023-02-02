@@ -2,6 +2,8 @@ import re
 
 from collections import namedtuple
 
+import pytest
+
 
 def get_system_version(system_release_content=None):
     """Return a namedtuple with major and minor elements, both of an int type.
@@ -20,6 +22,7 @@ def get_system_version(system_release_content=None):
     return version
 
 
+@pytest.mark.custom_repos_conversion
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
 
     # We need to skip check for collected rhsm custom facts after the conversion

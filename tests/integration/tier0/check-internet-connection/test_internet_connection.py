@@ -47,6 +47,10 @@ def _restore_configuration_files():
 def test_check_if_internet_connection_is_reachable(convert2rhel):
     """Test if convert2rhel can access the internet."""
     with convert2rhel("--no-rpm-va --debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Checking internet connectivity using address")
         assert c2r.expect("internet connection seems to be available", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
@@ -65,6 +69,10 @@ def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell):
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Checking internet connectivity using address")
         assert c2r.expect("There was a problem while trying to connect to", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")

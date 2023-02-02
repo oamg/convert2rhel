@@ -128,6 +128,10 @@ def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
         assert "(FE)" in shell("cat /proc/modules").output
 
         with convert2rhel("--no-rpm-va --debug") as c2r:
+            # We need to get past the data collection acknowledgement.
+            c2r.expect("Continue with the system conversion?")
+            c2r.sendline("y")
+
             assert c2r.expect("Tainted kernel modules detected") == 0
             assert c2r.exitstatus != 0
 
