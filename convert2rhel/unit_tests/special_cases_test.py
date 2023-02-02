@@ -1,10 +1,7 @@
-from collections import namedtuple
-
 import pytest
 import six
 
 from convert2rhel import special_cases
-from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 
@@ -14,12 +11,11 @@ from six.moves import mock
 
 
 @mock.patch("convert2rhel.special_cases.perform_java_openjdk_workaround")
-@mock.patch("convert2rhel.special_cases.unprotect_shim_x64")
-def test_check_and_resolve(unprotect_shim_x64, perform_java_openjdk_workaround_mock, monkeypatch):
+@mock.patch("convert2rhel.special_cases.remove_iwlax2xx_firmware")
+def test_check_and_resolve(remove_iwlax2xx_firmware_mock, perform_java_openjdk_workaround_mock, monkeypatch):
     special_cases.check_and_resolve()
-
     perform_java_openjdk_workaround_mock.assert_called()
-    unprotect_shim_x64.assert_called()
+    remove_iwlax2xx_firmware_mock.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -87,38 +83,6 @@ def test_perform_java_openjdk_workaround(
     else:
         mkdir_p_mocked.assert_not_called()
     has_rpm_mocked.assert_called()
-
-
-@pytest.mark.parametrize(
-    ("sys_id", "removal_ok", "log_msg", "is_rpm_installed"),
-    (
-        ("oracle", True, "removed in accordance with", True),
-        ("oracle", False, "Unable to remove", True),
-        ("centos", True, "Relevant to Oracle Linux 7 only", True),
-        ("centos", False, "shim-x64 package is not installed. Nothing to do.", False),
-    ),
-)
-@mock.patch("os.remove")
-def test_unprotect_shim_x64(
-    mock_os_remove,
-    sys_id,
-    removal_ok,
-    log_msg,
-    is_rpm_installed,
-    monkeypatch,
-    caplog,
-):
-    monkeypatch.setattr(system_info, "id", sys_id)
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    monkeypatch.setattr(special_cases.system_info, "is_rpm_installed", value=mock.Mock(return_value=is_rpm_installed))
-    if not removal_ok:
-        mock_os_remove.side_effect = OSError()
-
-    special_cases.unprotect_shim_x64()
-
-    assert log_msg in caplog.records[-1].message
-    if sys_id == "oracle" and removal_ok:
-        mock_os_remove.assert_called_once()
 
 
 @pytest.mark.parametrize(
