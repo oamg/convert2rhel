@@ -82,7 +82,9 @@ class LogLevelTask(object):
 
 class LogLevelFile(object):
     level = 5
-    label = "FILE"
+    # Label messages DEBUG as it is contains the same messages as debug, just that they always go
+    # to the log file.
+    label = "DEBUG"
 
 
 def setup_logger_handler(log_name, log_dir):
