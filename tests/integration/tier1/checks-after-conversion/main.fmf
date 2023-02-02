@@ -1,4 +1,13 @@
-summary: checks-after-conversion
+summary: Checks after conversion
+description: |
+    This set of checks looks at the system that has been freshly converted to see whether it has all signs of a
+    successfully converted system. As an example one of the checks looks at /etc/system-release to see if it has
+    the "Red Hat Enterprise Linux" string.
 
 tier: 1
 test: pytest -svv
+
+link:
+  - https://issues.redhat.com/browse/RHELC-664
+  - https://issues.redhat.com/browse/RHELC-411
+  - https://issues.redhat.com/browse/RHELC-291
