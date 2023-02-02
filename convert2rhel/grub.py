@@ -157,8 +157,8 @@ def _get_device_number(device):
         logger.debug("blkid output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
     # We are spliting the partition entry number, and we are just taking that output as our desired partition number
-    parttition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
-    return int(parttition_number)
+    partition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
+    return int(partition_number)
 
 
 def get_grub_device():
