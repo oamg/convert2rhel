@@ -781,7 +781,7 @@ class TestRegistrationCommand(object):
                 None,
                 "RegisterWithActivationKeys",
                 "sasa{sv}a{sv}s",
-                "Organization: Local Organization",
+                "Organization: *****",
             ),
             (
                 "Local Organization",
@@ -790,7 +790,7 @@ class TestRegistrationCommand(object):
                 "pass_word",
                 "Register",
                 "sssa{sv}a{sv}s",
-                "Organization: Local Organization",
+                "Organization: *****",
             ),
             (None, None, "user_name", "pass_word", "Register", "sssa{sv}a{sv}s", None),
         ),
