@@ -67,12 +67,12 @@ class ChangedRPMPackagesController(object):
 
     def _remove_installed_pkgs(self):
         """For each package installed during conversion remove it."""
-        loggerinst.task("Rollback: Removing installed packages")
+        loggerinst.task("Rollback: Remove installed packages")
         remove_pkgs(self.installed_pkgs, backup=False, critical=False)
 
     def _install_removed_pkgs(self):
         """For each package removed during conversion install it."""
-        loggerinst.task("Rollback: Installing removed packages")
+        loggerinst.task("Rollback: Install removed packages")
         pkgs_to_install = []
         for restorable_pkg in self.removed_pkgs:
             if restorable_pkg.path is None:
@@ -301,7 +301,7 @@ class RestorableFile(object):
         """Restore a previously backed up file"""
         backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
         if rollback:
-            loggerinst.task("Rollback: Restoring %s from backup" % self.filepath)
+            loggerinst.task("Rollback: Restore %s from backup" % self.filepath)
         else:
             loggerinst.info("Restoring %s from backup" % self.filepath)
 

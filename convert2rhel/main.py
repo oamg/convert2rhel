@@ -123,10 +123,10 @@ def main():
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_ponr_conversion()
 
-        loggerinst.task("Final: RPM files modified by the conversion")
+        loggerinst.task("Final: Show RPM files modified by the conversion")
         systeminfo.system_info.modified_rpm_files_diff()
 
-        loggerinst.task("Final: Updating GRUB2 configuration")
+        loggerinst.task("Final: Update GRUB2 configuration")
         grub.update_grub_after_conversion()
 
         loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
@@ -134,7 +134,7 @@ def main():
 
         breadcrumbs.breadcrumbs.finish_collection(success=True)
 
-        loggerinst.task("Final: Updating RHSM custom facts")
+        loggerinst.task("Final: Update RHSM custom facts")
         subscription.update_rhsm_custom_facts()
 
         loggerinst.info("\nConversion successful!\n")
