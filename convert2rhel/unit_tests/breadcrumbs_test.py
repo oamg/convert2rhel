@@ -87,11 +87,11 @@ def test_finish_collection(pretend_os, success, monkeypatch):
                 "--username=test",
                 "--password=nicePassword",
             ],
-            "/usr/bin/convert2rhel --username=test --password=*****",
+            "/usr/bin/convert2rhel --username=***** --password=*****",
         ),
         (
             ["/usr/bin/convert2rhel", "-u=test", "-p=nicePassword"],
-            "/usr/bin/convert2rhel -u=test -p=*****",
+            "/usr/bin/convert2rhel -u=***** -p=*****",
         ),
         (
             [
@@ -100,11 +100,11 @@ def test_finish_collection(pretend_os, success, monkeypatch):
                 "--org=1234",
                 "-y",
             ],
-            "/usr/bin/convert2rhel --activationkey=***** --org=1234 -y",
+            "/usr/bin/convert2rhel --activationkey=***** --org=***** -y",
         ),
         (
             ["/usr/bin/convert2rhel", "-k=test", "-o=1234", "-y"],
-            "/usr/bin/convert2rhel -k=***** -o=1234 -y",
+            "/usr/bin/convert2rhel -k=***** -o=***** -y",
         ),
     ),
 )

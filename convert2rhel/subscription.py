@@ -334,9 +334,6 @@ class RegistrationCommand(object):
                 loggerinst.info("    ... password detected")
                 password = tool_opts.password
             else:
-                if tool_opts.username:
-                    # Hint user for which username they need to enter pswd
-                    loggerinst.info("Username: %s", username)  # lgtm[py/clear-text-logging-sensitive-data]
                 password = ""
                 while not password:
                     password = utils.prompt_user("Password: ", password=True)
@@ -422,9 +419,9 @@ class RegistrationCommand(object):
             try:
                 if self.password:
                     if self.org:
-                        loggerinst.info("Organization: %s", self.org)
-                    loggerinst.info("Username: %s", self.username)
-                    loggerinst.info("Password: %s", "*" * 5)
+                        loggerinst.info("Organization: %s", utils.OBFUSCATION_STRING)
+                    loggerinst.info("Username: %s", utils.OBFUSCATION_STRING)
+                    loggerinst.info("Password: %s", utils.OBFUSCATION_STRING)
                     loggerinst.info("Connection Options: %s", self.connection_opts)
                     loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (
@@ -446,8 +443,8 @@ class RegistrationCommand(object):
                     )
 
                 else:
-                    loggerinst.info("Organization: %s", self.org)
-                    loggerinst.info("Activation Key: %s", "*" * 5)
+                    loggerinst.info("Organization: %s", utils.OBFUSCATION_STRING)
+                    loggerinst.info("Activation Key: %s", utils.OBFUSCATION_STRING)
                     loggerinst.info("Connection Options: %s", self.connection_opts)
                     loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (

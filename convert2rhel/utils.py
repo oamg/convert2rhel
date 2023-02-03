@@ -38,6 +38,9 @@ from convert2rhel import i18n
 
 loggerinst = logging.getLogger(__name__)
 
+# A string we're using to replace sensitive information (like an RHSM password) in logs, terminal output, etc.
+OBFUSCATION_STRING = "*" * 5
+
 
 class ImportGPGKeyError(Exception):
     """Raised for failures during the rpm import of gpg keys."""
@@ -702,44 +705,51 @@ def remove_orphan_folders():
             os.rmdir(path)
 
 
-def hide_secrets(args, secret_args=frozenset(("--password", "--activationkey", "--token", "-p", "-k"))):
+def hide_secrets(
+    args, secret_options=frozenset(("--username", "--password", "--activationkey", "--org", "-u", "-p", "-k", "-o"))
+):
     """
-    Replace secret values with asterisks.
+    Replace secret values passed through a command line with asterisks.
 
-    This function takes a list of arguments which will be passed
-    in a transformation process where we will replace any secret values
-    with an fixed size of asterisks (*) and returns a new list containing
-     the arguments with this transformation.
+    This function takes a list of command line arguments and returns a new list containing where any secret value is
+    replaced with a fixed size of asterisks (*).
 
-    :arg args: An argument list which may contain secret values.
+    Terminology:
+     - an argument is one of whitespace delimited strings of an executed cli command
+       Example: `ls -a -w 10 dir` ... four arguments (-a, -w, 10, dir)
+     - an option is a subset of arguments that start with - or -- and modify the behavior of a cli command
+       Example: `ls -a -w 10 dir` ... two options (-a, -w)
+     - an option parameter is the argument following an option if the option requires a value
+       Example: `ls -a -w 10 dir` ... one option parameter (10)
+
+    :param: args: A list of command line arguments which may contain secret values.
+    :param: secret_options: A set of command line options requiring sensitive or private information.
     :returns: A new list of arguments with secret values hidden.
     """
-    obfuscation_string = "*" * 5
-
     sanitized_list = []
     hide_next = False
     for arg in args:
         if hide_next:
-            # Second part of a two part secret argument (like --password *SECRET*)
-            arg = obfuscation_string
+            # This is a parameter of a secret option
+            arg = OBFUSCATION_STRING
             hide_next = False
 
-        elif arg in secret_args:
-            # First part of a two part secret argument (like *--password* SECRET)
+        elif arg in secret_options:
+            # This is a secret option => mark its parameter (the following argument) to be obfuscated
             hide_next = True
 
         else:
-            # A secret argument in one part (like --password=SECRET)
-            for problem_arg in secret_args:
-                if arg.startswith(problem_arg + "="):
-                    arg = "{0}={1}".format(problem_arg, obfuscation_string)
+            # Handle the case where the secret option and its parameter are both in one argument ("--password=SECRET")
+            for option in secret_options:
+                if arg.startswith(option + "="):
+                    arg = "{0}={1}".format(option, OBFUSCATION_STRING)
 
         sanitized_list.append(arg)
 
     if hide_next:
         loggerinst.debug(
-            "Passed arguments had unexpected secret argument,"
-            " '{0}', without a secret".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
+            "Passed arguments had an option, '{0}', without an expected"
+            " secret parameter".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
         )
 
     return sanitized_list
