@@ -68,7 +68,7 @@ class SystemCert(object):
 
     def remove(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""
-        loggerinst.task("Rollback: Removing installed RHSM certificate")
+        loggerinst.task("Rollback: Remove installed RHSM certificate")
 
         try:
             os.remove(self._target_cert_path)
