@@ -479,17 +479,17 @@ def test_validate_serverurl_parsing(url_parts, message):
 def test__log_command_used(caplog, monkeypatch):
     obfuscation_string = "*" * 5
     input_command = mock_cli_arguments(
-        ["--username", "uname", "--password", "123", "--activationkey", "456", "--token", "789"]
+        ["--username", "uname", "--password", "123", "--activationkey", "456", "--org", "789"]
     )
     expected_command = mock_cli_arguments(
         [
             "--username",
-            "uname",
+            obfuscation_string,
             "--password",
             obfuscation_string,
             "--activationkey",
             obfuscation_string,
-            "--token",
+            "--org",
             obfuscation_string,
         ]
     )
@@ -503,7 +503,7 @@ def test__log_command_used(caplog, monkeypatch):
     ("argv", "message"),
     (
         # The message is a log of used command
-        (mock_cli_arguments(["-o", "org", "-k", "key"]), "-o org -k *****"),
+        (mock_cli_arguments(["-o", "org", "-k", "key"]), "-o ***** -k *****"),
         (
             mock_cli_arguments(["-o", "org"]),
             "Either the --organization or the --activationkey option is missing. You can't use one without the other.",

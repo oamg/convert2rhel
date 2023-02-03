@@ -601,7 +601,7 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
 
 
 @pytest.mark.parametrize(
-    ("arguments", "secret_args", "expected"),
+    ("arguments", "secret_options", "expected"),
     (
         # No sanitization is being used here
         (["-h"], frozenset(), ["-h"]),
@@ -619,37 +619,30 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
             frozenset(),
             ["--argument=with space in it", "--another"],
         ),
-        # Single parameter being passed
+        # Single option being passed
         (
             ["--activationkey=123"],
             frozenset(("--activationkey",)),
             ["--activationkey=*****"],
         ),
-        # Multiple parameters and hide the secrets only for activation key
+        # Hide the secrets in the short form of the options
         (
-            ["--activationkey=123", "--org=1234", "-y"],
+            ["-u=test", "-p=Super@Secret@Password", "-k=123", "-o=1234"],
             frozenset(
-                ("--activationkey",),
+                (
+                    "-u",
+                    "-p",
+                    "-k",
+                    "-o",
+                )
             ),
-            ["--activationkey=*****", "--org=1234", "-y"],
-        ),
-        # Hide the secrets for activationkey in it's short form
-        (
-            ["-k=123"],
-            frozenset(("-k",)),
-            ["-k=*****"],
-        ),
-        # Hide the secrets for password only
-        (
-            ["--username=test", "--password=Super@Secret@Password"],
-            frozenset(("--password",)),
-            ["--username=test", "--password=*****"],
+            ["-u=*****", "-p=*****", "-k=*****", "-o=*****"],
         ),
         # Multiple sanitizations should occur in the next test
         (
             ["--username=test", "--password=Super@Secret@Password", "--activationkey=123", "--org=1234", "-y"],
-            frozenset(("--password", "--activationkey")),
-            ["--username=test", "--password=*****", "--activationkey=*****", "--org=1234", "-y"],
+            frozenset(("--username", "--password", "--activationkey", "--org")),
+            ["--username=*****", "--password=*****", "--activationkey=*****", "--org=*****", "-y"],
         ),
         # Test the same sanitization but without the equal sign ("=") in the arguments
         (
@@ -664,8 +657,8 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
                 "1234",
                 "-y",
             ],
-            frozenset(("--password", "--activationkey")),
-            ["--username", "test", "--password", "*****", "--activationkey", "*****", "--org", "1234", "-y"],
+            frozenset(("--username", "--password", "--activationkey", "--org")),
+            ["--username", "*****", "--password", "*****", "--activationkey", "*****", "--org", "*****", "-y"],
         ),
         # A real world example of how the tool would be used
         (
@@ -678,10 +671,16 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
                 "--debug",
                 "-y",
             ],
-            frozenset(("--password", "-p", "--activationkey", "-k")),
+            frozenset(
+                (
+                    "--username",
+                    "--password",
+                    "--activationkey",
+                )
+            ),
             [
                 "/usr/bin/convert2rhel",
-                "--username=test",
+                "--username=*****",
                 "--password=*****",
                 "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
                 "--no-rpm-va",
@@ -689,15 +688,7 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
                 "-y",
             ],
         ),
-        # Test password with special strings
-        (
-            ["--password", "\\)(*&^%f %##@^%&*&^("],
-            frozenset(("--password",)),
-            [
-                "--password",
-                "*****",
-            ],
-        ),
+        # Test replacement of parameters with special characters
         (
             ["--password", " "],
             frozenset(
@@ -724,13 +715,13 @@ def test_remove_orphan_folders(path_exists, list_dir, expected, tmpdir, monkeypa
         ),
     ),
 )
-def test_hide_secrets(arguments, secret_args, expected):
-    sanitazed_cmd = utils.hide_secrets(arguments, secret_args=secret_args)
+def test_hide_secrets(arguments, secret_options, expected):
+    sanitazed_cmd = utils.hide_secrets(arguments, secret_options=secret_options)
     assert sanitazed_cmd == expected
 
 
 def test_hide_secrets_default():
-    """Test that the default secret_args are sound."""
+    """Test that the default secret_options cover all known secrets."""
     test_cmd = [
         "register",
         "--force",
@@ -748,7 +739,7 @@ def test_hide_secrets_default():
     assert sanitized_cmd == [
         "register",
         "--force",
-        "--username=jdoe",
+        "--username=*****",
         "--password=*****",
         "-p=*****",
         "--activationkey=*****",
@@ -756,7 +747,7 @@ def test_hide_secrets_default():
         "--pool=e6e3f4ca-342f-11ed-b5eb-6c9466263bdf",
         "--no-rpm-va",
         "--debug",
-        "--org=0123",
+        "--org=*****",
     ]
 
 
@@ -765,15 +756,15 @@ def test_hide_secrets_no_secrets():
     test_cmd = [
         "register",
         "--force",
-        "--username=jdoe",
-        "--org=0123",
+        "--no-rpm-va",
+        "-y",
     ]
     sanitized_cmd = utils.hide_secrets(test_cmd)
     assert sanitized_cmd == [
         "register",
         "--force",
-        "--username=jdoe",
-        "--org=0123",
+        "--no-rpm-va",
+        "-y",
     ]
 
 
@@ -794,13 +785,13 @@ def test_hide_secret_unexpected_input(caplog):
         "register",
         "--force",
         "--password=*****",
-        "--username=jdoe",
-        "--org=0123",
+        "--username=*****",
+        "--org=*****",
         "--activationkey",
     ]
     assert len(caplog.records) == 1
     assert caplog.records[-1].levelname == "DEBUG"
-    assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
+    assert "Passed arguments had an option, '--activationkey', without an expected secret parameter" in caplog.text
 
 
 @pytest.mark.parametrize(

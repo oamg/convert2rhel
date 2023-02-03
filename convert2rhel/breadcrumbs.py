@@ -98,8 +98,7 @@ class Breadcrumbs(object):
 
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
-        cli_options_to_sanitize = frozenset(("--password", "-p", "--activationkey", "-k"))
-        self.executed = " ".join(utils.hide_secrets(args=sys.argv, secret_args=cli_options_to_sanitize))
+        self.executed = " ".join(utils.hide_secrets(args=sys.argv))
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
