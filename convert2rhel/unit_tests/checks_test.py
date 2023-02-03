@@ -316,7 +316,7 @@ class TestCheckConvert2rhelLatest(object):
         checks.check_convert2rhel_latest()
 
         local_version, dummy_ = convert2rhel_latest_version_test
-        log_msg = "Latest available Convert2RHEL version is installed.\n" "Continuing conversion."
+        log_msg = "Latest available Convert2RHEL version is installed."
         assert log_msg in caplog.text
 
     @pytest.mark.parametrize(

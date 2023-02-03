@@ -229,7 +229,7 @@ def check_convert2rhel_latest():
                 )
 
     else:
-        logger.info("Latest available Convert2RHEL version is installed.\n" "Continuing conversion.")
+        logger.info("Latest available Convert2RHEL version is installed.")
 
 
 def check_efi():
