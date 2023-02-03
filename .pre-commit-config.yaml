@@ -2,26 +2,25 @@ minimum_pre_commit_version: "2.9.0"
 repos:
   - repo: local
     hooks:
-    - id: black
-      name: black
-      entry: black
-      types: [python]
-      language: python
-      language_version: "python3"
-      additional_dependencies: [click==7.1.2, black==21.12b0]
+      - id: black
+        name: black
+        entry: black
+        types: [python]
+        language: python
+        language_version: "python3"
+        additional_dependencies: [click==7.1.2, black==21.12b0]
   - repo: local
     hooks:
-    - id: pylint
-      name: pylint
-      entry: pylint
-      types: [python]
-      language: python
-      additional_dependencies: [pylint==2.15.10]
-      args:
-        [
-          "-sn", # Don't display the score
-          "--rcfile=.pylintrc", # Link to your config file
-        ]
+      - id: pylint
+        name: pylint
+        entry: pylint
+        types: [python]
+        language: python
+        additional_dependencies: [pylint==2.15.10]
+        args: [
+            "-sn", # Don't display the score
+            "--rcfile=.pylintrc", # Link to your config file
+          ]
   - repo: "https://github.com/timothycrosley/isort"
     rev: 5.12.0
     hooks:
@@ -44,3 +43,11 @@ repos:
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
+
+  - repo: https://github.com/packit/pre-commit-hooks
+    rev: v1.0.0
+    hooks:
+      - id: check-rebase
+        args:
+          - https://github.com/oamg/convert2rhel.git
+        stages: [manual, push]
