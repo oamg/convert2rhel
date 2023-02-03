@@ -135,7 +135,7 @@ def perform_pre_ponr_checks():
 
 def check_convert2rhel_latest():
     """Make sure that we are running the latest downstream version of convert2rhel"""
-    logger.task("Prepare: Checking if this is the latest version of Convert2RHEL")
+    logger.task("Prepare: Check if this is the latest version of Convert2RHEL")
 
     if not system_info.has_internet_access:
         logger.warning("Skipping the check because no internet connection has been detected.")
@@ -233,7 +233,7 @@ def check_convert2rhel_latest():
 
 def check_efi():
     """Inhibit the conversion when we are not able to handle UEFI."""
-    logger.task("Prepare: Checking the firmware interface type (BIOS/UEFI)")
+    logger.task("Prepare: Check the firmware interface type (BIOS/UEFI)")
     if not grub.is_efi():
         logger.info("BIOS detected.")
         return
@@ -282,7 +282,7 @@ def check_tainted_kmods():
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
         system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<<< Tainted
     """
-    logger.task("Prepare: Checking if loaded kernel modules are not tainted")
+    logger.task("Prepare: Check if loaded kernel modules are not tainted")
     unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
     module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
     if unsigned_modules:
@@ -304,7 +304,7 @@ def check_readonly_mounts():
     Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
     fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
     """
-    logger.task("Prepare: Checking /mnt and /sys are read-write")
+    logger.task("Prepare: Check /mnt and /sys are read-write")
 
     mounts = get_file_content("/proc/mounts", as_list=True)
     for line in mounts:
@@ -334,7 +334,7 @@ def check_custom_repos_are_valid():
     - YUM/DNF is able to find the repoids (to rule out a typo)
     - the repository "baseurl" is accessible and contains repository metadata
     """
-    logger.task("Prepare: Checking if --enablerepo repositories are accessible")
+    logger.task("Prepare: Check if --enablerepo repositories are accessible")
 
     if not tool_opts.no_rhsm:
         logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
@@ -390,7 +390,7 @@ def ensure_compatibility_of_kmods():
 
 def validate_package_manager_transaction():
     """Validate the package manager transaction is passing the tests."""
-    logger.task("Validate the %s transaction", pkgmanager.TYPE)
+    logger.task("Prepare: Validate the %s transaction", pkgmanager.TYPE)
     transaction_handler = pkgmanager.create_transaction_handler()
     transaction_handler.run_transaction(
         validate_transaction=True,
@@ -654,7 +654,7 @@ def _bad_kernel_substring(kernel_release):
 
 def check_package_updates():
     """Ensure that the system packages installed are up-to-date."""
-    logger.task("Prepare: Checking if the installed packages are up-to-date")
+    logger.task("Prepare: Check if the installed packages are up-to-date")
 
     if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
         logger.info(
@@ -705,7 +705,7 @@ def check_package_updates():
 
 def is_loaded_kernel_latest():
     """Check if the loaded kernel is behind or of the same version as in yum repos."""
-    logger.task("Prepare: Checking if the loaded kernel version is the most recent")
+    logger.task("Prepare: Check if the loaded kernel version is the most recent")
 
     if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
         logger.info(
