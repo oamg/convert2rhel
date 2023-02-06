@@ -27,8 +27,6 @@ import dbus.exceptions
 import pytest
 import six
 
-from six.moves import urllib
-
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import GetLoggerMocked, get_pytest_marker, run_subprocess_side_effect
@@ -754,81 +752,6 @@ class TestRegistrationCommand(object):
         assert utils.prompt_user.called == {"Username: ": 2, "Password: ": 2}
 
     @pytest.mark.parametrize(
-        "registration_kwargs",
-        (
-            {
-                "rhsm_hostname": "localhost",
-                "activation_key": "0xDEADBEEF",
-                "org": "Local Organization",
-            },
-            {
-                "rhsm_hostname": "localhost",
-                "rhsm_port": "8800",
-                "rhsm_prefix": "/rhsm",
-                "activation_key": "0xDEADBEEF",
-                "org": "Local Organization",
-            },
-            {
-                "rhsm_hostname": "localhost",
-                "rhsm_port": "8800",
-                "rhsm_prefix": "rhsm",
-                "org": "Local Organization",
-                "username": "me_myself_and_i",
-                "password": "a password",
-            },
-            {
-                "username": "me_myself_and_i",
-                "password": "a password",
-            },
-        ),
-    )
-    def test_args(self, registration_kwargs):
-        """Test that the argument list is generated correctly."""
-        reg_cmd = subscription.RegistrationCommand(**registration_kwargs)
-
-        args_list = reg_cmd.args
-
-        # Assert that these are always added
-        assert args_list[0] == "register"
-        assert "--force" in args_list
-
-        # Assert that password was not added to the args_list
-        assert len([arg for arg in args_list if "password" in arg]) == 0
-
-        # Assert the other args were added
-        if (
-            "rhsm_prefix" in registration_kwargs
-            and "rhsm_port" in registration_kwargs
-            and "rhsm_prefix" in registration_kwargs
-        ):
-            server_url = urllib.parse.urljoin(
-                "https://{rhsm_hostname}:{rhsm_port}".format(**registration_kwargs),
-                "{rhsm_prefix}".format(**registration_kwargs),
-            )
-            assert "--serverurl={0}".format(server_url) in args_list
-        elif "rhsm_hostname" in registration_kwargs:
-            assert "--serverurl=https://{rhsm_hostname}".format(**registration_kwargs) in args_list
-
-        if "activation_key" in registration_kwargs:
-            assert "--activationkey={activation_key}".format(**registration_kwargs) in args_list
-
-        if "org" in registration_kwargs:
-            assert "--org={org}".format(**registration_kwargs) in args_list
-
-        if "username" in registration_kwargs:
-            assert "--username={username}".format(**registration_kwargs) in args_list
-
-        expected_length = len(registration_kwargs) + 2
-        if "password" in registration_kwargs:
-            expected_length -= 1
-        if "rhsm_port" in registration_kwargs:
-            expected_length -= 1
-        if "rhsm_prefix" in registration_kwargs:
-            expected_length -= 1
-
-        assert len(args_list) == expected_length
-
-    @pytest.mark.parametrize(
         ("rhsm_hostname", "rhsm_port", "rhsm_prefix", "expected"),
         (
             (None, None, None, dbus.Dictionary({}, signature="ss")),
@@ -858,49 +781,89 @@ class TestRegistrationCommand(object):
         )
         assert reg_cmd.connection_opts == expected
 
-    def test_calling_registration_command_activation_key(self, monkeypatch, mocked_rhsm_call_blocking):
-        reg_cmd = subscription.RegistrationCommand(activation_key="0xDEADBEEF", org="Local Organization")
-        reg_cmd()
-
-        args = (
-            "Local Organization",
-            ["0xDEADBEEF"],
-            {"force": True},
-            {},
-            "C",
+    @pytest.mark.parametrize(
+        (
+            "organization",
+            "activation_key",
+            "username",
+            "password",
+            "register_var",
+            "register_signature",
+            "organization_log",
+        ),
+        (
+            (
+                "Local Organization",
+                "0xDEADBEEF",
+                None,
+                None,
+                "RegisterWithActivationKeys",
+                "sasa{sv}a{sv}s",
+                "Organization: Local Organization",
+            ),
+            (
+                "Local Organization",
+                None,
+                "user_name",
+                "pass_word",
+                "Register",
+                "sssa{sv}a{sv}s",
+                "Organization: Local Organization",
+            ),
+            (None, None, "user_name", "pass_word", "Register", "sssa{sv}a{sv}s", None),
+        ),
+    )
+    def test_calling_registration_command(
+        self,
+        organization,
+        activation_key,
+        username,
+        password,
+        register_var,
+        register_signature,
+        organization_log,
+        monkeypatch,
+        mocked_rhsm_call_blocking,
+        caplog,
+    ):
+        reg_cmd = subscription.RegistrationCommand(
+            username=username, password=password, org=organization, activation_key=activation_key
         )
+
+        reg_cmd()
+        if password:
+            args = (
+                organization or "",
+                username,
+                password,
+                {"force": True},
+                {},
+                "C",
+            )
+
+        else:
+            args = (
+                organization or "",
+                [activation_key],
+                {"force": True},
+                {},
+                "C",
+            )
+
         mocked_rhsm_call_blocking.assert_called_once_with(
             "com.redhat.RHSM1",
             "/com/redhat/RHSM1/Register",
             "com.redhat.RHSM1.Register",
-            "RegisterWithActivationKeys",
-            "sasa{sv}a{sv}s",
+            register_var,
+            register_signature,
             args,
             timeout=subscription.REGISTRATION_TIMEOUT,
         )
 
-    def test_calling_registration_command_password(self, monkeypatch, mocked_rhsm_call_blocking):
-        reg_cmd = subscription.RegistrationCommand(username="me_myself_and_i", password="a password")
-
-        reg_cmd()
-
-        args = (
-            "",
-            "me_myself_and_i",
-            "a password",
-            {"force": True},
-            {},
-            "C",
-        )
-        mocked_rhsm_call_blocking.assert_called_once_with(
-            "com.redhat.RHSM1",
-            "/com/redhat/RHSM1/Register",
-            "com.redhat.RHSM1.Register",
-            "Register",
-            "sssa{sv}a{sv}s",
-            args,
-            timeout=subscription.REGISTRATION_TIMEOUT,
-        )
+        if organization_log is None:
+            assert "Organization: " not in caplog.text
+        else:
+            assert organization_log in caplog.text
 
     def test_calling_registration_command_with_connection_opts(self, monkeypatch, mocked_rhsm_call_blocking):
         reg_cmd = subscription.RegistrationCommand(
