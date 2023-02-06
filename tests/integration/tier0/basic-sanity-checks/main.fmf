@@ -33,6 +33,12 @@ tag+:
     test: |
       pytest -svv -m smoke
 
+/log_file_exists:
+    tag+:
+        - log-file
+    test: |
+      pytest -svv -m log_file_exists
+
 /version_latest_or_newer:
     tag+:
         - version-latest-or-newer

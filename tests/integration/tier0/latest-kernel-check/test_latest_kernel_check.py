@@ -1,6 +1,8 @@
 import configparser
-from conftest import SYSTEM_RELEASE_ENV
+
 import pytest
+
+from conftest import SYSTEM_RELEASE_ENV
 
 
 @pytest.mark.failed_repoquery

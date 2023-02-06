@@ -4,7 +4,7 @@ from conftest import SYSTEM_RELEASE_ENV
 
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
-    """TODO better description and function name"""
+    """TODO(r0x0d) better description and function name"""
 
     # We need to skip check for collected rhsm custom facts after the conversion
     # due to disabled submgr, thus adding envar

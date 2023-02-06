@@ -5,12 +5,12 @@ from collections import namedtuple
 import pytest
 
 
-# TODO move to conftest
+# TODO(danmyway) move to conftest
 class GetSystemInformation:
     """
     Helper class.
     Assign a namedtuple with major and minor elements, both of an int type.
-    Assign a distribution (e.g. centos, oracle, rocky, alma0
+    Assign a distribution (e.g. centos, oracle, rocky, alma)
     Assign a system release.
 
     Examples:
@@ -32,7 +32,7 @@ class GetSystemInformation:
 class AssignRepositoryVariables:
     """
     Helper class.
-    Assign correct repofile content, name and enable_repo_opt to their respective major/eus system verison.
+    Assign correct repofile content, name and enable_repo_opt to their respective major/eus system version.
     """
 
     repofile_epel7 = "rhel7"

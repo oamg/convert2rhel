@@ -18,19 +18,33 @@ tag+:
         pytest -svv -m custom_module_loaded
 
 /custom_module_not_loaded:
+    adjust+:
+        - environment+:
+            PROMPT_AMOUNT: 5
+          when: distro == centos
+        - environment+:
+            PROMPT_AMOUNT: 4
+          when: distro == oraclelinux-7
+        - environment+:
+            PROMPT_AMOUNT: 3
+          when: distro == oraclelinux-8
     tag+:
         - custom-module-not-loaded
     test: |
         pytest -svv -m custom_module_not_loaded
 
+
 /force_loaded_kmod:
     adjust+:
         - enabled: false
           when: distro == centos-7 or distro == oraclelinux-7
+          because: |
+            Force loading the kernel module on RHEL7 like distros is flaky.
     tag+:
         - force-loaded-kmod
     test: |
         pytest -svv -m force_loaded_kmod
+
 
 /tainted_kernel:
     tag+:

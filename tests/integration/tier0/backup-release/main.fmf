@@ -26,6 +26,8 @@ tag+:
         - with-envar
     test: |
         pytest -svv -m with_envar
+    link:
+        - verifies: https://issues.redhat.com/browse/OAMG-5457
 
 /missing_system_release:
     tag+:
@@ -38,3 +40,5 @@ tag+:
         - unsuccessful-satellite-registration
     test: |
         pytest -svv -m unsuccessful_satellite_registration
+    link:
+        - verifies: https://issues.redhat.com/browse/RHELC-51

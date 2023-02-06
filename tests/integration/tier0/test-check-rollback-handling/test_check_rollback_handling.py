@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from conftest import SYSTEM_RELEASE_ENV
@@ -86,18 +87,13 @@ def terminate_and_assert_good_rollback(c2r):
 
 
 @pytest.mark.rhsm_cleanup
-def test_proper_rhsm_clean_up(get_system_release, shell, convert2rhel):
+def test_proper_rhsm_clean_up(shell, convert2rhel):
     """
     Verify that the system has been successfully unregistered after the rollback.
     Verify that usermode, rhn-setup and os-release packages are not removed.
     """
     prompt_amount = int(os.environ["PROMPT_AMOUNT"])
-    packages_to_remove_at_cleanup = install_packages(shell, assign_packages(get_system_release))
-    if "oracle" in get_system_release:
-        prompt_amount = 3
-    # additional question about the removal of python3-syspurpose
-    elif "centos" in get_system_release:
-        prompt_amount = 4
+    packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va".format(
@@ -150,7 +146,7 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
         c2r.sendcontrol("d")
         assert c2r.exitstatus != 0
 
-    is_installed_post_rollback(shell, assign_packages(get_system_release))
+    is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
@@ -184,7 +180,7 @@ def test_terminate_on_username_prompt(convert2rhel):
 
 
 @pytest.mark.terminate_on_password
-def test_terminate_on_password_prompt(convert2rhel, get_system_release):
+def test_terminate_on_password_prompt(convert2rhel):
     """
     Send termination signal on the user prompt for password.
     Verify that c2r goes successfully through the rollback.

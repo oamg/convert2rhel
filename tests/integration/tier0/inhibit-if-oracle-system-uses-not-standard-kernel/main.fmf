@@ -1,6 +1,7 @@
 summary: Oracle Linux unsupported kernel
 description: |
-    Install unsupported unbreakable kernel (uek) on an Oracle Linux machine and verify, that the conversion is inhibited.
+    Install unsupported Unbreakable Enterprise Kernel (uek) on an Oracle Linux machine
+    and verify, that the conversion is inhibited.
 
 tier: 0
 

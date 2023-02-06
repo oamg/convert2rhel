@@ -6,7 +6,7 @@ from envparse import env
 
 
 @pytest.mark.sub_man_rollback
-def test_sub_man_rollback(convert2rhel, shell, install_required_packages):
+def test_sub_man_rollback(convert2rhel, shell, required_packages):
     """
     Verify that convert2rhel removes and backs up the original vendor subscription-manager packages, including
     python3-syspurpose and python3-cloud-what which are also built out of the subscription-manager SRPM.

@@ -1,7 +1,7 @@
 summary: Verify rollback correct behavior
 description: |
     Terminate conversion at various points and verify that the rollback finishes successfully.
-    Verify that packages unnecessary packages are backed up and not removed.
+    Verify that unnecessary packages are backed up and not removed.
 
 adjust+:
     - environment+:

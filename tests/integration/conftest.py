@@ -233,6 +233,9 @@ def system_release(shell):
     This fixture returns a string of ID and VERSION_ID from /etc/os-release.
     If /etc/os-release is not available, /etc/system-release is read instead.
     These could be in generally used for OS specific conditioning.
+    To be used whenever we need live information about system release.
+    E.g. after conversion system release check.
+    Otherwise, use hardcoded SYSTEM_RELEASE_ENV envar from /plans/main.fmf
     Mapping of OS to ID:
         {
             "Centos Linux": "centos",\n
@@ -309,11 +312,13 @@ def log_file_data():
 
 @pytest.fixture(scope="function")
 def required_packages(shell):
+    """
+    Installs packages based on values under TEST_REQUIRES envar in tmt metadata, when called.
+    """
     try:
         required_packages = os.environ.get("TEST_REQUIRES").split(" ")
         for package in required_packages:
             print(f"\nPREPARE: Installing required {package}")
             assert shell(f"yum install -y {package}")
-
     except KeyError:
         raise

@@ -1,4 +1,3 @@
-import platform
 import re
 
 from collections import namedtuple
@@ -29,8 +28,8 @@ def test_install_dependency_packages(shell):
     """
 
     with open("/etc/system-release", "r") as file:
-        system_release = file.read()
-        system_version = get_system_version(system_release_content=system_release)
+        system_rls = file.read()
+        system_version = get_system_version(system_release_content=system_rls)
         if system_version.major == 7:
             dependency_pkgs = [
                 "abrt-retrace-client",  # OAMG-4447

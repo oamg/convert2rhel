@@ -14,7 +14,7 @@ def assign_repository_variable(repository=None):
 
     epel7_repository = "ubi"
     epel8_repository = "baseos"
-    if "oracle-7" in SYSTEM_RELEASE_ENV or "centos-7" in SYSTEM_RELEASE_ENV:
+    if SYSTEM_RELEASE_ENV in ("oracle-7", "centos-7"):
         repository = epel7_repository
     elif "oracle-8" in SYSTEM_RELEASE_ENV or "centos-8" in SYSTEM_RELEASE_ENV:
         repository = epel8_repository
@@ -22,8 +22,8 @@ def assign_repository_variable(repository=None):
     return repository
 
 
-BACKUP_DIR = "/tmp/test-backup-release_backup/"
-BACKUP_DIR_EUS = "/tmp/test-backup-release_backup_eus/"
+BACKUP_DIR = "/tmp/test-backup-release_backup"
+BACKUP_DIR_EUS = "%s_eus" % BACKUP_DIR
 
 REPOSITORY = assign_repository_variable()
 
@@ -81,10 +81,10 @@ def teardown_repositories_and_cleanup(shell):
     Remove changes from the preparation phase.
     """
     # Return repositories to their original location
-    assert shell(f"mv {BACKUP_DIR}* /etc/yum.repos.d/").returncode == 0
+    assert shell(f"mv {BACKUP_DIR}/* /etc/yum.repos.d/").returncode == 0
     # Return EUS repositories to their original location
     if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell(f"mv {BACKUP_DIR_EUS}* /usr/share/convert2rhel/repos/").returncode == 0
+        assert shell(f"mv {BACKUP_DIR_EUS}/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Remove subscription-manager and associated packages, katello package, custom repositories and backup folder
     assert shell("yum remove -y subscription-manager* katello-*").returncode == 0
@@ -99,11 +99,11 @@ def teardown_repositories_and_cleanup(shell):
     # Install the package back to avoid leaving the system in tainted state
     elif "centos-8" in SYSTEM_RELEASE_ENV:
         shell("yum install -y centos-gpg-keys centos-logos")
-    # Additionally installing the subscription-manager on Oracle Linux 8.7, packages librepo and libxml2 get downgraded
+    # Additionally installing the subscription-manager on Oracle Linux 8, packages librepo and libxml2 get downgraded
     # Update said packages to not interfere with subsequent tests
-    elif "oracle-8.7" in SYSTEM_RELEASE_ENV:
+    elif "oracle-8" in SYSTEM_RELEASE_ENV:
         shell("yum update -y librepo libxml2")
-        shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8.7-* redhat-release-8.7-*")
+        shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8* redhat-release-8*")
 
 
 @pytest.mark.unsuccessful_satellite_registration
@@ -197,7 +197,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
 
 
 @pytest.mark.with_envar
-def test_backup_os_release_with_envar(shell, convert2rhel, get_system_release):
+def test_backup_os_release_with_envar(shell, convert2rhel):
     """
     In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that

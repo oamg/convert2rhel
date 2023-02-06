@@ -1,3 +1,5 @@
+import os
+
 from pathlib import Path
 
 import pytest
@@ -69,7 +71,7 @@ def test_inhibit_if_custom_module_loaded(shell, convert2rhel):
 
 
 @pytest.mark.custom_module_not_loaded
-def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel, get_system_release):
+def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     """
     Load the kmod from custom location.
     Verify that it is loaded.
@@ -81,12 +83,8 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel, get_system_
     assert "bonding" in shell("cat /proc/modules").output
     restore_custom_kmod(shell)
 
-    if "oracle-7" in get_system_release:
-        prompt_amount = 3
-    elif "oracle-8" in get_system_release:
-        prompt_amount = 2
-    elif "centos" in get_system_release:
-        prompt_amount = 4
+    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
+
     # If custom module is not loaded the conversion should not be inhibited.
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -110,7 +108,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel, get_system_
 
 
 @pytest.mark.force_loaded_kmod
-def test_inhibit_if_module_is_force_loaded(shell, convert2rhel, get_system_release):
+def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     """
     Test force loads kmod and verifies that Convert2RHEL run is being inhibited.
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.

@@ -37,7 +37,7 @@ DISTRO_KERNEL_MAPPING = {
     },
 }
 
-_, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
+_, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
 
 
 def install_custom_kernel(shell):
@@ -65,7 +65,7 @@ def clean_up_custom_kernel(shell):
 
     # Install back the CentOS 8.5 original kernel
     if "centos-8.5" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install %s -y" % original_kernel).returncode == 0
+        assert shell("yum install -y %s" % original_kernel).returncode == 0
 
     assert (
         shell(
