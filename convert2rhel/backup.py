@@ -251,7 +251,6 @@ class RestorableRpmKey(RestorableChange):
                 raise utils.ImportGPGKeyError("Failed to import the GPG key %s: %s" % (self.keyfile, output))
 
             self.previously_installed = False
-            loggerinst.info("GPG key %s imported", self.keyid)
 
         else:
             self.previously_installed = True
