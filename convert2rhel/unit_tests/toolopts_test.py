@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__metaclass__ = type
 
 import os
 import sys
@@ -39,7 +40,7 @@ def mock_cli_arguments(args):
     return sys.argv[0:1] + args
 
 
-class TestTooloptsParseFromCLI(object):
+class TestTooloptsParseFromCLI:
     def test_cmdline_interactive_username_without_passwd(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--username", "uname"]))
         convert2rhel.toolopts.CLI()

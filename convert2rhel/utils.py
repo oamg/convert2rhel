@@ -54,7 +54,7 @@ class ImportGPGKeyError(Exception):
     """Raised for failures during the rpm import of gpg keys."""
 
 
-class Color(object):
+class Color:
     PURPLE = "\033[95m"
     CYAN = "\033[96m"
     DARKCYAN = "\033[36m"
@@ -303,11 +303,8 @@ def get_file_content(filename, as_list=False):
         if not as_list:
             return ""
         return lines
-    file_to_read = open(filename, "r")
-    try:
+    with open(filename, "r") as file_to_read:
         lines = file_to_read.readlines()
-    finally:
-        file_to_read.close()
     if as_list:
         # remove newline character from each line
         return [x.strip() for x in lines]
@@ -359,7 +356,8 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
     if print_cmd:
         loggerinst.debug("Calling command '%s'" % " ".join(cmd))
 
-    process = subprocess.Popen(
+    process = subprocess.Popen(  # pylint: disable=consider-using-with
+        # Popen is only a context manager in Python-3.2+
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,

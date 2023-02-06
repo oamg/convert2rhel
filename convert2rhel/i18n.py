@@ -22,6 +22,8 @@ module provides a single place to keep that information.  If we decide to locali
 the future, this file should point us towards all the locations that we may need to change.
 """
 
+__metaclass__ = type
+
 #
 # Display locales
 #

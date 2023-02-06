@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 import pytest
 
 from convert2rhel import pkgmanager

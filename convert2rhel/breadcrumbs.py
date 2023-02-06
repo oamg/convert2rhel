@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import json
 import logging
 import os
@@ -40,7 +42,7 @@ RHSM_CUSTOM_FACTS_NAMESPACE = "conversions"
 loggerinst = logging.getLogger(__name__)
 
 
-class Breadcrumbs(object):
+class Breadcrumbs:
     """The so-called breadcrumbs data is a collection of basic information about the convert2rhel execution.
 
     This data is to be stored in a specific file in a machine-readable format which can be collected by various

@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 import logging
 
 from convert2rhel import actions

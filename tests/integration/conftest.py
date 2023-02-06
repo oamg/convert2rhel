@@ -43,6 +43,8 @@ def shell(tmp_path):
             "\nExecuting a command:\n{}\n\n".format(command),
             color="green",
         )
+        # pylint: disable=consider-using-with
+        # Popen is a context-manager in python-3.2+
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = ""
         for line in iter(process.stdout.readline, b""):

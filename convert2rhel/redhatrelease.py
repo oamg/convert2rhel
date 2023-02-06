@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import logging
 import os
 import re
@@ -60,7 +62,7 @@ def get_system_release_content():
         loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
-class YumConf(object):
+class YumConf:
     _yum_conf_path = "/etc/yum.conf"
 
     def __init__(self):
@@ -87,11 +89,8 @@ class YumConf(object):
             self._yum_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._yum_conf_content)
 
     def _write_altered_yum_conf(self):
-        file_to_write = open(self._yum_conf_path, "w")
-        try:
+        with open(self._yum_conf_path, "w") as file_to_write:
             file_to_write.write(self._yum_conf_content)
-        finally:
-            file_to_write.close()
 
     @staticmethod
     def get_yum_conf_filepath():

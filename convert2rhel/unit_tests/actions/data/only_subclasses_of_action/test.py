@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 from convert2rhel import actions
 
 
@@ -8,7 +10,7 @@ class RealTest(actions.Action):
         pass
 
 
-class NotAction(object):
+class NotAction:
     pass
 
 

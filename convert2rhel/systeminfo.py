@@ -14,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__metaclass__ = type
+
 import difflib
 import logging
 import os
@@ -54,7 +57,7 @@ EUS_MINOR_VERSIONS = ["8.6"]
 Version = namedtuple("Version", ["major", "minor"])
 
 
-class SystemInfo(object):
+class SystemInfo:
     def __init__(self):
         # Operating system name (e.g. Oracle Linux)
         self.name = None
@@ -374,8 +377,11 @@ class SystemInfo(object):
             CHECK_INTERNET_CONNECTION_ADDRESS,
         )
         try:
+            # urlopen as a context manager is only available in Python-3.0+
+            # pylint: disable=consider-using-with
             response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
             response.close()
+            # pylint: enable=consider-using-with
             self.logger.info(
                 "Successfully connected to address '%s', internet connection seems to be available."
                 % CHECK_INTERNET_CONNECTION_ADDRESS

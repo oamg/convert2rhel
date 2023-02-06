@@ -2299,6 +2299,6 @@ def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, cap
     result = pkghandler._get_package_repositories(packages)
 
     assert "Repoquery exited with return code 1 and with output: failed" in caplog.records[-1].message
-    for package in result:
+    for package, repo in result.items():
         assert package in packages
-        assert result[package] == "N/A"
+        assert repo == "N/A"

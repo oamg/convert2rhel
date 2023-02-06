@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 from convert2rhel.actions import Action as Foo
 
 

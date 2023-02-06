@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import glob
 import logging
 import os
@@ -451,9 +453,9 @@ def get_rpm_header(pkg_obj):
             #  separately, but there's a bug: https://bugzilla.redhat.com/show_bug.cgi?id=1876885.
 
             return rpm_hdr
-    else:
-        # Package not found in the rpm db
-        loggerinst.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
+
+    # Package not found in the rpm db
+    loggerinst.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
 
 
 def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
