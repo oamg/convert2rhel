@@ -18,15 +18,18 @@
 import os
 import sys
 
+from convert2rhel import i18n
+
 
 def set_locale():
-    """Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
+    """
+    Set the C locale, also known as the POSIX locale, for the main process as well as the child processes.
 
     The reason is to get predictable output from the executables we call, not
-    influenced by non-default locale. We need to be setting not only LC_ALL but
-    LANG as well because subscription-manager considers LANG to have priority
-    over LC_ALL even though it goes against POSIX which specifies that LC_ALL
-    overrides LANG.
+    influenced by non-default locale. We need to be setting not only LC_ALL
+    and LANGUAGE but LANG as well because subscription-manager considers LANG
+    to have priority over LC_ALL even though it goes against POSIX which
+    specifies that LC_ALL overrides LANG.
 
     .. note::
         Since we introduced a new way to interact with packages that is not
@@ -37,7 +40,13 @@ def set_locale():
         overriding any user set locale in their machine, to actually being the
         ones we require during the process execution.
     """
-    os.environ.update({"LC_ALL": "C", "LANG": "C"})
+    os.environ.update(
+        {
+            "LC_ALL": i18n.SCREENSCRAPED_LOCALE,
+            "LANG": i18n.SCREENSCRAPED_LOCALE,
+            "LANGUAGE": i18n.SCREENSCRAPED_LOCALE,
+        }
+    )
 
 
 def run():
