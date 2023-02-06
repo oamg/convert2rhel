@@ -26,6 +26,9 @@ DEBUG     (10)    Prints debug message (using date/time)
 FILE      (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
                   handle (using date/time)
 """
+
+__metaclass__ = type
+
 import logging
 import os
 import shutil
@@ -37,12 +40,12 @@ from time import gmtime, strftime
 LOG_DIR = "/var/log/convert2rhel"
 
 
-class LogLevelTask(object):
+class LogLevelTask:
     level = 15
     label = "TASK"
 
 
-class LogLevelFile(object):
+class LogLevelFile:
     level = 5
     # Label messages DEBUG as it is contains the same messages as debug, just that they always go
     # to the log file.
@@ -193,12 +196,9 @@ def colorize(message, color="OKGREEN"):
     return "".join((getattr(bcolors, color), message, bcolors.ENDC))
 
 
-class CustomFormatter(logging.Formatter, object):
-    """Custom formatter to handle different logging formats based on logging level
-
-    Python 2.6 workaround - logging.Formatter class does not use new-style
-        class and causes 'TypeError: super() argument 1 must be type, not
-        classobj' so we use multiple inheritance to get around the problem.
+class CustomFormatter(logging.Formatter):
+    """
+    Custom formatter to handle different logging formats based on logging level.
     """
 
     color_disabled = False

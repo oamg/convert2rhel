@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__metaclass__ = type
 
 import argparse
 import copy
@@ -64,7 +65,7 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
 
-class ToolOpts(object):
+class ToolOpts:
     def __init__(self):
         self.debug = False
         self.username = None
@@ -97,7 +98,7 @@ class ToolOpts(object):
                 setattr(self, key, value)
 
 
-class CLI(object):
+class CLI:
     def __init__(self):
         self._parser = self._get_argparser()
         self._shared_options_parser = argparse.ArgumentParser(add_help=False)

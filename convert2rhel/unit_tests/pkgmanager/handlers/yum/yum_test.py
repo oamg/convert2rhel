@@ -14,6 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__metaclass__ = type
+
+import six
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import os
 
 import pytest
@@ -90,7 +96,7 @@ SYSTEM_PACKAGES = [
     pkgmanager.TYPE != "yum",
     reason="No yum module detected on the system, skipping it.",
 )
-class TestYumTransactionHandler(object):
+class TestYumTransactionHandler:
     @pytest.fixture
     def _mock_yum_api_calls(self, monkeypatch):
         """ """

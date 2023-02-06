@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 import pytest
 
 from convert2rhel import pkgmanager
@@ -8,7 +10,7 @@ from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallbac
     pkgmanager.TYPE != "yum",
     reason="No yum module detected on the system, skipping it.",
 )
-class TestPackageDownloadCallback(object):
+class TestPackageDownloadCallback:
     @pytest.mark.parametrize(
         ("name", "frac", "fread", "ftime", "expected"),
         (
@@ -51,7 +53,7 @@ class TestPackageDownloadCallback(object):
     pkgmanager.TYPE != "yum",
     reason="No yum module detected on the system, skipping it.",
 )
-class TestTransactionDisplayCallback(object):
+class TestTransactionDisplayCallback:
     def test_event(self, caplog):
         instance = TransactionDisplayCallback()
         instance.event(

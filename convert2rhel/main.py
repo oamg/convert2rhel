@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import logging
 import os
 import sys
@@ -33,7 +35,7 @@ class _AnalyzeExit(Exception):
     pass
 
 
-class ConversionPhase(object):
+class ConversionPhase:
     INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return

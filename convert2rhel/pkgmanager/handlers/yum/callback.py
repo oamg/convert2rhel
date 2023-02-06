@@ -55,7 +55,9 @@
 #   License above taken from the original code at:
 #
 #       https://github.com/rpm-software-management/yum/blob/master/yum/callbacks.py
-#
+
+__metaclass__ = type
+
 import logging
 
 from convert2rhel import pkgmanager
@@ -66,7 +68,7 @@ loggerinst = logging.getLogger(__name__)
 
 # We need to double inherit here, both from the callback class and the base
 # object class, just to initialize properly with `super`
-class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
+class PackageDownloadCallback(pkgmanager.DownloadProgress, object):  # pylint: disable=useless-object-inheritance
     """Package download callback for YUM transaction."""
 
     def __init__(self):
@@ -111,7 +113,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
         self.last_package_seen = name
 
 
-class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
+class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):  # pylint: disable=useless-object-inheritance
     """Transaction display callback for YUM transaction."""
 
     def __init__(self):

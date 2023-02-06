@@ -65,5 +65,8 @@ setup(
             "convert2rhel = convert2rhel.initialize:run",
         ]
     },
+    install_requires=[
+        "six",
+    ],
     include_package_data=True,
 )

@@ -58,6 +58,8 @@
 #   License above taken from the original code at:
 #
 #       https://github.com/rpm-software-management/dnf/blob/4.7.0/dnf/cli/output.py
+__metaclass__ = type
+
 import logging
 
 from convert2rhel import pkgmanager

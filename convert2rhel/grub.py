@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import logging
 import os
 import re
@@ -182,7 +184,7 @@ def get_grub_device():
     return _get_blk_device(partition)
 
 
-class EFIBootLoader(object):
+class EFIBootLoader:
     """Representation of an UEFI boot loader entry."""
 
     def __init__(self, boot_number, label, active, efi_bin_source):
@@ -243,7 +245,7 @@ class EFIBootLoader(object):
         return EFIBootLoader._efi_path_to_canonical(match.groups("path")[0])
 
 
-class EFIBootInfo(object):
+class EFIBootInfo:
     """Data about the current UEFI boot configuration.
 
     Raise BootloaderError when unable to obtain info about the UEFI configuration.
@@ -311,8 +313,8 @@ class EFIBootInfo(object):
         msg = "Bootloader setup:"
         msg += "\nCurrent boot: %s" % self.current_bootnum
         msg += "\nBoot order: %s\nBoot entries:" % ", ".join(self.boot_order)
-        for bootnum in self.entries:
-            msg += "\n- %s: %s" % (bootnum, self.entries[bootnum].label.rstrip())
+        for bootnum, entry in self.entries.items():
+            msg += "\n- %s: %s" % (bootnum, entry.label.rstrip())
         logger.debug(msg)
 
 

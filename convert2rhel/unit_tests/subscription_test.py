@@ -357,7 +357,7 @@ def test_install_rhel_subsription_manager(monkeypatch):
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")
-class TestAttachSubscription(object):
+class TestAttachSubscription:
     def test_attach_subscription_sca_enabled(self, monkeypatch):
         monkeypatch.setattr(
             utils,
@@ -384,7 +384,7 @@ class TestAttachSubscription(object):
         assert caplog.records[-1].levelname == "CRITICAL"
 
 
-class TestRegisterSystem(object):
+class TestRegisterSystem:
     @pytest.mark.parametrize(
         ("unregister_system_mock", "stop_rhsm_mock", "expected_log_messages"),
         (
@@ -501,7 +501,7 @@ class TestRegisterSystem(object):
             subscription._stop_rhsm()
 
 
-class TestRegistrationCommand(object):
+class TestRegistrationCommand:
     @pytest.mark.parametrize(
         "registration_kwargs",
         (
@@ -890,7 +890,7 @@ class TestRegistrationCommand(object):
             reg_cmd()
 
 
-class TestUnregisteringSystem(object):
+class TestUnregisteringSystem:
     @pytest.mark.parametrize(
         ("output", "ret_code", "expected"),
         (("", 0, "System unregistered successfully."),),

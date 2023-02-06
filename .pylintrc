@@ -1,3 +1,6 @@
+[MASTER]
+ignore=
+
 [BASIC]
 
 # Regular expression matching correct function names
@@ -18,11 +21,7 @@ disable=
  arguments-renamed,
  attribute-defined-outside-init,
  broad-except,
- consider-using-dict-items,
- consider-using-f-string,
- consider-using-with,
  cyclic-import,
- deprecated-module,
  duplicate-code,
  empty-docstring,
  expression-not-assigned,
@@ -81,8 +80,6 @@ disable=
  unused-argument,
  unused-import,
  unused-variable,
- useless-else-on-loop,
- useless-object-inheritance,
  useless-option-value,
  useless-return,
  useless-suppression,

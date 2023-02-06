@@ -64,8 +64,8 @@ def create_pkg_information(
     return pkg_info
 
 
-class TestPkgObj(object):
-    class PkgObjHdr(object):
+class TestPkgObj:
+    class PkgObjHdr:
         def sprintf(self, *args, **kwargs):
             return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
 
@@ -83,7 +83,7 @@ def create_pkg_obj(
     manager="yum",
     vendor=None,
 ):
-    class DumbObj(object):
+    class DumbObj:
         pass
 
     obj = TestPkgObj()
@@ -593,8 +593,8 @@ def run_subprocess_side_effect(*stubs):
         for kws, result in stubs:
             if all(kw in args[0] for kw in kws):
                 return result
-        else:
-            return run_subprocess(*args, **kwargs)
+
+        return run_subprocess(*args, **kwargs)
 
     return factory
 

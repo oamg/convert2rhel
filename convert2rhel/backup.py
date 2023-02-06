@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
 import abc
 import logging
 import os
@@ -32,7 +34,7 @@ from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, 
 loggerinst = logging.getLogger(__name__)
 
 # Note: Currently the only use case for this is package removals
-class ChangedRPMPackagesController(object):
+class ChangedRPMPackagesController:
     """Keep control of installed/removed RPM pkgs for backup/restore."""
 
     def __init__(self):
@@ -121,7 +123,7 @@ class ChangedRPMPackagesController(object):
         self._install_removed_pkgs()
 
 
-class BackupController(object):
+class BackupController:
     """
     Controls backup and restore for all restorable types.
 
@@ -258,7 +260,7 @@ class BackupController(object):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class RestorableChange(object):
+class RestorableChange:
     """
     Interface definition for types which can be restored.
     """
@@ -339,7 +341,7 @@ class RestorableRpmKey(RestorableChange):
         super(RestorableRpmKey, self).restore()
 
 
-class RestorableFile(object):
+class RestorableFile:
     def __init__(self, filepath):
         self.filepath = filepath
 
@@ -392,7 +394,7 @@ class RestorableFile(object):
 
 # Over time we want to replace this with pkghandler.RestorablePackageSet
 # Right now, this is still used for removed packages.  Installed packages are handled by pkghandler.RestorablePackageSet
-class RestorablePackage(object):
+class RestorablePackage:
     def __init__(self, pkgname):
         self.name = pkgname
         self.path = None

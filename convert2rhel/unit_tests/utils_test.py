@@ -14,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__metaclass__ = type
+
 import getpass
 import json
 import logging
@@ -305,7 +308,7 @@ def test_get_rpm_header(monkeypatch):
 
 
 class TestFindKeys:
-    class MockedRmtree(object):
+    class MockedRmtree:
         def __init__(self, exception, real_rmtree):
             self.called = 0
             self.exception = exception
