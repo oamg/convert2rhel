@@ -15,10 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import sys
 
 from convert2rhel import i18n
+
+
+def initialize_logging():
+    """
+    Initialize root logger before dbus is imported.
+
+    We need to initialize the root logger with the NullHandler before dbus is
+    imported. Otherwise, dbus will install Handlers on the root logger which
+    can end up printing our log messages an additional time.  Additionally,
+    bad user data could end up causing the dbus logging to log rhsm passwords
+    and other credentials.
+    """
+    logging.getLogger().addHandler(logging.NullHandler())
 
 
 def set_locale():
@@ -57,6 +71,9 @@ def run():
     """
     # prepare environment
     set_locale()
+
+    # Initialize logging to stop duplicate messages.
+    initialize_logging()
 
     from convert2rhel import main
 
