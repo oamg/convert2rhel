@@ -420,6 +420,11 @@ class CLI(object):
                 " We're going to use the password file."
             )
 
+        if (tool_opts.org and not tool_opts.activation_key) or (not tool_opts.org and tool_opts.activation_key):
+            loggerinst.critical(
+                "Either the --organization or the --activationkey option is missing. You can't use one without the other."
+            )
+
         if tool_opts.username and tool_opts.password:
             tool_opts.credentials_thru_cli = True
 
