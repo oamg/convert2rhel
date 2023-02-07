@@ -4,7 +4,7 @@ def test_missing_os_release(shell):
     file is not present on the system.
     The reference PR: https://github.com/oamg/convert2rhel/pull/384
 
-    Note that using the satellite as a mathod of conversion is not
+    Note that using the satellite as a method of conversion is not
     supported at the moment and will fail during the registration process.
     """
     assert shell("rm /etc/os-release").returncode == 0
