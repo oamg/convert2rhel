@@ -23,7 +23,8 @@ WARNING   (30)    Prints warning message using date/time
 INFO      (20)    Prints info message (no date/time, just plain message)
 TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
-FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
+FILE      (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
+                  handle (using date/time)
 """
 import logging
 import os
