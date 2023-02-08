@@ -313,16 +313,6 @@ class RegistrationCommand(object):
             loggerinst.info("    ... activation key detected")
             registration_attributes["activation_key"] = tool_opts.activation_key
 
-            while "org" not in registration_attributes:
-                loggerinst.info("    ... activation key requires organization")
-                # Organization is required when activation key is used
-                # TODO: Parse the output of 'subscription-manager orgs' and let the
-                # user choose from the available organizations. If there's just one,
-                # pick it automatically.
-                org = utils.prompt_user("Organization: ").strip()
-                # In case the user entered the empty string
-                if org:
-                    registration_attributes["org"] = org
         else:
             # No activation key -> username/password required
             if tool_opts.username and tool_opts.password:

@@ -42,30 +42,6 @@ def test_check_user_response_user_and_password(convert2rhel):
     assert c2r.exitstatus != 0
 
 
-def test_check_user_response_organization(convert2rhel):
-    """
-    Run c2r registration with activation key provided and verify the organization prompt when not specified during the command call.
-    """
-    substitute_org = "foo"
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {} -k {}".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_KEY"),
-        ),
-        unregister=True,
-    ) as c2r:
-        c2r.expect_exact("activation key detected")
-        c2r.expect_exact("Organization: ")
-        c2r.sendline()
-        assert c2r.expect_exact(["Organization", "Registering the system"], timeout=300) == 0
-        c2r.sendline(substitute_org)
-        c2r.expect_exact("Registering the system using subscription-manager ...")
-        # Due to inconsistent behavior of Ctrl+c
-        # the Ctrl+d is used to terminate the process instead
-        c2r.sendcontrol("d")
-    assert c2r.exitstatus != 0
-
-
 def test_auto_attach_pool_submgr(convert2rhel):
     """
     Provide Convert2RHEL with username and password with just one subscription available.

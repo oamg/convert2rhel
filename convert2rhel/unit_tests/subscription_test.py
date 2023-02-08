@@ -681,11 +681,6 @@ class TestRegistrationCommand(object):
     @pytest.mark.parametrize(
         "registration_kwargs, prompt_input",
         (
-            # activation_key and not org
-            (
-                {"activation_key": "0xDEADBEEF"},
-                {"Organization: ": "Local Organization"},
-            ),
             # no activation_key no password
             (
                 {"username": "me_myself_and_i"},
@@ -720,9 +715,6 @@ class TestRegistrationCommand(object):
 
         registration_cmd = subscription.RegistrationCommand.from_tool_opts(tool_opts)
 
-        if "Organization: " in prompt_input:
-            assert registration_cmd.org == prompt_input["Organization: "]
-
         if "Password: " in prompt_input:
             assert registration_cmd.password == prompt_input["Password: "]
 
@@ -731,16 +723,6 @@ class TestRegistrationCommand(object):
 
         # assert that we prompted the user the number of times that we expected
         assert fake_prompt_user.call_count == len(prompt_input)
-
-    def test_from_tool_opts_activation_key_empty_string(self, tool_opts, monkeypatch):
-        monkeypatch.setattr(utils, "prompt_user", PromptUserLoopMocked())
-        tool_opts.activation_key = "activation_key"
-
-        registration_cmd = subscription.RegistrationCommand.from_tool_opts(tool_opts)
-
-        assert registration_cmd.activation_key == "activation_key"
-        assert registration_cmd.org == "test"
-        assert utils.prompt_user.called == {"Organization: ": 2}
 
     def test_from_tool_opts_username_empty_string(self, tool_opts, monkeypatch):
         monkeypatch.setattr(utils, "prompt_user", PromptUserLoopMocked())
