@@ -107,7 +107,19 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base = None
 
     def _set_up_base(self):
-        """Create a new instance of the yum.YumBase() class."""
+        """Create a new instance of the yum.YumBase() class
+
+        We create a new instance of the YumBase() inside this internal method
+        with the intention of being able to re-initialize the base class
+        whenever we need during the class workflow.
+
+        .. note::
+            Since we need have to delete the base class at the end of the
+            `run_transaction` workflow so we can close the RPM database, preventing
+            leaks or transaction mismatches between the validation and replacement
+            of the packages, we use this internal method to make it easier to
+            re-initialize it again.
+        """
         pkgmanager.misc.setup_locale(override_time=True)
         self._base = pkgmanager.YumBase()
         self._base.conf.yumvar["releasever"] = system_info.releasever
@@ -209,8 +221,8 @@ class YumTransactionHandler(TransactionHandlerBase):
         """
 
         if validate_transaction:
-            self._base.conf.tsflags.append("test")
             loggerinst.info("Validating the yum transaction set, no modifications to the system will happen this time.")
+            self._base.conf.tsflags.append("test")
         else:
             loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
 
@@ -242,11 +254,9 @@ class YumTransactionHandler(TransactionHandlerBase):
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 
-        This function is supposed to be an replacement of the old
-        `call_yum_cmd_w_downgrades()` function, that in the past, used to call
-        the yum commands (upgrade, reinstall and downgrade) several times in
-        order to replace all the possible packages from the original system
-        vendor to the RHEL ones.
+        Perform the transaction. If the `validate_transaction` parameter set to
+        true, it means the transaction will not be executed, but rather verify
+        everything and do an early return.
 
         ..notes::
             The implementation of this yum transaction is different from the
