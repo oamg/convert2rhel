@@ -86,10 +86,10 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
     def pkg_added(self, pkg, mode):
         """Output a message of the package added to the dependency solver.
 
-        This method has the purpose of sending a message that indicates what the
-        package added to the dependency solver transaction will be doing.
+        This method sends a message that indicates what the package added
+        to the dependency solver transaction will be doing.
 
-        :param pkg: The package itself added to the dependency solver. It's is
+        :param pkg: The package itself added to the dependency solver. It's
             composable of `name`, `arch`, `version` and `repository`.
         :type pkg: dnf.package.Package
         :param mode: The mode that will be performed by the package.
@@ -143,8 +143,8 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
         This method will handle the initialization of a few properties before
         starting to output log messages to the user regarding the package
         download progress. Those properties are necessary to keep track of the
-        progress of the downloaded packages, without them, we lose the
-        information about how many packages needs to be downloaded, and where
+        progress of the downloaded packages. Without them, we lose the
+        information about how many packages need to be downloaded, and where
         the count starts.
 
         .. note::
@@ -167,8 +167,8 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
         """Communicate the information that `payload` has finished downloading.
 
         ..note::
-            DNF will give us an status to the file that is being downloaded, so
-            we can print this status to the user, as a way of them knowing that
+            DNF will give us status about the file that is being downloaded, so
+            we can print this status to the user, for them to know that
             the file was skipped due a cache or any other status.
 
         :param payload: The payload sent in the callback.
@@ -193,7 +193,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
 
         if status:
             # the error message, no trimming
-            if status is pkgmanager.callback.STATUS_DRPM and self.total_drpm > 1:
+            if status == pkgmanager.callback.STATUS_DRPM and self.total_drpm > 1:
                 message = "(%d/%d) [%s %d/%d]: %s" % (
                     self.done_files,
                     self.total_files,
@@ -249,10 +249,10 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
             loggerinst.debug("No action or package was provided in the callback.")
             return
 
-        # We convert the package here to a str because we just stand a
-        # normal-standard str comparision rather than what is implemented in
-        # `yum.sqlitesack.YumAvailablePackageSqlite`, as this class does
-        # version comparision and a bunch of other stuff. We don't care about
+        # Here we convert the package to a str because we just need to do a
+        # standard str comparision rather than what is implemented in
+        # `yum.sqlitesack.YumAvailablePackageSqlite` (that class does
+        # version comparison and a bunch of other stuff). We don't care about
         # any of that, we just want to check if the package name is equal or
         # different.
         package = str(package)
@@ -260,7 +260,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         message = "%s: %s [%s/%s]" % (pkgmanager.transaction.ACTIONS.get(action), package, ts_done, ts_total)
 
         # The base API will call this callback class on every package update,
-        # not matter if it is the same update or not, so, the below statement
+        # no matter if it is the same update or not, so, the below statement
         # prevents the same message being sent more than once to the user.
         if self.last_package_seen != package:
             loggerinst.info(message)
@@ -271,14 +271,14 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         """Hook for reporting an rpm scriptlet output.
 
         .. note::
-            If there is no problem reported buring the scriptlet execution,
+            If there is no problem reported during the scriptlet execution,
             then this method will receive a None instead of the normal message.
 
         :param msgs: The scriptlet output
         :type msgs: bytes | None
         """
         # The base API will call this callback class on every package update,
-        # not matter if the messages are empty or not, so, the below statement
+        # no matter if the messages are empty or not, so, the below statement
         # prevents the same message being sent to the user with empty strings.
         if msgs:
             loggerinst.warning("Scriptlet output: %s", msgs.decode())
