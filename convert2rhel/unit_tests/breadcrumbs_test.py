@@ -16,9 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import os
-
-from datetime import datetime
 
 import pytest
 import six
@@ -85,7 +82,11 @@ def test_finish_collection(pretend_os, success, monkeypatch):
     ("command", "expected"),
     (
         (
-            ["/usr/bin/convert2rhel", "--username=test", "--password=nicePassword"],
+            [
+                "/usr/bin/convert2rhel",
+                "--username=test",
+                "--password=nicePassword",
+            ],
             "/usr/bin/convert2rhel --username=test --password=*****",
         ),
         (
@@ -93,7 +94,12 @@ def test_finish_collection(pretend_os, success, monkeypatch):
             "/usr/bin/convert2rhel -u=test -p=*****",
         ),
         (
-            ["/usr/bin/convert2rhel", "--activationkey=test", "--org=1234", "-y"],
+            [
+                "/usr/bin/convert2rhel",
+                "--activationkey=test",
+                "--org=1234",
+                "-y",
+            ],
             "/usr/bin/convert2rhel --activationkey=***** --org=1234 -y",
         ),
         (
@@ -117,7 +123,10 @@ def test_set_env(monkeypatch):
 
     breadcrumbs.breadcrumbs._set_env()
 
-    assert {"CONVERT2RHEL_": "VALUE1", "CONVERT2RHEL_VAR": "VALUE2"} == breadcrumbs.breadcrumbs.env
+    assert {
+        "CONVERT2RHEL_": "VALUE1",
+        "CONVERT2RHEL_VAR": "VALUE2",
+    } == breadcrumbs.breadcrumbs.env
 
 
 @pytest.mark.parametrize(
@@ -125,7 +134,12 @@ def test_set_env(monkeypatch):
     [
         (False, None, "key", '{"key":[{"some_key": "some_data"}]}'),
         (True, '{"key":[]}', "key", '{"key":[{"some_key": "some_data"}]}'),
-        (True, '{"diff_key":[]}', "key", '{"diff_key":[], "key":[{"some_key": "some_data"}]}'),
+        (
+            True,
+            '{"diff_key":[]}',
+            "key",
+            '{"diff_key":[], "key":[{"some_key": "some_data"}]}',
+        ),
         (True, "something", "key", False),
     ],
 )
@@ -148,20 +162,27 @@ def test_write_obj_to_array_json(tmpdir, file, content, key, out):
 
 @centos7
 def test_save_rhsm_facts(pretend_os, monkeypatch, tmpdir, caplog):
-    rhsm_folder = str(tmpdir.join("custom.facts"))
-
-    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
+    rhsm_file = str(tmpdir.join("convert2rhel.facts"))
+    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FOLDER", str(tmpdir))
+    monkeypatch.setattr(
+        breadcrumbs,
+        "RHSM_CUSTOM_FACTS_FILE",
+        rhsm_file,
+    )
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "Writing RHSM custom facts to '%s'" % rhsm_folder in caplog.records[-1].message
+    assert "Writing RHSM custom facts to '%s'" % rhsm_file in caplog.records[-1].message
 
 
 def test_save_rhsm_facts_no_rhsm_folder(monkeypatch, tmpdir, caplog):
-    rhsm_folder = str(tmpdir.join("invalid-path").join("custom.facts"))
-    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_folder)
+    rhsm_folder = str(tmpdir.join("rhsm").join("facts"))
+    rhsm_file = "%s/convert2rhel.facts" % rhsm_folder
+    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FOLDER", rhsm_folder)
+    monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_file)
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "Unable to find RHSM facts folder at '%s'." % os.path.dirname(rhsm_folder) in caplog.records[-1].message
+    assert "No RHSM facts folder found at '%s'." % rhsm_folder in caplog.records[-2].message
+    assert "Writing RHSM custom facts to '%s'" % rhsm_file in caplog.records[-1].message
 
 
 def test_save_migration_results(tmpdir, monkeypatch, caplog):
@@ -232,10 +253,18 @@ def test_set_ended():
 @centos7
 def test_set_source_os(pretend_os):
     breadcrumbs.breadcrumbs._set_source_os()
-    assert {"id": "null", "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.source_os
+    assert {
+        "id": "null",
+        "name": "CentOS Linux",
+        "version": "7.9",
+    } == breadcrumbs.breadcrumbs.source_os
 
 
 @centos7
 def test_set_target_os(pretend_os):
     breadcrumbs.breadcrumbs._set_target_os()
-    assert {"id": "null", "name": "CentOS Linux", "version": "7.9"} == breadcrumbs.breadcrumbs.target_os
+    assert {
+        "id": "null",
+        "name": "CentOS Linux",
+        "version": "7.9",
+    } == breadcrumbs.breadcrumbs.target_os
