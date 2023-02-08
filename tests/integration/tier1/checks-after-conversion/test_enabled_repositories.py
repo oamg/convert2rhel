@@ -19,22 +19,22 @@ def _check_eus_enabled_repos_rhel8(enabled_repos):
     assert appstream_repo in enabled_repos
 
 
-def test_enabled_repositories(shell, get_system_release):
+def test_enabled_repositories(shell, system_release):
     """Testing, if the EUS repostitories are enabled after conversion"""
 
     enabled_repos = shell("yum repolist").output
 
     try:
-        if "redhat-8.4" in get_system_release or "redhat-8.6" in get_system_release:
+        if "redhat-8.4" in system_release or "redhat-8.6" in system_release:
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories
             if os.path.exists("/non_eus_repos_used"):
                 _check_enabled_repos_rhel8(enabled_repos)
             else:
                 _check_eus_enabled_repos_rhel8(enabled_repos)
-        elif "redhat-8.5" in get_system_release:
+        elif "redhat-8.5" in system_release:
             _check_enabled_repos_rhel8(enabled_repos)
-        elif "redhat-7.9" in get_system_release:
+        elif "redhat-7.9" in system_release:
             assert "rhel-7-server-rpms/7Server/x86_64" in enabled_repos
     finally:
         # We need to unregister the system after the conversion

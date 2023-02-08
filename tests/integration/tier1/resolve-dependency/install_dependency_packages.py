@@ -2,7 +2,7 @@ import re
 
 from collections import namedtuple
 
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 
 
 def get_system_version(system_release_content=None):
@@ -45,7 +45,7 @@ def test_install_dependency_packages(shell):
                 "python-requests",  # OAMG-4936
             ]
         elif system_version.major == 8:
-            if "oracle-8" in SYSTEM_RELEASE:
+            if "oracle-8" in SYSTEM_RELEASE_ENV:
                 dependency_pkgs = [
                     "iwl7260-firmware",  # RHELC-567
                     "iwlax2xx-firmware",  # RHELC-567 - causing problems during the conversion on OL8

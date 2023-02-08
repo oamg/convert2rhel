@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -83,7 +83,7 @@ def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     Convert2RHEL sees force loaded kmod as tainted.
     """
     # TODO condition moved to test metadata in #619
-    if SYSTEM_RELEASE not in ("oracle-7", "centos-7"):
+    if SYSTEM_RELEASE_ENV not in ("oracle-7", "centos-7"):
         # Force load the kernel module
         assert shell("modprobe -f -v bonding").returncode == 0
         # Check for force loaded modules being flagged FE in /proc/modules

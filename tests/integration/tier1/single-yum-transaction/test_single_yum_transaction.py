@@ -1,4 +1,4 @@
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -10,7 +10,7 @@ def test_single_yum_transaction(convert2rhel, shell):
     """
     pkgmanager = "yum"
 
-    if "centos-8" in SYSTEM_RELEASE or "oracle-8" in SYSTEM_RELEASE:
+    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
         pkgmanager = "dnf"
 
     with convert2rhel(

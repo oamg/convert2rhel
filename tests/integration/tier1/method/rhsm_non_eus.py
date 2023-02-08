@@ -3,9 +3,9 @@ from envparse import env
 
 def test_rhsm_non_eus_account(convert2rhel):
     """
-    Verify that Convert2RHEL is working properly when non-eus repository is available
-    for 8.4, 8.6, ... (EUS systems) and that after the conversion we have the correct
-    repositories attached to the system.
+    Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions
+    to RHEL EUS minor versions (8.4, 8.6, ...) and there are the correct
+    repositories attached to the system after the conversion.
     """
 
     # Mark the system so the check for the enabled repos after the conversion handles this special case

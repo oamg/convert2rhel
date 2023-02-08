@@ -192,7 +192,7 @@
     discover+:
         test: checks-after-conversion
     prepare+:
-        - name: remove os-relase
+        - name: remove os-release
           how: shell
           script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
         - name: main conversion preparation

@@ -1,6 +1,6 @@
 import os
 
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 
 
 def test_run_conversion_using_custom_repos(shell, convert2rhel):
@@ -24,9 +24,9 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
     # contains higher version of kernel, so the update would get inhibited due to
     # the kernel not being at the latest version installed on the system.
     # We also need to enable env variable to allow unsupported rollback.
-    if "centos" in SYSTEM_RELEASE:
+    if "centos" in SYSTEM_RELEASE_ENV:
         assert shell("yum-config-manager --disable updates").returncode == 0
-    elif "oracle" in SYSTEM_RELEASE:
+    elif "oracle" in SYSTEM_RELEASE_ENV:
         assert shell("yum-config-manager --disable ol7_latest").returncode == 0
         # This internal repo breaks the conversion on the instances we are getting
         # from Testing Farm

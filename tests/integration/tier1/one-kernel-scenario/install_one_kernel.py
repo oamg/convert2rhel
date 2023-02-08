@@ -1,13 +1,13 @@
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 
 
 def test_install_one_kernel(shell):
     # installing kernel package
     assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
     # set default kernel
-    if "centos-7" in SYSTEM_RELEASE:
+    if "centos-7" in SYSTEM_RELEASE_ENV:
         assert shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'").returncode == 0
-    elif "oracle-7" in SYSTEM_RELEASE:
+    elif "oracle-7" in SYSTEM_RELEASE_ENV:
         assert shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'").returncode == 0
 
     # replace url in yum.repos.d rhel repo

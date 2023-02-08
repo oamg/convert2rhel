@@ -1,4 +1,4 @@
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -37,7 +37,7 @@ def test_non_latest_kernel(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        if "centos-8" in SYSTEM_RELEASE:
+        if "centos-8" in SYSTEM_RELEASE_ENV:
             c2r.expect(
                 "The version of the loaded kernel is different from the latest version in repositories defined in the"
             )

@@ -1,4 +1,4 @@
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 
 
 def test_use_non_english_language(shell):
@@ -9,7 +9,7 @@ def test_use_non_english_language(shell):
     """
     # install Chinese language pack for CentOS-8 and Oracle Linux 8
 
-    if "centos-8" in SYSTEM_RELEASE or "oracle-8" in SYSTEM_RELEASE:
+    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
         assert shell("dnf install glibc-langpack-zh -y").returncode == 0
 
     # set locale variables that affect translations to Chinese
@@ -19,5 +19,5 @@ def test_use_non_english_language(shell):
     # Testing farm is returning an error on CentOS7 mentioning
     # setting incompatible LC_CTYPE C.UTF-8.
     # However the C.UTF-8 was added on RHEL-8 like distros.
-    if "centos-7" in SYSTEM_RELEASE:
+    if "centos-7" in SYSTEM_RELEASE_ENV:
         assert shell("localectl set-locale LC_CTYPE=zh_CN.utf8").returncode == 0

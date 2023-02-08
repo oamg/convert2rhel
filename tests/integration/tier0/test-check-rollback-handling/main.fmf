@@ -7,6 +7,8 @@ adjust+:
     - environment+:
         PROMPT_AMOUNT: 4
       when: distro == centos
+      because: |
+        There is one more user prompt asking for removal of python[3]?-syspurpose
 
 tier: 0
 
