@@ -125,7 +125,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
         """Process and output the RPM operations in the transaction.
 
         .. note::
-            Yum API sends the `package` paramter as two different types.
+            Yum API sends the `package` parameter as two different types.
             If the package comes as a `str`, then it's a cleanup, if it's a
             `yum.sqlitesack.YumAvailablePackageSqlite`, then it's a normal
             package being processed.
