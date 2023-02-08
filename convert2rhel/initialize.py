@@ -22,9 +22,9 @@ import sys
 from convert2rhel import i18n
 
 
-def initialize_logging():
+def disable_root_logger():
     """
-    Initialize root logger before dbus is imported.
+    Set the root logger to not output before dbus is imported.
 
     We need to initialize the root logger with the NullHandler before dbus is
     imported. Otherwise, dbus will install Handlers on the root logger which
@@ -73,7 +73,7 @@ def run():
     set_locale()
 
     # Initialize logging to stop duplicate messages.
-    initialize_logging()
+    disable_root_logger()
 
     from convert2rhel import main
 
