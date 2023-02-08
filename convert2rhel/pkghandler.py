@@ -67,49 +67,6 @@ class PkgWFingerprint(object):
         self.fingerprint = fingerprint
 
 
-def call_yum_cmd_w_downgrades(cmd, pkgs, retries=MAX_YUM_CMD_CALLS):
-    """Calling yum command is prone to end up with an error due to unresolved
-    dependencies, especially when it tries to downgrade pkgs. This function
-    tries to resolve the dependency errors where yum is not able to.
-    """
-    # TODO(r0x0d): Verify if we need to remove this specific function.
-
-    if retries <= 0:
-        loggerinst.critical("Could not resolve yum errors.")
-
-    output, ret_code = call_yum_cmd(cmd, pkgs)
-    loggerinst.info("Received return code: %s\n" % str(ret_code))
-    # handle success condition #1
-    if ret_code == 0:
-        return
-
-    # handle success condition #2
-    # false positive: yum returns non-zero code when there is nothing to do
-    nothing_to_do_error_exists = output.endswith("Error: Nothing to do\n")
-    if ret_code == 1 and nothing_to_do_error_exists:
-        return
-
-    # handle success condition #3
-    # false positive: yum distro-sync returns 1 and an error message on RHEL 8+ based systems when none of the passed
-    # packages is available in RHEL repositories. If at least one of them is available, yum returns 0. On RHEL 7- yum
-    # returns 0 in both cases.
-    no_packages_marked_error_exists = output.endswith("Error: No packages marked for distribution synchronization.\n")
-    if ret_code == 1 and no_packages_marked_error_exists:
-        return
-
-    # handle error condition
-    loggerinst.info("Resolving dependency errors ... ")
-    output = resolve_dep_errors(output)
-
-    # if we have problematic packages, remove them
-    problematic_pkgs = get_problematic_pkgs(output)
-    to_remove = problematic_pkgs["errors"] | problematic_pkgs["mismatches"]
-    if to_remove:
-        loggerinst.warning("Removing problematic packages to continue with conversion:\n%s" % "\n".join(to_remove))
-        remove_pkgs(to_remove, backup=False, critical=False)
-    return call_yum_cmd_w_downgrades(cmd, pkgs, retries - 1)
-
-
 def call_yum_cmd(
     command,
     args=None,
