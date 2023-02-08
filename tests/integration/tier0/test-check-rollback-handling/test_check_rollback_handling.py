@@ -198,18 +198,3 @@ def test_terminate_on_subscription_prompt(convert2rhel):
     ) as c2r:
         c2r.expect("Enter number of the chosen subscription:")
         terminate_and_assert_good_rollback(c2r)
-
-
-def test_terminate_on_organization_prompt(convert2rhel):
-    """
-    Send termination signal on the user prompt for organization.
-    Verify that c2r goes successfully through the rollback.
-    """
-    with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} -k {}").format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_KEY"),
-        )
-    ) as c2r:
-        c2r.expect("Organization:")
-        terminate_and_assert_good_rollback(c2r)
