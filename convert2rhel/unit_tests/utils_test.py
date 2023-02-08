@@ -799,7 +799,7 @@ def test_hide_secret_unexpected_input(caplog):
         "--activationkey",
     ]
     assert len(caplog.records) == 1
-    assert caplog.records[-1].levelname == "FILE"
+    assert caplog.records[-1].levelname == "DEBUG"
     assert "Passed arguments had unexpected secret argument," " '--activationkey', without a secret" in caplog.text
 
 
