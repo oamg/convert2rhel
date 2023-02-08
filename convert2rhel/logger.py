@@ -23,7 +23,8 @@ WARNING   (30)    Prints warning message using date/time
 INFO      (20)    Prints info message (no date/time, just plain message)
 TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
-FILE      (5)     CUSTOM LABEL - Prints only to file handler (using date/time)
+FILE      (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
+                  handle (using date/time)
 """
 import logging
 import os
@@ -82,7 +83,9 @@ class LogLevelTask(object):
 
 class LogLevelFile(object):
     level = 5
-    label = "FILE"
+    # Label messages DEBUG as it is contains the same messages as debug, just that they always go
+    # to the log file.
+    label = "DEBUG"
 
 
 def setup_logger_handler(log_name, log_dir):
