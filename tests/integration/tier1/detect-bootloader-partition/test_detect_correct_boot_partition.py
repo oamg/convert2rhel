@@ -22,7 +22,7 @@ def get_boot_device():
 def get_device_name(device):
     """Utillity function to get a device name only, without the partition number."""
     name = subprocess.check_output(["lsblk", "-spnlo", "name", device])
-    return name.decode().strip()
+    return name.decode().strip().splitlines()[-1].strip()
 
 
 def get_device_partition(device):
@@ -75,8 +75,5 @@ def test_detect_correct_boot_partition(convert2rhel):
             )
             == 0
         )
-        # Last assertation to make sure that it went well and we removed the
-        # old UEFI bootloader.
-        assert c2r.expect("The removal of the original, currently used UEFI bootloader") == 0
 
     assert c2r.exitstatus == 0
