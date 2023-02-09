@@ -15,20 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 try:
     from yum import *
+    from yum.callbacks import DownloadBaseCallback as DownloadProgress
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from yum.Errors import RepoError  # lgtm[py/unused-import]
+    from yum.Errors import RepoError
+    from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay
 
     TYPE = "yum"
 except ImportError as e:
-    from dnf import *  # pylint: disable=import-error
+    from dnf import *
+    from dnf.callback import Depsolve, DownloadProgress
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from dnf.exceptions import RepoError  # lgtm[py/unused-import]
+    from dnf.exceptions import RepoError
+    from dnf.yum.rpmtrans import TransactionDisplay
 
     TYPE = "dnf"
 

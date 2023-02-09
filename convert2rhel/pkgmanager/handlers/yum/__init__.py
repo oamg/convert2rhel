@@ -25,17 +25,19 @@ from convert2rhel import pkgmanager
 from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
+from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR
 
 
 loggerinst = logging.getLogger(__name__)
+"""Instance of the logger used in this module."""
 
-# Limit the number of yum transaction retries.
 MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS = 3
+"""Limit the number of yum transaction retries."""
 
-# Extract the first package that appears in the yum depsolve error
 EXTRACT_PKG_FROM_YUM_DEPSOLVE = re.compile(r".*?(?=requires)")
+"""Extract the first package that appears in the yum depsolve error."""
 
 
 def _resolve_yum_problematic_dependencies(output):
@@ -48,7 +50,7 @@ def _resolve_yum_problematic_dependencies(output):
 
     :param output: A list of strings with packages names that had a dependency
     error.
-    :type output: list[str]
+    :type output: list[bytes]
     """
     packages_to_remove = []
     if output:
@@ -64,7 +66,8 @@ def _resolve_yum_problematic_dependencies(output):
     if packages_to_remove:
         packages_to_remove = set(packages_to_remove)
         loggerinst.debug(
-            "Removing problematic packages to continue with the conversion:\n%s", "\n".join(packages_to_remove)
+            "Removing problematic packages to continue with the conversion:\n%s",
+            "\n".join(packages_to_remove),
         )
         remove_pkgs(
             pkgs_to_remove=packages_to_remove,
@@ -91,8 +94,6 @@ class YumTransactionHandler(TransactionHandlerBase):
 
     _base: yum.YumBase()
         The actual instance of the `yum.YumBase()` class.
-    _enabled_repos: list[str]
-        A list of packages that are used during the transaction.
     """
 
     def __init__(self):
@@ -127,6 +128,8 @@ class YumTransactionHandler(TransactionHandlerBase):
     def _enable_repos(self):
         """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
+        # Set the download progress display
+        self._base.repos.setProgressBar(PackageDownloadCallback())
         enabled_repos = system_info.get_enabled_rhel_repos()
         loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
         for repo in enabled_repos:
@@ -150,7 +153,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             self._base.update(pattern=pkg)
             try:
                 self._base.reinstall(pattern=pkg)
-            except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
+            except (
+                pkgmanager.Errors.ReinstallInstallError,
+                pkgmanager.Errors.ReinstallRemoveError,
+            ):
                 try:
                     self._base.downgrade(pattern=pkg)
                 except (
@@ -185,6 +191,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             errors are "thrown" for the user, you will need to loop until the
             point you don't have any more errors.
 
+        :param validate_transaction: Determines if the transaction needs to be
+            validated or not.
+        :type validate_transaction: bool
+
         :return: A boolean indicating if it was successful or not.
         :rtype: bool
         """
@@ -215,19 +225,27 @@ class YumTransactionHandler(TransactionHandlerBase):
         """Internal method to process the transaction.
 
         :param validate_transaction: Determines if the transaction needs to be
-        validated or not.
+            validated or not.
         :type validate_transaction: bool
         :raises SystemExit: If we can't process the transaction.
         """
 
         if validate_transaction:
-            loggerinst.info("Validating the yum transaction set, no modifications to the system will happen this time.")
             self._base.conf.tsflags.append("test")
+            loggerinst.info(
+                "Downloading and validating the yum transaction set, no modifications to the system will happen "
+                "this time."
+            )
         else:
-            loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
+            loggerinst.info(
+                "Replacing %s packages. This process may take some time to finish.",
+                system_info.name,
+            )
 
         try:
-            self._base.processTransaction()
+            self._base.processTransaction(
+                rpmDisplay=TransactionDisplayCallback(),
+            )
         except pkgmanager.Errors.YumBaseError as e:
             # We are catching only `pkgmanager.Errors.YumBaseError` as the base
             # exception here because all of the other exceptions that can be
@@ -284,7 +302,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             reliable.
 
         :param vaidate_transaction: Determines if the transaction needs to be
-        validated or not.
+            validated or not.
         :type valiate_transaction: bool
         :raises SystemExit: If we can't resolve the transaction dependencies.
         """

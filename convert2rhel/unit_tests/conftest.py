@@ -4,7 +4,7 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup, cert, redhatrelease, systeminfo, toolopts, utils
+from convert2rhel import backup, cert, pkgmanager, redhatrelease, systeminfo, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -38,6 +38,18 @@ try:
 
 except ImportError:
     pass
+
+# We are injecting a instance of `mock.Mock()` for `Depsolve` class and
+# `callback` module, as when we run the tests under CentOS 7, it fails by saying
+# that `pkgmanager.callback.Depsolve` can't be imported as it is an import from
+# DNF, not YUM.
+# This implies in us mocking those targets on Python 2.7, as DNF is only
+# available on Python 3+.
+# Not a perfect solution, but a needed one since we are inheriting this
+# class/module in the dnf handler module.
+if sys.version_info[:2] <= (2, 7):
+    pkgmanager.Depsolve = mock.Mock()
+    pkgmanager.callback = mock.Mock()
 
 
 @pytest.fixture(scope="session")

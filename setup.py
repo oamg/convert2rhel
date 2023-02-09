@@ -18,7 +18,7 @@
 import os
 import re
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 from man.build_manpage import build_manpage
 
@@ -58,7 +58,7 @@ setup(
     author_email="mbocek@redhat.com",
     url="www.redhat.com",
     license="GNU General Public License v3 or later (GPLv3+)",
-    packages=["convert2rhel", "convert2rhel/pkgmanager", "convert2rhel/pkgmanager/handlers"],
+    packages=find_packages(exclude=["scripts", "*tests*"]),
     entry_points={
         "console_scripts": [
             "convert2rhel = convert2rhel.initialize:run",
