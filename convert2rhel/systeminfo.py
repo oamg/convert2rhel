@@ -33,7 +33,7 @@ from convert2rhel.utils import run_subprocess
 CHECK_DBUS_STATUS_RETRIES = 3
 
 # The address that will be used to check if there is a internet connection.
-CHECK_INTERNET_CONNECTION_ADDRESS = "http://static.redhat.com/test/rhel-networkmanager.txt"
+CHECK_INTERNET_CONNECTION_ADDRESS = "https://static.redhat.com/test/rhel-networkmanager.txt"
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
