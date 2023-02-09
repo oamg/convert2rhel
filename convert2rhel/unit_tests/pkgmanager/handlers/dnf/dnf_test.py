@@ -20,6 +20,7 @@ import six
 
 from convert2rhel import pkgmanager
 from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
+from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgressIndicatorCallback
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8
 
@@ -70,6 +71,7 @@ class TestDnfTransactionHandler:
         assert isinstance(instance._base, pkgmanager.Base)
         assert instance._base.conf.substitutions["releasever"] == "8.4"
         assert instance._base.conf.module_platform_id == "platform:el8"
+        assert isinstance(instance._base._ds_callback, DependencySolverProgressIndicatorCallback)
 
     @centos8
     @pytest.mark.parametrize(

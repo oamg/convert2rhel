@@ -20,10 +20,16 @@ import logging
 from convert2rhel import pkgmanager
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
+from convert2rhel.pkgmanager.handlers.dnf.callback import (
+    DependencySolverProgressIndicatorCallback,
+    PackageDownloadCallback,
+    TransactionDisplayCallback,
+)
 from convert2rhel.systeminfo import system_info
 
 
 loggerinst = logging.getLogger(__name__)
+"""Instance of the logger used in this module."""
 
 
 class DnfTransactionHandler(TransactionHandlerBase):
@@ -36,8 +42,6 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
     _base: dnf.Base()
         The actual instance of the `dnf.Base()` class.
-    _enabled_repos: list[str]
-        A list of packages that are used during the transaction.
     """
 
     def __init__(self):
@@ -74,6 +78,12 @@ class DnfTransactionHandler(TransactionHandlerBase):
         # issues in the second run of this class.
         # Ref: https://dnf.readthedocs.io/en/latest/conf_ref.html#keepcache-label
         self._base.conf.keepcache = True
+
+        # Currently, the depsolver callback associated with `_ds_callback` is
+        # just a bypass. We are overriding this property to use our own
+        # depsolver callback, that will output useful information of what is
+        # going in with the packages in the transaction.
+        self._base._ds_callback = DependencySolverProgressIndicatorCallback()
 
     def _enable_repos(self):
         """Enable a list of required repositories."""
@@ -135,7 +145,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
 
         loggerinst.info("Downloading the packages that were added to the dnf transaction set.")
         try:
-            self._base.download_packages(self._base.transaction.install_set)
+            self._base.download_packages(self._base.transaction.install_set, PackageDownloadCallback())
         except pkgmanager.exceptions.DownloadError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
             loggerinst.critical("Failed to download the transaction packages.")
@@ -156,7 +166,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             loggerinst.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
 
         try:
-            self._base.do_transaction()
+            self._base.do_transaction(display=TransactionDisplayCallback())
         except (
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
@@ -177,7 +187,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         everything and do an early return.
 
         :param validate_transaction: Determines if the transaction needs to be
-        validated or not.
+            validated or not.
         :type validate_transaction: bool
         :raises SystemExit: If there was any problem during the
         """
