@@ -151,7 +151,7 @@ def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subp
 
     if subproc_called:
         utils.run_subprocess.assert_called_once_with(
-            ["blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False
+            ["/usr/sbin/blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False
         )
     else:
         utils.run_subprocess.assert_not_called()
