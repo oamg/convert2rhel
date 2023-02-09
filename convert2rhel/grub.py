@@ -151,12 +151,24 @@ def _get_blk_device(device):
 
 
 def _get_device_number(device):
-    """Return dict with 'major' and 'minor' number of the specified device/partition."""
-    output, ecode = utils.run_subprocess(["blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False)
+    """Get the partition number of a particular device.
+
+    This method will use `blkid` to determinate what is the partition number
+    related to a particular device.
+
+    :param device: The device to be analyzed.
+    :type device: str
+    :return: The device partition number.
+    :rtype: int
+    """
+    output, ecode = utils.run_subprocess(
+        ["/usr/sbin/blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False
+    )
     if ecode:
         logger.debug("blkid output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
-    # We are spliting the partition entry number, and we are just taking that output as our desired partition number
+    # We are spliting the partition entry number, and we are just taking that
+    # output as our desired partition number
     partition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
     return int(partition_number)
 
