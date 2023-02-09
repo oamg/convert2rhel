@@ -8,6 +8,9 @@ from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
+PROMPT_AMOUNT = int(os.environ["PROMPT_AMOUNT"])
+
+
 @pytest.fixture()
 def insert_custom_kmod(shell):
     """
@@ -45,14 +48,49 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
+@pytest.mark.unsupported_kmod_with_envar
+def test_envar_overrides_unsupported_module_loaded(insert_custom_kmod, convert2rhel, prompt_amount=PROMPT_AMOUNT):
+    """
+    This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"
+    will override the inhibition when there is RHEL unsupported kernel module detected.
+
+    TODO(danmyway) after merging PR619 add the reference links to test metadata.
+    Verifies issue RHELC-244
+    Verifies https://github.com/oamg/convert2rhel/pull/613/
+    """
+    insert_custom_kmod()
+    os.environ["CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"] = "1"
+
+    with convert2rhel(
+        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        while prompt_amount > 0:
+            c2r.expect("Continue with the system conversion?")
+            c2r.sendline("y")
+            prompt_amount -= 1
+
+        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable")
+        c2r.expect("We will continue the conversion, with the following kernel modules")
+
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+    assert c2r.exitstatus != 0
+
+    del os.environ["CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"]
+
+
+def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel, prompt_amount=PROMPT_AMOUNT):
     """
     Test removes previously loaded custom module and runs the conversion.
     The kmod compatibility checks is right before the point of no return.
     Abort the conversion right after the check.
     """
     assert shell("modprobe -r -v bonding").returncode == 0
-    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     # If custom module is not loaded the conversion is not inhibited.
     with convert2rhel(
@@ -82,7 +120,7 @@ def test_do_not_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
-    # TODO condition moved to test metadata in #619
+    # TODO(danmyway) condition moved to test metadata in #619
     if SYSTEM_RELEASE_ENV not in ("oracle-7", "centos-7"):
         # Force load the kernel module
         assert shell("modprobe -f -v bonding").returncode == 0
