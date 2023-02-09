@@ -11,6 +11,10 @@ PKI_ENTITLEMENT_KEYS_PATH = "/etc/pki/entitlement"
 
 
 def backup_entitlement_keys():
+    """
+    Utillity function to backup and remove the entitlment key as soon as we
+    notice then in the the `PKI_ENTITLEMENT_KEYS_PATH`.
+    """
     original_keys = os.listdir(PKI_ENTITLEMENT_KEYS_PATH)
 
     for key in original_keys:
@@ -20,7 +24,7 @@ def backup_entitlement_keys():
 
 
 def rollback_entitlement_keys():
-    """"""
+    """Utillity function to rollback entitlment keys and clean-up after the test."""
     backup_keys = os.listdir(PKI_ENTITLEMENT_KEYS_PATH)
 
     for key in backup_keys:
@@ -87,7 +91,6 @@ def test_transaction_validation_error(convert2rhel):
     the entitlement keys found in /etc/pki/entitlement/*.pem to ensure that the
     tool is doing a proper rollback when the transaction is being processed.
     """
-
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
@@ -96,7 +99,9 @@ def test_transaction_validation_error(convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("Validating the yum transaction set, no modifications to the system will happen this time.")
+        c2r.expect(
+            "Downloading and validating the yum transaction set, no modifications to the system will happen this time."
+        )
         backup_entitlement_keys()
         assert c2r.expect_exact("Failed to validate the yum transaction.", timeout=600) == 0
 
