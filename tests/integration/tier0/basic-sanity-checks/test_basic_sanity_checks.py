@@ -135,7 +135,7 @@ def test_clean_cache(convert2rhel):
     """
     with convert2rhel("--no-rpm-va --debug") as c2r:
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
-        assert c2r.expect("Cached yum metadata cleaned successfully.", timeout=300) == 0
+        assert c2r.expect("Cached repositories metadata cleaned successfully.", timeout=300) == 0
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
