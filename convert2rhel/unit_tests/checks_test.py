@@ -23,7 +23,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import checks, grub, pkgmanager, systeminfo, unit_tests, utils
+from convert2rhel import checks, grub, pkgmanager, unit_tests, utils
 from convert2rhel.checks import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
@@ -1177,184 +1177,89 @@ def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch,
     assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
 
 
-@oracle8
-def test_is_loaded_kernel_latest_skip_on_not_latest_ol(pretend_os, monkeypatch, caplog):
-    message = (
-        "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
-    )
-
-    is_loaded_kernel_latest()
-
-    assert message in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
-    (
-        "repoquery_version",
-        "uname_version",
-        "return_code",
-        "major_ver",
-        "package_name",
-        "raise_system_exit",
-        "expected_message",
-    ),
-    (
-        (
-            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
-            "3.10.0-1160.42.2.el7.x86_64",
-            1,
-            8,
-            "kernel-core",
-            False,
-            "Couldn't fetch the list of the most recent kernels available in the repositories.",
-        ),
-        (
-            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
-            "3.10.0-1160.42.2.el7.x86_64",
-            0,
-            8,
-            "kernel-core",
-            True,
-            None,
-        ),
-        (
-            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
-            "3.10.0-1160.45.1.el7.x86_64",
-            0,
-            7,
-            "kernel",
-            False,
-            "The currently loaded kernel is at the latest version.",
-        ),
-        (
-            "1634146676\t3.10.0-1160.45.1.el7\tbaseos",
-            "3.10.0-1160.45.1.el7.x86_64",
-            0,
-            6,
-            "kernel",
-            False,
-            "The currently loaded kernel is at the latest version.",
-        ),
-    ),
-)
-def test_is_loaded_kernel_latest(
-    repoquery_version,
-    uname_version,
-    return_code,
-    major_ver,
-    package_name,
-    raise_system_exit,
-    expected_message,
-    monkeypatch,
-    caplog,
-):
-    Version = namedtuple("Version", ("major", "minor"))
-    # Using the minor version as 99, so the tests should never fail because of a constraint in the code, since we don't
-    # mind the minor version number (for now), and require only that the major version to be in the range of 6 to 8,
-    # we can set the minor version to 99 to avoid hardcoded checks in the code.
-    monkeypatch.setattr(
-        checks.system_info,
-        "version",
-        value=Version(major=major_ver, minor=99),
-    )
-    system_info.id = "centos"
-    run_subprocess_mocked = mock.Mock(
-        spec=run_subprocess,
-        side_effect=run_subprocess_side_effect(
-            (
-                (
-                    "repoquery",
-                    "--setopt=exclude=",
-                    "--quiet",
-                    "--qf",
-                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                    package_name,
-                ),
-                (
-                    repoquery_version,
-                    return_code,
-                ),
-            ),
-            (("uname", "-r"), (uname_version, return_code)),
-        ),
-    )
-    monkeypatch.setattr(
-        checks,
-        "run_subprocess",
-        value=run_subprocess_mocked,
-    )
-
-    if raise_system_exit:
-        with pytest.raises(SystemExit):
-            is_loaded_kernel_latest()
-
-        repoquery_kernel_version = repoquery_version.split("\t")[1]
-        uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert (
-            "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version in caplog.records[-1].message
+class TestIsLoadedKernelLatest:
+    @oracle8
+    def test_is_loaded_kernel_latest_skip_on_not_latest_ol(
+        self,
+        pretend_os,
+        caplog,
+    ):
+        message = (
+            "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
         )
-        assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
-    else:
+
         is_loaded_kernel_latest()
-        assert expected_message in caplog.records[-1].message
 
+        assert message in caplog.records[-1].message
 
-@pytest.mark.parametrize(
-    ("repoquery_version", "uname_version", "return_code", "package_name", "raise_system_exit"),
-    (
-        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.42.2.el7.x86_64", 0, "kernel-core", True),
-        ("1634146676\t3.10.0-1160.45.1.el7\tbaseos", "3.10.0-1160.45.1.el7.x86_64", 0, "kernel-core", False),
-    ),
-)
-@centos8
-def test_is_loaded_kernel_latest_eus_system(
-    pretend_os,
-    repoquery_version,
-    uname_version,
-    return_code,
-    package_name,
-    raise_system_exit,
-    tmpdir,
-    monkeypatch,
-    caplog,
-):
-    fake_reposdir_path = str(tmpdir)
-    monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: fake_reposdir_path)
-
-    monkeypatch.setattr(checks.system_info, "has_internet_access", True)
-
-    run_subprocess_mocked = mock.Mock(
-        spec=run_subprocess,
-        side_effect=run_subprocess_side_effect(
+    @pytest.mark.parametrize(
+        (
+            "repoquery_version",
+            "uname_version",
+            "return_code",
+            "package_name",
+        ),
+        (
             (
-                (
-                    "repoquery",
-                    "--setopt=exclude=",
-                    "--quiet",
-                    "--qf",
-                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                    "--setopt=reposdir=%s" % fake_reposdir_path,
-                    package_name,
-                ),
-                (
-                    repoquery_version,
-                    return_code,
-                ),
+                "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+                "3.10.0-1160.42.2.el7.x86_64",
+                0,
+                "kernel-core",
             ),
-            (("uname", "-r"), (uname_version, return_code)),
         ),
     )
-    monkeypatch.setattr(
-        checks,
-        "run_subprocess",
-        value=run_subprocess_mocked,
-    )
+    @centos8
+    def test_is_loaded_kernel_latest_eus_system_system_exit(
+        self,
+        pretend_os,
+        repoquery_version,
+        uname_version,
+        return_code,
+        package_name,
+        tmpdir,
+        monkeypatch,
+        caplog,
+    ):
+        fake_reposdir_path = str(tmpdir)
+        monkeypatch.setattr(
+            checks,
+            "get_hardcoded_repofiles_dir",
+            value=lambda: fake_reposdir_path,
+        )
 
-    if raise_system_exit:
+        monkeypatch.setattr(checks.system_info, "has_internet_access", True)
+
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "--setopt=reposdir=%s" % fake_reposdir_path,
+                        package_name,
+                    ),
+                    (
+                        repoquery_version,
+                        return_code,
+                    ),
+                ),
+                (("uname", "-r"), (uname_version, return_code)),
+            ),
+        )
+        monkeypatch.setattr(
+            checks,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
         with pytest.raises(SystemExit):
             is_loaded_kernel_latest()
 
-        repoquery_kernel_version = repoquery_version.split("\t")[1]
+        repoquery_kernel_version = repoquery_version.split("\t")[2]
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
         assert (
             "The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
@@ -1364,78 +1269,309 @@ def test_is_loaded_kernel_latest_eus_system(
             "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version in caplog.records[-1].message
         )
         assert "Loaded kernel version: %s\n" % uname_kernel_version in caplog.records[-1].message
-    else:
+
+    @centos8
+    def test_is_loaded_kernel_latest_eus_system(self, pretend_os, tmpdir, monkeypatch, caplog):
+        fake_reposdir_path = str(tmpdir)
+        monkeypatch.setattr(
+            checks,
+            "get_hardcoded_repofiles_dir",
+            value=lambda: fake_reposdir_path,
+        )
+
+        monkeypatch.setattr(checks.system_info, "has_internet_access", True)
+
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "--setopt=reposdir=%s" % fake_reposdir_path,
+                        "kernel-core",
+                    ),
+                    (
+                        "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+                        0,
+                    ),
+                ),
+                (("uname", "-r"), ("3.10.0-1160.45.1.el7.x86_64", 0)),
+            ),
+        )
+        monkeypatch.setattr(
+            checks,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
         is_loaded_kernel_latest()
         assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
 
+    @centos8
+    def test_is_loaded_kernel_latest_eus_system_no_connection(self, pretend_os, monkeypatch, tmpdir, caplog):
+        monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
+        system_info.has_internet_access = False
 
-@centos8
-def test_is_loaded_kernel_latest_eus_system_no_connection(pretend_os, monkeypatch, tmpdir, caplog):
-    monkeypatch.setattr(checks, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-    system_info.has_internet_access = False
+        is_loaded_kernel_latest()
+        assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
 
-    is_loaded_kernel_latest()
-    assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
-    ("repoquery_version", "return_code", "major_ver", "package_name", "unsupported_skip", "expected"),
-    (
+    @centos8
+    @pytest.mark.parametrize(
         (
-            "",
-            0,
-            8,
-            "kernel-core",
-            "1",
-            "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+            "repoquery_version",
+            "return_code",
+            "package_name",
+            "unsupported_skip",
+            "expected",
         ),
-        ("", 0, 8, "kernel-core", "0", "Could not find any {0} from repositories"),
-        ("", 0, 7, "kernel", "0", "Could not find any {0} from repositories"),
-        ("", 0, 6, "kernel", "0", "Could not find any {0} from repositories"),
-    ),
-)
-def test_is_loaded_kernel_latest_unsupported_skip(
-    repoquery_version, return_code, major_ver, package_name, unsupported_skip, expected, monkeypatch, caplog
-):
-    run_subprocess_mocked = mock.Mock(
-        spec=run_subprocess,
-        side_effect=run_subprocess_side_effect(
-            (
-                (
-                    "repoquery",
-                    "--setopt=exclude=",
-                    "--quiet",
-                    "--qf",
-                    "%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                    package_name,
-                ),
-                (
-                    repoquery_version,
-                    return_code,
-                ),
+        (
+            pytest.param(
+                "",
+                0,
+                "kernel-core",
+                "1",
+                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+                id="Unsupported skip with environment var set to 1",
+            ),
+            pytest.param(
+                "",
+                0,
+                "kernel-core",
+                "0",
+                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+                id="Unsupported skip with environment var set to 0",
+            ),
+            pytest.param(
+                "",
+                0,
+                "kernel-core",
+                None,
+                "Could not find any {0} from repositories to compare against the loaded kernel.",
+                id="Repoquery failure without environment var",
             ),
         ),
     )
-    monkeypatch.setattr(
-        checks.system_info,
-        "version",
-        value=systeminfo.Version(major=major_ver, minor=0),
-    )
-    monkeypatch.setattr(
-        checks,
-        "run_subprocess",
-        value=run_subprocess_mocked,
-    )
-    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip})
+    def test_is_loaded_kernel_latest_unsupported_skip(
+        self,
+        pretend_os,
+        repoquery_version,
+        return_code,
+        package_name,
+        unsupported_skip,
+        expected,
+        monkeypatch,
+        caplog,
+    ):
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        package_name,
+                    ),
+                    (
+                        repoquery_version,
+                        return_code,
+                    ),
+                ),
+            ),
+        )
+        monkeypatch.setattr(
+            checks,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+        if unsupported_skip:
+            monkeypatch.setattr(
+                os,
+                "environ",
+                {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
+            )
 
-    if unsupported_skip == "0":
+        if not unsupported_skip:
+            with pytest.raises(SystemExit):
+                is_loaded_kernel_latest()
+            expected = expected.format(package_name)
+        else:
+            is_loaded_kernel_latest()
+
+        assert expected in caplog.records[-1].message
+
+    @pytest.mark.parametrize(
+        (
+            "repoquery_version",
+            "uname_version",
+            "return_code",
+            "major_ver",
+            "package_name",
+            "expected_message",
+        ),
+        (
+            (
+                "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+                "3.10.0-1160.42.2.el7.x86_64",
+                1,
+                8,
+                "kernel-core",
+                "Couldn't fetch the list of the most recent kernels available in the repositories.",
+            ),
+            (
+                "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+                "3.10.0-1160.45.1.el7.x86_64",
+                0,
+                7,
+                "kernel",
+                "The currently loaded kernel is at the latest version.",
+            ),
+            (
+                "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
+                "3.10.0-1160.45.1.el7.x86_64",
+                0,
+                6,
+                "kernel",
+                "The currently loaded kernel is at the latest version.",
+            ),
+            (
+                """
+                Repository base is listed more than once in the configuration\n
+                Repository updates is listed more than once in the configuration\n
+                Repository extras is listed more than once in the configuration\n
+                Repository centosplus is listed more than once in the configuration\n
+                C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos\n
+                Could not retrieve mirrorlist http://mirorlist.centos.org/?release=7&arch=x86_64&repo=os&infra=stock error was\n
+                14: curl#6 - "Could not resolve host: mirorlist.centos.org; Unknown error"\n
+                Repo convert2rhel-for-rhel-7-rpms forced skip_if_unavailable=True due to: /etc/rhsm/ca/redhat-uep.pem\n
+                """,
+                "3.10.0-1160.45.1.el7.x86_64",
+                0,
+                8,
+                "kernel-core",
+                "The currently loaded kernel is at the latest version.",
+            ),
+            (
+                """
+                gargabe-output before the good line\n
+                C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos\n
+                more garbage\n
+                """,
+                "3.10.0-1160.45.1.el7.x86_64",
+                0,
+                8,
+                "kernel-core",
+                "The currently loaded kernel is at the latest version.",
+            ),
+        ),
+    )
+    def test_is_loaded_kernel_latest(
+        self,
+        repoquery_version,
+        uname_version,
+        return_code,
+        major_ver,
+        package_name,
+        expected_message,
+        monkeypatch,
+        caplog,
+    ):
+        # Using the minor version as 99, so the tests should never fail because of a
+        # constraint in the code, since we don't mind the minor version number (for
+        # now), and require only that the major version to be in the range of 6 to
+        # 8, we can set the minor version to 99 to avoid hardcoded checks in the
+        # code.
+        Version = namedtuple("Version", ("major", "minor"))
+        monkeypatch.setattr(
+            checks.system_info,
+            "version",
+            value=Version(major=major_ver, minor=99),
+        )
+        system_info.id = "centos"
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        package_name,
+                    ),
+                    (
+                        repoquery_version,
+                        return_code,
+                    ),
+                ),
+                (("uname", "-r"), (uname_version, return_code)),
+            ),
+        )
+        monkeypatch.setattr(
+            checks,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
+        is_loaded_kernel_latest()
+        assert expected_message in caplog.records[-1].message
+
+    def test_is_loaded_kernel_latest_system_exit(self, monkeypatch, caplog):
+        repoquery_version = "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos"
+        uname_version = "3.10.0-1160.42.2.el7.x86_64"
+
+        # Using the minor version as 99, so the tests should never fail because of a
+        # constraint in the code, since we don't mind the minor version number (for
+        # now), and require only that the major version to be in the range of 6 to
+        # 8, we can set the minor version to 99 to avoid hardcoded checks in the
+        # code.
+        Version = namedtuple("Version", ("major", "minor"))
+        monkeypatch.setattr(
+            checks.system_info,
+            "version",
+            value=Version(major=8, minor=99),
+        )
+        system_info.id = "centos"
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "kernel-core",
+                    ),
+                    (
+                        repoquery_version,
+                        0,
+                    ),
+                ),
+                (("uname", "-r"), (uname_version, 0)),
+            ),
+        )
+        monkeypatch.setattr(
+            checks,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
         with pytest.raises(SystemExit):
             is_loaded_kernel_latest()
-        expected = expected.format(package_name)
-    else:
-        is_loaded_kernel_latest()
 
-    assert expected in caplog.records[-1].message
+        repoquery_kernel_version = repoquery_version.split("\t")[2]
+        uname_kernel_version = uname_version.rsplit(".", 1)[0]
+        assert "Latest kernel version available in baseos: %s" % repoquery_kernel_version in caplog.records[-1].message
+        assert "Loaded kernel version: %s\n\n" % uname_kernel_version in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
