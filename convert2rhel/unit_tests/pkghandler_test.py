@@ -34,7 +34,7 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os, run_subprocess_side_effect
+from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
 from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
 
 
@@ -1865,28 +1865,6 @@ def test_filter_installed_pkgs(packages, expected, is_rpm_installed, monkeypatch
 def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
     monkeypatch.setattr(utils, "get_package_name_from_rpm", lambda x: x)
     assert pkghandler.get_pkg_names_from_rpm_paths(rpm_paths) == expected
-
-
-@pytest.mark.parametrize(
-    ("ret_code", "expected"), ((0, "Cached yum metadata cleaned successfully."), (1, "Failed to clean yum metadata"))
-)
-def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
-    run_subprocess_mock = mock.Mock(
-        side_effect=run_subprocess_side_effect(
-            (
-                ("yum", "clean", "metadata", "--quiet"),
-                (expected, ret_code),
-            ),
-        ),
-    )
-    monkeypatch.setattr(
-        pkghandler.utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-
-    pkghandler.clean_yum_metadata()
-    assert expected in caplog.records[-1].message
 
 
 @all_systems

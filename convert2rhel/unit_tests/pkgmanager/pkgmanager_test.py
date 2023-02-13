@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 import pytest
 import six
 
-from convert2rhel import pkgmanager
+from convert2rhel import pkgmanager, utils
+from convert2rhel.unit_tests import run_subprocess_side_effect
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -47,3 +49,27 @@ def test_create_transaction_handler_dnf(monkeypatch):
     pkgmanager.create_transaction_handler()
 
     assert dnf_transaction_handler_mock.called
+
+
+@pytest.mark.parametrize(
+    ("ret_code", "expected"),
+    ((0, "Cached repositories metadata cleaned successfully."), (1, "Failed to clean yum metadata")),
+)
+def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (
+                ("yum", "clean", "metadata", "--enablerepo=*", "--quiet"),
+                (expected, ret_code),
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        pkgmanager.utils,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    pkgmanager.clean_yum_metadata()
+
+    assert expected in caplog.records[-1].message

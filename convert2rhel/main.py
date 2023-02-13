@@ -94,7 +94,7 @@ def main():
         pkghandler.clear_versionlock()
 
         loggerinst.task("Prepare: Clean yum cache metadata")
-        pkghandler.clean_yum_metadata()
+        pkgmanager.clean_yum_metadata()
 
         # check the system prior the conversion (possible inhibit)
         checks.perform_system_checks()
