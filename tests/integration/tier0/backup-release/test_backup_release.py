@@ -100,7 +100,7 @@ def test_backup_os_release_wrong_registartion(shell, convert2rhel):
 
     with convert2rhel("-y --no-rpm-va -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
         c2r.expect("Unable to register the system through subscription-manager.")
-        c2r.expect("Restoring /etc/os-release from backup")
+        c2r.expect("Restore /etc/os-release from backup")
 
     assert shell("find /etc/os-release").returncode == 0
 

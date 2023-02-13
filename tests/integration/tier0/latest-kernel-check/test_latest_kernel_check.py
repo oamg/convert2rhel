@@ -81,7 +81,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     # Run the conversion and verify, that it goes past the latest kernel check
     # if so, inhibit the conversion
     with convert2rhel("-y --debug --no-rpm-va") as c2r:
-        c2r.expect("Prepare: Checking if the loaded kernel version is the most recent")
+        c2r.expect("Prepare: Check if the loaded kernel version is the most recent")
         assert c2r.expect("Convert: List third-party packages", timeout=300) == 0
         c2r.sendcontrol("c")
 
