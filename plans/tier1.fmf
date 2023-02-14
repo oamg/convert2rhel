@@ -1,372 +1,375 @@
 /activation_key:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/activation_key.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/activation_key.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /rhsm:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/rhsm.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/rhsm.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /rhsm_non_eus:
-  adjust:
-    enabled: false
-    # TODO EUS Bump disabled version
-    when: >
-      distro != centos-8.4
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/rhsm_non_eus.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          # TODO EUS Bump disabled version
+          when: >
+            distro != centos-8.4
+    discover+:
+      test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/rhsm_non_eus.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /satellite:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/satellite.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/satellite.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /custom_repos:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: add custom repos
-    how: ansible
-    playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/custom_repos.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: add custom repos
+          how: ansible
+          playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/custom_repos.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /changed_yum_conf:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/changed-yum-conf/test_patch_yum_conf.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/changed-yum-conf/test_patch_yum_conf.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_excld_pkgs_epel8:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-8
-  environment+:
-    PACKAGES: centos-backgrounds centos-gpg-keys
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+            distro != centos-8
+    environment+:
+        PACKAGES: centos-backgrounds centos-gpg-keys
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_excld_pkgs_epel7:
-  adjust:
-    enabled: false
-    when: distro != oraclelinux-7 and distro != centos-7
-  environment+:
-    PACKAGES: gnome-documents-libs shim-x64
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: distro != oraclelinux-7 and distro != centos-7
+    environment+:
+        PACKAGES: gnome-documents-libs shim-x64
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/remove-excld-pkgs/test_remove_excld_pkgs.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /remove_all_submgr_pkgs:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: test no sub manager installed
-    how: shell
-    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
-  - name: install subscription manager
-    how: ansible
-    playbook: tests/ansible_collections/roles/install-submgr/main.yml
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    adjust+:
+        - environment+:
+            PROMPT_AMOUNT: 2
+          when: distro != oraclelinux-8
+        - environment+:
+            PROMPT_AMOUNT: 1
+          when: distro == oraclelinux-8
+    prepare+:
+        - name: test no sub manager installed
+          how: shell
+          script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
+        - name: install subscription manager
+          how: ansible
+          playbook: tests/ansible_collections/roles/install-submgr/main.yml
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /resolve_dependency:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: install dependency packages
-    how: shell
-    script: pytest -svv tests/integration/tier1/resolve-dependency/install_dependency_packages.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/rhsm.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: install dependency packages
+          how: shell
+          script: pytest -svv tests/integration/tier1/resolve-dependency/install_dependency_packages.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/rhsm.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /one_kernel_scenario:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-7 and
-      distro != oraclelinux-7
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: add custom repos
-    how: ansible
-    playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
-  - name: install one kernel
-    how: shell
-    script: pytest -svv tests/integration/tier1/one-kernel-scenario/install_one_kernel.py
-  - name: reboot machine
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
-  - name: remove other kernels
-    how: shell
-    script: pytest -svv tests/integration/tier1/one-kernel-scenario/remove_other_kernels.py
-  - name: reboot machine
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
-  - name: run conversion
-    how: shell
-    script: pytest -svv tests/integration/tier1/one-kernel-scenario/run_conversion.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+              distro != centos-7 and
+              distro != oraclelinux-7
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: add custom repos
+          how: ansible
+          playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+        - name: install one kernel
+          how: shell
+          script: pytest -svv tests/integration/tier1/one-kernel-scenario/install_one_kernel.py
+        - name: reboot machine
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: remove other kernels
+          how: shell
+          script: pytest -svv tests/integration/tier1/one-kernel-scenario/remove_other_kernels.py
+        - name: reboot machine
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: run conversion
+          how: shell
+          script: pytest -svv tests/integration/tier1/one-kernel-scenario/run_conversion.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /language_test:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: set non english locale
-    how: shell
-    script: pytest -svv tests/integration/tier1/set-locale/use_non_english_language.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/activation_key.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: set non english locale
+          how: shell
+          script: pytest -svv tests/integration/tier1/set-locale/use_non_english_language.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/activation_key.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /missing_os_release:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: remove os-relase
-    how: shell
-    script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/method/rhsm.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: remove os-release
+          how: shell
+          script: pytest -svv tests/integration/tier1/os-release-removal/remove_os_release.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/method/rhsm.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /yum_distro_sync:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: enable extras repo for Oracle Linux
-    how: ansible
-    playbook: tests/integration/tier1/yum-distro-sync/add-extras-repo/main.yml
-  - name: install problematic package
-    how: shell
-    script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+          test: checks-after-conversion
+    prepare+:
+          - name: enable extras repo for Oracle Linux
+            how: ansible
+            playbook: tests/integration/tier1/yum-distro-sync/add-extras-repo/main.yml
+          - name: install problematic package
+            how: shell
+            script: pytest -svv tests/integration/tier1/yum-distro-sync/install_problematic_package.py
+          - name: main conversion preparation
+            how: shell
+            script: pytest -svv tests/integration/tier1/yum-distro-sync/test_yum_distro_sync.py
+          - name: reboot after conversion
+            how: ansible
+            playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /convert_offline_systems:
-  # At the moment we have only CentOS7 repos available on Satellite server
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-7
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: install subscription manager
-    how: ansible
-    playbook: tests/ansible_collections/roles/install-submgr/main.yml
-  - name: allow access to Satellite only
-    how: shell
-    script: pytest -svv tests/integration/tier1/convert-offline-systems/prepare_system.py
-  - name: run offline conversion using the satellite
-    how: shell
-    script: pytest -svv tests/integration/tier1/convert-offline-systems/run_conversion.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    # At the moment we have only CentOS7 repos available on Satellite server
+    adjust+:
+        - enabled: false
+          when: >
+            distro != centos-7
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: install subscription manager
+          how: ansible
+          playbook: tests/ansible_collections/roles/install-submgr/main.yml
+        - name: allow access to Satellite only
+          how: shell
+          script: pytest -svv tests/integration/tier1/convert-offline-systems/prepare_system.py
+        - name: run offline conversion using the satellite
+          how: shell
+          script: pytest -svv tests/integration/tier1/convert-offline-systems/run_conversion.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /system_up_to_date:
-  # There are no minor version repositories for Oracle Linux EUS releases, so we skip the check for up-to-date system.
-  # The other distributions (including latest Oracle Linux 8 ) have all the necessary repositories
-  # to make the check possible.
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: prepare non latest kernel
-    how: shell
-    script: pytest -svv tests/integration/tier1/system-up-to-date/install_non_latest_kernel.py
-  - name: reboot machine
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
-  - name: test inhibitor on non latest kernels
-    how: shell
-    script: pytest -svv tests/integration/tier1/system-up-to-date/test_non_latest_kernel_inhibitor.py
-  - name: reboot machine
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
-  - name: test conversion non updated package
-    how: shell
-    script: pytest -svv tests/integration/tier1/system-up-to-date/test_system_up_to_date.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: prepare non latest kernel
+          how: shell
+          script: pytest -svv tests/integration/tier1/system-up-to-date/install_non_latest_kernel.py
+        - name: reboot machine
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: test inhibitor on non latest kernels
+          how: shell
+          script: pytest -svv tests/integration/tier1/system-up-to-date/test_non_latest_kernel_inhibitor.py
+        - name: reboot machine
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: test conversion non updated package
+          how: shell
+          script: pytest -svv tests/integration/tier1/system-up-to-date/test_system_up_to_date.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /removed_pkgs_centos_85:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-8-latest
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-    - name: install removed pkgs from CentOS 8.5
-      how: ansible
-      playbook: tests/integration/tier1/removed-pkgs-centos-85/ansible/install_removed_pkgs_from_centos_85_repos.yml
-    - name: main conversion preparation
-      how: shell
-      script: pytest -svv tests/integration/tier1/removed-pkgs-centos-85/test_removed_pkgs_centos_85.py
-    - name: reboot after conversion
-      how: ansible
-      playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+              distro != centos-8-latest
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: install removed pkgs from CentOS 8.5
+          how: ansible
+          playbook: tests/integration/tier1/removed-pkgs-centos-85/ansible/install_removed_pkgs_from_centos_85_repos.yml
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/removed-pkgs-centos-85/test_removed_pkgs_centos_85.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /changed_grub_valid:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: modify /etc/default/grub with valid changes
-    how: shell
-    script: pytest -svv tests/integration/tier1/changed-grub-file/test_valid_changed_grub.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: modify /etc/default/grub with valid changes
+          how: shell
+          script: pytest -svv tests/integration/tier1/changed-grub-file/test_valid_changed_grub.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /changed_grub_invalid:
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: modify /etc/default/grub with invalid changes
-    how: shell
-    script: pytest -svv tests/integration/tier1/changed-grub-file/test_invalid_changed_grub.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: modify /etc/default/grub with invalid changes
+          how: shell
+          script: pytest -svv tests/integration/tier1/changed-grub-file/test_invalid_changed_grub.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /config_file:
-  adjust:
-      enabled: false
-      when: >
-        distro != centos-8-latest
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/config-file/test_config_file.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+              distro != centos-8-latest
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/config-file/test_config_file.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /single_yum_transaction_all_errors:
-  adjust:
-    enabled: false
-    when: >
-      distro != oraclelinux-7
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: install ntp package and remove one dependency
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/install_ntp_and_remove_dependency.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+              distro != oraclelinux-7
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: install ntp package and remove one dependency
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/install_ntp_and_remove_dependency.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /single_yum_transaction_excld_pkgs:
-  adjust:
-    enabled: false
-    when: >
-      distro != centos-7
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: remove some pkgs from the excld pkgs config list
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/remove_excld_pkgs_from_config.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+            distro != centos-7
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: remove some pkgs from the excld pkgs config list
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/remove_excld_pkgs_from_config.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /single_yum_transaction_mismatch_errors:
-  adjust:
-    enabled: false
-    # TODO EUS Bump disabled version
-    when: >
-      distro != centos-8-latest and
-      distro != oraclelinux-8.6
-  discover+:
-    test: checks-after-conversion
-  prepare+:
-  - name: install multilib packages with dnf
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/install_multilib_packages.py
-  - name: main conversion preparation
-    how: shell
-    script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
-  - name: reboot after conversion
-    how: ansible
-    playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: >
+              distro != centos-8-latest and
+              distro != oraclelinux-8
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: install multilib packages with dnf
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/install_multilib_packages.py
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/test_single_yum_transaction.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml

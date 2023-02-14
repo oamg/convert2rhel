@@ -1,17 +1,15 @@
 import configparser
-import platform
 
 import pytest
 
 
 @pytest.mark.failed_repoquery
-def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2rhel):
+def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2rhel, system_release):
     """
     This test verifies, that failed repoquery is handled correctly.
     Failed repoquery subsequently caused the latest kernel check to fail.
     Introduced fixes should get the process past the latest kernel check.
     """
-    get_system_release = platform.platform()
     repofile = "broken_repo"
     centos_custom_reposdir = "/usr/share/convert2rhel/repos/"
 
@@ -20,9 +18,9 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
 
     # TODO after the #619 gets merged, squash condition to centos-8 only
     # TODO and copy to {centos_custom_reposdir}/{get_system_release}/
-    if "centos-8.4" in get_system_release:
+    if "centos-8.4" in system_release:
         shell(f"cp -r files/{repofile}.repo {centos_custom_reposdir}/centos-8.4/")
-    elif "centos-8.5" in get_system_release:
+    elif "centos-8.5" in system_release:
         shell(f"cp -r files/{repofile}.repo {centos_custom_reposdir}/centos-8.5/")
     shell(f"cp -r files/{repofile}.repo /etc/yum.repos.d/")
 
@@ -42,9 +40,9 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
     assert c2r.exitstatus != 0
 
     # Cleanup the tainted repository.
-    if "centos-8.4" in get_system_release:
+    if "centos-8.4" in system_release:
         assert shell(f"rm -f {centos_custom_reposdir}/centos-8.4/{repofile}.repo").returncode == 0
-    if "centos-8.5" in get_system_release:
+    if "centos-8.5" in system_release:
         assert shell(f"rm -f {centos_custom_reposdir}/centos-8.5/{repofile}.repo").returncode == 0
     assert shell(f"rm -f /etc/yum.repos.d/{repofile}.repo").returncode == 0
 

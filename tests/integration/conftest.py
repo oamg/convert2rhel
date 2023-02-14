@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -29,6 +30,8 @@ logger = logging.getLogger(__name__)
 SATELLITE_URL = "satellite.sat.engineering.redhat.com"
 SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
 SATELLITE_PKG_DST = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+
+SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
 
 @pytest.fixture()
@@ -225,7 +228,7 @@ def c2r_config(os_release):
 
 
 @pytest.fixture
-def get_system_release(shell):
+def system_release(shell):
     """
     This fixture returns a string of ID and VERSION_ID from /etc/os-release.
     If /etc/os-release is not available, /etc/system-release is read instead.

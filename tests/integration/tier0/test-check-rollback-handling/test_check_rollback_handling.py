@@ -1,9 +1,9 @@
-import platform
+import os
 
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
-booted_os = platform.platform()
 OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
 OL_8_PKGS = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
 COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
@@ -18,13 +18,13 @@ def install_pkg(shell, pkgs=None):
     Install packages that cause trouble/needs to be checked during/after rollback.
     Some packages were removed during the conversion and were not backed up/installed back when the rollback occurred.
     """
-    if "centos-7" in booted_os:
+    if "centos-7" in SYSTEM_RELEASE_ENV:
         pkgs = COS_7_PKGS
-    elif "centos-8" in booted_os:
+    elif "centos-8" in SYSTEM_RELEASE_ENV:
         pkgs = COS_8_PKGS
-    elif "oracle-7" in booted_os:
+    elif "oracle-7" in SYSTEM_RELEASE_ENV:
         pkgs = OL_7_PKGS
-    elif "oracle-8" in booted_os:
+    elif "oracle-8" in SYSTEM_RELEASE_ENV:
         pkgs = OL_8_PKGS
     for pkg in pkgs:
         print(f"PREP: Setting up {pkg}")
@@ -47,13 +47,13 @@ def post_rollback_check(shell):
     Helper function.
     Provide respective packages to the is_installed() helper function.
     """
-    if "centos-7" in booted_os:
+    if "centos-7" in SYSTEM_RELEASE_ENV:
         is_installed(shell, COS_7_PKGS)
-    elif "centos-8" in booted_os:
+    elif "centos-8" in SYSTEM_RELEASE_ENV:
         is_installed(shell, COS_8_PKGS)
-    elif "oracle-7" in booted_os:
+    elif "oracle-7" in SYSTEM_RELEASE_ENV:
         is_installed(shell, OL_7_PKGS)
-    elif "oracle-8" in booted_os:
+    elif "oracle-8" in SYSTEM_RELEASE_ENV:
         is_installed(shell, OL_8_PKGS)
 
 
@@ -62,7 +62,7 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    if "oracle-7" in booted_os or "centos-7" in booted_os:
+    if SYSTEM_RELEASE_ENV in ("oracle-7", "centos-7"):
         # Use 'Ctrl + c' first to check for unexpected behaviour
         # of the rollback feature after process termination
         c2r.sendcontrol("c")
@@ -87,19 +87,9 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     Verify that usermode, rhn-setup and os-release packages are not removed.
     """
     install_pkg(shell)
-    if "oracle-7" in booted_os:
-        prompt_amount = 3
-    elif "centos-7" in booted_os:
-        # additional question about the removal of python-syspurpose
-        prompt_amount = 4
-    elif "oracle-8" in booted_os:
-        prompt_amount = 3
-    elif "centos-8" in booted_os:
-        # additional question about the removal of python3-syspurpose
-        prompt_amount = 4
-
+    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
     with convert2rhel(
-        ("--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va").format(
+        "--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -154,7 +144,7 @@ def test_terminate_registration_start(convert2rhel):
     Verify that c2r goes successfully through the rollback.
     """
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -179,7 +169,7 @@ def test_terminate_on_password_prompt(convert2rhel):
     Send termination signal on the user prompt for password.
     Verify that c2r goes successfully through the rollback.
     """
-    with convert2rhel(("-y --no-rpm-va --username {}").format(env.str("RHSM_USERNAME"))) as c2r:
+    with convert2rhel("-y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
         c2r.expect("Password:")
         terminate_and_assert_good_rollback(c2r)
 
@@ -190,7 +180,7 @@ def test_terminate_on_subscription_prompt(convert2rhel):
     Verify that c2r goes successfully through the rollback.
     """
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {}").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

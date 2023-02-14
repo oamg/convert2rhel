@@ -1,11 +1,7 @@
 import os
-import platform
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV
 from envparse import env
-
-
-system = platform.platform()
 
 
 def test_backup_os_release_no_envar(shell, convert2rhel):
@@ -32,8 +28,8 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     assert shell("mkdir /tmp/s_backup").returncode == 0
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
-    # EUS version use hardoced repos from c2r as well
-    if "centos-8" in system:
+    # EUS version use hardcoded repos from c2r as well
+    if "centos-8" in SYSTEM_RELEASE_ENV:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -42,7 +38,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )
@@ -67,7 +63,7 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
 
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug --keep-rhsm").format(
+        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         ),
@@ -83,7 +79,7 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     # Return repositories to their original location
     assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
-    if "centos-8" in system:
+    if "centos-8" in SYSTEM_RELEASE_ENV:
         assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
 
     # Clean up
@@ -115,7 +111,7 @@ def test_missing_system_release(shell, convert2rhel):
     assert shell("mv /etc/system-release /tmp/s_backup/").returncode == 0
 
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug").format(
+        "-y --no-rpm-va -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )

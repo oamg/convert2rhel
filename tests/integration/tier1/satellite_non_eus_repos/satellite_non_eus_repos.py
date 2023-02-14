@@ -21,7 +21,7 @@ def test_missing_os_release(shell, convert2rhel):
     assert shell("wget --no-check-certificate --output-document {} {}".format(pkg_dst, pkg_url)).returncode == 0
 
     with convert2rhel(
-        ("-y --no-rpm-va -k {} -o {} --debug").format(
+        "-y --no-rpm-va -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )

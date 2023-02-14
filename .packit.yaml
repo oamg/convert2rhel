@@ -41,7 +41,7 @@ jobs:
       distros: [centos-7, oraclelinux-7]
     epel-8-x86_64:
         #TODO bump distro context to 8.7 when the image is available on the testing farm
-        # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE to 8.7
+        # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE_ENV to 8.7
         # to tag the updated system correctly
       distros: [centos-8.4, centos-8-latest, oraclelinux-8.6]
   use_internal_tf: True

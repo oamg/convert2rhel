@@ -1,9 +1,9 @@
 summary: one-kernel-scenario
 tier: 1
-adjust:
-  enabled: false
-  when: >
-    distro != centos-7 and
-    distro != oracle-7
+adjust+:
+    - enabled: false
+      when: >
+        distro != centos-7 and
+        distro != oraclelinux-7
 test: |
   pytest -svv
