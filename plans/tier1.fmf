@@ -373,7 +373,7 @@
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
-  
+
 /detect_correct_boot_partition:
    adjust+:
      - enabled: false
