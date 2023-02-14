@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 
-from conftest import SYSTEM_RELEASE
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -56,10 +56,10 @@ def test_package_download_error(convert2rhel):
     pkgmanager = "yum"
     final_message = "There are no suitable mirrors available for the loaded repositories."
 
-    if "oracle" in SYSTEM_RELEASE:
+    if "oracle" in SYSTEM_RELEASE_ENV:
         server_sub = "Oracle Linux Server"
 
-    if "8" in SYSTEM_RELEASE:
+    if "8" in SYSTEM_RELEASE_ENV:
         pkgmanager = "dnf"
         final_message = "Failed to download the transaction packages."
 
