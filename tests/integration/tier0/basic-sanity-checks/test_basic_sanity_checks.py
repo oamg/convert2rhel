@@ -1,9 +1,7 @@
 import os
-import platform
 import subprocess
 
-
-booted_os = platform.platform()
+from conftest import SYSTEM_RELEASE_ENV
 
 
 def test_check_user_privileges(shell):
@@ -107,7 +105,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
     os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
 
     with convert2rhel(f"--no-rpm-va --debug") as c2r:
-        if "centos-6" in booted_os or "oracle-6" in booted_os:
+        if SYSTEM_RELEASE_ENV in ("centos-6", "oracle-6"):
             assert c2r.expect("You are currently running 0.01", timeout=300) == 0
             assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
 

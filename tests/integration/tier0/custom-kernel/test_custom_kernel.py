@@ -2,8 +2,8 @@ import os
 
 import pytest
 
+from conftest import SYSTEM_RELEASE_ENV
 
-SYSTEM_RELEASE = os.environ.get("SYSTEM_RELEASE")
 
 ORIGINAL_KERNEL = os.popen("rpm -q --last kernel | head -1 | cut -d ' ' -f1").read()
 
@@ -44,7 +44,7 @@ def install_custom_kernel(shell):
     kernel that is not signed by the running OS official vendor.
     """
 
-    _, custom_kernel, grub_substring = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
+    _, custom_kernel, grub_substring = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
 
     assert shell("yum install %s -y" % custom_kernel).returncode == 0
 
@@ -57,13 +57,13 @@ def clean_up_custom_kernel(shell):
     """
     Remove the current installed kernel and install the machine default kernel.
     """
-    original_kernel, custom_kernel, _ = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE].values()
+    original_kernel, custom_kernel, _ = DISTRO_KERNEL_MAPPING[SYSTEM_RELEASE_ENV].values()
     original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-", 2)[-1]
     custom_kernel_release = custom_kernel.rsplit("/")[-1].replace(".rpm", "")
     assert shell("rpm -e %s" % custom_kernel_release).returncode == 0
 
     # Install back the CentOS 8.5 original kernel
-    if "centos-8.5" in SYSTEM_RELEASE:
+    if "centos-8.5" in SYSTEM_RELEASE_ENV:
         assert shell("yum install %s -y" % original_kernel).returncode == 0
 
     assert (
@@ -80,7 +80,7 @@ def test_custom_kernel(convert2rhel, shell):
     Run the conversion with custom kernel installed on the system.
     """
     os_vendor = "CentOS"
-    if "oracle" in SYSTEM_RELEASE:
+    if "oracle" in SYSTEM_RELEASE_ENV:
         os_vendor = "Oracle"
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":

@@ -1,5 +1,15 @@
 summary: check-if-rollback-is-finishing-up-properly
 
+adjust+:
+    - environment+:
+        PROMPT_AMOUNT: 3
+      when: distro == oraclelinux
+    - environment+:
+        PROMPT_AMOUNT: 4
+      when: distro == centos
+      because: |
+        There is one more user prompt asking for removal of python[3]?-syspurpose
+
 tier: 0
 
 test: pytest -svv

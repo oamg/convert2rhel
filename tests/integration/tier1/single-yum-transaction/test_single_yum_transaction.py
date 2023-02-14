@@ -1,9 +1,5 @@
-import platform
-
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
-
-
-system_version = platform.platform()
 
 
 def test_single_yum_transaction(convert2rhel, shell):
@@ -14,11 +10,11 @@ def test_single_yum_transaction(convert2rhel, shell):
     """
     pkgmanager = "yum"
 
-    if "centos-8" in system_version or "oracle-8" in system_version:
+    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
         pkgmanager = "dnf"
 
     with convert2rhel(
-        ("-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

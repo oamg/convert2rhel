@@ -1,4 +1,4 @@
-import platform
+import os
 
 from envparse import env
 
@@ -9,17 +9,15 @@ def test_no_sub_manager_installed(shell, convert2rhel):
     is able to get to the last point of the rollback.
     """
 
-    assert shell("yum remove -y subscription-manager python3-syspurpose").returncode == 0
-    system_version = platform.platform()
-    if "oracle-7" in system_version or "centos-7" in system_version:
-        prompt_amount = 2
-    elif "oracle-8" in system_version:
-        prompt_amount = 1
-    elif "centos-8" in system_version:
-        prompt_amount = 2
+    packages_to_remove = ["subscription-manager", "python3-syspurpose"]
+    for package in packages_to_remove:
+        if package in shell(f"rpm -qi {package}").output:
+            assert shell(f"yum remove -y {package}").returncode == 0
+
+    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     with convert2rhel(
-        ("--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug").format(
+        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
