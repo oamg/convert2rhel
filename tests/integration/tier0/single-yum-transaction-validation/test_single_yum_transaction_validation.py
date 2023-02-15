@@ -66,7 +66,7 @@ def test_package_download_error(convert2rhel):
         )
     ) as c2r:
         c2r.expect("Adding {} packages to the {} transaction set.".format(server_sub, pkgmanager))
-        backup_entitlement_certs()
+        remove_entitlement_certs()
         assert c2r.expect_exact(final_message, timeout=600) == 0
 
     assert c2r.exitstatus == 1
@@ -94,7 +94,7 @@ def test_transaction_validation_error(convert2rhel):
         c2r.expect(
             "Downloading and validating the yum transaction set, no modifications to the system will happen this time."
         )
-        backup_entitlement_certs()
+        remove_entitlement_certs()
         assert c2r.expect_exact("Failed to validate the yum transaction.", timeout=600) == 0
 
     assert c2r.exitstatus == 1
