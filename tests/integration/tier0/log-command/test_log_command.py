@@ -1,4 +1,8 @@
+import json
+
+
 C2R_LOG = "/var/log/convert2rhel/convert2rhel.log"
+C2R_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
 def test_verify_logfile_starts_with_command(shell):
@@ -10,14 +14,13 @@ def test_verify_logfile_starts_with_command(shell):
     username = "jdoe"
     password = "foobar"
     activationkey = "a-map-of-a-key"
+    organization = "SoMe_NumberS-8_a_lettER"
 
-    command_long = (
-        "convert2rhel --debug --no-rpm-va --serverurl {} --username {} --password {} --activationkey {}".format(
-            serverurl, username, password, activationkey
-        )
+    command_long = "convert2rhel --debug --no-rpm-va --serverurl {} --username {} --password {} --activationkey {} --org {}".format(
+        serverurl, username, password, activationkey, organization
     )
-    command_short = "convert2rhel --debug --no-rpm-va --serverurl {} -u {} -p {} -k {}".format(
-        serverurl, username, password, activationkey
+    command_short = "convert2rhel --debug --no-rpm-va --serverurl {} -u {} -p {} -k {} -o {}".format(
+        serverurl, username, password, activationkey, organization
     )
 
     command_verification = "convert2rhel --debug --no-rpm-va --serverurl {}".format(serverurl)
@@ -41,3 +44,14 @@ def test_verify_logfile_starts_with_command(shell):
             assert command_verification in command_line
             assert password not in command_line
             assert activationkey not in command_line
+            assert username not in command_line
+            assert organization not in command_line
+
+        with open(C2R_FACTS, "r") as breadcrumbs:
+            data = json.load(breadcrumbs)
+            command = data.get("conversions.executed")
+
+            assert password not in command
+            assert activationkey not in command
+            assert username not in command
+            assert organization not in command

@@ -78,7 +78,7 @@ def terminate_and_assert_good_rollback(c2r):
     # Verify the last step of the rollback is present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
         for line in logfile:
-            assert "Rollback: Removing installed RHSM certificate" not in line
+            assert "Rollback: Remove installed RHSM certificate" not in line
 
 
 def test_proper_rhsm_clean_up(shell, convert2rhel):

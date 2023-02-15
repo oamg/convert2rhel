@@ -748,8 +748,7 @@ def hide_secrets(
 
     if hide_next:
         loggerinst.debug(
-            "Passed arguments had an option, '{0}', without an expected"
-            " secret parameter".format(sanitized_list[-1])  # lgtm[py/clear-text-logging-sensitive-data]
+            "Passed arguments had an option, '{0}', without an expected secret parameter".format(sanitized_list[-1])
         )
 
     return sanitized_list
