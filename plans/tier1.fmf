@@ -373,3 +373,18 @@
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/detect_correct_boot_partition:
+   adjust+:
+     - enabled: false
+       when: trigger == commit
+       because: There are no UEFI images available on the Testing Farm yet.
+   discover+:
+       test: checks-after-conversion
+   prepare+:
+       - name: main conversion part
+         how: shell
+         script: pytest -svv tests/integration/tier1/detect-bootloader-partition/test_detect_correct_boot_partition.py
+       - name: reboot after conversion
+         how: ansible
+         playbook: tests/ansible_collections/roles/reboot/main.yml
