@@ -1612,3 +1612,163 @@ def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts
     )
     assert log_msg == caplog.records[-1].message
     assert caplog.records[-1].levelname == "CRITICAL"
+
+
+@pytest.mark.parametrize(
+    ("create_file", "latest_installed_kernel", "expected"),
+    ((True, "6.1.7-200.fc37.x86_64", True), (False, "6.1.7-200.fc37.x86_64", False)),
+)
+def test_verify_vmlinuz_file(create_file, latest_installed_kernel, expected, tmpdir, monkeypatch):
+    if create_file:
+        vmlinuz_file = tmpdir.mkdir("/boot").join("vmlinuz-%s")
+        vmlinuz_file = str(vmlinuz_file)
+        with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
+            handler.write(latest_installed_kernel)
+
+        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
+    else:
+        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", "/non-existing-%s")
+
+    result = checks._verify_vmlinuz_file(latest_installed_kernel)
+    assert result == expected
+
+
+def test_verify_initramfs_file_file_not_found(monkeypatch):
+    monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", "/non-existing-%s")
+    assert checks._verify_initramfs_file("6.1.7-200.fc37.x86_64") == False
+
+
+@pytest.mark.parametrize(
+    ("latest_installed_kernel", "subprocess_output", "expected"),
+    (("6.1.7-200.fc37.x86_64", ("test", 0), True), ("6.1.7-200.fc37.x86_64", ("error", 1), False)),
+)
+def test_verify_initramfs_file(latest_installed_kernel, subprocess_output, expected, tmpdir, caplog, monkeypatch):
+    initramfs_file = tmpdir.mkdir("/boot").join("initramfs-%s.img")
+    initramfs_file = str(initramfs_file)
+    with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
+        handler.write(latest_installed_kernel)
+
+    monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+    monkeypatch.setattr(checks, "run_subprocess", mock.Mock(return_value=subprocess_output))
+    result = checks._verify_initramfs_file(latest_installed_kernel)
+    assert result == expected
+
+    if not expected:
+        assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
+        assert "Output of lsinitrd: %s" % subprocess_output[0] in caplog.records[-1].message
+
+
+@centos8
+def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch):
+    rpm_last_kernel_output = ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0)
+    latest_installed_kernel = "6.1.8-200.fc37.x86_64"
+
+    boot_folder = tmpdir.mkdir("/boot")
+    initramfs_file = boot_folder.join("initramfs-%s.img")
+    vmlinuz_file = boot_folder.join("vmlinuz-%s")
+    initramfs_file = str(initramfs_file)
+    vmlinuz_file = str(vmlinuz_file)
+
+    with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
+        handler.write(latest_installed_kernel)
+    with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
+        handler.write(latest_installed_kernel)
+
+    monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
+    monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+    monkeypatch.setattr(checks, "run_subprocess", mock.Mock(side_effect=[rpm_last_kernel_output, ("test", 0)]))
+
+    checks.check_kernel_boot_files()
+    assert "Initramfs and vmlinuz files exists and are valid." in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("create_initramfs", "create_vmlinuz", "run_piped_subprocess", "rpm_last_kernel_output", "latest_installed_kernel"),
+    (
+        pytest.param(
+            False,
+            False,
+            ("", 0),
+            ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
+            "6.1.8-200.fc37.x86_64",
+            id="both-files-missing",
+        ),
+        pytest.param(
+            True,
+            False,
+            ("test", 0),
+            ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
+            "6.1.8-200.fc37.x86_64",
+            id="vmlinuz-missing",
+        ),
+        pytest.param(
+            False,
+            True,
+            ("test", 0),
+            ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
+            "6.1.8-200.fc37.x86_64",
+            id="initramfs-missing",
+        ),
+        pytest.param(
+            True,
+            True,
+            ("test", 1),
+            ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
+            "6.1.8-200.fc37.x86_64",
+            id="initramfs-corrupted",
+        ),
+    ),
+)
+@centos8
+def test_check_kernel_boot_files_missing(
+    pretend_os,
+    create_initramfs,
+    create_vmlinuz,
+    run_piped_subprocess,
+    rpm_last_kernel_output,
+    latest_installed_kernel,
+    tmpdir,
+    caplog,
+    monkeypatch,
+):
+    """
+    This test will check if we output the warning message correctly if either
+    initramfs or vmlinuz are missing.
+    """
+    # We are mocking both subprocess calls here in order to make it easier for
+    # testing any type of parametrization we may include in the future. Note
+    # that the second iteration may not run sometimes, as this is specific for
+    # when we want to check if a file is corrupted or not.
+    monkeypatch.setattr(
+        checks,
+        "run_subprocess",
+        mock.Mock(
+            side_effect=[
+                rpm_last_kernel_output,
+                run_piped_subprocess,
+            ]
+        ),
+    )
+    boot_folder = tmpdir.mkdir("/boot")
+    if create_initramfs:
+        initramfs_file = boot_folder.join("initramfs-%s.img")
+        initramfs_file = str(initramfs_file)
+        with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
+            handler.write(latest_installed_kernel)
+
+        monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+    else:
+        monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", "/non-existing-%s.img")
+
+    if create_vmlinuz:
+        vmlinuz_file = boot_folder.join("vmlinuz-%s")
+        vmlinuz_file = str(vmlinuz_file)
+        with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
+            handler.write(latest_installed_kernel)
+
+        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
+    else:
+        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", "/non-existing-%s")
+
+    checks.check_kernel_boot_files()
+    assert "Couldn't verify the kernel boot files in the boot partition." in caplog.records[-1].message
