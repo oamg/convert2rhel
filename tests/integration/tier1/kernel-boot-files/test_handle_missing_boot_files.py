@@ -57,7 +57,7 @@ def test_missing_kernel_boot_files(convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("Convert: Replace system packages") == 0
+        c2r.expect("Convert: Replace system packages")
         with Pool(processes=1) as pool:
             _ = pool.apply_async(fill_disk_space, ())
         assert c2r.expect("Couldn't verify the kernel boot files in the boot partition.") == 0

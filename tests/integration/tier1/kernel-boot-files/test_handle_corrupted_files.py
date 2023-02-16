@@ -62,7 +62,7 @@ def test_corrupted_initramfs_file(convert2rhel):
         )
     ) as c2r:
         # Start the watcher as soon as we hit this message.
-        c2r.expect("Convert: List remaining non-Red Hat packages") == 0
+        c2r.expect("Convert: List remaining non-Red Hat packages")
 
         with Pool(processes=1) as pool:
             _ = pool.apply_async(corrupt_initramfs_file, (kernel_name,))
