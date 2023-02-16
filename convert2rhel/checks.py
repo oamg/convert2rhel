@@ -844,7 +844,7 @@ def check_dbus_is_running():
 
 
 def _is_initramfs_file_valid(filepath):
-    """Internal function to verify if a initramfs file is corrupted.
+    """Internal function to verify if an initramfs file is corrupted.
 
     This method will rely on using lsinitrd to do the validation. If the
     lsinitrd returns other value that is not 0, then it means that the file is
@@ -852,7 +852,7 @@ def _is_initramfs_file_valid(filepath):
 
     :param filepath: The path to the initramfs file.
     :type filepath: str
-    :return: A boolean to determinate if the file is corrupted.
+    :return: A boolean to determine if the file is corrupted.
     :rtype: bool
     """
     logger.info("Checking if the '%s' file is not corrupted.", filepath)
@@ -870,7 +870,7 @@ def _is_initramfs_file_valid(filepath):
 
 
 def check_kernel_boot_files():
-    """Check if the required kernel files exists and are valid under the boot partition."""
+    """Check if the required kernel files exist and are valid under the boot partition."""
     # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
     # we check for `kernel-core`. This is not true regarding the 7.* releases.
     kernel_name = "kernel-core" if system_info.version.major >= 8 else "kernel"
@@ -888,8 +888,11 @@ def check_kernel_boot_files():
     latest_installed_kernel = latest_installed_kernel.split("%s-" % kernel_name)[-1]
     grub2_config_file = grub.get_grub_config_file()
     initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
-
-    vmlinuz_exists = os.path.exists(VMLINUZ_FILEPATH % latest_installed_kernel)
+    vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
+    
+    logger.debug("Checking if the '%s' file exists", vmlinuz_file)
+    vmlinuz_exists = os.path.exists(vmlinuz_file)
+    logger.debug("Result of vmlinuz presence: %s", vmlinuz_exists)
 
     # We always set this value to True, as a way of having an initial value.
     # Always assuming the good path.

@@ -594,7 +594,7 @@ def post_ponr_set_efi_configuration():
 def get_grub_config_file():
     """Get the grub config file path.
 
-    This method will return the grub config file, depending if it's is BIOS or
+    This method will return the grub config file, depending if it is BIOS or
     UEFI, the method will handle that automatically.
 
     :return: The path to the grub config file.

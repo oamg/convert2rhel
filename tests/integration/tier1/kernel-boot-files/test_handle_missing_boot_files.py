@@ -39,13 +39,13 @@ def test_missing_kernel_boot_files(convert2rhel):
     the tool can't detect the initramfs and vmlinuz files in /boot.
 
     This case can happen if the kernel scriptlet fails during the yum/dnf
-    transaction where Convert2RHEL tries to replace the packages. Even thought
+    transaction where Convert2RHEL tries to replace the packages. Even though
     the scriptlet can fail, the transaction will still continue and the
     workflow will continue to be executed. The problem is that, with a
     scriptlet failure when replacing/installing a kernel, the initramfs and
     vmlinuz could not be available in the /boot partition, especially if there
     is no sufficient disk space available in there. This test has the intention
-    to verify that the a warning with the correct steps are provided to the
+    to verify that the warning with the correct steps are provided to the
     user in order to overcome this case and fix it for them.
     """
 
