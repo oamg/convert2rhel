@@ -67,6 +67,7 @@ def test_corrupted_initramfs_file(convert2rhel):
         with Pool(processes=1) as pool:
             _ = pool.apply_async(corrupt_initramfs_file, (kernel_name,))
 
+        assert c2r.expect("Couldn't verify initramfs file. It may be corrupted.") == 0
         assert c2r.expect("Output of lsinitrd") == 0
         assert c2r.expect("Couldn't verify the kernel boot files in the boot partition.") == 0
 

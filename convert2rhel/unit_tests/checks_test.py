@@ -1616,17 +1616,21 @@ def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts
 
 @pytest.mark.parametrize(
     ("latest_installed_kernel", "subprocess_output", "expected"),
-    (("6.1.7-200.fc37.x86_64", ("test", 0), True), ("6.1.7-200.fc37.x86_64", ("error", 1), False)),
+    (
+        ("6.1.7-200.fc37.x86_64", ("test", 0), True),
+        ("6.1.7-200.fc37.x86_64", ("error", 1), False),
+    ),
 )
 def test_is_initramfs_file_valid(latest_installed_kernel, subprocess_output, expected, tmpdir, caplog, monkeypatch):
     initramfs_file = tmpdir.mkdir("/boot").join("initramfs-%s.img")
     initramfs_file = str(initramfs_file)
-    with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
-        handler.write(latest_installed_kernel)
+    initramfs_file = initramfs_file % latest_installed_kernel
+    with open(initramfs_file, mode="w") as _:
+        pass
 
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
     monkeypatch.setattr(checks, "run_subprocess", mock.Mock(return_value=subprocess_output))
-    result = checks._is_initramfs_file_valid(latest_installed_kernel)
+    result = checks._is_initramfs_file_valid(initramfs_file)
     assert result == expected
 
     if not expected:
@@ -1645,10 +1649,11 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch):
     initramfs_file = str(initramfs_file)
     vmlinuz_file = str(vmlinuz_file)
 
-    with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
-        handler.write(latest_installed_kernel)
-    with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
-        handler.write(latest_installed_kernel)
+    with open(initramfs_file % latest_installed_kernel, mode="w") as _:
+        pass
+
+    with open(vmlinuz_file % latest_installed_kernel, mode="w") as _:
+        pass
 
     monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
@@ -1688,7 +1693,7 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch):
         pytest.param(
             True,
             True,
-            ("test", 1),
+            ("error", 1),
             ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
             "6.1.8-200.fc37.x86_64",
             id="initramfs-corrupted",
@@ -1729,8 +1734,8 @@ def test_check_kernel_boot_files_missing(
     if create_initramfs:
         initramfs_file = boot_folder.join("initramfs-%s.img")
         initramfs_file = str(initramfs_file)
-        with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
-            handler.write(latest_installed_kernel)
+        with open(initramfs_file % latest_installed_kernel, mode="w") as _:
+            pass
 
         monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
     else:
@@ -1739,8 +1744,8 @@ def test_check_kernel_boot_files_missing(
     if create_vmlinuz:
         vmlinuz_file = boot_folder.join("vmlinuz-%s")
         vmlinuz_file = str(vmlinuz_file)
-        with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
-            handler.write(latest_installed_kernel)
+        with open(vmlinuz_file % latest_installed_kernel, mode="w") as _:
+            pass
 
         monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
     else:

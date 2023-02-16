@@ -855,7 +855,14 @@ def _is_initramfs_file_valid(filepath):
     :return: A boolean to determine if the file is corrupted.
     :rtype: bool
     """
-    logger.info("Checking if the '%s' file is not corrupted.", filepath)
+    logger.info("Checking if the '%s' file is valid.", filepath)
+
+    logger.debug("Checking if the '%s' file exists.", filepath)
+    if not os.path.exists(filepath):
+        logger.info("The initramfs file is not present.")
+        return False
+
+    logger.debug("Checking if the '%s' file is not corrupted.", filepath)
     out, return_code = run_subprocess(
         cmd=["/usr/bin/lsinitrd", filepath],
         print_output=False,
@@ -885,25 +892,17 @@ def check_kernel_boot_files():
     # detecting the latest kernel by using `rpm` and figuring out which was the
     # latest kernel installed.
     latest_installed_kernel = output.split("\n")[0].split(" ")[0]
-    latest_installed_kernel = latest_installed_kernel.split("%s-" % kernel_name)[-1]
+    latest_installed_kernel = latest_installed_kernel[len(kernel_name + "-") :]
     grub2_config_file = grub.get_grub_config_file()
     initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
     vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
 
-    logger.debug("Checking if the '%s' file exists", vmlinuz_file)
+    logger.info("Checking if the '%s' file exists.", vmlinuz_file)
     vmlinuz_exists = os.path.exists(vmlinuz_file)
-    logger.debug("Result of vmlinuz presence: %s", vmlinuz_exists)
+    if not vmlinuz_exists:
+        logger.info("The vmlinuz file is not present.")
 
-    # We always set this value to True, as a way of having an initial value.
-    # Always assuming the good path.
-    is_initramfs_valid = True
-    if os.path.exists(initramfs_file):
-        is_initramfs_valid = _is_initramfs_file_valid(initramfs_file)
-    else:
-        # Change it to False as if we don't have an initramfs file, then we
-        # shift this value to also reach the below if-statement and output the
-        # warning message.
-        is_initramfs_valid = False
+    is_initramfs_valid = _is_initramfs_file_valid(initramfs_file)
 
     if not is_initramfs_valid or not vmlinuz_exists:
         logger.warning(
