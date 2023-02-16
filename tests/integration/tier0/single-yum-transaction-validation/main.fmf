@@ -1,0 +1,33 @@
+summary: Verify single yum transaction validation
+
+description: >
+    Verify that we are doing a proper rollback during the validation phase in
+    our transactions.
+
+    If any errors occurs during the transaction resolution, either by
+    downloading a package, dependency resolver and etc... A rollback should
+    start and revert the changes to the system.
+
+link: https://issues.redhat.com/browse/RHELC-576
+
+tier: 0
+
+tag+:
+    - yum
+    - dnf
+    - transaction
+
+/transaction_validation_error:
+    adjust+:
+        - enabled: false
+          when: distro == centos-8 or distro == oraclelinux-8
+    tag+:
+        - transaction-validation-error
+    test: |
+        pytest -svv -m transaction_validation_error
+
+/package_download_error:
+    tag+:
+        - package-download-error
+    test: |
+        pytest -svv -m package_download_error

@@ -77,3 +77,7 @@
 /log_command_verification:
     discover+:
         test: log-command
+
+/single_yum_transaction_validation:
+    discover+:
+        test: single-yum-transaction-validation
