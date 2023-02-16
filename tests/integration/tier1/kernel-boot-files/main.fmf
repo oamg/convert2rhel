@@ -1,0 +1,15 @@
+summary: Handle kernel boot files
+
+description: |
+    Verify that Convert2RHEL can detect and handle the kernel boot files in
+    case of failure.
+    Verify that, if present, the kernel boot files are not corrupted.
+
+    In any case, the conversion should not be inhibited. An warning will be
+    shown to the user with instructions on how to fix it.
+
+tier: 1
+
+tag+:
+    - kernel
+    - boot

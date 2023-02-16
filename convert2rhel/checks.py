@@ -846,18 +846,20 @@ def check_dbus_is_running():
 def _verify_initramfs_file(latest_installed_kernel):
     """Internal function to handle the verification for initramfs file.
 
-    :param latest_installed_kernel: The version corresponding to the latest installed kernel on the system.
+    :param latest_installed_kernel: The version corresponding to the latest
+        installed kernel on the system.
     :type latest_installed_kernel: str
-    :return: A boolean to determinate if there was any errors with the file or not.
+    :return: A boolean to determinate if there was any errors with the file or
+        not.
     :rtype: bool
     """
     initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
 
     if not os.path.exists(initramfs_file):
-        logger.warning("Couldn't find '%s' file.")
+        logger.warning("Couldn't find '%s' file.", initramfs_file)
         return False
 
-    logger.info("Checking if the %s file is not corrupted.", initramfs_file)
+    logger.info("Checking if the '%s' file is not corrupted.", initramfs_file)
     out, return_code = run_subprocess(
         cmd=["/usr/bin/lsinitrd", initramfs_file],
         print_output=False,
@@ -874,9 +876,11 @@ def _verify_initramfs_file(latest_installed_kernel):
 def _verify_vmlinuz_file(latest_installed_kernel):
     """Internal function to handle the verification for vmlinuz file.
 
-    :param latest_installed_kernel: The version corresponding to the latest installed kernel on the system.
+    :param latest_installed_kernel: The version corresponding to the latest
+        installed kernel on the system.
     :type latest_installed_kernel: str
-    :return: A boolean to determinate if there was any errors with the file or not.
+    :return: A boolean to determinate if there was any errors with the file or
+        not.
     :rtype: bool
     """
     vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
@@ -902,11 +906,11 @@ def check_kernel_boot_files():
     latest_installed_kernel = latest_installed_kernel.split("%s-" % kernel_name)[-1]
     grub2_config_file = grub.get_grub_config_file()
 
-    logger.info("Checking if initiramfs file exists on the system.")
-    initramfs_exists = _verify_initramfs_file(latest_installed_kernel)
-
     logger.info("Checking if vmlinuz file exists on the system.")
     vmlinuz_exists = _verify_vmlinuz_file(latest_installed_kernel)
+
+    logger.info("Checking if initiramfs file exists on the system.")
+    initramfs_exists = _verify_initramfs_file(latest_installed_kernel)
 
     if not initramfs_exists or not vmlinuz_exists:
         logger.warning(

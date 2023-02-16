@@ -375,16 +375,49 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /detect_correct_boot_partition:
-   adjust+:
-     - enabled: false
-       when: trigger == commit
-       because: There are no UEFI images available on the Testing Farm yet.
-   discover+:
-       test: checks-after-conversion
-   prepare+:
-       - name: main conversion part
-         how: shell
-         script: pytest -svv tests/integration/tier1/detect-bootloader-partition/test_detect_correct_boot_partition.py
-       - name: reboot after conversion
-         how: ansible
-         playbook: tests/ansible_collections/roles/reboot/main.yml
+    adjust+:
+        - enabled: false
+          when: trigger == commit
+          because: There are no UEFI images available on the Testing Farm yet.
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion part
+          how: shell
+          script: pytest -svv tests/integration/tier1/detect-bootloader-partition/test_detect_correct_boot_partition.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+    
+/kernel_boot_files_check_boot_files_presence:
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion part
+          how: shell
+          script: pytest -svv tests/integration/tier1/kernel-boot-files/test_verify_file_presence.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/kernel_boot_files_missing_boot_files:
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion part
+          how: shell
+          script: pytest -svv tests/integration/tier1/kernel-boot-files/test_handle_missing_boot_files.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/kernel_boot_files_corrupted_initramfs_file:
+    discover+:
+        test: checks-after-conversion
+    prepare+:
+        - name: main conversion part
+          how: shell
+          script: pytest -svv tests/integration/tier1/kernel-boot-files/test_handle_corrupted_files.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
