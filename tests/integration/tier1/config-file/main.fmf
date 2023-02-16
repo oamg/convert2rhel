@@ -1,5 +1,16 @@
-summary: config file
+summary: Test config file
 
-tier: 0
+description: |
+    Run Convert2RHEL using a configuration file for sensitive information.
+    Verify that the conversion can be done with different configuration paths,
+    as well, CLI options and to assert that the configuration will take precendence over the CLI.
+    Verify that the correct data were loaded and if applicable a warning is printed.
+
+
+link:
+    - https://issues.redhat.com/browse/RHELC-411
+    - https://issues.redhat.com/browse/RHELC-413
+
+tier: 1
 
 test: pytest -svv
