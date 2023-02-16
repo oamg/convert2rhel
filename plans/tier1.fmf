@@ -76,7 +76,7 @@
     adjust+:
         - enabled: false
           when: >
-            distro != centos-8
+            distro == oraclelinux or distro == centos-7
     environment+:
         PACKAGES: centos-backgrounds centos-gpg-keys
     discover+:

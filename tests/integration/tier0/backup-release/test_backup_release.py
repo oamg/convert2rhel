@@ -87,10 +87,10 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     del os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"]
 
 
-def test_backup_os_release_wrong_registartion(shell, convert2rhel):
+def test_backup_os_release_wrong_registration(shell, convert2rhel):
     """
-    Verify that the os-release file is restored when the satellite registartion fails.
-    Refrence issue: RHELC-51
+    Verify that the os-release file is restored when the satellite registration fails.
+    Reference issue: RHELC-51
     """
     assert shell("find /etc/os-release").returncode == 0
 

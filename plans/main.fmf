@@ -26,12 +26,12 @@ adjust+:
         SYSTEM_RELEASE_ENV: oracle-8.7
       when: distro == oraclelinux-8.6
     - environment+:
-        SYSTEM_RELEASE: alma-8.7
+        SYSTEM_RELEASE_ENV: alma-8.7
       when: distro == almalinux-os-8.7
     - environment+:
         # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE to 8.7
         # to tag the updated system correctly
-        SYSTEM_RELEASE: rocky-8.7
+        SYSTEM_RELEASE_ENV: rocky-8.7
       when: distro == rocky-linux-8.6
 
 prepare:

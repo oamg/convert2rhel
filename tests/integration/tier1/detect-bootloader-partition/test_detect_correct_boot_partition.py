@@ -45,10 +45,10 @@ def test_detect_correct_boot_partition(convert2rhel):
     boot_device_name = get_device_name(boot_device)
     boot_partition = get_device_partition(boot_device)
 
-    rhel_version = "7"
+    rhel_version = "8"
 
-    if "centos-8" in SYSTEM_RELEASE or "oracle-8" in SYSTEM_RELEASE:
-        rhel_version = "8"
+    if "centos-7" in SYSTEM_RELEASE or "oracle-7" in SYSTEM_RELEASE:
+        rhel_version = "7"
 
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(

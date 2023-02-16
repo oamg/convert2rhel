@@ -20,7 +20,7 @@ def install_pkg(shell, pkgs=None):
     """
     if "centos-7" in SYSTEM_RELEASE_ENV:
         pkgs = COS_7_PKGS
-    elif "centos-8" in SYSTEM_RELEASE_ENV:
+    elif "centos-8" in SYSTEM_RELEASE_ENV or "rocky" in SYSTEM_RELEASE_ENV or "alma" in SYSTEM_RELEASE_ENV:
         pkgs = COS_8_PKGS
     elif "oracle-7" in SYSTEM_RELEASE_ENV:
         pkgs = OL_7_PKGS
@@ -49,7 +49,7 @@ def post_rollback_check(shell):
     """
     if "centos-7" in SYSTEM_RELEASE_ENV:
         is_installed(shell, COS_7_PKGS)
-    elif "centos-8" in SYSTEM_RELEASE_ENV:
+    elif "centos-8" in SYSTEM_RELEASE_ENV or "rocky" in SYSTEM_RELEASE_ENV or "alma" in SYSTEM_RELEASE_ENV:
         is_installed(shell, COS_8_PKGS)
     elif "oracle-7" in SYSTEM_RELEASE_ENV:
         is_installed(shell, OL_7_PKGS)

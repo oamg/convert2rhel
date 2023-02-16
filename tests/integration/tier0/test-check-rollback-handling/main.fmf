@@ -6,7 +6,7 @@ adjust+:
       when: distro == oraclelinux
     - environment+:
         PROMPT_AMOUNT: 4
-      when: distro == centos
+      when: distro != oraclelinux
       because: |
         There is one more user prompt asking for removal of python[3]?-syspurpose
 

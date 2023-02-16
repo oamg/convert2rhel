@@ -1,12 +1,3 @@
 ---
 - name: Overwrite CentOS repositories
   include: centos-repos.yml
-  when: ansible_facts["distribution"] == "CentOS"
-
-- name: Overwrite Alma Linux repositories
-  include: alma-repos.yml
-  when: ansible_facts["distribution"] == "AlmaLinux"
-
-- name: Overwrite RockyLinux repositories
-  include: rocky-repos.yml
-  when: ansible_facts["distribution"] == "Rocky"
