@@ -7,7 +7,7 @@ from multiprocessing import Pool
 import pytest
 
 from envparse import env
-
+from conftest import SYSTEM_RELEASE_ENV
 
 def get_latest_installed_kernel(kernel_name):
     """Utility function to get the latest installed kernel."""
@@ -31,7 +31,7 @@ def corrupt_initramfs_file(kernel_name):
 
 
 @pytest.mark.corrupted_initramfs_file
-def test_corrupted_initramfs_file(system_release, convert2rhel):
+def test_corrupted_initramfs_file(convert2rhel):
     """
     Verify if an output with a warning message is sent to the user in case of a
     corrupted initramfs file.
@@ -49,7 +49,7 @@ def test_corrupted_initramfs_file(system_release, convert2rhel):
         @lnykryn made an reproducer for the `cp` issue that can be seen here: https://gist.github.com/r0x0d/5d6a93c5827bd365e934f3d612fdafae
     """
     kernel_name = "kernel"
-    if "centos-8" in system_release or "oracle-8" in system_release:
+    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
         kernel_name = "kernel-core"
 
     with convert2rhel(
