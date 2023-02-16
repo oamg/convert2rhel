@@ -6,8 +6,9 @@ from multiprocessing import Pool
 
 import pytest
 
-from envparse import env
 from conftest import SYSTEM_RELEASE_ENV
+from envparse import env
+
 
 def get_latest_installed_kernel(kernel_name):
     """Utility function to get the latest installed kernel."""
