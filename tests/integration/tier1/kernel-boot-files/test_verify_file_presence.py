@@ -22,8 +22,6 @@ def test_check_boot_files_presence(convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        assert c2r.expect("Checking if vmlinuz file exists on the system.") == 0
-        assert c2r.expect("Checking if initiramfs file exists on the system.") == 0
-        assert c2r.expect("Initramfs and vmlinuz files exists and are valid.") == 0
+        assert c2r.expect("The initramfs and vmlinuz files are valid.") == 0
 
     assert c2r.exitstatus == 0

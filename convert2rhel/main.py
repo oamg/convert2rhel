@@ -132,7 +132,7 @@ def main():
         loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
         utils.remove_tmp_dir()
 
-        loggerinst.task("Final: Checking for kernel boot files")
+        loggerinst.task("Final: Check kernel boot files")
         checks.check_kernel_boot_files()
 
         breadcrumbs.breadcrumbs.finish_collection(success=True)

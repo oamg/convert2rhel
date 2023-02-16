@@ -388,7 +388,7 @@
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
-    
+
 /kernel_boot_files_check_boot_files_presence:
     discover+:
         test: checks-after-conversion

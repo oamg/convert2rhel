@@ -1615,34 +1615,10 @@ def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts
 
 
 @pytest.mark.parametrize(
-    ("create_file", "latest_installed_kernel", "expected"),
-    ((True, "6.1.7-200.fc37.x86_64", True), (False, "6.1.7-200.fc37.x86_64", False)),
-)
-def test_verify_vmlinuz_file(create_file, latest_installed_kernel, expected, tmpdir, monkeypatch):
-    if create_file:
-        vmlinuz_file = tmpdir.mkdir("/boot").join("vmlinuz-%s")
-        vmlinuz_file = str(vmlinuz_file)
-        with open(vmlinuz_file % latest_installed_kernel, mode="w") as handler:
-            handler.write(latest_installed_kernel)
-
-        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
-    else:
-        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", "/non-existing-%s")
-
-    result = checks._verify_vmlinuz_file(latest_installed_kernel)
-    assert result == expected
-
-
-def test_verify_initramfs_file_file_not_found(monkeypatch):
-    monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", "/non-existing-%s")
-    assert checks._verify_initramfs_file("6.1.7-200.fc37.x86_64") == False
-
-
-@pytest.mark.parametrize(
     ("latest_installed_kernel", "subprocess_output", "expected"),
     (("6.1.7-200.fc37.x86_64", ("test", 0), True), ("6.1.7-200.fc37.x86_64", ("error", 1), False)),
 )
-def test_verify_initramfs_file(latest_installed_kernel, subprocess_output, expected, tmpdir, caplog, monkeypatch):
+def test_is_initramfs_file_valid(latest_installed_kernel, subprocess_output, expected, tmpdir, caplog, monkeypatch):
     initramfs_file = tmpdir.mkdir("/boot").join("initramfs-%s.img")
     initramfs_file = str(initramfs_file)
     with open(initramfs_file % latest_installed_kernel, mode="w") as handler:
@@ -1650,7 +1626,7 @@ def test_verify_initramfs_file(latest_installed_kernel, subprocess_output, expec
 
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
     monkeypatch.setattr(checks, "run_subprocess", mock.Mock(return_value=subprocess_output))
-    result = checks._verify_initramfs_file(latest_installed_kernel)
+    result = checks._is_initramfs_file_valid(latest_installed_kernel)
     assert result == expected
 
     if not expected:
@@ -1679,7 +1655,7 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch):
     monkeypatch.setattr(checks, "run_subprocess", mock.Mock(side_effect=[rpm_last_kernel_output, ("test", 0)]))
 
     checks.check_kernel_boot_files()
-    assert "Initramfs and vmlinuz files exists and are valid." in caplog.records[-1].message
+    assert "The initramfs and vmlinuz files are valid." in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

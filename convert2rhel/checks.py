@@ -843,25 +843,21 @@ def check_dbus_is_running():
     )
 
 
-def _verify_initramfs_file(latest_installed_kernel):
-    """Internal function to handle the verification for initramfs file.
+def _is_initramfs_file_valid(filepath):
+    """Internal function to verify if a initramfs file is corrupted.
 
-    :param latest_installed_kernel: The version corresponding to the latest
-        installed kernel on the system.
-    :type latest_installed_kernel: str
-    :return: A boolean to determinate if there was any errors with the file or
-        not.
+    This method will rely on using lsinitrd to do the validation. If the
+    lsinitrd returns other value that is not 0, then it means that the file is
+    probably corrupted or may cause problems during the next reboot.
+
+    :param filepath: The path to the initramfs file.
+    :type filepath: str
+    :return: A boolean to determinate if the file is corrupted.
     :rtype: bool
     """
-    initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
-
-    if not os.path.exists(initramfs_file):
-        logger.warning("Couldn't find '%s' file.", initramfs_file)
-        return False
-
-    logger.info("Checking if the '%s' file is not corrupted.", initramfs_file)
+    logger.info("Checking if the '%s' file is not corrupted.", filepath)
     out, return_code = run_subprocess(
-        cmd=["/usr/bin/lsinitrd", initramfs_file],
+        cmd=["/usr/bin/lsinitrd", filepath],
         print_output=False,
     )
 
@@ -871,20 +867,6 @@ def _verify_initramfs_file(latest_installed_kernel):
         return False
 
     return True
-
-
-def _verify_vmlinuz_file(latest_installed_kernel):
-    """Internal function to handle the verification for vmlinuz file.
-
-    :param latest_installed_kernel: The version corresponding to the latest
-        installed kernel on the system.
-    :type latest_installed_kernel: str
-    :return: A boolean to determinate if there was any errors with the file or
-        not.
-    :rtype: bool
-    """
-    vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
-    return os.path.exists(vmlinuz_file)
 
 
 def check_kernel_boot_files():
@@ -905,14 +887,22 @@ def check_kernel_boot_files():
     latest_installed_kernel = output.split("\n")[0].split(" ")[0]
     latest_installed_kernel = latest_installed_kernel.split("%s-" % kernel_name)[-1]
     grub2_config_file = grub.get_grub_config_file()
+    initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
 
-    logger.info("Checking if vmlinuz file exists on the system.")
-    vmlinuz_exists = _verify_vmlinuz_file(latest_installed_kernel)
+    vmlinuz_exists = os.path.exists(VMLINUZ_FILEPATH % latest_installed_kernel)
 
-    logger.info("Checking if initiramfs file exists on the system.")
-    initramfs_exists = _verify_initramfs_file(latest_installed_kernel)
+    # We always set this value to True, as a way of having an initial value.
+    # Always assuming the good path.
+    is_initramfs_valid = True
+    if os.path.exists(initramfs_file):
+        is_initramfs_valid = _is_initramfs_file_valid(initramfs_file)
+    else:
+        # Change it to False as if we don't have an initramfs file, then we
+        # shift this value to also reach the below if-statement and output the
+        # warning message.
+        is_initramfs_valid = False
 
-    if not initramfs_exists or not vmlinuz_exists:
+    if not is_initramfs_valid or not vmlinuz_exists:
         logger.warning(
             "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
             "of your system.\nIn order to fix this problem you may need to free/increase space in your boot partition"
@@ -925,4 +915,4 @@ def check_kernel_boot_files():
             grub2_config_file,
         )
     else:
-        logger.info("Initramfs and vmlinuz files exists and are valid.")
+        logger.info("The initramfs and vmlinuz files are valid.")
