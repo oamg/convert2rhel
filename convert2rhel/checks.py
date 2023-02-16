@@ -889,7 +889,7 @@ def check_kernel_boot_files():
     grub2_config_file = grub.get_grub_config_file()
     initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
     vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
-    
+
     logger.debug("Checking if the '%s' file exists", vmlinuz_file)
     vmlinuz_exists = os.path.exists(vmlinuz_file)
     logger.debug("Result of vmlinuz presence: %s", vmlinuz_exists)
