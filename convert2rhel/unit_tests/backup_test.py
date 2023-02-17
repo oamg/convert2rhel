@@ -1,13 +1,12 @@
 import collections
 import os
-import sys
 import unittest
 
 import pytest
 import six
 
 from convert2rhel import backup, repo, unit_tests, utils  # Imports unit_tests/__init__.py
-from convert2rhel.unit_tests.conftest import all_systems, centos8
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -589,7 +588,6 @@ class TestRestorableRpmKey:
 
     def test_enable_already_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
         utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
-        previous_number_of_calls = len(run_subprocess_with_empty_rpmdb.called_with)
         rpm_key.enable()
 
         # Check that we did not call rpm to import the key

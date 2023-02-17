@@ -9,11 +9,8 @@ def _load_json_schema(path):
     """Load the JSON schema from the system."""
     assert os.path.exists(path)
 
-    # Python2 doesn't have the nice `with` syntax.
-    handler = open(path, "r")
-    data = json.load(handler)
-    handler.close()
-    return data
+    with open(path, mode="r") as handler:
+        return json.load(handler)
 
 
 C2R_MIGRATION_RESULTS_SCHEMA = _load_json_schema(path="artifacts/c2r_migration_results_schema.json")

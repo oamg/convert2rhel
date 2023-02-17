@@ -204,7 +204,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
     @unit_tests.mock(os.path, "getsize", GetSizeMocked(file_size=0))
     def test_clear_versionlock_plugin_not_enabled(self):
-        self.assertFalse(pkghandler.clear_versionlock())
+        pkghandler.clear_versionlock()
         self.assertEqual(len(pkghandler.loggerinst.info_msgs), 1)
         self.assertEqual(
             pkghandler.loggerinst.info_msgs,
@@ -1219,7 +1219,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_list_third_party_pkgs_no_pkgs(self):
         pkghandler.list_third_party_pkgs()
 
-        self.assertTrue("No third party packages installed" in pkghandler.loggerinst.info_msgs[0])
+        self.assertIn("No third party packages installed", pkghandler.loggerinst.info_msgs[0])
 
     @unit_tests.mock(
         pkghandler,
@@ -1233,14 +1233,14 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.list_third_party_pkgs()
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
-        self.assertTrue("Only packages signed by" in pkghandler.loggerinst.warning_msgs[0])
+        self.assertIn("Only packages signed by", pkghandler.loggerinst.warning_msgs[0])
 
     @unit_tests.mock(tool_opts, "disablerepo", ["*", "rhel-7-extras-rpm"])
     @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
     @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     def test_is_disable_and_enable_repos_has_same_repo(self):
         pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertTrue("Duplicate repositories were found" in pkghandler.loggerinst.warning_msgs[0])
+        self.assertIn("Duplicate repositories were found", pkghandler.loggerinst.warning_msgs[0])
 
     @unit_tests.mock(tool_opts, "disablerepo", ["*"])
     @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
@@ -1263,24 +1263,24 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
-        self.assertTrue(
-            "Detected leftover boot kernel, changing to RHEL kernel" in pkghandler.logging.getLogger.warning_msgs[0]
+        self.assertIn(
+            "Detected leftover boot kernel, changing to RHEL kernel", pkghandler.logging.getLogger.warning_msgs[0]
         )
-        self.assertTrue("/etc/sysconfig/kernel", utils.store_content_to_file.filename)
-        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
-        self.assertFalse("DEFAULTKERNEL=kernel-uek" in utils.store_content_to_file.content)
-        self.assertFalse("DEFAULTKERNEL=kernel-core" in utils.store_content_to_file.content)
+        self.assertIn("/etc/sysconfig/kernel", utils.store_content_to_file.filename)
+        self.assertIn("DEFAULTKERNEL=kernel", utils.store_content_to_file.content)
+        self.assertNotIn("DEFAULTKERNEL=kernel-uek", utils.store_content_to_file.content)
+        self.assertNotIn("DEFAULTKERNEL=kernel-core", utils.store_content_to_file.content)
 
         system_info.name = "Oracle Linux Server release 8.1"
         system_info.version = namedtuple("Version", ["major", "minor"])(8, 1)
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
-        self.assertTrue(
-            "Detected leftover boot kernel, changing to RHEL kernel" in pkghandler.logging.getLogger.warning_msgs[0]
+        self.assertIn(
+            "Detected leftover boot kernel, changing to RHEL kernel", pkghandler.logging.getLogger.warning_msgs[0]
         )
-        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
-        self.assertFalse("DEFAULTKERNEL=kernel-uek" in utils.store_content_to_file.content)
+        self.assertIn("DEFAULTKERNEL=kernel", utils.store_content_to_file.content)
+        self.assertNotIn("DEFAULTKERNEL=kernel-uek", utils.store_content_to_file.content)
 
     @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
@@ -1297,8 +1297,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
         self.assertTrue("/etc/sysconfig/kernel", utils.store_content_to_file.filename)
-        self.assertTrue("DEFAULTKERNEL=kernel" in utils.store_content_to_file.content)
-        self.assertFalse("DEFAULTKERNEL=kernel-plus" in utils.store_content_to_file.content)
+        self.assertIn("DEFAULTKERNEL=kernel", utils.store_content_to_file.content)
+        self.assertNotIn("DEFAULTKERNEL=kernel-plus", utils.store_content_to_file.content)
 
     @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")

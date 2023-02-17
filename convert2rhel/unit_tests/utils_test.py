@@ -61,21 +61,6 @@ class TestUtils(unittest.TestCase):
             self.called += 1
             return self.output, self.ret_code
 
-    class DummyGetUID(unit_tests.MockFunction):
-        def __init__(self, uid):
-            self.uid = uid
-
-        def __call__(self, *args, **kargs):
-            return self.uid
-
-    @unit_tests.mock(os, "geteuid", DummyGetUID(1000))
-    def test_require_root_is_not_root(self):
-        self.assertRaises(SystemExit, utils.require_root)
-
-    @unit_tests.mock(os, "geteuid", DummyGetUID(0))
-    def test_require_root_is_root(self):
-        self.assertEqual(utils.require_root(), None)
-
     def test_run_subprocess(self):
         output, code = utils.run_subprocess(["echo", "foobar"])
 
@@ -257,7 +242,7 @@ def test_run_cmd_in_pty_quiet_options(print_cmd, print_output, global_tool_opts,
     caplog.set_level(logging.DEBUG)
 
     with capfd.disabled():
-        output, code = utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
+        utils.run_cmd_in_pty(["echo", "foo bar"], print_cmd=print_cmd, print_output=print_output)
 
     expected_count = 0
     if print_cmd:
@@ -305,7 +290,7 @@ def test_run_cmd_in_pty_size_set(columns, capfd, tmpdir):
     # Need to disable capfd because pytest capturing interferes with pexpect-2.3's ability to set
     # the pty size before starting the program.
     with capfd.disabled():
-        output, return_code = utils.run_cmd_in_pty([sys.executable, str(tmpdir / "terminal-test.py")], columns=columns)
+        output, _ = utils.run_cmd_in_pty([sys.executable, str(tmpdir / "terminal-test.py")], columns=columns)
 
     assert int(output.strip()) == columns
 
@@ -351,7 +336,7 @@ def test_pexpectspawnwithdimensions_unknown_typeerror():
     # Our compat class handles TypeError caused by passing dimensions.  Check
     # that TypeError caused by something else re-raises the TypeError.
     with pytest.raises(TypeError, match=".*got an unexpected keyword argument 'unknown'"):
-        _dummy = utils.PexpectSpawnWithDimensions("/bin/true", [], unknown=False)
+        utils.PexpectSpawnWithDimensions("/bin/true", [], unknown=False)
 
 
 def test_get_package_name_from_rpm(monkeypatch):
@@ -875,3 +860,27 @@ def test_run_subprocess_env(monkeypatch):
     output, rc = utils.run_subprocess(["echo", "foobar"])
     assert u"test of nonascii output: café" == output
     assert 0 == rc
+
+
+class DummyGetUID(unit_tests.MockFunction):
+    def __init__(self, uid):
+        self.uid = uid
+
+    def __call__(self, *args, **kargs):
+        return self.uid
+
+
+def test_require_root_is_not_root(monkeypatch, capsys):
+    monkeypatch.setattr(os, "geteuid", DummyGetUID(1000))
+    with pytest.raises(SystemExit):
+        utils.require_root()
+
+    assert "The tool needs to be run under the root user." in capsys.readouterr().out
+
+
+def test_require_root_is_root(monkeypatch):
+    monkeypatch.setattr(os, "geteuid", DummyGetUID(0))
+    exit_mock = mock.Mock(return_value=1)
+    monkeypatch.setattr(sys, "exit", exit_mock)
+    utils.require_root()
+    assert exit_mock.call_count == 0

@@ -16,29 +16,6 @@ if sys.version_info[:2] <= (2, 7):
 else:
     from unittest import mock  # pylint: disable=no-name-in-module
 
-try:
-    from pytest_catchlog import CompatLogCaptureFixture
-
-    class SubCompatLogCaptureFixture(CompatLogCaptureFixture):
-        @property
-        def messages(self):
-            return [r.getMessage() for r in self.records]
-
-    @pytest.fixture
-    def caplog(request):
-        """Access and control log capturing.
-        Captured logs are available through the following properties/methods::
-        * caplog.messages        -> list of format-interpolated log messages
-        * caplog.text            -> string containing formatted log output
-        * caplog.records         -> list of logging.LogRecord instances
-        * caplog.record_tuples   -> list of (logger_name, level, message) tuples
-        * caplog.clear()         -> clear captured records and formatted log output string
-        """
-        return SubCompatLogCaptureFixture(request.node)
-
-except ImportError:
-    pass
-
 # We are injecting a instance of `mock.Mock()` for `Depsolve` class and
 # `callback` module, as when we run the tests under CentOS 7, it fails by saying
 # that `pkgmanager.callback.Depsolve` can't be imported as it is an import from
