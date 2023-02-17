@@ -6,10 +6,9 @@ description: |
 adjust+:
     - environment+:
         PROMPT_AMOUNT: 2
-      when: distro != oraclelinux-8
     - environment+:
         PROMPT_AMOUNT: 1
-      when: distro == oraclelinux-8
+      when: distro == oraclelinux-8, almalinux
 
 tier: 1
 

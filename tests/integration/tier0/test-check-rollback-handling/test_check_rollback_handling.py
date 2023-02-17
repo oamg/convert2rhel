@@ -8,53 +8,48 @@ OL_7_PKGS = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
 OL_8_PKGS = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
 COS_7_PKGS = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
 COS_8_PKGS = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
+ALM_8_PKGS = ["almalinux-release", "usermode", "rhn-setup", "python3-syspurpose", "almalinux-logos"]
+ROC_8_PKGS = ["rocky-release", "usermode", "rhn-setup", "python3-syspurpose", "rocky-logos"]
 # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
 # and Oracle Linux 8.2 respectively.
 
+RELEASE_MAPPING = {
+    "centos-7": COS_7_PKGS,
+    "centos-8": COS_8_PKGS,
+    "oracle-7": OL_7_PKGS,
+    "oracle-8": OL_8_PKGS,
+    "alma-8": ALM_8_PKGS,
+    "rocky-8": ROC_8_PKGS,
+}
 
-def install_pkg(shell, pkgs=None):
+RELEASE_KEY = SYSTEM_RELEASE_ENV
+
+if "." in SYSTEM_RELEASE_ENV:
+    RELEASE_KEY = SYSTEM_RELEASE_ENV.split(".")[0]
+
+PACKAGES = RELEASE_MAPPING.get(RELEASE_KEY)
+
+
+def install_pkg(shell):
     """
     Helper function.
     Install packages that cause trouble/needs to be checked during/after rollback.
     Some packages were removed during the conversion and were not backed up/installed back when the rollback occurred.
     """
-    if "centos-7" in SYSTEM_RELEASE_ENV:
-        pkgs = COS_7_PKGS
-    elif "centos-8" in SYSTEM_RELEASE_ENV or "rocky" in SYSTEM_RELEASE_ENV or "alma" in SYSTEM_RELEASE_ENV:
-        pkgs = COS_8_PKGS
-    elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        pkgs = OL_7_PKGS
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        pkgs = OL_8_PKGS
-    for pkg in pkgs:
+    for pkg in PACKAGES:
         print(f"PREP: Setting up {pkg}")
         assert shell(f"yum install -y {pkg}").returncode == 0
-
-
-def is_installed(shell, pkgs=None):
-    """
-    Helper function.
-    Iterate over list of packages and verify that untracked packages stay installed after the rollback.
-    """
-    for pkg in pkgs:
-        print(f"CHECK: Checking for {pkg}")
-        query = shell(f"rpm -q {pkg}")
-        assert f"{pkg} is not installed" not in query.output
 
 
 def post_rollback_check(shell):
     """
     Helper function.
-    Provide respective packages to the is_installed() helper function.
+    Iterate over list of packages and verify that untracked packages stay installed after the rollback.
     """
-    if "centos-7" in SYSTEM_RELEASE_ENV:
-        is_installed(shell, COS_7_PKGS)
-    elif "centos-8" in SYSTEM_RELEASE_ENV or "rocky" in SYSTEM_RELEASE_ENV or "alma" in SYSTEM_RELEASE_ENV:
-        is_installed(shell, COS_8_PKGS)
-    elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        is_installed(shell, OL_7_PKGS)
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        is_installed(shell, OL_8_PKGS)
+    for pkg in PACKAGES:
+        print(f"CHECK: Checking for {pkg}")
+        query = shell(f"rpm -q {pkg}")
+        assert f"{pkg} is not installed" not in query.output
 
 
 def terminate_and_assert_good_rollback(c2r):

@@ -218,7 +218,7 @@ class ConfigUtils:
 @pytest.fixture()
 def c2r_config(os_release):
     """ConfigUtils object with already loaded convert2rhel config."""
-    release_id2conf = {"centos": "centos", "ol": "oracle"}
+    release_id2conf = {"centos": "centos", "ol": "oracle", "almalinux": "almalinux", "rocky": "rocky"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")
         / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"

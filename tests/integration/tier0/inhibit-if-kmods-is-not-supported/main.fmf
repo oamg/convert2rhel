@@ -7,10 +7,10 @@ adjust+:
     # TODO (danmyway) after the merge of the tier0 refactor disable just the force load kmod test
     - environment+:
         PROMPT_AMOUNT: 4
-      when: distro == centos-8, alma, rocky
+      when: distro == centos-8, rocky-linux-8
     - environment+:
         PROMPT_AMOUNT: 3
-      when: distro == centos-7, oraclelinux-7
+      when: distro == centos-7, oraclelinux-7, almalinux-os-8
     - environment+:
         PROMPT_AMOUNT: 2
       when: distro == oraclelinux-8

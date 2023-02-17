@@ -92,6 +92,10 @@ def test_custom_kernel(convert2rhel, shell):
     os_vendor = "CentOS"
     if "oracle" in SYSTEM_RELEASE_ENV:
         os_vendor = "Oracle"
+    elif "alma" in SYSTEM_RELEASE_ENV:
+        os_vendor = "AlmaLinux"
+    elif "rocky" in SYSTEM_RELEASE_ENV:
+        os_vendor = "Rocky"
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         install_custom_kernel(shell)

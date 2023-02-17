@@ -26,12 +26,12 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
 
     # Move all repos to other location, so it is not being used
     assert shell("mkdir /tmp/s_backup").returncode == 0
-    assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
+    assert shell("mv -v /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardcoded repos from c2r as well
     if "centos-8" in SYSTEM_RELEASE_ENV:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
-        assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
+        assert shell("mv -v /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     # Since we are moving all repos away, we need to bypass kernel check
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
@@ -77,10 +77,13 @@ def test_backup_os_release_with_envar(shell, convert2rhel):
     assert shell("find /etc/os-release").returncode == 0
 
     # Return repositories to their original location
-    assert shell("mv /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
+    assert shell("mv -v /tmp/s_backup/* /etc/yum.repos.d/").returncode == 0
 
     if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell("mv /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
+        assert shell("mv -v /tmp/s_backup_eus/* /usr/share/convert2rhel/repos/").returncode == 0
+    # The conversion is not canceled fast enough, we need to install some removed packages back
+    elif "alma-8" in SYSTEM_RELEASE_ENV:
+        assert shell("yum install -y --enablerepo=baseos --releasever=8.7 almalinux-release-8*").returncode == 0
 
     # Clean up
     del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
@@ -108,7 +111,7 @@ def test_missing_system_release(shell, convert2rhel):
     """
 
     # Make backup copy of the file
-    assert shell("mv /etc/system-release /tmp/s_backup/").returncode == 0
+    assert shell("mv -v /etc/system-release /tmp/s_backup/").returncode == 0
 
     with convert2rhel(
         "-y --no-rpm-va -k {} -o {} --debug".format(
@@ -121,4 +124,4 @@ def test_missing_system_release(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
     # Restore the system
-    assert shell("mv /tmp/s_backup/system-release /etc/").returncode == 0
+    assert shell("mv -v /tmp/s_backup/system-release /etc/").returncode == 0

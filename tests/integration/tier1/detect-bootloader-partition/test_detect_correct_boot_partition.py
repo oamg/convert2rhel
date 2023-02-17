@@ -14,19 +14,19 @@ SYSTEM_RELEASE = platform.platform()
 
 
 def get_boot_device():
-    """Utillity function to get the device that the `EFI_BOOT_MOUNTPOINT` lives in."""
+    """Utility function to get the device that the `EFI_BOOT_MOUNTPOINT` lives in."""
     device = subprocess.check_output(["grub2-probe", "--target=device", EFI_BOOT_MOUNTPOINT])
     return device.decode().strip()
 
 
 def get_device_name(device):
-    """Utillity function to get a device name only, without the partition number."""
+    """Utility function to get a device name only, without the partition number."""
     name = subprocess.check_output(["lsblk", "-spnlo", "name", device])
     return name.decode().strip().splitlines()[-1].strip()
 
 
 def get_device_partition(device):
-    """Utillity function to retrieve the boot partition for a given device."""
+    """Utllity function to retrieve the boot partition for a given device."""
     partition = subprocess.check_output(["blkid", "-p", "-s", "PART_ENTRY_NUMBER", device])
     partition = partition.decode().strip()
     return partition.rsplit("PART_ENTRY_NUMBER=", maxsplit=1)[-1].replace('"', "")
@@ -60,7 +60,7 @@ def test_detect_correct_boot_partition(convert2rhel):
     ) as c2r:
         assert c2r.expect("Calling command '/usr/sbin/blkid -p -s PART_ENTRY_NUMBER %s'" % boot_device) == 0
 
-        # This assertation should always match what comes from boot_partition.
+        # This assertion should always match what comes from boot_partition.
         assert c2r.expect("Block device: %s" % boot_device_name) == 0
         assert c2r.expect("ESP device number: %s" % boot_partition) == 0
 

@@ -76,9 +76,17 @@
     adjust+:
         - enabled: false
           when: >
-            distro == oraclelinux or distro == centos-7
-    environment+:
-        PACKAGES: centos-backgrounds centos-gpg-keys
+            distro == oraclelinux, centos-7
+        - environment+:
+            PACKAGES: centos-backgrounds centos-gpg-keys
+          when: distro == centos-8
+        - environment+:
+            PACKAGES: almalinux-backgrounds
+          when: distro == almalinux-os-8
+          because: No almalinux-gpg-keys package for release 8 available
+        - environment+:
+            PACKAGES: rocky-backgrounds rocky-gpg-keys
+          when: distro == rocky-linux-8
     discover+:
         test: checks-after-conversion
     prepare+:
@@ -111,10 +119,9 @@
     adjust+:
         - environment+:
             PROMPT_AMOUNT: 2
-          when: distro != oraclelinux-8
         - environment+:
             PROMPT_AMOUNT: 1
-          when: distro == oraclelinux-8
+          when: distro == oraclelinux-8, almalinux
     prepare+:
         - name: test no sub manager installed
           how: shell
@@ -130,6 +137,11 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /resolve_dependency:
+    adjust+:
+        - enabled: false
+          when: distro == almalinux, rocky
+          because: |
+            We do not have any tracked packages with dependency issues for these releases.
     discover+:
         test: checks-after-conversion
     prepare+:

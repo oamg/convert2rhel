@@ -20,7 +20,7 @@ tag+:
 /transaction_validation_error:
     adjust+:
         - enabled: false
-          when: distro == centos-8 or distro == oraclelinux-8
+          when: distro == centos-8, oraclelinux-8, almalinux-os-8, rocky-linux-8
     tag+:
         - transaction-validation-error
     test: |

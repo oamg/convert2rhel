@@ -34,3 +34,9 @@ def test_install_one_kernel(shell):
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
         assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
         shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
+    elif "alma-8" in SYSTEM_RELEASE_ENV:
+        assert shell("yum install kernel-4.18.0-425.3.1.el8.x86_64 -y")
+        shell("grub2-set-default 'AlmaLinux (4.18.0-425.3.1.el8.x86_64) 8.7 (Stone Smilodon)'")
+    elif "rocky-8" in SYSTEM_RELEASE_ENV:
+        assert shell("yum install kernel-4.18.0-425.3.1.el8.x86_64 -y")
+        shell("grub2-set-default 'Rocky Linux (4.18.0-425.3.1.el8.x86_64) 8.7 (Green Obsidian)'")

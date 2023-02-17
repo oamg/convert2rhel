@@ -52,6 +52,10 @@ def test_package_download_error(convert2rhel):
 
     if "oracle" in SYSTEM_RELEASE_ENV:
         server_sub = "Oracle Linux Server"
+    elif "alma" in SYSTEM_RELEASE_ENV:
+        server_sub = "AlmaLinux"
+    elif "rocky" in SYSTEM_RELEASE_ENV:
+        server_sub = "Rocky Linux"
 
     if "8" in SYSTEM_RELEASE_ENV:
         pkgmanager = "dnf"
@@ -78,7 +82,7 @@ def test_transaction_validation_error(convert2rhel):
     Remove the entitlement certs found at /etc/pki/entitlement during transaction
     processing to throw the following yum error: pkgmanager.Errors.YumDownloadError
 
-    This will run the conversion up to the point where we valiate the
+    This will run the conversion up to the point where we validate the
     transaction, when it reaches a specific point of the validation, we remove
     the entitlement certs found in /etc/pki/entitlement/*.pem to ensure that the
     tool is doing a proper rollback when the transaction is being processed.

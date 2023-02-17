@@ -1,3 +1,5 @@
+import re
+
 from conftest import SYSTEM_RELEASE_ENV
 
 
@@ -9,7 +11,7 @@ def test_use_non_english_language(shell):
     """
     # install Chinese language pack for CentOS-8 and Oracle Linux 8
 
-    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(centos|oracle|alma|rocky)-8\.\d$", SYSTEM_RELEASE_ENV):
         assert shell("dnf install glibc-langpack-zh -y").returncode == 0
 
     # set locale variables that affect translations to Chinese
