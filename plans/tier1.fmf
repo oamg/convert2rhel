@@ -389,7 +389,7 @@
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
-/kernel_boot_files_missing_boot_files:
+/kernel_boot_files_missing_initramfs_and_vmlinuz:
     discover+:
         filter: tag:checks-after-conversion & tag:-initramfs-and-vmlinuz-present
     prepare+:

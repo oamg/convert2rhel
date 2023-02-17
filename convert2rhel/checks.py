@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Copyright(C) 2016 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -857,7 +855,6 @@ def _is_initramfs_file_valid(filepath):
     """
     logger.info("Checking if the '%s' file is valid.", filepath)
 
-    logger.debug("Checking if the '%s' file exists.", filepath)
     if not os.path.exists(filepath):
         logger.info("The initramfs file is not present.")
         return False
