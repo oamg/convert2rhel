@@ -12,10 +12,12 @@ changelog:
     - title: Enhancements 🎉
       labels:
         - enhancement
-        - "*"
     - title: Security Hardening 🔒
       labels:
         - security-hardening
     - title: Bug Fixes 🐛
       labels:
         - bug-fix
+    - title: Other Changes
+      labels:
+        - "*"
