@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.1
+Version:        1.2
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -124,6 +124,26 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon Feb 22 2023 Eric Gustavsson <egustavs@redhat.com> 1.2
+- Remove RHEL 6 conversion capability
+- Check for kernel boot files after conversion
+- Allow overriding the kernel module inhibitor
+- Remove shim-x64 related workaround for Oracle Linux 7
+- Always print the RHSM rollback task "title"
+- Verify both RHSM org and key is passed
+- Improve logging and handling of RHSM facts
+- Change the debug FILE label in log file to DEBUG
+- Add progress indicators for the main package replacement
+- Man/help page to mention config file location
+- Enable opt out for telemetry
+- Hide RHSM username and org from logs and breadcrumbs
+- Fix conversion with "LANGUAGE" envar
+- Deduplicate log messages about imported keys
+- Update address for internet connection check
+- Fix a traceback when checking if the latest kernel is loaded
+- Make TASK log messages consistent
+- Fix partition number usage when creating RHEL UEFI bootloader entry
+
 * Wed Nov 30 2022 Eric Gustavsson <egustavs@redhat.com> 1.1
 - Add RHEL 8.6 among the supported EUS minor versions
 - Merge yum transactions into a single one to improve stability
