@@ -242,9 +242,6 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /system_up_to_date:
-    # There are no minor version repositories for Oracle Linux EUS releases, so we skip the check for up-to-date system.
-    # The other distributions (including latest Oracle Linux 8) have all the necessary repositories
-    # to make the check possible.
     discover+:
         test: checks-after-conversion
     prepare+:

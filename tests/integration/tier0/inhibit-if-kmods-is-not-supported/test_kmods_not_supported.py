@@ -51,7 +51,7 @@ def test_inhibit_if_custom_module_loaded(insert_custom_kmod, convert2rhel):
 @pytest.mark.unsupported_kmod_with_envar
 def test_envar_overrides_unsupported_module_loaded(insert_custom_kmod, convert2rhel, prompt_amount=PROMPT_AMOUNT):
     """
-    This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"
+    This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
     will override the inhibition when there is RHEL unsupported kernel module detected.
 
     TODO(danmyway) after merging PR619 add the reference links to test metadata.
@@ -59,7 +59,7 @@ def test_envar_overrides_unsupported_module_loaded(insert_custom_kmod, convert2r
     Verifies https://github.com/oamg/convert2rhel/pull/613/
     """
     insert_custom_kmod()
-    os.environ["CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"] = "1"
+    os.environ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"] = "1"
 
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -74,14 +74,14 @@ def test_envar_overrides_unsupported_module_loaded(insert_custom_kmod, convert2r
             c2r.sendline("y")
             prompt_amount -= 1
 
-        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable")
-        c2r.expect("We will continue the conversion, with the following kernel modules")
+        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
+        c2r.expect("We will continue the conversion with the following kernel modules")
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
     assert c2r.exitstatus != 0
 
-    del os.environ["CONVERT2RHEL_ALLOW_UNCHECKED_KMODS"]
+    del os.environ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"]
 
 
 def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel, prompt_amount=PROMPT_AMOUNT):
