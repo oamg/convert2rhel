@@ -273,7 +273,6 @@ def run_subprocess_side_effect(*stubs):
     >>>         (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
     >>>     )
     >>> )
-
     """
 
     def factory(*args, **kwargs):

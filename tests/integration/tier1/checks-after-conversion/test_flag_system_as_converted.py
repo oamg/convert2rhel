@@ -2,6 +2,7 @@ import json
 import os
 
 import jsonschema
+import pytest
 
 
 def _load_json_schema(path):
@@ -22,6 +23,7 @@ C2R_MIGRATION_RESULTS = "/etc/migration-results"
 C2R_RHSM_CUSTOM_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
+@pytest.mark.flag_system_as_converted
 def test_flag_system_as_converted(shell):
     """Test if the breadcrumbs file was created and corresponds to the JSON schema."""
 

@@ -591,6 +591,23 @@ def post_ponr_set_efi_configuration():
         _log_critical_error(e.message)
 
 
+def get_grub_config_file():
+    """Get the grub config file path.
+
+    This method will return the grub config file, depending if it is BIOS or
+    UEFI, the method will handle that automatically.
+
+    :return: The path to the grub config file.
+    :rtype: str
+    """
+    grub_config_path = GRUB2_BIOS_CONFIG_FILE
+
+    if is_efi():
+        grub_config_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
+
+    return grub_config_path
+
+
 def update_grub_after_conversion():
     """Update GRUB2 images and config after conversion.
 
@@ -611,7 +628,7 @@ def update_grub_after_conversion():
     backup.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
     backup.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()
 
-    grub2_config_file = GRUB2_BIOS_CONFIG_FILE if not is_efi() else os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
+    grub2_config_file = get_grub_config_file()
 
     output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False)
     logger.debug("Output of the grub2-mkconfig call:\n%s" % output)

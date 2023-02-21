@@ -1,6 +1,9 @@
 import json
 
+import pytest
 
+
+@pytest.mark.basic_conversion
 def test_basic_conversion(shell):
     os_release = shell("cat /etc/os-release").output
     assert "Red Hat Enterprise Linux" in os_release
@@ -19,6 +22,7 @@ DISTRO_CONVERSION_MAPPING = {
 }
 
 
+@pytest.mark.correct_distro
 def test_correct_distro():
     """ "
     Check that we landed on the correct version
