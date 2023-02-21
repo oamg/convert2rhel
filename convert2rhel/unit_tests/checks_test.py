@@ -446,7 +446,7 @@ def test_ensure_compatibility_of_kmods_check_env(
     caplog,
 ):
 
-    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_UNCHECKED_KMODS": "1"})
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS": "1"})
     monkeypatch.setattr(checks, "get_loaded_kmods", mock.Mock(return_value=HOST_MODULES_STUB_BAD))
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
@@ -463,8 +463,8 @@ def test_ensure_compatibility_of_kmods_check_env(
 
     checks.ensure_compatibility_of_kmods()
     should_be_in_logs = (
-        ".*Detected 'CONVERT2RHEL_ALLOW_UNCHECKED_KMODS' environment variable."
-        " We will continue the conversion, with the following kernel modules:.*"
+        ".*Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
+        " We will continue the conversion with the following kernel modules unavailable in RHEL:.*"
     )
     assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
 
