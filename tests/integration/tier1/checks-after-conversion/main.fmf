@@ -5,9 +5,40 @@ description: |
     the "Red Hat Enterprise Linux" string.
 
 tier: 1
-test: pytest -svv
+
+tag+:
+    - checks-after-conversion
 
 link:
   - https://issues.redhat.com/browse/RHELC-664
   - https://issues.redhat.com/browse/RHELC-411
   - https://issues.redhat.com/browse/RHELC-291
+
+/delete_temporary_folder:
+    test: pytest -svv -m delete_temporary_folder
+
+/enabled_repositories:
+    test: pytest -svv -m enabled_repositories
+
+/flag_system_as_converted:
+    test: pytest -svv -m flag_system_as_converted
+
+/basic_conversion:
+    test: pytest -svv -m basic_conversion
+
+/correct_distro:
+    test: pytest -svv -m correct_distro
+
+/rhel_kernel:
+    test: pytest -svv -m rhel_kernel
+
+/yum_check:
+    test: pytest -svv -m yum_check
+
+/verify_string_in_log:
+    tag+:
+        - verify-string-in-log
+    /initramfs_and_vmlinuz_present:
+        tag+:
+            - initramfs-and-vmlinuz-present
+        test: pytest -svv -m initramfs_and_vmlinuz_present

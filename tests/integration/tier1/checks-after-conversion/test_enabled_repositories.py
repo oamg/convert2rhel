@@ -1,5 +1,7 @@
 import os.path
 
+import pytest
+
 
 def _check_enabled_repos_rhel8(enabled_repos):
     """Helper function to assert RHEL repositories."""
@@ -19,6 +21,7 @@ def _check_eus_enabled_repos_rhel8(enabled_repos):
     assert appstream_repo in enabled_repos
 
 
+@pytest.mark.enabled_repositories
 def test_enabled_repositories(shell, system_release):
     """Testing, if the EUS repostitories are enabled after conversion"""
 

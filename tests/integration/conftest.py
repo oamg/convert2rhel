@@ -291,3 +291,17 @@ def config_at():
         return ConfigUtils(path)
 
     return factory
+
+
+@pytest.fixture()
+def log_file_data():
+    """
+    This fixture reads and returns data from the convert2rhel.log file.
+    Mainly used for after conversion checks, where we match required strings to the log output.
+    """
+    convert2rhel_log_file = "/var/log/convert2rhel/convert2rhel.log"
+
+    with open(convert2rhel_log_file, "r") as logfile:
+        log_data = logfile.read()
+
+        return log_data
