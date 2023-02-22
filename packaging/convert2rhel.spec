@@ -124,7 +124,7 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
-* Mon Feb 22 2023 Eric Gustavsson <egustavs@redhat.com> 1.2
+* Wed Feb 22 2023 Eric Gustavsson <egustavs@redhat.com> 1.2
 - Remove RHEL 6 conversion capability
 - Check for kernel boot files after conversion
 - Allow overriding the kernel module inhibitor
