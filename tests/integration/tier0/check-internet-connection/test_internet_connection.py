@@ -51,7 +51,9 @@ def test_check_if_internet_connection_is_reachable(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect("Checking internet connectivity using address")
+        c2r.expect(
+            "Checking internet connectivity using address 'https://static.redhat.com/test/rhel-networkmanager.txt'"
+        )
         assert c2r.expect("internet connection seems to be available", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
@@ -73,7 +75,9 @@ def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect("Checking internet connectivity using address")
+        c2r.expect(
+            "Checking internet connectivity using address 'https://static.redhat.com/test/rhel-networkmanager.txt'"
+        )
         assert c2r.expect("There was a problem while trying to connect to", timeout=300) == 0
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
