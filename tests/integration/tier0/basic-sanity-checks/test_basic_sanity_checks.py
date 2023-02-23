@@ -272,11 +272,10 @@ def test_disable_data_collection(shell, convert2rhel):
     """
     This test verifies functionality of CONVERT2RHEL_DISABLE_TELEMETRY envar.
     The data collection should be disabled, therefore convert2rhel.facts file should not get created.
+    The environment variable is set by tmt test metadata.
     """
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
-    # Set envar to disable data collection
-    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0

@@ -28,12 +28,12 @@ def remove_entitlement_certs():
 
 
 @pytest.mark.package_download_error
-def test_package_download_error(convert2rhel):
+def test_package_download_error(convert2rhel, shell):
     """
     Remove the entitlement certs found at /etc/pki/entitlement during package
     download phase for both yum and dnf transactions.
 
-    This will run the conversion up to the point where we valiate the
+    This will run the conversion up to the point where we validate the
     transaction, when it reaches a specific point of the validation, we remove
     the entitlement certs found in /etc/pki/entitlement/*.pem to ensure that the
     tool is doing a proper rollback when there is any failure during the package
@@ -44,6 +44,9 @@ def test_package_download_error(convert2rhel):
     has a specific method that process and download the packages in the
     transaction.
     """
+    # We need to clean packages downloaded by the previous test runs
+    # to correctly reproduce the transaction validation download fail
+    assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
 
     server_sub = "CentOS Linux"
     pkgmanager = "yum"
@@ -64,6 +67,7 @@ def test_package_download_error(convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
+        c2r.expect("Validate the {} transaction".format(pkgmanager))
         c2r.expect("Adding {} packages to the {} transaction set.".format(server_sub, pkgmanager))
         remove_entitlement_certs()
         assert c2r.expect_exact(final_message, timeout=600) == 0
@@ -72,16 +76,20 @@ def test_package_download_error(convert2rhel):
 
 
 @pytest.mark.transaction_validation_error
-def test_transaction_validation_error(convert2rhel):
+def test_transaction_validation_error(convert2rhel, shell):
     """
     Remove the entitlement certs found at /etc/pki/entitlement during transaction
     processing to throw the following yum error: pkgmanager.Errors.YumDownloadError
 
-    This will run the conversion up to the point where we valiate the
+    This will run the conversion up to the point where we validate the
     transaction, when it reaches a specific point of the validation, we remove
     the entitlement certs found in /etc/pki/entitlement/*.pem to ensure that the
     tool is doing a proper rollback when the transaction is being processed.
     """
+    # We need to clean packages downloaded by the previous test runs
+    # to correctly reproduce the transaction validation download fail
+    assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
+
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),

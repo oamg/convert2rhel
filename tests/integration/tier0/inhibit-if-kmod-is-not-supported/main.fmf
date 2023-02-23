@@ -51,3 +51,27 @@ tag+:
         - tainted-kernel
     test: |
         pytest -svv -m tainted_kernel
+
+
+/unsupported_kmod_with_envar:
+    adjust+:
+        - environment+:
+            CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+        - environment+:
+            PROMPT_AMOUNT: 6
+          when: distro == centos-8-latest
+        - environment+:
+            PROMPT_AMOUNT: 5
+          when: distro == centos-8.4, centos-7
+        - environment+:
+            PROMPT_AMOUNT: 4
+          when: distro == oraclelinux-7
+        - environment+:
+            PROMPT_AMOUNT: 3
+          when: distro == oraclelinux-8
+    tag+:
+        - unsupported-kmod-with-envar
+    test: |
+        pytest -svv -m unsupported_kmod_with_envar
+    link:
+        verifies: https://issues.redhat.com/browse/RHELC-244

@@ -74,3 +74,18 @@ tag+:
         - variant-message
     test: |
       pytest -svv -m variant_message
+
+/data_collection_acknowledgement:
+    tag+:
+        - data-collection-acknowledgement
+    test: |
+      pytest -svv -m data_collection_acknowledgement
+
+/disable_data_collection:
+    adjust+:
+        - environment+:
+            CONVERT2RHEL_DISABLE_TELEMETRY: 1
+    tag+:
+        - disable-data-collection
+    test: |
+      pytest -svv -m disable_data_collection
