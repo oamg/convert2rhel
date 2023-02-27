@@ -1,7 +1,5 @@
-summary: Verify behavior when user response is empty
-description: |
-    Verify the user response is enforced when username, password or organization prompts are passed as empty strings.
-    Verify, that passing username and password with just one subscription attached automatically selects the subscription.
+summary: |
+    User response is empty
 
 tier: 0
 
@@ -12,13 +10,25 @@ tag+:
     - check-user-response
 
 /empty_username_and_password:
+    summary+: |
+        Pass empty string for username and password
+    description+: |
+        Verify that the user is enforced to input a value and passing an empty string
+        loops back to the user prompt.
+        Verify for both username and password.
+        The functionality is generic enough, so there is no need to verify other prompts.
     tag+:
         - empty-username-and-password
     test: |
-      pytest -svv -m empty_username_and_password
+      pytest -svv -m test_empty_username_and_password
 
 /auto_attach_pool:
+    summary+: |
+        One subscription attached auto-selected
+    description+: |
+        Verify, that passing username and password with just one subscription attached
+        automatically selects the subscription.
     tag+:
         - auto-attach-pool
     test: |
-      pytest -svv -m auto_attach_pool
+      pytest -svv -m test_auto_attach_pool

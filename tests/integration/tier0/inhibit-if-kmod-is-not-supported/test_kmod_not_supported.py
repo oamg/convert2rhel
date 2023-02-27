@@ -59,7 +59,7 @@ def kmod_in_different_directory(shell):
     shell("depmod")
 
 
-@pytest.mark.custom_module_loaded
+@pytest.mark.test_custom_module_loaded
 def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, shell, convert2rhel):
     """
     This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
@@ -78,7 +78,7 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, shell, con
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.custom_module_not_loaded
+@pytest.mark.test_custom_module_not_loaded
 def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     """
     Load the kmod from custom location.
@@ -124,10 +124,10 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         assert c2r.exitstatus != 0
 
 
-@pytest.mark.force_loaded_kmod
+@pytest.mark.test_force_loaded_kmod
 def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     """
-    Test force loads kmod and verifies that Convert2RHEL run is being inhibited.
+    In this test case we force load kmod and verify that the convert2rhel run is inhibited.
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
@@ -149,10 +149,10 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     assert "(FE)" not in shell("cat /proc/modules").output
 
 
-@pytest.mark.tainted_kernel
+@pytest.mark.test_tainted_kernel
 def test_tainted_kernel_inhibitor(custom_kmod, shell, convert2rhel):
     """
-    This test marks the kernel as tainted which is not supported by Convert2RHEL.
+    This test marks the kernel as tainted which is not supported by convert2rhel.
     We need to install specific kernel packages to build own custom kernel module.
     """
 
@@ -169,7 +169,7 @@ def test_tainted_kernel_inhibitor(custom_kmod, shell, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.unsupported_kmod_with_envar
+@pytest.mark.test_unsupported_kmod_with_envar
 def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, convert2rhel):
     """
     This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"

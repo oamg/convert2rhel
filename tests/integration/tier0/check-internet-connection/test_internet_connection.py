@@ -43,7 +43,7 @@ def _restore_configuration_files():
         shutil.copy(RESOLV_CONF_BACKUP_FILE, RESOLV_CONF_FILE)
 
 
-@pytest.mark.available_connection
+@pytest.mark.test_available_connection
 def test_check_if_internet_connection_is_reachable(convert2rhel):
     """Test if convert2rhel can access the internet."""
     with convert2rhel("--no-rpm-va --debug") as c2r:
@@ -61,7 +61,7 @@ def test_check_if_internet_connection_is_reachable(convert2rhel):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.unavailable_connection
+@pytest.mark.test_unavailable_connection
 def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell):
     """Test a case where the internet connection is not reachable by any means."""
     assert shell("yum install dnsmasq -y").returncode == 0

@@ -5,7 +5,7 @@ import pytest
 from conftest import SYSTEM_RELEASE_ENV
 
 
-@pytest.mark.failed_repoquery
+@pytest.mark.test_failed_repoquery
 def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2rhel):
     """
     This test verifies, that failed repoquery is handled correctly.
@@ -47,7 +47,7 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
     assert shell(f"rm -f /etc/yum.repos.d/{repofile}.repo").returncode == 0
 
 
-@pytest.mark.yum_excld_kernel
+@pytest.mark.test_yum_excld_kernel
 def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel):
     """
     Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:

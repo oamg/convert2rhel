@@ -79,7 +79,7 @@ def teardown_custom_repositories(shell):
     assert shell(f"rm -f /etc/yum.repos.d/{AssignRepositoryVariables.repofile}.repo").returncode == 0
 
 
-@pytest.mark.valid_repo_provided
+@pytest.mark.test_valid_repo_provided
 def test_good_conversion_without_rhsm(shell, convert2rhel):
     """
     Verify, that --enablerepo is not skipped when subscription-manager is disabled.
@@ -98,7 +98,7 @@ def test_good_conversion_without_rhsm(shell, convert2rhel):
     teardown_custom_repositories(shell)
 
 
-@pytest.mark.invalid_repo_provided
+@pytest.mark.test_invalid_repo_provided
 def test_bad_conversion_without_rhsm(shell, convert2rhel):
     """
     Verify, that --enablerepo is not skipped when subscription-manager is disabled.

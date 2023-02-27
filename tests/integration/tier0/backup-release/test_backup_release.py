@@ -106,7 +106,7 @@ def teardown_repositories_and_cleanup(shell):
         shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8* redhat-release-8*")
 
 
-@pytest.mark.unsuccessful_satellite_registration
+@pytest.mark.test_unsuccessful_satellite_registration
 def test_backup_os_release_wrong_registration(shell, convert2rhel):
     """
     Verify that the os-release file is restored when the satellite registration fails.
@@ -133,7 +133,7 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel):
         shell("yum update -y librepo libxml2")
 
 
-@pytest.mark.missing_system_release
+@pytest.mark.test_missing_system_release
 def test_missing_system_release(shell, convert2rhel):
     """
     It is required to have /etc/system-release file present on the system.
@@ -160,7 +160,7 @@ def test_missing_system_release(shell, convert2rhel):
     assert shell(f"rm -rf {backup_folder}").returncode == 0
 
 
-@pytest.mark.no_envar
+@pytest.mark.test_backup_os_release_no_envar
 def test_backup_os_release_no_envar(shell, convert2rhel):
     """
     This test case removes all the repos on the system which prevents the backup of some files.
@@ -196,7 +196,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel):
     del os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"]
 
 
-@pytest.mark.with_envar
+@pytest.mark.test_backup_os_release_with_envar
 def test_backup_os_release_with_envar(shell, convert2rhel):
     """
     In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.

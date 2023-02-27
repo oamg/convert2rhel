@@ -86,7 +86,7 @@ def terminate_and_assert_good_rollback(c2r):
             assert "Rollback: Remove installed RHSM certificate" not in line
 
 
-@pytest.mark.rhsm_cleanup
+@pytest.mark.test_rhsm_cleanup
 def test_proper_rhsm_clean_up(shell, convert2rhel):
     """
     Verify that the system has been successfully unregistered after the rollback.
@@ -116,7 +116,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.packages_untracked_graceful_rollback
+@pytest.mark.test_packages_untracked_graceful_rollback
 def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     """
     Provide c2r with incorrect username and password, so the registration fails and c2r performs rollback.
@@ -132,14 +132,14 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.packages_untracked_forced_rollback
+@pytest.mark.test_packages_untracked_forced_rollback
 def test_check_untrack_pkgs_force(convert2rhel, shell):
     """
     Terminate the c2r process forcefully, so the rollback is performed.
     Primary issue - verify that python-syspurpose is not removed.
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    with convert2rhel(f"--debug -y --no-rpm-va") as c2r:
+    with convert2rhel("--debug -y --no-rpm-va") as c2r:
         c2r.expect("Username")
         # Due to inconsistent behaviour of 'Ctrl+c'
         # use 'Ctrl+d' instead
@@ -150,7 +150,7 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.terminate_on_registration
+@pytest.mark.test_terminate_on_registration
 def test_terminate_registration_start(convert2rhel):
     """
     Send termination signal immediately after c2r tries the registration.
@@ -168,7 +168,7 @@ def test_terminate_registration_start(convert2rhel):
         terminate_and_assert_good_rollback(c2r)
 
 
-@pytest.mark.terminate_on_username
+@pytest.mark.test_terminate_on_username
 def test_terminate_on_username_prompt(convert2rhel):
     """
     Send termination signal on the user prompt for username.
@@ -179,7 +179,7 @@ def test_terminate_on_username_prompt(convert2rhel):
         terminate_and_assert_good_rollback(c2r)
 
 
-@pytest.mark.terminate_on_password
+@pytest.mark.test_terminate_on_password
 def test_terminate_on_password_prompt(convert2rhel):
     """
     Send termination signal on the user prompt for password.
@@ -190,7 +190,7 @@ def test_terminate_on_password_prompt(convert2rhel):
         terminate_and_assert_good_rollback(c2r)
 
 
-@pytest.mark.terminate_on_subscription
+@pytest.mark.test_terminate_on_subscription
 def test_terminate_on_subscription_prompt(convert2rhel):
     """
     Send termination signal on the user prompt for subscription number.

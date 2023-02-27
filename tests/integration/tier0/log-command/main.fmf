@@ -1,6 +1,7 @@
-summary: Passed command at the top of a log file
+summary: |
+    Passed command at the top of a log file
 description: |
-    Verify log file is generated and the passed command is in first line of the log file.
+    Verify log file is generated and the passed command is in first lines of the log file.
 
 tier: 0
 
@@ -12,4 +13,4 @@ tag+:
     tag+:
         - logfile-starts-with-command
     test: |
-        pytest -svv -m logfile_starts_with_command
+        pytest -svv -m test_logfile_starts_with_command

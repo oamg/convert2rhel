@@ -1,6 +1,7 @@
-summary: Verify rollback correct behavior
+summary: |
+    Correct rollback behavior
 description: |
-    Terminate conversion at various points and verify that the rollback finishes successfully.
+    Terminate the conversion at various points and verify that the rollback finishes successfully.
     Verify that unnecessary packages are backed up and not removed.
 
 adjust+:
@@ -21,43 +22,83 @@ tag+:
     - check-rollback-handling
 
 /rhsm_cleanup:
+    summary+: |
+        Rollback at PONR
+    description+: |
+        Get right to the point of no return and end the conversion.
+        Verify that the system has been successfully unregistered after the rollback.
+        Verify that usermode, rhn-setup and os-release packages are not removed.
+    adjust+:
+        - environment+:
+            PROMPT_AMOUNT: 6
+          when: distro == centos-8-latest
     tag+:
         - rhsm-cleanup
     test: |
-        pytest -svv -m rhsm_cleanup
+        pytest -svv -m test_rhsm_cleanup
 
 /packages_untracked_graceful_rollback:
+    summary+: |
+        Rollback with failed registration
+    description+: |
+        Provide c2r with incorrect username and password, so the registration fails and c2r performs rollback.
+        Primary issue - checking for python[3]?-syspurpose not being removed.
     tag+:
         - packages-untracked-graceful-rollback
     test: |
-        pytest -svv -m packages_untracked_graceful_rollback
+        pytest -svv -m test_packages_untracked_graceful_rollback
 
 /packages_untracked_forced_rollback:
+    summary+: |
+        Forced rollback
+    description+: |
+        Terminate the c2r process forcefully, so the rollback is performed.
+        Primary issue - verify that python[3]?-syspurpose is not removed.
     tag+:
         - packages-untracked-forced-rollback
     test: |
-        pytest -svv -m packages_untracked_forced_rollback
+        pytest -svv -m test_packages_untracked_forced_rollback
 
 /terminate_on_registration:
+    summary+: |
+        Rollback during registration
+    description+: |
+        Send termination signal immediately after c2r tries the registration.
+        Verify that c2r goes successfully through the rollback.
     tag+:
         - terminate-on-registration
     test: |
-        pytest -svv -m terminate_on_registration
+        pytest -svv -m test_terminate_on_registration
 
 /terminate_on_username:
+    summary+: |
+        Rollback from username prompt
+    description+: |
+        Send termination signal on the user prompt for username.
+        Verify that c2r goes successfully through the rollback.
     tag+:
         - terminate-on-username
     test: |
-        pytest -svv -m terminate_on_username
+        pytest -svv -m test_terminate_on_username
 
 /terminate_on_password:
+    summary+: |
+        Rollback from password prompt
+    description+: |
+        Send termination signal on the user prompt for password.
+        Verify that c2r goes successfully through the rollback.
     tag+:
         - terminate-on-password
     test: |
-        pytest -svv -m terminate_on_password
+        pytest -svv -m test_terminate_on_password
 
 /terminate_on_subscription:
+    summary+: |
+        Rollback from subscription prompt
+    description+: |
+        Send termination signal on the user prompt for subscription number.
+        Verify that c2r goes successfully through the rollback.
     tag+:
         - terminate-on-subscription
     test: |
-        pytest -svv -m terminate_on_subscription
+        pytest -svv -m test_terminate_on_subscription

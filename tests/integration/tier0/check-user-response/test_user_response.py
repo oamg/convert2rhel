@@ -3,7 +3,7 @@ import pytest
 from envparse import env
 
 
-@pytest.mark.empty_username_and_password
+@pytest.mark.test_empty_username_and_password
 def test_check_user_response_user_and_password(convert2rhel):
     """
     Run c2r registration with no username and password provided.
@@ -45,7 +45,7 @@ def test_check_user_response_user_and_password(convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.auto_attach_pool
+@pytest.mark.test_auto_attach_pool
 def test_auto_attach_pool_submgr(convert2rhel):
     """
     Provide Convert2RHEL with username and password with just one subscription available.

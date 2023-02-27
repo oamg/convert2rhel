@@ -7,7 +7,7 @@ C2R_LOG = "/var/log/convert2rhel/convert2rhel.log"
 C2R_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
-@pytest.mark.logfile_starts_with_command
+@pytest.mark.test_logfile_starts_with_command
 def test_verify_logfile_starts_with_command(shell):
     """
     This test verifies, that the command passed to the command line is at the beginning of the log file.

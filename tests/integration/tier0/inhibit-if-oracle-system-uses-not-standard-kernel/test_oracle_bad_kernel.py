@@ -25,7 +25,7 @@ def teardown_uek(shell):
     shell("tmt-reboot -t 600")
 
 
-@pytest.mark.unsupported_kernel
+@pytest.mark.test_unsupported_kernel
 def test_bad_conversion(shell, convert2rhel):
     """
     Verify that the check for compatible kernel on Oracle Linux works.

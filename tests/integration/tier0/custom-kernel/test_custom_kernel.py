@@ -75,7 +75,7 @@ def clean_up_custom_kernel(shell):
     )
 
 
-@pytest.mark.custom_kernel
+@pytest.mark.test_custom_kernel
 def test_custom_kernel(convert2rhel, shell):
     """
     Run the conversion with custom kernel installed on the system.
