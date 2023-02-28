@@ -551,14 +551,6 @@ def test__remove_orig_boot_entry(
         (8, False, "/boot/grub2/grub.cfg", 0, 0, "Successfully updated GRUB2 on the system."),
         (7, False, "/boot/grub2/grub.cfg", 0, 1, "Couldn't install the new images with GRUB2."),
         (7, False, "/boot/grub2/grub.cfg", 1, 1, "GRUB2 config file generation failed."),
-        (
-            6,
-            False,
-            "/boot/grub/grub.conf",
-            1,
-            1,
-            "Convert2RHEL does not install updated GRUB Legacy bootloader image on RHEL 6.",
-        ),
     ),
 )
 def test_update_grub_after_conversion(

@@ -503,10 +503,7 @@ class TestRegisterSystem(object):
 
     @pytest.mark.parametrize(
         ("rhel_major_version", "expected_message"),
-        (
-            (6, "Skipping RHSM service shutdown on CentOS Linux 6."),
-            (7, "RHSM service stopped."),
-        ),
+        ((7, "RHSM service stopped."),),
     )
     def test_stop_rhsm(self, caplog, monkeypatch, global_system_info, rhel_major_version, expected_message):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
@@ -521,12 +518,7 @@ class TestRegisterSystem(object):
 
     @pytest.mark.parametrize(
         "rhel_major_version",
-        (
-            # 6 currently doesn't stop rhsm-service.  Revisit if we get host
-            # already registered errors
-            # 6,
-            7,
-        ),
+        (7,),
     )
     def test_stop_rhsm_failure(self, caplog, monkeypatch, global_system_info, rhel_major_version):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
@@ -1019,17 +1011,6 @@ class TestDownloadRHSMPkgs(object):
             "pkgs_to_download",
         ),
         (
-            (
-                (6, 0),
-                False,
-                frozenset(
-                    (
-                        "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
-                        "subscription-manager-rhsm",
-                    )
-                ),
-            ),
             (
                 (7, 0),
                 False,

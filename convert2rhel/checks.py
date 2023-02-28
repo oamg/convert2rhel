@@ -68,7 +68,6 @@ LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
-    6: "2.6.32",
     7: "3.10.0",
     8: "4.18.0",
 }
@@ -216,20 +215,12 @@ def check_convert2rhel_latest():
             )
 
         else:
-            if int(system_info.version.major) <= 6:
-                logger.warning(
-                    "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                    "We encourage you to update to the latest version."
-                    % (installed_convert2rhel_version, latest_available_version[1])
-                )
-
-            else:
-                logger.critical(
-                    "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                    "Only the latest version is supported for conversion. If you want to ignore"
-                    " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
-                    % (installed_convert2rhel_version, latest_available_version[1])
-                )
+            logger.critical(
+                "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                "Only the latest version is supported for conversion. If you want to ignore"
+                " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+                % (installed_convert2rhel_version, latest_available_version[1])
+            )
 
     else:
         logger.info("Latest available Convert2RHEL version is installed.")
@@ -242,8 +233,6 @@ def check_efi():
         logger.info("BIOS detected.")
         return
     logger.info("UEFI detected.")
-    if system_info.version.major == 6:
-        logger.critical("The conversion with UEFI is possible only for systems of major version 7 and newer.")
     if not os.path.exists("/usr/sbin/efibootmgr"):
         logger.critical("Install efibootmgr to continue converting the UEFI-based system.")
     if system_info.arch != "x86_64":
@@ -838,7 +827,7 @@ def check_dbus_is_running():
 
     logger.critical(
         "Could not find a running DBus Daemon which is needed to register with subscription manager.\n"
-        "Please start dbus using `systemctl start dbus` or (on CentOS Linux 6), `service messagebus start`"
+        "Please start dbus using `systemctl start dbus`"
     )
 
 

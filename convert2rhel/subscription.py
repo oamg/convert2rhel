@@ -37,14 +37,6 @@ loggerinst = logging.getLogger(__name__)
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 _RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
-_CENTOS_6_REPO_CONTENT = (
-    "[centos-6-contrib-convert2rhel]\n"
-    "name=CentOS Linux 6 - Contrib added by Convert2RHEL\n"
-    "baseurl=https://vault.centos.org/centos/6/contrib/$basearch/\n"
-    "gpgcheck=1\n"
-    "enabled=1\n"
-)
-_CENTOS_6_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "centos_6.repo")
 _UBI_7_REPO_CONTENT = (
     "[ubi-7-convert2rhel]\n"
     "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
@@ -218,16 +210,6 @@ def register_system():
 def _stop_rhsm():
     """Stop the rhsm service."""
     cmd = ["/bin/systemctl", "stop", "rhsm"]
-    if system_info.version.major <= 6:
-        # On RHEL6, there isn't a service-oriented way to stop rhsm.  It is started on demand so
-        # there isn't an init script to stop it.  If we find we need to stop it, because we're
-        # etting "machine is already registered" errors there, then we'll need to look for
-        # rhsm-service in the process list and send it the TERM signal.
-        loggerinst.info(
-            "Skipping RHSM service shutdown on {0} {1}.".format(system_info.name, system_info.version.major)
-        )
-        return
-
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
         raise StopRhsmError("Stopping RHSM failed with code: %s; output: %s" % (ret_code, output))
@@ -379,10 +361,6 @@ class RegistrationCommand(object):
         Use dbus to register the system with subscription-manager.
 
         Status of dbus on various platforms:
-            * RHEL6:
-                * DBUS-1.2.24 is present but may not be installed.
-                * Install the dbus package and run /etc/rc.d/init.d/messagebus start
-                * dbus-python-0.83.0 is available
             * RHEL7:
                 * dbus-1.10.24 is installed and run by default
                 * dbus-python-1.1.9 is available
@@ -955,11 +933,7 @@ def download_rhsm_pkgs():
         "subscription-manager-rhsm-certificates",
     ]
 
-    if system_info.version.major == 6:
-        pkgs_to_download.append("subscription-manager-rhsm")
-        _download_rhsm_pkgs(pkgs_to_download, _CENTOS_6_REPO_PATH, _CENTOS_6_REPO_CONTENT)
-
-    elif system_info.version.major == 7:
+    if system_info.version.major == 7:
         pkgs_to_download += ["subscription-manager-rhsm", "python-syspurpose"]
         _download_rhsm_pkgs(pkgs_to_download, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
 

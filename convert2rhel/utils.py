@@ -534,8 +534,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
     """Parse the output of yumdownloader to get the filepath of the downloaded rpm.
 
     The name of the downloaded rpm is on the last line of the output from yumdownloader. The line can look like:
-      RHEL 6 & 7 & 8: "vim-enhanced-8.0.1763-13.0.1.el8.x86_64.rpm     2.2 MB/s | 1.4 MB     00:00"
-      RHEL 6: "/var/lib/convert2rhel/yum-plugin-ulninfo-0.2-13.el6.noarch.rpm already exists and appears to be complete"
+      RHEL 7 & 8: "vim-enhanced-8.0.1763-13.0.1.el8.x86_64.rpm     2.2 MB/s | 1.4 MB     00:00"
       RHEL 7: "using local copy of 7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
       RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
     """

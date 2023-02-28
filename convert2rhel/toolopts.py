@@ -226,7 +226,7 @@ class CLI(object):
             "-v",
             "--variant",
             help="This option is not supported anymore and has no effect. When"
-            " converting a system to RHEL 6 or 7 using subscription-manager,"
+            " converting a system to RHEL 7 using subscription-manager,"
             " the system is now always converted to the Server variant. In case"
             " of using custom repositories, the system is converted to the variant"
             " provided by these repositories.",
