@@ -109,7 +109,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
     """
     Check if running older version with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
-    Running older version of Convert2RHEL on epel major version 6 or older should inhibit either way.
+    Running older version of Convert2RHEL on OS major version 6 or older should inhibit either way.
     """
     _change_c2r_version(0.01)
 

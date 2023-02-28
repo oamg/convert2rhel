@@ -158,8 +158,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         if print_output:
             loggerinst.info(line.rstrip("\n"))
 
-    # Call communicate() to wait for the process to terminate so that we can get the return code by poll().
-    # It's just for py2.6, py2.7+/3 doesn't need this.
+    # Call communicate() to wait for the process to terminate so that we can get the return code by poll()
     process.communicate()
 
     return_code = process.poll()
