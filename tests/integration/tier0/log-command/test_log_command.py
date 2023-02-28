@@ -29,9 +29,10 @@ def test_verify_logfile_starts_with_command(shell):
 
     # Run command twice with both long and short options to verify, the secrets are obfuscated.
     for command in commands:
-        # There is no need to run the conversion past the first prompt
-        # pass the command with appending 'n'
-        assert shell(f"{command} <<< n").returncode != 0
+        # We need to get past the first prompt acknowledging the data collection,
+        # to make sure the convert2rhel.facts file is created.
+        # After that we can stop the execution at the following prompt.
+        assert shell(f"{command} <<< y n").returncode != 0
 
         with open(C2R_LOG, "r") as logfile:
             command_line = None
