@@ -78,43 +78,7 @@ VMLINUZ_FILEPATH = "/boot/vmlinuz-%s"
 INITRAMFS_FILEPATH = "/boot/initramfs-%s.img"
 """The path to the initramfs image in a system."""
 
-# Python 2.6 compatibility.
-# This code is copied from Pthon-3.10's functools module,
-# licensed under the Python Software Foundation License, version 2
-try:
-    from functools import cmp_to_key
-except ImportError:
-
-    def cmp_to_key(mycmp):
-        """Convert a cmp= function into a key= function"""
-
-        class K(object):
-            __slots__ = ["obj"]
-
-            def __init__(self, obj):
-                self.obj = obj
-
-            def __lt__(self, other):
-                return mycmp(self.obj, other.obj) < 0
-
-            def __gt__(self, other):
-                return mycmp(self.obj, other.obj) > 0
-
-            def __eq__(self, other):
-                return mycmp(self.obj, other.obj) == 0
-
-            def __le__(self, other):
-                return mycmp(self.obj, other.obj) <= 0
-
-            def __ge__(self, other):
-                return mycmp(self.obj, other.obj) >= 0
-
-            __hash__ = None
-
-        return K
-
-
-# End of PSF Licensed code
+from functools import cmp_to_key
 
 
 def perform_system_checks():

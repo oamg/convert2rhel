@@ -30,11 +30,6 @@ if sys.version_info[:2] <= (2, 7):
 
 
 @pytest.fixture(scope="session")
-def is_py26():
-    return sys.version_info[:2] == (2, 6)
-
-
-@pytest.fixture(scope="session")
 def is_py2():
     return sys.version_info[:2] <= (2, 7)
 
@@ -292,11 +287,6 @@ centos7 = pytest.mark.parametrize(
 centos8 = pytest.mark.parametrize(
     "pretend_os",
     (("8.4.1111", "CentOS Linux"),),
-    indirect=True,
-)
-oracle6 = pytest.mark.parametrize(
-    "pretend_os",
-    (("6.10.1111", "Oracle Linux Server"),),
     indirect=True,
 )
 oracle7 = pytest.mark.parametrize(

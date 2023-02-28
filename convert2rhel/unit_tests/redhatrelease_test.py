@@ -44,7 +44,7 @@ distroverpkg=centos-release
 #  This is the default"""
 
 
-SUPPORTED_RHEL_VERSIONS = [6, 7, 8]
+SUPPORTED_RHEL_VERSIONS = [7, 8]
 
 
 class DumbMocked(unit_tests.MockFunction):
