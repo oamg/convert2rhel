@@ -614,16 +614,7 @@ def update_grub_after_conversion():
     This is mainly a protective measure to prevent issues in case the original distribution GRUB2 tooling
     generates images that expect different format of a config file. To be on the safe side we
     rather re-generate the GRUB2 config file and install the GRUB2 image.
-    We opted for doing that only for GRUB2 and not for GRUB Legacy intentionally for the reason of
-    RHEL 6 having transitioned to the Extended Life-cycle Support phase.
     """
-
-    if systeminfo.system_info.version.major == 6:
-        logger.warning(
-            "Convert2RHEL does not install updated GRUB Legacy bootloader image on RHEL 6. Install the image manually "
-            "by following https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/sect-grub-installing."
-        )
-        return
 
     backup.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
     backup.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()

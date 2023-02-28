@@ -2,7 +2,7 @@
 
 set -e
 
-# Run this script on CentOS Linux/OL/RHEL 6/7/8
+# Run this script on CentOS Linux/OL/RHEL 7/8
 echo "Creating a tarball for building the RPM ..."
 if [ -x "$(command -v python3)" ]; then
   python3 setup.py sdist

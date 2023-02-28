@@ -181,9 +181,7 @@ class TestSysteminfo(unittest.TestCase):
     def test_get_system_version(self):
         Version = namedtuple("Version", ["major", "minor"])
         versions = {
-            "Oracle Linux Server release 6.10": Version(6, 10),
             "Oracle Linux Server release 7.8": Version(7, 8),
-            "CentOS release 6.10 (Final)": Version(6, 10),
             "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
             "CentOS Linux release 8.1.1911 (Core)": Version(8, 1),
         }
@@ -297,10 +295,6 @@ def test_check_internet_access(side_effect, expected, message, monkeypatch, capl
 @pytest.mark.parametrize(
     ("version_major", "command_output", "expected_command", "expected_output"),
     (
-        (6, "messagebus: (pid  1315) is running...\n", ["/sbin/service", "messagebus", "status"], True),
-        (6, "messagebus: unrecognized service\n", ["/sbin/service", "messagebus", "status"], False),
-        (6, "", ["/sbin/service", "messagebus", "status"], False),
-        (6, "master status unknown due to insufficient privileges.", ["/sbin/service", "messagebus", "status"], False),
         (7, "ActiveState=active\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], True),
         (7, "ActiveState=reloading\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
         (7, "ActiveState=inactive\n", ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], False),
@@ -394,7 +388,6 @@ def test_corresponds_to_rhel_eus_release(major, minor, expected):
     ("system_release_content", "expected"),
     (
         ("CentOS Linux release 8.1.1911 (Core)", "Core"),
-        ("CentOS release 6.10 (Final)", "Final"),
         ("Oracle Linux Server release 7.8", None),
     ),
 )

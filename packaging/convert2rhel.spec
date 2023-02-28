@@ -63,7 +63,7 @@ Requires:       grub2-tools
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS Linux 6/7/8, Oracle Linux 6/7/8
+RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8
 and Scientific Linux 7 to the respective major version of RHEL.
 
 %prep
@@ -106,11 +106,6 @@ install -d %{buildroot}%{_sysconfdir}/
 install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.ini
 
 %files
-
-%if 0%{?rhel} && 0%{?rhel} <= 6
-# without this on CentOS Linux/OL 6, rpmlint gives an error "E: files-attr-not-set"
-%defattr(-,root,root,-)
-%endif
 
 %{_bindir}/%{name}
 %{_datadir}/%{name}/
