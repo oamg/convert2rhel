@@ -81,7 +81,7 @@ def test_missing_kernel_boot_files(convert2rhel, shell):
         # assert that the rest of the conversion has succeeded.
         # We'll do that the same way we're telling the user in a warning message how to fix the problem.
         # That is by reinstalling the RHEL kernel and re-running grub2-mkconfig.
-        assert shell("yum reinstall kernel-{} -y".format(kernel_version)).returncode == 0
+        assert shell("yum reinstall {}-{} -y".format(kernel_name, kernel_version)).returncode == 0
         assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0
 
     assert c2r.exitstatus == 0
