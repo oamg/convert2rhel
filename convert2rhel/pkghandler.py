@@ -613,18 +613,10 @@ def get_system_packages_for_replacement():
     This function will return a list of packages installed on the system by
     using the `system_info.fingerprint_ori_os` signature.
 
-    ..notes::
-        This function will append `subscription-manager*` packages if the
-        current system if Oracle Linux 6.
-
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
-    # The subscription-manager packages on Oracle Linux 6 are installed from
-    # CentOS Linux 6 repositories. They are not replaced during the system
-    # conversion with the RHEL ones because convert2rhel replaces only packages
-    # signed by the original system vendor (Oracle).
-    submgr_pkgs = ["subscription-manager*"] if system_info.id == "oracle" and system_info.version.major == "6" else []
+    submgr_pkgs = []
     orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
     orig_os_pkgs += submgr_pkgs
     return orig_os_pkgs
@@ -669,7 +661,6 @@ def install_rhel_kernel():
 
     # Check if kernel with same version is already installed.
     # Example output from yum and dnf:
-    #  "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
     #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
     already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
     if already_installed:
@@ -809,8 +800,8 @@ def fix_default_kernel():
     """
     Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus in
     /etc/sysconfig/kernel as DEFAULTKERNEL.
-    This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for RHEL 6
-    and RHEL7 and kernel-core for RHEL 8
+    This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for
+    and RHEL7 and kernel-core for RHEL
     """
     loggerinst = logging.getLogger(__name__)
 
@@ -824,7 +815,7 @@ def fix_default_kernel():
     )
     if kernel_to_change:
         loggerinst.warning("Detected leftover boot kernel, changing to RHEL kernel")
-        # need to change to "kernel" in rhel6, 7 and "kernel-core" in rhel8
+        # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
         new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major in [6, 7] else "kernel-core")
 
         kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
@@ -1005,7 +996,7 @@ def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
 
     It uses both yum/dnf depending on whether they are installed on the system,
-    In case of RHEL 6 or 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
+    In case of RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
 
     To check whether the system is updated or not, we use original vendor repofiles which we ship within the
     convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.

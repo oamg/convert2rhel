@@ -947,7 +947,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         GetInstalledPkgsWDifferentFingerprintMocked(),
     )
     def test_install_rhel_kernel_already_installed_regexp(self):
-        # RHEL 6 and 7
+        # RHEL 7
         utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
 
         pkghandler.install_rhel_kernel()

@@ -10,79 +10,10 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
-@mock.patch("convert2rhel.special_cases.perform_java_openjdk_workaround")
 @mock.patch("convert2rhel.special_cases.remove_iwlax2xx_firmware")
-def test_check_and_resolve(remove_iwlax2xx_firmware_mock, perform_java_openjdk_workaround_mock, monkeypatch):
+def test_check_and_resolve(remove_iwlax2xx_firmware_mock, monkeypatch):
     special_cases.check_and_resolve()
-    perform_java_openjdk_workaround_mock.assert_called()
     remove_iwlax2xx_firmware_mock.assert_called()
-
-
-@pytest.mark.parametrize(
-    (
-        "has_openjdk",
-        "can_successfully_apply_workaround",
-        "mkdir_p_should_raise",
-        "check_message_in_log",
-        "check_message_not_in_log",
-    ),
-    [
-        # All is fine case
-        (
-            True,
-            True,
-            None,
-            "openjdk workaround applied successfully.",
-            "Unable to create the %s" % special_cases.OPENJDK_RPM_STATE_DIR,
-        ),
-        # openjdk presented, but OSError when trying to apply workaround
-        (
-            True,
-            False,
-            OSError,
-            "Unable to create the %s" % special_cases.OPENJDK_RPM_STATE_DIR,
-            "openjdk workaround applied successfully.",
-        ),
-        # No openjdk
-        (False, False, None, None, None),
-    ],
-)
-def test_perform_java_openjdk_workaround(
-    has_openjdk,
-    can_successfully_apply_workaround,
-    mkdir_p_should_raise,
-    check_message_in_log,
-    check_message_not_in_log,
-    monkeypatch,
-    caplog,
-):
-    mkdir_p_mocked = mock.Mock(side_effect=mkdir_p_should_raise()) if mkdir_p_should_raise else mock.Mock()
-    has_rpm_mocked = mock.Mock(return_value=has_openjdk)
-
-    monkeypatch.setattr(
-        special_cases,
-        "mkdir_p",
-        value=mkdir_p_mocked,
-    )
-    monkeypatch.setattr(
-        special_cases.system_info,
-        "is_rpm_installed",
-        value=has_rpm_mocked,
-    )
-    special_cases.perform_java_openjdk_workaround()
-
-    # check logs
-    if check_message_in_log:
-        assert check_message_in_log in caplog.text
-    if check_message_not_in_log:
-        assert check_message_not_in_log not in caplog.text
-
-    # check calls
-    if has_openjdk:
-        mkdir_p_mocked.assert_called()
-    else:
-        mkdir_p_mocked.assert_not_called()
-    has_rpm_mocked.assert_called()
 
 
 @pytest.mark.parametrize(

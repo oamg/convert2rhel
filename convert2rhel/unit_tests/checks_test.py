@@ -207,25 +207,6 @@ class TestCheckConvert2rhelLatest(object):
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
         (
-            [{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "0.18", "package_version": "convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
-        ),
-        indirect=True,
-    )
-    def test_convert2rhel_latest_out_of_date_el6(self, caplog, convert2rhel_latest_version_test):
-        checks.check_convert2rhel_latest()
-
-        local_version, package_version = convert2rhel_latest_version_test
-        package_version = package_version[15:19]
-        log_msg = (
-            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-            "We encourage you to update to the latest version." % (local_version, package_version)
-        )
-        assert log_msg in caplog.text
-
-    @pytest.mark.parametrize(
-        ("convert2rhel_latest_version_test",),
-        (
             [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],
             [{"local_version": "0.21", "package_version": "convert2rhel-0:1.10-1.el7.noarch", "pmajor": "7"}],
         ),
@@ -799,26 +780,11 @@ class TestEFIChecks(unittest.TestCase):
             self.assertIn("BIOS detected.", checks.logger.info_msgs)
             self.assertNotIn("UEFI detected.", checks.logger.info_msgs)
 
-    @unit_tests.mock(grub, "is_efi", lambda: False)
-    @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    @unit_tests.mock(checks.system_info, "version", _gen_version(6, 10))
-    def test_check_efi_bios_detected(self):
-        checks.check_efi()
-        self.assertFalse(checks.logger.critical_msgs)
-        self._check_efi_detection_log(False)
-
     def _check_efi_critical(self, critical_msg):
         self.assertRaises(SystemExit, checks.check_efi)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertIn(critical_msg, checks.logger.critical_msgs)
         self._check_efi_detection_log(True)
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(checks, "logger", GetLoggerMocked())
-    @unit_tests.mock(checks.system_info, "arch", "x86_64")
-    @unit_tests.mock(checks.system_info, "version", _gen_version(6, 10))
-    def test_check_efi_old_sys(self):
-        self._check_efi_critical("The conversion with UEFI is possible only for systems of major version 7 and newer.")
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -950,7 +916,6 @@ def test_check_rhel_compatible_kernel_is_used(
     (
         ("5.11.0-7614-generic", None, True),
         ("3.10.0-1160.24.1.el7.x86_64", 7, False),
-        ("3.10.0-1160.24.1.el7.x86_64", 6, True),
         ("5.4.17-2102.200.13.el8uek.x86_64", 8, True),
         ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
     ),
@@ -1429,14 +1394,6 @@ class TestIsLoadedKernelLatest:
                 "The currently loaded kernel is at the latest version.",
             ),
             (
-                "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos",
-                "3.10.0-1160.45.1.el7.x86_64",
-                0,
-                6,
-                "kernel",
-                "The currently loaded kernel is at the latest version.",
-            ),
-            (
                 """
                 Repository base is listed more than once in the configuration\n
                 Repository updates is listed more than once in the configuration\n
@@ -1604,7 +1561,7 @@ def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts
     log_msg = (
         "Could not find a running DBus Daemon which is needed to"
         " register with subscription manager.\nPlease start dbus using `systemctl"
-        " start dbus` or (on CentOS Linux 6), `service messagebus start`"
+        " start dbus`"
     )
     assert log_msg == caplog.records[-1].message
     assert caplog.records[-1].levelname == "CRITICAL"
