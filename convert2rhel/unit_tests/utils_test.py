@@ -135,7 +135,7 @@ class TestDownloadPkg(object):
             "could put the system in a broken state.\nCheck to ensure that the None "
             "repositories are enabled, and the packages are updated to their latest "
             "versions.\nIf this error still occurs after re-running the conversion, "
-            "you can set the environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK=1"
+            "you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
             "to ignore this check."
         )
 
@@ -162,7 +162,7 @@ class TestDownloadPkg(object):
                 " complete rollback and may put the system in a broken state.\n"
                 "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
                 "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
-                " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
+                " environment variable. Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
             ),
             (
                 "kernel",
@@ -181,7 +181,7 @@ class TestDownloadPkg(object):
                 " complete rollback and may put the system in a broken state.\n"
                 "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
                 "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
-                " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
+                " environment variable. Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead.",
             ),
         ),
     )

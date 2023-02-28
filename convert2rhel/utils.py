@@ -759,7 +759,7 @@ def report_on_a_download_error(output, pkg):
                 # give the warning about the old envar not being used anymore if it is used
                 loggerinst.warning(
                     "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
-                    " environment variable.  Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
+                    " environment variable. Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
                 )
 
             # give regular warning if the new envar is used
@@ -769,15 +769,23 @@ def report_on_a_download_error(output, pkg):
                 "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing"
                 " conversion." % pkg
             )
-    else:
-        loggerinst.critical(
-            "Couldn't download the %s package which is needed to do a rollback of this action."
-            " Check to make sure that the %s repositories are enabled and the package is"
-            " updated to its latest version.\n"
-            "Note that you can choose to ignore this check when running a conversion by"
-            " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1'"
-            " but not during a pre-conversion analysis." % (pkg, system_info.name)
-        )
+        else:
+            loggerinst.critical(
+                "Couldn't back up the packages: %s. This means that if a rollback is needed,"
+                "there is no guarantee that the packages will be restored on rollback, which"
+                "could put the system in a broken state.\nCheck to ensure that the %s "
+                "repositories are enabled, and the packages are updated to their latest "
+                "versions.\nIf this error still occurs after re-running the conversion, "
+                "you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
+                "to ignore this check." % (pkg, system_info.name)
+            )
+
+    path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
+    if path:
+        loggerinst.info("Successfully downloaded the %s package." % pkg)
+        loggerinst.debug("Path of the downloaded package: %s" % path)
+
+    return path
 
 
 def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
