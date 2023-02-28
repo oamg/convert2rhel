@@ -75,11 +75,11 @@ class SystemInfo(object):
         # Fingerprints of RHEL GPG keys available at:
         #  https://access.redhat.com/security/team/key/
         self.fingerprints_rhel = [
-            # RHEL 7: RPM-GPG-KEY-redhat-release
+            # RPM-GPG-KEY-redhat-release
             "199e2f91fd431d51",
-            # RHEL 7: RPM-GPG-KEY-redhat-legacy-release
+            # RPM-GPG-KEY-redhat-legacy-release
             "5326810137017186",
-            # RHEL 7: RPM-GPG-KEY-redhat-legacy-former
+            # RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e",
         ]
         # Packages to be removed before the system conversion
@@ -475,24 +475,6 @@ def _get_original_releasever():
         original_releasever = db.conf.releasever
 
     return str(original_releasever)
-
-
-def _is_sysv_managed_dbus_running():
-    """Get DBus status from SysVinit compatible systems."""
-    # None means the status should be retried because we weren't sure if it is turned off.
-    running = None
-    output, _ret_code = utils.run_subprocess(["/sbin/service", "messagebus", "status"])
-    for line in output.splitlines():
-        if line.startswith("messagebus"):
-            if "running" in line:
-                running = True
-                break
-
-            # Note: SysV has a stopped status but I don't think that toggles until after
-            # the service is running so we could be caught in the case where the service
-            # is starting if we don't retry.
-
-    return running
 
 
 def _is_systemd_managed_dbus_running():

@@ -801,7 +801,7 @@ def fix_default_kernel():
     Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus in
     /etc/sysconfig/kernel as DEFAULTKERNEL.
     This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for
-    and RHEL7 and kernel-core for RHEL
+    RHEL7 and kernel-core for RHEL8
     """
     loggerinst = logging.getLogger(__name__)
 
@@ -816,7 +816,7 @@ def fix_default_kernel():
     if kernel_to_change:
         loggerinst.warning("Detected leftover boot kernel, changing to RHEL kernel")
         # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
-        new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major in [6, 7] else "kernel-core")
+        new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
 
         kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
         utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)

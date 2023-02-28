@@ -501,28 +501,20 @@ class TestRegisterSystem(object):
         assert len(mocked_rhsm_call_blocking.call_args_list) == 1
         assert "CRITICAL" not in [rec.levelname for rec in caplog.records]
 
-    @pytest.mark.parametrize(
-        ("rhel_major_version", "expected_message"),
-        ((7, "RHSM service stopped."),),
-    )
-    def test_stop_rhsm(self, caplog, monkeypatch, global_system_info, rhel_major_version, expected_message):
+    def test_stop_rhsm(self, caplog, monkeypatch, global_system_info):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
-        global_system_info.version = Version(rhel_major_version, 10)
+        global_system_info.version = Version(7, 9)
         global_system_info.name = "CentOS Linux"
 
         run_subprocess_mock = mock.Mock(return_value=("Success", 0))
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
 
         assert subscription._stop_rhsm() is None
-        assert caplog.records[-1].message == expected_message
+        assert caplog.records[-1].message == "RHSM service stopped."
 
-    @pytest.mark.parametrize(
-        "rhel_major_version",
-        (7,),
-    )
-    def test_stop_rhsm_failure(self, caplog, monkeypatch, global_system_info, rhel_major_version):
+    def test_stop_rhsm_failure(self, caplog, monkeypatch, global_system_info):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
-        global_system_info.version = Version(rhel_major_version, 10)
+        global_system_info.version = Version(7, 9)
 
         run_subprocess_mock = mock.Mock(return_value=("Failure", 1))
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
