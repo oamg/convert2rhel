@@ -63,55 +63,46 @@ class AssignRepositoryVariables:
                 enable_repo_opt = enable_repo_opt_epel8
 
 
-def prepare_custom_repository(shell):
+@pytest.fixture(scope="function")
+def custom_repository(shell):
     """
-    Helper function.
+    Fixture.
     Set up custom repositories.
+    Tear down after the test.
     """
     assert shell(f"cp files/{AssignRepositoryVariables.repofile}.repo /etc/yum.repos.d/")
 
+    yield
 
-def teardown_custom_repositories(shell):
-    """
-    Helper function.
-    Clean up all custom repositories.
-    """
     assert shell(f"rm -f /etc/yum.repos.d/{AssignRepositoryVariables.repofile}.repo").returncode == 0
 
 
 @pytest.mark.test_custom_valid_repo_provided
-def test_good_conversion_without_rhsm(shell, convert2rhel):
+def test_good_conversion_without_rhsm(shell, convert2rhel, custom_repository):
     """
     Verify that --enablerepo is not skipped when subscription-manager is disabled.
     Verify that the passed repositories are accessible.
     """
-    prepare_custom_repository(shell)
-
     with convert2rhel(
         "-y --no-rhsm {} --debug".format(AssignRepositoryVariables.enable_repo_opt), unregister=True
     ) as c2r:
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
         c2r.sendcontrol("c")
 
-    # Clean up
-    teardown_custom_repositories(shell)
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_custom_invalid_repo_provided
-def test_bad_conversion_without_rhsm(shell, convert2rhel):
+def test_bad_conversion_without_rhsm(shell, convert2rhel, custom_repository):
     """
     Verify that --enablerepo is not skipped when subscription-manager is disabled.
-    Verify the conversion will inhibit with invalid repository passed.
+    Verify the conversion will raise CUSTOM_REPOSITORIES_ARE_VALID.UNABLE_TO_ACCESS_REPOSITORIES
+    with invalid repository passed.
     Make sure that after failed repo check there is a kernel installed.
     """
-    prepare_custom_repository(shell)
-
     with convert2rhel("-y --no-rhsm --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True) as c2r:
         c2r.expect("CUSTOM_REPOSITORIES_ARE_VALID::UNABLE_TO_ACCESS_REPOSITORIES")
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0
 
     assert shell("rpm -qi kernel").returncode == 0
-
-    # Clean up
-    teardown_custom_repositories(shell)

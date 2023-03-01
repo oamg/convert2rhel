@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.rhel_kernel
+@pytest.mark.test_rhel_kernel
 def test_rhel_kernel(shell):
     """
     After conversion check.

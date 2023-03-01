@@ -1,6 +1,9 @@
+import pytest
+
 from envparse import env
 
 
+@pytest.mark.test_yum_distro_sync
 def test_yum_distro_sync(convert2rhel, shell):
     """Test yum distro-sync command edge-cases when given packages aren't in enabled repositories.
 
@@ -15,7 +18,7 @@ def test_yum_distro_sync(convert2rhel, shell):
     Another problem is, that yum behaves differently on Centos 7 and Centos 8
         - on CentOS Linux 7 returns 0 and any error in both cases
         - on CentOS Linux 8 returns 0 and any error if in list of packages for distro-sync is at least
-          one, which can be successfully distro synced. If all of the given cannot be synced, there
+          one, which can be successfully distro synced. If all the given cannot be synced, there
           is an error, which caused problems: https://issues.redhat.com/browse/RHELC-150. But
           the error isn't in fact error, the package stays there
           and just isn't supported by Red Hat.
@@ -41,8 +44,11 @@ def test_yum_distro_sync(convert2rhel, shell):
 
 
 def condition_test(output, ret_code):
-    """__THE SAME__ conditions as in convert2rhel/pkghandler.py are. Just small change -
-    they returns True or False depending on success or not."""
+    """
+    Verifies __THE SAME__ conditions as in convert2rhel/pkghandler.py.
+    Just small change -
+    they return True or False depending on success or not.
+    """
 
     if ret_code == 0:
         return True

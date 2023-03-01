@@ -1,4 +1,5 @@
-summary: Verify the single yum transaction
+summary: |
+    Single yum transaction
 
 description: |
     Handle the unified yum transactions so that it handles packages without
@@ -14,4 +15,8 @@ link:
    - https://issues.redhat.com/browse/RHELC-899
 
 
-test: pytest -svv
+/single_yum_transaction:
+    test: pytest -svv -m test_single_yum_transaction
+
+/packages_upgraded_after_conversion:
+    test: pytest -svv -m test_packages_upgraded_after_conversion

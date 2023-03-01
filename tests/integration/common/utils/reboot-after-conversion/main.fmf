@@ -1,0 +1,10 @@
+summary: |
+    Reboot the system after conversion
+description: |
+    Typically for tests with full conversion, we need to reboot the system,
+    to perform multiple checks after conversion.
+    This suits only the purpose of rebooting the system.
+
+test: pytest -svv -m reboot_after_conversion
+result: info
+order: 51

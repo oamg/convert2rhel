@@ -20,6 +20,6 @@ def test_use_non_english_language(shell):
 
     # Testing farm is returning an error on CentOS7 mentioning
     # setting incompatible LC_CTYPE C.UTF-8.
-    # However the C.UTF-8 was added on RHEL-8 like distros.
+    # However, the C.UTF-8 was added on RHEL-8 like distros.
     if "centos-7" in SYSTEM_RELEASE_ENV:
         assert shell("localectl set-locale LC_CTYPE=zh_CN.utf8").returncode == 0

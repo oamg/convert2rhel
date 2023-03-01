@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 
@@ -18,9 +19,14 @@ def test_skip_kernel_check(shell, convert2rhel):
         4/ Run conversion verifying the conversion is not inhibited and completes successfully
     """
     backup_dir = "/tmp/repobckp"
+    eus_backup_dir = "/tmp/eus_repobckp"
     shell(f"mkdir {backup_dir}")
     # Move all the repos away except the rhel7.repo
     shell("find /etc/yum.repos.d/ -type f -name '*.repo' ! -name 'rhel7.repo' -exec mv {} /tmp/repobckp \\;")
+    # EUS version use hardcoded repos from c2r as well
+    if re.match(r"^(alma|rocky)-8\.[68]$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+        assert shell(f"mkdir {eus_backup_dir}").returncode == 0
+        assert shell(f"mv /usr/share/convert2rhel/repos/* {eus_backup_dir}").returncode == 0
 
     # Verify the environment variable to bypass the check is in place
     # Intentionally use the deprecated variable to verify its compatibility

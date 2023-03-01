@@ -38,7 +38,7 @@ adjust+:
         SYSTEM_RELEASE_ENV: rocky-8-latest
       when: distro == rocky-8-latest
 
-prepare:
+prepare+:
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

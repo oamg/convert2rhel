@@ -3,13 +3,13 @@ import re
 import pytest
 
 
-@pytest.mark.initramfs_and_vmlinuz_present
+@pytest.mark.test_initramfs_and_vmlinuz_present
 def test_verify_initramfs_and_vmlinuz_present(log_file_data):
     """
-    Verify that after successful conversion the kernel boot files are
+    Verify that after a successful conversion the kernel boot files are
     present.
 
-    Our criteria, in this case, is related to the `check_kernel_boot_files()`
+    Our criteria, in this case, are related to the `check_kernel_boot_files()`
     finding the two necessary boot files (initramfs and vmlinuz),
     and validating that the initramfs file is not corrupted.
     """

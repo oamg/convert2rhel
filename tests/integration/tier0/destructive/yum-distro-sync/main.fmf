@@ -1,9 +1,14 @@
-summary: yum distro-sync edge-cases
+summary: |
+    yum distro-sync edge-cases
 
 description: |
-    Test yum distro-sync command edge-cases when given packages aren't in enabled repositories.
+    Verify the 'yum distro-sync' command edge-cases when given packages are not in the enabled repositories.
 
-link: https://issues.redhat.com/browse/RHELC-150
+link:
+    - verifies: https://issues.redhat.com/browse/RHELC-150
+
+/yum_distro_sync:
+    test: pytest -svv -m test_yum_distro_sync
 
 
-test: pytest -svv
+#TODO(danmyway) merge with single-yum-transaction

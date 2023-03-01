@@ -1,0 +1,76 @@
+summary: |
+    Kernel check verification
+description: |
+    Verify expected behavior of the latest kernel check.
+
+tier: 0
+
+tag+:
+    - kernel-check
+
+/custom_kernel:
+    summary+: |
+        Custom kernel
+    description+: |
+        Install custom kernel with different signature than allowed on the on the running system.
+        Verify that convert2rhel raises the RHEL_COMPATIBLE_KERNEL.BOOTED_KERNEL_INCOMPATIBLE error.
+    tag+:
+        - custom-kernel
+    test: |
+        pytest -svv -m test_custom_kernel
+
+
+/failed_repoquery:
+    summary+: |
+        Failed repoquery
+    description+: |
+        This test verifies, that failed repoquery is handled correctly.
+        Failed repoquery subsequently caused the latest kernel check to fail.
+        Introduced fixes should get the process past the latest kernel check.
+    tag+:
+        - failed-repoquery
+    test: |
+        pytest -svv -m test_failed_repoquery
+
+
+/yum_exclude_kernel:
+    summary+: |
+        Exclude kernel|kernel-core defined in yum config
+    description+: |
+        Verify, the conversion does not raise:
+        'Could not find any kernel from repositories to compare against the loaded kernel.'
+        When `exclude=kernel kernel-core` is defined in yum.conf
+        Verify IS_LOADED_KERNEL_LATEST has succeeded is raised and terminate the utility.
+    tag+:
+        - yum-exclude-kernel
+    test: |
+        pytest -svv -m test_yum_exclude_kernel
+
+
+/non_latest_kernel_error:
+    summary+: |
+        Outdated kernel version installed
+    description+: |
+        System has non latest kernel installed.
+        Verify the ERROR - (ERROR) IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.
+    tag+:
+        - non-latest-kernel-error
+    test: |
+        pytest -svv -m test_non_latest_kernel_error
+
+
+/unsupported_unbreakable_enterprise_kernel:
+    summary+: |
+        Oracle Linux unsupported Unbreakable Enterprise Kernel
+    description+: |
+        Install unsupported Unbreakable Enterprise Kernel (UEK) on an Oracle Linux machine
+        and verify that the RHEL_COMPATIBLE_KERNEL.BOOTED_KERNEL_INCOMPATIBLE error is raised.
+    enabled: false
+    adjust+:
+        - enabled: true
+          when: distro == oracle
+          because: The test case applies to Oracle Linux (Unbreakable Enterprise Kernel) only.
+    tag+:
+        - unsupported-unbreakable-enterprise-kernel
+    test: |
+        pytest -svv -m test_unsupported_unbreakable_enterprise_kernel

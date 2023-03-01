@@ -11,9 +11,11 @@ C2R_MIGRATION_RESULTS = "/etc/migration-results"
 C2R_RHSM_CUSTOM_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
-@pytest.mark.flag_system_as_converted
+@pytest.mark.test_flag_system_as_converted
 def test_flag_system_as_converted(shell):
-    """Test if the breadcrumbs file was created and corresponds to the JSON schema."""
+    """
+    Verify, that the breadcrumbs file was created and corresponds to the JSON schema after the conversion.
+    """
 
     # We need to skip check for collected rhsm custom facts after the conversion
     # due to disabled submgr, thus adding envar

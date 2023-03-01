@@ -552,6 +552,18 @@ def hybrid_rocky_image(shell, system_release):
             shutil.copy2(target_grubenv_file, grubenv_file)
 
 
+@pytest.fixture(autouse=True, scope="function")
+def tmt_reboot_count_reset(shell):
+    """
+    Fixture to reset reboot counters.
+    We need this to be able to perform reboot using the tmt-reboot.
+    After each reboot the TMT_REBOOT_COUNT += 1, meaning we would need to
+    reflect the test order to be able to perform the reboot.
+    The fixture will reset the counter for each function, so we always start with "0".
+    """
+    shell("export TMT_REBOOT_COUNT=0 && export REBOOTCOUNT=0 && export RSTRNT_REBOOTCOUNT=0")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def rcmtools_cleanup():
     """

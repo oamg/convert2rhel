@@ -22,13 +22,17 @@ def _check_eus_enabled_repos_rhel8(enabled_repos):
     assert appstream_repo in enabled_repos
 
 
-@pytest.mark.enabled_repositories
+@pytest.mark.test_enabled_repositories
 def test_enabled_repositories(shell, system_release):
-    """Verify, that the EUS repositories are enabled after conversion"""
+    """
+    Verify that the correct repositories (including EUS if applies) are enabled after the conversion.
+    """
 
     enabled_repos = shell("yum repolist").output
 
     try:
+        # Using system_release fixture here, to read live data from /etc/os-release or /etc/system-release.
+        # Usage of hardcoded environment variable SYSTEM_RELEASE_ENV is not feasible.
         if re.match(r"redhat-8\.[68]", system_release):
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories

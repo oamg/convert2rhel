@@ -70,26 +70,26 @@ def c2r_version(request):
         ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
     ).decode("utf-8")
     # Load the original value to restore later
-    with open(path_to_version, "r") as version_file:
-        old_version_content = version_file.read()
+    with open(path_to_version, "r") as version_file_orig:
+        old_version_content = version_file_orig.read()
 
     def _update_c2r_version(version):
         """
         Modify the Convert2RHEL version value in the __init__.py file.
         We want to simulate the running version is older/newer than in the repositories.
         """
-        with open(path_to_version, "w") as version_file:
+        with open(path_to_version, "w") as version_file_to_update:
             # Update the version
             version_pattern = r'__version__ = "(\d+\.\d+\.\d+)"'
             updated_version_content = re.sub(version_pattern, '__version__ = "{}"'.format(version), old_version_content)
-            version_file.write(updated_version_content)
+            version_file_to_update.write(updated_version_content)
 
     yield _update_c2r_version
 
     def _restore_c2r_version():
         # Update the value back to the original
-        with open(path_to_version, "w") as version_file:
-            version_file.write(old_version_content)
+        with open(path_to_version, "w") as version_file_to_restore:
+            version_file_to_restore.write(old_version_content)
 
     _restore_c2r_version()
 
@@ -115,9 +115,9 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
 
 @pytest.mark.test_version_older_no_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
-def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
+def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version):
     """
-    Check if running older version inhibits the conversion.
+    Verify that running older version raises an error during the conversion.
     """
 
     c2r_version(version)
@@ -161,7 +161,6 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
     """
     Verify that running older version of Convert2RHEL with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
-    Running older version of convert2rhel on OS major version 6 or older should inhibit either way.
     """
     c2r_version(version)
 
@@ -187,7 +186,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
 @pytest.mark.test_clean_cache
 def test_clean_cache(convert2rhel):
     """
-    Verify that the yum clean is done before any other check that c2r does
+    Verify that the yum clean is done before any other check that convert2rhel does.
     """
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
@@ -228,9 +227,11 @@ def test_rhsm_error_logged(convert2rhel):
                     # We just need to make sure the file does not exist.
                     pass
 
-        # Now trigger a rollback so we can see if it handles the missing
+        # Now trigger a rollback, so we can see if it handles the missing
         # certificate
         c2r.sendcontrol("c")
+
+    assert c2r.exitstatus != 0
 
     # Verify the error message is not present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:

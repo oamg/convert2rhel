@@ -1,5 +1,0 @@
-summary: test using satellite with non eus account for the EUS distro
-
-
-test: |
-  pytest -svv

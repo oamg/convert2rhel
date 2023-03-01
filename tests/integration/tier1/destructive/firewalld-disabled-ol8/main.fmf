@@ -6,10 +6,8 @@ description: |
     option is set to `yes` in firewalld configuration file (default value).
     This only applies to Oracle Linux (>=) 8.8.
 
-enabled: false
-
 tag+:
     - firewalld-disabled
 
 test: |
-    pytest -svv
+    pytest -svv -m test_firewalld_disabled

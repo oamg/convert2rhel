@@ -1,0 +1,14 @@
+summary: |
+    Excluded packages removed
+description: |
+    Verify, that convert2rhel removes packages, which are specified as excluded_pkgs in config.
+    Verification scenarios cover just some of the packages causing the most issues.
+    Those are specified in their respective test plan (remove_excluded_pkgs_epel7 and remove_excluded_pkgs_epel8).
+    Packages are passed to the test as an environment variable through their respective plan.
+
+
+tag+:
+    - excluded-packages
+
+/excluded_packages_removed:
+    test: pytest -svv -m test_excluded_packages_removed

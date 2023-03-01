@@ -1,15 +1,16 @@
-summary: Detect correct bootloader partition
+summary: |
+    Detect correct bootloader partition
 
 description: |
     Verify that Convert2RHEL detected the correct boot partition.
-
-    This test is supposed to be ran only on UEFI machines.
-
-test: pytest -svv
+    This test is supposed to be ran exclusively on UEFI machines.
 
 tag+:
     - uefi
     - bootloader
 
 link:
-    verifies: https://issues.redhat.com/browse/RHELC-733
+    - verifies: https://issues.redhat.com/browse/RHELC-733
+
+/detect_correct_boot_partition:
+    test: pytest -svv -m test_detect_correct_boot_partition

@@ -7,10 +7,12 @@ tier: 0
 
 enabled: false
 
+tag+:
+    - subscription-manager
 
-/rollback:
+/subscription_manager_handled_during_rollback:
     summary+: |
-        Back up and restore subscription-manager
+        Subscription manager handled during rollback
     description+: |
         When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
         removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly

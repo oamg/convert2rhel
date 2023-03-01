@@ -13,7 +13,7 @@ tag+:
     summary+: |
         Valid custom repository enabled
     description+: |
-        Provide valid custom repository and verify that the conversion proceeds.
+        Provide valid custom repository and verify that the conversion proceeds without issues.
     tag+:
         - custom-valid-repo-provided
     test: |
@@ -23,7 +23,8 @@ tag+:
     summary+: |
         Invalid custom repository enabled
     description+: |
-        Provide invalid values for custom repository options and verify that the conversion is inhibited.
+        Provide invalid values for custom repository options and verify
+        that the CUSTOM_REPOSITORIES_ARE_VALID.UNABLE_TO_ACCESS_REPOSITORIES is raised.
     tag+:
         - custom-invalid-repo-provided
     test: |
