@@ -106,12 +106,12 @@ def unregister_system():
     """Unregister the system from RHSM."""
     loggerinst.info("Unregistering the system.")
     # We are calling run_subprocess with rpm here because of a bug in
-    # Oracle/CentOS Linux 7 in which the process always exits with 1 in case of a
-    # rollback when KeyboardInterrupt is raised.  To avoid many changes and
-    # different conditionals to handle that, we are doing a simple call to rpm to verify if
-    # subscription-manager is installed on the system.  This is the current line
-    # in `rpm` that causes the process to exit with any interaction with the yum
-    # library
+    # Oracle/CentOS Linux 7 in which the process always exits with 1 in case of
+    # a rollback when KeyboardInterrupt is raised.  To avoid many changes and
+    # different conditionals to handle that, we are doing a simple call to rpm
+    # to verify if subscription-manager is installed on the system.  This is
+    # the current line in `rpm` that causes the process to exit with any
+    # interaction with the yum library
     # https://github.com/rpm-software-management/rpm/blob/rpm-4.11.x/lib/rpmdb.c#L640
     _, ret_code = utils.run_subprocess(["rpm", "--quiet", "-q", "subscription-manager"])
     if ret_code != 0:
@@ -559,12 +559,10 @@ def remove_original_subscription_manager():
     if not submgr_pkgs:
         loggerinst.info("No packages related to subscription-manager installed.")
         return
-    loggerinst.info(
-        "Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n"
-    )
+
+    loggerinst.info("We will now uninstall the following subscription-manager/katello-ca-consumer packages:\n")
 
     pkghandler.print_pkg_info(submgr_pkgs)
-    utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
 
     if system_info.id == "centos" and system_info.version.major == 8 and system_info.version.minor == 5:
@@ -836,8 +834,22 @@ def disable_repos():
 
 
 def enable_repos(rhel_repoids):
-    """By default, enable the standard Red Hat CDN RHEL repository IDs using subscription-manager.
-    This can be overriden by the --enablerepo option.
+    """
+    By default, enable the standard Red Hat CDN RHEL repository IDs using
+    subscription-manager. This can be overriden by the --enablerepo option.
+
+    .. note::
+        If the system matches our criteria of a EUS release, then we will try
+        to enable the EUS repoistories first, if that fails, we try to enable
+        the default repositories, this way, the user will progress in the
+        conversion.
+
+        If the user specified the repositories to be enabled through
+        --enablerepo, then the above logic is not applied.
+
+    :param rhel_repoids: List of repositories to enable through
+        subscription-manager.
+    :type rhel_repoids: list[str]
     """
     if tool_opts.enablerepo:
         repos_to_enable = tool_opts.enablerepo
@@ -850,8 +862,9 @@ def enable_repos(rhel_repoids):
                 "The system version corresponds to a RHEL Extended Update Support (EUS) release. "
                 "Trying to enable RHEL EUS repositories."
             )
-            # Try first if it's possible to enable EUS repoids. Otherwise try enabling the default RHSM repoids.
-            # Otherwise, if it raiess an exception, try to enable the default rhsm-repos
+            # Try first if it's possible to enable EUS repoids. Otherwise try
+            # enabling the default RHSM repoids. Otherwise, if it raiess an
+            # exception, try to enable the default rhsm-repos
             _submgr_enable_repos(repos_to_enable)
         except SystemExit:
             loggerinst.info(
@@ -913,7 +926,6 @@ def check_needed_repos_availability(repo_ids_needed):
                 "%s repository is not available - some packages"
                 " may not be replaced and thus not supported." % repo_id
             )
-            utils.ask_to_continue()
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed RHEL repositories are available.")

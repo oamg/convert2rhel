@@ -65,14 +65,11 @@ def test_collect_early_data(pretend_os, _mock_pkg_obj, _mock_pkg_information, mo
 
 
 @pytest.mark.parametrize(
-    ("success"),
-    (
-        (False),
-        (True),
-    ),
+    ("success", "action"),
+    ((False, "convert"), (False, "analysis"), (True, "convert"), (True, "analysis")),
 )
 @centos7
-def test_finish_collection(pretend_os, success, monkeypatch):
+def test_finish_collection(pretend_os, success, action, monkeypatch):
     save_migration_results_mock = mock.Mock()
     save_rhsm_facts_mock = mock.Mock()
 
@@ -81,7 +78,7 @@ def test_finish_collection(pretend_os, success, monkeypatch):
     # Set to true, pretend that user was informed about collecting data
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_inform_telemetry", True)
 
-    breadcrumbs.breadcrumbs.finish_collection(success=success)
+    breadcrumbs.breadcrumbs.finish_collection(success=success, action=action)
 
     if success:
         assert breadcrumbs.breadcrumbs.success
@@ -90,6 +87,7 @@ def test_finish_collection(pretend_os, success, monkeypatch):
         assert not breadcrumbs.breadcrumbs.success
         assert breadcrumbs.breadcrumbs.target_os == "null"
 
+    assert breadcrumbs.breadcrumbs.data["action"] == action
     assert save_migration_results_mock.call_count == 1
     assert save_rhsm_facts_mock.call_count == 1
 

@@ -18,22 +18,18 @@
 import logging
 import os
 
-from convert2rhel import backup, breadcrumbs, cert, checks, grub
+from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import (
-    pkghandler,
-    pkgmanager,
-    redhatrelease,
-    repo,
-    special_cases,
-    subscription,
-    systeminfo,
-    toolopts,
-    utils,
-)
+from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
+from convert2rhel.actions import report
 
 
 loggerinst = logging.getLogger(__name__)
+
+
+class _AnalyzeExit(Exception):
+    # Exception just to exit when Analyzing
+    pass
 
 
 class ConversionPhase(object):
@@ -41,7 +37,9 @@ class ConversionPhase(object):
     POST_CLI = 1
     # PONR means Point Of No Return
     PRE_PONR_CHANGES = 2
-    POST_PONR_CHANGES = 3
+    # Phase to exit the Analyze SubCommand early
+    ANALYZE_EXIT = 3
+    POST_PONR_CHANGES = 4
 
 
 def initialize_logger(log_name, log_dir):
@@ -79,40 +77,39 @@ def main():
     toolopts.CLI()
     try:
         process_phase = ConversionPhase.POST_CLI
+        perform_boilerplate()
 
-        # license agreement
-        loggerinst.task("Prepare: Show Red Hat software EULA")
-        show_eula()
+        gather_system_info()
+        prepare_system()
 
-        loggerinst.task("Prepare: Inform about telemetry")
-        breadcrumbs.breadcrumbs.print_data_collection()
-
-        # gather system information
-        loggerinst.task("Prepare: Gather system information")
-        systeminfo.system_info.resolve_system_info()
-        systeminfo.system_info.print_system_information()
-
-        breadcrumbs.breadcrumbs.collect_early_data()
-
-        loggerinst.task("Prepare: Clear YUM/DNF version locks")
-        pkghandler.clear_versionlock()
-
-        loggerinst.task("Prepare: Clean yum cache metadata")
-        pkgmanager.clean_yum_metadata()
-
-        # check the system prior the conversion (possible inhibit)
-        checks.perform_system_checks()
-
-        # backup system release file before starting conversion process
-        loggerinst.task("Prepare: Backup System")
-        redhatrelease.system_release_file.backup()
-        redhatrelease.os_release_file.backup()
-        repo.backup_yum_repos()
-        repo.backup_varsdir()
-
-        # begin conversion process
+        # Note: set pre_conversion_results before changing to the next phase so
+        # we don't fail in case rollback is triggered during
+        # actions.run_actions() (either from a bug or from the user hitting
+        # Ctrl-C)
+        pre_conversion_results = None
         process_phase = ConversionPhase.PRE_PONR_CHANGES
-        pre_ponr_conversion()
+        pre_conversion_results = actions.run_actions()
+
+        experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
+        if experimental_analysis:
+            process_phase = ConversionPhase.ANALYZE_EXIT
+            raise _AnalyzeExit()
+
+        pre_conversion_failures = actions.find_actions_of_severity(pre_conversion_results, "SKIP")
+        if pre_conversion_failures:
+            # The report will be handled in the error handler, after rollback.
+            loggerinst.critical("Conversion failed.")
+
+        #
+        # Ready to convert
+        #
+
+        # Print the assessment just before we ask the user whether to continue past the PONR
+        report.summary(
+            pre_conversion_results,
+            include_all_reports=experimental_analysis,
+            with_colors=logger_module.should_disable_color_output(),
+        )
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -125,36 +122,30 @@ def main():
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
-        post_ponr_conversion()
-
-        loggerinst.task("Final: Show RPM files modified by the conversion")
-        systeminfo.system_info.modified_rpm_files_diff()
-
-        loggerinst.task("Final: Update GRUB2 configuration")
-        grub.update_grub_after_conversion()
-
-        loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-        utils.remove_tmp_dir()
-
-        loggerinst.task("Final: Check kernel boot files")
-        checks.check_kernel_boot_files()
-
-        breadcrumbs.breadcrumbs.finish_collection(success=True)
-
-        loggerinst.task("Final: Update RHSM custom facts")
-        subscription.update_rhsm_custom_facts()
-
-        loggerinst.info("\nConversion successful!\n")
+        post_ponr_changes()
 
         # restart system if required
         utils.restart_system()
 
+    except _AnalyzeExit:
+        breadcrumbs.breadcrumbs.finish_collection(success=True, action="analysis")
+
+        rollback_changes()
+
+        report.summary(
+            pre_conversion_results,
+            include_all_reports=experimental_analysis,
+            with_colors=logger_module.should_disable_color_output(),
+        )
+        return 0
+
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
-        utils.log_traceback(toolopts.tool_opts.debug)
+        breadcrumbs.breadcrumbs.finish_collection()
+
         no_changes_msg = "No changes were made to the system."
-        breadcrumbs.breadcrumbs.finish_collection(success=False)
+        utils.log_traceback(toolopts.tool_opts.debug)
 
         if is_help_msg_exit(process_phase, err):
             return 0
@@ -164,6 +155,14 @@ def main():
             loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
+            if pre_conversion_results is None:
+                loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
+            else:
+                report.summary(
+                    pre_conversion_results,
+                    include_all_reports=experimental_analysis,
+                    with_colors=logger_module.should_disable_color_output(),
+                )
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a
@@ -183,6 +182,21 @@ def main():
     return 0
 
 
+#
+# Boilerplate Task
+#
+
+
+def perform_boilerplate():
+    # license agreement
+    loggerinst.task("Prepare: Show Red Hat software EULA")
+    show_eula()
+
+    # Telemetry opt-out
+    loggerinst.task("Prepare: Inform about telemetry")
+    breadcrumbs.breadcrumbs.print_data_collection()
+
+
 def show_eula():
     """Print out the content of the Red Hat End User License Agreement."""
 
@@ -195,65 +209,49 @@ def show_eula():
     return
 
 
-def pre_ponr_conversion():
-    """Perform steps and checks to guarantee system is ready for conversion."""
+#
+# Gathering system information
+#
 
-    # check if user pass some repo to both disablerepo and enablerepo options
-    pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
 
-    # package analysis
-    loggerinst.task("Convert: List third-party packages")
-    pkghandler.list_third_party_pkgs()
+def gather_system_info():
+    # gather system information
+    loggerinst.task("Prepare: Gather system information")
+    systeminfo.system_info.resolve_system_info()
+    systeminfo.system_info.print_system_information()
+    breadcrumbs.breadcrumbs.collect_early_data()
 
-    # remove excluded packages
-    loggerinst.task("Convert: Remove excluded packages")
-    pkghandler.remove_excluded_pkgs()
 
-    # handle special cases
-    loggerinst.task("Convert: Resolve possible edge cases")
-    special_cases.check_and_resolve()
+def prepare_system():
+    loggerinst.task("Prepare: Clear YUM/DNF version locks")
+    pkghandler.clear_versionlock()
 
-    # Import the Red Hat GPG Keys for installing Subscription-manager and for later.
-    loggerinst.task("Convert: Import Red Hat GPG keys")
-    pkghandler.install_gpg_keys()
+    loggerinst.task("Prepare: Clean yum cache metadata")
+    pkgmanager.clean_yum_metadata()
 
-    rhel_repoids = []
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Download packages")
-        subscription.download_rhsm_pkgs()
-        loggerinst.task("Convert: Subscription Manager - Replace")
-        subscription.replace_subscription_manager()
-        loggerinst.task("Convert: Subscription Manager - Verify installation")
-        subscription.verify_rhsm_installed()
-        loggerinst.task("Convert: Install RHEL certificates for RHSM")
-        system_cert = cert.SystemCert()
-        system_cert.install()
 
-    # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
-    # This needs to be before attempt to unregister the system because after unregistration can be lost
-    # access to repositories needed for backuping removed packages
-    loggerinst.task("Convert: Remove packages containing .repo files")
-    pkghandler.remove_repofile_pkgs()
+def post_ponr_changes():
+    loggerinst.info("Starting Conversion")
+    post_ponr_conversion()
 
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Subscribe system")
-        subscription.subscribe_system()
-        loggerinst.task("Convert: Get RHEL repository IDs")
-        rhel_repoids = repo.get_rhel_repoids()
-        loggerinst.task("Convert: Subscription Manager - Check required repositories")
-        subscription.check_needed_repos_availability(rhel_repoids)
-        loggerinst.task("Convert: Subscription Manager - Disable all repositories")
-        subscription.disable_repos()
+    loggerinst.task("Final: Show RPM files modified by the conversion")
+    systeminfo.system_info.modified_rpm_files_diff()
 
-    # we need to enable repos after removing repofile pkgs, otherwise we don't get backups
-    # to restore from on a rollback
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
-        subscription.enable_repos(rhel_repoids)
+    loggerinst.task("Final: Update GRUB2 configuration")
+    grub.update_grub_after_conversion()
 
-    # perform final checks before the conversion
-    loggerinst.task("Convert: Final system checks before main conversion")
-    checks.perform_pre_ponr_checks()
+    loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
+    utils.remove_tmp_dir()
+
+    loggerinst.task("Final: Check kernel boot files")
+    checks.check_kernel_boot_files()
+
+    breadcrumbs.breadcrumbs.finish_collection(success=True)
+
+    loggerinst.task("Final: Update RHSM custom facts")
+    subscription.update_rhsm_custom_facts()
+
+    loggerinst.info("\nConversion successful!\n")
 
 
 def post_ponr_conversion():
