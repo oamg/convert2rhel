@@ -36,7 +36,7 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
+from convert2rhel.unit_tests import GetLoggerMocked, create_pkg_obj, is_rpm_based_os
 from convert2rhel.unit_tests.conftest import (
     TestPkgObj,
     all_systems,
@@ -877,41 +877,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     )
     def test_check_installed_rhel_kernel_returns_false(self):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
-
-    @unit_tests.mock(pkghandler, "get_third_party_pkgs", lambda: [])
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    def test_list_third_party_pkgs_no_pkgs(self):
-        pkghandler.list_third_party_pkgs()
-
-        self.assertIn("No third party packages installed", pkghandler.loggerinst.info_msgs[0])
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_third_party_pkgs",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    def test_list_third_party_pkgs(self):
-        pkghandler.list_third_party_pkgs()
-
-        self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
-        self.assertIn("Only packages signed by", pkghandler.loggerinst.warning_msgs[0])
-
-    @unit_tests.mock(tool_opts, "disablerepo", ["*", "rhel-7-extras-rpm"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_has_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertIn("Duplicate repositories were found", pkghandler.loggerinst.warning_msgs[0])
-
-    @unit_tests.mock(tool_opts, "disablerepo", ["*"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_doesnt_thas_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
 
     @unit_tests.mock(system_info, "name", "Oracle Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
@@ -2168,10 +2133,10 @@ def test_get_packages_to_remove(monkeypatch):
     monkeypatch.setattr(
         pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgObjectsWDiffFingerprintMocked()
     )
-    original_func = pkghandler._get_packages_to_remove.__wrapped__
-    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", mock_decorator(original_func))
+    original_func = pkghandler.get_packages_to_remove.__wrapped__
+    monkeypatch.setattr(pkghandler, "get_packages_to_remove", mock_decorator(original_func))
 
-    result = pkghandler._get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
+    result = pkghandler.get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
     assert len(result) == 1
     assert result[0].nevra.name == "installed_pkg"
 
@@ -2181,7 +2146,7 @@ def test_remove_pkgs_with_confirm(monkeypatch):
     monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallable())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
 
-    pkghandler.remove_pkgs_with_confirm(
+    pkghandler.remove_pkgs_unless_from_redhat(
         [
             create_pkg_information(
                 packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
@@ -2576,25 +2541,3 @@ def test_get_package_information_value_error(monkeypatch, caplog):
     result = pkghandler.get_package_information()
     assert not result
     assert "Failed to parse a package" in caplog.records[-1].message
-
-
-def test_remove_excluded_pkgs(monkeypatch):
-    monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    pkghandler.remove_excluded_pkgs()
-
-    assert pkghandler._get_packages_to_remove.called == 1
-    assert pkghandler.remove_pkgs_with_confirm.called == 1
-    assert pkghandler._get_packages_to_remove.command == system_info.excluded_pkgs
-
-
-def test_remove_repofile_pkgs(monkeypatch):
-    monkeypatch.setattr(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    pkghandler.remove_repofile_pkgs()
-
-    assert pkghandler._get_packages_to_remove.called == 1
-    assert pkghandler.remove_pkgs_with_confirm.called == 1
-    assert pkghandler._get_packages_to_remove.command == system_info.repofile_pkgs

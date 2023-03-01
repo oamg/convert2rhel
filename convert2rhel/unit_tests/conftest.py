@@ -145,6 +145,14 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
 
 
 @pytest.fixture
+def sys_path():
+    real_sys_path = sys.path
+    sys.path = sys.path[:]
+    yield sys.path
+    sys.path = real_sys_path
+
+
+@pytest.fixture
 def global_tool_opts(monkeypatch):
     local_tool_opts = toolopts.ToolOpts()
     monkeypatch.setattr(toolopts, "tool_opts", local_tool_opts)
@@ -303,6 +311,7 @@ oracle8 = pytest.mark.parametrize(
 )
 
 
+# TODO(r0x0d): Remove this from here since it lives also in unit_tests/__init__.py
 class TestPkgObj(object):
     class PkgObjHdr(object):
         def sprintf(self, *args, **kwargs):
@@ -311,6 +320,7 @@ class TestPkgObj(object):
     hdr = PkgObjHdr()
 
 
+# TODO(r0x0d): Move this to unit_tests/__init__.py
 def create_pkg_information(
     packager=None,
     vendor=None,
@@ -328,6 +338,7 @@ def create_pkg_information(
     return obj
 
 
+# TODO(r0x0d): Remove this from here since we have it under unit_tests/__init__.py
 def create_pkg_obj(
     name,
     epoch=0,

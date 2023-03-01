@@ -676,30 +676,7 @@ def list_non_red_hat_pkgs_left():
         loggerinst.info("All packages are now signed by Red Hat.")
 
 
-def remove_excluded_pkgs():
-    """Certain packages need to be removed before the system conversion,
-    depending on the system to be converted.
-    """
-    loggerinst.info("Searching for the following excluded packages:\n")
-    pkgs_to_remove = _get_packages_to_remove(system_info.excluded_pkgs)
-    remove_pkgs_with_confirm(pkgs_to_remove)
-
-
-def remove_repofile_pkgs():
-    """Remove those non-RHEL packages that contain YUM/DNF repofiles (/etc/yum.repos.d/*.repo) or affect variables
-    in the repofiles (e.g. $releasever).
-    Red Hat cannot automatically remove these non-RHEL packages with other excluded packages. While other excluded
-    packages must be removed before installing subscription-manager to prevent package conflicts, these non-RHEL
-    packages must be present on the system during subscription-manager installation so that the system can access and
-    install subscription-manager dependencies. As a result, these non-RHEL packages must be manually removed after
-    subscription-manager installation.
-    """
-    loggerinst.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
-    pkgs_to_remove = _get_packages_to_remove(system_info.repofile_pkgs)
-    remove_pkgs_with_confirm(pkgs_to_remove)
-
-
-def remove_pkgs_with_confirm(pkgs_to_remove, backup=True):
+def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
     """Remove packages with user confirmation and backup.
 
     :param pkgs_to_remove: List of packages that will be removed
@@ -712,15 +689,13 @@ def remove_pkgs_with_confirm(pkgs_to_remove, backup=True):
         return
 
     loggerinst.info("\n")
-    loggerinst.warning("The following packages will be removed...")
-    print_pkg_info(pkgs_to_remove)
-    utils.ask_to_continue()
     remove_pkgs([get_pkg_nvra(pkg.nevra) for pkg in pkgs_to_remove], backup=backup)
-    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
+    loggerinst.warning("Successfully removed the following %s packages:" % str(len(pkgs_to_remove)))
+    print_pkg_info(pkgs_to_remove)
 
 
 @utils.run_as_child_process
-def _get_packages_to_remove(pkgs):
+def get_packages_to_remove(pkgs):
     """
     Get packages information that will be removed.
 
@@ -768,6 +743,7 @@ def get_system_packages_for_replacement():
 
 
 def install_gpg_keys():
+    """TODO: Add a docstring here."""
     gpg_path = os.path.join(utils.DATA_DIR, "gpg-keys")
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
@@ -1056,17 +1032,6 @@ def clear_versionlock():
         loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
 
 
-def has_duplicate_repos_across_disablerepo_enablerepo_options():
-
-    duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
-    if duplicate_repos:
-        message = "Duplicate repositories were found across disablerepo and enablerepo options:"
-        for repo in duplicate_repos:
-            message += "\n%s" % repo
-        message += "\nThis ambiguity may have unintended consequences."
-        loggerinst.warning(message)
-
-
 def filter_installed_pkgs(pkg_names):
     """Check if a package is present on the system based on a list of package names.
     This function aims to act as a filter for a list of pkg_names to return wether or not a package is present on the
@@ -1200,9 +1165,11 @@ def compare_package_versions(version1, version2):
     :type version1: str
     :param version2: The version to compare against.
     :type version2: str
+
     .. example::
         >>> match = compare_package_versions("kernel-core-5.14.10-300.fc35", "kernel-core-5.14.15-300.fc35")
         >>> print(match) # -1
+
     .. note::
         Since the return type is a int, this could be difficult to understand
         the meaning of each number, so here is a list that represents
@@ -1210,6 +1177,10 @@ def compare_package_versions(version1, version2):
             * -1 if the version1 is less then version2 version
             * 0 if the version1 is equal version2 version
             * 1 if the version1 is greater than version2 version
+
+    :raises ValueError: In case of packages name being different.
+    :raises ValueError: In case of architectures being different.
+
     :return: Return a number indicating if the versions match, are less or greater then.
     :rtype: int
     """
@@ -1259,8 +1230,10 @@ def parse_pkg_string(pkg):
 
 def _validate_parsed_fields(package, name, epoch, version, release, arch):
     """
-    Validation for each field contained in pkg_ver_components from the
-    package parsing functions. If one of the fields are invalid then a ValueError is raised
+    Validation for each field contained in pkg_ver_components from the package
+    parsing functions. If one of the fields are invalid then a ValueError is
+    raised.
+
     :param name: unparsed package
     :type name: str
     :param name: parsed package name
@@ -1273,6 +1246,8 @@ def _validate_parsed_fields(package, name, epoch, version, release, arch):
     :type name: str
     :param arch: parsed package arch
     :type name: str
+
+    :raises ValueError: If any of the fields are invalid, raise ValueError.
     """
 
     errors = []
@@ -1359,6 +1334,8 @@ def _parse_pkg_with_dnf(pkg):
     :type pkg: str
     :return: Return a list containing name, epoch, version, release, arch (may contain null values)
     :rtype: list[str]
+
+    :raises ValueError: If any of the fields are invalid, raise ValueError.
     """
 
     name = epoch = version = release = arch = None

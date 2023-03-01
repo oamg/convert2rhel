@@ -758,6 +758,21 @@ def test_hide_secret_unexpected_input(caplog):
 
 
 @pytest.mark.parametrize(
+    ("items", "expected"),
+    (
+        ([], ""),
+        (["zebra"], "zebra"),
+        (["zebra", "ostrich"], "zebra and ostrich"),
+        (["zebra", "ostrich", "whale"], "zebra, ostrich, and whale"),
+        (["a", "b", "c"], "a, b, and c"),
+        ("abcdefg", "a, b, c, d, e, f, and g"),
+    ),
+)
+def test_format_sequence_as_message(items, expected):
+    assert utils.format_sequence_as_message(items) == expected
+
+
+@pytest.mark.parametrize(
     ("nested_dict", "expected"),
     (
         (
