@@ -22,6 +22,8 @@ import unittest
 import pytest
 import six
 
+from convert2rhel import grub
+from convert2rhel.actions import STATUS_CODE
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
 
@@ -36,6 +38,50 @@ NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
+
+
+class TestPkgObj(object):
+    class PkgObjHdr(object):
+        def sprintf(self, *args, **kwargs):
+            return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
+
+    hdr = PkgObjHdr()
+
+
+def create_pkg_obj(
+    name,
+    epoch=0,
+    version="",
+    release="",
+    arch="",
+    packager=None,
+    from_repo="",
+    manager="yum",
+    vendor=None,
+):
+    class DumbObj(object):
+        pass
+
+    obj = TestPkgObj()
+    obj.yumdb_info = DumbObj()
+    obj.name = name
+    obj.epoch = obj.e = epoch
+    obj.version = obj.v = version
+    obj.release = obj.r = release
+    obj.evr = version + "-" + release
+    obj.arch = arch
+    obj.packager = packager
+    if vendor:
+        obj.vendor = vendor
+    if manager == "yum":
+        if from_repo:
+            obj.yumdb_info.from_repo = from_repo
+    elif manager == "dnf":
+        if from_repo:
+            obj._from_repo = from_repo
+        else:
+            obj._from_repo = "@@System"
+    return obj
 
 
 def mock(class_or_module, orig_obj, mock_obj):
@@ -260,6 +306,15 @@ class GetFileContentMocked(MockFunction):
         return [x.strip() for x in self.data] if self.as_list else self.data
 
 
+class DumbCallableObject(MockFunction):
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return
+
+
 def run_subprocess_side_effect(*stubs):
     """Side effect function for utils.run_subprocess.
     :type stubs: Tuple[Tuple[command, ...], Tuple[command_stdout, exit_code]]
@@ -361,3 +416,87 @@ def mock_decorator(func):
         return func(*args, **kwargs)
 
     return wrapped
+
+
+class GetInstalledPkgsWFingerprintsMocked(MockFunction):
+    def prepare_test_pkg_tuples_w_fingerprints(self):
+        class PkgData:
+            def __init__(self, pkg_obj, fingerprint):
+                self.pkg_obj = pkg_obj
+                self.fingerprint = fingerprint
+
+        obj1 = create_pkg_obj("pkg1")
+        obj2 = create_pkg_obj("pkg2")
+        obj3 = create_pkg_obj("gpg-pubkey")
+        pkgs = [
+            PkgData(obj1, "199e2f91fd431d51"),  # RHEL
+            PkgData(obj2, "72f97b74ec551f03"),  # OL
+            PkgData(obj3, "199e2f91fd431d51"),
+        ]  # RHEL
+        return pkgs
+
+    def __call__(self, *args, **kwargs):
+        return self.prepare_test_pkg_tuples_w_fingerprints()
+
+
+#: Used as a sentinel value for assert_action_result() so we only check
+#: attributes that the test has asked for.
+_NO_USER_VALUE = object()
+
+
+def assert_actions_result(instance, status=_NO_USER_VALUE, error_id=_NO_USER_VALUE, message=_NO_USER_VALUE):
+    """Helper function to assert result set by Actions Framework."""
+
+    if status != _NO_USER_VALUE:
+        assert instance.status == STATUS_CODE[status]
+
+    if error_id != _NO_USER_VALUE:
+        assert instance.error_id == error_id
+
+    if message != _NO_USER_VALUE:
+        assert message in instance.message
+
+
+class EFIBootInfoMocked:
+    def __init__(
+        self,
+        current_bootnum="0001",
+        next_boot=None,
+        boot_order=("0001", "0002"),
+        entries=None,
+        exception=None,
+    ):
+        self.current_bootnum = current_bootnum
+        self.next_boot = next_boot
+        self.boot_order = boot_order
+        self.entries = entries
+        self.set_default_efi_entries()
+        self._exception = exception
+
+    def __call__(self):
+        """Tested functions call existing object instead of creating one.
+        The object is expected to be instantiated already when mocking
+        so tested functions are not creating new object but are calling already
+        the created one. From the point of the tested code, the behaviour is
+        same now.
+        """
+        if not self._exception:
+            return self
+        raise self._exception  # pylint: disable=raising-bad-type
+
+    def set_default_efi_entries(self):
+        if not self.entries:
+            self.entries = {
+                "0001": grub.EFIBootLoader(
+                    boot_number="0001",
+                    label="Centos Linux",
+                    active=True,
+                    efi_bin_source=r"HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)",
+                ),
+                "0002": grub.EFIBootLoader(
+                    boot_number="0002",
+                    label="Foo label",
+                    active=True,
+                    efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
+                ),
+            }
