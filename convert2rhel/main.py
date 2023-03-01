@@ -18,7 +18,7 @@
 import logging
 import os
 
-from convert2rhel import backup, breadcrumbs, cert, checks, grub
+from convert2rhel import actions, backup, breadcrumbs, cert, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import (
     pkghandler,
@@ -87,10 +87,8 @@ def main():
         loggerinst.task("Prepare: Inform about telemetry")
         breadcrumbs.breadcrumbs.print_data_collection()
 
-        # gather system information
-        loggerinst.task("Prepare: Gather system information")
-        systeminfo.system_info.resolve_system_info()
-        systeminfo.system_info.print_system_information()
+        ### FIXME: After talking with mbocek, let's merge this in with the actions framework
+        pre_ponr_changes()
 
         breadcrumbs.breadcrumbs.collect_early_data()
 
@@ -137,7 +135,7 @@ def main():
         utils.remove_tmp_dir()
 
         loggerinst.task("Final: Check kernel boot files")
-        checks.check_kernel_boot_files()
+        actions.check_kernel_boot_files()
 
         breadcrumbs.breadcrumbs.finish_collection(success=True)
 
@@ -183,6 +181,21 @@ def main():
     return 0
 
 
+#
+# Boilerplate Task
+#
+
+
+def perform_boilerplate():
+    # license agreement
+    loggerinst.task("Prepare: Show Red Hat software EULA")
+    show_eula()
+
+    # Telemetry opt-out
+    loggerinst.task("Prepare: Inform about telemetry")
+    breadcrumbs.breadcrumbs.print_data_collection()
+
+
 def show_eula():
     """Print out the content of the Red Hat End User License Agreement."""
 
@@ -193,6 +206,45 @@ def show_eula():
     else:
         loggerinst.critical("EULA file not found.")
     return
+
+
+#
+# Gathering system information
+#
+
+
+def gather_system_info():
+    # gather system information
+    loggerinst.task("Prepare: Gather system information")
+    systeminfo.system_info.resolve_system_info()
+    systeminfo.system_info.print_system_information()
+    breadcrumbs.breadcrumbs.collect_early_data()
+
+
+def prepare_system():
+    loggerinst.task("Prepare: Clear YUM/DNF version locks")
+    pkghandler.clear_versionlock()
+
+    loggerinst.task("Prepare: Clean yum cache metadata")
+    pkghandler.clean_yum_metadata()
+
+
+def system_checks():
+    # check the system prior the conversion (possible inhibit)
+    actions.perform_system_checks()
+    pass
+
+
+def pre_ponr_changes():
+    pass
+
+
+def post_ponr_changes():
+    pass
+
+
+def rollback():
+    pass
 
 
 def pre_ponr_conversion():
@@ -253,7 +305,7 @@ def pre_ponr_conversion():
 
     # perform final checks before the conversion
     loggerinst.task("Convert: Final system checks before main conversion")
-    checks.perform_pre_ponr_checks()
+    actions.perform_pre_ponr_checks()
 
 
 def post_ponr_conversion():
