@@ -378,9 +378,10 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /detect_correct_boot_partition:
+    enabled: false
     adjust+:
-        - enabled: false
-          when: trigger == commit
+        - enabled: true
+          when: initiator == human
           because: There are no UEFI images available on the Testing Farm yet.
     discover+:
         filter: tag:checks-after-conversion

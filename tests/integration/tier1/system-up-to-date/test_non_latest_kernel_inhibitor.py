@@ -1,3 +1,5 @@
+import re
+
 from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
@@ -28,6 +30,16 @@ def test_non_latest_kernel(shell, convert2rhel):
     System has non latest kernel installed, thus the conversion
     has to be inhibited.
     """
+
+    # Downgrading the kernel on Oracle Linux 8.7 sometimes causes
+    # the kernel module kvm to be marked as tainted.
+    # Check if the kmod is marked tainted and remove it if so.
+    # Remove also kvm_intel as it is dependent on kvm kernel module.
+
+    kmods_output = shell("cat /proc/modules | grep kvm").output
+    tainted_kvm = re.compile(r"(.*\n)*(kvm ).*\(t\)")
+    if "oracle-8" in SYSTEM_RELEASE_ENV and re.match(tainted_kvm, kmods_output):
+        shell("rmmod kvm_intel && rmmod kvm")
 
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
