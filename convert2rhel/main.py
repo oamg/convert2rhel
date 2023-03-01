@@ -79,27 +79,27 @@ def main():
     toolopts.CLI()
     try:
         process_phase = ConversionPhase.POST_CLI
+        perform_boilerplate()
 
-        # license agreement
-        loggerinst.task("Prepare: Show Red Hat software EULA")
-        show_eula()
+        gather_system_info()
 
-        loggerinst.task("Prepare: Inform about telemetry")
-        breadcrumbs.breadcrumbs.print_data_collection()
+        ### FIXME: This should be expected to either succeed or fail.  Need to look for the return
+        ### value and act upon it.
+        system_checks()
 
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
-        breadcrumbs.breadcrumbs.collect_early_data()
+        if toolopts.action == "precheck":
+            rollback()
 
-        loggerinst.task("Prepare: Clear YUM/DNF version locks")
-        pkghandler.clear_versionlock()
+        post_ponr_changes()
 
-        loggerinst.task("Prepare: Clean yum cache metadata")
-        pkgmanager.clean_yum_metadata()
+        ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
+        ### This is an artificial stopping point to mark what code still needs to be migrated.
+        import sys
 
-        # check the system prior the conversion (possible inhibit)
-        checks.perform_system_checks()
+        sys.exit(1000)
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
