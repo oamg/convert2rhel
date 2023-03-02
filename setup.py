@@ -23,9 +23,11 @@ from setuptools import find_packages, setup
 from man.build_manpage import build_manpage
 
 
-# Utility function to read content of a file.
 def read(fname):
-    return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)).read()
+    """Utility function to read the contents of a file."""
+    filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)
+    with open(filepath, mode="r") as handler:
+        return handler.read()
 
 
 def get_version():

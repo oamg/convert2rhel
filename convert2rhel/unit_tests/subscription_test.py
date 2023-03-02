@@ -223,17 +223,17 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
     def test_check_needed_repos_availability(self):
         subscription.check_needed_repos_availability(["rhel_x"])
-        self.assertTrue("Needed RHEL repositories are available." in logging.Logger.info.msg)
+        self.assertIn("Needed RHEL repositories are available.", logging.Logger.info.msg)
 
         subscription.check_needed_repos_availability(["rhel_z"])
-        self.assertTrue("rhel_z repository is not available" in logging.Logger.warning.msg)
+        self.assertIn("rhel_z repository is not available", logging.Logger.warning.msg)
 
     @unit_tests.mock(logging.Logger, "warning", LogMocked())
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
-        self.assertTrue("rhel repository is not available" in logging.Logger.warning.msg)
+        self.assertIn("rhel repository is not available", logging.Logger.warning.msg)
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
@@ -264,9 +264,7 @@ class TestSubscription(unittest.TestCase):
         subscription.remove_original_subscription_manager()
 
         self.assertEqual(len(subscription.loggerinst.info_msgs), 2)
-        self.assertTrue(
-            "No packages related to subscription-manager installed." in subscription.loggerinst.info_msgs[-1]
-        )
+        self.assertIn("No packages related to subscription-manager installed.", subscription.loggerinst.info_msgs[-1])
 
 
 @pytest.fixture
@@ -624,7 +622,7 @@ class TestRegistrationCommand(object):
     def test_instantiate_failures(self, registration_kwargs, error_message):
         """Test various failures instantiating RegistrationCommand."""
         with pytest.raises(ValueError, match=error_message):
-            cmd = subscription.RegistrationCommand(**registration_kwargs)
+            subscription.RegistrationCommand(**registration_kwargs)
 
     @pytest.mark.parametrize(
         "registration_kwargs",

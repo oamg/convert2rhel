@@ -29,14 +29,16 @@ OS_RELEASE_FILEPATH = "/etc/os-release"
 
 
 def get_release_pkg_name():
-    """For RHEL 6 and 7 the release package name is redhat-release-server.
+    """For RHEL 7 the release package name is redhat-release-server.
 
     For RHEL 8, the name is redhat-release.
     """
-    if system_info.version.major in [6, 7]:
-        return "redhat-release-server"
-    elif system_info.version.major == 8:
-        return "redhat-release"
+    release_pkg_name = "redhat-release-server"
+
+    if system_info.version.major == 8:
+        release_pkg_name = "redhat-release"
+
+    return release_pkg_name
 
 
 def get_system_release_filepath():

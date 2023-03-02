@@ -65,10 +65,10 @@ def create_transaction_handler():
         from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 
         return YumTransactionHandler()
-    elif TYPE == "dnf":
-        from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
 
-        return DnfTransactionHandler()
+    from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
+
+    return DnfTransactionHandler()
 
 
 def clean_yum_metadata():

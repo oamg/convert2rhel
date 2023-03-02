@@ -26,7 +26,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import logger, pkgmanager, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
@@ -163,7 +163,7 @@ class TestSysteminfo(unittest.TestCase):
         # Check that rpm -Va is executed (default) and stored into the specific file.
         tool_opts.no_rpm_va = False
         system_info.generate_rpm_va()
-        self.assertTrue(utils.run_subprocess.called > 0)
+        self.assertGreater(utils.run_subprocess.called, 0)
         self.assertEqual(utils.run_subprocess.used_args[0][0], ["rpm", "-Va"])
         self.assertTrue(os.path.isfile(self.rpmva_output_file))
         self.assertEqual(utils.get_file_content(self.rpmva_output_file), "rpmva\n")
@@ -404,7 +404,7 @@ def test_get_system_distribution_id(system_release_content, expected):
 
 @centos8
 def test_get_system_distribution_id_default_system_release_content(pretend_os):
-    assert system_info._get_system_distribution_id() == None
+    assert system_info._get_system_distribution_id() is None
 
 
 @pytest.mark.parametrize(

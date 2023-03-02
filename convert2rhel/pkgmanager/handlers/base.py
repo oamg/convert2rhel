@@ -41,10 +41,10 @@ class TransactionHandlerBase:
         self._enabled_repos = []
 
     @abc.abstractmethod
-    def run_transaction(self, test_transaction=False):
+    def run_transaction(self, validate_transaction=False):
         """Run the actual transaction for the base class.
 
-        :param test_transaction: Determines if the transaction needs to be tested or not.
-        :type test_transaction: bool
+        :param validate_transaction: Determines if the transaction needs to be tested or not.
+        :type validate_transaction: bool
         """
         pass

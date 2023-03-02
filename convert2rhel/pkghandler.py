@@ -318,8 +318,8 @@ def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
     """
     if pkgmanager.TYPE == "yum":
         return _get_installed_pkg_objects_yum(name, version, release, arch)
-    elif pkgmanager.TYPE == "dnf":
-        return _get_installed_pkg_objects_dnf(name, version, release, arch)
+
+    return _get_installed_pkg_objects_dnf(name, version, release, arch)
 
 
 def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=None):
@@ -515,14 +515,14 @@ def get_pkg_nevra(pkg_obj):
             pkg_obj.release,
             pkg_obj.arch,
         )
-    elif pkgmanager.TYPE == "dnf":
-        return "%s-%s%s-%s.%s" % (
-            pkg_obj.name,
-            "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
-            pkg_obj.version,
-            pkg_obj.release,
-            pkg_obj.arch,
-        )
+
+    return "%s-%s%s-%s.%s" % (
+        pkg_obj.name,
+        "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
+        pkg_obj.version,
+        pkg_obj.release,
+        pkg_obj.arch,
+    )
 
 
 def get_packager(pkg_obj):

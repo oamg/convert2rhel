@@ -19,7 +19,7 @@
 import pytest
 import six
 
-from convert2rhel import pkgmanager, utils
+from convert2rhel import pkgmanager
 from convert2rhel.unit_tests import run_subprocess_side_effect
 
 

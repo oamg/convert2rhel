@@ -793,11 +793,11 @@ def _gen_version(major, minor):
 class TestEFIChecks(unittest.TestCase):
     def _check_efi_detection_log(self, efi_detected=True):
         if efi_detected:
-            self.assertFalse("BIOS detected." in checks.logger.info_msgs)
-            self.assertTrue("UEFI detected." in checks.logger.info_msgs)
+            self.assertNotIn("BIOS detected.", checks.logger.info_msgs)
+            self.assertIn("UEFI detected.", checks.logger.info_msgs)
         else:
-            self.assertTrue("BIOS detected." in checks.logger.info_msgs)
-            self.assertFalse("UEFI detected." in checks.logger.info_msgs)
+            self.assertIn("BIOS detected.", checks.logger.info_msgs)
+            self.assertNotIn("UEFI detected.", checks.logger.info_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: False)
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
@@ -810,7 +810,7 @@ class TestEFIChecks(unittest.TestCase):
     def _check_efi_critical(self, critical_msg):
         self.assertRaises(SystemExit, checks.check_efi)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
-        self.assertTrue(critical_msg in checks.logger.critical_msgs)
+        self.assertIn(critical_msg, checks.logger.critical_msgs)
         self._check_efi_detection_log(True)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
@@ -864,7 +864,7 @@ class TestEFIChecks(unittest.TestCase):
             "The conversion with secure boot is currently not possible.\n"
             "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
         )
-        self.assertTrue("Secure boot detected." in checks.logger.info_msgs)
+        self.assertIn("Secure boot detected.", checks.logger.info_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -894,7 +894,7 @@ class TestEFIChecks(unittest.TestCase):
             "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
             " EFI System Partition (ESP)."
         )
-        self.assertTrue(warn_msg in checks.logger.warning_msgs)
+        self.assertIn(warn_msg, checks.logger.warning_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -1052,8 +1052,8 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         checks.check_readonly_mounts()
         self.assertEqual(len(checks.logger.critical_msgs), 0)
         self.assertEqual(len(checks.logger.debug_msgs), 2)
-        self.assertTrue("/mnt mount point is not read-only." in checks.logger.debug_msgs)
-        self.assertTrue("/sys mount point is not read-only." in checks.logger.debug_msgs)
+        self.assertIn("/mnt mount point is not read-only.", checks.logger.debug_msgs)
+        self.assertIn("/sys mount point is not read-only.", checks.logger.debug_msgs)
 
     @unit_tests.mock(checks, "logger", GetLoggerMocked())
     @unit_tests.mock(
@@ -1070,13 +1070,9 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     def test_mounted_are_readonly(self):
         self.assertRaises(SystemExit, checks.check_readonly_mounts)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
-        self.assertTrue(
-            "Stopping conversion due to read-only mount to /mnt directory" in checks.logger.critical_msgs[0]
-        )
-        self.assertTrue(
-            "Stopping conversion due to read-only mount to /sys directory" not in checks.logger.critical_msgs[0]
-        )
-        self.assertTrue("/sys mount point is not read-only." in checks.logger.debug_msgs[0])
+        self.assertIn("Stopping conversion due to read-only mount to /mnt directory", checks.logger.critical_msgs[0])
+        self.assertNotIn("Stopping conversion due to read-only mount to /sys directory", checks.logger.critical_msgs[0])
+        self.assertIn("/sys mount point is not read-only.", checks.logger.debug_msgs[0])
 
     class CallYumCmdMocked(unit_tests.MockFunction):
         def __init__(self, ret_code, ret_string):
@@ -1107,8 +1103,8 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         checks.check_custom_repos_are_valid()
         self.assertEqual(len(checks.logger.info_msgs), 1)
         self.assertEqual(len(checks.logger.debug_msgs), 1)
-        self.assertTrue(
-            "The repositories passed through the --enablerepo option are all accessible." in checks.logger.info_msgs
+        self.assertIn(
+            "The repositories passed through the --enablerepo option are all accessible.", checks.logger.info_msgs
         )
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
@@ -1123,7 +1119,7 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
         self.assertRaises(SystemExit, checks.check_custom_repos_are_valid)
         self.assertEqual(len(checks.logger.critical_msgs), 1)
         self.assertEqual(len(checks.logger.info_msgs), 0)
-        self.assertTrue("Unable to access the repositories passed through " in checks.logger.critical_msgs[0])
+        self.assertIn("Unable to access the repositories passed through ", checks.logger.critical_msgs[0])
 
 
 @oracle8
