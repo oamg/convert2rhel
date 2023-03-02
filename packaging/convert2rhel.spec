@@ -25,6 +25,9 @@ BuildRequires:  python%{python_pkgversion}-six
 BuildRequires:  python3-pexpect
 # rpm is being imported through utils.py
 BuildRequires:  python3-rpm
+# Disallow packages like python38-rpm-macros or python39-rpm-macros to be installed when building the package.
+# Having them installed would expand the 'python3_pkgversion' macro to 38 or 39 instead of the expected 3.
+BuildConflicts: python-modular-rpm-macros
 %endif
 %if 0%{?rhel} && 0%{?rhel} <= 7
 BuildRequires:  pexpect
