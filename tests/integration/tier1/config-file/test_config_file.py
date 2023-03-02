@@ -10,9 +10,9 @@ Config = namedtuple("Config", "path content")
 
 def create_files(config):
     for cfg in config:
-        f = open(os.path.expanduser(cfg.path), "w")
-        f.write(cfg.content)
-        f.close()
+        with open(os.path.expanduser(cfg.path), mode="w") as handler:
+            handler.write(cfg.content)
+
         os.chmod(os.path.expanduser(cfg.path), 0o600)
 
 

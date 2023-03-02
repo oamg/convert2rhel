@@ -103,7 +103,8 @@ def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
     test_data = "test data\n"
 
     if path_exists:
-        open(log_file, "w").write(test_data)
+        with open(log_file, mode="w") as handler:
+            handler.write(test_data)
 
     logger_module.archive_old_logger_files(log_name, tmpdir)
 

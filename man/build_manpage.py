@@ -142,9 +142,8 @@ class build_manpage(Command):
         manpage.append(self._write_header())
         manpage.append(self._write_options())
         manpage.append(self._write_footer())
-        stream = open(self.output, "w")
-        stream.write("".join(manpage))
-        stream.close()
+        with open(self.output, mode="w") as stream:
+            stream.write("".join(manpage))
 
 
 class ManPageFormatter(optparse.HelpFormatter):

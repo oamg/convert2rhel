@@ -26,7 +26,6 @@ from collections import namedtuple
 import pytest
 import six
 
-import convert2rhel.toolopts
 import convert2rhel.utils
 
 from convert2rhel.toolopts import tool_opts
@@ -92,9 +91,9 @@ class TestTooloptsParseFromCLI(object):
     def test_no_serverurl(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments([]))
         convert2rhel.toolopts.CLI()
-        assert global_tool_opts.rhsm_hostname == None
-        assert global_tool_opts.rhsm_port == None
-        assert global_tool_opts.rhsm_prefix == None
+        assert global_tool_opts.rhsm_hostname is None
+        assert global_tool_opts.rhsm_port is None
+        assert global_tool_opts.rhsm_prefix is None
 
     @pytest.mark.parametrize(
         "serverurl",

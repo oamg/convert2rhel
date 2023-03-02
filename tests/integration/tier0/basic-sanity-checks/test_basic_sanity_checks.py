@@ -1,8 +1,6 @@
 import os
 import subprocess
 
-from os import getenv
-
 import pytest
 
 
@@ -218,7 +216,7 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
     # Remove envar disabling telemetry just in case.
-    if getenv("CONVERT2RHEL_DISABLE_TELEMETRY"):
+    if os.getenv("CONVERT2RHEL_DISABLE_TELEMETRY"):
         del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
