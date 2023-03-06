@@ -20,6 +20,7 @@ import getpass
 import inspect
 import json
 import logging
+import multiprocessing
 import os
 import re
 import shutil
@@ -27,6 +28,8 @@ import subprocess
 import sys
 import tempfile
 import traceback
+
+from functools import wraps
 
 import pexpect
 import rpm
@@ -64,6 +67,141 @@ DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
 TMP_DIR = "/var/lib/convert2rhel/"
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
+
+
+# Code taken from https://stackoverflow.com/a/63773140
+class Process(multiprocessing.Process):
+    """Overrides the implementation of the multiprocessing.Process class."""
+
+    def __init__(self, *args, **kwargs):
+        """Default constructor for the class"""
+        multiprocessing.Process.__init__(self, *args, **kwargs)
+        self._pconn, self._cconn = multiprocessing.Pipe()
+        self._exception = None
+
+    def run(self):
+        """Overrides the `run` method to catch exceptions raised in child."""
+        try:
+            multiprocessing.Process.run(self)
+            self._cconn.send(None)
+        # Here, `SystemExit` is inherit from `BaseException`, which is too
+        # broad to catch as it involves for-loop exceptions. The idea here
+        # is to catch `SystemExit` *and* any `Exception` that shows up as we do
+        # a lot of logger.critical() and they do raise `SystemExit`.
+        except (Exception, SystemExit) as e:
+            tb = traceback.format_exc()
+            self._cconn.send((e, tb))
+
+    @property
+    def exception(self):
+        """Custom property to access the exception raised by the children."""
+        if self._pconn.poll():
+            self._exception = self._pconn.recv()
+        return self._exception
+
+
+def run_as_child_process(func):
+    """Decorator to execute functions as child process.
+
+    This decorator will use `multiprocessing.Process` class to initiate the
+    function as a child process to the parent process with the intention to
+    execute that in its own process, thus, avoiding cases where libraries would
+    install handlers that could be propagated to the main thread if they do not
+    do a clean and proper clean-up.
+
+    .. note::
+        This decorator is mostly intended to be used when dealing with
+        functions that call directly `rpm` or `yum`.
+
+        In `rpm` (version 4.11.3, RHEL 7), it's know that whenever there is a
+        call to that library, it will install a global signal handler catching
+        different types of signals, but most importantly, the SIGINT (Ctrl + C)
+        one, which causes problem during the conversion, as we can't replace or
+        override that signal as it was initiated in a C library rather than a
+        python library.
+
+        By using this decorator, `rpm` will install the signal handler in the
+        child process and leave the parent one with the original signal
+        handling that is initiated by python itself (or, whatever signal is
+        registered when the conversion starts as well).
+
+    .. warning::
+        This decorator will use a instance of `multiprocessing.Queue` to
+        communicate between the processes, so, if this decorator is being used
+        in a function that should return values, it will need to adapt to the
+        queue workflow, and instead of returning it directly, just put the
+        value inside the queue and the decorator will pop it out once the
+        process finishes.
+
+    :param func: Function attached to the decorator
+    :type func: Callable
+    :return: A internal callable wrapper
+    :rtype: Callable
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """
+        Wrapper function to execute and control the function attached to the
+        decorator.
+
+        :param args: Arguments tied to the function
+        :type args: tuple
+        :param kwargs: Named arguments tied to the function
+        :type kwargs: dict
+
+        :raises KeyboardInterrupt: Raises a `KeyboardInterrupt` if a SIGINT is
+            catched during the execution of the child process. This exception
+            will be re-raised to the stack once it is catched.
+        :raises Exception: Raise any general exception that can occurs during
+            the execution of the child process.
+
+        :return: If the Queue is not empty, return anything that on it,
+        otherwise, returns `None`.
+        :rtype: Any
+        """
+        queue = multiprocessing.Queue()
+        process_args = (queue,)
+        if args:
+            args += process_args
+            process_args = args
+
+        # TODO(r0x0d): I don't think that creating the process can cause an
+        # exception that we should handle here, only if we mess something with
+        # the process_args tuple, but that should be know during development
+        # time. In any case, check this later.
+        process = Process(target=func, args=process_args)
+        try:
+            process.start()
+            process.join()
+
+            if process.exception:
+                raise process.exception
+
+            # Only try to terminate a process if it is alive, otherwise, do
+            # nothing.
+            if process.is_alive():
+                process.terminate()
+
+            # We don't need to block the I/O as we are mostly done with the
+            # child process and no exceptions was raised, so we can instantly
+            # retrieve the item that was in the queue.
+            return queue.get(block=False) if not queue.empty() else None
+        except KeyboardInterrupt:
+            # Only try to terminate a process if it is alive, otherwise, do
+            # nothing.
+            if process.is_alive():
+                process.terminate()
+
+            # If there is a KeyboardInterrupt raised while the child process is
+            # being executed, let's just re-raise it to the stack and move on.
+            raise
+
+    # Python2 and Python3 < 3.2 compatibility
+    if not hasattr(wrapper, "__wrapped__"):
+        wrapper.__wrapped__ = func
+
+    return wrapper
 
 
 def get_executable_name():
@@ -158,11 +296,11 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         if print_output:
             loggerinst.info(line.rstrip("\n"))
 
-    # Call communicate() to wait for the process to terminate so that we can get the return code by poll()
-    process.communicate()
+    # Call wait() to wait for the process to terminate so that we can get the
+    # return code.
+    process.wait()
 
-    return_code = process.poll()
-    return output, return_code
+    return output, process.returncode
 
 
 def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, columns=150):

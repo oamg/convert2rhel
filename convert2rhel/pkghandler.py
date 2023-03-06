@@ -301,15 +301,42 @@ def get_pkg_fingerprint(pkg_obj):
         return "none"
 
 
-def get_pkg_signature(pkg_obj):
-    """Get information about a package signature from the RPM database."""
+@utils.run_as_child_process
+def get_pkg_signature(pkg_obj, queue):
+    """Get information about a package signature from the RPM database.
+
+    .. warning::
+        This function will run as a child process for the main thread, the
+        reason for that is that this was the only way to make it behave and
+        respect the SIGINT signals when the user presses Ctrl + C (SIGINT) or
+        send a `kill -<number> <pid>` to the main process. The reason that this
+        is done this way is because of RPM installing a global signal handler
+        during some functions calls that is propagated to the main thread
+        instead of being released after the function execution is over.
+
+        By running the function in a child process does not change how the
+        function itself works, it will still remain the same, the only small
+        addition that was made is the usage of a `Queue` to be able to
+        communicate with the main process and give the result of this function
+        back to the caller.
+
+    :param pkg_obj: Instace of a package RPM installed on the system.
+    :type pkg_obj: yum.rpmsack.RPMInstalledPackage
+    :param queue: An instance of a queue used when the function is run as a
+        child process.
+    :type queue: multiprocessing.queues.Queue
+    :return: Return will be None, as the function is actually putting what the
+        return value should be into the instance of a queue to be return
+        through the decorator call.
+    :rtype: None
+    """
     if pkgmanager.TYPE == "yum":
         hdr = pkg_obj.hdr
     elif pkgmanager.TYPE == "dnf":
         hdr = get_rpm_header(pkg_obj)
 
     pkg_sig = hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|")
-    return pkg_sig
+    queue.put(pkg_sig)
 
 
 def get_rpm_header(pkg_obj):
@@ -987,15 +1014,34 @@ def get_total_packages_to_update(reposdir):
     return set(packages)
 
 
-def _get_packages_to_update_yum():
-    """Query all the packages with yum that has an update pending on the system."""
+@utils.run_as_child_process
+def _get_packages_to_update_yum(queue):
+    """Query all the packages with yum that have an update pending on the system.
+
+    .. warning::
+        This function is being executed in a child process so we will be able
+        to raise SIGINT or any other signal that is sent to the main process.
+
+        The function calls here does not affect the others subprocesses calls
+        that are called after this function during the conversion, but, it does
+        affect the signal handling while the user tries to send that signal
+        while this function is executing.
+
+    :param queue: An instance of a queue used when the function is run as a
+        child process.
+    :type queue: multiprocessing.queues.Queue
+    :return: Return will be None, as the function is actually putting what the
+        return value should be into the instance of a queue to be return
+        through the decorator call.
+    :rtype: None
+    """
     base = pkgmanager.YumBase()
     packages = base.doPackageLists(pkgnarrow="updates")
     all_packages = []
     for package in packages.updates:
         all_packages.append(package.name)
 
-    return all_packages
+    queue.put(all_packages)
 
 
 def _get_packages_to_update_dnf(reposdir):
