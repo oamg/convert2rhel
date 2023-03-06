@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import errno
 import getpass
 import inspect
@@ -133,7 +134,7 @@ class Process(multiprocessing.Process):
 
 
 def run_as_child_process(func):
-    """Decorator to execute a function in a child process.
+    """Decorator to execute functions as child process.
 
     This decorator will use `multiprocessing.Process` class to initiate the
     function as a child process to the parent process with the intention to
