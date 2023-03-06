@@ -15,10 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
+
+import six
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import os
 
 import pytest
-import six
+
+from six.moves import mock
 
 from convert2rhel import pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
@@ -26,8 +33,12 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos7
 
 
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+def mock_decorator(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped
 
 
 class YumResolveDepsMocked(unit_tests.MockFunction):
@@ -149,7 +160,15 @@ class TestYumTransactionHandler(object):
         ),
     )
     def test_resolve_dependencies(
-        self, pretend_os, ret_code, message, validate_transaction, expected, _mock_yum_api_calls, caplog, monkeypatch
+        self,
+        pretend_os,
+        ret_code,
+        message,
+        validate_transaction,
+        expected,
+        _mock_yum_api_calls,
+        caplog,
+        monkeypatch,
     ):
         monkeypatch.setattr(
             pkgmanager.YumBase,
@@ -197,15 +216,19 @@ class TestYumTransactionHandler(object):
 
     @centos7
     @pytest.mark.parametrize(
-        ("validate_transaction", "expected"),
+        ("validate_transaction"),
         (
-            (True, "Validating the yum transaction set, no modifications to the system will happen this time."),
-            (False, "Replacing CentOS Linux packages."),
+            (True,),
+            (False,),
         ),
     )
-    def test_run_transaction(
-        self, pretend_os, validate_transaction, expected, _mock_yum_api_calls, caplog, monkeypatch
-    ):
+    def test_run_transaction(self, pretend_os, validate_transaction, _mock_yum_api_calls, caplog, monkeypatch):
+        # Save original function as we need to override the decorator that is in place for `run_transaction`
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
+        )
+
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
@@ -219,10 +242,22 @@ class TestYumTransactionHandler(object):
         assert pkgmanager.handlers.yum.YumTransactionHandler._process_transaction.call_count == 1
 
     @centos7
-    @pytest.mark.parametrize(("start_at", "loop_until"), ((0, 99), (4, 99)))
+    @pytest.mark.parametrize(
+        ("start_at", "loop_until", "expected_count"),
+        (
+            (0, 99, (4, 4)),
+            (4, 99, (4, 8)),
+        ),
+    )
     def test_run_transaction_resolve_dependencies_loop(
-        self, pretend_os, start_at, loop_until, _mock_yum_api_calls, caplog, monkeypatch
+        self, pretend_os, start_at, loop_until, expected_count, _mock_yum_api_calls, monkeypatch
     ):
+        # Save original function as we need to override the decorator that is in place for `run_transaction`
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
+        )
+
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler,
@@ -231,10 +266,12 @@ class TestYumTransactionHandler(object):
         )
         instance = YumTransactionHandler()
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(SystemExit, match="Failed to resolve dependencies in the transaction."):
             instance.run_transaction(validate_transaction=False)
 
-        assert "Failed to resolve dependencies in the transaction." in caplog.records[-1].message
+        perform_operations_count, resolve_dependencies_count = expected_count
+        assert pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.call_count == perform_operations_count
+        assert pkgmanager.handlers.yum.YumTransactionHandler._resolve_dependencies.called == resolve_dependencies_count
 
 
 @centos7

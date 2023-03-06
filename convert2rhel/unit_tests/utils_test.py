@@ -824,10 +824,11 @@ class DummyPopenOutput(unit_tests.MockFunction):
         self.call_count += 1
         return next_line
 
-    def communicate(self):
+    def wait(self):
         pass
 
-    def poll(self):
+    @property
+    def returncode(self):
         return 0
 
 

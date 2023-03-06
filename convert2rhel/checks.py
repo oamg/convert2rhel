@@ -386,9 +386,7 @@ def validate_package_manager_transaction():
     """Validate the package manager transaction is passing the tests."""
     logger.task("Prepare: Validate the %s transaction", pkgmanager.TYPE)
     transaction_handler = pkgmanager.create_transaction_handler()
-    transaction_handler.run_transaction(
-        validate_transaction=True,
-    )
+    transaction_handler.run_transaction(validate_transaction=True)
 
 
 def get_loaded_kmods():
