@@ -27,7 +27,7 @@ from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR
+from convert2rhel.utils import BACKUP_DIR, run_as_child_process
 
 
 loggerinst = logging.getLogger(__name__)
@@ -274,12 +274,23 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("System packages replaced successfully.")
 
-    def run_transaction(self, validate_transaction=False):
+    @run_as_child_process
+    def run_transaction(self, validate_transaction=False, queue=None):
         """Run the yum transaction.
 
         Perform the transaction. If the `validate_transaction` parameter set to
         true, it means the transaction will not be executed, but rather verify
         everything and do an early return.
+
+        .. warning::
+            This function is being executed in a child process so we will be
+            able to raise SIGINT or any other signal that is sent to the main
+            process.
+
+            The function calls here does not affect the others subprocesses
+            calls that are called after this function during the conversion,
+            but, it does affect the signal handling while the user tries to
+            send that signal while this function is executing.
 
         ..notes::
             The implementation of this yum transaction is different from the
@@ -309,6 +320,9 @@ class YumTransactionHandler(TransactionHandlerBase):
         :param vaidate_transaction: Determines if the transaction needs to be
             validated or not.
         :type valiate_transaction: bool
+        :param queue: An instance of a queue used when the function is run as a
+            child process.
+        :type queue: multiprocessing.queues.Queue
         :raises SystemExit: If we can't resolve the transaction dependencies.
         """
         resolve_deps_finished = False
@@ -318,7 +332,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
             self._perform_operations()
             resolved = self._resolve_dependencies(validate_transaction)
-
             if not resolved:
                 loggerinst.info("Retrying to resolve dependencies %s", attempts)
                 attempts += 1
@@ -330,11 +343,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
         self._process_transaction(validate_transaction)
-
-        # Because we call the same thing multiple times, the rpm database is not
-        # properly closed at the end of it, thus, having the need to call
-        # `self._base.close()` explicitly before we delete the object. If we use
-        # only `del self._base`, it seems that yum is not able to properly clean
-        # everything in the database.
+        # Because we call the same thing multiple times, the rpm database is
+        # not properly closed at the end of it, thus, having the need to call
+        # `self._base.close()` explicitly before we delete the object. If we
+        # use only `del self._base`, it seems that yum is not able to properly
+        # clean everything in the database.
         self._base.close()
         del self._base
