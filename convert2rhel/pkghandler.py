@@ -314,11 +314,10 @@ def get_pkg_signature(pkg_obj, queue):
         during some functions calls that is propagated to the main thread
         instead of being released after the function execution is over.
 
-        By running the function in a child process does not change how the
-        function itself works, it will still remain the same, the only small
-        addition that was made is the usage of a `Queue` to be able to
-        communicate with the main process and give the result of this function
-        back to the caller.
+        Running the function in a child process does not change how the
+        function itself works. The only addition is the usage of a `Queue`
+        to be able to communicate with the main process and give the result
+        of this function back to the caller.
 
     :param pkg_obj: Instace of a package RPM installed on the system.
     :type pkg_obj: yum.rpmsack.RPMInstalledPackage
@@ -326,7 +325,7 @@ def get_pkg_signature(pkg_obj, queue):
         child process.
     :type queue: multiprocessing.queues.Queue
     :return: Return will be None, as the function is actually putting what the
-        return value should be into the instance of a queue to be return
+        return value should be into the instance of a Queue to be returned
         through the decorator call.
     :rtype: None
     """
@@ -1016,22 +1015,20 @@ def get_total_packages_to_update(reposdir):
 
 @utils.run_as_child_process
 def _get_packages_to_update_yum(queue):
-    """Query all the packages with yum that have an update pending on the system.
+    """Use yum to get all the installed packages that have an update available.
 
     .. warning::
-        This function is being executed in a child process so we will be able
-        to raise SIGINT or any other signal that is sent to the main process.
+        This function is being executed in a child process so that yum does
+        not handle signals like SIGINT without us knowing about it.
 
-        The function calls here does not affect the others subprocesses calls
-        that are called after this function during the conversion, but, it does
-        affect the signal handling while the user tries to send that signal
-        while this function is executing.
+        We need to know about the signals to act on them, for example to execute
+        a rollback when the user presses Ctrl + C.
 
-    :param queue: An instance of a queue used when the function is run as a
+    :param queue: An instance of a Queue used when the function is run as a
         child process.
     :type queue: multiprocessing.queues.Queue
     :return: Return will be None, as the function is actually putting what the
-        return value should be into the instance of a queue to be return
+        return value should be into the instance of a queue to be returned
         through the decorator call.
     :rtype: None
     """
