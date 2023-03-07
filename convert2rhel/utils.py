@@ -296,9 +296,9 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         if print_output:
             loggerinst.info(line.rstrip("\n"))
 
-    # Call wait() to wait for the process to terminate so that we can get the
-    # return code.
-    process.wait()
+    # Call coomunicate() to wait for the process to terminate so that we can
+    # get the return code.
+    process.communicate()
 
     return output, process.returncode
 
