@@ -83,7 +83,7 @@ class Process(multiprocessing.Process):
         try:
             multiprocessing.Process.run(self)
             self._cconn.send(None)
-        # Here, `SystemExit` is inherit from `BaseException`, which is too
+        # Here, `SystemExit` inherits from `BaseException`, which is too
         # broad to catch as it involves for-loop exceptions. The idea here
         # is to catch `SystemExit` *and* any `Exception` that shows up as we do
         # a lot of logger.critical() and they do raise `SystemExit`.
@@ -100,22 +100,22 @@ class Process(multiprocessing.Process):
 
 
 def run_as_child_process(func):
-    """Decorator to execute functions as child process.
+    """Decorator to execute a function in a child process.
 
     This decorator will use `multiprocessing.Process` class to initiate the
     function as a child process to the parent process with the intention to
     execute that in its own process, thus, avoiding cases where libraries would
-    install handlers that could be propagated to the main thread if they do not
-    do a clean and proper clean-up.
+    install signal handlers that could be propagated to the main thread if they
+    do not do a proper clean-up.
 
     .. note::
         This decorator is mostly intended to be used when dealing with
         functions that call directly `rpm` or `yum`.
 
-        In `rpm` (version 4.11.3, RHEL 7), it's know that whenever there is a
+        In `rpm` (version 4.11.3, RHEL 7), it's known that whenever there is a
         call to that library, it will install a global signal handler catching
         different types of signals, but most importantly, the SIGINT (Ctrl + C)
-        one, which causes problem during the conversion, as we can't replace or
+        one, which causes a problem during the conversion as we can't replace or
         override that signal as it was initiated in a C library rather than a
         python library.
 
@@ -150,13 +150,13 @@ def run_as_child_process(func):
         :type kwargs: dict
 
         :raises KeyboardInterrupt: Raises a `KeyboardInterrupt` if a SIGINT is
-            catched during the execution of the child process. This exception
-            will be re-raised to the stack once it is catched.
-        :raises Exception: Raise any general exception that can occurs during
+            caught during the execution of the child process. This exception
+            will be re-raised to the stack once it is caught.
+        :raises Exception: Raise any general exception that can occur during
             the execution of the child process.
 
-        :return: If the Queue is not empty, return anything that on it,
-            otherwise, returns `None`.
+        :return: If the Queue is not empty, return anything in it, otherwise,
+            return `None`.
         :rtype: Any
         """
         # Create the queue anyway, even if it's not used.
@@ -296,9 +296,9 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         if print_output:
             loggerinst.info(line.rstrip("\n"))
 
-    # Call wait() to wait for the process to terminate so that we can get the
-    # return code.
-    process.wait()
+    # Call coomunicate() to wait for the process to terminate so that we can
+    # get the return code.
+    process.communicate()
 
     return output, process.returncode
 
