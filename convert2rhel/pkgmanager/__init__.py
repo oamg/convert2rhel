@@ -43,7 +43,6 @@ except ImportError as e:
     from dnf import *  # pylint: disable=import-error
     from dnf.callback import Depsolve, DownloadProgress
 
-
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
     from dnf.exceptions import RepoError
