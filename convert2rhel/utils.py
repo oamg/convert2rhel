@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import errno
 import getpass
 import inspect
@@ -157,20 +156,18 @@ def run_as_child_process(func):
             the execution of the child process.
 
         :return: If the Queue is not empty, return anything that on it,
-        otherwise, returns `None`.
+            otherwise, returns `None`.
         :rtype: Any
         """
+        # Create the queue anyway, even if it's not used.
         queue = multiprocessing.Queue()
-        process_args = (queue,)
-        if args:
-            args += process_args
-            process_args = args
+        kwargs.update({"queue": queue})
 
         # TODO(r0x0d): I don't think that creating the process can cause an
         # exception that we should handle here, only if we mess something with
         # the process_args tuple, but that should be know during development
         # time. In any case, check this later.
-        process = Process(target=func, args=process_args)
+        process = Process(target=func, args=args, kwargs=kwargs)
         try:
             process.start()
             process.join()
@@ -183,10 +180,13 @@ def run_as_child_process(func):
             if process.is_alive():
                 process.terminate()
 
-            # We don't need to block the I/O as we are mostly done with the
-            # child process and no exceptions was raised, so we can instantly
-            # retrieve the item that was in the queue.
-            return queue.get(block=False) if not queue.empty() else None
+            if not queue.empty():
+                # We don't need to block the I/O as we are mostly done with
+                # the child process and no exceptions was raised, so we can
+                # instantly retrieve the item that was in the queue.
+                return queue.get(block=False)
+
+            return None
         except KeyboardInterrupt:
             # Only try to terminate a process if it is alive, otherwise, do
             # nothing.
