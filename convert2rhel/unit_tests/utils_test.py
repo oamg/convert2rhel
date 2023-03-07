@@ -863,3 +863,111 @@ def test_require_root_is_root(monkeypatch):
     monkeypatch.setattr(sys, "exit", exit_mock)
     utils.require_root()
     assert exit_mock.call_count == 0
+
+
+class RunAsChildProcessFunctions:
+    """Map methods as static to re-use in the run_as_child_process tests."""
+
+    @staticmethod
+    def raise_keyboard_interrupt_exception(queue):
+        raise KeyboardInterrupt
+
+    @staticmethod
+    def return_value(queue):
+        queue.put(1)
+
+    @staticmethod
+    def without_return(queue):
+        print("executed")
+
+    @staticmethod
+    def return_with_parameter(something, queue):
+        queue.put(something)
+
+    @staticmethod
+    def return_with_both_args_and_kwargs(args, kwargs, queue):
+        queue.put("%s, %s" % (args, kwargs))
+
+    @staticmethod
+    def raise_bare_system_exit_exception(queue):
+        raise SystemExit
+
+    @staticmethod
+    def function_without_queue():
+        print("should fail")
+
+
+@pytest.mark.parametrize(
+    ("func", "args", "kwargs", "expected"),
+    (
+        (RunAsChildProcessFunctions.return_value, (), {}, 1),
+        (RunAsChildProcessFunctions.without_return, (), {}, None),
+        # Only args, no kwargs
+        (
+            RunAsChildProcessFunctions.return_with_parameter,
+            ("Test",),
+            {},
+            "Test",
+        ),
+        # Only kwargs, no args
+        (
+            RunAsChildProcessFunctions.return_with_parameter,
+            (),
+            {"something": "Test"},
+            "Test",
+        ),
+        # Both args and kwargs
+        (
+            RunAsChildProcessFunctions.return_with_both_args_and_kwargs,
+            ("Test from args",),
+            {"kwargs": "Test from kwargs"},
+            "Test from args, Test from kwargs",
+        ),
+    ),
+)
+def test_run_as_child_process(func, args, kwargs, expected):
+    decorated = utils.run_as_child_process(func)
+    result = decorated(*args, **kwargs)
+
+    assert result == expected
+    assert hasattr(decorated, "__wrapped__")
+    assert decorated.__wrapped__ == func
+
+
+class MockProcess:
+    def __init__(self, exception):
+        self._exception = exception
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def start(self):
+        pass
+
+    def join(self):
+        pass
+
+    def is_alive(self):
+        return True
+
+    def terminate(self):
+        pass
+
+    @property
+    def exception(self):
+        return self._exception
+
+
+@pytest.mark.parametrize(
+    ("func", "args", "kwargs", "expected_exception"),
+    (
+        (RunAsChildProcessFunctions.raise_keyboard_interrupt_exception, (), {}, KeyboardInterrupt),
+        (RunAsChildProcessFunctions.raise_bare_system_exit_exception, (), {}, SystemExit),
+        (RunAsChildProcessFunctions.function_without_queue, (), {}, TypeError),
+    ),
+)
+def test_run_as_child_process_with_exceptions(func, args, kwargs, expected_exception, monkeypatch):
+    monkeypatch.setattr(utils, "Process", MockProcess(expected_exception))
+    decorated = utils.run_as_child_process(func)
+    with pytest.raises(expected_exception):
+        decorated(*args, **kwargs)
