@@ -85,7 +85,7 @@ class Process(multiprocessing.Process):
             multiprocessing.Process.run(self)
             self._cconn.send(None)
         # Here, `SystemExit` is inherit from `BaseException`, which is too
-        # broad to catch as it involves for-loop exceptions. The ideal here
+        # broad to catch as it involves for-loop exceptions. The idea here
         # is to catch `SystemExit` *and* any `Exception` that shows up as we do
         # a lot of logger.critical() and they do raise `SystemExit`.
         except (Exception, SystemExit) as e:

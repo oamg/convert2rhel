@@ -1016,7 +1016,7 @@ def get_total_packages_to_update(reposdir):
 
 @utils.run_as_child_process
 def _get_packages_to_update_yum(queue):
-    """Query all the packages with yum that has an update pending on the system.
+    """Query all the packages with yum that have an update pending on the system.
 
     .. warning::
         This function is being executed in a child process so we will be able
