@@ -319,8 +319,8 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         :param vaidate_transaction: Determines if the transaction needs to be
             validated or not.
-        :type valiate_transaction: bool
-        :param queue: An instance of a queue used when the function is run as a
+        :type validate_transaction: bool
+        :param queue: An instance of a Queue used when the function is run as a
             child process.
         :type queue: multiprocessing.queues.Queue
         :raises SystemExit: If we can't resolve the transaction dependencies.
