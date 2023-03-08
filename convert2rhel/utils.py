@@ -124,14 +124,6 @@ def run_as_child_process(func):
         handling that is initiated by python itself (or, whatever signal is
         registered when the conversion starts as well).
 
-    .. warning::
-        This decorator will use a instance of `multiprocessing.Queue` to
-        communicate between the processes, so, if this decorator is being used
-        in a function that should return values, it will need to adapt to the
-        queue workflow, and instead of returning it directly, just put the
-        value inside the queue and the decorator will pop it out once the
-        process finishes.
-
     :param func: Function attached to the decorator
     :type func: Callable
     :return: A internal callable wrapper
@@ -159,15 +151,30 @@ def run_as_child_process(func):
             return `None`.
         :rtype: Any
         """
-        # Create the queue anyway, even if it's not used.
+
+        def inner_wrapper(*args, **kwargs):
+            """
+            Inner function wrapper to execute decorated functions without the
+            need to modify them to have a queue parameter.
+
+            :param args: Arguments tied to the function
+            :type args: tuple
+            :param kwargs: Named arguments tied to the function
+            :type kwargs: dict
+            """
+            func = kwargs.pop("func")
+            queue = kwargs.pop("queue")
+            result = func(*args, **kwargs)
+            queue.put(result)
+
         queue = multiprocessing.Queue()
-        kwargs.update({"queue": queue})
 
         # TODO(r0x0d): I don't think that creating the process can cause an
         # exception that we should handle here, only if we mess something with
         # the process_args tuple, but that should be know during development
         # time. In any case, check this later.
-        process = Process(target=func, args=args, kwargs=kwargs)
+        kwargs.update({"func": func, "queue": queue})
+        process = Process(target=inner_wrapper, args=args, kwargs=kwargs)
         try:
             process.start()
             process.join()

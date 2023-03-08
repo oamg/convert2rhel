@@ -275,7 +275,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.info("System packages replaced successfully.")
 
     @run_as_child_process
-    def run_transaction(self, validate_transaction=False, queue=None):
+    def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 
         Perform the transaction. If the `validate_transaction` parameter set to
@@ -320,9 +320,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         :param vaidate_transaction: Determines if the transaction needs to be
             validated or not.
         :type validate_transaction: bool
-        :param queue: An instance of a Queue used when the function is run as a
-            child process.
-        :type queue: multiprocessing.queues.Queue
         :raises SystemExit: If we can't resolve the transaction dependencies.
         """
         resolve_deps_finished = False

@@ -869,32 +869,28 @@ class RunAsChildProcessFunctions:
     """Map methods as static to re-use in the run_as_child_process tests."""
 
     @staticmethod
-    def raise_keyboard_interrupt_exception(queue):
+    def raise_keyboard_interrupt_exception():
         raise KeyboardInterrupt
 
     @staticmethod
-    def return_value(queue):
-        queue.put(1)
+    def return_value():
+        return 1
 
     @staticmethod
-    def without_return(queue):
+    def without_return():
         print("executed")
 
     @staticmethod
-    def return_with_parameter(something, queue):
-        queue.put(something)
+    def return_with_parameter(something):
+        return something
 
     @staticmethod
-    def return_with_both_args_and_kwargs(args, kwargs, queue):
-        queue.put("%s, %s" % (args, kwargs))
+    def return_with_both_args_and_kwargs(args, kwargs):
+        return "%s, %s" % (args, kwargs)
 
     @staticmethod
-    def raise_bare_system_exit_exception(queue):
+    def raise_bare_system_exit_exception():
         raise SystemExit
-
-    @staticmethod
-    def function_without_queue():
-        print("should fail")
 
 
 @pytest.mark.parametrize(
@@ -963,7 +959,6 @@ class MockProcess:
     (
         (RunAsChildProcessFunctions.raise_keyboard_interrupt_exception, (), {}, KeyboardInterrupt),
         (RunAsChildProcessFunctions.raise_bare_system_exit_exception, (), {}, SystemExit),
-        (RunAsChildProcessFunctions.function_without_queue, (), {}, TypeError),
     ),
 )
 def test_run_as_child_process_with_exceptions(func, args, kwargs, expected_exception, monkeypatch):
