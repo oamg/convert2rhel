@@ -645,6 +645,13 @@ def test_get_rhel_supported_kmods(
         ),
         (
             (
+                "kmod-core-0:10.18.0-240.10.1.el8_3.x86_64",
+                "kmod-core-0:9.18.0-240.15.1.el8_3.x86_64",
+            ),
+            ("kmod-core-0:10.18.0-240.10.1.el8_3.x86_64",),
+        ),
+        (
+            (
                 "not-expected-core-0:4.18.0-240.10.1.el8_3.x86_64",
                 "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
             ),

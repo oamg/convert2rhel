@@ -47,6 +47,27 @@ versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C01
 # NEVR can contain more than that.  For instance: gcc-c++-4.8.5-44.0.3.el7.x86_64
 PKG_NEVR = r"\b(?:([0-9]+):)?(\S+)-(\S+)-(\S+)\b"
 
+# This regex finds if a package is in ENVR/ENVRA format by searching for the epoch field
+# being the first set of characters in the package string
+ENVRA_ENVR_FORMAT = re.compile(r"^\d:")
+
+# This regex finds if a package is in NEVRA/NEVR format by searching for any digit
+# found between a "-" and a ":"
+NEVRA_NEVR_FORMAT = re.compile(r"-\d:")
+
+# This regex ensures there are no whitespace charcters in the package name
+PKG_NAME = re.compile(r"^[^\s]+$")
+
+# This regex ensures package epoch has only 1 or more digits
+PKG_EPOCH = re.compile(r"^\d+$")
+
+# This regex ensures there are no whitespace charcters or dashes in the package version and release
+PKG_VERSION = re.compile(r"^[^\s-]+$")
+PKG_RELEASE = PKG_VERSION
+
+# Set of valid arches
+PKG_ARCH = ("x86_64", "s390x", "i86", "ppc64le", "aarch64", "noarch")
+
 # It would be better to construct this dynamically but we don't have lru_cache
 # in Python-2.6 and modifying a global after your program initializes isn't a
 # good idea.
@@ -76,13 +97,11 @@ def call_yum_cmd(
     set_releasever=True,
 ):
     """Call yum command and optionally print its output.
-
     The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
     which is:
     * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
     * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
       file for the particular system OR passed through a CLI option by the user
-
     YUM/DNF typically expands the $releasever variable used in repofiles. However it fails to do so after we remove the
     release packages (centos-release, oraclelinux-release, etc.) and before the redhat-release package is installed.
     By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
@@ -185,7 +204,6 @@ def get_problematic_pkgs(output, excluded_pkgs=frozenset()):
 def find_pkg_names(output, message_key="%s"):
     """
     Find all the package names of a "type" from amongst a string of output from yum.
-
     :arg output: The yum output to parse for package names
     :arg message_key: This function tries to retrieve "types" of packages from the yum output.
         Packages that have multilib problems or dependency errors for instance.
@@ -489,7 +507,6 @@ def print_pkg_info(pkgs):
 
 def get_pkg_nvra(pkg_obj):
     """Get package NVRA as a string: name, version, release, architecture.
-
     Some utilities don't accept the full NEVRA of a package, for example rpm.
     """
     return "%s-%s-%s.%s" % (
@@ -502,7 +519,6 @@ def get_pkg_nvra(pkg_obj):
 
 def get_pkg_nevra(pkg_obj):
     """Get package NEVRA as a string: name, epoch, version, release, architecture.
-
     Epoch is included only when non-zero. However it's on a different position when printed by YUM or DNF:
       YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
       DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
@@ -527,7 +543,6 @@ def get_pkg_nevra(pkg_obj):
 
 def get_packager(pkg_obj):
     """Get the package packager from the yum/dnf package object.
-
     The packager may not be set for all packages. E.g. Oracle Linux packages have the packager info empty.
     """
     packager = pkg_obj.packager if pkg_obj.packager else "N/A"
@@ -540,7 +555,6 @@ def get_packager(pkg_obj):
 
 def get_vendor(pkg_obj):
     """Get the package vendor from the yum/dnf package object.
-
     The vendor information is provided by the yum/dnf python API on all systems except systems derived from
     RHEL 8.0-8.3 (see bug https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
@@ -574,7 +588,6 @@ def remove_excluded_pkgs():
 def remove_repofile_pkgs():
     """Remove those non-RHEL packages that contain YUM/DNF repofiles (/etc/yum.repos.d/*.repo) or affect variables
     in the repofiles (e.g. $releasever).
-
     Red Hat cannot automatically remove these non-RHEL packages with other excluded packages. While other excluded
     packages must be removed before installing subscription-manager to prevent package conflicts, these non-RHEL
     packages must be present on the system during subscription-manager installation so that the system can access and
@@ -609,7 +622,6 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
 
 def get_system_packages_for_replacement():
     """Get a list of packages in the system to be replaced.
-
     This function will return a list of packages installed on the system by
     using the `system_info.fingerprint_ori_os` signature.
 
@@ -829,12 +841,10 @@ def fix_invalid_grub2_entries():
     """
     On systems derived from RHEL 8 and later, /etc/machine-id is being used to identify grub2 boot loader entries per
     the Boot Loader Specification.
-
     However, at the time of executing convert2rhel, the current machine-id can be different from the machine-id from the
     time when the kernels were installed. If that happens:
     - convert2rhel installs the RHEL kernel, but it's not set as default
     - convert2rhel removes the original OS kernels, but for these the boot entries are not removed
-
     The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
     OS kernels, and set the RHEL kernel as default.
     """
@@ -926,10 +936,8 @@ def has_duplicate_repos_across_disablerepo_enablerepo_options():
 
 def filter_installed_pkgs(pkg_names):
     """Check if a package is present on the system based on a list of package names.
-
     This function aims to act as a filter for a list of pkg_names to return wether or not a package is present on the
     system.
-
     :param pkg_names: List of package names
     :type pkg_names: list[str]
     :return: A list of packages that are present on the system.
@@ -947,7 +955,6 @@ def filter_installed_pkgs(pkg_names):
 
 def get_pkg_names_from_rpm_paths(rpm_paths):
     """Return names of packages represented by locally stored rpm packages.
-
     :param rpm_paths: List of rpm with filepaths.
     :type rpm_paths: list[str]
     :return: A list of package names extracted from the rpm filepath.
@@ -959,51 +966,15 @@ def get_pkg_names_from_rpm_paths(rpm_paths):
     return pkg_names
 
 
-def compare_package_versions(version1, version2):
-    """Compare two EVR versions against each other.
-
-
-    :param version1: The version to be compared.
-    :type version1: str
-    :param version2: The version to compare against.
-    :type version2: str
-
-    :example:
-
-        >>> match = compare_package_versions("5.14.10-300.fc35", "5.14.15-300.fc35")
-        >>> match # -1
-
-    .. note::
-
-        Since the return type is a int, this could be difficult to understand
-        the meaning of each number, so here is a quick list of the meaning from
-        every possible number:
-            * -1 if the evr1 is less then evr2 version
-            * 0 if the evr1 is equal evr2 version
-            * 1 if the evr1 is greater than evr2 version
-
-    :return: Return a number indicating if the versions match, are less or greater then.
-    :rtype: int
-    """
-
-    evr1 = utils.string_to_version(version1)
-    evr2 = utils.string_to_version(version2)
-
-    return rpm.labelCompare(evr1, evr2)
-
-
 def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
-
     It uses both yum/dnf depending on whether they are installed on the system,
     In case of RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
 
     To check whether the system is updated or not, we use original vendor repofiles which we ship within the
     convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
-
     :param reposdir: The path to the hardcoded repositories for EUS (If any).
     :type reposdir: str | None
-
     :return: The packages that need to be updated.
     :rtype: list[str]
     """
@@ -1032,7 +1003,6 @@ def _get_packages_to_update_yum():
 def _get_packages_to_update_dnf(reposdir):
     """Query all the packages with dnf that has an update pending on the
     system.
-
     :param reposdir: The path to the hardcoded repositories for EUS (If any).
     :type reposdir: str | None
     """
@@ -1070,52 +1040,208 @@ def _get_packages_to_update_dnf(reposdir):
     return packages
 
 
-def _package_version_cmp(pkg_1, pkg_2):
-    """Compare the version key in a given package name.
-
-    Consider the following variables that will be passed to this function::
-
-        pkg_1 = 'kernel-core-0:4.18.0-240.10.1.el8_3.x86_64'
-        pkg_2 = 'kernel-core-0:4.18.0-239.0.0.el8_3.x86_64'
-
-    The output of this will be a tuple containing the package version in a
-    tuple::
-
-        result = _package_version_cmp(pkg_1, pkg_2)
-        print("Result is: %s" % result)
-        # Result is: -1
-
-    The function will ignore the package name as it is not an important
-    information here and will only care about the version that is tied to it's
-    name.
-
-    :param pkg_1: The first package to extract the version
-    :type pkg_1: str
-    :param pkg_2: The second package to extract the version
-    :type pkg_2: str
-    :return: An integer resulting in the package comparision
+def compare_package_versions(version1, version2):
+    """Compare two package versions against each other, including name and arch.
+    This function will receive packages in any of the following formats:
+        * ENVR
+        * ENVRA
+        * NVR
+        * NEVR
+        * NVRA
+        * NEVRA
+    :param version1: The version to be compared.
+    :type version1: str
+    :param version2: The version to compare against.
+    :type version2: str
+    .. example::
+        >>> match = compare_package_versions("kernel-core-5.14.10-300.fc35", "kernel-core-5.14.15-300.fc35")
+        >>> print(match) # -1
+    .. note::
+        Since the return type is a int, this could be difficult to understand
+        the meaning of each number, so here is a list that represents
+        every possible number:
+            * -1 if the version1 is less then version2 version
+            * 0 if the version1 is equal version2 version
+            * 1 if the version1 is greater than version2 version
+    :return: Return a number indicating if the versions match, are less or greater then.
     :rtype: int
     """
+    # call parse_pkg_string to obtain a list containing name, epoch, release, version and arch fields
+    # order of fields returned: name, epoch, version, release, arch
+    version1_components = parse_pkg_string(version1)
+    version2_components = parse_pkg_string(version2)
 
-    # TODO(r0x0d): This function still needs some enhancements code-wise, it
-    # workes perfectly, but the way we are handling the versions is not 100%
-    # complete yet.  will be done in a future work. Right now, all the list of
-    # changes are listed in this comment:
-    # https://github.com/oamg/convert2rhel/pull/469#discussion_r873971400
-    pkg_ver_components = []
-    for pkg in pkg_1, pkg_2:
-        # Remove the package name and split the rest between epoch + version
-        # and release + arch
-        epoch_version, release_arch = pkg.rsplit("-", 2)[-2:]
-        # Separate the (optional) epoch from the version
-        epoch_version = epoch_version.split(":", 1)
-        if len(epoch_version) == 1:
-            epoch = "0"
-            version = epoch_version[0]
+    # ensure package names match, error if not
+    if version1_components[0] != version2_components[0]:
+        raise ValueError(
+            "The package names ('%s' and '%s') do not match. Can only compare versions for the same packages."
+            % (version1_components[0], version2_components[0])
+        )
+
+    # ensure package arches match, error if not
+    if version1_components[4] != version2_components[4] and all(([version1_components[4]], version2_components[4])):
+        raise ValueError(
+            "The arches ('%s' and '%s') do not match. Can only compare versions for the same arches."
+            % (version1_components[4], version2_components[4])
+        )
+
+    # create list containing EVR for comparison
+    evr1 = (version1_components[1], version1_components[2], version1_components[3])
+    evr2 = (version2_components[1], version2_components[2], version2_components[3])
+
+    return rpm.labelCompare(evr1, evr2)
+
+
+def parse_pkg_string(pkg):
+    """
+    This function takes a version string in NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR and decides whether
+    to parse with a yum/dnf module based on the package manager type of the system.
+    :param pkg: The package to be parsed.
+    :type pkg: str
+    :return: Return a Return a list containing name, epoch, version, release, arch
+    :rtype: list[str | None]
+    """
+    if pkgmanager.TYPE == "yum":
+        pkg_ver_components = _parse_pkg_with_yum(pkg)
+    else:
+        pkg_ver_components = _parse_pkg_with_dnf(pkg)
+
+    _validate_parsed_fields(*pkg_ver_components)
+
+    return pkg_ver_components
+
+
+def _validate_parsed_fields(name, epoch, version, release, arch):
+    """
+    Validation for each field contained in pkg_ver_components from the
+    package parsing functions. If one of the fields are invalid then a ValueError is raised
+    :param name: parsed package name
+    :type name: str
+    :param epoch: parsed package epoch
+    :type name: str
+    :param version: parsed package version
+    :type name: str
+    :param release: parsed package release
+    :type name: str
+    :param arch: parsed package arch
+    :type name: str
+    """
+
+    errors = []
+
+    if name is None or not PKG_NAME.match(name):
+        errors.append("name : %s" % name if name else "name : [None]")
+    if epoch is not None and not PKG_EPOCH.match(epoch):
+        errors.append("epoch : %s" % epoch)
+    if version is None or not PKG_VERSION.match(version):
+        errors.append("version : %s" % version if version else "version : [None]")
+    if release is None or not PKG_RELEASE.match(release):
+        errors.append("release : %s" % release if release else "release : [None]")
+    if arch is not None and arch not in PKG_ARCH:
+        errors.append("arch : %s" % arch)
+
+    if errors:
+        raise ValueError("The following field(s) are invalid - %s" % ", ".join(errors))
+
+
+def _parse_pkg_with_yum(pkg):
+    """Parse verison string using yum and rpmUtils splitFilename
+    :param pkg: The package to be parsed.
+    :type pkg: str
+    :return: Return a list containing name, epoch, version, release, arch (may contain null values)
+    :rtype: list[str]
+    """
+
+    # package is in NEVRA/NEVR format
+    if NEVRA_NEVR_FORMAT.findall(pkg):
+        name, epoch_version, release_arch = pkg.rsplit("-", 2)
+        epoch, version = epoch_version.split(":", 1)
+        # package is in NEVRA format
+        if release_arch.endswith(PKG_ARCH):
+            release, arch = release_arch.rsplit(".", 1)
+        # package is in NEVR format
         else:
-            epoch, version = epoch_version
-        # Discard the arch
-        release = release_arch.rsplit(".", 1)[0]
-        pkg_ver_components.append((epoch, version, release))
+            release = release_arch
+            arch = None
 
-    return rpm.labelCompare(pkg_ver_components[0], pkg_ver_components[1])
+    # package is in either ENVR, ENVRA, NVR or NVRA
+    else:
+        # splitFilename doesn't work with packages in NEVRA/NEVR format, that's why we are using it only here.
+        (name, version, release, epoch, arch) = pkgmanager.splitFilename(pkg)
+
+        # splitFilename places part of the release in the arch field when no arch is present
+        # if arch field is invalid, append contents to release field
+        if arch not in PKG_ARCH:
+            temp_release = arch
+            arch = None
+            release = "%s.%s" % (release, temp_release)
+
+    # convert any empty strings to None for consistency
+    pkg_ver_components = tuple((i or None) for i in (name, epoch, version, release, arch))
+
+    return pkg_ver_components
+
+
+def _parse_pkg_with_dnf(pkg):
+    """
+    Parse verison string using hawkey and dnf.
+    :param pkg: The package to be parsed.
+    :type pkg: str
+    :return: Return a list containing name, epoch, version, release, arch (may contain null values)
+    :rtype: list[str]
+    """
+
+    name = epoch = version = release = arch = None
+    no_arch_data = None
+
+    # if format is ENVR/ENVRA, store and remove epoch and evaluate as NVR/NVRA
+    if ENVRA_ENVR_FORMAT.findall(pkg):
+        pkg = pkg.split(":")
+        epoch = pkg[0]
+        pkg = pkg[1]
+
+    # returns generator for every possible nevra
+    subject = pkgmanager.dnf.subject.Subject(pkg)
+    possible_nevra = subject.get_nevra_possibilities(forms=[pkgmanager.hawkey.FORM_NEVRA, pkgmanager.hawkey.FORM_NEVR])
+
+    # loop through each possible set of nevra fields and select the valid one
+    for nevra in possible_nevra:
+
+        # current arch is valid
+        if str(nevra.arch) in PKG_ARCH:
+            name = nevra.name
+            epoch = epoch or nevra.epoch
+            version = nevra.version
+            release = nevra.release
+            arch = nevra.arch
+            break
+
+        # there is no arch present and current arch is None
+        if nevra.arch is None:
+            no_arch_data = nevra
+
+        # arch is not valid, move on to next iteration
+
+    else:  # This else goes with the for loop
+
+        # if no_arch_data is still None by this point, the parser wasn't able to find valid fields
+        # therefore the package entered is invalid and/or in the wrong format
+        if no_arch_data is None:
+            raise ValueError(
+                "Invalid package string - %s, enter a package in one of the formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
+                % pkg
+            )
+
+        name = no_arch_data.name
+        epoch = epoch or no_arch_data.epoch
+        version = no_arch_data.version
+        release = no_arch_data.release
+        arch = no_arch_data.arch
+
+    # convert epoch from integer to string for consistency
+    if epoch is not None:
+        epoch = str(epoch)
+
+    pkg_ver_components = (name, epoch, version, release, arch)
+
+    return pkg_ver_components

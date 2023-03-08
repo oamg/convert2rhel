@@ -545,28 +545,6 @@ def test_prompt_user(question, is_password, response, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("string_version", "nevra"),
-    (
-        ("5.14.15-300.fc35", ("0", "5.14.15", "300.fc35")),
-        ("0.17-9.fc35", ("0", "0.17", "9.fc35")),
-        ("2.34.1-2.fc35", ("0", "2.34.1", "2.fc35")),
-        (
-            "0.9.1-2.20210420git36391559.fc35",
-            ("0", "0.9.1", "2.20210420git36391559.fc35"),
-        ),
-        ("2:8.2.3568-1.fc35", ("2", "8.2.3568", "1.fc35")),
-        (
-            "4.6~pre16262021g84ef6bd9-3.fc35",
-            ("0", "4.6~pre16262021g84ef6bd9", "3.fc35"),
-        ),
-    ),
-)
-def test_string_to_version(string_version, nevra):
-    nevra_version = utils.string_to_version(string_version)
-    assert nevra_version == nevra
-
-
-@pytest.mark.parametrize(
     ("path_exists", "list_dir", "expected"),
     (
         (True, ["dir-1", "dir-2"], 0),

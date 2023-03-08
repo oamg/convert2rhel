@@ -1320,19 +1320,244 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 @pytest.mark.parametrize(
     ("version1", "version2", "expected"),
     (
-        ("123-4.fc35", "123-4.fc35", 0),
-        ("123-5.fc35", "123-4.fc35", 1),
-        ("123-3.fc35", "123-4.fc35", -1),
-        (
-            "4.6~pre16262021g84ef6bd9-3.fc35",
-            "4.6~pre16262021g84ef6bd9-3.fc35",
-            0,
+        pytest.param(
+            "kernel-core-0:4.18.0-240.10.1.el8_3.i86", "kernel-core-0:4.18.0-240.10.1.el8_3.i86", 0, id="NEVRA"
         ),
-        ("2:8.2.3568-1.fc35", "2:8.2.3568-1.fc35", 0),
+        pytest.param("kernel-core-0:123-5.fc35", "kernel-core-0:123-4.fc35", 1, id="NEVR"),
+        pytest.param("kernel-core-123-3.fc35.aarch64", "kernel-core-123-4.fc35.aarch64", -1, id="NVRA"),
+        pytest.param("kernel-3.10.0-1160.83.1.0.1.el7", "kernel-3.10.0-1160.83.1.el7", 1, id="NVR"),
+        pytest.param(
+            "kernel-core-0:4.6~pre16262021g84ef6bd9-3.fc35",
+            "kernel-core-0:4.6~pre16262021g84ef6bd9-3.fc35",
+            0,
+            id="NEVR",
+        ),
+        pytest.param("kernel-core-2:8.2.3568-1.fc35", "kernel-core-2:8.2.3568-1.fc35", 0, id="NEVR"),
+        pytest.param(
+            "1:NetworkManager-1.18.8-2.0.1.el7_9.aarch64", "1:NetworkManager-1.18.8-1.0.1.el7_9.aarch64", 1, id="ENVRA"
+        ),
+        pytest.param("1:NetworkManager-1.18.8-2.0.1.el7_9", "1:NetworkManager-1.18.8-3.0.1.el7_9", -1, id="ENVR"),
+        pytest.param("NetworkManager-1.18.8-2.0.1.el7_9", "1:NetworkManager-2.18.8-3.0.1.el7_9", -1, id="NVR&ENVR"),
+        pytest.param("2:NetworkManager-1.18.8-2.0.1.el7_9", "0:NetworkManager-1.18.8-3.0.1.el7_9", 1, id="ENVR"),
     ),
 )
 def test_compare_package_versions(version1, version2, expected):
     assert pkghandler.compare_package_versions(version1, version2) == expected
+
+
+@pytest.mark.parametrize(
+    ("version1", "version2", "exception_message"),
+    (
+        (
+            "kernel-core-0:390-287.fc36",
+            "kernel-0:390-287.fc36",
+            re.escape(
+                "The package names ('kernel-core' and 'kernel') do not match. Can only compare versions for the same packages."
+            ),
+        ),
+        (
+            "kernel-core-0:390-287.fc36.aarch64",
+            "kernel-core-0:391-287.fc36.i86",
+            re.escape("The arches ('aarch64' and 'i86') do not match. Can only compare versions for the same arches."),
+        ),
+    ),
+)
+def test_compare_package_versions_warnings(version1, version2, exception_message):
+    with pytest.raises(ValueError, match=exception_message):
+        pkghandler.compare_package_versions(version1, version2)
+
+
+PACKAGE_FORMATS = (
+    pytest.param(
+        "kernel-core-0:4.18.0-240.10.1.el8_3.i86", ("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "i86"), id="NEVRA"
+    ),
+    pytest.param(
+        "kernel-core-0:4.18.0-240.10.1.el8_3", ("kernel-core", "0", "4.18.0", "240.10.1.el8_3", None), id="NEVR"
+    ),
+    pytest.param(
+        "1:NetworkManager-1.18.8-2.0.1.el7_9.aarch64",
+        ("NetworkManager", "1", "1.18.8", "2.0.1.el7_9", "aarch64"),
+        id="ENVRA",
+    ),
+    pytest.param(
+        "1:NetworkManager-1.18.8-2.0.1.el7_9", ("NetworkManager", "1", "1.18.8", "2.0.1.el7_9", None), id="ENVR"
+    ),
+    pytest.param(
+        "NetworkManager-1.18.8-2.0.1.el7_9.aarch64",
+        ("NetworkManager", None, "1.18.8", "2.0.1.el7_9", "aarch64"),
+        id="NVRA",
+    ),
+    pytest.param(
+        "NetworkManager-1.18.8-2.0.1.el7_9", ("NetworkManager", None, "1.18.8", "2.0.1.el7_9", None), id="NVR"
+    ),
+)
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="cannot test dnf backend if dnf is not present")
+def test_parse_pkg_string_dnf_called(monkeypatch):
+    package = "kernel-core-0:4.18.0-240.10.1.el8_3.i86"
+    parse_pkg_with_dnf_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "x86_64"))
+    monkeypatch.setattr(pkghandler, "_parse_pkg_with_dnf", value=parse_pkg_with_dnf_mock)
+    pkghandler.parse_pkg_string(package)
+    parse_pkg_with_dnf_mock.assert_called_once()
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="cannot test yum backend if yum is not present")
+def test_parse_pkg_string_yum_called(monkeypatch):
+    package = "kernel-core-0:4.18.0-240.10.1.el8_3.i86"
+    parse_pkg_with_yum_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "x86_64"))
+    monkeypatch.setattr(pkghandler, "_parse_pkg_with_yum", value=parse_pkg_with_yum_mock)
+    pkghandler.parse_pkg_string(package)
+    parse_pkg_with_yum_mock.assert_called_once()
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="cannot test yum backend if yum is not present")
+@pytest.mark.parametrize(
+    ("package", "expected"),
+    (PACKAGE_FORMATS),
+)
+def test_parse_pkg_with_yum(package, expected):
+    assert pkghandler._parse_pkg_with_yum(package) == expected
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="cannot test dnf backend if dnf is not present")
+@pytest.mark.parametrize(
+    ("package", "expected"),
+    (PACKAGE_FORMATS),
+)
+def test_parse_pkg_with_dnf(package, expected):
+    assert pkghandler._parse_pkg_with_dnf(package) == expected
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="cannot test dnf backend if dnf is not present")
+@pytest.mark.parametrize(
+    ("package"),
+    (
+        ("not a valid package"),
+        ("centos:0.1.0-34.aarch64"),
+        ("name:0-10._12.aarch64"),
+        ("kernel:0-10-1-2.aarch64"),
+    ),
+)
+def test_parse_pkg_with_dnf_value_error(package):
+    with pytest.raises(ValueError):
+        pkghandler._parse_pkg_with_dnf(package)
+
+
+# test name, version, release being None
+# test name containing whitespace, epoch having charcters other than numbers
+# release and version whitespace and dashes
+# arch not being in right format
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="dnf parsing function will raise a different valueError")
+@pytest.mark.parametrize(
+    ("name", "epoch", "version", "release", "arch", "expected"),
+    (
+        (
+            "Network Manager",
+            "1",
+            "1.18.8",
+            "2.0.1.el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - name : Network Manager"),
+        ),
+        (
+            "NetworkManager",
+            "O1",
+            "1.18.8",
+            "2.0.1.el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - epoch : O1"),
+        ),
+        (
+            "NetworkManager",
+            "1",
+            "1.1 8.8",
+            "2.0.1.el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - version : 1.1 8.8"),
+        ),
+        (
+            "NetworkManager",
+            "1",
+            "1.18.8",
+            "2.0.1-el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - release : 2.0.1-el7_9"),
+        ),
+        (
+            "NetworkManager",
+            "1",
+            "1.18.8",
+            "2.0.1.el7_9",
+            "aarch65",
+            re.escape("The following field(s) are invalid - arch : aarch65"),
+        ),
+        (
+            "Network Manager",
+            "O1",
+            "1.1 8.8",
+            "2.0.1-el7_9",
+            "aarch65",
+            re.escape(
+                "The following field(s) are invalid - name : Network Manager, epoch : O1, version : 1.1 8.8, release : 2.0.1-el7_9, arch : aarch65"
+            ),
+        ),
+        (
+            None,
+            "1",
+            "1.18.8",
+            "2.0.1.el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - name : [None]"),
+        ),
+        (
+            "NetworkManager",
+            "1",
+            None,
+            "2.0.1.el7_9",
+            "aarch64",
+            re.escape("The following field(s) are invalid - version : [None]"),
+        ),
+        (
+            "NetworkManager",
+            "1",
+            "1.18.8",
+            None,
+            "aarch64",
+            re.escape("The following field(s) are invalid - release : [None]"),
+        ),
+    ),
+)
+def test_validate_parsed_fields_invalid(name, epoch, version, release, arch, expected):
+    with pytest.raises(ValueError, match=expected):
+
+        pkghandler._validate_parsed_fields(name, epoch, version, release, arch)
+
+
+@pytest.mark.parametrize(
+    ("package"),
+    (
+        pytest.param("kernel-core-0:4.18.0-240.10.1.el8_3.i86", id="NEVRA"),
+        pytest.param("kernel-core-0:4.18.0-240.10.1.el8_3", id="NEVR"),
+        pytest.param(
+            "1:NetworkManager-1.18.8-2.0.1.el7_9.aarch64",
+            id="ENVRA",
+        ),
+        pytest.param("1:NetworkManager-1.18.8-2.0.1.el7_9", id="ENVR"),
+        pytest.param(
+            "NetworkManager-1.18.8-2.0.1.el7_9.aarch64",
+            id="NVRA",
+        ),
+        pytest.param("NetworkManager-1.18.8-2.0.1.el7_9", id="NVR"),
+    ),
+)
+def test_validate_parsed_fields_valid(package):
+    try:
+        pkghandler.parse_pkg_string(package)
+    except ValueError:
+        assert False
 
 
 @pytest.mark.parametrize(
@@ -1875,40 +2100,6 @@ def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
     result = pkghandler.get_system_packages_for_replacement()
     for pkg in pkgs:
         assert pkg in result
-
-
-@pytest.mark.parametrize(
-    ("pkg_1", "pkg_2", "expected"),
-    (
-        (
-            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64",
-            "kernel-core-0:4.18.0-240.15.1.el8_3.x86_64",
-            -1,
-        ),
-        (
-            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
-            "kmod-core-0:4.18.0-240.10.1.el8_3.x86_64",
-            1,
-        ),
-        (
-            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
-            "kmod-core-0:4.18.0-240.15.1.el8_3.x86_64",
-            0,
-        ),
-        (
-            "no-arch-0:4.18.0-240.15.1.el8_3",
-            "no-arch-0:4.18.0-240.15.1.el8_3",
-            0,
-        ),
-        (
-            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
-            "kmod-core-0.4.18.0-240.15.1.el8_3.x86_64",
-            0,
-        ),
-    ),
-)
-def test__package_version_cmp(pkg_1, pkg_2, expected):
-    assert pkghandler._package_version_cmp(pkg_1, pkg_2) == expected
 
 
 @pytest.mark.skipif(
