@@ -664,27 +664,6 @@ def find_keyid(keyfile):
     return keyid.lower()
 
 
-def string_to_version(verstring):
-    """Return a tuple of (epoch, version, release) from a version string
-    This function was taken from softwarefactory-project/rdopkg
-    (https://github.com/softwarefactory-project/rdopkg/blob/1.4.0/rdopkg/utils/specfile.py)
-    """
-
-    # is there an epoch?
-    components = verstring.split(":")
-    if len(components) > 1:
-        epoch = components[0]
-        components.pop(0)
-    else:
-        epoch = "0"
-
-    remaining = components[:2][0].split("-")
-    version = remaining[0]
-    release = remaining[1]
-
-    return (epoch, version, release)
-
-
 def remove_orphan_folders():
     """Even after removing redhat-release-* package, some of its folders are
     still present, are empty, and that blocks us from installing centos-release
