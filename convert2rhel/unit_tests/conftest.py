@@ -335,6 +335,7 @@ def create_pkg_obj(
     if vendor:
         obj.vendor = vendor
     if manager == "yum":
+        obj.rpmdb = mock.Mock()
         if from_repo:
             obj.yumdb_info.from_repo = from_repo
     elif manager == "dnf":

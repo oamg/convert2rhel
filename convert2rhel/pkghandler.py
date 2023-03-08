@@ -302,32 +302,46 @@ def get_pkg_fingerprint(pkg_obj):
 
 
 @utils.run_as_child_process
-def get_pkg_signature(pkg_obj, queue):
-    """Get information about a package signature from the RPM database.
+def get_pkg_signature_with_cleanup(pkg_obj):
+    """
+    Wrapper function for get_pkg_signature that will run as child and handle
+    rpmdb termination.
 
-    .. warning::
-        This function will run as a child process for the main thread, the
-        reason for that is that this was the only way to make it behave and
-        respect the SIGINT signals when the user presses Ctrl + C (SIGINT) or
-        send a `kill -<number> <pid>` to the main process. The reason that this
-        is done this way is because of RPM installing a global signal handler
-        during some functions calls that is propagated to the main thread
-        instead of being released after the function execution is over.
+    .. important::
+        This function will run as a child process of the main process. We
+        need to do it this way is to make it respect the SIGINT signal
+        when the user presses Ctrl + C (SIGINT) or sends a
+        `kill -<number> <pid>` to the main process. The reason this is
+        necessary is that librpm installs a global signal handler during
+        some functions calls which is not removed once those functions
+        return.  When those functions are run in the convert2rhel process,
+        the signal handler causes convert2rhel to exit immediately if SIGINT
+        is sent.  Running librpm code in a child process means the signal
+        handler only applies to the child, not to the main convert2rhel process.
 
         Running the function in a child process does not change how the
-        function itself works. The only addition is the usage of a `Queue`
-        to be able to communicate with the main process and give the result
-        of this function back to the caller.
+        function itself works.
+
+        In addition to it running as a child process, this function will handle
+        the closing of the rpmdb instance to prevent further problems when
+        using Yum in a CLI, or, when there is a call to the Yum python API.
 
     :param pkg_obj: Instace of a package RPM installed on the system.
     :type pkg_obj: yum.rpmsack.RPMInstalledPackage
-    :param queue: An instance of a queue used when the function is run as a
-        child process.
-    :type queue: multiprocessing.queues.Queue
-    :return: Return will be None, as the function is actually putting what the
-        return value should be into the instance of a Queue to be returned
-        through the decorator call.
-    :rtype: None
+    :return: Return the package signature.
+    :rtype: str
+    """
+    with pkgmanager.rpm_db_lock(pkg_obj):
+        return get_pkg_signature(pkg_obj)
+
+
+def get_pkg_signature(pkg_obj):
+    """Get information about a package signature from the RPM database.
+
+    :param pkg_obj: Instace of a package RPM installed on the system.
+    :type pkg_obj: yum.rpmsack.RPMInstalledPackage
+    :return: Return the package signature.
+    :rtype: str
     """
     if pkgmanager.TYPE == "yum":
         hdr = pkg_obj.hdr
@@ -335,7 +349,7 @@ def get_pkg_signature(pkg_obj, queue):
         hdr = get_rpm_header(pkg_obj)
 
     pkg_sig = hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|")
-    queue.put(pkg_sig)
+    return pkg_sig
 
 
 def get_rpm_header(pkg_obj):
@@ -384,7 +398,8 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
 
         return yum_base.rpmdb.returnPackages(patterns=[pattern])
 
-    return yum_base.rpmdb.returnPackages()
+    installed_packages = yum_base.rpmdb.returnPackages()
+    return list(installed_packages)
 
 
 def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=None):
@@ -1014,23 +1029,18 @@ def get_total_packages_to_update(reposdir):
 
 
 @utils.run_as_child_process
-def _get_packages_to_update_yum(queue):
+def _get_packages_to_update_yum():
     """Use yum to get all the installed packages that have an update available.
 
-    .. warning::
+    .. important::
         This function is being executed in a child process so that yum does
         not handle signals like SIGINT without us knowing about it.
 
         We need to know about the signals to act on them, for example to execute
         a rollback when the user presses Ctrl + C.
 
-    :param queue: An instance of a Queue used when the function is run as a
-        child process.
-    :type queue: multiprocessing.queues.Queue
-    :return: Return will be None, as the function is actually putting what the
-        return value should be into the instance of a queue to be returned
-        through the decorator call.
-    :rtype: None
+    :return: Return a list of packages that needs to be updated.
+    :rtype: list[str]
     """
     base = pkgmanager.YumBase()
     packages = base.doPackageLists(pkgnarrow="updates")
@@ -1038,7 +1048,9 @@ def _get_packages_to_update_yum(queue):
     for package in packages.updates:
         all_packages.append(package.name)
 
-    queue.put(all_packages)
+    base.close()
+    del base
+    return all_packages
 
 
 def _get_packages_to_update_dnf(reposdir):
