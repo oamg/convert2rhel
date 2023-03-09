@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import abc
 import itertools
 import logging
 import os
 import os.path
 import re
 
-from collections import abc
+from functools import cmp_to_key
 
 import six
 
@@ -77,11 +78,50 @@ SEVERITY_LEVELS = {
 }
 
 
-from functools import cmp_to_key
+@six.add_metaclass(abc.ABCMeta)
+class ActionError(Exception):
+    """
+    Individual Actions which can fail need to subclass this class and set the
+    action class attribute.
+    """
+
+    # Once we can limit to Python3-3.3+ we can use this instead:
+    # @property
+    # @abc.abstractproperty
+    # def action(self):
+    @abc.abstractproperty  # pylint: disable=deprecated-decorator
+    def action(self):
+        """
+        This should be replaced by a simple class attribute.
+        It is a short string that uniquely identifies the Action.
+        For instance::
+            class Convert2rhelLatestError(ActionError):
+                action = "C2R_LATEST"
+
+        `action` will be combined with `code` to create a unique key per error
+        that can be used by other tools to tell what went wrong.
+        """
+        pass
+
+    def __init__(self, code, message, *args, **kwargs):
+        """
+        This exception has several required arguments:
+
+        :param code: A short string to uniquely identify the error within this
+            action.  It is combined with the :attr:`action` class attribute to
+            make this unique for the whole action framework.
+        :type: str
+        :param message: A message to be displayed to the user to describe the
+            problem and how the user might fix or workaround it.
+        :type: str
+        """
+        super(ActionError, self).__init__(*args, **kwargs)
+        self.code = code
+        self.message = message
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Check:
+class Action:
     """Base class for writing a check."""
 
     # Override dependencies with a Sequence that has check data that must be gathered first.
@@ -111,7 +151,7 @@ def get_all_checks(check_directories):
     pass
     from convert2rhel.actions import convert2rhel_latest
 
-    return (convert2rhel_latest.Convert2rhelLatestCheck,)
+    return (convert2rhel_latest.Convert2rhelLatest,)
 
 
 def resolve_check_order(potential_checks, failed_checks):
