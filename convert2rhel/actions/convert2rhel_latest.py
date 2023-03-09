@@ -51,7 +51,11 @@ gpgkey=file://%s""" % (
 PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 
-class Convert2rhelLatestCheck(actions.Check):
+class Convert2rhelLatestError(actions.ActionError):
+    action = "C2R_LATEST"
+
+
+class Convert2rhelLatest(actions.Action):
     dependencies = tuple()
     severity = actions.SEVERITY_LEVELS["ERROR"]
 
@@ -150,7 +154,7 @@ class Convert2rhelLatestCheck(actions.Check):
                         " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
                         % (installed_convert2rhel_version, latest_available_version[1])
                     )
-                    raise Exception(message=error_message)
+                    raise Convert2rhelLatestError("OUT_OF_DATE", error_message)
 
         else:
             logger.info("Latest available Convert2RHEL version is installed.")
