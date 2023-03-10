@@ -1396,7 +1396,7 @@ PACKAGE_FORMATS = (
 @pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="cannot test dnf backend if dnf is not present")
 def test_parse_pkg_string_dnf_called(monkeypatch):
     package = "kernel-core-0:4.18.0-240.10.1.el8_3.i86"
-    parse_pkg_with_dnf_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "x86_64"))
+    parse_pkg_with_dnf_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "i86"))
     monkeypatch.setattr(pkghandler, "_parse_pkg_with_dnf", value=parse_pkg_with_dnf_mock)
     pkghandler.parse_pkg_string(package)
     parse_pkg_with_dnf_mock.assert_called_once()
@@ -1405,7 +1405,7 @@ def test_parse_pkg_string_dnf_called(monkeypatch):
 @pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="cannot test yum backend if yum is not present")
 def test_parse_pkg_string_yum_called(monkeypatch):
     package = "kernel-core-0:4.18.0-240.10.1.el8_3.i86"
-    parse_pkg_with_yum_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "x86_64"))
+    parse_pkg_with_yum_mock = mock.Mock(return_value=("kernel-core", "0", "4.18.0", "240.10.1.el8_3", "i86"))
     monkeypatch.setattr(pkghandler, "_parse_pkg_with_yum", value=parse_pkg_with_yum_mock)
     pkghandler.parse_pkg_string(package)
     parse_pkg_with_yum_mock.assert_called_once()
@@ -1437,6 +1437,7 @@ def test_parse_pkg_with_dnf(package, expected):
         ("centos:0.1.0-34.aarch64"),
         ("name:0-10._12.aarch64"),
         ("kernel:0-10-1-2.aarch64"),
+        ("foo-15.x86_64"),
     ),
 )
 def test_parse_pkg_with_dnf_value_error(package):
@@ -1444,17 +1445,12 @@ def test_parse_pkg_with_dnf_value_error(package):
         pkghandler._parse_pkg_with_dnf(package)
 
 
-# test name, version, release being None
-# test name containing whitespace, epoch having charcters other than numbers
-# release and version whitespace and dashes
-# arch not being in right format
-
-
 @pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="dnf parsing function will raise a different valueError")
 @pytest.mark.parametrize(
-    ("name", "epoch", "version", "release", "arch", "expected"),
+    ("package", "name", "epoch", "version", "release", "arch", "expected"),
     (
         (
+            "Network Manager:0-1.18.8-2.0.1.el7_9.aarch64",
             "Network Manager",
             "1",
             "1.18.8",
@@ -1463,6 +1459,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - name : Network Manager"),
         ),
         (
+            "NetworkManager:01-1.18.8-2.0.1.el7_9.aarch64",
             "NetworkManager",
             "O1",
             "1.18.8",
@@ -1471,6 +1468,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - epoch : O1"),
         ),
         (
+            "NetworkManager:1-1.1 8.8-2.0.1.el7_9.aarch64",
             "NetworkManager",
             "1",
             "1.1 8.8",
@@ -1479,6 +1477,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - version : 1.1 8.8"),
         ),
         (
+            "NetworkManager:1-1.18.8-2.0.1-el7_9.aarch64",
             "NetworkManager",
             "1",
             "1.18.8",
@@ -1487,6 +1486,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - release : 2.0.1-el7_9"),
         ),
         (
+            "NetworkManager:1-1.18.8-2.0.1.el7_9.aarch65",
             "NetworkManager",
             "1",
             "1.18.8",
@@ -1495,6 +1495,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - arch : aarch65"),
         ),
         (
+            "Network Manager:01-1.1 8.8-2.0.1-el7_9.aarch65",
             "Network Manager",
             "O1",
             "1.1 8.8",
@@ -1505,6 +1506,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             ),
         ),
         (
+            "1-18.8-2.0.1.el7_9.aarch64",
             None,
             "1",
             "1.18.8",
@@ -1513,6 +1515,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - name : [None]"),
         ),
         (
+            "NetworkManager:1-2.0.1.el7_9.aarch64",
             "NetworkManager",
             "1",
             None,
@@ -1521,6 +1524,7 @@ def test_parse_pkg_with_dnf_value_error(package):
             re.escape("The following field(s) are invalid - version : [None]"),
         ),
         (
+            "NetworkManager:1-1.18.8.el7_9.aarch64",
             "NetworkManager",
             "1",
             "1.18.8",
@@ -1530,10 +1534,36 @@ def test_parse_pkg_with_dnf_value_error(package):
         ),
     ),
 )
-def test_validate_parsed_fields_invalid(name, epoch, version, release, arch, expected):
+def test_validate_parsed_fields_invalid(package, name, epoch, version, release, arch, expected):
     with pytest.raises(ValueError, match=expected):
+        pkghandler._validate_parsed_fields(package, name, epoch, version, release, arch)
 
-        pkghandler._validate_parsed_fields(name, epoch, version, release, arch)
+
+@pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="dnf parsing function will raise a different valueError")
+@pytest.mark.parametrize(
+    ("package", "expected"),
+    (
+        (
+            "0:Network Manager-1.1.1-82.aarch64",
+            re.escape("The following field(s) are invalid - name : Network Manager"),
+        ),
+        (
+            "foo-15.x86_64",
+            re.escape(
+                "Invalid package - foo-15.x86_64, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
+            ),
+        ),
+        (
+            "notavalidpackage",
+            re.escape(
+                "Invalid package - notavalidpackage, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
+            ),
+        ),
+    ),
+)
+def test_validate_parsed_fields_invalid_package(package, expected):
+    with pytest.raises(ValueError, match=expected):
+        pkghandler.parse_pkg_string(package)
 
 
 @pytest.mark.parametrize(
@@ -1554,10 +1584,7 @@ def test_validate_parsed_fields_invalid(name, epoch, version, release, arch, exp
     ),
 )
 def test_validate_parsed_fields_valid(package):
-    try:
-        pkghandler.parse_pkg_string(package)
-    except ValueError:
-        assert False
+    pkghandler.parse_pkg_string(package)
 
 
 @pytest.mark.parametrize(
