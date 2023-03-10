@@ -136,9 +136,9 @@ def run_as_child_process(func):
         Wrapper function to execute and control the function attached to the
         decorator.
 
-        :param args: Arguments tied to the function
+        :arg args: Arguments tied to the function
         :type args: tuple
-        :param kwargs: Named arguments tied to the function
+        :keyword kwargs: Named arguments tied to the function
         :type kwargs: dict
 
         :raises KeyboardInterrupt: Raises a `KeyboardInterrupt` if a SIGINT is
