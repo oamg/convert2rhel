@@ -127,7 +127,7 @@ def _action_defaults_to_success(func):
     return wrapper
 
 
-#: Used as a sentinel value for Action.set_status() method.
+#: Used as a sentinel value for Action.set_result() method.
 _NO_USER_VALUE = object()
 
 
