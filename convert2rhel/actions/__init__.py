@@ -127,6 +127,10 @@ def _action_defaults_to_success(func):
     return wrapper
 
 
+#: Used as a sentinel value for Action.set_result() method.
+_NO_USER_VALUE = object()
+
+
 @six.add_metaclass(abc.ABCMeta)
 class Action:
     """Base class for writing a check."""
@@ -177,6 +181,26 @@ class Action:
             display to the user) or make additional changes to return an error
             instead.
         """
+
+    def set_result(self, status=_NO_USER_VALUE, error_id=_NO_USER_VALUE, message=_NO_USER_VALUE):
+        """
+        Helper method that sets the resulting values for status, error_id and message.
+
+        :param status: The status to be set.
+        :type: status: str
+        :param error_id: The error_id to identify the error.
+        :type error_id: str
+        :param message: The message to be set.
+        :type message: str | None
+        """
+        if status != _NO_USER_VALUE:
+            self.status = STATUS_CODE[status]
+
+        if error_id != _NO_USER_VALUE:
+            self.error_id = error_id
+
+        if message != _NO_USER_VALUE:
+            self.message = message
 
 
 def get_all_actions(actions_directories):
