@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import systeminfo, utils
+from convert2rhel import actions, systeminfo, utils
 from convert2rhel.actions import convert2rhel_latest
 
 
@@ -31,7 +31,7 @@ from six.moves import mock
 
 
 @pytest.fixture
-def convert2rhel_latest_check():
+def convert2rhel_latest_action():
     return convert2rhel_latest.Convert2rhelLatest()
 
 
@@ -59,10 +59,10 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_convert2rhel_latest_offline(
-        self, caplog, convert2rhel_latest_check, convert2rhel_latest_version_test, global_system_info
+        self, caplog, convert2rhel_latest_action, convert2rhel_latest_version_test, global_system_info
     ):
         global_system_info.has_internet_access = False
-        convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
         log_msg = "Skipping the check because no internet connection has been detected."
         assert log_msg in caplog.text
@@ -75,12 +75,12 @@ class TestCheckConvert2rhelLatest:
         ),
         indirect=True,
     )
-    def test_convert2rhel_latest_check_error(self, convert2rhel_latest_check, convert2rhel_latest_version_test):
+    def test_convert2rhel_latest_action_error(self, convert2rhel_latest_action, convert2rhel_latest_version_test):
 
-        with pytest.raises(convert2rhel_latest.Convert2rhelLatestError) as exc_info:
-            convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
-        assert exc_info.value.code == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.error_id == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.status == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
         package_version = package_version[15:19]
@@ -91,7 +91,7 @@ class TestCheckConvert2rhelLatest:
             " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
             % (local_version, package_version)
         )
-        assert exc_info.value.message == msg
+        assert convert2rhel_latest_action.message == msg
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -132,10 +132,10 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_convert2rhel_latest_log_check_env(
-        self, caplog, monkeypatch, convert2rhel_latest_check, convert2rhel_latest_version_test
+        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
     ):
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_OLDER_VERSION": "1"})
-        convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
         local_version, package_version = convert2rhel_latest_version_test
         package_version = package_version[15:19]
@@ -162,8 +162,8 @@ class TestCheckConvert2rhelLatest:
         ),
         indirect=True,
     )
-    def test_c2r_up_to_date(self, caplog, monkeypatch, convert2rhel_latest_check, convert2rhel_latest_version_test):
-        convert2rhel_latest_check.run()
+    def test_c2r_up_to_date(self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test):
+        convert2rhel_latest_action.run()
 
         local_version, dummy_ = convert2rhel_latest_version_test
         log_msg = "Latest available Convert2RHEL version is installed."
@@ -175,11 +175,11 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_c2r_up_to_date_repoquery_error(
-        self, caplog, monkeypatch, convert2rhel_latest_check, convert2rhel_latest_version_test
+        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
     ):
         monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("Repoquery did not run", 1)))
 
-        convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
         log_msg = (
             "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
@@ -200,14 +200,12 @@ class TestCheckConvert2rhelLatest:
         ),
         indirect=True,
     )
-    def test_c2r_up_to_date_multiple_packages(
-        self, caplog, convert2rhel_latest_check, convert2rhel_latest_version_test
-    ):
+    def test_c2r_up_to_date_multiple_packages(self, convert2rhel_latest_action, convert2rhel_latest_version_test):
 
-        with pytest.raises(convert2rhel_latest.Convert2rhelLatestError) as exc_info:
-            convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
-        assert exc_info.value.code == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.error_id == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.status == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
 
@@ -217,7 +215,7 @@ class TestCheckConvert2rhelLatest:
             " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
             % (local_version,)
         )
-        assert exc_info.value.message == msg
+        assert convert2rhel_latest_action.message == msg
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -225,12 +223,12 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_c2r_up_to_date_deprecated_env_var(
-        self, caplog, monkeypatch, convert2rhel_latest_check, convert2rhel_latest_version_test
+        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
     ):
         env = {"CONVERT2RHEL_UNSUPPORTED_VERSION": 1}
         monkeypatch.setattr(os, "environ", env)
 
-        convert2rhel_latest_check.run()
+        convert2rhel_latest_action.run()
 
         log_msg = (
             "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"

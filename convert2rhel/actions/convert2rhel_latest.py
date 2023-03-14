@@ -51,13 +51,9 @@ gpgkey=file://%s""" % (
 PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 
-class Convert2rhelLatestError(actions.ActionError):
-    action = "C2R_LATEST"
-
-
 class Convert2rhelLatest(actions.Action):
+    id = "C2R_LATEST"
     dependencies = tuple()
-    severity = actions.SEVERITY_LEVELS["ERROR"]
 
     def run(self):
         """Make sure that we are running the latest downstream version of convert2rhel"""
@@ -148,13 +144,15 @@ class Convert2rhelLatest(actions.Action):
                     )
 
                 else:
-                    error_message = (
+                    self.status = actions.STATUS_CODE["ERROR"]
+                    self.error_id = "OUT_OF_DATE"
+                    self.message = (
                         "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                         "Only the latest version is supported for conversion. If you want to ignore"
                         " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
                         % (installed_convert2rhel_version, latest_available_version[1])
                     )
-                    raise Convert2rhelLatestError("OUT_OF_DATE", error_message)
 
-        else:
-            logger.info("Latest available Convert2RHEL version is installed.")
+                    return
+
+        logger.info("Latest available Convert2RHEL version is installed.")
