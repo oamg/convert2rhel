@@ -17,11 +17,6 @@ __metaclass__ = type
 
 import logging
 import os.path
-import re
-import shutil
-import tempfile
-
-import rpm
 
 from convert2rhel import __version__ as installed_convert2rhel_version
 from convert2rhel import actions, grub, utils
@@ -29,26 +24,6 @@ from convert2rhel.systeminfo import system_info
 
 
 logger = logging.getLogger(__name__)
-
-# The SSL certificate of the https://cdn.redhat.com/ server
-SSL_CERT_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
-CDN_URL = "https://cdn.redhat.com/content/public/convert2rhel/$releasever/$basearch/os/"
-RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
-
-CONVERT2RHEL_REPO_CONTENT = """\
-[convert2rhel]
-name=Convert2RHEL Repository
-baseurl=%s
-gpgcheck=1
-enabled=1
-sslcacert=%s
-gpgkey=file://%s""" % (
-    CDN_URL,
-    SSL_CERT_PATH,
-    RPM_GPG_KEY_PATH,
-)
-
-PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 
 class Convert2rhelLatest(actions.Action):
