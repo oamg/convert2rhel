@@ -155,7 +155,7 @@ class Action:
 
     def __init__(self):
         """
-        The three attributes set here should be set when the run() method returns.
+        The attributes set here should be set when the run() method returns.
 
         They represent whether the Change succeeded or failed and if it failed,
         gives useful information to the user.
@@ -171,9 +171,12 @@ class Action:
         The method that performs the action.
 
         .. note:: This method should set :attr:`status`, :attr:`message`, and
-            attr:`error_id` before returning.
+            attr:`error_id` before returning.  The @action_defaults_to_success
+            decorator takes care of setting a default success status but you
+            can either add more information (for instance, a message to
+            display to the user) or make additional changes to return an error
+            instead.
         """
-        return self.status
 
 
 def get_all_actions(actions_directories):
