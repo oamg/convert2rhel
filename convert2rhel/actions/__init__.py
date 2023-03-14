@@ -20,7 +20,7 @@ import os
 import os.path
 import re
 
-from functools import cmp_to_key
+from functools import cmp_to_key, wraps
 
 import six
 
@@ -71,146 +71,183 @@ COMPATIBLE_KERNELS_VERS = {
     8: "4.18.0",
 }
 
-SEVERITY_LEVELS = {
-    "FATAL": 0,
-    "ERROR": 1,
-    "WARNING": 2,
+#: Status code of an Action.
+#:
+#: When an action completes, it may have succeeded or failed.  We set the
+#: `Action.status` attribute to one of the following values so that we know
+#: what happened.  This mapping lets us use a symbolic name for the status
+#: for readability but that is mapped to a specific integer for consumption
+#: by other tools.
+#:
+#: .. note:: At the moment, we only make use of SUCCESS and ERROR.  Other
+#:      statuses may be used in future releases as we refine this system
+#:      and start to use it with console.redhat.com
+#:
+#: :SUCCESS: no problem.
+#: :WARNING: the problem is just a warning displayed to the user. (unused,
+#:      warnings are currently emitted directly from the Action)
+#: :OVERRIDABLE: the error caused convert2rhel to fail but the user has
+#:      the option to ignore the check in a future run.
+#: :ERROR: the error caused convert2rhel to fail the conversion, but further
+#:      tests can be run.
+#: :FATAL: the error caused convert2rhel to stop immediately.
+#:
+#: .. warning:: Do not change the numeric value of these statuses once they
+#:      have been in a public release as external tools may be depending on
+#:      the value.
+STATUS_CODE = {
+    "SUCCESS": 0,
+    "WARNING": 300,
+    "OVERRIDABLE": 600,
+    "ERROR": 900,
+    "FATAL": 1200,
 }
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ActionError(Exception):
+def _action_defaults_to_success(func):
     """
-    Individual Actions which can fail need to subclass this class and set the
-    action class attribute.
+    Decorator to set default values for return values from this change.
+
+    The way the Action class returns values is modelled on
+    :class:`subprocess.Popen` in that all the data that is returned are set on
+    the object's instance after :meth:`run` is called.  This decorator
+    sets the functions to return values to success if the run() method did
+    not explicitly return something different.
     """
 
-    # Once we can limit to Python3-3.3+ we can use this instead:
-    # @property
-    # @abc.abstractproperty
-    # def action(self):
-    @abc.abstractproperty  # pylint: disable=deprecated-decorator
-    def action(self):
-        """
-        This should be replaced by a simple class attribute.
-        It is a short string that uniquely identifies the Action.
-        For instance::
-            class Convert2rhelLatestError(ActionError):
-                action = "C2R_LATEST"
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        return_value = func(*args, **kwargs)
 
-        `action` will be combined with `code` to create a unique key per error
-        that can be used by other tools to tell what went wrong.
-        """
-        pass
+        if self.status is None:
+            self.status = STATUS_CODE["SUCCESS"]
 
-    def __init__(self, code, message, *args, **kwargs):
-        """
-        This exception has several required arguments:
+        return return_value
 
-        :param code: A short string to uniquely identify the error within this
-            action.  It is combined with the :attr:`action` class attribute to
-            make this unique for the whole action framework.
-        :type: str
-        :param message: A message to be displayed to the user to describe the
-            problem and how the user might fix or workaround it.
-        :type: str
-        """
-        super(ActionError, self).__init__(*args, **kwargs)
-        self.code = code
-        self.message = message
+    return wrapper
 
 
 @six.add_metaclass(abc.ABCMeta)
 class Action:
     """Base class for writing a check."""
 
-    # Override dependencies with a Sequence that has check data that must be gathered first.
-    dependencies = tuple()
+    # Once we can limit to Python3-3.3+ we can use this instead:
+    # @property
+    # @abc.abstractmethod
+    # def id(self):
+    @abc.abstractproperty  # pylint: disable=deprecated-decorator
+    def id(self):
+        """
+        This should be replaced by a simple class attribute.
+        It is a short string that uniquely identifies the Action.
+        For instance::
+            class Convert2rhelLatest(Action):
+                id = "C2R_LATEST"
 
+        `id` will be combined with `error_code` from the exception parameter
+        list to create a unique key per error that can be used by other tools
+        to tell what went wrong.
+        """
+
+    #: Override dependencies with a Sequence that has other :class:`Action`s
+    #: that must be run before this one.
+    dependencies = ()
+
+    def __init__(self):
+        """
+        The three attributes set here should be set when the run() method returns.
+
+        They represent whether the Change succeeded or failed and if it failed,
+        gives useful information to the user.
+        """
+        self.status = None
+        self.message = None
+        self.error_id = None
+
+    @_action_defaults_to_success
     @abc.abstractmethod
     def run(self):
         """
-        The method that performs a check.
+        The method that performs the action.
 
-        If the check fails, it raises an exception.
-        If the check succeeds, it returns any information that the caller can use to do anything further.
+        .. note:: This method should set :attr:`status`, :attr:`message`, and
+            attr:`error_id` before returning.
         """
-        ### TODO: Do we want to treat warnings specially as well as errors?
-        return {}
+        return self.status
 
 
-def get_all_checks(check_directories):
+def get_all_actions(actions_directories):
     """
-    Determine the list of checks that we can run.
+    Determine the list of actions that we can run.
 
-    :returns: A list of all the checks that we can run.
+    :returns: A list of all the actions that we can run.
     """
-    # import all the python modules that are in convert2rhel.checks
+    # import all the python modules that are in convert2rhel.actions
     # For each, find all the classes inside
-    # If class is a subclass of convert2rhel.checks.Check, then return it
+    # If class is a subclass of convert2rhel.actions.Action, then return it
     pass
     from convert2rhel.actions import convert2rhel_latest
 
     return (convert2rhel_latest.Convert2rhelLatest,)
 
 
-def resolve_check_order(potential_checks, failed_checks):
+def resolve_action_order(potential_actions, failed_actions):
     """
-    Order the checks according to the order in which they need to run.
+    Order the Actions according to the order in which they need to run.
 
-    :arg potential_checks: Sequence of checks which should be run.
-    :arg failed_checks: A set of failed checks.  resolve_check_order() does not modify this but
+    :arg potential_actions: Sequence of Actions which should be run.
+    :arg failed_actions: A set of failed Actions.  resolve_action_order() does not modify this but
         does expect that its contents will be updated between iterations if there are more
         failures.
-    :returns: A list of checks sorted so that all dependent checks are run before checks which
+    :returns: A list of Actions sorted so that all dependent Actions are run before actions which
         depend on their output.
-    :raises Exception: when it is impossible to satisfy a dependency in a check.
+    :raises Exception: when it is impossible to satisfy a dependency in an Action.
     """
-    previous_number_of_unresolved_checks = len(potential_checks)
-    unresolved_checks = [check for check in potential_checks if check.dependencies]
-    resolved_checks = [check for check in potential_checks if not check.dependencies]
-    resolved_check_names = set(check.name for check in resolved_checks)
+    previous_number_of_unresolved_actions = len(potential_actions)
+    unresolved_actions = [action for action in potential_actions if action.dependencies]
+    resolved_actions = [action for action in potential_actions if not action.dependencies]
+    resolved_action_names = set(action.name for action in resolved_actions)
 
-    while previous_number_of_unresolved_checks != len(unresolved_checks):
-        previous_number_of_unresolved_checks = len(unresolved_checks)
-        for check in unresolved_checks[:]:
-            if all(d in resolved_check_names for d in check.dependencies):
-                unresolved_checks.remove(check)
-                resolved_check_names.add(check.__name__)
-                resolved_checks.append(check)
-                yield check
+    while previous_number_of_unresolved_actions != len(unresolved_actions):
+        previous_number_of_unresolved_actions = len(unresolved_actions)
+        for action in unresolved_actions[:]:
+            if all(d in resolved_action_names for d in action.dependencies):
+                unresolved_actions.remove(action)
+                resolved_action_names.add(action.__name__)
+                resolved_actions.append(action)
+                yield action
 
-    if previous_number_of_unresolved_checks != 0:
+    if previous_number_of_unresolved_actions != 0:
         raise Exception(
-            "Unresolvable Dependency in these Checks: %s" % ", ".join(check.__name__ for check in unresolved_checks)
+            "Unresolvable Dependency in these actions: %s" % ", ".join(action.__name__ for action in unresolved_actions)
         )
 
 
-def run_checks():
-    potential_checks = get_all_checks()
-    checks = resolve_check_order(potential_checks)
-    for check in checks:
+def run_actions():
+    potential_actions = get_all_actions()
+    actions = resolve_action_order(potential_actions)
+    for action in actions:
         try:
-            check.run()
+            action.run()
         except Exception as e:
-            ### TODO: We need to keep a tree of checks according to dependencies so that we can run
-            # all the checks which do not have failed dependencies.
+            ### TODO: We need to keep a tree of actions according to dependencies so that we can run
+            # all the actions which do not have failed dependencies.
             if hasattr(e.error_message):
                 message = e.error_message
             else:
                 message = str(e)
                 message.append("\nException raised: %s" % e)
             logger.critical(message)
-    # Each check will have one of the following statuses:
+    # Each action will have one of the following statuses:
     # Pass
     # Fail
     # Could not run
     # Not Applicable
-    # Checks and remediations:
+    # Actions and remediations:
     #   Remediations should live at the console integration level
     #   But convert2rhel needs to give enough information that the remediation can decide what to
     #   run
-    #   For instance, if the check can fail for multiple reasons, the code needs to differentiate
+    #   For instance, if the action can fail for multiple reasons, the code needs to differentiate
     #   between which failure case caused this.
     #
 
