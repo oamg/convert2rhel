@@ -143,6 +143,14 @@ def system_cert_with_target_path(monkeypatch, tmpdir, request):
 
 
 @pytest.fixture
+def sys_path():
+    real_sys_path = sys.path
+    sys.path = sys.path[:]
+    yield sys.path
+    sys.path = real_sys_path
+
+
+@pytest.fixture
 def global_tool_opts(monkeypatch):
     local_tool_opts = toolopts.ToolOpts()
     monkeypatch.setattr(toolopts, "tool_opts", local_tool_opts)
