@@ -14,10 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import abc
+import importlib
 import itertools
 import logging
 import os
 import os.path
+import pkgutil
 import re
 
 from functools import cmp_to_key, wraps
@@ -203,19 +205,47 @@ class Action:
             self.message = message
 
 
-def get_all_actions(actions_directories):
+def get_actions(actions_path, prefix):
     """
-    Determine the list of actions that we can run.
+    Determine the list of actions that exist at a path.
 
-    :returns: A list of all the actions that we can run.
+    :param actions_path: Filesystem path to the directory in which the
+        Actions may live.
+    :type actions_path: str
+    :param prefix: Python dotted notation leading up to the Action.
+    :type prefix: str
+    :returns: A list of Action subclasses which existed at the given path.
+    :rtype: list
+
+    Sample usage::
+
+        from convert2rhel.action import system_checks
+
+        successful_actions = []
+        failed_actions = []
+
+        action_classes = get_actions(system_checks.__file__,
+                                     system_checks.__name__ + ".")
+        for action in action_classes:
+            action.run()
+            if action.status = STATUS_CODE["SUCCESS"]:
+                successful_actions.append(action)
+            else:
+                failed_actions.append(action)
     """
-    # import all the python modules that are in convert2rhel.actions
-    # For each, find all the classes inside
-    # If class is a subclass of convert2rhel.actions.Action, then return it
-    pass
-    from convert2rhel.actions import convert2rhel_latest
+    actions = []
 
-    return (convert2rhel_latest.Convert2rhelLatest,)
+    modules = (m[1] for m in pkgutil.iter_modules(actions_path) if not m.ispkg)
+    modules = (importlib.import_module(m) for m in modules)
+
+    for module in modules:
+        objects = (getattr(module, obj_name) for obj_name in dir(module))
+        action_classes = (
+            obj for obj in objects if isinstance(obj, type) and issubclass(obj, Action) and obj is not Action
+        )
+        actions.extend(action_classes)
+
+    return actions
 
 
 def resolve_action_order(potential_actions, failed_actions):
@@ -251,7 +281,7 @@ def resolve_action_order(potential_actions, failed_actions):
 
 
 def run_actions():
-    potential_actions = get_all_actions()
+    potential_actions = get_actions(__path__, __name__)
     actions = resolve_action_order(potential_actions)
     for action in actions:
         try:
