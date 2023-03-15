@@ -163,7 +163,7 @@ class TestEFIChecks(unittest.TestCase):
         EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
     )
     def test_check_efi_efi_detected_bootloader_error(self):
-        self._check_efi_critical("BOOTLOADER_ERROR", "errmsg")
+        self._check_efi_critical("BOOTLOADER_ERROR", grub.BootloaderError("errmsg"))
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
