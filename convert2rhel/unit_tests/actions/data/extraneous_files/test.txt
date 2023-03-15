@@ -1,0 +1,5 @@
+from convert2rhel import actions
+
+
+class Test(actions.Action):
+    pass
