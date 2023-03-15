@@ -18,7 +18,6 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import __version__ as installed_convert2rhel_version
 from convert2rhel import actions, grub, utils
 from convert2rhel.systeminfo import system_info
 
@@ -43,7 +42,10 @@ class Efi(actions.Action):
             self.message = "Install efibootmgr to continue converting the UEFI-based system."
             return
         if system_info.arch != "x86_64":
-            logger.critical("Only x86_64 systems are supported for UEFI conversions.")
+            self.status = actions.STATUS_CODE["ERROR"]
+            self.error_id = "NON_x86_64"
+            self.message = "Only x86_64 systems are supported for UEFI conversions."
+            return
         if grub.is_secure_boot():
             logger.info("Secure boot detected.")
             self.status = actions.STATUS_CODE["ERROR"]
@@ -63,6 +65,7 @@ class Efi(actions.Action):
             self.status = actions.STATUS_CODE["ERROR"]
             self.error_id = "BOOTLOADER_ERROR"
             self.message = e.message
+            return
 
         if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
             # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
