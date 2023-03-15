@@ -53,7 +53,6 @@ PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 class Convert2rhelLatest(actions.Action):
     id = "CONVERT2RHEL_LATEST_VERSION"
-    dependencies = tuple()
 
     def run(self):
         """Make sure that we are running the latest downstream version of convert2rhel"""
