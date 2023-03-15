@@ -86,20 +86,20 @@ def _gen_version(major, minor):
 class TestEFIChecks(unittest.TestCase):
     def setUp(self):
         self.efi_action = actions.efi.Efi()
-        self.efi_logger = actions.efi.logger
 
     def _check_efi_detection_log(self, efi_detected=True):
         if efi_detected:
-            self.assertNotIn("BIOS detected.", self.efi_logger.info_msgs)
-            self.assertIn("UEFI detected.", self.efi_logger.info_msgs)
+            self.assertNotIn("BIOS detected.", actions.efi.logger.info_msgs)
+            self.assertIn("UEFI detected.", actions.efi.logger.info_msgs)
         else:
-            self.assertIn("BIOS detected.", self.efi_logger.info_msgs)
-            self.assertNotIn("UEFI detected.", self.efi_logger.info_msgs)
+            self.assertIn("BIOS detected.", actions.efi.logger.info_msgs)
+            self.assertNotIn("UEFI detected.", actions.efi.logger.info_msgs)
 
     def _check_efi_critical(self, error_id, critical_msg):
-        self.assertIs(self.efi_action.status, actions.STATUS_CODE["ERROR"])
-        self.assertIs(self.efi_action.error_id, error_id)
-        self.assertIs(self.efi_action.message, critical_msg)
+        self.efi_action.run()
+        self.assertEqual(self.efi_action.status, actions.STATUS_CODE["ERROR"])
+        self.assertEqual(self.efi_action.error_id, error_id)
+        self.assertEqual(self.efi_action.message, critical_msg)
         self._check_efi_detection_log(True)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
@@ -149,7 +149,7 @@ class TestEFIChecks(unittest.TestCase):
             "The conversion with secure boot is currently not possible.\n"
             "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
         )
-        self.assertIn("Secure boot detected.", self.efi_logger.info_msgs)
+        self.assertIn("Secure boot detected.", actions.efi.logger.info_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -163,7 +163,7 @@ class TestEFIChecks(unittest.TestCase):
         EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
     )
     def test_check_efi_efi_detected_bootloader_error(self):
-        self._check_efi_critical("BOOTLOADER_ERROR", "errmsg")
+        self._check_efi_critical("BOOTLOADER_ERROR", grub.BootloaderError("errmsg"))
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -179,7 +179,7 @@ class TestEFIChecks(unittest.TestCase):
             "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
             " EFI System Partition (ESP)."
         )
-        self.assertIn(warn_msg, self.efi_logger.warning_msgs)
+        self.assertIn(warn_msg, actions.efi.logger.warning_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
@@ -191,4 +191,4 @@ class TestEFIChecks(unittest.TestCase):
     def test_check_efi_efi_detected_ok(self):
         self.efi_action.run()
         self._check_efi_detection_log()
-        self.assertEqual(len(self.efi_logger.warning_msgs), 0)
+        self.assertEqual(len(actions.efi.logger.warning_msgs), 0)
