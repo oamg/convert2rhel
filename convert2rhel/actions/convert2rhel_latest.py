@@ -143,13 +143,15 @@ class Convert2rhelLatest(actions.Action):
                     )
 
                 else:
-                    self.status = actions.STATUS_CODE["ERROR"]
-                    self.error_id = "OUT_OF_DATE"
-                    self.message = (
-                        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                        "Only the latest version is supported for conversion. If you want to ignore"
-                        " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
-                        % (installed_convert2rhel_version, latest_available_version[1])
+                    self.set_result(
+                        status="ERROR",
+                        error_id="OUT_OF_DATE",
+                        message=(
+                            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                            "Only the latest version is supported for conversion. If you want to ignore"
+                            " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+                            % (installed_convert2rhel_version, latest_available_version[1])
+                        ),
                     )
 
                     return
