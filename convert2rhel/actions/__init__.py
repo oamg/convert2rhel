@@ -117,7 +117,7 @@ def _action_defaults_to_success(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        return_value = func(*args, **kwargs)
+        return_value = func(self, *args, **kwargs)
 
         if self.status is None:
             self.status = STATUS_CODE["SUCCESS"]
