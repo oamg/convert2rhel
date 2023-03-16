@@ -66,6 +66,7 @@ class TestCheckConvert2rhelLatest:
 
         log_msg = "Skipping the check because no internet connection has been detected."
         assert log_msg in caplog.text
+        assert convert2rhel_latest_action.status == actions.STATUS_CODE["SUCCESS"]
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
