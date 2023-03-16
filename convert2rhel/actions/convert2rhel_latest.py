@@ -58,6 +58,8 @@ class Convert2rhelLatest(actions.Action):
         """Make sure that we are running the latest downstream version of convert2rhel"""
         logger.task("Prepare: Check if this is the latest version of Convert2RHEL")
 
+        super(Convert2rhelLatest, self).run()
+
         if not system_info.has_internet_access:
             logger.warning("Skipping the check because no internet connection has been detected.")
             return
