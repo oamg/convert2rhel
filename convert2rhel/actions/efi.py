@@ -68,7 +68,7 @@ class Efi(actions.Action):
         try:
             efiboot_info = grub.EFIBootInfo()
         except grub.BootloaderError as e:
-            self.set_result(status="ERROR", error_id="BOOTLOADER_ERROR", message=e)
+            self.set_result(status="ERROR", error_id="BOOTLOADER_ERROR", message="%s" % e)
             return
 
         if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
