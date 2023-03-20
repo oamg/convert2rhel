@@ -28,7 +28,6 @@ from convert2rhel.actions import (
     _bad_kernel_package_signature,
     _bad_kernel_substring,
     _bad_kernel_version,
-    check_package_updates,
     get_loaded_kmods,
     is_loaded_kernel_latest,
 )
@@ -96,7 +95,6 @@ REPOQUERY_L_STUB_BAD = (
 def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
     check_custom_repos_are_valid_mock = mock.Mock()
-    check_package_updates_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
     check_dbus_is_running_mock = mock.Mock()
 
@@ -115,14 +113,12 @@ def test_perform_pre_checks(monkeypatch):
         "check_custom_repos_are_valid",
         value=check_custom_repos_are_valid_mock,
     )
-    monkeypatch.setattr(actions, "check_package_updates", value=check_package_updates_mock)
     monkeypatch.setattr(actions, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
     monkeypatch.setattr(actions, "check_dbus_is_running", value=check_dbus_is_running_mock)
 
     actions.perform_system_checks()
 
     check_thirdparty_kmods_mock.assert_called_once()
-    check_package_updates_mock.assert_called_once()
     is_loaded_kernel_latest_mock.assert_called_once()
     check_dbus_is_running_mock.assert_called_once()
 
@@ -560,57 +556,6 @@ def test_custom_repos_are_invalid(self):
     self.assertEqual(len(actions.logger.critical_msgs), 1)
     self.assertEqual(len(actions.logger.info_msgs), 0)
     self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
-
-
-@oracle8
-def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog):
-    message = (
-        "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
-    )
-
-    check_package_updates()
-
-    assert message in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
-    ("packages", "exception", "expected"),
-    (
-        (["package-1", "package-2"], True, "The system has {0} package(s) not updated"),
-        ([], False, "System is up-to-date."),
-    ),
-)
-@centos8
-def test_check_package_updates(pretend_os, packages, exception, expected, monkeypatch, caplog):
-    monkeypatch.setattr(actions, "get_total_packages_to_update", value=lambda reposdir: packages)
-    monkeypatch.setattr(actions, "ask_to_continue", value=lambda: mock.Mock())
-
-    check_package_updates()
-    if exception:
-        expected = expected.format(len(packages))
-
-    assert expected in caplog.records[-1].message
-
-
-def test_check_package_updates_with_repoerror(monkeypatch, caplog):
-    get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError)
-    monkeypatch.setattr(actions, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
-    monkeypatch.setattr(actions, "ask_to_continue", value=lambda: mock.Mock())
-
-    check_package_updates()
-    # This is -2 because the last message is the error from the RepoError class.
-    assert (
-        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-2].message
-    )
-
-
-@centos8
-def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch, caplog):
-    monkeypatch.setattr(actions, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-    system_info.has_internet_access = False
-    check_package_updates()
-
-    assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
 
 
 class TestIsLoadedKernelLatest:
