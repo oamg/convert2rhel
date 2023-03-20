@@ -52,7 +52,7 @@ repos:
           - https://github.com/oamg/convert2rhel.git
         stages: [manual, push]
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.16.0
+    rev: v8.16.1
     hooks:
       - id: gitleaks
         stages: [manual, push]
