@@ -283,7 +283,6 @@ def perform_system_checks():
     """Early checks after system facts should be added here."""
     check_custom_repos_are_valid()
     check_tainted_kmods()
-    check_package_updates()
     is_loaded_kernel_latest()
     check_dbus_is_running()
 
@@ -614,57 +613,6 @@ def _bad_kernel_substring(kernel_release):
         )
         return True
     return False
-
-
-def check_package_updates():
-    """Ensure that the system packages installed are up-to-date."""
-    logger.task("Prepare: Check if the installed packages are up-to-date")
-
-    if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
-        logger.info(
-            "Skipping the check because there are no publicly available %s %d.%d repositories available."
-            % (system_info.name, system_info.version.major, system_info.version.minor)
-        )
-        return
-
-    reposdir = get_hardcoded_repofiles_dir()
-
-    if reposdir and not system_info.has_internet_access:
-        logger.warning("Skipping the check as no internet connection has been detected.")
-        return
-
-    try:
-        packages_to_update = get_total_packages_to_update(reposdir=reposdir)
-    except pkgmanager.RepoError as e:
-        # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
-        # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
-        # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
-        # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
-        logger.warning(
-            "There was an error while checking whether the installed packages are up-to-date. Having updated system is "
-            "an important prerequisite for a successful conversion. Consider stopping the conversion to "
-            "verify that manually."
-        )
-        logger.warning(str(e))
-        ask_to_continue()
-        return
-
-    if len(packages_to_update) > 0:
-        repos_message = (
-            "on the enabled system repositories"
-            if not reposdir
-            else "on repositories defined in the %s folder" % reposdir
-        )
-        logger.warning(
-            "The system has %s package(s) not updated based %s.\n"
-            "List of packages to update: %s.\n\n"
-            "Not updating the packages may cause the conversion to fail.\n"
-            "Consider stopping the conversion and update the packages before re-running convert2rhel."
-            % (len(packages_to_update), repos_message, " ".join(packages_to_update))
-        )
-        ask_to_continue()
-    else:
-        logger.info("System is up-to-date.")
 
 
 def is_loaded_kernel_latest():
