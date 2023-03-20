@@ -326,6 +326,17 @@ class CLI(object):
             tool_opts.enablerepo = parsed_opts.enablerepo
         if parsed_opts.disablerepo:
             tool_opts.disablerepo = parsed_opts.disablerepo
+
+        # Check if we have duplicate repositories specified
+        if parsed_opts.enablerepo or parsed_opts.disablerepo:
+            duplicate_repos = set(parsed_opts.disablerepo) & set(parsed_opts.enablerepo)
+            if duplicate_repos:
+                message = "Duplicate repositories were found across disablerepo and enablerepo options:"
+                for repo in duplicate_repos:
+                    message += "\n%s" % repo
+                message += "\nThis ambiguity may have unintended consequences."
+                loggerinst.warning(message)
+
         if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:

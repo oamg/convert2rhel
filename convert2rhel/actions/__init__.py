@@ -295,6 +295,45 @@ def perform_pre_ponr_checks():
     """Late checks before ponr should be added here."""
     ensure_compatibility_of_kmods()
     validate_package_manager_transaction()
+    
+def check_efi():
+    """Inhibit the conversion when we are not able to handle UEFI."""
+    logger.task("Prepare: Check the firmware interface type (BIOS/UEFI)")
+    if not grub.is_efi():
+        logger.info("BIOS detected.")
+        return
+    logger.info("UEFI detected.")
+    if not os.path.exists("/usr/sbin/efibootmgr"):
+        logger.critical("Install efibootmgr to continue converting the UEFI-based system.")
+    if system_info.arch != "x86_64":
+        logger.critical("Only x86_64 systems are supported for UEFI conversions.")
+    if grub.is_secure_boot():
+        logger.info("Secure boot detected.")
+        logger.critical(
+            "The conversion with secure boot is currently not possible.\n"
+            "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
+        )
+
+    # Get information about the bootloader. Currently the data is not used, but it's
+    # good to check that we can obtain all the required data before the PONR. Better to
+    # stop now than after the PONR.
+    try:
+        efiboot_info = grub.EFIBootInfo()
+    except grub.BootloaderError as e:
+        logger.critical(e.message)
+
+    if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
+        # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
+        # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
+        logger.warning(
+            "The current UEFI bootloader '%s' is not referring to any binary UEFI"
+            " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+        )
+    # TODO(pstodulk): print warning when multiple orig. UEFI entries point
+    # to the original system (e.g. into the centos/ directory..). The point is
+    # that only the current UEFI bootloader entry is handled.
+    # If e.g. on CentOS Linux, other entries with CentOS labels could be
+    # invalid (or at least misleading) as the OS will be replaced by RHEL
 
 
 def ensure_compatibility_of_kmods():
