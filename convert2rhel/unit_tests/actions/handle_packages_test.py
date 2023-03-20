@@ -98,7 +98,12 @@ def test_remove_excluded_packages_error(remove_excluded_packages_instance, monke
 
     remove_excluded_packages_instance.run()
 
-    unit_tests.assert_actions_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message="Raising SystemExit")
+    unit_tests.assert_actions_result(
+        remove_excluded_packages_instance,
+        status="ERROR",
+        error_id="PACKAGE_REMOVAL_FAILED",
+        message="Raising SystemExit",
+    )
 
 
 @pytest.fixture
@@ -124,4 +129,9 @@ def test_remove_repository_files_packages_error(remove_repository_files_packages
 
     remove_repository_files_packages_instance.run()
 
-    unit_tests.assert_actions_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message="Raising SystemExit")
+    unit_tests.assert_actions_result(
+        remove_repository_files_packages_instance,
+        status="ERROR",
+        error_id="PACKAGE_REMOVAL_FAILED",
+        message="Raising SystemExit",
+    )
