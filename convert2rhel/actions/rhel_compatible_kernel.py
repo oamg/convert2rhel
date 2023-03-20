@@ -41,6 +41,7 @@ class RhelCompatibleKernel(actions.Action):
         By requesting that, we can be confident that the RHEL kernel will provide the same capabilities as on the
         original system.
         """
+        super(RhelCompatibleKernel, self).run()
         logger.task("Prepare: Check kernel compatibility with RHEL")
         if any(
             (
