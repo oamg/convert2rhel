@@ -22,7 +22,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import actions, systeminfo
+from convert2rhel import actions, systeminfo, unit_tests
 from convert2rhel.actions import rhel_compatible_kernel
 from convert2rhel.unit_tests.conftest import centos8
 from convert2rhel.utils import run_subprocess
@@ -74,21 +74,24 @@ def test_check_rhel_compatible_kernel_is_used(
     )
     rhel_compatible_kernel_action.run()
     if any_of_the_subchecks_is_true:
-        assert rhel_compatible_kernel_action.error_id == "BOOTED_KERNEL_INCOMPATIBLE"
-        assert rhel_compatible_kernel_action.status == actions.STATUS_CODE["ERROR"]
-        assert rhel_compatible_kernel_action.message == (
-            "The booted kernel version is incompatible with the standard RHEL kernel. "
-            "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
-            " by executing the following steps:\n\n"
-            "1. Ensure that the {0} {1} base repository is enabled\n"
-            "2. Run: yum install kernel\n"
-            "3. (optional) Run: grubby --set-default "
-            '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
-            "4. Reboot the machine and if step 3 was not applied choose the kernel"
-            " installed in step 2 manually".format(
-                actions.rhel_compatible_kernel.system_info.name,
-                actions.rhel_compatible_kernel.system_info.version.major,
-            )
+        unit_tests.assert_actions_result(
+            rhel_compatible_kernel_action,
+            status="ERROR",
+            error_id="BOOTED_KERNEL_INCOMPATIBLE",
+            message=(
+                "The booted kernel version is incompatible with the standard RHEL kernel. "
+                "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
+                " by executing the following steps:\n\n"
+                "1. Ensure that the {0} {1} base repository is enabled\n"
+                "2. Run: yum install kernel\n"
+                "3. (optional) Run: grubby --set-default "
+                '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
+                "4. Reboot the machine and if step 3 was not applied choose the kernel"
+                " installed in step 2 manually".format(
+                    actions.rhel_compatible_kernel.system_info.name,
+                    actions.rhel_compatible_kernel.system_info.version.major,
+                )
+            ),
         )
     else:
         assert "is compatible with RHEL" in caplog.records[-1].message
