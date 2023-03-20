@@ -22,6 +22,7 @@ from functools import wraps
 
 import pytest
 
+from convert2rhel.actions import STATUS_CODE
 from convert2rhel.utils import run_subprocess
 
 
@@ -282,3 +283,20 @@ def run_subprocess_side_effect(*stubs):
             return run_subprocess(*args, **kwargs)
 
     return factory
+
+
+#: Used as a sentinel value for Action.set_result() method.
+_NO_USER_VALUE = object()
+
+
+def assert_actions_result(instance, status=_NO_USER_VALUE, error_id=_NO_USER_VALUE, message=_NO_USER_VALUE):
+    """Helper function to assert result set by Actions Framework."""
+
+    if status != _NO_USER_VALUE:
+        assert instance.status == STATUS_CODE[status]
+
+    if error_id != _NO_USER_VALUE:
+        assert instance.error_id == error_id
+
+    if message != _NO_USER_VALUE:
+        assert message in instance.message
