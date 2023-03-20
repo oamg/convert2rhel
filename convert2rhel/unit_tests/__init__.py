@@ -285,7 +285,8 @@ def run_subprocess_side_effect(*stubs):
     return factory
 
 
-#: Used as a sentinel value for Action.set_result() method.
+#: Used as a sentinel value for assert_action_result() so we only check
+#: attributes that the test has asked for.
 _NO_USER_VALUE = object()
 
 
