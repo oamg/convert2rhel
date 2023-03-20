@@ -35,18 +35,18 @@ class Efi(actions.Action):
             logger.info("BIOS detected.")
             return
         logger.info("UEFI detected.")
-        if not os.path.exists("/usr/sbin/efibootmgr"):
-            self.set_result(
-                status="ERROR",
-                error_id="EFIBOOTMGR_NOT_FOUND",
-                message="Install efibootmgr to continue converting the UEFI-based system.",
-            )
-            return
         if system_info.arch != "x86_64":
             self.set_result(
                 status="ERROR",
                 error_id="NON_x86_64",
                 message="Only x86_64 systems are supported for UEFI conversions.",
+            )
+            return
+        if not os.path.exists("/usr/sbin/efibootmgr"):
+            self.set_result(
+                status="ERROR",
+                error_id="EFIBOOTMGR_NOT_FOUND",
+                message="Install efibootmgr to continue converting the UEFI-based system.",
             )
             return
         if grub.is_secure_boot():
@@ -59,7 +59,6 @@ class Efi(actions.Action):
                     "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
                 ),
             )
-
             return
 
         # Get information about the bootloader. Currently the data is not used, but it's
@@ -68,7 +67,7 @@ class Efi(actions.Action):
         try:
             efiboot_info = grub.EFIBootInfo()
         except grub.BootloaderError as e:
-            self.set_result(status="ERROR", error_id="BOOTLOADER_ERROR", message="%s" % e)
+            self.set_result(status="ERROR", error_id="BOOTLOADER_ERROR", message=str(e))
             return
 
         if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
