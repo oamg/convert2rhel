@@ -29,7 +29,6 @@ from convert2rhel.actions import (
     _bad_kernel_substring,
     _bad_kernel_version,
     check_package_updates,
-    check_rhel_compatible_kernel_is_used,
     get_loaded_kmods,
     is_loaded_kernel_latest,
 )
@@ -96,33 +95,15 @@ REPOQUERY_L_STUB_BAD = (
 
 def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
-    check_efi_mock = mock.Mock()
-    check_readonly_mounts_mock = mock.Mock()
     check_custom_repos_are_valid_mock = mock.Mock()
-    check_rhel_compatible_kernel_is_used_mock = mock.Mock()
     check_package_updates_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
     check_dbus_is_running_mock = mock.Mock()
 
     monkeypatch.setattr(
         actions,
-        "check_efi",
-        value=check_efi_mock,
-    )
-    monkeypatch.setattr(
-        actions,
         "check_tainted_kmods",
         value=check_thirdparty_kmods_mock,
-    )
-    monkeypatch.setattr(
-        actions,
-        "check_readonly_mounts",
-        value=check_readonly_mounts_mock,
-    )
-    monkeypatch.setattr(
-        actions,
-        "check_rhel_compatible_kernel_is_used",
-        value=check_rhel_compatible_kernel_is_used_mock,
     )
     monkeypatch.setattr(
         actions,
@@ -141,9 +122,6 @@ def test_perform_pre_checks(monkeypatch):
     actions.perform_system_checks()
 
     check_thirdparty_kmods_mock.assert_called_once()
-    check_efi_mock.assert_called_once()
-    check_readonly_mounts_mock.assert_called_once()
-    check_rhel_compatible_kernel_is_used_mock.assert_called_once()
     check_package_updates_mock.assert_called_once()
     is_loaded_kernel_latest_mock.assert_called_once()
     check_dbus_is_running_mock.assert_called_once()
@@ -534,371 +512,54 @@ def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
         actions.check_tainted_kmods()
 
 
-class EFIBootInfoMocked:
-    def __init__(
-        self,
-        current_bootnum="0001",
-        next_boot=None,
-        boot_order=("0001", "0002"),
-        entries=None,
-        exception=None,
-    ):
-        self.current_bootnum = current_bootnum
-        self.next_boot = next_boot
-        self.boot_order = boot_order
-        self.entries = entries
-        self.set_default_efi_entries()
-        self._exception = exception
+class CallYumCmdMocked(unit_tests.MockFunction):
+    def __init__(self, ret_code, ret_string):
+        self.called = 0
+        self.return_code = ret_code
+        self.return_string = ret_string
+        self.fail_once = False
+        self.command = None
 
-    def __call__(self):
-        """Tested functions call existing object instead of creating one.
-        The object is expected to be instantiated already when mocking
-        so tested functions are not creating new object but are calling already
-        the created one. From the point of the tested code, the behaviour is
-        same now.
-        """
-        if not self._exception:
-            return self
-        raise self._exception  # pylint: disable=raising-bad-type
-
-    def set_default_efi_entries(self):
-        if not self.entries:
-            self.entries = {
-                "0001": grub.EFIBootLoader(
-                    boot_number="0001",
-                    label="Centos Linux",
-                    active=True,
-                    efi_bin_source=r"HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)",
-                ),
-                "0002": grub.EFIBootLoader(
-                    boot_number="0002",
-                    label="Foo label",
-                    active=True,
-                    efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
-                ),
-            }
+    def __call__(self, command, *args, **kwargs):
+        if self.fail_once and self.called == 0:
+            self.return_code = 1
+        if self.fail_once and self.called > 0:
+            self.return_code = 0
+        self.called += 1
+        self.command = command
+        return self.return_string, self.return_code
 
 
-def _gen_version(major, minor):
-    return namedtuple("Version", ["major", "minor"])(major, minor)
-
-
-class TestEFIChecks(unittest.TestCase):
-    def _check_efi_detection_log(self, efi_detected=True):
-        if efi_detected:
-            self.assertNotIn("BIOS detected.", actions.logger.info_msgs)
-            self.assertIn("UEFI detected.", actions.logger.info_msgs)
-        else:
-            self.assertIn("BIOS detected.", actions.logger.info_msgs)
-            self.assertNotIn("UEFI detected.", actions.logger.info_msgs)
-
-    def _check_efi_critical(self, critical_msg):
-        self.assertRaises(SystemExit, actions.check_efi)
-        self.assertEqual(len(actions.logger.critical_msgs), 1)
-        self.assertIn(critical_msg, actions.logger.critical_msgs)
-        self._check_efi_detection_log(True)
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: not x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_without_efibootmgr(self):
-        self._check_efi_critical("Install efibootmgr to continue converting the UEFI-based system.")
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.system_info, "arch", "aarch64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_non_intel(self):
-        self._check_efi_critical("Only x86_64 systems are supported for UEFI conversions.")
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: True)
-    @unit_tests.mock(actions.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_secure_boot(self):
-        self._check_efi_critical(
-            "The conversion with secure boot is currently not possible.\n"
-            "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
-        )
-        self.assertIn("Secure boot detected.", actions.logger.info_msgs)
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_bootloader_error(self):
-        self._check_efi_critical("errmsg")
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
-    def test_check_efi_efi_detected_nofile_entry(self):
-        actions.check_efi()
-        self._check_efi_detection_log()
-        warn_msg = (
-            "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
-            " EFI System Partition (ESP)."
-        )
-        self.assertIn(warn_msg, actions.logger.warning_msgs)
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked())
-    def test_check_efi_efi_detected_ok(self):
-        actions.check_efi()
-        self._check_efi_detection_log()
-        self.assertEqual(len(actions.logger.warning_msgs), 0)
-
-
-@pytest.mark.parametrize(
-    # i.e. _bad_kernel_version...
-    ("any_of_the_subchecks_is_true",),
-    (
-        (True,),
-        (False,),
-    ),
+@unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+@unit_tests.mock(
+    actions,
+    "call_yum_cmd",
+    CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
 )
-def test_check_rhel_compatible_kernel_is_used(
-    any_of_the_subchecks_is_true,
-    monkeypatch,
-    caplog,
-):
-    monkeypatch.setattr(
-        actions,
-        "_bad_kernel_version",
-        value=mock.Mock(return_value=any_of_the_subchecks_is_true),
+@unit_tests.mock(actions, "logger", GetLoggerMocked())
+@unit_tests.mock(tool_opts, "no_rhsm", True)
+def test_custom_repos_are_valid(self):
+    actions.check_custom_repos_are_valid()
+    self.assertEqual(len(actions.logger.info_msgs), 1)
+    self.assertEqual(len(actions.logger.debug_msgs), 1)
+    self.assertIn(
+        "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
     )
-    monkeypatch.setattr(
-        actions,
-        "_bad_kernel_substring",
-        value=mock.Mock(return_value=False),
-    )
-    monkeypatch.setattr(
-        actions,
-        "_bad_kernel_package_signature",
-        value=mock.Mock(return_value=False),
-    )
-    if any_of_the_subchecks_is_true:
-        with pytest.raises(SystemExit):
-            check_rhel_compatible_kernel_is_used()
-    else:
-        check_rhel_compatible_kernel_is_used()
-        assert "is compatible with RHEL" in caplog.records[-1].message
 
 
-@pytest.mark.parametrize(
-    ("kernel_release", "major_ver", "exp_return"),
-    (
-        ("5.11.0-7614-generic", None, True),
-        ("3.10.0-1160.24.1.el7.x86_64", 7, False),
-        ("5.4.17-2102.200.13.el8uek.x86_64", 8, True),
-        ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
-    ),
+@unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+@unit_tests.mock(
+    actions,
+    "call_yum_cmd",
+    CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
 )
-def test_bad_kernel_version(kernel_release, major_ver, exp_return, monkeypatch):
-    Version = namedtuple("Version", ("major", "minor"))
-    monkeypatch.setattr(
-        actions.system_info,
-        "version",
-        value=Version(major=major_ver, minor=0),
-    )
-    assert _bad_kernel_version(kernel_release) == exp_return
-
-
-@pytest.mark.parametrize(
-    ("kernel_release", "exp_return"),
-    (
-        ("3.10.0-1160.24.1.el7.x86_64", False),
-        ("5.4.17-2102.200.13.el8uek.x86_64", True),
-        ("3.10.0-514.2.2.rt56.424.el7.x86_64", True),
-    ),
-)
-def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
-    assert _bad_kernel_substring(kernel_release) == exp_return
-
-
-@pytest.mark.parametrize(
-    ("kernel_release", "kernel_pkg", "kernel_pkg_fingerprint", "get_installed_pkg_objects", "exp_return"),
-    (
-        (
-            "4.18.0-240.22.1.el8_3.x86_64",
-            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
-            "05b555b38483c65d",
-            "yajl.x86_64",
-            False,
-        ),
-        (
-            "4.18.0-240.22.1.el8_3.x86_64",
-            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
-            "somebadsig",
-            "somepkgobj",
-            True,
-        ),
-    ),
-)
-@centos8
-def test_bad_kernel_package_signature(
-    kernel_release,
-    kernel_pkg,
-    kernel_pkg_fingerprint,
-    get_installed_pkg_objects,
-    exp_return,
-    monkeypatch,
-    pretend_os,
-):
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
-    get_pkg_fingerprint_mocked = mock.Mock(spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint)
-    monkeypatch.setattr(actions, "run_subprocess", run_subprocess_mocked)
-    get_installed_pkg_objects_mocked = mock.Mock(spec=get_installed_pkg_objects, return_value=[kernel_pkg])
-    monkeypatch.setattr(
-        actions,
-        "get_installed_pkg_objects",
-        get_installed_pkg_objects_mocked,
-    )
-    monkeypatch.setattr(actions, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
-    assert _bad_kernel_package_signature(kernel_release) == exp_return
-    run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],
-        print_output=False,
-    )
-
-
-@centos8
-def test_kernel_not_installed(pretend_os, caplog, monkeypatch):
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(" ", 1))
-    monkeypatch.setattr(actions, "run_subprocess", run_subprocess_mocked)
-    assert _bad_kernel_package_signature("4.18.0-240.22.1.el8_3.x86_64")
-    log_message = (
-        "The booted kernel /boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64 is not owned by any installed package."
-        " It needs to be owned by a package signed by CentOS."
-    )
-    assert log_message in caplog.text
-
-
-class TestReadOnlyMountsChecks(unittest.TestCase):
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(
-        actions,
-        "get_file_content",
-        GetFileContentMocked(
-            data=[
-                "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-            ]
-        ),
-    )
-    def test_mounted_are_readwrite(self):
-        actions.check_readonly_mounts()
-        self.assertEqual(len(actions.logger.critical_msgs), 0)
-        self.assertEqual(len(actions.logger.debug_msgs), 2)
-        self.assertIn("/mnt mount point is not read-only.", actions.logger.debug_msgs)
-        self.assertIn("/sys mount point is not read-only.", actions.logger.debug_msgs)
-
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(
-        actions,
-        "get_file_content",
-        GetFileContentMocked(
-            data=[
-                "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-            ]
-        ),
-    )
-    def test_mounted_are_readonly(self):
-        self.assertRaises(SystemExit, actions.check_readonly_mounts)
-        self.assertEqual(len(actions.logger.critical_msgs), 1)
-        self.assertIn("Stopping conversion due to read-only mount to /mnt directory", actions.logger.critical_msgs[0])
-        self.assertNotIn(
-            "Stopping conversion due to read-only mount to /sys directory", actions.logger.critical_msgs[0]
-        )
-        self.assertIn("/sys mount point is not read-only.", actions.logger.debug_msgs[0])
-
-    class CallYumCmdMocked(unit_tests.MockFunction):
-        def __init__(self, ret_code, ret_string):
-            self.called = 0
-            self.return_code = ret_code
-            self.return_string = ret_string
-            self.fail_once = False
-            self.command = None
-
-        def __call__(self, command, *args, **kwargs):
-            if self.fail_once and self.called == 0:
-                self.return_code = 1
-            if self.fail_once and self.called > 0:
-                self.return_code = 0
-            self.called += 1
-            self.command = command
-            return self.return_string, self.return_code
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(
-        actions,
-        "call_yum_cmd",
-        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
-    )
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_valid(self):
-        actions.check_custom_repos_are_valid()
-        self.assertEqual(len(actions.logger.info_msgs), 1)
-        self.assertEqual(len(actions.logger.debug_msgs), 1)
-        self.assertIn(
-            "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
-        )
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(
-        actions,
-        "call_yum_cmd",
-        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
-    )
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_invalid(self):
-        self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
-        self.assertEqual(len(actions.logger.critical_msgs), 1)
-        self.assertEqual(len(actions.logger.info_msgs), 0)
-        self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
+@unit_tests.mock(actions, "logger", GetLoggerMocked())
+@unit_tests.mock(tool_opts, "no_rhsm", True)
+def test_custom_repos_are_invalid(self):
+    self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
+    self.assertEqual(len(actions.logger.critical_msgs), 1)
+    self.assertEqual(len(actions.logger.info_msgs), 0)
+    self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
 
 
 @oracle8
