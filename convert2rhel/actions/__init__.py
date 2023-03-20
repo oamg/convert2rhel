@@ -282,10 +282,7 @@ def run_actions():
 def perform_system_checks():
     """Early checks after system facts should be added here."""
     check_custom_repos_are_valid()
-    check_efi()
     check_tainted_kmods()
-    check_readonly_mounts()
-    check_rhel_compatible_kernel_is_used()
     check_package_updates()
     is_loaded_kernel_latest()
     check_dbus_is_running()
@@ -295,46 +292,6 @@ def perform_pre_ponr_checks():
     """Late checks before ponr should be added here."""
     ensure_compatibility_of_kmods()
     validate_package_manager_transaction()
-
-
-def check_efi():
-    """Inhibit the conversion when we are not able to handle UEFI."""
-    logger.task("Prepare: Check the firmware interface type (BIOS/UEFI)")
-    if not grub.is_efi():
-        logger.info("BIOS detected.")
-        return
-    logger.info("UEFI detected.")
-    if not os.path.exists("/usr/sbin/efibootmgr"):
-        logger.critical("Install efibootmgr to continue converting the UEFI-based system.")
-    if system_info.arch != "x86_64":
-        logger.critical("Only x86_64 systems are supported for UEFI conversions.")
-    if grub.is_secure_boot():
-        logger.info("Secure boot detected.")
-        logger.critical(
-            "The conversion with secure boot is currently not possible.\n"
-            "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
-        )
-
-    # Get information about the bootloader. Currently the data is not used, but it's
-    # good to check that we can obtain all the required data before the PONR. Better to
-    # stop now than after the PONR.
-    try:
-        efiboot_info = grub.EFIBootInfo()
-    except grub.BootloaderError as e:
-        logger.critical(e.message)
-
-    if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
-        # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
-        # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
-        logger.warning(
-            "The current UEFI bootloader '%s' is not referring to any binary UEFI"
-            " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
-        )
-    # TODO(pstodulk): print warning when multiple orig. UEFI entries point
-    # to the original system (e.g. into the centos/ directory..). The point is
-    # that only the current UEFI bootloader entry is handled.
-    # If e.g. on CentOS Linux, other entries with CentOS labels could be
-    # invalid (or at least misleading) as the OS will be replaced by RHEL
 
 
 def check_tainted_kmods():
@@ -360,35 +317,6 @@ def check_tainted_kmods():
             )
         )
     logger.info("No tainted kernel module is loaded.")
-
-
-def check_readonly_mounts():
-    """
-    Mounting directly to /mnt/ is not in line with Unix FS (https://en.wikipedia.org/wiki/Unix_filesystem).
-    Having /mnt/ and /sys/ read-only causes the installation of the filesystem package to
-    fail (https://bugzilla.redhat.com/show_bug.cgi?id=1887513, https://github.com/oamg/convert2rhel/issues/123).
-    """
-    logger.task("Prepare: Check /mnt and /sys are read-write")
-
-    mounts = get_file_content("/proc/mounts", as_list=True)
-    for line in mounts:
-        _, mount_point, _, flags, _, _ = line.split()
-        flags = flags.split(",")
-        if mount_point not in ("/mnt", "/sys"):
-            continue
-        if "ro" in flags:
-            if mount_point == "/mnt":
-                logger.critical(
-                    "Stopping conversion due to read-only mount to /mnt directory.\n"
-                    "Mount at a subdirectory of /mnt to have /mnt writeable."
-                )
-            else:  # /sys
-                logger.critical(
-                    "Stopping conversion due to read-only mount to /sys directory.\n"
-                    "Ensure mount point is writable before executing convert2rhel."
-                )
-        logger.debug("%s mount point is not read-only." % mount_point)
-    logger.info("Read-only /mnt or /sys mount points not detected.")
 
 
 def check_custom_repos_are_valid():
@@ -614,35 +542,6 @@ def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
         for kmod in unsupported_kmods_subpaths
     ]
     return unsupported_kmods_full_paths
-
-
-def check_rhel_compatible_kernel_is_used():
-    """Ensure the booted kernel is signed, is standard (not UEK, realtime, ...), and has the same version as in RHEL.
-
-    By requesting that, we can be confident that the RHEL kernel will provide the same capabilities as on the
-    original system.
-    """
-    logger.task("Prepare: Check kernel compatibility with RHEL")
-    if any(
-        (
-            _bad_kernel_version(system_info.booted_kernel),
-            _bad_kernel_package_signature(system_info.booted_kernel),
-            _bad_kernel_substring(system_info.booted_kernel),
-        )
-    ):
-        logger.critical(
-            "The booted kernel version is incompatible with the standard RHEL kernel. "
-            "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
-            " by executing the following steps:\n\n"
-            "1. Ensure that the {0} {1} base repository is enabled\n"
-            "2. Run: yum install kernel\n"
-            "3. (optional) Run: grubby --set-default "
-            '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
-            "4. Reboot the machine and if step 3 was not applied choose the kernel"
-            " installed in step 2 manually".format(system_info.name, system_info.version.major)
-        )
-    else:
-        logger.info("The booted kernel %s is compatible with RHEL." % system_info.booted_kernel)
 
 
 def _bad_kernel_version(kernel_release):
