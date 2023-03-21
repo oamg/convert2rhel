@@ -531,14 +531,14 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
 @pytest.mark.parametrize(
     ("argv", "expected"),
     (
-        (mock_cli_arguments(["--pre-check"]), True),
+        (mock_cli_arguments(["--pre-assessment"]), True),
         (mock_cli_arguments([]), False),
     ),
 )
-def test_pre_check_set(argv, expected, monkeypatch):
+def test_pre_assessment_set(argv, expected, monkeypatch):
     tool_opts.__init__()
     monkeypatch.setattr(sys, "argv", argv)
 
     convert2rhel.toolopts.CLI()
 
-    assert tool_opts.pre_check == expected
+    assert tool_opts.pre_assessment == expected

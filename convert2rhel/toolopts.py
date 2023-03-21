@@ -55,7 +55,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.keep_rhsm = False
-        self.pre_check = False
+        self.pre_assessment = False
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -82,7 +82,7 @@ class CLI(object):
             "\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
-            "  convert2rhel [--pre-check]\n "
+            "  convert2rhel [--pre-assessment]\n "
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
             " [-y]\n"
@@ -131,7 +131,7 @@ class CLI(object):
             % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
         self._parser.add_option(
-            "--pre-check",
+            "--pre-assessment",
             action="store_true",
             help="Run all Convert2RHEL initial checks up until the "
             " Point of no Return (PONR) and generate a report with the findings."
@@ -308,8 +308,8 @@ class CLI(object):
         if parsed_opts.debug:
             tool_opts.debug = True
 
-        if parsed_opts.pre_check:
-            tool_opts.pre_check = True
+        if parsed_opts.pre_assessment:
+            tool_opts.pre_assessment = True
 
         # Processing the configuration file
         conf_file_opts = options_from_config_files(parsed_opts.config_file)
