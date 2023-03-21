@@ -28,7 +28,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, backup, cert, grub
+from convert2rhel import actions, backup, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.breadcrumbs import breadcrumbs
@@ -380,6 +380,7 @@ def test_main(monkeypatch):
     show_eula_mock = mock.Mock()
     print_data_collection_mock = mock.Mock()
     resolve_system_info_mock = mock.Mock()
+    print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
     system_release_file_mock = mock.Mock()
@@ -405,6 +406,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
     monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
@@ -421,7 +423,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-    monkeypatch.setattr(actions, "check_kernel_boot_files", check_kernel_boot_files_mock)
+    monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
     monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
 
     assert main.main() == 0
@@ -480,6 +482,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     show_eula_mock = mock.Mock()
     print_data_collection_mock = mock.Mock()
     resolve_system_info_mock = mock.Mock()
+    print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
     perform_system_checks_mock = mock.Mock()
@@ -500,6 +503,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
     monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
@@ -539,6 +543,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     show_eula_mock = mock.Mock()
     print_data_collection_mock = mock.Mock()
     resolve_system_info_mock = mock.Mock()
+    print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
     perform_system_checks_mock = mock.Mock()
@@ -561,6 +566,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
     monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
