@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 class RemoveIwlax2xxFirmware(actions.Action):
     id = "REMOVE_IWLAX2XX_FIRMWARE"
-    dependencies = tuple()
 
     @actions._action_defaults_to_success
     def run(self):
