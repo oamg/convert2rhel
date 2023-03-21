@@ -184,7 +184,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
     @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
-    @unit_tests.mock(actions, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_with_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -234,7 +233,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
     @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
-    @unit_tests.mock(actions, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()
@@ -286,7 +284,6 @@ class TestMain(unittest.TestCase):
     @mock_calls(subscription, "disable_repos", CallOrderMocked)
     @mock_calls(subscription, "enable_repos", CallOrderMocked)
     @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    @unit_tests.mock(actions, "check_readonly_mounts", GetFakeFunctionMocked)
     def test_pre_ponr_conversion_order_without_rhsm(self):
         self.CallOrderMocked.reset()
         main.pre_ponr_conversion()

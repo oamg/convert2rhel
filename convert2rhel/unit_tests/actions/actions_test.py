@@ -526,36 +526,36 @@ class CallYumCmdMocked(unit_tests.MockFunction):
         return self.return_string, self.return_code
 
 
-@unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-@unit_tests.mock(
-    actions,
-    "call_yum_cmd",
-    CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
-)
-@unit_tests.mock(actions, "logger", GetLoggerMocked())
-@unit_tests.mock(tool_opts, "no_rhsm", True)
-def test_custom_repos_are_valid(self):
-    actions.check_custom_repos_are_valid()
-    self.assertEqual(len(actions.logger.info_msgs), 1)
-    self.assertEqual(len(actions.logger.debug_msgs), 1)
-    self.assertIn(
-        "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
+class TestCustomReposAreValid(unittest.TestCase):
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(
+        actions,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
     )
+    @unit_tests.mock(actions, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
+    def test_custom_repos_are_valid(self):
+        actions.check_custom_repos_are_valid()
+        self.assertEqual(len(actions.logger.info_msgs), 1)
+        self.assertEqual(len(actions.logger.debug_msgs), 1)
+        self.assertIn(
+            "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
+        )
 
-
-@unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-@unit_tests.mock(
-    actions,
-    "call_yum_cmd",
-    CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
-)
-@unit_tests.mock(actions, "logger", GetLoggerMocked())
-@unit_tests.mock(tool_opts, "no_rhsm", True)
-def test_custom_repos_are_invalid(self):
-    self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
-    self.assertEqual(len(actions.logger.critical_msgs), 1)
-    self.assertEqual(len(actions.logger.info_msgs), 0)
-    self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(
+        actions,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
+    )
+    @unit_tests.mock(actions, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
+    def test_custom_repos_are_invalid(self):
+        self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
+        self.assertEqual(len(actions.logger.critical_msgs), 1)
+        self.assertEqual(len(actions.logger.info_msgs), 0)
+        self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
 
 
 class TestIsLoadedKernelLatest:
