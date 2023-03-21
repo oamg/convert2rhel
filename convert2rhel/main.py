@@ -44,6 +44,12 @@ class ConversionPhase(object):
     POST_PONR_CHANGES = 3
 
 
+class ConversionExitCode(object):
+    SUCCESS = 0
+    FAILURE = 1
+    INHIBITED = 2
+
+
 def initialize_logger(log_name, log_dir):
     """
     Entrypoint function that aggregates other calls for initialization logic
@@ -91,9 +97,10 @@ def main():
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
-        ### FIXME: Need to implement the command line arg to do this
-        # if toolopts.action == "precheck":
-        #    rollback()
+        if toolopts.tool_opts.pre_check:
+            rollback()
+            # Return code here depends on the result of the action framework.
+            return ConversionExitCode.SUCCESS
 
         post_ponr_changes()
 
@@ -155,7 +162,7 @@ def main():
         breadcrumbs.breadcrumbs.finish_collection(success=False)
 
         if is_help_msg_exit(process_phase, err):
-            return 0
+            return ConversionExitCode.SUCCESS
         elif process_phase == ConversionPhase.INIT:
             print(no_changes_msg)
         elif process_phase == ConversionPhase.POST_CLI:
@@ -176,9 +183,9 @@ def main():
                 " the system from a backup."
             )
             subscription.update_rhsm_custom_facts()
-        return 1
+        return ConversionExitCode.FAILURE
 
-    return 0
+    return ConversionExitCode.SUCCESS
 
 
 #
