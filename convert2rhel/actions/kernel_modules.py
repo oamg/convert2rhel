@@ -23,7 +23,6 @@ import re
 from functools import cmp_to_key
 
 from convert2rhel import actions, pkghandler
-from convert2rhel.actions import subscription
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
@@ -39,7 +38,7 @@ class RHELKernelModuleNotFound(Exception):
 
 class EnsureKernelModulesCompatibility(actions.Action):
     id = "ENSURE_KERNEL_MODULES_COMPATIBILITY"
-    dependencies = (subscription.SubscribeSystem,)
+    dependencies = ("SUBSCRIBE_SYSTEM",)
 
     def _get_loaded_kmods(self):
         """Get a set of kernel modules loaded on host.
