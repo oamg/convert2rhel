@@ -18,7 +18,7 @@
 import logging
 import os
 
-from convert2rhel import actions, backup, breadcrumbs, cert, grub
+from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import (
     pkghandler,
@@ -82,6 +82,7 @@ def main():
         perform_boilerplate()
 
         gather_system_info()
+        prepare_system()
 
         ### FIXME: This should be expected to either succeed or fail.  Need to look for the return
         ### value and act upon it.
@@ -90,16 +91,13 @@ def main():
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
-        if toolopts.action == "precheck":
-            rollback()
+        ### FIXME: Need to implement the command line arg to do this
+        # if toolopts.action == "precheck":
+        #    rollback()
 
         post_ponr_changes()
 
         ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
-        ### This is an artificial stopping point to mark what code still needs to be migrated.
-        import sys
-
-        sys.exit(1000)
 
         # backup system release file before starting conversion process
         loggerinst.task("Prepare: Backup System")
@@ -107,6 +105,8 @@ def main():
         redhatrelease.os_release_file.backup()
         repo.backup_yum_repos()
         repo.backup_varsdir()
+
+        ### End calls that should be put into pre_ponr_changes(), rollback(), or post_ponr_changes()
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
@@ -135,7 +135,7 @@ def main():
         utils.remove_tmp_dir()
 
         loggerinst.task("Final: Check kernel boot files")
-        actions.check_kernel_boot_files()
+        checks.check_kernel_boot_files()
 
         breadcrumbs.breadcrumbs.finish_collection(success=True)
 
@@ -226,7 +226,7 @@ def prepare_system():
     pkghandler.clear_versionlock()
 
     loggerinst.task("Prepare: Clean yum cache metadata")
-    pkghandler.clean_yum_metadata()
+    pkgmanager.clean_yum_metadata()
 
 
 def system_checks():
