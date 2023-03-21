@@ -18,7 +18,6 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, cert, pkghandler, repo, subscription, toolopts
-from convert2rhel.actions import handle_packages
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class PreSubscription(actions.Action):
     id = "PRE_SUBSCRIPTION"
-    dependencies = (handle_packages.RemoveExcludedPackages,)
+    dependencies = ("REMOVE_EXCLUDED_PACKAGES",)
 
     @actions._action_defaults_to_success
     def run(self):
@@ -80,8 +79,8 @@ class PreSubscription(actions.Action):
 class SubscribeSystem(actions.Action):
     id = "SUBSCRIBE_SYSTEM"
     dependencies = (
-        handle_packages.RemoveRepositoryFilesPackages,
-        PreSubscription,
+        "REMOVE_REPOSITORY_FILES_PACKAGES",
+        "PRE_SUBSCRIPTION",
     )
 
     @actions._action_defaults_to_success

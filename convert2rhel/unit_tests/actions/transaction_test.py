@@ -37,10 +37,10 @@ def validate_package_manager_transaction():
 
 def test_validate_package_manager_transaction_dependency_order(validate_package_manager_transaction):
     expected_dependencies = (
-        RemoveExcludedPackages,
-        RemoveIwlax2xxFirmware,
-        EnsureKernelModulesCompatibility,
-        SubscribeSystem,
+        "REMOVE_EXCLUDED_PACKAGES",
+        "REMOVE_IWLAX2XX_FIRMWARE",
+        "ENSURE_KERNEL_MODULES_COMPATIBILITY",
+        "SUBSCRIBE_SYSTEM",
     )
 
     assert expected_dependencies == validate_package_manager_transaction.dependencies
