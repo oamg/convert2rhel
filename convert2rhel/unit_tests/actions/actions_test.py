@@ -31,7 +31,6 @@ from convert2rhel.actions import (
     _bad_kernel_substring,
     _bad_kernel_version,
     get_loaded_kmods,
-    is_loaded_kernel_latest,
 )
 from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
@@ -155,6 +154,7 @@ class TestRunActions:
 
 def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
+<<<<<<< HEAD
     is_loaded_kernel_latest_mock = mock.Mock()
 
     monkeypatch.setattr(actions, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
@@ -162,6 +162,32 @@ def test_perform_pre_checks(monkeypatch):
 
     check_thirdparty_kmods_mock.assert_called_once()
     is_loaded_kernel_latest_mock.assert_called_once()
+=======
+    check_custom_repos_are_valid_mock = mock.Mock()
+    check_dbus_is_running_mock = mock.Mock()
+
+    monkeypatch.setattr(
+        actions,
+        "check_tainted_kmods",
+        value=check_thirdparty_kmods_mock,
+    )
+    monkeypatch.setattr(
+        actions,
+        "check_custom_repos_are_valid",
+        value=check_custom_repos_are_valid_mock,
+    )
+    monkeypatch.setattr(
+        actions,
+        "check_custom_repos_are_valid",
+        value=check_custom_repos_are_valid_mock,
+    )
+    monkeypatch.setattr(actions, "check_dbus_is_running", value=check_dbus_is_running_mock)
+
+    actions.perform_system_checks()
+
+    check_thirdparty_kmods_mock.assert_called_once()
+    check_dbus_is_running_mock.assert_called_once()
+>>>>>>> 7e50579 ([RHELC-936] Port is_loaded_kernel_latest to Action framework)
 
 
 def test_perform_pre_ponr_checks(monkeypatch):
@@ -534,6 +560,7 @@ class CallYumCmdMocked(unit_tests.MockFunction):
         return self.return_string, self.return_code
 
 
+<<<<<<< HEAD
 class TestIsLoadedKernelLatest:
     @oracle8
     def test_is_loaded_kernel_latest_skip_on_not_latest_ol(
@@ -921,3 +948,75 @@ class TestIsLoadedKernelLatest:
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
         assert "Latest kernel version available in baseos: %s" % repoquery_kernel_version in caplog.records[-1].message
         assert "Loaded kernel version: %s\n\n" % uname_kernel_version in caplog.records[-1].message
+=======
+class TestCustomReposAreValid(unittest.TestCase):
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(
+        actions,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
+    )
+    @unit_tests.mock(actions, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
+    def test_custom_repos_are_valid(self):
+        actions.check_custom_repos_are_valid()
+        self.assertEqual(len(actions.logger.info_msgs), 1)
+        self.assertEqual(len(actions.logger.debug_msgs), 1)
+        self.assertIn(
+            "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
+        )
+
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(
+        actions,
+        "call_yum_cmd",
+        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
+    )
+    @unit_tests.mock(actions, "logger", GetLoggerMocked())
+    @unit_tests.mock(tool_opts, "no_rhsm", True)
+    def test_custom_repos_are_invalid(self):
+        self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
+        self.assertEqual(len(actions.logger.critical_msgs), 1)
+        self.assertEqual(len(actions.logger.info_msgs), 0)
+        self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
+
+
+@pytest.mark.parametrize(
+    ("no_rhsm", "dbus_running", "log_msg"),
+    (
+        (True, True, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (True, False, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (False, True, "DBus Daemon is running"),
+    ),
+)
+def test_check_dbus_is_running(
+    caplog, monkeypatch, global_tool_opts, global_system_info, no_rhsm, dbus_running, log_msg
+):
+    monkeypatch.setattr(actions, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = no_rhsm
+    monkeypatch.setattr(actions, "system_info", global_system_info)
+    global_system_info.dbus_running = dbus_running
+
+    assert actions.check_dbus_is_running() is None
+    assert caplog.records[-1].message == log_msg
+
+    assert log_msg == caplog.records[-1].message
+
+
+def test_check_dbus_is_running_not_running(caplog, monkeypatch, global_tool_opts, global_system_info):
+    monkeypatch.setattr(actions, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = False
+    monkeypatch.setattr(actions, "system_info", global_system_info)
+    global_system_info.dbus_running = False
+
+    with pytest.raises(SystemExit):
+        actions.check_dbus_is_running()
+
+    log_msg = (
+        "Could not find a running DBus Daemon which is needed to"
+        " register with subscription manager.\nPlease start dbus using `systemctl"
+        " start dbus`"
+    )
+    assert log_msg == caplog.records[-1].message
+    assert caplog.records[-1].levelname == "CRITICAL"
+>>>>>>> 7e50579 ([RHELC-936] Port is_loaded_kernel_latest to Action framework)
