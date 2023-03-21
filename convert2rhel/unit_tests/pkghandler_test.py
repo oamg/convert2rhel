@@ -1162,20 +1162,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_check_installed_rhel_kernel_returns_false(self):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
 
-    @unit_tests.mock(tool_opts, "disablerepo", ["*", "rhel-7-extras-rpm"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_has_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertIn("Duplicate repositories were found", pkghandler.loggerinst.warning_msgs[0])
-
-    @unit_tests.mock(tool_opts, "disablerepo", ["*"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_doesnt_thas_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
-
     @unit_tests.mock(system_info, "name", "Oracle Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))

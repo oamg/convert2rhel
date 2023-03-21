@@ -164,152 +164,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(backup.backup_control.pop_all.called, 1)
         self.assertEqual(repo.restore_varsdir.called, 1)
 
-    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", False)
-    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
-    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
-    @mock_calls(main.actions, "perform_system_checks", CallOrderMocked)
-    @mock_calls(main.actions, "perform_pre_ponr_checks", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
-    @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
-    @mock_calls(cert.SystemCert, "install", CallOrderMocked)
-    @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "subscribe_system", CallOrderMocked)
-    @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
-    @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
-    @mock_calls(subscription, "disable_repos", CallOrderMocked)
-    @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
-    def test_pre_ponr_conversion_order_with_rhsm(self):
-        self.CallOrderMocked.reset()
-        main.pre_ponr_conversion()
-
-        intended_call_order = OrderedDict()
-        intended_call_order["list_third_party_pkgs"] = 1
-        intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["install_gpg_keys"] = 1
-        intended_call_order["download_rhsm_pkgs"] = 1
-        intended_call_order["replace_subscription_manager"] = 1
-        intended_call_order["verify_rhsm_installed"] = 1
-        intended_call_order["install"] = 1
-        intended_call_order["remove_repofile_pkgs"] = 1
-        intended_call_order["subscribe_system"] = 1
-        intended_call_order["get_rhel_repoids"] = 1
-        intended_call_order["check_needed_repos_availability"] = 1
-        intended_call_order["disable_repos"] = 1
-
-        intended_call_order["enable_repos"] = 1
-        intended_call_order["perform_pre_ponr_checks"] = 1
-        intended_call_order["perform_system_checks"] = 1
-
-        # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
-        zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
-        for expected, actual in zipped_call_order:
-            if expected[1] > 0:
-                self.assertEqual(expected, actual)
-
-    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", False)
-    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
-    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
-    @mock_calls(main.actions, "perform_system_checks", CallOrderMocked)
-    @mock_calls(main.actions, "perform_pre_ponr_checks", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
-    @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
-    @mock_calls(cert.SystemCert, "install", CallOrderMocked)
-    @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "subscribe_system", CallOrderMocked)
-    @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
-    @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
-    @mock_calls(subscription, "disable_repos", CallOrderMocked)
-    @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    @mock_calls(pkgmanager, "create_transaction_handler", CallOrderMocked)
-    def test_pre_ponr_conversion_order_without_rhsm(self):
-        self.CallOrderMocked.reset()
-        main.pre_ponr_conversion()
-
-        intended_call_order = OrderedDict()
-
-        intended_call_order["list_third_party_pkgs"] = 1
-        intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["install_gpg_keys"] = 1
-
-        # Do not expect this one to be called - related to RHSM
-        intended_call_order["download_rhsm_pkgs"] = 0
-        intended_call_order["replace_subscription_manager"] = 0
-        intended_call_order["verify_rhsm_installed"] = 0
-        intended_call_order["install"] = 0
-        intended_call_order["subscribe_system"] = 0
-        intended_call_order["get_rhel_repoids"] = 0
-        intended_call_order["check_needed_repos_availability"] = 0
-        intended_call_order["disable_repos"] = 0
-
-        intended_call_order["remove_repofile_pkgs"] = 1
-
-        intended_call_order["enable_repos"] = 0
-        intended_call_order["perform_pre_ponr_checks"] = 1
-        intended_call_order["perform_system_checks"] = 1
-
-        # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
-        zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
-        for expected, actual in zipped_call_order:
-            if expected[1] > 0:
-                self.assertEqual(expected, actual)
-
-    @unit_tests.mock(main.logging, "getLogger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", False)
-    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
-    @mock_calls(pkghandler, "install_gpg_keys", CallOrderMocked)
-    @mock_calls(main.actions, "perform_pre_ponr_checks", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_excluded_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "replace_subscription_manager", CallOrderMocked)
-    @mock_calls(subscription, "verify_rhsm_installed", CallOrderMocked)
-    @mock_calls(pkghandler, "remove_repofile_pkgs", CallOrderMocked)
-    @mock_calls(cert.SystemCert, "install", CallOrderMocked)
-    @mock_calls(pkghandler, "list_third_party_pkgs", CallOrderMocked)
-    @mock_calls(subscription, "subscribe_system", CallOrderMocked)
-    @mock_calls(repo, "get_rhel_repoids", CallOrderMocked)
-    @mock_calls(subscription, "check_needed_repos_availability", CallOrderMocked)
-    @mock_calls(subscription, "disable_repos", CallOrderMocked)
-    @mock_calls(subscription, "enable_repos", CallOrderMocked)
-    @mock_calls(subscription, "download_rhsm_pkgs", CallOrderMocked)
-    def test_pre_ponr_conversion_order_without_rhsm(self):
-        self.CallOrderMocked.reset()
-        main.pre_ponr_conversion()
-
-        intended_call_order = OrderedDict()
-
-        intended_call_order["list_third_party_pkgs"] = 1
-        intended_call_order["remove_excluded_pkgs"] = 1
-        intended_call_order["install_gpg_keys"] = 1
-
-        # Do not expect this one to be called - related to RHSM
-        intended_call_order["download_rhsm_pkgs"] = 0
-        intended_call_order["replace_subscription_manager"] = 0
-        intended_call_order["verify_rhsm_installed"] = 0
-        intended_call_order["install"] = 0
-        intended_call_order["remove_repofile_pkgs"] = 1
-
-        # Do not expect this one to be called - related to RHSM
-        intended_call_order["subscribe_system"] = 0
-        intended_call_order["get_rhel_repoids"] = 0
-        intended_call_order["check_needed_repos_availability"] = 0
-        intended_call_order["disable_repos"] = 0
-        intended_call_order["enable_repos"] = 0
-        intended_call_order["perform_pre_ponr_checks"] = 1
-
-        # Merge the two together like a zipper, creates a tuple which we can assert with - including method call order!
-        zipped_call_order = zip(intended_call_order.items(), self.CallOrderMocked.calls.items())
-        for expected, actual in zipped_call_order:
-            if expected[1] > 0:
-                self.assertEqual(expected, actual)
-
 
 @pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
 def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
@@ -380,7 +234,6 @@ def test_main(monkeypatch):
     backup_yum_repos_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     perform_system_checks_mock = mock.Mock()
-    pre_ponr_conversion_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     post_ponr_conversion_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
@@ -406,7 +259,6 @@ def test_main(monkeypatch):
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(actions, "perform_system_checks", perform_system_checks_mock)
-    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
@@ -431,7 +283,6 @@ def test_main(monkeypatch):
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
-    assert pre_ponr_conversion_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
@@ -482,7 +333,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     backup_yum_repos_mock = mock.Mock()
     backup_varsdir_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
-    pre_ponr_conversion_mock = mock.Mock(side_effect=Exception)
 
     # Mock the rollback calls
     finish_collection_mock = mock.Mock()
@@ -503,7 +353,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
-    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
 
@@ -522,7 +371,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
-    assert pre_ponr_conversion_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert rollback_changes_mock.call_count == 1
 
@@ -543,7 +391,6 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     backup_yum_repos_mock = mock.Mock()
     backup_varsdir_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
-    pre_ponr_conversion_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
 
@@ -566,7 +413,6 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
-    monkeypatch.setattr(main, "pre_ponr_conversion", pre_ponr_conversion_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
@@ -587,7 +433,6 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
-    assert pre_ponr_conversion_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert finish_collection_mock.call_count == 1

@@ -329,7 +329,7 @@ class CLI(object):
 
         # Check if we have duplicate repositories specified
         if parsed_opts.enablerepo or parsed_opts.disablerepo:
-            duplicate_repos = set(parsed_opts.disablerepo) & set(parsed_opts.enablerepo)
+            duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
             if duplicate_repos:
                 message = "Duplicate repositories were found across disablerepo and enablerepo options:"
                 for repo in duplicate_repos:

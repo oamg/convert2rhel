@@ -150,24 +150,6 @@ def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock.assert_called_once()
 
 
-def test_perform_pre_ponr_checks(monkeypatch):
-    ensure_compatibility_of_kmods_mock = mock.Mock()
-    create_transaction_handler_mock = mock.Mock()
-    monkeypatch.setattr(
-        actions,
-        "ensure_compatibility_of_kmods",
-        value=ensure_compatibility_of_kmods_mock,
-    )
-    monkeypatch.setattr(
-        actions.pkgmanager,
-        "create_transaction_handler",
-        value=create_transaction_handler_mock,
-    )
-    actions.perform_pre_ponr_checks()
-    ensure_compatibility_of_kmods_mock.assert_called_once()
-    create_transaction_handler_mock.assert_called_once()
-
-
 @pytest.mark.parametrize(
     (
         "host_kmods",
