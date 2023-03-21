@@ -20,6 +20,8 @@ __metaclass__ = type
 import os.path
 import re
 
+from collections import defaultdict
+
 import pytest
 
 from convert2rhel import actions
@@ -42,6 +44,12 @@ class TestGetActions:
                         filesystem_detected_actions_count += len(action_classes)
 
         assert len(computed_actions) == filesystem_detected_actions_count
+
+    def test_get_actions_no_dupes(self):
+        """Test that there are no duplicates in the list of returned Actions."""
+        computed_actions = actions.get_actions(actions.__path__, actions.__name__ + ".")
+
+        assert len(computed_actions) == len(frozenset(computed_actions))
 
     def test_no_actions(self, tmpdir):
         """No Actions returns an empty list."""
@@ -74,6 +82,25 @@ class TestGetActions:
             for m in actions.get_actions([test_data], "convert2rhel.unit_tests.actions.data.%s." % test_dir_name)
         )
         assert computed_action_names == sorted(expected_action_names)
+
+
+class TestActions:
+    """Tests across all of the Actions we ship."""
+
+    def test_no_duplicate_ids(self):
+        """Test that each Action has its own unique id."""
+        computed_actions = actions.get_actions(actions.__path__, actions.__name__ + ".")
+
+        action_id_locations = defaultdict(list)
+        for action in computed_actions:
+            action_id_locations[action.id].append(str(action))
+
+        dupe_actions = []
+        for action_id, locations in action_id_locations.items():
+            if len(locations) > 1:
+                dupe_actions.append("%s is present in more than one location: %s" % (action_id, ", ".join(locations)))
+
+        assert not dupe_actions, "\n".join(dupe_actions)
 
 
 class TestResolveActionOrder:

@@ -18,10 +18,6 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, pkgmanager
-from convert2rhel.actions.handle_packages import RemoveExcludedPackages
-from convert2rhel.actions.kernel_modules import EnsureKernelModulesCompatibility
-from convert2rhel.actions.special_cases import RemoveIwlax2xxFirmware
-from convert2rhel.actions.subscription import SubscribeSystem
 
 
 logger = logging.getLogger(__name__)
@@ -30,13 +26,13 @@ logger = logging.getLogger(__name__)
 class ValidatePackageManagerTransaction(actions.Action):
     id = "VALIDATE_PACKAGE_MANAGER_TRANSACTION"
     dependencies = (
-        RemoveExcludedPackages,
+        "REMOVE_EXCLUDED_PACKAGES",
         # This package can cause problems during the validation. Since no one
         # is depending on this action, it may run whenever it wants to, which
         # can cause problems.
-        RemoveIwlax2xxFirmware,
-        EnsureKernelModulesCompatibility,
-        SubscribeSystem,
+        "REMOVE_IWLAX2XX_FIRMWARE",
+        "ENSURE_KERNEL_MODULES_COMPATIBILITY",
+        "SUBSCRIBE_SYSTEM",
     )
 
     @actions._action_defaults_to_success

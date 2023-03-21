@@ -45,7 +45,7 @@ class SystemCertMock:
 
 
 def test_pre_subscription_dependency_order(pre_subscription_instance):
-    expected_dependencies = (RemoveExcludedPackages,)
+    expected_dependencies = ("REMOVE_EXCLUDED_PACKAGES",)
 
     assert expected_dependencies == pre_subscription_instance.dependencies
 
@@ -100,7 +100,10 @@ def subscribe_system_instance():
 
 
 def test_subscribe_system_dependency_order(subscribe_system_instance):
-    expected_dependencies = (RemoveRepositoryFilesPackages, PreSubscription)
+    expected_dependencies = (
+        "REMOVE_REPOSITORY_FILES_PACKAGES",
+        "PRE_SUBSCRIPTION",
+    )
 
     assert expected_dependencies == subscribe_system_instance.dependencies
 
