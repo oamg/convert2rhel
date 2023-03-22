@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import argparse
 import copy
 import logging
-import optparse
 import os
 import re
 import sys
@@ -91,27 +91,27 @@ class CLI(object):
             "\n\n"
             "WARNING: The tool needs to be run under the root user"
         )
-        return optparse.OptionParser(
+        return argparse.ArgumentParser(
             conflict_handler="resolve",
             usage=usage,
-            add_help_option=False,
-            version=__version__,
+            add_help=False,
         )
 
     def _register_options(self):
         """Prescribe what command line options the tool accepts."""
-        self._parser.add_option(
+        self._parser.add_argument(
             "-h",
             "--help",
             action="help",
             help="Show help message and exit.",
         )
-        self._parser.add_option(
+        self._parser.add_argument(
             "--version",
             action="version",
+            version=__version__,
             help="Show convert2rhel version and exit.",
         )
-        self._parser.add_option(
+        self._parser.add_argument(
             "--debug",
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
@@ -119,7 +119,7 @@ class CLI(object):
         # Importing here instead of on top of the file to avoid cyclic dependency
         from convert2rhel.systeminfo import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
 
-        self._parser.add_option(
+        self._parser.add_argument(
             "--no-rpm-va",
             action="store_true",
             help="Skip gathering changed rpm files using"
@@ -128,7 +128,7 @@ class CLI(object):
             " to show you what rpm files have been affected by the conversion."
             % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
-        self._parser.add_option(
+        self._parser.add_argument(
             "--enablerepo",
             metavar="repoidglob",
             action="append",
@@ -138,7 +138,7 @@ class CLI(object):
             " to override the default RHEL repoids that convert2rhel enables through"
             " subscription-manager.",
         )
-        self._parser.add_option(
+        self._parser.add_argument(
             "--disablerepo",
             metavar="repoidglob",
             action="append",
@@ -146,12 +146,52 @@ class CLI(object):
             " repositories by ID or glob. For more repositories to disable, use this option"
             " multiple times. This option defaults to all repositories ('*').",
         )
-        group = optparse.OptionGroup(
-            self._parser,
+
+        self._add_subscription_manager_options()
+        self._add_alternative_installation_options()
+        self._add_automation_options()
+
+    def _add_automation_options(self):
+        group = self._parser.add_argument_group(
+            "Automation Options",
+            "The following options are used to automate the installation",
+        )
+        group.add_argument(
+            "-r",
+            "--restart",
+            help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
+            action="store_true",
+        )
+        group.add_argument(
+            "-y",
+            help="Answer yes to all yes/no questions the tool asks.",
+            action="store_true",
+        )
+
+    def _add_alternative_installation_options(self):
+        group = self._parser.add_argument_group(
+            "Alternative Installation Options",
+            "The following options are required if you do not intend on using subscription-manager",
+        )
+        group.add_argument(
+            "--disable-submgr",
+            action="store_true",
+            help="Replaced by --no-rhsm. Both options have the same effect.",
+        )
+        group.add_argument(
+            "--no-rhsm",
+            action="store_true",
+            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
+            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
+            " Using this option requires to have the --enablerepo specified.",
+        )
+
+    def _add_subscription_manager_options(self):
+        group = self._parser.add_argument_group(
             "Subscription Manager Options",
             "The following options are specific to using subscription-manager.",
         )
-        group.add_option(
+        group.add_argument(
             "-u",
             "--username",
             help="Username for the"
@@ -159,7 +199,7 @@ class CLI(object):
             " --activation-key option is used, the user"
             " is asked to enter the username.",
         )
-        group.add_option(
+        group.add_argument(
             "-p",
             "--password",
             help="Password for the"
@@ -168,7 +208,7 @@ class CLI(object):
             " We recommend using the --config-file option instead to prevent leaking the password"
             " through a list of running processes.",
         )
-        group.add_option(
+        group.add_argument(
             "-f",
             "--password-from-file",
             help="File containing"
@@ -176,7 +216,7 @@ class CLI(object):
             " text form. It's an alternative to the --password"
             " option. Deprecated, use --config-file instead.",
         )
-        group.add_option(
+        group.add_argument(
             "-k",
             "--activationkey",
             help="Activation key used"
@@ -186,7 +226,7 @@ class CLI(object):
             " We recommend using the --config-file option instead to prevent leaking the activation key"
             " through a list of running processes.",
         )
-        group.add_option(
+        group.add_argument(
             "-o",
             "--org",
             help="Organization with which the"
@@ -196,7 +236,7 @@ class CLI(object):
             " 'subscription-manager orgs'. From the listed pairs"
             " Name:Key, use the Key here.",
         )
-        group.add_option(
+        group.add_argument(
             "-c",
             "--config-file",
             help="The configuration file is an optional way to safely pass either a user password or an activation key"
@@ -208,13 +248,13 @@ class CLI(object):
             " of those locations, the latter having preference over the former. Alternatively, you can specify a path"
             " to the configuration file using the --config-file option to override other configurations.",
         )
-        group.add_option(
+        group.add_argument(
             "-a",
             "--auto-attach",
             help="Automatically attach compatible subscriptions to the system.",
             action="store_true",
         )
-        group.add_option(
+        group.add_argument(
             "--pool",
             help="Subscription pool ID. If not used,"
             " the user is asked to choose from the available"
@@ -222,7 +262,7 @@ class CLI(object):
             " subscriptions is possible to obtain by running"
             " 'subscription-manager list --available'.",
         )
-        group.add_option(
+        group.add_argument(
             "-v",
             "--variant",
             help="This option is not supported anymore and has no effect. When"
@@ -231,13 +271,13 @@ class CLI(object):
             " of using custom repositories, the system is converted to the variant"
             " provided by these repositories.",
         )
-        group.add_option(
+        group.add_argument(
             "--serverurl",
             help="Hostname of the subscription service with which to register the system through subscription-manager."
             " The default is the Customer Portal Subscription Management service. It is not to be used to specify a"
             " Satellite server. For that, read the product documentation at https://access.redhat.com/.",
         )
-        group.add_option(
+        group.add_argument(
             "--keep-rhsm",
             action="store_true",
             help="Keep the already installed Red Hat Subscription Management-related packages. By default,"
@@ -246,44 +286,6 @@ class CLI(object):
             " Red Hat Satellite. Warning: The system is being re-registered during the conversion and when the"
             " re-registration fails, there's no automated rollback to the original registration.",
         )
-        self._parser.add_option_group(group)
-
-        group = optparse.OptionGroup(
-            self._parser,
-            "Alternative Installation Options",
-            "The following options are required if you do not intend on using subscription-manager",
-        )
-        group.add_option(
-            "--disable-submgr",
-            action="store_true",
-            help="Replaced by --no-rhsm. Both options have the same effect.",
-        )
-        group.add_option(
-            "--no-rhsm",
-            action="store_true",
-            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
-            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
-            " Using this option requires to have the --enablerepo specified.",
-        )
-        self._parser.add_option_group(group)
-
-        group = optparse.OptionGroup(
-            self._parser,
-            "Automation Options",
-            "The following options are used to automate the installation",
-        )
-        group.add_option(
-            "-r",
-            "--restart",
-            help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
-            action="store_true",
-        )
-        group.add_option(
-            "-y",
-            help="Answer yes to all yes/no questions the tool asks.",
-            action="store_true",
-        )
-        self._parser.add_option_group(group)
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
@@ -291,7 +293,7 @@ class CLI(object):
 
         warn_on_unsupported_options()
 
-        parsed_opts, _ = self._parser.parse_args()
+        parsed_opts = self._parser.parse_args()
 
         global tool_opts  # pylint: disable=C0103
 
