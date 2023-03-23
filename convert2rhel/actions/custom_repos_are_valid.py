@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class CustomReposAreValid(actions.Action):
-    id = "CUSTOM_REPOS_ARE_VALID"
+    id = "CUSTOM_REPOSITORIES_ARE_VALID"
 
     def run(self):
         """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
@@ -50,7 +50,7 @@ class CustomReposAreValid(actions.Action):
         if ret_code != 0:
             self.set_result(
                 status="ERROR",
-                error_id="UNABLE_TO_ACCESS_REPOS",
+                error_id="UNABLE_TO_ACCESS_REPOSITORIES",
                 message=(
                     "Unable to access the repositories passed through the --enablerepo option. "
                     "For more details, see YUM/DNF output:\n{0}".format(output)

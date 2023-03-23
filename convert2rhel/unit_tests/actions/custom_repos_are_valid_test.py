@@ -89,7 +89,7 @@ class TestCustomReposAreValid(unittest.TestCase):
         self.custom_repos_are_valid_action.run()
         self.assertEqual(len(actions.custom_repos_are_valid.logger.info_msgs), 0)
         self.assertEqual(self.custom_repos_are_valid_action.status, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.custom_repos_are_valid_action.error_id, "UNABLE_TO_ACCESS_REPOS")
+        self.assertEqual(self.custom_repos_are_valid_action.error_id, "UNABLE_TO_ACCESS_REPOSITORIES")
         self.assertIn(
             "Unable to access the repositories passed through the --enablerepo option. ",
             self.custom_repos_are_valid_action.message,
