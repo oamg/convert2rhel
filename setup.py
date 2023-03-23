@@ -18,9 +18,8 @@
 import os
 import re
 
+from build_manpages import build_manpages
 from setuptools import find_packages, setup
-
-from man.build_manpage import build_manpage
 
 
 def read(fname):
@@ -58,7 +57,7 @@ setup(
     long_description=read("README.md"),
     author="Michal Bocek",
     author_email="mbocek@redhat.com",
-    url="www.redhat.com",
+    url="https://cdn.redhat.com/content/public/convert2rhel/",
     license="GNU General Public License v3 or later (GPLv3+)",
     packages=find_packages(exclude=["scripts", "*tests*"]),
     entry_points={
@@ -66,6 +65,6 @@ setup(
             "convert2rhel = convert2rhel.initialize:run",
         ]
     },
-    cmdclass={"build_manpage": build_manpage},
+    cmdclass={"build_manpage": build_manpages},
     include_package_data=True,
 )

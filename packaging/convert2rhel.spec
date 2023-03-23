@@ -21,6 +21,7 @@ BuildArch:      noarch
 BuildRequires:  python%{python_pkgversion}-devel
 BuildRequires:  python%{python_pkgversion}-setuptools
 BuildRequires:  python%{python_pkgversion}-six
+BuildRequires:  argparse-manpage
 %if 0%{?rhel} && 0%{?rhel} >= 8
 BuildRequires:  python3-pexpect
 # rpm is being imported through utils.py

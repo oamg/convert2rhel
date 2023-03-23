@@ -79,7 +79,7 @@ class CLI(object):
     def _get_argparser():
         usage = (
             "\n"
-            "  convert2rhel [-h]\n"
+            "  convert2rhel [-h]<n>"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
@@ -89,9 +89,10 @@ class CLI(object):
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]"
             "\n\n"
-            "WARNING: The tool needs to be run under the root user"
+            "*WARNING* The tool needs to be run under the root user"
         )
         return argparse.ArgumentParser(
+            prog="convert2rhel",
             conflict_handler="resolve",
             usage=usage,
             add_help=False,
