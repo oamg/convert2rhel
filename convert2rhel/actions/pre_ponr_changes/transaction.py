@@ -35,9 +35,10 @@ class ValidatePackageManagerTransaction(actions.Action):
         "SUBSCRIBE_SYSTEM",
     )
 
-    @actions._action_defaults_to_success
     def run(self):
         """Validate the package manager transaction is passing the tests."""
+        super(ValidatePackageManagerTransaction, self).run()
+
         try:
             logger.task("Prepare: Validate the %s transaction", pkgmanager.TYPE)
             transaction_handler = pkgmanager.create_transaction_handler()

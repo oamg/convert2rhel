@@ -20,7 +20,7 @@ __metaclass__ = type
 import unittest
 
 from convert2rhel import actions, unit_tests
-from convert2rhel.actions import custom_repos_are_valid
+from convert2rhel.actions.system_checks import custom_repos_are_valid
 from convert2rhel.unit_tests import GetLoggerMocked
 
 
