@@ -312,7 +312,6 @@ def run_actions():
 
 def perform_system_checks():
     """Early checks after system facts should be added here."""
-    check_custom_repos_are_valid()
     check_tainted_kmods()
     is_loaded_kernel_latest()
     check_dbus_is_running()
@@ -347,34 +346,6 @@ def check_tainted_kmods():
             )
         )
     logger.info("No tainted kernel module is loaded.")
-
-
-def check_custom_repos_are_valid():
-    """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
-
-    What is meant by valid:
-    - YUM/DNF is able to find the repoids (to rule out a typo)
-    - the repository "baseurl" is accessible and contains repository metadata
-    """
-    logger.task("Prepare: Check if --enablerepo repositories are accessible")
-
-    if not tool_opts.no_rhsm:
-        logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
-        return
-
-    output, ret_code = call_yum_cmd(
-        command="makecache",
-        args=["-v", "--setopt=*.skip_if_unavailable=False"],
-        print_output=False,
-    )
-    if ret_code != 0:
-        logger.critical(
-            "Unable to access the repositories passed through the --enablerepo option. "
-            "For more details, see YUM/DNF output:\n{0}".format(output)
-        )
-
-    logger.debug("Output of the previous yum command:\n{0}".format(output))
-    logger.info("The repositories passed through the --enablerepo option are all accessible.")
 
 
 def ensure_compatibility_of_kmods():
