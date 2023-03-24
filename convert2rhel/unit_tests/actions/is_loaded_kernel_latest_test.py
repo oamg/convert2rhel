@@ -26,7 +26,6 @@ import six
 
 from convert2rhel import actions, unit_tests
 from convert2rhel.actions import is_loaded_kernel_latest
-from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 from convert2rhel.utils import run_subprocess
@@ -210,9 +209,6 @@ class TestIsLoadedKernelLatest:
 
         is_loaded_kernel_latest_action.run()
 
-        repoquery_kernel_version = repoquery_version.split("\t")[2]
-        uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert is_loaded_kernel_latest_action.message == expected
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
             status="ERROR",

@@ -17,12 +17,11 @@
 
 __metaclass__ = type
 
-from collections import namedtuple
 
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager, unit_tests
+from convert2rhel import actions, pkgmanager
 from convert2rhel.actions import package_updates
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8, oracle8
