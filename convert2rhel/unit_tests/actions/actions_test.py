@@ -155,7 +155,6 @@ class TestRunActions:
 
 def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
-    check_custom_repos_are_valid_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
     check_dbus_is_running_mock = mock.Mock()
 
@@ -163,16 +162,6 @@ def test_perform_pre_checks(monkeypatch):
         actions,
         "check_tainted_kmods",
         value=check_thirdparty_kmods_mock,
-    )
-    monkeypatch.setattr(
-        actions,
-        "check_custom_repos_are_valid",
-        value=check_custom_repos_are_valid_mock,
-    )
-    monkeypatch.setattr(
-        actions,
-        "check_custom_repos_are_valid",
-        value=check_custom_repos_are_valid_mock,
     )
     monkeypatch.setattr(actions, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
     monkeypatch.setattr(actions, "check_dbus_is_running", value=check_dbus_is_running_mock)
@@ -585,38 +574,6 @@ class CallYumCmdMocked(unit_tests.MockFunction):
         self.called += 1
         self.command = command
         return self.return_string, self.return_code
-
-
-class TestCustomReposAreValid(unittest.TestCase):
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(
-        actions,
-        "call_yum_cmd",
-        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
-    )
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_valid(self):
-        actions.check_custom_repos_are_valid()
-        self.assertEqual(len(actions.logger.info_msgs), 1)
-        self.assertEqual(len(actions.logger.debug_msgs), 1)
-        self.assertIn(
-            "The repositories passed through the --enablerepo option are all accessible.", actions.logger.info_msgs
-        )
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(
-        actions,
-        "call_yum_cmd",
-        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
-    )
-    @unit_tests.mock(actions, "logger", GetLoggerMocked())
-    @unit_tests.mock(tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_invalid(self):
-        self.assertRaises(SystemExit, actions.check_custom_repos_are_valid)
-        self.assertEqual(len(actions.logger.critical_msgs), 1)
-        self.assertEqual(len(actions.logger.info_msgs), 0)
-        self.assertIn("Unable to access the repositories passed through ", actions.logger.critical_msgs[0])
 
 
 class TestIsLoadedKernelLatest:
