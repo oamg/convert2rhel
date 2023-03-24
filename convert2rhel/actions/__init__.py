@@ -312,7 +312,7 @@ def run_actions():
 
 def perform_system_checks():
     """Early checks after system facts should be added here."""
-    check_tainted_kmods()
+
     is_loaded_kernel_latest()
 
 
