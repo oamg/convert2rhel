@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, grub, utils
+from convert2rhel import actions
 from convert2rhel.utils import get_file_content
 
 

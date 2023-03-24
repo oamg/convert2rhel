@@ -523,3 +523,51 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
         # Don't care about the exception, focus on output message
         pass
     assert message in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
+        (
+            mock_cli_arguments(["--disablerepo", "*", "--enablerepo", "*"]),
+            "Duplicate repositories were found across disablerepo and enablerepo options",
+        ),
+        (
+            mock_cli_arguments(
+                ["--disablerepo", "*", "--disablerepo", "rhel-7-extras-rpm", "--enablerepo", "rhel-7-extras-rpm"]
+            ),
+            "Duplicate repositories were found across disablerepo and enablerepo options",
+        ),
+        (
+            mock_cli_arguments(["--disablerepo", "test", "--enablerepo", "test"]),
+            "Duplicate repositories were found across disablerepo and enablerepo options",
+        ),
+    ),
+)
+def test_disable_and_enable_repos_has_same_repo(argv, expected, monkeypatch, caplog):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+    convert2rhel.toolopts.CLI()
+
+    assert expected in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
+        (
+            mock_cli_arguments(["--disablerepo", "*", "--enablerepo", "test"]),
+            "Duplicate repositories were found across disablerepo and enablerepo options",
+        ),
+        (
+            mock_cli_arguments(["--disablerepo", "test", "--enablerepo", "test1"]),
+            "Duplicate repositories were found across disablerepo and enablerepo options",
+        ),
+    ),
+)
+def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypatch, caplog):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+    convert2rhel.toolopts.CLI()
+
+    assert expected not in caplog.records[-1].message

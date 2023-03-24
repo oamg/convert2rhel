@@ -19,7 +19,6 @@ import logging
 
 from convert2rhel import actions
 from convert2rhel.pkghandler import call_yum_cmd
-from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 

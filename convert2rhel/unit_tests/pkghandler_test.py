@@ -34,8 +34,8 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
+from convert2rhel.unit_tests import GetLoggerMocked, TestPkgObj, create_pkg_obj, is_rpm_based_os
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -155,16 +155,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         def __call__(self, *args, **kwargs):
             self.called += 1
-            return
-
-    class CommandCallableObject(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.command = None
-
-        def __call__(self, command):
-            self.called += 1
-            self.command = command
             return
 
     class SysExitCallableObject(unit_tests.MockFunction):
@@ -366,30 +356,10 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
-    class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
-        def prepare_test_pkg_tuples_w_fingerprints(self):
-            class PkgData:
-                def __init__(self, pkg_obj, fingerprint):
-                    self.pkg_obj = pkg_obj
-                    self.fingerprint = fingerprint
-
-            obj1 = create_pkg_obj("pkg1")
-            obj2 = create_pkg_obj("pkg2")
-            obj3 = create_pkg_obj("gpg-pubkey")
-            pkgs = [
-                PkgData(obj1, "199e2f91fd431d51"),  # RHEL
-                PkgData(obj2, "72f97b74ec551f03"),  # OL
-                PkgData(obj3, "199e2f91fd431d51"),
-            ]  # RHEL
-            return pkgs
-
-        def __call__(self, *args, **kwargs):
-            return self.prepare_test_pkg_tuples_w_fingerprints()
-
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
+        unit_tests.GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
         system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
@@ -400,7 +370,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
+        unit_tests.GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(self):
         pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
@@ -597,7 +567,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
+        unit_tests.GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_get_third_party_pkgs(self):
         # This test covers also get_installed_pkgs_w_different_fingerprint
@@ -744,35 +714,13 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     @unit_tests.mock(
         pkghandler,
         "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
+        unit_tests.GetInstalledPkgsWFingerprintsMocked(),
     )
     def test_list_non_red_hat_pkgs_left(self):
         pkghandler.list_non_red_hat_pkgs_left()
 
         self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 1)
         self.assertEqual(pkghandler.print_pkg_info.pkgs[0].name, "pkg2")
-
-    @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_excluded_pkgs(self):
-        pkghandler.remove_excluded_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.excluded_pkgs,
-        )
-
-    @unit_tests.mock(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_repofile_pkgs(self):
-        pkghandler.remove_repofile_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.repofile_pkgs,
-        )
 
     class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
         def __call__(self, fingerprints, name=""):
@@ -1213,41 +1161,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     )
     def test_check_installed_rhel_kernel_returns_false(self):
         self.assertEqual(pkghandler.is_rhel_kernel_installed(), False)
-
-    @unit_tests.mock(pkghandler, "get_third_party_pkgs", lambda: [])
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    def test_list_third_party_pkgs_no_pkgs(self):
-        pkghandler.list_third_party_pkgs()
-
-        self.assertIn("No third party packages installed", pkghandler.loggerinst.info_msgs[0])
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_third_party_pkgs",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    def test_list_third_party_pkgs(self):
-        pkghandler.list_third_party_pkgs()
-
-        self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 3)
-        self.assertIn("Only packages signed by", pkghandler.loggerinst.warning_msgs[0])
-
-    @unit_tests.mock(tool_opts, "disablerepo", ["*", "rhel-7-extras-rpm"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_has_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertIn("Duplicate repositories were found", pkghandler.loggerinst.warning_msgs[0])
-
-    @unit_tests.mock(tool_opts, "disablerepo", ["*"])
-    @unit_tests.mock(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
-    @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
-    def test_is_disable_and_enable_repos_doesnt_thas_same_repo(self):
-        pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-        self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
 
     @unit_tests.mock(system_info, "name", "Oracle Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
