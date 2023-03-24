@@ -144,7 +144,7 @@ class IsLoadedKernelLatest(actions.Action):
             self.set_result(
                 status="ERROR",
                 error_id="INVALID_KERNEL_PACKAGE",
-                message=(str(exc)),
+                message=str(exc),
             )
             return
 

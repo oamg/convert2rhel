@@ -49,29 +49,10 @@ BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
 RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
 # The SSL certificate of the https://cdn.redhat.com/ server
 SSL_CERT_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
-CDN_URL = "https://cdn.redhat.com/content/public/convert2rhel/$releasever/$basearch/os/"
-CONVERT2RHEL_REPO_CONTENT = """\
-[convert2rhel]
-name=Convert2RHEL Repository
-baseurl=%s
-gpgcheck=1
-enabled=1
-sslcacert=%s
-gpgkey=file://%s""" % (
-    CDN_URL,
-    SSL_CERT_PATH,
-    RPM_GPG_KEY_PATH,
-)
 
-PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
-# The kernel version stays the same throughout a RHEL major version
-COMPATIBLE_KERNELS_VERS = {
-    7: "3.10.0",
-    8: "4.18.0",
-}
 
 #: Status code of an Action.
 #:
@@ -316,31 +297,6 @@ def perform_pre_ponr_checks():
     validate_package_manager_transaction()
 
 
-def check_tainted_kmods():
-    """Stop the conversion when a loaded tainted kernel module is detected.
-
-    Tainted kmods ends with (...) in /proc/modules, for example:
-        multipath 20480 0 - Live 0x0000000000000000
-        linear 20480 0 - Live 0x0000000000000000
-        system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
-        system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<<< Tainted
-    """
-    logger.task("Prepare: Check if loaded kernel modules are not tainted")
-    unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
-    module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
-    if unsigned_modules:
-        logger.critical(
-            "Tainted kernel modules detected:\n  {0}\n"
-            "Third-party components are not supported per our "
-            "software support policy:\n {1}\n"
-            "Prevent the modules from loading by following {2}"
-            " and run convert2rhel again to continue with the conversion.".format(
-                module_names, LINK_KMODS_RH_POLICY, LINK_PREVENT_KMODS_FROM_LOADING
-            )
-        )
-    logger.info("No tainted kernel module is loaded.")
-
-
 def ensure_compatibility_of_kmods():
     """Ensure that the host kernel modules are compatible with RHEL.
 
@@ -512,4 +468,27 @@ def get_most_recent_unique_kernel_pkgs(pkgs):
     return tuple(list_of_sorted_pkgs)
 
 
+def get_rhel_kmods_keys(rhel_kmods_str):
+    return set(
+        _get_kmod_comparison_key(kmod_path)
+        for kmod_path in filter(
+            lambda path: path.endswith(("ko.xz", "ko")),
+            rhel_kmods_str.rstrip("\n").split(),
+        )
+    )
 
+
+def get_unsupported_kmods(host_kmods, rhel_supported_kmods):
+    """Return a set of full paths to those installed kernel modules that are
+    not available in RHEL repositories.
+
+    Ignore certain kmods mentioned in the system configs. These kernel modules
+    moved to kernel core, meaning that the functionality is retained and we
+    would be incorrectly saying that the modules are not supported in RHEL.
+    """
+    unsupported_kmods_subpaths = host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
+    unsupported_kmods_full_paths = [
+        "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod)
+        for kmod in unsupported_kmods_subpaths
+    ]
+    return unsupported_kmods_full_paths

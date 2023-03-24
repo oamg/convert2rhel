@@ -268,7 +268,7 @@ class TestIsLoadedKernelLatest:
         self, pretend_os, monkeypatch, tmpdir, caplog, is_loaded_kernel_latest_action
     ):
         monkeypatch.setattr(actions.is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-        system_info.has_internet_access = False
+        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", False)
 
         is_loaded_kernel_latest_action.run()
         assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
@@ -410,9 +410,9 @@ class TestIsLoadedKernelLatest:
         )
         is_loaded_kernel_latest_action.run()
         expected = expected.format(package_name)
-        assert is_loaded_kernel_latest_action.error_id == "KERNEL_CURRENCY_CHECK_FAIL"
-        assert is_loaded_kernel_latest_action.status == actions.STATUS_CODE["ERROR"]
-        assert expected in is_loaded_kernel_latest_action.message
+        unit_tests.assert_actions_result(
+            is_loaded_kernel_latest_action, status="ERROR", error_id="KERNEL_CURRENCY_CHECK_FAIL", message=expected
+        )
 
     @pytest.mark.parametrize(
         (
@@ -494,7 +494,7 @@ class TestIsLoadedKernelLatest:
             "version",
             value=Version(major=major_ver, minor=99),
         )
-        system_info.id = "centos"
+        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "id", "centos")
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -539,7 +539,7 @@ class TestIsLoadedKernelLatest:
             "version",
             value=Version(major=8, minor=99),
         )
-        system_info.id = "centos"
+        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "id", "centos")
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
