@@ -91,10 +91,6 @@ def main():
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
-        ### FIXME: Need to implement the command line arg to do this
-        # if toolopts.action == "precheck":
-        #    rollback()
-
         post_ponr_changes()
 
         ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
@@ -111,6 +107,10 @@ def main():
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_ponr_conversion()
+
+        if os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None):
+            # TODO: Include report before rollback
+            rollback()
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
