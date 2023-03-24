@@ -157,11 +157,6 @@ def test_perform_pre_checks(monkeypatch):
     check_thirdparty_kmods_mock = mock.Mock()
     is_loaded_kernel_latest_mock = mock.Mock()
 
-    monkeypatch.setattr(
-        actions,
-        "check_tainted_kmods",
-        value=check_thirdparty_kmods_mock,
-    )
     monkeypatch.setattr(actions, "is_loaded_kernel_latest", value=is_loaded_kernel_latest_mock)
     actions.perform_system_checks()
 
@@ -519,39 +514,6 @@ def test_get_rhel_supported_kmods(
 )
 def test_get_most_recent_unique_kernel_pkgs(pkgs, exp_res):
     assert tuple(actions.get_most_recent_unique_kernel_pkgs(pkgs)) == exp_res
-
-
-@pytest.mark.parametrize(
-    ("command_return", "expected_exception"),
-    (
-        (
-            ("", 0),
-            None,
-        ),
-        (
-            (
-                (
-                    "system76_io 16384 0 - Live 0x0000000000000000 (OE)\n"
-                    "system76_acpi 16384 0 - Live 0x0000000000000000 (OE)"
-                ),
-                0,
-            ),
-            SystemExit,
-        ),
-    ),
-)
-def test_check_tainted_kmods(monkeypatch, command_return, expected_exception):
-    run_subprocess_mock = mock.Mock(return_value=command_return)
-    monkeypatch.setattr(
-        actions,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    if expected_exception:
-        with pytest.raises(expected_exception):
-            actions.check_tainted_kmods()
-    else:
-        actions.check_tainted_kmods()
 
 
 class CallYumCmdMocked(unit_tests.MockFunction):
