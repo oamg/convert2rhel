@@ -264,7 +264,8 @@ def resolve_action_order(potential_actions, failed_actions):
 
 def run_actions():
     potential_actions = get_actions(__path__, __name__)
-    actions = resolve_action_order(potential_actions)
+    # TODO(abadger): Fix this later
+    actions = resolve_action_order(potential_actions, None)
     for action in actions:
         try:
             action.run()

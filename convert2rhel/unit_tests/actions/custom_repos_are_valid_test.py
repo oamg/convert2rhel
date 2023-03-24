@@ -19,19 +19,9 @@ __metaclass__ = type
 
 import unittest
 
-from collections import namedtuple
-
-import pytest
-import six
-
 from convert2rhel import actions, unit_tests
 from convert2rhel.actions import custom_repos_are_valid
-from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import GetLoggerMocked
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 class CallYumCmdMocked(unit_tests.MockFunction):
@@ -54,40 +44,34 @@ class CallYumCmdMocked(unit_tests.MockFunction):
 
 class TestCustomReposAreValid(unittest.TestCase):
     def setUp(self):
-        self.custom_repos_are_valid_action = actions.custom_repos_are_valid.CustomReposAreValid()
+        self.custom_repos_are_valid_action = custom_repos_are_valid.CustomReposAreValid()
 
     @unit_tests.mock(
-        actions.custom_repos_are_valid.system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0)
-    )
-    @unit_tests.mock(
-        actions.custom_repos_are_valid,
+        custom_repos_are_valid,
         "call_yum_cmd",
         CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
     )
-    @unit_tests.mock(actions.custom_repos_are_valid, "logger", GetLoggerMocked())
-    @unit_tests.mock(actions.custom_repos_are_valid.tool_opts, "no_rhsm", True)
+    @unit_tests.mock(custom_repos_are_valid, "logger", GetLoggerMocked())
+    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", True)
     def test_custom_repos_are_valid(self):
         self.custom_repos_are_valid_action.run()
-        self.assertEqual(len(actions.custom_repos_are_valid.logger.info_msgs), 1)
-        self.assertEqual(len(actions.custom_repos_are_valid.logger.debug_msgs), 1)
+        self.assertEqual(len(custom_repos_are_valid.logger.info_msgs), 1)
+        self.assertEqual(len(custom_repos_are_valid.logger.debug_msgs), 1)
         self.assertIn(
             "The repositories passed through the --enablerepo option are all accessible.",
-            actions.custom_repos_are_valid.logger.info_msgs,
+            custom_repos_are_valid.logger.info_msgs,
         )
 
     @unit_tests.mock(
-        actions.custom_repos_are_valid.system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0)
-    )
-    @unit_tests.mock(
-        actions.custom_repos_are_valid,
+        custom_repos_are_valid,
         "call_yum_cmd",
         CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
     )
-    @unit_tests.mock(actions.custom_repos_are_valid, "logger", GetLoggerMocked())
-    @unit_tests.mock(actions.custom_repos_are_valid.tool_opts, "no_rhsm", True)
+    @unit_tests.mock(custom_repos_are_valid, "logger", GetLoggerMocked())
+    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", True)
     def test_custom_repos_are_invalid(self):
         self.custom_repos_are_valid_action.run()
-        self.assertEqual(len(actions.custom_repos_are_valid.logger.info_msgs), 0)
+        self.assertEqual(len(custom_repos_are_valid.logger.info_msgs), 0)
         self.assertEqual(self.custom_repos_are_valid_action.status, actions.STATUS_CODE["ERROR"])
         self.assertEqual(self.custom_repos_are_valid_action.error_id, "UNABLE_TO_ACCESS_REPOSITORIES")
         self.assertIn(
