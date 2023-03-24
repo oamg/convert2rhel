@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import actions, grub, utils
+from convert2rhel import actions, grub
 from convert2rhel.systeminfo import system_info
 
 

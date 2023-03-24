@@ -21,7 +21,8 @@ import pytest
 import six
 
 from convert2rhel import breadcrumbs, pkghandler, pkgmanager, utils
-from convert2rhel.unit_tests.conftest import centos7, create_pkg_obj
+from convert2rhel.unit_tests import create_pkg_obj
+from convert2rhel.unit_tests.conftest import centos7
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
