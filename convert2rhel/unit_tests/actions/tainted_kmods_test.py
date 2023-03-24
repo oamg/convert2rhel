@@ -15,14 +15,12 @@
 
 __metaclass__ = type
 
-import unittest
 
 import pytest
 import six
 
 from convert2rhel import actions, unit_tests
 from convert2rhel.actions import tainted_kmods
-from convert2rhel.utils import run_subprocess
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

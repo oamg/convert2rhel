@@ -22,15 +22,9 @@ import unittest
 
 from collections import namedtuple
 
-import six
-
 from convert2rhel import actions, grub, unit_tests
 from convert2rhel.actions import efi
 from convert2rhel.unit_tests import GetLoggerMocked
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 class EFIBootInfoMocked:
@@ -84,15 +78,15 @@ def _gen_version(major, minor):
 
 class TestEFIChecks(unittest.TestCase):
     def setUp(self):
-        self.efi_action = actions.efi.Efi()
+        self.efi_action = efi.Efi()
 
     def _check_efi_detection_log(self, efi_detected=True):
         if efi_detected:
-            self.assertNotIn("BIOS detected.", actions.efi.logger.info_msgs)
-            self.assertIn("UEFI detected.", actions.efi.logger.info_msgs)
+            self.assertNotIn("BIOS detected.", efi.logger.info_msgs)
+            self.assertIn("UEFI detected.", efi.logger.info_msgs)
         else:
-            self.assertIn("BIOS detected.", actions.efi.logger.info_msgs)
-            self.assertNotIn("UEFI detected.", actions.efi.logger.info_msgs)
+            self.assertIn("BIOS detected.", efi.logger.info_msgs)
+            self.assertNotIn("UEFI detected.", efi.logger.info_msgs)
 
     def _check_efi_critical(self, error_id, critical_msg):
         self.efi_action.run()
@@ -103,9 +97,9 @@ class TestEFIChecks(unittest.TestCase):
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "x86_64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: not x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(
         grub,
@@ -119,9 +113,9 @@ class TestEFIChecks(unittest.TestCase):
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.efi.system_info, "arch", "aarch64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "aarch64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(
         grub,
@@ -133,9 +127,9 @@ class TestEFIChecks(unittest.TestCase):
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: True)
-    @unit_tests.mock(actions.efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "x86_64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(
         grub,
@@ -148,13 +142,13 @@ class TestEFIChecks(unittest.TestCase):
             "The conversion with secure boot is currently not possible.\n"
             "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
         )
-        self.assertIn("Secure boot detected.", actions.efi.logger.info_msgs)
+        self.assertIn("Secure boot detected.", efi.logger.info_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "x86_64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(
         grub,
@@ -166,9 +160,9 @@ class TestEFIChecks(unittest.TestCase):
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "x86_64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
     def test_check_efi_efi_detected_nofile_entry(self):
@@ -178,16 +172,16 @@ class TestEFIChecks(unittest.TestCase):
             "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
             " EFI System Partition (ESP)."
         )
-        self.assertIn(warn_msg, actions.efi.logger.warning_msgs)
+        self.assertIn(warn_msg, efi.logger.warning_msgs)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(actions.efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(actions.efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(actions.efi, "logger", GetLoggerMocked())
+    @unit_tests.mock(efi.system_info, "arch", "x86_64")
+    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
+    @unit_tests.mock(efi, "logger", GetLoggerMocked())
     @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
     @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked())
     def test_check_efi_efi_detected_ok(self):
         self.efi_action.run()
         self._check_efi_detection_log()
-        self.assertEqual(len(actions.efi.logger.warning_msgs), 0)
+        self.assertEqual(len(efi.logger.warning_msgs), 0)
