@@ -126,11 +126,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
-        """Enable a list of required repositories.
-
-        :raises SystemInfo: If there is no way to connect to the mirrors in the
-            repos.
-        """
+        """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
