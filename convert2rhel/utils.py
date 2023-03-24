@@ -109,14 +109,13 @@ def store_content_to_file(filename, content):
     """
     if isinstance(content, list):
         content = "\n".join(content)
+
     if len(content) > 0 and content[-1] != "\n":
         # append the missing newline to comply with standard about text files
         content += "\n"
-    file_to_write = open(filename, "w")
-    try:
-        file_to_write.write(content)
-    finally:
-        file_to_write.close()
+
+    with open(filename, "w") as handler:
+        handler.write(content)
 
 
 def restart_system():
