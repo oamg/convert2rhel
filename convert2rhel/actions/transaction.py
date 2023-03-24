@@ -69,4 +69,3 @@ class ValidatePackageManagerTransaction(actions.Action):
             #       - If we fail to download the transaction packages
             #       - If we fail to validate the transaction
             self.set_result(status="ERROR", error_id="UNKNOWN_ERROR", message=str(e))
-            return

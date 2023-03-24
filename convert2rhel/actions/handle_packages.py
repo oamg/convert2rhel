@@ -68,7 +68,6 @@ class RemoveExcludedPackages(actions.Action):
             # changed to something more specific.
             #   - When we can't remove a package.
             self.set_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message=str(e))
-            return
 
 
 class RemoveRepositoryFilesPackages(actions.Action):
@@ -101,4 +100,3 @@ class RemoveRepositoryFilesPackages(actions.Action):
             # changed to something more specific.
             #   - When we can't remove a package.
             self.set_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message=str(e))
-            return

@@ -69,14 +69,12 @@ class PreSubscription(actions.Action):
             # TODO(r0x0d): This should be refactored to handle each case
             # individually rather than relying on SystemExit.
             self.set_result(status="ERROR", error_id="UNKNOWN_ERROR", message=str(e))
-            return
         except subscription.UnregisterError as e:
             self.set_result(
                 status="ERROR",
                 error_id="UNABLE_TO_REGISTER",
                 message="Failed to unregister the system: %s" % e,
             )
-            return
 
 
 class SubscribeSystem(actions.Action):
