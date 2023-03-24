@@ -16,11 +16,9 @@
 __metaclass__ = type
 
 import pytest
-import six
 
 from convert2rhel import actions, unit_tests
 from convert2rhel.actions import dbus
-from convert2rhel.systeminfo import system_info
 
 
 @pytest.fixture
@@ -49,9 +47,7 @@ def test_check_dbus_is_running(
     assert caplog.records[-1].message == log_msg
 
 
-def test_check_dbus_is_running_not_running(
-    caplog, monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action
-):
+def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action):
     monkeypatch.setattr(actions.dbus, "tool_opts", global_tool_opts)
     global_tool_opts.no_rhsm = False
     monkeypatch.setattr(actions.dbus, "system_info", global_system_info)

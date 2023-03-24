@@ -19,7 +19,6 @@ __metaclass__ = type
 
 import unittest
 
-import pytest
 import six
 
 from convert2rhel import actions, unit_tests
@@ -33,12 +32,12 @@ from six.moves import mock
 
 class TestReadOnlyMountsChecks(unittest.TestCase):
     def setUp(self):
-        self.readonly_mounts_action_mnt = actions.readonly_mounts.ReadonlyMountMnt()
-        self.readonly_mounts_action_sys = actions.readonly_mounts.ReadonlyMountSys()
+        self.readonly_mounts_action_mnt = readonly_mounts.ReadonlyMountMnt()
+        self.readonly_mounts_action_sys = readonly_mounts.ReadonlyMountSys()
 
-    @unit_tests.mock(actions.readonly_mounts, "logger", GetLoggerMocked())
+    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
     @unit_tests.mock(
-        actions.readonly_mounts,
+        readonly_mounts,
         "get_file_content",
         GetFileContentMocked(
             data=[
@@ -50,13 +49,13 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     )
     def test_mounted_mnt_is_readwrite(self):
         self.readonly_mounts_action_mnt.run()
-        print(actions.readonly_mounts.logger.debug_msgs)
-        self.assertEqual(len(actions.readonly_mounts.logger.debug_msgs), 1)
-        self.assertIn("/mnt mount point is not read-only.", actions.readonly_mounts.logger.debug_msgs)
+        print(readonly_mounts.logger.debug_msgs)
+        self.assertEqual(len(readonly_mounts.logger.debug_msgs), 1)
+        self.assertIn("/mnt mount point is not read-only.", readonly_mounts.logger.debug_msgs)
 
-    @unit_tests.mock(actions.readonly_mounts, "logger", GetLoggerMocked())
+    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
     @unit_tests.mock(
-        actions.readonly_mounts,
+        readonly_mounts,
         "get_file_content",
         GetFileContentMocked(
             data=[
@@ -68,12 +67,12 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     )
     def test_mounted_sys_is_readwrite(self):
         self.readonly_mounts_action_sys.run()
-        self.assertEqual(len(actions.readonly_mounts.logger.debug_msgs), 1)
-        self.assertIn("/sys mount point is not read-only.", actions.readonly_mounts.logger.debug_msgs)
+        self.assertEqual(len(readonly_mounts.logger.debug_msgs), 1)
+        self.assertIn("/sys mount point is not read-only.", readonly_mounts.logger.debug_msgs)
 
-    @unit_tests.mock(actions.readonly_mounts, "logger", GetLoggerMocked())
+    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
     @unit_tests.mock(
-        actions.readonly_mounts,
+        readonly_mounts,
         "get_file_content",
         GetFileContentMocked(
             data=[
@@ -95,9 +94,9 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
             ),
         )
 
-    @unit_tests.mock(actions.readonly_mounts, "logger", GetLoggerMocked())
+    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
     @unit_tests.mock(
-        actions.readonly_mounts,
+        readonly_mounts,
         "get_file_content",
         GetFileContentMocked(
             data=[
