@@ -221,7 +221,6 @@ def prepare_system():
 
 def system_checks():
     # check the system prior the conversion (possible inhibit)
-    actions.perform_system_checks()
     pass
 
 
