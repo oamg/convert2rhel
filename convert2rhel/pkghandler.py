@@ -1172,6 +1172,8 @@ def _parse_pkg_with_dnf(pkg):
     :type pkg: str
     :return: Return a list containing name, epoch, version, release, arch (may contain null values)
     :rtype: list[str]
+
+    :raises ValueError: If any of the fields are invalid, raise ValueError.
     """
 
     name = epoch = version = release = arch = None
