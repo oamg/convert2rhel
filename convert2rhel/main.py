@@ -20,17 +20,7 @@ import os
 
 from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import (
-    pkghandler,
-    pkgmanager,
-    redhatrelease,
-    repo,
-    special_cases,
-    subscription,
-    systeminfo,
-    toolopts,
-    utils,
-)
+from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 
 
 loggerinst = logging.getLogger(__name__)
@@ -106,7 +96,7 @@ def main():
 
         # begin conversion process
         process_phase = ConversionPhase.PRE_PONR_CHANGES
-        pre_ponr_conversion()
+        # pre_ponr_conversion()
 
         if os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None):
             # TODO: Include report before rollback
@@ -239,73 +229,16 @@ def pre_ponr_changes():
     pass
 
 
+def pre_ponr_checks():
+    pass
+
+
 def post_ponr_changes():
     pass
 
 
 def rollback():
     pass
-
-
-def pre_ponr_conversion():
-    """Perform steps and checks to guarantee system is ready for conversion."""
-
-    # check if user pass some repo to both disablerepo and enablerepo options
-    pkghandler.has_duplicate_repos_across_disablerepo_enablerepo_options()
-
-    # package analysis
-    loggerinst.task("Convert: List third-party packages")
-    pkghandler.list_third_party_pkgs()
-
-    # remove excluded packages
-    loggerinst.task("Convert: Remove excluded packages")
-    pkghandler.remove_excluded_pkgs()
-
-    # handle special cases
-    loggerinst.task("Convert: Resolve possible edge cases")
-    special_cases.check_and_resolve()
-
-    # Import the Red Hat GPG Keys for installing Subscription-manager and for later.
-    loggerinst.task("Convert: Import Red Hat GPG keys")
-    pkghandler.install_gpg_keys()
-
-    rhel_repoids = []
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Download packages")
-        subscription.download_rhsm_pkgs()
-        loggerinst.task("Convert: Subscription Manager - Replace")
-        subscription.replace_subscription_manager()
-        loggerinst.task("Convert: Subscription Manager - Verify installation")
-        subscription.verify_rhsm_installed()
-        loggerinst.task("Convert: Install RHEL certificates for RHSM")
-        system_cert = cert.SystemCert()
-        system_cert.install()
-
-    # remove non-RHEL packages containing repofiles or affecting variables in the repofiles
-    # This needs to be before attempt to unregister the system because after unregistration can be lost
-    # access to repositories needed for backuping removed packages
-    loggerinst.task("Convert: Remove packages containing .repo files")
-    pkghandler.remove_repofile_pkgs()
-
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Subscribe system")
-        subscription.subscribe_system()
-        loggerinst.task("Convert: Get RHEL repository IDs")
-        rhel_repoids = repo.get_rhel_repoids()
-        loggerinst.task("Convert: Subscription Manager - Check required repositories")
-        subscription.check_needed_repos_availability(rhel_repoids)
-        loggerinst.task("Convert: Subscription Manager - Disable all repositories")
-        subscription.disable_repos()
-
-    # we need to enable repos after removing repofile pkgs, otherwise we don't get backups
-    # to restore from on a rollback
-    if not toolopts.tool_opts.no_rhsm:
-        loggerinst.task("Convert: Subscription Manager - Enable RHEL repositories")
-        subscription.enable_repos(rhel_repoids)
-
-    # perform final checks before the conversion
-    loggerinst.task("Convert: Final system checks before main conversion")
-    actions.perform_pre_ponr_checks()
 
 
 def post_ponr_conversion():
