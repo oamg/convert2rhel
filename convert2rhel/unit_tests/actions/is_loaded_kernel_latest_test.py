@@ -24,10 +24,10 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import actions, unit_tests
+from convert2rhel import actions, pkgmanager, unit_tests
 from convert2rhel.actions import is_loaded_kernel_latest
 from convert2rhel.unit_tests import run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import centos8, oracle8
+from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
 
 
@@ -158,7 +158,87 @@ class TestIsLoadedKernelLatest:
         ),
     )
     @centos8
-    def test_is_loaded_kernel_latest_eus_system_invalid_kernel_package(
+    @pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="cannot test dnf backend if dnf is not present")
+    def test_is_loaded_kernel_latest_eus_system_invalid_kernel_package_dnf(
+        self,
+        pretend_os,
+        repoquery_version,
+        uname_version,
+        return_code,
+        package_name,
+        expected,
+        tmpdir,
+        monkeypatch,
+        caplog,
+        is_loaded_kernel_latest_action,
+    ):
+        fake_reposdir_path = str(tmpdir)
+        monkeypatch.setattr(
+            actions.is_loaded_kernel_latest,
+            "get_hardcoded_repofiles_dir",
+            value=lambda: fake_reposdir_path,
+        )
+
+        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", True)
+
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "--setopt=reposdir=%s" % fake_reposdir_path,
+                        package_name,
+                    ),
+                    (
+                        repoquery_version,
+                        return_code,
+                    ),
+                ),
+                (("uname", "-r"), (uname_version, return_code)),
+            ),
+        )
+        monkeypatch.setattr(
+            actions.is_loaded_kernel_latest,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
+        is_loaded_kernel_latest_action.run()
+
+        unit_tests.assert_actions_result(
+            is_loaded_kernel_latest_action,
+            status="ERROR",
+            error_id="INVALID_KERNEL_PACKAGE",
+            message=expected,
+        )
+
+    @pytest.mark.parametrize(
+        ("repoquery_version", "uname_version", "return_code", "package_name", "expected"),
+        (
+            (
+                "C2R\t1634146676\t1-1.01-5.02\tbaseos",
+                "2-1.01-5.02",
+                0,
+                "kernel-core",
+                "The following field(s) are invalid - release : 1.01-5",
+            ),
+            (
+                "C2R\t1634146676\t1 .01-5.02\tbaseos",
+                "1 .01-5.03",
+                0,
+                "kernel-core",
+                "The following field(s) are invalid - version : 1 .01",
+            ),
+        ),
+    )
+    @centos7
+    @pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="cannot test yum backend if yum is not present")
+    def test_is_loaded_kernel_latest_eus_system_invalid_kernel_package_yum(
         self,
         pretend_os,
         repoquery_version,
