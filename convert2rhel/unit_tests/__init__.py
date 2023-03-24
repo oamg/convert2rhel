@@ -34,6 +34,50 @@ DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
 
 
+class TestPkgObj(object):
+    class PkgObjHdr(object):
+        def sprintf(self, *args, **kwargs):
+            return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
+
+    hdr = PkgObjHdr()
+
+
+def create_pkg_obj(
+    name,
+    epoch=0,
+    version="",
+    release="",
+    arch="",
+    packager=None,
+    from_repo="",
+    manager="yum",
+    vendor=None,
+):
+    class DumbObj(object):
+        pass
+
+    obj = TestPkgObj()
+    obj.yumdb_info = DumbObj()
+    obj.name = name
+    obj.epoch = obj.e = epoch
+    obj.version = obj.v = version
+    obj.release = obj.r = release
+    obj.evr = version + "-" + release
+    obj.arch = arch
+    obj.packager = packager
+    if vendor:
+        obj.vendor = vendor
+    if manager == "yum":
+        if from_repo:
+            obj.yumdb_info.from_repo = from_repo
+    elif manager == "dnf":
+        if from_repo:
+            obj._from_repo = from_repo
+        else:
+            obj._from_repo = "@@System"
+    return obj
+
+
 def mock(class_or_module, orig_obj, mock_obj):
     """
     This is a decorator to be applied to any test method that needs to mock
@@ -256,6 +300,15 @@ class GetFileContentMocked(MockFunction):
         return [x.strip() for x in self.data] if self.as_list else self.data
 
 
+class DumbCallableObject(MockFunction):
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return
+
+
 def run_subprocess_side_effect(*stubs):
     """Side effect function for utils.run_subprocess.
     :type stubs: Tuple[Tuple[command, ...], Tuple[command_stdout, exit_code]]
@@ -283,6 +336,27 @@ def run_subprocess_side_effect(*stubs):
             return run_subprocess(*args, **kwargs)
 
     return factory
+
+
+class GetInstalledPkgsWFingerprintsMocked(MockFunction):
+    def prepare_test_pkg_tuples_w_fingerprints(self):
+        class PkgData:
+            def __init__(self, pkg_obj, fingerprint):
+                self.pkg_obj = pkg_obj
+                self.fingerprint = fingerprint
+
+        obj1 = create_pkg_obj("pkg1")
+        obj2 = create_pkg_obj("pkg2")
+        obj3 = create_pkg_obj("gpg-pubkey")
+        pkgs = [
+            PkgData(obj1, "199e2f91fd431d51"),  # RHEL
+            PkgData(obj2, "72f97b74ec551f03"),  # OL
+            PkgData(obj3, "199e2f91fd431d51"),
+        ]  # RHEL
+        return pkgs
+
+    def __call__(self, *args, **kwargs):
+        return self.prepare_test_pkg_tuples_w_fingerprints()
 
 
 #: Used as a sentinel value for assert_action_result() so we only check
