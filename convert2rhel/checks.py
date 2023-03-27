@@ -31,6 +31,7 @@ from convert2rhel.pkghandler import (
     get_installed_pkg_objects,
     get_pkg_fingerprint,
     get_total_packages_to_update,
+    parse_pkg_string,
 )
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
@@ -60,8 +61,6 @@ gpgkey=file://%s""" % (
     SSL_CERT_PATH,
     RPM_GPG_KEY_PATH,
 )
-
-PKG_NEVR = r"\b(\S+)-(?:([0-9]+):)?(\S+)-(\S+)\b"
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
@@ -117,6 +116,8 @@ def check_convert2rhel_latest():
         "--enablerepo=convert2rhel",
         "--releasever=%s" % system_info.version.major,
         "--setopt=reposdir=%s" % repo_dir,
+        "--qf",
+        "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}",
         "convert2rhel",
     ]
 
@@ -136,9 +137,42 @@ def check_convert2rhel_latest():
         )
         return
 
-    convert2rhel_versions = re.findall(PKG_NEVR, raw_output_convert2rhel_versions, re.MULTILINE)
-    logger.debug("Found %s convert2rhel package(s)" % len(convert2rhel_versions))
+    # convert the raw output of convert2rhel version strings into a list
+    raw_output_convert2rhel_versions = raw_output_convert2rhel_versions.splitlines()
+
+    temp_raw_output = []
+
+    # We are expecting an repoquery output to be similar to this:
+    # C2R convert2rhel-0:0.17-1.el7.noarch
+    # We need the `C2R` identifier to be present on the line so we can know for
+    # sure that the line we are working with is the a line that contains
+    # relevant repoquery information to our check, otherwise, we just log the
+    # information as debug and do nothing with it.
+    for raw_version in raw_output_convert2rhel_versions:
+        if "C2R" in raw_version:
+            temp_raw_output.append(raw_version.lstrip("C2R "))
+        else:
+            # Mainly for debugging purposes to see what is happening if we got
+            # anything else that does not have the C2R identifier at the start
+            # of the line.
+            logger.debug("Got a line without the C2R identifier: %s" % raw_version)
+    raw_output_convert2rhel_versions = temp_raw_output
+
     latest_available_version = ("0", "0.00", "0")
+    convert2rhel_versions = []
+
+    # add each tuple of fields obtained from parse_pkg_string() to convert2rhel_versions
+    for raw_pkg in raw_output_convert2rhel_versions:
+        try:
+            parsed_pkg = parse_pkg_string(raw_pkg)
+
+        except ValueError as exc:
+            # Not a valid package string input
+            logger.debug(exc)
+            continue
+        convert2rhel_versions.append(parsed_pkg)
+
+    logger.debug("Found %s convert2rhel package(s)" % len(convert2rhel_versions))
 
     # This loop will determine the latest available convert2rhel version in the yum repo.
     # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
@@ -146,12 +180,15 @@ def check_convert2rhel_latest():
         logger.debug("...comparing version %s" % latest_available_version[1])
         # rpm.labelCompare(pkg1, pkg2) compare two package version strings and return
         # -1 if latest_version is greater than package_version, 0 if they are equal, 1 if package_version is greater than latest_version
-        ver_compare = rpm.labelCompare(package_version[1:], latest_available_version)
+        ver_compare = rpm.labelCompare(
+            (package_version[1], package_version[2], package_version[3]), latest_available_version
+        )
+
         if ver_compare > 0:
             logger.debug(
-                "...found %s to be newer than %s, updating" % (package_version[1:][1], latest_available_version[1])
+                "...found %s to be newer than %s, updating" % (package_version[2], latest_available_version[1])
             )
-            latest_available_version = package_version[1:]
+            latest_available_version = (package_version[1], package_version[2], package_version[3])
 
     logger.debug("Found %s to be latest available version" % (latest_available_version[1]))
     # After the for loop, the latest_available_version variable will gain the epoch, version, and release

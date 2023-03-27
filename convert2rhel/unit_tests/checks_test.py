@@ -194,7 +194,11 @@ def test_perform_pre_ponr_checks(monkeypatch):
 class TestCheckConvert2rhelLatest(object):
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
-        ([{"local_version": "0.20", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],),
+        (
+            [{"local_version": "0.20.0", "package_version": "C2R convert2rhel-0:0.22.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.20", "package_version": "C2R convert2rhel-0:0.22.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.20.0", "package_version": "C2R convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],
+        ),
         indirect=True,
     )
     def test_convert2rhel_latest_offline(self, caplog, convert2rhel_latest_version_test, global_system_info):
@@ -207,8 +211,11 @@ class TestCheckConvert2rhelLatest(object):
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
         (
-            [{"local_version": "0.21", "package_version": "convert2rhel-0:0.22-1.el7.noarch", "pmajor": "7"}],
-            [{"local_version": "0.21", "package_version": "convert2rhel-0:1.10-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.21.1", "package_version": "C2R convert2rhel-0:0.22.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.21.2", "package_version": "C2R convert2rhel-0:1.10.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "7"}],
         ),
         indirect=True,
     )
@@ -216,8 +223,10 @@ class TestCheckConvert2rhelLatest(object):
         with pytest.raises(SystemExit):
             checks.check_convert2rhel_latest()
         local_version, package_version = convert2rhel_latest_version_test
-        package_version = package_version[15:19]
-
+        if len(package_version) > 36:
+            package_version = package_version[19:25]
+        else:
+            package_version = package_version[19:23]
         log_msg = (
             "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
             "Only the latest version is supported for conversion. If you want to ignore"
@@ -231,24 +240,32 @@ class TestCheckConvert2rhelLatest(object):
         (
             [
                 {
-                    "local_version": "0.18",
-                    "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                    "local_version": "0.18.0",
+                    "package_version": "C2R convert2rhel-0:0.22.1-1.el7.noarch",
                     "pmajor": "6",
                     "enset": "1",
                 }
             ],
             [
                 {
-                    "local_version": "0.18",
-                    "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                    "local_version": "0.18.1",
+                    "package_version": "C2R convert2rhel-0:0.22.0-1.el7.noarch",
                     "pmajor": "7",
                     "enset": "1",
                 }
             ],
             [
                 {
-                    "local_version": "0.18",
-                    "package_version": "convert2rhel-0:0.22-1.el7.noarch",
+                    "local_version": "0.18.3",
+                    "package_version": "C2R convert2rhel-0:0.22.1-1.el7.noarch",
+                    "pmajor": "8",
+                    "enset": "1",
+                }
+            ],
+            [
+                {
+                    "local_version": "0.18.0",
+                    "package_version": "C2R convert2rhel-0:1.10.2-1.el7.noarch",
                     "pmajor": "8",
                     "enset": "1",
                 }
@@ -256,7 +273,15 @@ class TestCheckConvert2rhelLatest(object):
             [
                 {
                     "local_version": "0.18",
-                    "package_version": "convert2rhel-0:1.10-1.el7.noarch",
+                    "package_version": "C2R convert2rhel-0:1.10.2-1.el7.noarch",
+                    "pmajor": "8",
+                    "enset": "1",
+                }
+            ],
+            [
+                {
+                    "local_version": "0.18.0",
+                    "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch",
                     "pmajor": "8",
                     "enset": "1",
                 }
@@ -269,7 +294,10 @@ class TestCheckConvert2rhelLatest(object):
         checks.check_convert2rhel_latest()
 
         local_version, package_version = convert2rhel_latest_version_test
-        package_version = package_version[15:19]
+        if len(package_version) > 36:
+            package_version = package_version[19:25]
+        else:
+            package_version = package_version[19:23]
         log_msg = (
             "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
             "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
@@ -283,13 +311,14 @@ class TestCheckConvert2rhelLatest(object):
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
         (
-            [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "7"}],
-            [{"local_version": "0.17", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "8"}],
-            [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "7"}],
-            [{"local_version": "0.25", "package_version": "convert2rhel-0:0.17-1.el7.noarch", "pmajor": "8"}],
-            [{"local_version": "1.10", "package_version": "convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "0.25.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "0.25.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "7"}],
+            [{"local_version": "0.25.0", "package_version": "C2R convert2rhel-0:0.17.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "1.10.0", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "1.10.1", "package_version": "C2R convert2rhel-0:1.10.0-1.el7.noarch", "pmajor": "8"}],
         ),
         indirect=True,
     )
@@ -302,7 +331,11 @@ class TestCheckConvert2rhelLatest(object):
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
-        ([{"local_version": "1.10", "package_version": "convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],),
+        (
+            [{"local_version": "1.10.0", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "1.10", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "1.10.0", "package_version": "C2R convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],
+        ),
         indirect=True,
     )
     def test_c2r_up_to_date_repoquery_error(self, caplog, convert2rhel_latest_version_test, monkeypatch):
@@ -321,8 +354,22 @@ class TestCheckConvert2rhelLatest(object):
         (
             [
                 {
+                    "local_version": "0.19.0",
+                    "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
+                    "pmajor": "8",
+                }
+            ],
+            [
+                {
                     "local_version": "0.19",
-                    "package_version": "convert2rhel-0:0.18-1.el7.noarch\nconvert2rhel-0:0.17-1.el7.noarch\nconvert2rhel-0:0.20-1.el7.noarch",
+                    "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
+                    "pmajor": "8",
+                }
+            ],
+            [
+                {
+                    "local_version": "0.19.0",
+                    "package_version": "C2R convert2rhel-0:0.18-1.el7.noarch\nC2R convert2rhel-0:0.17-1.el7.noarch\nC2R convert2rhel-0:0.20-1.el7.noarch",
                     "pmajor": "8",
                 }
             ],
@@ -334,17 +381,28 @@ class TestCheckConvert2rhelLatest(object):
         with pytest.raises(SystemExit):
             checks.check_convert2rhel_latest()
 
+        local_version, package_version = convert2rhel_latest_version_test
+
+        if len(package_version) > 110:
+            package_version = package_version[97:103]
+        else:
+            package_version = package_version[93:97]
+
         log_msg = (
-            "You are currently running 0.19 and the latest version of Convert2RHEL is 0.20.\n"
+            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
             "Only the latest version is supported for conversion. If you want to ignore"
             " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+            % (local_version, package_version)
         )
-
         assert log_msg in caplog.text
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
-        ([{"local_version": "0.17", "package_version": "convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],),
+        (
+            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "0.17", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
+            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],
+        ),
         indirect=True,
     )
     def test_c2r_up_to_date_deprecated_env_var(self, caplog, convert2rhel_latest_version_test, monkeypatch):

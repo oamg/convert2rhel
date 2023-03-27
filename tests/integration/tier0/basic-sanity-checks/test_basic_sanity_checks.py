@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 
 import pytest
@@ -51,28 +52,47 @@ def test_log_file_verification():
     assert os.path.exists("/var/log/convert2rhel/convert2rhel.log")
 
 
-# Find where the site packages for Convert2RHEL are and backup the original version.
-PATH_TO_VERSION = subprocess.check_output(
-    ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
-).decode("utf-8")
-os.system(f"cp {PATH_TO_VERSION} /tmp/")
-
-
-def _change_c2r_version(version):
+@pytest.fixture(scope="function")
+def c2r_version(request):
     """
-    Modify the __init__.py in which the version is stored.
+    A fixture that updates the version value in a file.
     """
-    with open(PATH_TO_VERSION, "r+") as version_file:
-        version_file.write(f"__version__ = '{version}'")
+    # Find where the site packages for Convert2RHEL are and backup the original version.
+    path_to_version = subprocess.check_output(
+        ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
+    ).decode("utf-8")
+    # Load the original value to restore later
+    with open(path_to_version, "r") as version_file:
+        old_version_content = version_file.read()
+
+    def _update_c2r_version(version):
+        """
+        Modify the Convert2RHEL version value in the __init__.py file.
+        We want to simulate the running version is older/newer than in the repositories.
+        """
+        with open(path_to_version, "w") as version_file:
+            # Update the version
+            version_pattern = r'__version__ = "(\d+\.\d+\.\d+)"'
+            updated_version_content = re.sub(version_pattern, '__version__ = "{}"'.format(version), old_version_content)
+            version_file.write(updated_version_content)
+
+    yield _update_c2r_version
+
+    def _restore_c2r_version():
+        # Update the value back to the original
+        with open(path_to_version, "w") as version_file:
+            version_file.write(old_version_content)
+
+    _restore_c2r_version()
 
 
-def test_c2r_latest_newer(convert2rhel):
+@pytest.mark.parametrize("version", ["42.0.0"])
+def test_c2r_latest_newer(convert2rhel, c2r_version, version):
     """
     Check if running latest or newer version continues the conversion.
     """
-    _change_c2r_version(42.0)
-
-    with convert2rhel(f"--no-rpm-va --debug") as c2r:
+    c2r_version(version)
+    with convert2rhel("--no-rpm-va --debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -82,17 +102,16 @@ def test_c2r_latest_newer(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
-    # Clean up
-    os.system(f"cp /tmp/__init__.py {PATH_TO_VERSION}")
 
-
-def test_c2r_latest_older_inhibit(convert2rhel):
+@pytest.mark.parametrize("version", ["0.01.0"])
+def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
     """
     Check if running older version inhibits the conversion.
     """
-    _change_c2r_version(0.01)
 
-    with convert2rhel(f"--no-rpm-va --debug") as c2r:
+    c2r_version(version)
+
+    with convert2rhel("--no-rpm-va --debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -101,21 +120,27 @@ def test_c2r_latest_older_inhibit(convert2rhel):
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
     assert c2r.exitstatus != 0
 
-    # Clean up
-    os.system(f"cp /tmp/__init__.py {PATH_TO_VERSION}")
+
+@pytest.fixture
+def older_version_envar():
+    # Set the environment variable
+    os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
+
+    yield
+    # Delete the environment variable
+    del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
 
 
-def test_c2r_latest_older_unsupported_version(convert2rhel):
+@pytest.mark.parametrize("version", ["0.01.0"])
+def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version, older_version_envar):
     """
     Check if running older version with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
     Running older version of Convert2RHEL on OS major version 6 or older should inhibit either way.
     """
-    _change_c2r_version(0.01)
+    c2r_version(version)
 
-    os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
-
-    with convert2rhel(f"--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -131,10 +156,6 @@ def test_c2r_latest_older_unsupported_version(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
     assert c2r.exitstatus != 0
-
-    # Clean up
-    os.system(f"cp /tmp/__init__.py {PATH_TO_VERSION}")
-    del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
 
 
 def test_clean_cache(convert2rhel):
