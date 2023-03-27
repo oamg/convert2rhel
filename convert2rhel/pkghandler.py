@@ -624,7 +624,6 @@ def get_system_packages_for_replacement():
     """Get a list of packages in the system to be replaced.
     This function will return a list of packages installed on the system by
     using the `system_info.fingerprint_ori_os` signature.
-
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
@@ -970,7 +969,6 @@ def get_total_packages_to_update(reposdir):
     """Return the total number of packages to update in the system
     It uses both yum/dnf depending on whether they are installed on the system,
     In case of RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
-
     To check whether the system is updated or not, we use original vendor repofiles which we ship within the
     convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
     :param reposdir: The path to the hardcoded repositories for EUS (If any).
@@ -1157,6 +1155,7 @@ def _validate_parsed_fields(package, name, epoch, version, release, arch):
 
     # convert None fields to empty strings for concatenation
     pkg_fields = [(i or "") for i in (name, epoch, version, release, arch)]
+
     # check to see if the package length is equalivalent to the length of parsed fields + separators
     parsed_pkg_length = len("".join(pkg_fields)) + seperators
     if pkg_length != parsed_pkg_length:
