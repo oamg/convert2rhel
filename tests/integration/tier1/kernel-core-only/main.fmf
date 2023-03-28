@@ -1,0 +1,10 @@
+summary: kernel-core package is the only kernel package installed
+
+description: |
+  This tests set's up the machine that it contains only `kernel-core` package installed
+  on the system. Test is only viable to run on RHEL-8 like systems.
+
+tier: 1
+
+test: |
+  pytest -svv
