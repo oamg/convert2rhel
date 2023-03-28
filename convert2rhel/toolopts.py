@@ -79,7 +79,7 @@ class CLI(object):
     def _get_argparser():
         usage = (
             "\n"
-            "  convert2rhel [-h]<n>"
+            "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
@@ -182,9 +182,9 @@ class CLI(object):
         group.add_argument(
             "--no-rhsm",
             action="store_true",
-            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
-            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
-            " Using this option requires to have the --enablerepo specified.",
+            help="Do not use subscription-manager. Use custom repositories instead. See --enablerepo/--disablerepo"
+            " options. Without this option, subscription-manager is used to access RHEL repositories by default."
+            " Using this option requires specifying --enablerepo as well.",
         )
 
     def _add_subscription_manager_options(self):
