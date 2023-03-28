@@ -10,7 +10,7 @@ tier: 0
 tag+:
     - kmod
     - kernel
-    - inhibit-if-kmod-is-not-supported
+    - kernel-modules
 
 
 /custom_kernel_module:
@@ -19,6 +19,16 @@ tag+:
     description+:
         One kernel module is moved to a custom location,
         therefore denoted as custom by the running system.
+    adjust+:
+        - environment+:
+            PROMPT_AMOUNT: 5
+          when: distro == centos-8
+        - environment+:
+            PROMPT_AMOUNT: 4
+          when: distro == oraclelinux-7, centos-7
+        - environment+:
+            PROMPT_AMOUNT: 3
+          when: distro == oraclelinux-8
 
     /custom_module_loaded:
         summary+: |
@@ -40,16 +50,6 @@ tag+:
             Remove the previously loaded 'custom' kmod and verify, the conversion is not inhibited.
             The kmod compatibility check is right before the point of no return.
             Abort the conversion right after the check.
-        adjust+:
-            - environment+:
-                PROMPT_AMOUNT: 5
-              when: distro == centos
-            - environment+:
-                PROMPT_AMOUNT: 4
-              when: distro == oraclelinux-7
-            - environment+:
-                PROMPT_AMOUNT: 3
-              when: distro == oraclelinux-8
         tag+:
             - custom-module-not-loaded
         test: |
@@ -65,18 +65,6 @@ tag+:
         adjust+:
             - environment+:
                 CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
-            - environment+:
-                PROMPT_AMOUNT: 6
-              when: distro == centos-8-latest
-            - environment+:
-                PROMPT_AMOUNT: 5
-              when: distro == centos-8.4, centos-7
-            - environment+:
-                PROMPT_AMOUNT: 4
-              when: distro == oraclelinux-7
-            - environment+:
-                PROMPT_AMOUNT: 3
-              when: distro == oraclelinux-8
         tag+:
             - unsupported-kmod-with-envar
         test: |

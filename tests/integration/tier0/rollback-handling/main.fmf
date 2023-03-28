@@ -19,7 +19,7 @@ tier: 0
 tag+:
     - nondestructive
     - rollback
-    - check-rollback-handling
+    - rollback-handling
 
 /rhsm_cleanup:
     summary+: |

@@ -8,7 +8,7 @@ tier: 0
 
 tag+:
     - repo
-    - backup-release
+    - system-release-backup
 
 /os_release_restored:
     summary+: |

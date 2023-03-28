@@ -7,7 +7,7 @@ tier: 0
 
 tag+:
     - log-file
-    - log-command
+    - logged-command
 
 /logfile_starts_with_command:
     tag+:

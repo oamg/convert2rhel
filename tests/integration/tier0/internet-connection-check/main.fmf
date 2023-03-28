@@ -8,6 +8,7 @@ tier: 0
 
 tag+:
     - internet-connection
+    - internet-connection-check
 
 /available_connection:
     summary+: |
