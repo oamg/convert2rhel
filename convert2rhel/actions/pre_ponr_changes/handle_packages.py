@@ -44,7 +44,6 @@ class ListThirdPartyPackages(actions.Action):
                 " for the following third party packages:\n" % system_info.name
             )
             pkghandler.print_pkg_info(third_party_pkgs)
-            utils.ask_to_continue()
         else:
             logger.info("No third party packages installed.")
 
@@ -62,7 +61,7 @@ class RemoveExcludedPackages(actions.Action):
         logger.task("Convert: Remove excluded packages")
         logger.info("Searching for the following excluded packages:\n")
         try:
-            pkghandler.remove_pkgs_with_confirm(system_info.excluded_pkgs)
+            pkghandler.remove_pkgs_unless_from_redhat(system_info.excluded_pkgs)
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.
         except SystemExit as e:
@@ -95,7 +94,7 @@ class RemoveRepositoryFilesPackages(actions.Action):
         logger.task("Convert: Remove packages containing .repo files")
         logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
         try:
-            pkghandler.remove_pkgs_with_confirm(system_info.repofile_pkgs)
+            pkghandler.remove_pkgs_unless_from_redhat(system_info.repofile_pkgs)
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.
         except SystemExit as e:

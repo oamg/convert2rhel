@@ -564,7 +564,6 @@ def remove_original_subscription_manager():
         "Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n"
     )
     pkghandler.print_pkg_info(submgr_pkgs)
-    utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
 
     if system_info.id == "centos" and system_info.version.major == 8 and system_info.version.minor == 5:
@@ -928,7 +927,6 @@ def check_needed_repos_availability(repo_ids_needed):
                 "%s repository is not available - some packages"
                 " may not be replaced and thus not supported." % repo_id
             )
-            utils.ask_to_continue()
             all_repos_avail = False
     if all_repos_avail:
         loggerinst.info("Needed RHEL repositories are available.")
