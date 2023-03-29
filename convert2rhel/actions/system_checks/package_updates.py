@@ -61,7 +61,6 @@ class PackageUpdates(actions.Action):
                 "verify that manually."
             )
             logger.warning(str(e))
-            ask_to_continue()
             return
 
         if len(packages_to_update) > 0:
@@ -77,6 +76,5 @@ class PackageUpdates(actions.Action):
                 "Consider stopping the conversion and update the packages before re-running convert2rhel."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
             )
-            ask_to_continue()
         else:
             logger.info("System is up-to-date.")
