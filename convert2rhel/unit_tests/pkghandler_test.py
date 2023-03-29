@@ -746,7 +746,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 )
             return [pkg_obj]
 
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
     @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
     @unit_tests.mock(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
     @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
@@ -755,8 +754,8 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         "get_installed_pkgs_w_different_fingerprint",
         GetInstalledPkgObjectsWDiffFingerprintMocked(),
     )
-    def test_remove_pkgs_with_confirm(self):
-        pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
+    def test_remove_pkgs_unless_from_redhat(self):
+        pkghandler.remove_pkgs_unless_from_redhat(["installed_pkg", "not_installed_pkg"])
 
         self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
         self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")

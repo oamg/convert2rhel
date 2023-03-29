@@ -633,7 +633,7 @@ def list_non_red_hat_pkgs_left():
         loggerinst.info("All packages are now signed by Red Hat.")
 
 
-def remove_pkgs_with_confirm(pkgs, backup=True):
+def remove_pkgs_unless_from_redhat(pkgs, backup=True):
     """
     Remove selected packages with a breakdown and user confirmation prompt.
     """
@@ -650,7 +650,6 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
-    utils.ask_to_continue()
     remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
