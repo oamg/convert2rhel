@@ -219,7 +219,6 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(logging.Logger, "info", LogMocked())
     @unit_tests.mock(logging.Logger, "warning", LogMocked())
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
     def test_check_needed_repos_availability(self):
         subscription.check_needed_repos_availability(["rhel_x"])
@@ -229,7 +228,6 @@ class TestSubscription(unittest.TestCase):
         self.assertIn("rhel_z repository is not available", logging.Logger.warning.msg)
 
     @unit_tests.mock(logging.Logger, "warning", LogMocked())
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
     def test_check_needed_repos_availability_no_repo_available(self):
         subscription.check_needed_repos_availability(["rhel"])
@@ -237,7 +235,6 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
@@ -252,7 +249,6 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
     @unit_tests.mock(system_info, "id", "centos")
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):
         subscription.remove_original_subscription_manager()
