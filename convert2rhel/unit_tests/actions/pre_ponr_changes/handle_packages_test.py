@@ -18,8 +18,8 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, unit_tests, utils
-from convert2rhel.actions.pre_ponr_changes import handle_packages
+from convert2rhel import actions, pkghandler, unit_tests
+from convert2rhel.actions import handle_packages
 from convert2rhel.systeminfo import system_info
 
 
@@ -54,7 +54,6 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
 def test_list_third_party_packages(list_third_party_packages_instance, monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    monkeypatch.setattr(utils, "ask_to_continue", unit_tests.DumbCallableObject())
 
     list_third_party_packages_instance.run()
 
@@ -83,18 +82,20 @@ def remove_excluded_packages_instance():
 def test_remove_excluded_packages(remove_excluded_packages_instance, monkeypatch):
     excluded_pkgs = ["installed_pkg", "not_installed_pkg"]
     monkeypatch.setattr(system_info, "excluded_pkgs", excluded_pkgs)
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_unless_from_redhat", CommandCallableObject())
 
     remove_excluded_packages_instance.run()
 
-    assert pkghandler.remove_pkgs_with_confirm.called == 1
-    assert pkghandler.remove_pkgs_with_confirm.command == excluded_pkgs
+    assert pkghandler.remove_pkgs_unless_from_redhat.called == 1
+    assert pkghandler.remove_pkgs_unless_from_redhat.command == excluded_pkgs
     assert remove_excluded_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
 
 
 def test_remove_excluded_packages_error(remove_excluded_packages_instance, monkeypatch):
     monkeypatch.setattr(system_info, "excluded_pkgs", [])
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", mock.Mock(side_effect=SystemExit("Raising SystemExit")))
+    monkeypatch.setattr(
+        pkghandler, "remove_pkgs_unless_from_redhat", mock.Mock(side_effect=SystemExit("Raising SystemExit"))
+    )
 
     remove_excluded_packages_instance.run()
 
@@ -114,18 +115,20 @@ def remove_repository_files_packages_instance():
 def test_remove_repository_files_packages(remove_repository_files_packages_instance, monkeypatch):
     repofile_pkgs = ["installed_pkg", "not_installed_pkg"]
     monkeypatch.setattr(system_info, "repofile_pkgs", repofile_pkgs)
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_unless_from_redhat", CommandCallableObject())
 
     remove_repository_files_packages_instance.run()
 
-    assert pkghandler.remove_pkgs_with_confirm.called == 1
-    assert pkghandler.remove_pkgs_with_confirm.command == repofile_pkgs
+    assert pkghandler.remove_pkgs_unless_from_redhat.called == 1
+    assert pkghandler.remove_pkgs_unless_from_redhat.command == repofile_pkgs
     assert remove_repository_files_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
 
 
 def test_remove_repository_files_packages_error(remove_repository_files_packages_instance, monkeypatch):
     monkeypatch.setattr(system_info, "repofile_pkgs", [])
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", mock.Mock(side_effect=SystemExit("Raising SystemExit")))
+    monkeypatch.setattr(
+        pkghandler, "remove_pkgs_unless_from_redhat", mock.Mock(side_effect=SystemExit("Raising SystemExit"))
+    )
 
     remove_repository_files_packages_instance.run()
 
