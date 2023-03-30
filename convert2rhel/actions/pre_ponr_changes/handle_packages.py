@@ -27,12 +27,13 @@ logger = logging.getLogger(__name__)
 class ListThirdPartyPackages(actions.Action):
     id = "LIST_THIRD_PARTY_PACKAGES"
 
-    @actions._action_defaults_to_success
     def run(self):
         """
         List packages not packaged by the original OS vendor or Red Hat and
         warn that these are not going to be converted.
         """
+        super(ListThirdPartyPackages, self).run()
+
         logger.task("Convert: List third-party packages")
 
         third_party_pkgs = pkghandler.get_third_party_pkgs()
@@ -51,12 +52,13 @@ class ListThirdPartyPackages(actions.Action):
 class RemoveExcludedPackages(actions.Action):
     id = "REMOVE_EXCLUDED_PACKAGES"
 
-    @actions._action_defaults_to_success
     def run(self):
         """
         Certain packages need to be removed before the system conversion,
         depending on the system to be converted.
         """
+        super(RemoveExcludedPackages, self).run()
+
         logger.task("Convert: Remove excluded packages")
         logger.info("Searching for the following excluded packages:\n")
         try:
@@ -73,7 +75,6 @@ class RemoveExcludedPackages(actions.Action):
 class RemoveRepositoryFilesPackages(actions.Action):
     id = "REMOVE_REPOSITORY_FILES_PACKAGES"
 
-    @actions._action_defaults_to_success
     def run(self):
         """
         Remove those non-RHEL packages that contain YUM/DNF repofiles
@@ -89,6 +90,8 @@ class RemoveRepositoryFilesPackages(actions.Action):
         packages must be manually removed after subscription-manager
         installation.
         """
+        super(RemoveRepositoryFilesPackages, self).run()
+
         logger.task("Convert: Remove packages containing .repo files")
         logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
         try:

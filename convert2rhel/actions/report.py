@@ -17,52 +17,10 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel.actions import STATUS_CODE
+from convert2rhel.actions import STATUS_CODE, format_report_message
 
 
 logger = logging.getLogger(__name__)
-
-
-_STATUS_NAME_FROM_CODE = dict((value, key) for key, value in STATUS_CODE.items())
-
-
-def _format_report_message(template, status_name, action_id, error_id, message):
-    """Helper function to format the report message.
-
-    :param template: The template to be formatted and returned to the caller.
-    :type template: str
-    :param status_name: The status name that will be used in the template.
-    :type status_name: str
-    :param action_id: Action id for the report
-    :type action_id: str
-    :param error_id: Error id associated with the action
-    :type error_id: str
-    :param message: The message that was produced in the action
-    :type message: str
-
-    :return: The formatted message that will be logged to the user.
-    :rtype: str
-    """
-    # `error_id` and `message` may not be present everytime, since it
-    # can be empty (either by mistake, or, intended), we only want to
-    # apply these fields if they are present, with a special mention to
-    # `message`.
-    if error_id:
-        template += ".{ERROR_ID}"
-
-    # Special case for `message` to not output empty message to the
-    # user without message.
-    if message:
-        template += ": {MESSAGE}"
-    else:
-        template += ": [No further information given]"
-
-    return template.format(
-        STATUS=status_name,
-        ACTION_ID=action_id,
-        ERROR_ID=error_id,
-        MESSAGE=message,
-    )
 
 
 def summary(results, include_all_reports=False):
@@ -120,11 +78,9 @@ def summary(results, include_all_reports=False):
     results = sorted(results.items(), key=lambda item: item[1]["status"], reverse=True)
 
     has_report_message = False
-    template = "({STATUS}) {ACTION_ID}"
 
     for action_id, result in results:
-        status_name = _STATUS_NAME_FROM_CODE[result["status"]]
-        message = _format_report_message(template, status_name, action_id, result["error_id"], result["message"])
+        message = format_report_message(result["status"], action_id, result["error_id"], result["message"])
 
         if include_all_reports:
             has_report_message = True

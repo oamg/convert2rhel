@@ -22,7 +22,7 @@ import pytest
 import six
 
 from convert2rhel import actions, pkgmanager
-from convert2rhel.actions import package_updates
+from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 
@@ -56,8 +56,8 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
 )
 @centos8
 def test_check_package_updates(pretend_os, packages, exception, expected, monkeypatch, caplog, package_updates_action):
-    monkeypatch.setattr(actions.package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
-    monkeypatch.setattr(actions.package_updates, "ask_to_continue", value=lambda: mock.Mock())
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
+    monkeypatch.setattr(package_updates, "ask_to_continue", value=lambda: mock.Mock())
 
     package_updates_action.run()
     if exception:
@@ -68,10 +68,8 @@ def test_check_package_updates(pretend_os, packages, exception, expected, monkey
 
 def test_check_package_updates_with_repoerror(monkeypatch, caplog, package_updates_action):
     get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError)
-    monkeypatch.setattr(
-        actions.package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock
-    )
-    monkeypatch.setattr(actions.package_updates, "ask_to_continue", value=lambda: mock.Mock())
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
+    monkeypatch.setattr(package_updates, "ask_to_continue", value=lambda: mock.Mock())
 
     package_updates_action.run()
     # This is -2 because the last message is the error from the RepoError class.
@@ -82,7 +80,7 @@ def test_check_package_updates_with_repoerror(monkeypatch, caplog, package_updat
 
 @centos8
 def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch, caplog, package_updates_action):
-    monkeypatch.setattr(actions.package_updates, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
+    monkeypatch.setattr(package_updates, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
     system_info.has_internet_access = False
     package_updates_action.run()
 

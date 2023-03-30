@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 
 from convert2rhel import actions, unit_tests
-from convert2rhel.actions import dbus
+from convert2rhel.actions.system_checks import dbus
 
 
 @pytest.fixture
@@ -37,9 +37,9 @@ def dbus_is_running_action():
 def test_check_dbus_is_running(
     caplog, monkeypatch, global_tool_opts, global_system_info, no_rhsm, dbus_running, log_msg, dbus_is_running_action
 ):
-    monkeypatch.setattr(actions.dbus, "tool_opts", global_tool_opts)
+    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
     global_tool_opts.no_rhsm = no_rhsm
-    monkeypatch.setattr(actions.dbus, "system_info", global_system_info)
+    monkeypatch.setattr(dbus, "system_info", global_system_info)
     global_system_info.dbus_running = dbus_running
 
     dbus_is_running_action.run()
@@ -48,9 +48,9 @@ def test_check_dbus_is_running(
 
 
 def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action):
-    monkeypatch.setattr(actions.dbus, "tool_opts", global_tool_opts)
+    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
     global_tool_opts.no_rhsm = False
-    monkeypatch.setattr(actions.dbus, "system_info", global_system_info)
+    monkeypatch.setattr(dbus, "system_info", global_system_info)
     global_system_info.dbus_running = False
 
     dbus_is_running_action.run()

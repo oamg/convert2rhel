@@ -18,11 +18,8 @@ import pytest
 import six
 
 from convert2rhel import pkgmanager, unit_tests
-from convert2rhel.actions import STATUS_CODE, transaction
-from convert2rhel.actions.handle_packages import RemoveExcludedPackages
-from convert2rhel.actions.kernel_modules import EnsureKernelModulesCompatibility
-from convert2rhel.actions.special_cases import RemoveIwlax2xxFirmware
-from convert2rhel.actions.subscription import SubscribeSystem
+from convert2rhel.actions import STATUS_CODE
+from convert2rhel.actions.pre_ponr_changes import transaction
 from convert2rhel.unit_tests.conftest import all_systems
 
 
