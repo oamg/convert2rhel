@@ -275,7 +275,7 @@ class TestStage:
                 ("all_status_actions",),
                 (
                     ("SUCCESSTEST", "WARNINGTEST"),
-                    ("FATALTEST", "ERRORTEST", "OVERRIDABLETEST"),
+                    ("ERRORTEST", "OVERRIDABLETEST"),
                     ("SKIPSINGLETEST", "SKIPMULTIPLETEST"),
                 ),
             ),
@@ -704,18 +704,6 @@ class TestRunActions:
                 actions.FinishedActions(
                     [],
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["FATAL"]),
-                    ],
-                    [],
-                ),
-                {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["FATAL"]),
-                },
-            ),
-            (
-                actions.FinishedActions(
-                    [],
-                    [
                         _ActionForTesting(id="One", status=STATUS_CODE["OVERRIDABLE"]),
                     ],
                     [],
@@ -822,13 +810,12 @@ class TestFindFailedActions:
             (
                 {
                     "BAD": dict(status=STATUS_CODE["ERROR"], error_id="ERROR", message="Explosion"),
-                    "BAD2": dict(status=STATUS_CODE["FATAL"], error_id="FATAL", message="Explosion"),
                     "BAD3": dict(status=STATUS_CODE["OVERRIDABLE"], error_id="OVERRIDABLE", message="Explosion"),
                     "BAD4": dict(status=STATUS_CODE["SKIP"], error_id="SKIP", message="Explosion"),
                     "GOOD": dict(status=STATUS_CODE["WARNING"], error_id="WARN", message="Danger"),
                     "GOOD2": dict(status=STATUS_CODE["SUCCESS"], error_id="", message="No Error here"),
                 },
-                ["BAD", "BAD2", "BAD3", "BAD4"],
+                ["BAD", "BAD3", "BAD4"],
             ),
         ),
     )

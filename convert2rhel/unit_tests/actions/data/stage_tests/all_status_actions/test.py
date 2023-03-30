@@ -1,15 +1,6 @@
 from convert2rhel import actions
 
 
-class FatalTest(actions.Action):
-    id = "FATALTEST"
-    dependencies = ("SUCCESSTEST",)
-
-    def run(self):
-        super(FatalTest, self).run()
-        self.set_result(status="FATAL", message="Fatally failed")
-
-
 class ErrorTest(actions.Action):
     id = "ERRORTEST"
     dependencies = ("SUCCESSTEST",)
