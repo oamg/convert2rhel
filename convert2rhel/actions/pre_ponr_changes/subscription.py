@@ -27,8 +27,9 @@ class PreSubscription(actions.Action):
     id = "PRE_SUBSCRIPTION"
     dependencies = ("REMOVE_EXCLUDED_PACKAGES",)
 
-    @actions._action_defaults_to_success
     def run(self):
+        super(PreSubscription, self).run()
+
         print(toolopts.tool_opts.no_rhsm)
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
@@ -83,8 +84,9 @@ class SubscribeSystem(actions.Action):
         "PRE_SUBSCRIPTION",
     )
 
-    @actions._action_defaults_to_success
     def run(self):
+        super(SubscribeSystem, self).run()
+
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
             return

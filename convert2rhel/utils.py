@@ -730,6 +730,28 @@ def hide_secrets(
     return sanitized_list
 
 
+def format_sequence_as_message(sequence_of_items):
+    """
+    Format a sequence of items for display to the user.
+
+    :param sequence_of_items: Sequence of items which should be formatted for
+        a message to be printed to the user.
+    :type sequence_of_items: Sequence
+    :returns: Items formatted appropriately for end user output.
+    :rtype: str
+    """
+    if len(sequence_of_items) < 1:
+        message = ""
+    elif len(sequence_of_items) == 1:
+        message = sequence_of_items[0]
+    elif len(sequence_of_items) == 2:
+        message = " and ".join(sequence_of_items)
+    else:
+        message = ", ".join(sequence_of_items[:-1]) + ", and " + sequence_of_items[-1]
+
+    return message
+
+
 def flatten(dictionary, parent_key=False, separator="."):
     """Turn a nested dictionary into a flattened dictionary.
 

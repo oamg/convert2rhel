@@ -23,7 +23,7 @@ import pytest
 import six
 
 from convert2rhel import actions, systeminfo, utils
-from convert2rhel.actions import convert2rhel_latest
+from convert2rhel.actions.system_checks import convert2rhel_latest
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

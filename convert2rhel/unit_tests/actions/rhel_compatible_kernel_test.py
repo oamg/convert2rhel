@@ -23,7 +23,7 @@ import pytest
 import six
 
 from convert2rhel import actions, systeminfo, unit_tests
-from convert2rhel.actions import rhel_compatible_kernel
+from convert2rhel.actions.system_checks import rhel_compatible_kernel
 from convert2rhel.unit_tests.conftest import centos8
 from convert2rhel.utils import run_subprocess
 
@@ -68,7 +68,7 @@ def test_check_rhel_compatible_kernel_is_used(
     )
     Version = namedtuple("Version", ("major", "minor"))
     monkeypatch.setattr(
-        actions.rhel_compatible_kernel.system_info,
+        rhel_compatible_kernel.system_info,
         "version",
         value=Version(major=1, minor=0),
     )
@@ -88,8 +88,8 @@ def test_check_rhel_compatible_kernel_is_used(
                 '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
                 "4. Reboot the machine and if step 3 was not applied choose the kernel"
                 " installed in step 2 manually".format(
-                    actions.rhel_compatible_kernel.system_info.name,
-                    actions.rhel_compatible_kernel.system_info.version.major,
+                    rhel_compatible_kernel.system_info.name,
+                    rhel_compatible_kernel.system_info.version.major,
                 )
             ),
         )
@@ -109,7 +109,7 @@ def test_check_rhel_compatible_kernel_is_used(
 def test_bad_kernel_version(kernel_release, major_ver, exp_return, monkeypatch):
     Version = namedtuple("Version", ("major", "minor"))
     monkeypatch.setattr(
-        actions.rhel_compatible_kernel.system_info,
+        rhel_compatible_kernel.system_info,
         "version",
         value=Version(major=major_ver, minor=0),
     )
@@ -161,16 +161,16 @@ def test_bad_kernel_package_signature(
     get_pkg_fingerprint_mocked = mock.Mock(
         spec=rhel_compatible_kernel.get_pkg_fingerprint, return_value=kernel_pkg_fingerprint
     )
-    monkeypatch.setattr(actions.rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
+    monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
     get_installed_pkg_objects_mocked = mock.Mock(
         spec=rhel_compatible_kernel.get_installed_pkg_objects, return_value=[kernel_pkg]
     )
     monkeypatch.setattr(
-        actions.rhel_compatible_kernel,
+        rhel_compatible_kernel,
         "get_installed_pkg_objects",
         get_installed_pkg_objects_mocked,
     )
-    monkeypatch.setattr(actions.rhel_compatible_kernel, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
+    monkeypatch.setattr(rhel_compatible_kernel, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
     assert rhel_compatible_kernel._bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
         ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],
@@ -181,7 +181,7 @@ def test_bad_kernel_package_signature(
 @centos8
 def test_kernel_not_installed(pretend_os, caplog, monkeypatch):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(" ", 1))
-    monkeypatch.setattr(actions.rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
+    monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
     assert rhel_compatible_kernel._bad_kernel_package_signature("4.18.0-240.22.1.el8_3.x86_64")
     log_message = (
         "The booted kernel /boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64 is not owned by any installed package."

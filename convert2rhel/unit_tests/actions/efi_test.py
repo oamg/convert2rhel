@@ -23,7 +23,7 @@ import unittest
 from collections import namedtuple
 
 from convert2rhel import actions, grub, unit_tests
-from convert2rhel.actions import efi
+from convert2rhel.actions.system_checks import efi
 from convert2rhel.unit_tests import GetLoggerMocked
 
 
