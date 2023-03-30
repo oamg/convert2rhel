@@ -50,11 +50,10 @@ def summary(results, include_all_reports=False):
             * If one of the status has no corresponding logger function, we
                 should use just `info`
 
-        The order of the message is from the highest priority (FATAL) to the
+        The order of the message is from the highest priority (ERROR) to the
         lowest priority (WARNING).
 
         Message example's::
-            * (FATAL) SubscribeSystem.FATAL: Fatal error message
             * (ERROR) SubscribeSystem.ERROR: Error message
             * (SKIP) SubscribeSystem.SKIP: Skip message
             * (WARNING) SubscribeSystem.WARNING: Warning message
