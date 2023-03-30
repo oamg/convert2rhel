@@ -91,10 +91,10 @@ LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 #:        runs the Actions will set this.
 STATUS_CODE = {
     "SUCCESS": 0,
-    "WARNING": 300,
-    "SKIP": 450,
-    "OVERRIDABLE": 600,
-    "ERROR": 900,
+    "WARNING": 51,
+    "SKIP": 101,
+    "OVERRIDABLE": 152,
+    "ERROR": 202,
 }
 
 #: Maps status names back from an integer code.  Used for constructing log
