@@ -763,7 +763,7 @@ def flatten(dictionary, parent_key=False, separator="."):
 
 
 def write_json_object_to_file(path, data, mode=0o600):
-    """Write a JSOn object to a file in the system.
+    """Write a Json object to a file in the system.
 
     :param path: The path of the file to be written.
     :type path: str
