@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 class RemoveIwlax2xxFirmware(actions.Action):
     id = "REMOVE_IWLAX2XX_FIRMWARE"
 
-    @actions._action_defaults_to_success
     def run(self):
         """
         Resolve a yum transaction failure on OL8 related to the
@@ -45,7 +44,9 @@ class RemoveIwlax2xxFirmware(actions.Action):
 
         Related: https://bugzilla.redhat.com/show_bug.cgi?id=2078916
         """
-        logger.task("Convert: Resolve possible edge cases")
+        super(RemoveIwlax2xxFirmware, self).run()
+
+        logger.task("Convert: Resolve possible edge case")
         iwl7260_firmware = system_info.is_rpm_installed(name="iwl7260-firmware")
         iwlax2xx_firmware = system_info.is_rpm_installed(name="iwlax2xx-firmware")
 

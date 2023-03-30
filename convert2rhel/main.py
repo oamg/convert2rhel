@@ -75,14 +75,8 @@ def main():
         gather_system_info()
         prepare_system()
 
-        ### FIXME: This should be expected to either succeed or fail.  Need to look for the return
-        ### value and act upon it.
-        system_checks()
-
-        ### FIXME: After talking with mbocek, let's merge this in with the actions framework
-        pre_ponr_changes()
-
-        post_ponr_changes()
+        process_phase = ConversionPhase.PRE_PONR_CHANGES
+        pre_conversion_results = actions.run_actions()
 
         ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
 
@@ -95,17 +89,22 @@ def main():
 
         ### End calls that should be put into pre_ponr_changes(), rollback(), or post_ponr_changes()
 
-        # begin conversion process
-        process_phase = ConversionPhase.PRE_PONR_CHANGES
-        # pre_ponr_conversion()
-
         experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
         loggerinst.task("Conversion analysis report")
-        report.summary({}, include_all_reports=experimental_analysis)
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
 
         if experimental_analysis:
             # TODO: Include report before rollback
             rollback()
+
+        # Print a summary of the failures
+        # TODO: Might not be needed once we have the report implemented
+        pre_conversion_failures = actions.find_failed_actions(pre_conversion_results)
+        if pre_conversion_failures:
+            message = "The following actions which are required to convert" " have failed:\n  %s" % "\n  ".join(
+                pre_conversion_failures
+            )
+            loggerinst.critical(message)
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -117,6 +116,7 @@ def main():
         loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
+        ### FIXME: These definitely go into post_ponr_changes():
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_ponr_conversion()
 
@@ -224,12 +224,7 @@ def prepare_system():
     pkgmanager.clean_yum_metadata()
 
 
-def system_checks():
-    # check the system prior the conversion (possible inhibit)
-    pass
-
-
-def pre_ponr_changes():
+def post_ponr_changes():
     pass
 
 
