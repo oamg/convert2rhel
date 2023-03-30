@@ -25,7 +25,7 @@ import pytest
 import six
 
 from convert2rhel import actions, pkgmanager, unit_tests
-from convert2rhel.actions import is_loaded_kernel_latest
+from convert2rhel.actions.system_checks import is_loaded_kernel_latest
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
@@ -87,12 +87,12 @@ class TestIsLoadedKernelLatest:
     ):
         fake_reposdir_path = str(tmpdir)
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "get_hardcoded_repofiles_dir",
             value=lambda: fake_reposdir_path,
         )
 
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", True)
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -116,7 +116,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -170,7 +170,7 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", True)
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -193,7 +193,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -239,7 +239,7 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", True)
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -262,7 +262,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -282,12 +282,12 @@ class TestIsLoadedKernelLatest:
     ):
         fake_reposdir_path = str(tmpdir)
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "get_hardcoded_repofiles_dir",
             value=lambda: fake_reposdir_path,
         )
 
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", True)
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -311,7 +311,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -323,8 +323,8 @@ class TestIsLoadedKernelLatest:
     def test_is_loaded_kernel_latest_eus_system_no_connection(
         self, pretend_os, monkeypatch, tmpdir, caplog, is_loaded_kernel_latest_action
     ):
-        monkeypatch.setattr(actions.is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "has_internet_access", False)
+        monkeypatch.setattr(is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", False)
 
         is_loaded_kernel_latest_action.run()
         assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
@@ -389,7 +389,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -460,7 +460,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -546,11 +546,11 @@ class TestIsLoadedKernelLatest:
         # code.
         Version = namedtuple("Version", ("major", "minor"))
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest.system_info,
+            is_loaded_kernel_latest.system_info,
             "version",
             value=Version(major=major_ver, minor=99),
         )
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "id", "centos")
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "id", "centos")
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -572,7 +572,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )
@@ -591,11 +591,11 @@ class TestIsLoadedKernelLatest:
         # code.
         Version = namedtuple("Version", ("major", "minor"))
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest.system_info,
+            is_loaded_kernel_latest.system_info,
             "version",
             value=Version(major=8, minor=99),
         )
-        monkeypatch.setattr(actions.is_loaded_kernel_latest.system_info, "id", "centos")
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "id", "centos")
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -617,7 +617,7 @@ class TestIsLoadedKernelLatest:
             ),
         )
         monkeypatch.setattr(
-            actions.is_loaded_kernel_latest,
+            is_loaded_kernel_latest,
             "run_subprocess",
             value=run_subprocess_mocked,
         )

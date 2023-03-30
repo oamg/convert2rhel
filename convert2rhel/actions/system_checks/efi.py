@@ -30,6 +30,8 @@ class Efi(actions.Action):
 
     def run(self):
         """Inhibit the conversion when we are not able to handle UEFI."""
+        super(Efi, self).run()
+
         logger.task("Prepare: Check the firmware interface type (BIOS/UEFI)")
         if not grub.is_efi():
             logger.info("BIOS detected.")

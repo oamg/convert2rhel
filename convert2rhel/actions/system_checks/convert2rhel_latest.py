@@ -192,7 +192,6 @@ class Convert2rhelLatest(actions.Action):
                             % (installed_convert2rhel_version, latest_available_version[1])
                         ),
                     )
-
                     return
 
         logger.info("Latest available Convert2RHEL version is installed.")
