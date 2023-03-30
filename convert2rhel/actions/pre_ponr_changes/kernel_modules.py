@@ -194,9 +194,10 @@ class EnsureKernelModulesCompatibility(actions.Action):
         ]
         return unsupported_kmods_full_paths
 
-    @actions._action_defaults_to_success
     def run(self):
         """Ensure that the host kernel modules are compatible with RHEL."""
+        super(EnsureKernelModulesCompatibility, self).run()
+
         try:
             host_kmods = self._get_loaded_kmods()
             rhel_supported_kmods = self._get_rhel_supported_kmods()

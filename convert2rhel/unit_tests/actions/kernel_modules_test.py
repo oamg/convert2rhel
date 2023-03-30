@@ -21,7 +21,7 @@ import re
 import pytest
 import six
 
-from convert2rhel.actions import kernel_modules
+from convert2rhel.actions.pre_ponr_changes import kernel_modules
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import assert_actions_result, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8

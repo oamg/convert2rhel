@@ -20,7 +20,7 @@ import pytest
 import six
 
 from convert2rhel import actions, unit_tests
-from convert2rhel.actions import tainted_kmods
+from convert2rhel.actions.system_checks import tainted_kmods
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -51,7 +51,7 @@ def tainted_kmods_action():
 def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmods_action):
     run_subprocess_mock = mock.Mock(return_value=command_return)
     monkeypatch.setattr(
-        actions.tainted_kmods,
+        tainted_kmods,
         "run_subprocess",
         value=run_subprocess_mock,
     )

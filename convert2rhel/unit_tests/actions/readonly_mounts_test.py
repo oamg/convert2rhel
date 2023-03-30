@@ -22,7 +22,7 @@ import unittest
 import six
 
 from convert2rhel import actions, unit_tests
-from convert2rhel.actions import readonly_mounts
+from convert2rhel.actions.system_checks import readonly_mounts
 from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
 
 
