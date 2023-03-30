@@ -307,14 +307,17 @@ def get_pkg_signature_with_cleanup(pkg_obj):
     Wrapper function for get_pkg_signature that will run as child and handle
     rpmdb termination.
 
-    .. warning::
-        This function will run as a child process for the main thread, the
-        reason for that is that this was the only way to make it behave and
-        respect the SIGINT signals when the user presses Ctrl + C (SIGINT) or
-        send a `kill -<number> <pid>` to the main process. The reason that this
-        is done this way is because of RPM installing a global signal handler
-        during some functions calls that is propagated to the main thread
-        instead of being released after the function execution is over.
+    .. important::
+        This function will run as a child process of the main process. We
+        need to do it this way is to make it respect the SIGINT signal
+        when the user presses Ctrl + C (SIGINT) or sends a
+        `kill -<number> <pid>` to the main process. The reason this is
+        necessary is that librpm installs a global signal handler during
+        some functions calls which is not removed once those functions
+        return.  When those functions are run in the convert2rhel process,
+        the signal handler causes convert2rhel to exit immediately if SIGINT
+        is sent.  Running librpm code in a child process means the signal
+        handler only applies to the child, not to the main convert2rhel process.
 
         Running the function in a child process does not change how the
         function itself works.
@@ -329,7 +332,7 @@ def get_pkg_signature_with_cleanup(pkg_obj):
     :rtype: str
     """
     with pkgmanager.rpm_db_lock(pkg_obj):
-        return get_pkg_fingerprint(pkg_obj)
+        return get_pkg_signature(pkg_obj)
 
 
 def get_pkg_signature(pkg_obj):
@@ -1029,7 +1032,7 @@ def get_total_packages_to_update(reposdir):
 def _get_packages_to_update_yum():
     """Use yum to get all the installed packages that have an update available.
 
-    .. warning::
+    .. important::
         This function is being executed in a child process so that yum does
         not handle signals like SIGINT without us knowing about it.
 

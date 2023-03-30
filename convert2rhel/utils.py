@@ -169,10 +169,6 @@ def run_as_child_process(func):
 
         queue = multiprocessing.Queue()
 
-        # TODO(r0x0d): I don't think that creating the process can cause an
-        # exception that we should handle here, only if we mess something with
-        # the process_args tuple, but that should be know during development
-        # time. In any case, check this later.
         kwargs.update({"func": func, "queue": queue})
         process = Process(target=inner_wrapper, args=args, kwargs=kwargs)
         try:
@@ -189,7 +185,7 @@ def run_as_child_process(func):
 
             if not queue.empty():
                 # We don't need to block the I/O as we are mostly done with
-                # the child process and no exceptions was raised, so we can
+                # the child process and no exception was raised, so we can
                 # instantly retrieve the item that was in the queue.
                 return queue.get(block=False)
 
@@ -303,7 +299,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         if print_output:
             loggerinst.info(line.rstrip("\n"))
 
-    # Call coomunicate() to wait for the process to terminate so that we can
+    # Call communicate() to wait for the process to terminate so that we can
     # get the return code.
     process.communicate()
 

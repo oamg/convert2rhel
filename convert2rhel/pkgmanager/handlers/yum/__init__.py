@@ -282,12 +282,12 @@ class YumTransactionHandler(TransactionHandlerBase):
         true, it means the transaction will not be executed, but rather verify
         everything and do an early return.
 
-        .. warning::
+        .. important::
             This function is being executed in a child process so we will be
             able to raise SIGINT or any other signal that is sent to the main
             process.
 
-            The function calls here does not affect the others subprocesses
+            The function calls here do not affect the others subprocess
             calls that are called after this function during the conversion,
             but, it does affect the signal handling while the user tries to
             send that signal while this function is executing.
