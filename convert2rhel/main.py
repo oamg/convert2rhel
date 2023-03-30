@@ -91,7 +91,7 @@ def main():
 
         experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
         loggerinst.task("Conversion analysis report")
-        report.summary({}, include_all_reports=experimental_analysis)
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
 
         if experimental_analysis:
             # TODO: Include report before rollback
