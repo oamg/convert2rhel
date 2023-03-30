@@ -46,3 +46,13 @@ link:
         tag+:
             - initramfs-and-vmlinuz-present
         test: pytest -svv -m initramfs_and_vmlinuz_present
+
+/log_lines_not_duplicated:
+    summary+: Logged lines are not duplicated
+    # TODO (danmyway) remove when the duplication of lines with multiple packages with different versions gets resolved
+    result: info
+    description+: |
+        Iterate over the log file and check that the lines are unique and not duplicated.
+    tag+:
+        - log-file
+    test: pytest -svv -m verify_logging_is_not_duplicated
