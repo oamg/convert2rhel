@@ -82,20 +82,19 @@ LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 #:      the option to ignore the check in a future run.
 #: :ERROR: the error caused convert2rhel to fail the conversion, but further
 #:      tests can be run.
-#: :FATAL: the error caused convert2rhel to stop immediately.
 #:
-#: .. warning:: Do not change the numeric value of these statuses once they
-#:      have been in a public release as external tools may be depending on
-#:      the value.
-#: .. warning:: Actions should not set a status to ``SKIP``.  The code which
-#:      runs the Actions will set this.
+#: .. warning::
+#:      * Do not change the numeric value of these statuses once they
+#:        have been in a public release as external tools may be depending on
+#:        the value.
+#:      * Actions should not set a status to ``SKIP``.  The code which
+#:        runs the Actions will set this.
 STATUS_CODE = {
     "SUCCESS": 0,
     "WARNING": 300,
     "SKIP": 450,
     "OVERRIDABLE": 600,
     "ERROR": 900,
-    "FATAL": 1200,
 }
 
 #: Maps status names back from an integer code.  Used for constructing log
@@ -363,7 +362,7 @@ class Stage:
         :rtype: FinishedActions
         .. important:: Success is currently defined as an action whose status after
             running is WARNING or better (WARNING or SUCCESS) and
-            failure as worse than WARNING (OVERRIDABLE, ERROR, FATAL)
+            failure as worse than WARNING (OVERRIDABLE, ERROR)
         """
         logger.task("Prepare: %s" % self.task_header)
 
