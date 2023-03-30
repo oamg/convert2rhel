@@ -98,6 +98,10 @@ STATUS_CODE = {
     "FATAL": 1200,
 }
 
+#: Maps status names back from an integer code.  Used for constructing log
+#: messages and information for the user.
+_STATUS_NAME_FROM_CODE = dict((value, key) for key, value in STATUS_CODE.items())
+
 
 def _action_defaults_to_success(func):
     """
@@ -417,8 +421,8 @@ class Stage:
                 successes.append(action)
 
             if action.status > STATUS_CODE["WARNING"]:
-                ### FIXME: Probably some code in reports that can do this better
-                logger.error("%s has failed (%s): %s" % (action.id, action.status, action.message))
+                message = format_report_message(action.status, action.id, action.error_id, action.message)
+                logger.error(message)
                 failures.append(action)
                 failed_action_ids.add(action.id)
 
@@ -552,3 +556,42 @@ def find_failed_actions(results):
     failed_actions = [a[0] for a in results.items() if a[1]["status"] > STATUS_CODE["WARNING"]]
 
     return failed_actions
+
+
+def format_report_message(status_code, action_id, error_id, message):
+    """Helper function to format a message about each Action result.
+
+    :param status_code: The status code that will be used in the template.
+    :type status_code: int
+    :param action_id: Action id for the message
+    :type action_id: str
+    :param error_id: Error id associated with the action
+    :type error_id: str
+    :param message: The message that was produced in the action
+    :type message: str
+
+    :return: The formatted message that will be logged to the user.
+    :rtype: str
+    """
+    status_name = _STATUS_NAME_FROM_CODE[status_code]
+    template = "({STATUS}) {ACTION_ID}"
+    # `error_id` and `message` may not be present everytime, since it
+    # can be empty (either by mistake, or, intended), we only want to
+    # apply these fields if they are present, with a special mention to
+    # `message`.
+    if error_id:
+        template += ".{ERROR_ID}"
+
+    # Special case for `message` to not output empty message to the
+    # user without message.
+    if message:
+        template += ": {MESSAGE}"
+    else:
+        template += ": [No further information given]"
+
+    return template.format(
+        STATUS=status_name,
+        ACTION_ID=action_id,
+        ERROR_ID=error_id,
+        MESSAGE=message,
+    )
