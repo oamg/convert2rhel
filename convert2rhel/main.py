@@ -21,6 +21,7 @@ import os
 from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
+from convert2rhel.actions import report
 
 
 loggerinst = logging.getLogger(__name__)
@@ -98,7 +99,11 @@ def main():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         # pre_ponr_conversion()
 
-        if os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None):
+        experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
+        loggerinst.task("Conversion analysis report")
+        report.summary({}, include_all_reports=experimental_analysis)
+
+        if experimental_analysis:
             # TODO: Include report before rollback
             rollback()
 

@@ -28,12 +28,11 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, backup, cert, checks, grub
+from convert2rhel import backup, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 
 
 def mock_calls(class_or_module, method_name, mock_obj):
