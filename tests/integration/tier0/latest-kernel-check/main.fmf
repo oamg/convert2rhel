@@ -26,7 +26,7 @@ tag+:
     summary+: |
         Exclude defined in yum config
     description+: |
-        Verify, that the repoquery call succeeds with an `exclude` option present in the config.
+        Verify that the repoquery call succeeds with an `exclude` option present in the config.
         Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
         'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
     tag+:

@@ -1,5 +1,5 @@
 summary: |
-    Modified releasever
+    Modified `releasever` variable
 description: |
     Modify the releasever in multiple scenarios and verify the expected behavior.
 
@@ -13,7 +13,7 @@ tag+:
     summary+: |
         Releasever in /usr/share/convert2rhel/configs/
     description+: |
-        Verify, that modifying the releasever value in config files
+        Verify that modifying the releasever value in config files
         at `/usr/share/convert2rhel/configs/` will override the $releasever
         when calling the `yumdownloader` command.
     tag+:
@@ -25,7 +25,7 @@ tag+:
     summary+: |
         Set /etc/system-release to unsupported version
     description+: |
-        Verify, that running the utility with unsupported version inhibits the conversion.
+        Verify that running the utility with unsupported version inhibits the conversion.
         Set the releasever to unsupported version (e.g. x.1.1111)
     tag+:
         - releasever-unknown-release

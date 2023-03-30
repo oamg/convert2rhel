@@ -1,5 +1,5 @@
 summary: |
-    Handling os-release and system-release
+    Handle os-release and system-release
 description: |
     Verify that os-release is backed up and restored properly.
     The Satellite is used for all the test cases.
@@ -12,7 +12,7 @@ tag+:
 
 /os_release_restored:
     summary+: |
-        The os-release file restored during rollback
+        Restore the os-release file during rollback
     /related_environment_variable:
         description+: |
             Install subscription-manager and katello package from the Satellite.
@@ -24,7 +24,7 @@ tag+:
                 Restore os-release without CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
             description+: |
                 This case runs the conversion with no repositories available.
-                Verify, that this condition disables the package backup,
+                Verify that this condition disables the package backup,
                 convert2rhel warns the user and inhibits the conversion.
             tag+:
                 - no-envar
@@ -33,11 +33,11 @@ tag+:
 
         /backup_os_release_with_envar:
             summary+: |
-                Restored os-release with CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
+                Restore os-release with CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
             description+: |
                 This case runs the conversion with no repositories available
                 and "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" envar set.
-                Verify, that this condition disables the package backup,
+                Verify that this condition disables the package backup,
                 convert2rhel warns the user, but continues the conversion.
             tag+:
                 - with-envar
@@ -50,7 +50,7 @@ tag+:
         summary+: |
             Rollback caused by failed registration
         description+: |
-            Verify, that the os-release is restored, when the registration to the Satellite servers fails.
+            Verify that the os-release is restored, when the registration to the Satellite servers fails.
         tag+:
             - unsuccessful-satellite-registration
         test: |
@@ -63,7 +63,7 @@ tag+:
     summary+: |
         Removed system-release inhibits the conversion
     description+: |
-        Verify, that missing /etc/system-release (removed pre-conversion) inhibits the conversion.
+        Verify that missing /etc/system-release (removed pre-conversion) inhibits the conversion.
     tag+:
         - missing-system-release
     test: |

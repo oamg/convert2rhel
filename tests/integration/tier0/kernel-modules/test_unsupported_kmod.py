@@ -94,7 +94,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     shell(f"mv {ORIGIN_KMOD_LOCATION.as_posix()} {CUSTOM_KMOD_DIRECTORY.as_posix()}")
     shell("depmod")
     shell("modprobe bonding -v")
-    # Verify, that it is loaded
+    # Verify that it is loaded
     assert "bonding" in shell("cat /proc/modules").output
     # Remove the kmod and clean up
     assert shell("modprobe -r -v bonding").returncode == 0

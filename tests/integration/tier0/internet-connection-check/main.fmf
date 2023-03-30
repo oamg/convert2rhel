@@ -1,7 +1,7 @@
 summary: |
     Internet connection checks
 description: |
-    Verify, that internet connection check works as expected
+    Verify that internet connection check works as expected
     trying to reach 'https://static.redhat.com/test/rhel-networkmanager.txt'
 
 tier: 0
@@ -27,8 +27,8 @@ tag+:
     description+: |
         Modify the '/etc/dnsmasq.conf' and '/etc/resolv.conf' files
         so everything gets resolved to localhost.
-        Verify that convert2rhel checks for internet connection
-        and notifies user, that there was a problem,
+        Verify that the internet connection check fails and
+        the user is notified, that there was a problem,
         therefore the connection seems to be unavailable.
     tag+:
         - unavailable-connection

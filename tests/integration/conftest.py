@@ -320,5 +320,12 @@ def required_packages(shell):
         for package in required_packages:
             print(f"\nPREPARE: Installing required {package}")
             assert shell(f"yum install -y {package}")
+
+        yield
+
+        for package in required_packages:
+            print(f"\nCLEANUP: Removing previously installed required {package}")
+            assert shell(f"yum remove -y *{package}*")
+
     except KeyError:
         raise

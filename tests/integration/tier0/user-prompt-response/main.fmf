@@ -11,7 +11,7 @@ tag+:
 
 /empty_username_and_password:
     summary+: |
-        Pass empty string for username and password
+        Pass an empty string for username and password
     description+: |
         Verify that the user is enforced to input a value and passing an empty string
         loops back to the user prompt.
@@ -23,10 +23,10 @@ tag+:
       pytest -svv -m test_empty_username_and_password
 
 /auto_attach_pool:
-    summary+: |
+    summary: |
         One subscription attached auto-selected
     description+: |
-        Verify, that passing username and password with just one subscription attached
+        Verify that passing username and password with just one subscription attached
         automatically selects the subscription.
     tag+:
         - auto-attach-pool

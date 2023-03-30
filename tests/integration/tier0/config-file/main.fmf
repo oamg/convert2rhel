@@ -1,7 +1,7 @@
 summary: |
     Config file
 description: |
-    Verify, that different methods of using a config file work as expected.
+    Verify that different methods of using a config file work as expected.
 
 #TODO(danmyway) create test case with config file with insufficient permissions.
 
@@ -38,7 +38,7 @@ tag+:
     summary+: |
         CLI provided values preferred
     description+: |
-        Verify, that the values provided to the CLI command are preferred
+        Verify that the values provided to the CLI command are preferred
         to those provided in the config file.
     tag+:
         - config-cli-priority
@@ -49,7 +49,7 @@ tag+:
     summary+: |
         Password file preferred
     description+: |
-        Verify, that passing the password through the password file
+        Verify that passing the password through the password file
         is preferred to the config file.
     tag+:
         - config-password-file-priority
@@ -60,7 +60,7 @@ tag+:
     summary+: |
         Activation key preferred to password
     description+: |
-        Verify, that with multiple config files each providing different method
+        Verify that with multiple config files each providing different method
         (password and activation key) the activation key is preferred.
     tag+:
         - config-standard-paths-priority-diff-methods

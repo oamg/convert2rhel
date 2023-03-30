@@ -66,7 +66,7 @@ tag+:
         summary+: |
             Latest or newer version of convert2rhel
         description+: |
-            Verify, that running the latest or newer than latest version does not inhibit the conversion.
+            Verify that running the latest or newer than latest version does not inhibit the conversion.
         tag+:
             - version-latest-or-newer
         test: |
@@ -76,7 +76,7 @@ tag+:
         summary+: |
             Older convert2rhel version without envar
         description+: |
-            Verify, that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
+            Verify that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
             environment variable in place, does inhibit the conversion.
         tag+:
             - version-older-no-envar
@@ -87,7 +87,7 @@ tag+:
         summary+: |
             Older convert2rhel version with envar
         description+: |
-            Verify, that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
+            Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
             environment variable in place, does inhibit the conversion.
         tag+:
             - version-older-with-envar
@@ -99,7 +99,7 @@ tag+:
     summary+: |
         Clean yum cache
     description+: |
-        Verify, that the yum cache clean is performed before any other check.
+        Verify that the yum cache clean is performed before any other check.
     tag+:
         - clean-cache
     test: |
@@ -110,7 +110,7 @@ tag+:
     summary+: |
         RHSM error not logged
     description+: |
-        Verify, that the OSError raised by RHSM certificate being removed
+        Verify that the OSError raised by RHSM certificate being removed
         is not being logged in cases the certificate is not installed yet.
     tag+:
         - log-rhsm-error
@@ -122,7 +122,7 @@ tag+:
     summary+: |
         Deprecated variant message
     description+: |
-        Verify, that the message about deprecated --variant option is printed.
+        Verify that the message about deprecated --variant option is printed.
     tag+:
         - variant-message
     test: |
@@ -136,7 +136,7 @@ tag+:
         summary+: |
             Data collection acknowledgement
         description+: |
-            Verify, that the user is asked to acknowledge the data collection.
+            Verify that the user is asked to acknowledge the data collection.
         tag+:
             - data-collection-acknowledgement
         test: |
@@ -146,7 +146,7 @@ tag+:
         summary+: |
             Disabled data collection.
         description+: |
-            Verify, that disabling the data collection inhibits the conversion.
+            Verify that disabling the data collection inhibits the conversion.
             The convert2rhel.facts file is not created.
         adjust+:
             - environment+:

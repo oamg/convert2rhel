@@ -5,8 +5,25 @@ import pytest
 from envparse import env
 
 
+@pytest.fixture(scope="function")
+def convert2rhel_repo(shell):
+    assert shell("rpm -qi subscription-manager").returncode == 0
+    # The following repository requires the redhat-uep.pem certificate. convert2rhel will try accessing the repo and
+    # by running convert2rhel twice makes sure that the rollback of the first run correctly reinstalled the certificate
+    # when installing subscription-manager-rhsm-certificates.
+    c2r_repo = "/etc/yum.repos.d/convert2rhel.repo"
+
+    assert shell(f"curl -o {c2r_repo} https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo").returncode == 0
+    assert os.path.exists(c2r_repo) is True
+
+    yield
+
+    assert shell(f"rm -f {c2r_repo}")
+    assert os.path.exists(c2r_repo) is False
+
+
 @pytest.mark.test_sub_man_rollback
-def test_sub_man_rollback(convert2rhel, shell, required_packages):
+def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_repo):
     """
     Verify that convert2rhel removes and backs up the original vendor subscription-manager packages, including
     python3-syspurpose and python3-cloud-what which are also built out of the subscription-manager SRPM.
@@ -23,17 +40,6 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages):
       back during the rollback and that lead to the $releasever variable being undefined, ultimately causing a traceback
       when using the DNF python API (https://issues.redhat.com/browse/RHELC-762)
     """
-    assert shell("rpm -qi subscription-manager").returncode == 0
-    # The following repository requires the redhat-uep.pem certificate. convert2rhel will try accessing the repo and
-    # by running convert2rhel twice makes sure that the rollback of the first run correctly reinstalled the certificate
-    # when installing subscription-manager-rhsm-certificates.
-    assert (
-        shell(
-            "curl -o /etc/yum.repos.d/convert2rhel.repo https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo"
-        ).returncode
-        == 0
-    )
-    assert os.path.exists("/etc/yum.repos.d/convert2rhel.repo") is True
 
     for run in range(2):
         with convert2rhel(

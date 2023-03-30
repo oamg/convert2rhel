@@ -82,8 +82,8 @@ def teardown_custom_repositories(shell):
 @pytest.mark.test_custom_valid_repo_provided
 def test_good_conversion_without_rhsm(shell, convert2rhel):
     """
-    Verify, that --enablerepo is not skipped when subscription-manager is disabled.
-    Verify, that the passed repositories are accessible.
+    Verify that --enablerepo is not skipped when subscription-manager is disabled.
+    Verify that the passed repositories are accessible.
     """
     prepare_custom_repository(shell)
 
@@ -101,7 +101,7 @@ def test_good_conversion_without_rhsm(shell, convert2rhel):
 @pytest.mark.test_custom_invalid_repo_provided
 def test_bad_conversion_without_rhsm(shell, convert2rhel):
     """
-    Verify, that --enablerepo is not skipped when subscription-manager is disabled.
+    Verify that --enablerepo is not skipped when subscription-manager is disabled.
     Verify the conversion will inhibit with invalid repository passed.
     Make sure that after failed repo check there is a kernel installed.
     """
