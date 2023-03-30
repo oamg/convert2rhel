@@ -199,7 +199,7 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
     ("argv", "content", "output", "message"),
     (
         (
-            mock_cli_arguments([""]),
+            mock_cli_arguments([]),
             "[subscription_manager]\npassword=conf_pass",
             {"password": "conf_pass", "activation_key": None},
             None,

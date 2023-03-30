@@ -20,4 +20,18 @@ from convert2rhel import toolopts
 
 def get_parser():
     """Return OptionParser instance used by manpage generator."""
-    return toolopts.CLI()._parser
+    parser = toolopts.CLI()._parser
+
+    # Description taken out of our Confluence page.
+    parser.description = (
+        "The Convert2RHEL utility automates converting Red Hat Enterprise Linux "
+        "derivative distributions to Red Hat Enterprise Linux. "
+        "The whole conversion procedure is performed on the running RHEL derivative OS "
+        "installation and a restart is needed at the end of the conversion to "
+        "boot into the RHEL kernel. The utility replaces the original OS packages "
+        "with the RHEL ones. Available are conversions of CentOS Linux 6/7/8, "
+        "Oracle Linux 6/7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
+        "to the respective major version of RHEL.".strip()
+    )
+    parser.usage = None
+    return parser
