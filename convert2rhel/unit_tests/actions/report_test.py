@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 
-from convert2rhel.actions import report
+from convert2rhel.actions import STATUS_CODE, report
 
 
 @pytest.mark.parametrize(
@@ -26,34 +26,42 @@ from convert2rhel.actions import report
         # Test that all messages are being used with the `include_all_reports`
         # parameter.
         (
-            {"PreSubscription": {"status": 0, "error_id": None, "message": "All good!"}},
+            {"PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": "All good!"}},
             True,
             ["(SUCCESS) PreSubscription: All good!"],
         ),
         (
-            {"PreSubscription": {"status": 0, "error_id": None, "message": None}},
+            {"PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": None}},
             True,
             ["(SUCCESS) PreSubscription: [No further information given]"],
         ),
         (
             {
-                "PreSubscription": {"status": 0, "error_id": None, "message": "All good!"},
-                "PreSubscription2": {"status": 300, "error_id": "SOME_WARNING", "message": "WARNING MESSAGE"},
+                "PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": "All good!"},
+                "PreSubscription2": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "SOME_WARNING",
+                    "message": "WARNING MESSAGE",
+                },
             },
             True,
             ["(SUCCESS) PreSubscription: All good!", "(WARNING) PreSubscription2.SOME_WARNING: WARNING MESSAGE"],
         ),
-        # Test that messages that are bellow WARNING (300) will not appear in
+        # Test that messages that are below WARNING will not appear in
         # the logs.
         (
-            {"PreSubscription": {"status": 0, "error_id": None, "message": None}},
+            {"PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": None}},
             False,
             ["No problems detected during the analysis!"],
         ),
         (
             {
-                "PreSubscription": {"status": 0, "error_id": None, "message": None},
-                "PreSubscription2": {"status": 300, "error_id": "SOME_WARNING", "message": "WARNING MESSAGE"},
+                "PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": None},
+                "PreSubscription2": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "SOME_WARNING",
+                    "message": "WARNING MESSAGE",
+                },
             },
             False,
             ["(WARNING) PreSubscription2.SOME_WARNING: WARNING MESSAGE"],
@@ -61,8 +69,12 @@ from convert2rhel.actions import report
         # Test all messages are displayed, WARNING and higher
         (
             {
-                "PreSubscription1": {"status": 300, "error_id": "SOME_WARNING", "message": "WARNING MESSAGE"},
-                "PreSubscription2": {"status": 450, "error_id": "SKIPPED", "message": "SKIP MESSAGE"},
+                "PreSubscription1": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "SOME_WARNING",
+                    "message": "WARNING MESSAGE",
+                },
+                "PreSubscription2": {"status": STATUS_CODE["SKIP"], "error_id": "SKIPPED", "message": "SKIP MESSAGE"},
             },
             False,
             [
@@ -72,10 +84,18 @@ from convert2rhel.actions import report
         ),
         (
             {
-                "WarningAction": {"status": 300, "error_id": "WARNING", "message": "WARNING MESSAGE"},
-                "SkipAction": {"status": 450, "error_id": "SKIP", "message": "SKIP MESSAGE"},
-                "OverridableAction": {"status": 600, "error_id": "OVERRIDABLE", "message": "OVERRIDABLE MESSAGE"},
-                "ErrorAction": {"status": 900, "error_id": "ERROR", "message": "ERROR MESSAGE"},
+                "WarningAction": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "WARNING",
+                    "message": "WARNING MESSAGE",
+                },
+                "SkipAction": {"status": STATUS_CODE["SKIP"], "error_id": "SKIP", "message": "SKIP MESSAGE"},
+                "OverridableAction": {
+                    "status": STATUS_CODE["OVERRIDABLE"],
+                    "error_id": "OVERRIDABLE",
+                    "message": "OVERRIDABLE MESSAGE",
+                },
+                "ErrorAction": {"status": STATUS_CODE["ERROR"], "error_id": "ERROR", "message": "ERROR MESSAGE"},
             },
             False,
             [
@@ -100,8 +120,12 @@ def test_summary(results, expected_results, include_all_reports, caplog):
         # Test all messages are displayed, WARNING and higher
         (
             {
-                "PreSubscription1": {"status": 300, "error_id": "SOME_WARNING", "message": "WARNING MESSAGE"},
-                "PreSubscription2": {"status": 450, "error_id": "SKIPPED", "message": "SKIP MESSAGE"},
+                "PreSubscription1": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "SOME_WARNING",
+                    "message": "WARNING MESSAGE",
+                },
+                "PreSubscription2": {"status": STATUS_CODE["SKIP"], "error_id": "SKIPPED", "message": "SKIP MESSAGE"},
             },
             False,
             [
@@ -111,10 +135,18 @@ def test_summary(results, expected_results, include_all_reports, caplog):
         ),
         (
             {
-                "WarningAction": {"status": 300, "error_id": "WARNING", "message": "WARNING MESSAGE"},
-                "SkipAction": {"status": 450, "error_id": "SKIP", "message": "SKIP MESSAGE"},
-                "OverridableAction": {"status": 600, "error_id": "OVERRIDABLE", "message": "OVERRIDABLE MESSAGE"},
-                "ErrorAction": {"status": 900, "error_id": "ERROR", "message": "ERROR MESSAGE"},
+                "WarningAction": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "WARNING",
+                    "message": "WARNING MESSAGE",
+                },
+                "SkipAction": {"status": STATUS_CODE["SKIP"], "error_id": "SKIP", "message": "SKIP MESSAGE"},
+                "OverridableAction": {
+                    "status": STATUS_CODE["OVERRIDABLE"],
+                    "error_id": "OVERRIDABLE",
+                    "message": "OVERRIDABLE MESSAGE",
+                },
+                "ErrorAction": {"status": STATUS_CODE["ERROR"], "error_id": "ERROR", "message": "ERROR MESSAGE"},
             },
             False,
             [
@@ -127,11 +159,19 @@ def test_summary(results, expected_results, include_all_reports, caplog):
         # Message order with `include_all_reports` set to True.
         (
             {
-                "PreSubscription": {"status": 0, "error_id": None, "message": "All good!"},
-                "WarningAction": {"status": 300, "error_id": "WARNING", "message": "WARNING MESSAGE"},
-                "SkipAction": {"status": 450, "error_id": "SKIP", "message": "SKIP MESSAGE"},
-                "OverridableAction": {"status": 600, "error_id": "OVERRIDABLE", "message": "OVERRIDABLE MESSAGE"},
-                "ErrorAction": {"status": 900, "error_id": "ERROR", "message": "ERROR MESSAGE"},
+                "PreSubscription": {"status": STATUS_CODE["SUCCESS"], "error_id": None, "message": "All good!"},
+                "WarningAction": {
+                    "status": STATUS_CODE["WARNING"],
+                    "error_id": "WARNING",
+                    "message": "WARNING MESSAGE",
+                },
+                "SkipAction": {"status": STATUS_CODE["SKIP"], "error_id": "SKIP", "message": "SKIP MESSAGE"},
+                "OverridableAction": {
+                    "status": STATUS_CODE["OVERRIDABLE"],
+                    "error_id": "OVERRIDABLE",
+                    "message": "OVERRIDABLE MESSAGE",
+                },
+                "ErrorAction": {"status": STATUS_CODE["ERROR"], "error_id": "ERROR", "message": "ERROR MESSAGE"},
             },
             True,
             [
