@@ -70,7 +70,15 @@ BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 # Code taken from https://stackoverflow.com/a/63773140
 class Process(multiprocessing.Process):
-    """Overrides the implementation of the multiprocessing.Process class."""
+    """Overrides the implementation of the multiprocessing.Process class.
+
+    This class is being overriden to be able to catch all type of exceptions in
+    order to not interrupt the conversion if it is not intended to. The
+    original behaviour from `multiprocess.Process` is that the code running
+    inside the child process will handle the exceptions, so in our case, if we
+    raise SystemExit because we are using `logger.critical`, we wouldn't have a
+    chance to catch that and enter the rollback.
+    """
 
     def __init__(self, *args, **kwargs):
         """Default constructor for the class"""
