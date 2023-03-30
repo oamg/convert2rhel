@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 _STATUS_NAME_FROM_CODE = dict((value, key) for key, value in actions.STATUS_CODE.items())
 
+
 def _format_report_message(template, status_name, action_id, error_id, message):
     """Helper function to format the report message.
 

@@ -20,8 +20,6 @@ import pytest
 from convert2rhel.actions import report
 
 
-
-
 @pytest.mark.parametrize(
     ("results", "include_all_reports", "expected_results"),
     (
