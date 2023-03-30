@@ -23,24 +23,7 @@ from convert2rhel.actions import STATUS_CODE
 logger = logging.getLogger(__name__)
 
 
-def _dictionary_value_lookup(dictionary=None, look_for=None):
-    """Return the key associated with the value.
-
-    .. important:: This function will not do a depth search for the dictionary,
-        it is meant to be used with dictionaries of one level.
-
-    :param dictionary: The dictionary to be used in the revese search.
-    :type dictionary: Mapping
-    :param look_for: The value to be used in the revese search.
-    :type look_for: Any
-
-    :return: The expected key inside the dictionary
-    :rtype: str | None
-    """
-    for key, value in dictionary.items():
-        if value == look_for:
-            return key
-
+_STATUS_NAME_FROM_CODE = dict((value, key) for key, value in actions.STATUS_CODE.items())
 
 def _format_report_message(template, status_name, action_id, error_id, message):
     """Helper function to format the report message.
@@ -139,7 +122,7 @@ def summary(results, include_all_reports=False):
     template = "({STATUS}) {ACTION_ID}"
 
     for action_id, result in results:
-        status_name = _dictionary_value_lookup(dictionary=STATUS_CODE, look_for=result["status"])
+        status_name = _STATUS_NAME_FROM_CODE[result["status"]]
         message = _format_report_message(template, status_name, action_id, result["error_id"], result["message"])
 
         if include_all_reports:
@@ -149,7 +132,7 @@ def summary(results, include_all_reports=False):
             has_report_message = True
             logger.info(message)
 
-    # If there is no warning or higher sent to the user, then we just give a
+    # If there is no other message sent to the user, then we just give a
     # happy message to them.
     if not has_report_message:
         logger.info("No problems detected during the analysis!")

@@ -20,11 +20,6 @@ import pytest
 from convert2rhel.actions import report
 
 
-@pytest.mark.parametrize(
-    ("dictionary", "look_for", "expected"), (({"zero": 0}, 0, "zero"), ({"zero": 0, "one": 1}, 0, "zero"))
-)
-def test_dictionary_value_lookup(dictionary, look_for, expected):
-    assert report._dictionary_value_lookup(dictionary, look_for) == expected
 
 
 @pytest.mark.parametrize(
