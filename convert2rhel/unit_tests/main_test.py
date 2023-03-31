@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import logging
 import os
 import unittest
 
@@ -233,7 +233,7 @@ def test_main(monkeypatch):
     backup_varsdir_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     run_actions_mock = mock.Mock()
-    find_failed_actions_mock = mock.Mock(return_value=[])
+    find_actions_of_severity_mock = mock.Mock(return_value=[])
     clear_versionlock_mock = mock.Mock()
     report_summary_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
@@ -261,7 +261,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
     monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(actions, "find_failed_actions", find_failed_actions_mock)
+    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
     monkeypatch.setattr(report, "summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
@@ -286,7 +286,7 @@ def test_main(monkeypatch):
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
-    assert find_failed_actions_mock.call_count == 1
+    assert find_actions_of_severity_mock.call_count == 1
     assert run_actions_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert report_summary_mock.call_count == 1
@@ -324,7 +324,73 @@ def test_main_rollback_post_cli_phase(monkeypatch, caplog):
     assert "No changes were made to the system." in caplog.records[-1].message
 
 
-def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
+def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
+    require_root_mock = mock.Mock()
+    initialize_logger_mock = mock.Mock()
+    toolopts_cli_mock = mock.Mock()
+    show_eula_mock = mock.Mock()
+    print_data_collection_mock = mock.Mock()
+    resolve_system_info_mock = mock.Mock()
+    print_system_information_mock = mock.Mock()
+    collect_early_data_mock = mock.Mock()
+    clean_yum_metadata_mock = mock.Mock()
+    run_actions_mock = mock.Mock()
+    report_summary_mock = mock.Mock()
+    system_release_file_mock = mock.Mock()
+    os_release_file_mock = mock.Mock()
+    backup_yum_repos_mock = mock.Mock()
+    backup_varsdir_mock = mock.Mock()
+    clear_versionlock_mock = mock.Mock()
+    find_actions_of_severity_mock = mock.Mock()
+
+    # Mock the rollback calls
+    finish_collection_mock = mock.Mock()
+    rollback_changes_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(main, "show_eula", show_eula_mock)
+    monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
+    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
+    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+    monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
+    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+    monkeypatch.setattr(report, "summary", report_summary_mock)
+    monkeypatch.setattr(redhatrelease.system_release_file, "backup", system_release_file_mock)
+    monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
+    monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
+    monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
+    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
+    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+    monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
+
+    assert main.main() == 1
+    assert require_root_mock.call_count == 1
+    assert initialize_logger_mock.call_count == 1
+    assert toolopts_cli_mock.call_count == 1
+    assert show_eula_mock.call_count == 1
+    assert print_data_collection_mock.call_count == 1
+    assert resolve_system_info_mock.call_count == 1
+    assert collect_early_data_mock.call_count == 1
+    assert clean_yum_metadata_mock.call_count == 1
+    assert run_actions_mock.call_count == 1
+    assert report_summary_mock.call_count == 1
+    assert find_actions_of_severity_mock.call_count == 1
+    assert system_release_file_mock.call_count == 1
+    assert os_release_file_mock.call_count == 1
+    assert backup_yum_repos_mock.call_count == 1
+    assert backup_varsdir_mock.call_count == 1
+    assert clear_versionlock_mock.call_count == 1
+    assert finish_collection_mock.call_count == 1
+    assert rollback_changes_mock.call_count == 1
+    assert caplog.records[-2].message == "Conversion failed."
+    assert caplog.records[-2].levelname == "CRITICAL"
+
+
+def test_main_rollback_analyze_exit_phase(monkeypatch):
     require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
@@ -339,6 +405,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     os_release_file_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     backup_varsdir_mock = mock.Mock()
+    report_summary_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
 
     # Mock the rollback calls
@@ -360,10 +427,13 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
+    monkeypatch.setattr(report, "summary", report_summary_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
 
-    assert main.main() == 1
+    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
+
+    assert main.main() == 0
     assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
@@ -377,6 +447,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch):
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
+    assert report_summary_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert rollback_changes_mock.call_count == 1
@@ -397,7 +468,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     os_release_file_mock = mock.Mock()
     backup_yum_repos_mock = mock.Mock()
     backup_varsdir_mock = mock.Mock()
-    find_failed_actions_mock = mock.Mock(return_value=[])
+    find_actions_of_severity_mock = mock.Mock(return_value=[])
     report_summary_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
@@ -422,7 +493,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(redhatrelease.os_release_file, "backup", os_release_file_mock)
     monkeypatch.setattr(repo, "backup_yum_repos", backup_yum_repos_mock)
     monkeypatch.setattr(repo, "backup_varsdir", backup_varsdir_mock)
-    monkeypatch.setattr(actions, "find_failed_actions", find_failed_actions_mock)
+    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
     monkeypatch.setattr(report, "summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
@@ -443,7 +514,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     assert os_release_file_mock.call_count == 1
     assert backup_yum_repos_mock.call_count == 1
     assert backup_varsdir_mock.call_count == 1
-    assert find_failed_actions_mock.call_count == 1
+    assert find_actions_of_severity_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert report_summary_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
