@@ -7,7 +7,7 @@ class ATest(actions.Action):
 
     def run(self):
         super(ATest, self).run()
-        pass
+        return
 
 
 class BTest(actions.Action):

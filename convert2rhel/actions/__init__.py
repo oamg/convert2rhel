@@ -27,22 +27,12 @@ import pkgutil
 import re
 import traceback
 
-from functools import cmp_to_key, wraps
+from functools import wraps
 
 import six
 
-from convert2rhel import grub, pkgmanager, utils
-from convert2rhel.pkghandler import (
-    call_yum_cmd,
-    compare_package_versions,
-    get_installed_pkg_objects,
-    get_pkg_fingerprint,
-    get_total_packages_to_update,
-)
-from convert2rhel.repo import get_hardcoded_repofiles_dir
-from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import ask_to_continue, format_sequence_as_message, get_file_content, run_subprocess
+from convert2rhel import utils
+from convert2rhel.utils import format_sequence_as_message
 
 
 logger = logging.getLogger(__name__)

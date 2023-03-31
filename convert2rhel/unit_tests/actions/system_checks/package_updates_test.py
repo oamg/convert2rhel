@@ -21,7 +21,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager
+from convert2rhel import pkgmanager
 from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8, oracle8
@@ -68,7 +68,6 @@ def test_check_package_updates(pretend_os, packages, exception, expected, monkey
 def test_check_package_updates_with_repoerror(monkeypatch, caplog, package_updates_action):
     get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError)
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
-    monkeypatch.setattr(package_updates, "ask_to_continue", value=lambda: mock.Mock())
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
 
     package_updates_action.run()
