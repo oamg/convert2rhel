@@ -25,7 +25,7 @@ import six
 
 from convert2rhel import grub, utils
 from convert2rhel.unit_tests import run_subprocess_side_effect
-from convert2rhel.unit_tests.actions.efi_test import EFIBootInfoMocked
+from convert2rhel.unit_tests.actions.system_checks.efi_test import EFIBootInfoMocked
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
