@@ -24,52 +24,7 @@ from collections import namedtuple
 
 from convert2rhel import actions, grub, unit_tests
 from convert2rhel.actions.system_checks import efi
-from convert2rhel.unit_tests import GetLoggerMocked
-
-
-class EFIBootInfoMocked:
-    def __init__(
-        self,
-        current_bootnum="0001",
-        next_boot=None,
-        boot_order=("0001", "0002"),
-        entries=None,
-        exception=None,
-    ):
-        self.current_bootnum = current_bootnum
-        self.next_boot = next_boot
-        self.boot_order = boot_order
-        self.entries = entries
-        self.set_default_efi_entries()
-        self._exception = exception
-
-    def __call__(self):
-        """Tested functions call existing object instead of creating one.
-        The object is expected to be instantiated already when mocking
-        so tested functions are not creating new object but are calling already
-        the created one. From the point of the tested code, the behaviour is
-        same now.
-        """
-        if not self._exception:
-            return self
-        raise self._exception  # pylint: disable=raising-bad-type
-
-    def set_default_efi_entries(self):
-        if not self.entries:
-            self.entries = {
-                "0001": grub.EFIBootLoader(
-                    boot_number="0001",
-                    label="Centos Linux",
-                    active=True,
-                    efi_bin_source=r"HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)",
-                ),
-                "0002": grub.EFIBootLoader(
-                    boot_number="0002",
-                    label="Foo label",
-                    active=True,
-                    efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
-                ),
-            }
+from convert2rhel.unit_tests import EFIBootInfoMocked, GetLoggerMocked
 
 
 def _gen_version(major, minor):
