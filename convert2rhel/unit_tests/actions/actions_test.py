@@ -770,54 +770,24 @@ class TestRunActions:
 
 
 class TestFindFailedActions:
+    test_results = {
+        "BAD": dict(status=STATUS_CODE["ERROR"], error_id="ERROR", message="Explosion"),
+        "BAD3": dict(status=STATUS_CODE["OVERRIDABLE"], error_id="OVERRIDABLE", message="Explosion"),
+        "BAD4": dict(status=STATUS_CODE["SKIP"], error_id="SKIP", message="Explosion"),
+        "GOOD": dict(status=STATUS_CODE["WARNING"], error_id="WARN", message="Danger"),
+        "GOOD2": dict(status=STATUS_CODE["SUCCESS"], error_id="", message="No Error here"),
+    }
+
     @pytest.mark.parametrize(
-        ("results", "failed"),
+        ("severity", "expected_ids"),
         (
-            # There are no failed actions in these so no results should be returned
-            (
-                {},
-                [],
-            ),
-            (
-                {
-                    "TEST": dict(status=STATUS_CODE["SUCCESS"], error_id="", message=""),
-                },
-                [],
-            ),
-            (
-                {
-                    "GOOD": dict(status=STATUS_CODE["SUCCESS"], error_id="", message=""),
-                    "GOOD2": dict(status=STATUS_CODE["SUCCESS"], error_id="TWO", message="Nothing to see"),
-                },
-                [],
-            ),
-            (
-                {
-                    "GOOD": dict(status=STATUS_CODE["WARNING"], error_id="AWARN", message="Danger"),
-                },
-                [],
-            ),
-            # Single failed action to make sure we can find failures at all.
-            (
-                {
-                    "BAD": dict(status=STATUS_CODE["ERROR"], error_id="ERROR", message="Explosion"),
-                },
-                ["BAD"],
-            ),
-            # Mix of every type of failure and success that we list in status_code
-            # to make sure we find evey type of failure and omit all types of
-            # successes.
-            (
-                {
-                    "BAD": dict(status=STATUS_CODE["ERROR"], error_id="ERROR", message="Explosion"),
-                    "BAD3": dict(status=STATUS_CODE["OVERRIDABLE"], error_id="OVERRIDABLE", message="Explosion"),
-                    "BAD4": dict(status=STATUS_CODE["SKIP"], error_id="SKIP", message="Explosion"),
-                    "GOOD": dict(status=STATUS_CODE["WARNING"], error_id="WARN", message="Danger"),
-                    "GOOD2": dict(status=STATUS_CODE["SUCCESS"], error_id="", message="No Error here"),
-                },
-                ["BAD", "BAD3", "BAD4"],
-            ),
+            ("SUCCESS", ["BAD", "BAD3", "BAD4", "GOOD", "GOOD2"]),
+            ("WARNING", ["BAD", "BAD3", "BAD4", "GOOD"]),
+            ("SKIP", ["BAD", "BAD3", "BAD4"]),
+            ("OVERRIDABLE", ["BAD", "BAD3"]),
+            ("ERROR", ["BAD"]),
         ),
     )
-    def test_find_failed_actions(self, results, failed):
-        assert sorted(actions.find_failed_actions(results)) == sorted(failed)
+    def test_find_actions_of_severity(self, severity, expected_ids):
+        found_action_ids = sorted(a[0] for a in actions.find_actions_of_severity(self.test_results, severity))
+        assert sorted(found_action_ids) == sorted(expected_ids)
