@@ -544,12 +544,12 @@ def run_actions():
 
 def find_actions_of_severity(results, severity):
     """
-    Filter results from :func:`run_actions` to include only results of ``severity`` or worse.
+    Filter results from :func:`run_actions` to include only results of ``severity`` or higher.
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
     :param severity: The name of a ``STATUS_CODE`` for the severity to filter to.
-    :returns: List of actions which are at ``severity`` or worse result. Empty list
+    :returns: List of actions which are at ``severity`` or higher result. Empty list
         if there were no failures.
     :rtype: Sequence
 
