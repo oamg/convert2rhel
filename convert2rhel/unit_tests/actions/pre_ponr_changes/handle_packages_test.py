@@ -19,7 +19,7 @@ import pytest
 import six
 
 from convert2rhel import actions, pkghandler, unit_tests
-from convert2rhel.actions import handle_packages
+from convert2rhel.actions.pre_ponr_changes import handle_packages
 from convert2rhel.systeminfo import system_info
 
 
