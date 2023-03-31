@@ -27,12 +27,19 @@ from convert2rhel.actions import report
 loggerinst = logging.getLogger(__name__)
 
 
+class _AnalyzeExit(Exception):
+    # Exception just to exit when Analyzing
+    pass
+
+
 class ConversionPhase(object):
     INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return
     PRE_PONR_CHANGES = 2
-    POST_PONR_CHANGES = 3
+    # Phase to exit the Analyze SubCommand early
+    ANALYZE_EXIT = 3
+    POST_PONR_CHANGES = 4
 
 
 def initialize_logger(log_name, log_dir):
@@ -94,17 +101,13 @@ def main():
         report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
 
         if experimental_analysis:
-            # TODO: Include report before rollback
-            rollback()
+            process_phase = ConversionPhase.ANALYZE_EXIT
+            raise _AnalyzeExit()
 
-        # Print a summary of the failures
-        # TODO: Might not be needed once we have the report implemented
-        pre_conversion_failures = actions.find_failed_actions(pre_conversion_results)
+        pre_conversion_failures = actions.find_actions_of_severity(pre_conversion_results, "SKIP")
         if pre_conversion_failures:
-            message = "The following actions which are required to convert" " have failed:\n  %s" % "\n  ".join(
-                pre_conversion_failures
-            )
-            loggerinst.critical(message)
+            # report.summary has already output more detailed information above
+            loggerinst.critical("Conversion failed.")
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -116,28 +119,8 @@ def main():
         loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
-        ### FIXME: These definitely go into post_ponr_changes():
         process_phase = ConversionPhase.POST_PONR_CHANGES
-        post_ponr_conversion()
-
-        loggerinst.task("Final: Show RPM files modified by the conversion")
-        systeminfo.system_info.modified_rpm_files_diff()
-
-        loggerinst.task("Final: Update GRUB2 configuration")
-        grub.update_grub_after_conversion()
-
-        loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-        utils.remove_tmp_dir()
-
-        loggerinst.task("Final: Check kernel boot files")
-        checks.check_kernel_boot_files()
-
-        breadcrumbs.breadcrumbs.finish_collection(success=True)
-
-        loggerinst.task("Final: Update RHSM custom facts")
-        subscription.update_rhsm_custom_facts()
-
-        loggerinst.info("\nConversion successful!\n")
+        post_ponr_changes()
 
         # restart system if required
         utils.restart_system()
@@ -145,9 +128,16 @@ def main():
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
-        utils.log_traceback(toolopts.tool_opts.debug)
-        no_changes_msg = "No changes were made to the system."
         breadcrumbs.breadcrumbs.finish_collection(success=False)
+
+        # ANALYZE_EXIT is an expected way of exiting.  So we don't want to
+        # log a stacktrace or any other handling that is error related.
+        if process_phase == ConversionPhase.ANALYZE_EXIT:
+            rollback_changes()
+            return 0
+
+        no_changes_msg = "No changes were made to the system."
+        utils.log_traceback(toolopts.tool_opts.debug)
 
         if is_help_msg_exit(process_phase, err):
             return 0
@@ -225,19 +215,27 @@ def prepare_system():
 
 
 def post_ponr_changes():
-    pass
+    loggerinst.info("Starting Conversion")
+    post_ponr_conversion()
 
+    loggerinst.task("Final: Show RPM files modified by the conversion")
+    systeminfo.system_info.modified_rpm_files_diff()
 
-def pre_ponr_checks():
-    pass
+    loggerinst.task("Final: Update GRUB2 configuration")
+    grub.update_grub_after_conversion()
 
+    loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
+    utils.remove_tmp_dir()
 
-def post_ponr_changes():
-    pass
+    loggerinst.task("Final: Check kernel boot files")
+    checks.check_kernel_boot_files()
 
+    breadcrumbs.breadcrumbs.finish_collection(success=True)
 
-def rollback():
-    pass
+    loggerinst.task("Final: Update RHSM custom facts")
+    subscription.update_rhsm_custom_facts()
+
+    loggerinst.info("\nConversion successful!\n")
 
 
 def post_ponr_conversion():

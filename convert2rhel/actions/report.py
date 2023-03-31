@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel.actions import STATUS_CODE, format_report_message
+from convert2rhel.actions import STATUS_CODE, find_actions_of_severity, format_report_message
 
 
 logger = logging.getLogger(__name__)
@@ -72,23 +72,20 @@ def summary(results, include_all_reports=False):
         highest ones.
     :type include_all_reports: bool
     """
+    if include_all_reports:
+        results = results.items()
+    else:
+        results = find_actions_of_severity(results, "WARNING")
+
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.
-    results = sorted(results.items(), key=lambda item: item[1]["status"], reverse=True)
-
-    has_report_message = False
+    results = sorted(results, key=lambda item: item[1]["status"], reverse=True)
 
     for action_id, result in results:
         message = format_report_message(result["status"], action_id, result["error_id"], result["message"])
-
-        if include_all_reports:
-            has_report_message = True
-            logger.info(message)
-        elif result["status"] >= STATUS_CODE["WARNING"]:
-            has_report_message = True
-            logger.info(message)
+        logger.info(message)
 
     # If there is no other message sent to the user, then we just give a
     # happy message to them.
-    if not has_report_message:
+    if not results:
         logger.info("No problems detected during the analysis!")
