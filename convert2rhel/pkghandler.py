@@ -622,6 +622,7 @@ def remove_pkgs_unless_from_redhat(pkgs, backup=True):
     loggerinst.warning("Successfully removed the following %s packages:" % str(len(pkgs_to_remove)))
     print_pkg_info(pkgs_to_remove)
 
+
 def get_system_packages_for_replacement():
     """Get a list of packages in the system to be replaced.
     This function will return a list of packages installed on the system by
