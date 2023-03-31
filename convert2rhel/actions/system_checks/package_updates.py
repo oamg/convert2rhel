@@ -21,7 +21,6 @@ from convert2rhel import actions, pkgmanager
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import ask_to_continue
 
 
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, unit_tests
+from convert2rhel import unit_tests
 from convert2rhel.actions.system_checks import tainted_kmods
 
 

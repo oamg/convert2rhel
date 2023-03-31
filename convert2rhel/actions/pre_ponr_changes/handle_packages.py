@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, pkghandler, utils
+from convert2rhel import actions, pkghandler
 from convert2rhel.systeminfo import system_info
 
 
