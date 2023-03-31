@@ -560,9 +560,7 @@ def remove_original_subscription_manager():
         loggerinst.info("No packages related to subscription-manager installed.")
         return
 
-    loggerinst.info(
-        "We will now uninstall the following subscription-manager/katello-ca-consumer packages:\n"
-    )
+    loggerinst.info("We will now uninstall the following subscription-manager/katello-ca-consumer packages:\n")
     pkghandler.print_pkg_info(submgr_pkgs)
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
 
