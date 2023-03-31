@@ -542,17 +542,24 @@ def run_actions():
     return formatted_results
 
 
-def find_failed_actions(results):
+def find_actions_of_severity(results, severity):
     """
-    Process results of run_actions for Actions which abort conversion.
+    Filter results from run_actions() to include only results of ``severity`` or worse.
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
-    :returns: List of actions which cause the conversion to stop. Empty list
+    :param severity: The name of a ``STATUS_CODE`` for the severity to filter to.
+    :returns: List of actions which are at ``severity`` or worse result. Empty list
         if there were no failures.
     :rtype: Sequence
+
+    Example::
+
+        failed_actions = find_actions_of_severity(results, "SKIP")
+        # failed_actions will contain all actions which were skipped
+        # or failed while running.
     """
-    failed_actions = [a[0] for a in results.items() if a[1]["status"] > STATUS_CODE["WARNING"]]
+    failed_actions = [a for a in results.items() if a[1]["status"] >= STATUS_CODE[severity]]
 
     return failed_actions
 
