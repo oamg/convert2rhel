@@ -544,7 +544,7 @@ def run_actions():
 
 def find_actions_of_severity(results, severity):
     """
-    Filter results from run_actions() to include only results of ``severity`` or worse.
+    Filter results from :func:`run_actions` to include only results of ``severity`` or worse.
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
