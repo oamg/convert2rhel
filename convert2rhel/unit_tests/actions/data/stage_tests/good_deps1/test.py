@@ -6,7 +6,7 @@ class RealTest(actions.Action):
 
     def run(self):
         super(RealTest, self).run()
-        pass
+        return
 
 
 class SecondTest(actions.Action):
@@ -15,7 +15,7 @@ class SecondTest(actions.Action):
 
     def run(self):
         super(SecondTest, self).run()
-        pass
+        return
 
 
 class ThirdTest(actions.Action):
@@ -24,7 +24,7 @@ class ThirdTest(actions.Action):
 
     def run(self):
         super(ThirdTest, self).run()
-        pass
+        return
 
 
 class FourthTest(actions.Action):
@@ -33,4 +33,4 @@ class FourthTest(actions.Action):
 
     def run(self):
         super(FourthTest, self).run()
-        pass
+        return

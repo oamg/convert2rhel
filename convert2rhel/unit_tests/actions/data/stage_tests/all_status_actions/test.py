@@ -26,7 +26,7 @@ class SkipSingleTest(actions.Action):
 
     def run(self):
         super(SkipSingleTest, self).run()
-        pass
+        return
 
 
 # Skip because of multiple dependencies have failed
@@ -36,7 +36,7 @@ class SkipMultipleTest(actions.Action):
 
     def run(self):
         super(SkipMultipleTest, self).run()
-        pass
+        return
 
 
 class WarningTest(actions.Action):
@@ -52,4 +52,4 @@ class SuccessTest(actions.Action):
 
     def run(self):
         super(SuccessTest, self).run()
-        pass
+        return

@@ -7,7 +7,7 @@ class BadTest1(actions.Action):
 
     def run(self):
         super(BadTest1, self).run()
-        pass
+        return
 
 
 class BadTest2(actions.Action):
@@ -16,4 +16,4 @@ class BadTest2(actions.Action):
 
     def run(self):
         super(BadTest2, self).run()
-        pass
+        return
