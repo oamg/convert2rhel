@@ -648,11 +648,9 @@ def remove_pkgs_unless_from_redhat(pkgs, backup=True):
         loggerinst.info("\nNothing to do.")
         return
     loggerinst.info("\n")
-    loggerinst.warning("The following packages will be removed...")
-    print_pkg_info(pkgs_to_remove)
     remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
-    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
-
+    loggerinst.warning("Successfully removed the following %s packages:" % str(len(pkgs_to_remove)))
+    print_pkg_info(pkgs_to_remove)
 
 def get_system_packages_for_replacement():
     """Get a list of packages in the system to be replaced.

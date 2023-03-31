@@ -56,9 +56,9 @@ class PackageUpdates(actions.Action):
             # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
             # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
             logger.warning(
-                "There was an error while checking whether the installed packages are up-to-date. Having updated system is "
-                "an important prerequisite for a successful conversion. Consider stopping the conversion to "
-                "verify that manually."
+                "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
+                " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
+                " before proceeding with the conversion."
             )
             logger.warning(str(e))
             return
@@ -73,7 +73,7 @@ class PackageUpdates(actions.Action):
                 "The system has %s package(s) not updated based %s.\n"
                 "List of packages to update: %s.\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
-                "Consider stopping the conversion and update the packages before re-running convert2rhel."
+                "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
             )
         else:
