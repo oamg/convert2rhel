@@ -188,7 +188,6 @@ class TestCheckConvert2rhelLatest:
     def test_c2r_up_to_date(self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test):
         convert2rhel_latest_action.run()
 
-        local_version, dummy_ = convert2rhel_latest_version_test
         log_msg = "Latest available Convert2RHEL version is installed."
         assert log_msg in caplog.text
 

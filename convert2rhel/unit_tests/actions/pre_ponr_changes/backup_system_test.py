@@ -16,15 +16,12 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 import pytest
 import six
 
-from convert2rhel import actions, backup, redhatrelease, repo, unit_tests
+from convert2rhel import backup, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
-from convert2rhel.backup import RestorableFile
-from convert2rhel.redhatrelease import OS_RELEASE_FILEPATH
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

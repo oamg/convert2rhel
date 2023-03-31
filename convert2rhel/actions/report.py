@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel.actions import STATUS_CODE, find_actions_of_severity, format_report_message
+from convert2rhel.actions import find_actions_of_severity, format_report_message
 
 
 logger = logging.getLogger(__name__)

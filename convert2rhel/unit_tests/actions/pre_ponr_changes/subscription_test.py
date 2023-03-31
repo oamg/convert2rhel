@@ -20,7 +20,6 @@ import six
 
 from convert2rhel import cert, pkghandler, repo, subscription, toolopts, unit_tests
 from convert2rhel.actions import STATUS_CODE
-from convert2rhel.actions.pre_ponr_changes.handle_packages import RemoveExcludedPackages, RemoveRepositoryFilesPackages
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
 
 
