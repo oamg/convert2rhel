@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, backup, redhatrelease, repo
+from convert2rhel import actions, backup, repo
 from convert2rhel.redhatrelease import get_system_release_filepath
 
 

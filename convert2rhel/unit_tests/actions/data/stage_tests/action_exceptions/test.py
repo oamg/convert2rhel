@@ -12,7 +12,7 @@ class DivideByZeroTest(actions.Action):
 
     def run(self):
         super(DivideByZeroTest, self).run()
-        1 / 0
+        return 1 / 0
 
 
 class LogCriticalTest(actions.Action):
@@ -29,4 +29,4 @@ class SuccessTest(actions.Action):
 
     def run(self):
         super(SuccessTest, self).run()
-        pass
+        return

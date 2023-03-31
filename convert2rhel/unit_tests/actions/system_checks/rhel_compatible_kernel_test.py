@@ -22,7 +22,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import actions, systeminfo, unit_tests
+from convert2rhel import unit_tests
 from convert2rhel.actions.system_checks import rhel_compatible_kernel
 from convert2rhel.unit_tests.conftest import centos8
 from convert2rhel.utils import run_subprocess
