@@ -20,7 +20,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import backup, repo, unit_tests
+from convert2rhel import backup, redhatrelease, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 
 
@@ -50,11 +50,20 @@ class RestorableFileMock(unit_tests.MockFunction):
         self.called += 1
 
 
+class RestorableFileExceptionMock(RestorableFileMock):
+    def backup(self):
+        raise SystemExit("File not found")
+
+
 class TestBackupSystem:
     def test_backup_redhat_release_calls(self, backup_redhat_release_action, monkeypatch):
-        monkeypatch.setattr(backup, "RestorableFile", RestorableFileMock())
+        monkeypatch.setattr(backup_system, "system_release_file", RestorableFileMock())
+        monkeypatch.setattr(backup_system, "os_release_file", RestorableFileMock())
+
         backup_redhat_release_action.run()
-        assert backup_system.backup.RestorableFile.called == 2
+
+        assert backup_system.system_release_file.called == 1
+        assert backup_system.os_release_file.called == 1
 
     def test_backup_repository_calls(self, backup_repository_action, monkeypatch):
         backup_varsdir_mock = mock.Mock()
@@ -68,19 +77,19 @@ class TestBackupSystem:
         backup_yum_repos_mock.assert_called_once()
         backup_varsdir_mock.assert_called_once()
 
-    @pytest.mark.parametrize(
-        ("is_file", "exception"),
-        ((False, True),),
-    )
-    def test_backup_redhat_release_error(self, backup_redhat_release_action, is_file, exception, monkeypatch):
-        is_file_mock = mock.MagicMock(return_value=is_file)
-        monkeypatch.setattr(os.path, "isfile", value=is_file_mock)
+    def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
+        monkeypatch.setattr(backup_system, "system_release_file", RestorableFileExceptionMock())
 
-        if exception:
-            backup_redhat_release_action.run()
-            unit_tests.assert_actions_result(
-                backup_redhat_release_action,
-                status="ERROR",
-                error_id="UNKNOWN_ERROR",
-                message="Error: Unable to find the /etc/system-release file containing the OS name and version",
-            )
+        backup_redhat_release_action.run()
+        unit_tests.assert_actions_result(
+            backup_redhat_release_action, status="ERROR", error_id="UNKNOWN_ERROR", message="File not found"
+        )
+
+    def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
+        monkeypatch.setattr(backup_system, "system_release_file", mock.Mock())
+        monkeypatch.setattr(backup_system, "os_release_file", RestorableFileExceptionMock())
+
+        backup_redhat_release_action.run()
+        unit_tests.assert_actions_result(
+            backup_redhat_release_action, status="ERROR", error_id="UNKNOWN_ERROR", message="File not found"
+        )
