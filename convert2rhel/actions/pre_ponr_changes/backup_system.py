@@ -17,12 +17,11 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, backup, repo
-from convert2rhel.redhatrelease import get_system_release_filepath
+from convert2rhel import actions, repo
+from convert2rhel.redhatrelease import os_release_file, system_release_file
 
 
 loggerinst = logging.getLogger(__name__)
-OS_RELEASE_FILEPATH = "/etc/os-release"
 
 
 class BackupRedhatRelease(actions.Action):
@@ -35,8 +34,11 @@ class BackupRedhatRelease(actions.Action):
         super(BackupRedhatRelease, self).run()
 
         try:
-            backup.RestorableFile(get_system_release_filepath()).backup()
-            backup.RestorableFile(OS_RELEASE_FILEPATH).backup()
+            # TODO(r0x0d): We need to keep calling those global objects from
+            # redhatrelease.py because of the below code:
+            # https://github.com/oamg/convert2rhel/blob/v1.2/convert2rhel/subscription.py#L189-L200
+            system_release_file.backup()
+            os_release_file.backup()
         except SystemExit as e:
             # TODO(pr-watson): Places where we raise SystemExit and need to be
             # changed to something more specific.
