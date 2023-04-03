@@ -86,14 +86,6 @@ def main():
         pre_conversion_results = actions.run_actions()
 
         ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
-
-        # backup system release file before starting conversion process
-        loggerinst.task("Prepare: Backup System")
-        redhatrelease.system_release_file.backup()
-        redhatrelease.os_release_file.backup()
-        repo.backup_yum_repos()
-        repo.backup_varsdir()
-
         ### End calls that should be put into pre_ponr_changes(), rollback(), or post_ponr_changes()
 
         experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
