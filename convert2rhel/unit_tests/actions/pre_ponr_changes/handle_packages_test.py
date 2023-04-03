@@ -124,6 +124,12 @@ def test_remove_repository_files_packages(remove_repository_files_packages_insta
     assert remove_repository_files_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
 
 
+def test_remove_repository_files_packages_dependency_order(remove_repository_files_packages_instance):
+    expected_dependencies = ("BACKUP_REDHAT_RELEASE",)
+
+    assert expected_dependencies == remove_repository_files_packages_instance.dependencies
+
+
 def test_remove_repository_files_packages_error(remove_repository_files_packages_instance, monkeypatch):
     monkeypatch.setattr(system_info, "repofile_pkgs", [])
     monkeypatch.setattr(

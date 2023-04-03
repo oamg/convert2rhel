@@ -73,6 +73,7 @@ class RemoveExcludedPackages(actions.Action):
 
 class RemoveRepositoryFilesPackages(actions.Action):
     id = "REMOVE_REPOSITORY_FILES_PACKAGES"
+    dependencies = ("BACKUP_REDHAT_RELEASE",)
 
     def run(self):
         """
