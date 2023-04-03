@@ -80,6 +80,7 @@ class PreSubscription(actions.Action):
 class SubscribeSystem(actions.Action):
     id = "SUBSCRIBE_SYSTEM"
     dependencies = (
+        # Implicit dependency for `BACKUP_REDHAT_RELEASE`
         "REMOVE_REPOSITORY_FILES_PACKAGES",
         "PRE_SUBSCRIPTION",
     )
