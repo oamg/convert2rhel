@@ -94,7 +94,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
         # querying obtained packages for files they produces
         cmd = basecmd[:]
-        cmd.extend(("-l", kmod_pkgs))
+        cmd.append("-l")
+        cmd.extend(kmod_pkgs)
         rhel_kmods_str, _ = run_subprocess(cmd, print_output=False)
 
         return self._get_rhel_kmods_keys(rhel_kmods_str)
