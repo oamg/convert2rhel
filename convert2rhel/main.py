@@ -85,13 +85,7 @@ def main():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_actions()
 
-        ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
-        ### End calls that should be put into pre_ponr_changes(), rollback(), or post_ponr_changes()
-
         experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
-        loggerinst.task("Conversion analysis report")
-        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
-
         if experimental_analysis:
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
@@ -100,6 +94,13 @@ def main():
         if pre_conversion_failures:
             # report.summary has already output more detailed information above
             loggerinst.critical("Conversion failed.")
+
+        #
+        # Ready to convert
+        #
+
+        # Print the assessment just before we ask the user whether to continue past the PONR
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -125,7 +126,9 @@ def main():
         # ANALYZE_EXIT is an expected way of exiting.  So we don't want to
         # log a stacktrace or any other handling that is error related.
         if process_phase == ConversionPhase.ANALYZE_EXIT:
+            loggerinst.task("Conversion analysis report")
             rollback_changes()
+            report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
             return 0
 
         no_changes_msg = "No changes were made to the system."
@@ -139,6 +142,7 @@ def main():
             loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
+            report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a
