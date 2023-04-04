@@ -91,6 +91,16 @@ STATUS_CODE = {
 #: messages and information for the user.
 _STATUS_NAME_FROM_CODE = dict((value, key) for key, value in STATUS_CODE.items())
 
+#: When we print a report for the user to view, we want some explanation of
+#: what the results mean
+_STATUS_HEADER = {
+    0: "Success (No changes needed)",
+    51: "Warning (Review and fix if needed)",
+    101: "Skip (Could not be checked due to other failures)",
+    152: "Overridable (Review and either fix or ignore the failure)",
+    202: "Error (Must fix before conversion)",
+}
+
 
 def _action_defaults_to_success(func):
     """
@@ -545,13 +555,28 @@ def find_actions_of_severity(results, severity):
 
     Example::
 
-        failed_actions = find_actions_of_severity(results, "SKIP")
-        # failed_actions will contain all actions which were skipped
+        matched_actions = find_actions_of_severity(results, "SKIP")
+        # matched_actions will contain all actions which were skipped
         # or failed while running.
     """
-    failed_actions = [a for a in results.items() if a[1]["status"] >= STATUS_CODE[severity]]
+    matched_actions = [action for action in results.items() if action[1]["status"] >= STATUS_CODE[severity]]
 
-    return failed_actions
+    return matched_actions
+
+
+def format_report_section_heading(status_code):
+    """
+    Format a section heading for a status in the report.
+
+    :param status_code: The status code that will be used in the heading
+    :return: The formatted heading that the caller can log.
+    :rtype: str
+    """
+    status_header = _STATUS_HEADER[status_code]
+    highlight = "=" * 10
+
+    heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
+    return heading
 
 
 def format_report_message(status_code, action_id, error_id, message):

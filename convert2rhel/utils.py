@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import errno
+import fcntl
 import getpass
 import inspect
 import json
@@ -23,9 +24,11 @@ import logging
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
+import termios
 import traceback
 
 import pexpect
@@ -679,6 +682,26 @@ def remove_orphan_folders():
     for path in rh_release_paths:
         if os.path.exists(path) and is_dir_empty(path):
             os.rmdir(path)
+
+
+def get_terminal_size():
+    try:
+        # Python 3.2+
+        return shutil.get_terminal_size()
+    except AttributeError:
+        pass
+
+    # Retrieve the terminal size on Linux systems in Python2
+
+    # We can't query the terminal size if it isn't a tty (For instance, if
+    # output is piped.  Use a default value in that case)
+    if not sys.stdout.isatty():
+        return (80, 24)
+
+    terminal_size_c_struct = struct.pack("HHHH", 0, 0, 0, 0)
+    size = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, terminal_size_c_struct)
+
+    return struct.unpack("HHHH", size)[:2]
 
 
 def hide_secrets(
