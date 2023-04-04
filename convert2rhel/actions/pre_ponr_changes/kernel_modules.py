@@ -71,7 +71,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
             basecmd.extend(("--repoid", repoid))
 
         cmd = basecmd[:]
-        cmd.extend(("-f", "/lib/modules/*.ko"))
+        cmd.append("-f")
+        cmd.append("/lib/modules/*.ko*")
 
         # Without the release package installed, dnf can't determine the
         # modularity platform ID. get output of a command to get all
