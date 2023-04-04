@@ -51,8 +51,8 @@ repos:
         args:
           - https://github.com/oamg/convert2rhel.git
         stages: [manual, push]
-  - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.16.1
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.16.2
     hooks:
       - id: gitleaks
         stages: [manual, push]
