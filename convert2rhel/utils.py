@@ -104,6 +104,7 @@ class Process(multiprocessing.Process):
         """Custom property to access the exception raised by the children."""
         if self._pconn.poll():
             self._exception = self._pconn.recv()
+
         return self._exception
 
 
