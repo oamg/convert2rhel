@@ -67,18 +67,10 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    if SYSTEM_RELEASE_ENV in ("oracle-7", "centos-7"):
-        # Use 'Ctrl + c' first to check for unexpected behaviour
-        # of the rollback feature after process termination
-        c2r.sendcontrol("c")
-        # Due to inconsistent behaviour of 'Ctrl + c' on some distros
-        # use Ctrl + d instead
-        c2r.sendcontrol("d")
-        # Assert the rollback finished all tasks by going through its last task
-        assert c2r.exitstatus != 1
-    else:
-        c2r.send(chr(3))
-        assert c2r.exitstatus != 1
+    # Use 'Ctrl + c' to check for unexpected behaviour
+    # of the rollback feature after process termination
+    c2r.sendcontrol("c")
+    assert c2r.exitstatus != 1
 
     # Verify the last step of the rollback is present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
@@ -141,9 +133,7 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
     with convert2rhel("--debug -y --no-rpm-va") as c2r:
         c2r.expect("Username")
-        # Due to inconsistent behaviour of 'Ctrl+c'
-        # use 'Ctrl+d' instead
-        c2r.sendcontrol("d")
+        c2r.sendcontrol("c")
         assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
