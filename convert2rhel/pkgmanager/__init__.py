@@ -119,11 +119,12 @@ def rpm_db_lock(pkg_obj):
     try:
         yield
     finally:
-        # Do a manual cleanup of the rpmdb to not leave it open as the
-        # conversion goes through. This is the same strategy as YumBase() uses
-        # in their `close()` method, see:
-        # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/yum/__init__.py#L672-L675
-        if pkg_obj.rpmdb:
-            pkg_obj.rpmdb.ts = None
-            pkg_obj.rpmdb.dropCachedData()
-            pkg_obj.rpmdb = None
+        if hasattr(pkg_obj, "rpmdb"):
+            # Do a manual cleanup of the rpmdb to not leave it open as the
+            # conversion goes through. This is the same strategy as YumBase() uses
+            # in their `close()` method, see:
+            # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/yum/__init__.py#L672-L675
+            if pkg_obj.rpmdb:
+                pkg_obj.rpmdb.ts = None
+                pkg_obj.rpmdb.dropCachedData()
+                pkg_obj.rpmdb = None
