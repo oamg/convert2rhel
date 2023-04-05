@@ -1,0 +1,104 @@
+summary: |
+    Kernel modules
+description: |
+    Load kernel module that is not supported in RHEL and verify the utility works as expected.
+    Verify that removing this kmod does not interfere with new conversion run.
+    Verify that loading custom kernel module, that marks the kernel as "tainted", inhibits the conversion.
+
+tier: 0
+
+tag+:
+    - kmod
+    - kernel
+    - kernel-modules
+
+
+/custom_kernel_module:
+    summary+: |
+        Custom kernel module
+    description+:
+        One kernel module is moved to a custom location,
+        therefore denoted as custom by the running system.
+    adjust+:
+        - environment+:
+            PROMPT_AMOUNT: 5
+          when: distro == centos-8
+        - environment+:
+            PROMPT_AMOUNT: 4
+          when: distro == oraclelinux-7, centos-7
+        - environment+:
+            PROMPT_AMOUNT: 3
+          when: distro == oraclelinux-8
+
+    /custom_module_loaded:
+        summary+: |
+            Load custom kernel module
+        description+: |
+            This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
+            If custom module is loaded the conversion has to be inhibited.
+        tag+:
+            - custom-module-loaded
+        test: |
+            pytest -svv -m test_custom_module_loaded
+
+    /custom_module_not_loaded:
+        summary+: |
+            Remove custom kernel module
+        description+: |
+            Load the kmod from custom location.
+            Verify that it is loaded.
+            Remove the previously loaded 'custom' kmod and verify, the conversion is not inhibited.
+            The kmod compatibility check is right before the point of no return.
+            Abort the conversion right after the check.
+        tag+:
+            - custom-module-not-loaded
+        test: |
+            pytest -svv -m test_custom_module_not_loaded
+
+    /unsupported_kmod_with_envar:
+        summary+: |
+            Bypass loaded custom kernel module
+        description+: |
+            This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
+            will override the inhibition when there is RHEL unsupported kernel module detected.
+            The environment variable is set through the test metadata.
+        adjust+:
+            - environment+:
+                CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+        tag+:
+            - unsupported-kmod-with-envar
+        test: |
+            pytest -svv -m test_unsupported_kmod_with_envar
+        link:
+            verifies: https://issues.redhat.com/browse/RHELC-244
+
+
+/force_loaded_kmod:
+    summary+: |
+        Force load a kernel module
+    description+: |
+        In this test case we force load kmod and verify that the convert2rhel run is inhibited.
+        Force loaded kmods are denoted (FE) where F = module was force loaded and E = unsigned module was loaded.
+        The utility handles force loaded kmod as tainted.
+    adjust+:
+        - enabled: false
+          when: distro == centos-7 or distro == oraclelinux-7
+          because: |
+            Force loading the kernel module on RHEL7 like distros is flaky.
+    tag+:
+        - force-loaded-kmod
+    test: |
+        pytest -svv -m test_force_loaded_kmod
+
+
+/tainted_kernel:
+    summary+: |
+        Build own custom kernel module
+    description+: |
+        This test marks the kernel as tainted which is not supported by convert2rhel.
+        We need to install specific kernel packages to build own custom kernel module.
+        Verify the conversion is inhibited.
+    tag+:
+        - tainted-kernel
+    test: |
+        pytest -svv -m test_tainted_kernel

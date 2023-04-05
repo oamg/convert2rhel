@@ -1,6 +1,6 @@
 # Integration tests
 
-The general idea of our integration tests is to run the convert2rhel tool as a
+The general idea of our integration tests is to run the Convert2RHEL tool as a
 black box and look for explicit outputs given a system state and inputs - like
 environment variables and CLI parameters.
 
@@ -17,7 +17,7 @@ We use the [fmf](https://fmf.readthedocs.io/en/stable/index.html) format to
 define testing plans and tests. Tests are then executed using the
 [tmt](https://tmt.readthedocs.io/en/stable/index.html) tool.
 
-Tests themselves are written mostly in `Python`. However one can write the
+Tests themselves are written mostly in `Python`. However, one can write the
 integration test in any other language, eg. in `Bash`.
 
 Finally, you can find out all the integration tests for Convert2RHEL in the

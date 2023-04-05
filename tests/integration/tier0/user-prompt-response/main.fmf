@@ -1,0 +1,34 @@
+summary: |
+    User response is empty
+
+tier: 0
+
+tag+:
+    - nondestructive
+    - registration
+    - rhsm
+    - user-prompt-response
+
+/empty_username_and_password:
+    summary+: |
+        Pass an empty string for username and password
+    description+: |
+        Verify that the user is enforced to input a value and passing an empty string
+        loops back to the user prompt.
+        Verify for both username and password.
+        The functionality is generic enough, so there is no need to verify other prompts.
+    tag+:
+        - empty-username-and-password
+    test: |
+      pytest -svv -m test_empty_username_and_password
+
+/auto_attach_pool:
+    summary: |
+        One subscription attached auto-selected
+    description+: |
+        Verify that passing username and password with just one subscription attached
+        automatically selects the subscription.
+    tag+:
+        - auto-attach-pool
+    test: |
+      pytest -svv -m test_auto_attach_pool

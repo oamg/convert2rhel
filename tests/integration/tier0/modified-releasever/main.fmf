@@ -1,0 +1,33 @@
+summary: |
+    Modified `releasever` variable
+description: |
+    Modify the releasever in multiple scenarios and verify the expected behavior.
+
+tier: 0
+
+tag+:
+    - nondestructive
+    - modified-releasever
+
+/modified_releasever_in_configs:
+    summary+: |
+        Releasever in /usr/share/convert2rhel/configs/
+    description+: |
+        Verify that modifying the releasever value in config files
+        at `/usr/share/convert2rhel/configs/` will override the $releasever
+        when calling the `yumdownloader` command.
+    tag+:
+        - modified-releasever-in-configs
+    test: |
+      pytest -svv -m test_modified_config
+
+/modified_releasever_to_unknown_release:
+    summary+: |
+        Set /etc/system-release to unsupported version
+    description+: |
+        Verify that running the utility with unsupported version inhibits the conversion.
+        Set the releasever to unsupported version (e.g. x.1.1111)
+    tag+:
+        - releasever-unknown-release
+    test: |
+      pytest -svv -m test_unknown_release

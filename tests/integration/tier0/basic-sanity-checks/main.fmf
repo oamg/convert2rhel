@@ -1,6 +1,157 @@
-summary: user privileges, manpage exists, basic smoke
+summary: |
+    Basic sanity checks
+description: |
+    Verify basic sanity behavior.
+        - Display help
+        - Only last version of Convert2RHEL supported
+        - Yum cache cleaned before any other check
+        - Missing RHSM certificates logged properly
+        - Deprecated --variant message displayed
 
 tier: 0
 
-test: |
-  pytest -svv
+tag+:
+    - nondestructive
+    - sanity
+
+/root_privileges:
+    summary+: |
+        Enforced root privileges
+    description+: |
+        Verify that convert2rhel enforces root privileges
+    tag+:
+        - root-privileges
+    test: |
+      pytest -svv -m test_root_privileges
+
+
+/manpage:
+    summary+: |
+        Manpage exists
+    description+: |
+        Verify that man page exists and is printed out
+    tag+:
+        - manpage
+    test: |
+      pytest -svv -m test_manpage
+
+
+/smoke:
+    summary+: |
+        Basic smoke test
+    description+: |
+        Display help and exit.
+        Exit on first prompt passing 'no'.
+    tag+:
+        - smoke
+    test: |
+      pytest -svv -m test_smoke
+
+
+/log_file_exists:
+    summary+: |
+        Log file exists
+    description+: |
+        Verify that the log file is created at the expected location.
+    tag+:
+        - log-file
+    test: |
+      pytest -svv -m test_log_file_exists
+
+
+/convert2rhel_version:
+    summary+: |
+        convert2rhel version check
+    /c2r_version_latest_or_newer:
+        summary+: |
+            Latest or newer version of convert2rhel
+        description+: |
+            Verify that running the latest or newer than latest version does not inhibit the conversion.
+        tag+:
+            - version-latest-or-newer
+        test: |
+          pytest -svv -m test_version_latest_or_newer
+
+    /c2r_version_older_no_envar:
+        summary+: |
+            Older convert2rhel version without envar
+        description+: |
+            Verify that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
+            environment variable in place, does inhibit the conversion.
+        tag+:
+            - version-older-no-envar
+        test: |
+          pytest -svv -m test_version_older_no_envar
+
+    /c2r_version_older_with_envar:
+        summary+: |
+            Older convert2rhel version with envar
+        description+: |
+            Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
+            environment variable in place, does inhibit the conversion.
+        tag+:
+            - version-older-with-envar
+        test: |
+          pytest -svv -m test_version_older_with_envar
+
+
+/clean_cache:
+    summary+: |
+        Clean yum cache
+    description+: |
+        Verify that the yum cache clean is performed before any other check.
+    tag+:
+        - clean-cache
+    test: |
+      pytest -svv -m test_clean_cache
+
+
+/log_rhsm_error:
+    summary+: |
+        RHSM error not logged
+    description+: |
+        Verify that the OSError raised by RHSM certificate being removed
+        is not being logged in cases the certificate is not installed yet.
+    tag+:
+        - log-rhsm-error
+    test: |
+      pytest -svv -m test_log_rhsm_error
+
+
+/variant_message:
+    summary+: |
+        Deprecated variant message
+    description+: |
+        Verify that the message about deprecated --variant option is printed.
+    tag+:
+        - variant-message
+    test: |
+      pytest -svv -m test_variant_message
+
+
+/data_collection:
+    summary+: |
+        Data collection sanity test
+    /data_collection_acknowledgement:
+        summary+: |
+            Data collection acknowledgement
+        description+: |
+            Verify that the user is asked to acknowledge the data collection.
+        tag+:
+            - data-collection-acknowledgement
+        test: |
+          pytest -svv -m test_data_collection_acknowledgement
+
+    /disable_data_collection:
+        summary+: |
+            Disabled data collection.
+        description+: |
+            Verify that disabling the data collection inhibits the conversion.
+            The convert2rhel.facts file is not created.
+        adjust+:
+            - environment+:
+                CONVERT2RHEL_DISABLE_TELEMETRY: 1
+        tag+:
+            - disable-data-collection
+        test: |
+          pytest -svv -m test_disable_data_collection

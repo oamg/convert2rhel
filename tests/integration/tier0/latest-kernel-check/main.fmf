@@ -1,10 +1,8 @@
-summary: Verify repoquery call on latest kernel
+summary: |
+    Repoquery call on the latest kernel check
 description: |
-    This test assert if the repoquery call does not affect the latest kernel
-    available on the system, the test consists of (but not limited to):
-        * Test if the C2R checks continue even with repoquery call failure.
-        * Test if the repoquery call succeeds with a `exclude` present in the
-          config.
+    This test verifies the repoquery call does not affect
+    the check of the latest kernel available on the system.
 
 tier: 0
 
@@ -14,13 +12,24 @@ tag+:
     - repository
 
 /failed_repoquery:
+    summary+: |
+        Failed repoquery
+    description+: |
+        Verify the convert2rhel handles the repoquery call failure properly
+        and proceeds with the conversion.
     tag+:
         - failed-repoquery
     test: |
-        pytest -svv -m failed_repoquery
+        pytest -svv -m test_failed_repoquery
 
 /yum_excld_kernel:
+    summary+: |
+        Exclude defined in yum config
+    description+: |
+        Verify that the repoquery call succeeds with an `exclude` option present in the config.
+        Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
+        'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
     tag+:
         - yum-excld-kernel
     test: |
-        pytest -svv -m yum_excld_kernel
+        pytest -svv -m test_yum_excld_kernel

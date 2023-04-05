@@ -23,7 +23,7 @@ def _check_eus_enabled_repos_rhel8(enabled_repos):
 
 @pytest.mark.enabled_repositories
 def test_enabled_repositories(shell, system_release):
-    """Testing, if the EUS repostitories are enabled after conversion"""
+    """Verify, that the EUS repositories are enabled after conversion"""
 
     enabled_repos = shell("yum repolist").output
 
