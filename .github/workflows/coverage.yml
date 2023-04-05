@@ -2,9 +2,9 @@ name: test_coverage
 
 on:
   push:
-    branches: [ main, pre-check ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, pre-check ]
+    branches: [ main ]
 
 jobs:
   coverage:
