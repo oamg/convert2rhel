@@ -1,0 +1,5 @@
+[ubi]
+name=Universal Base Image 7
+baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/x86_64/os/
+gpgcheck=0
+enabled=1

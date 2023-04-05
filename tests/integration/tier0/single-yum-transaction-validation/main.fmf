@@ -1,12 +1,14 @@
-summary: Verify single yum transaction validation
+summary: |
+    Single yum transaction validation
 
-description: >
+description: |
     Verify that we are doing a proper rollback during the validation phase in
     our transactions.
-
     If any errors occurs during the transaction resolution, either by
-    downloading a package, dependency resolver and etc... A rollback should
+    downloading a package, dependency resolver and etc., the rollback should
     start and revert the changes to the system.
+    We simulate the error by removing the entitlement certs found at /etc/pki/entitlement
+    at a specific times during the transaction validation.
 
 link: https://issues.redhat.com/browse/RHELC-576
 
@@ -17,17 +19,28 @@ tag+:
     - dnf
     - transaction
 
+
 /transaction_validation_error:
+    summary+: |
+        Error during processing the transaction
+    description+: |
+        This test case removes the certs during the transaction processing
+        to throw the following yum error: pkgmanager.Errors.YumDownloadError
     adjust+:
         - enabled: false
           when: distro == centos-8 or distro == oraclelinux-8
     tag+:
         - transaction-validation-error
     test: |
-        pytest -svv -m transaction_validation_error
+        pytest -svv -m test_transaction_validation_error
+
 
 /package_download_error:
+    summary+: |
+        Error during the package download
+    description+: |
+        This test case removes the certs during the package download phase for both yum and dnf transactions.
     tag+:
         - package-download-error
     test: |
-        pytest -svv -m package_download_error
+        pytest -svv -m test_package_download_error

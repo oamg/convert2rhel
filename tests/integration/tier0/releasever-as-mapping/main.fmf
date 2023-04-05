@@ -1,6 +1,0 @@
-summary: releasever-as-mapping
-
-tier: 0
-
-test: |
-  pytest -svv

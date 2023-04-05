@@ -1,0 +1,32 @@
+summary: |
+    Enable custom repositories
+description: |
+    Verify scenarios with enabled custom repositories and subscription-manager disabled.
+
+tier: 0
+
+tag+:
+    - repository
+    - custom-repository
+    - subscription-manager
+
+
+/custom_valid_repo_provided:
+    summary+: |
+        Valid custom repository enabled
+    description+: |
+        Provide valid custom repository and verify that the conversion proceeds.
+    tag+:
+        - custom-valid-repo-provided
+    test: |
+        pytest -svv -m test_custom_valid_repo_provided
+
+/custom_invalid_repo_provided:
+    summary+: |
+        Invalid custom repository enabled
+    description+: |
+        Provide invalid values for custom repository options and verify that the conversion is inhibited.
+    tag+:
+        - custom-invalid-repo-provided
+    test: |
+        pytest -svv -m test_custom_invalid_repo_provided

@@ -1,6 +1,0 @@
-summary: Verify that c2r correctly restores the os-release file during different scenarios.
-
-tier: 0
-
-test: |
-  pytest -svv

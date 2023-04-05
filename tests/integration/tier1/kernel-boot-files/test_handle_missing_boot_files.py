@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 
 import pytest
@@ -53,7 +54,7 @@ def test_missing_kernel_boot_files(convert2rhel, shell):
     """
 
     kernel_name = "kernel"
-    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(centos|oracle|alma|rocky)-8\.\d$", SYSTEM_RELEASE_ENV):
         kernel_name = "kernel-core"
 
     with convert2rhel(

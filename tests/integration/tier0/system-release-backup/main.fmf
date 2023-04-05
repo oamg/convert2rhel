@@ -1,0 +1,70 @@
+summary: |
+    Handle os-release and system-release
+description: |
+    Verify that os-release is backed up and restored properly.
+    The Satellite is used for all the test cases.
+
+tier: 0
+
+tag+:
+    - repo
+    - system-release-backup
+
+/os_release_restored:
+    summary+: |
+        Restore the os-release file during rollback
+    /related_environment_variable:
+        description+: |
+            Install subscription-manager and katello package from the Satellite.
+            Remove all repositories from the system.
+            Set the "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
+            Verify that the /etc/os-release file is restored after the rollback.
+        /backup_os_release_no_envar:
+            summary+: |
+                Restore os-release without CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
+            description+: |
+                This case runs the conversion with no repositories available.
+                Verify that this condition disables the package backup,
+                convert2rhel warns the user and inhibits the conversion.
+            tag+:
+                - no-envar
+            test: |
+                pytest -svv -m test_backup_os_release_no_envar
+
+        /backup_os_release_with_envar:
+            summary+: |
+                Restore os-release with CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
+            description+: |
+                This case runs the conversion with no repositories available
+                and "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" envar set.
+                Verify that this condition disables the package backup,
+                convert2rhel warns the user, but continues the conversion.
+            tag+:
+                - with-envar
+            test: |
+                pytest -svv -m test_backup_os_release_with_envar
+            link:
+                - verifies: https://issues.redhat.com/browse/OAMG-5457
+
+    /unsuccessful_satellite_registration:
+        summary+: |
+            Rollback caused by failed registration
+        description+: |
+            Verify that the os-release is restored, when the registration to the Satellite servers fails.
+        tag+:
+            - unsuccessful-satellite-registration
+        test: |
+            pytest -svv -m test_unsuccessful_satellite_registration
+        link:
+            - verifies: https://issues.redhat.com/browse/RHELC-51
+
+
+/missing_system_release:
+    summary+: |
+        Removed system-release inhibits the conversion
+    description+: |
+        Verify that missing /etc/system-release (removed pre-conversion) inhibits the conversion.
+    tag+:
+        - missing-system-release
+    test: |
+        pytest -svv -m test_missing_system_release

@@ -8,9 +8,10 @@ import pytest
 CONVERT2RHEL_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 
 
+@pytest.mark.test_root_privileges
 def test_check_user_privileges(shell):
     """
-    Check if the Convert2RHEL is only being possible to run as a root user.
+    Verify that running the convert2rhel is only being possible as a root user.
     """
     user = "testuser"
     # Create non-root user if not created already
@@ -27,6 +28,7 @@ def test_check_user_privileges(shell):
     assert shell(f"userdel -r '{user}'").returncode == 0
 
 
+@pytest.mark.test_manpage
 def test_manpage_exists(shell):
     """
     Check if manpage exists.
@@ -34,21 +36,25 @@ def test_manpage_exists(shell):
     assert shell("man -w convert2rhel").returncode == 0
 
 
+@pytest.mark.test_smoke
 def test_smoke_basic(shell):
     """
-    Check basic behaviour.
+    Verify basic behaviour.
     Show help and exit.
     Exit on first prompt passing 'no'.
     """
     assert shell("convert2rhel --help").returncode == 0
     assert shell("convert2rhel -h").returncode == 0
-    assert shell("convert2rhel <<< n").returncode != 0
+    assert shell("convert2rhel --no-rpm-va <<< n").returncode != 0
 
 
-def test_log_file_verification():
+@pytest.mark.test_log_file_exists
+def test_log_file_verification(shell):
     """
-    Verify that the log file was created by the previous test.
+    Verify that the log file was created by the convert2rhel run.
     """
+    assert shell("convert2rhel --no-rpm-va <<< n").returncode != 0
+
     assert os.path.exists("/var/log/convert2rhel/convert2rhel.log")
 
 
@@ -86,10 +92,11 @@ def c2r_version(request):
     _restore_c2r_version()
 
 
+@pytest.mark.test_version_latest_or_newer
 @pytest.mark.parametrize("version", ["42.0.0"])
 def test_c2r_latest_newer(convert2rhel, c2r_version, version):
     """
-    Check if running latest or newer version continues the conversion.
+    Verify that running latest or newer version does not interfere with running the conversion.
     """
     c2r_version(version)
     with convert2rhel("--no-rpm-va --debug") as c2r:
@@ -103,6 +110,7 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
         c2r.sendline("n")
 
 
+@pytest.mark.test_version_older_no_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
 def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
     """
@@ -123,6 +131,9 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
 
 @pytest.fixture
 def older_version_envar():
+    """
+    Fixture to set and remove CONVERT2RHEL_ALLOW_OLDER_VERSION environment variable.
+    """
     # Set the environment variable
     os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
 
@@ -131,12 +142,13 @@ def older_version_envar():
     del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
 
 
+@pytest.mark.test_version_older_with_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
 def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version, older_version_envar):
     """
-    Check if running older version with the environment
+    Verify that running older version of Convert2RHEL with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
-    Running older version of Convert2RHEL on OS major version 6 or older should inhibit either way.
+    Running older version of convert2rhel on OS major version 6 or older should inhibit either way.
     """
     c2r_version(version)
 
@@ -158,6 +170,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
     assert c2r.exitstatus != 0
 
 
+@pytest.mark.test_clean_cache
 def test_clean_cache(convert2rhel):
     """
     Verify that the yum clean is done before any other check that c2r does
@@ -174,9 +187,10 @@ def test_clean_cache(convert2rhel):
         c2r.sendline("n")
 
 
+@pytest.mark.test_log_rhsm_error
 def test_rhsm_error_logged(convert2rhel):
     """
-    Test if the OSError for RHSM certificate being removed
+    Verify that the OSError for RHSM certificate being removed
     is not being logged in cases the certificate is not installed yet.
     """
     with convert2rhel("--debug --no-rpm-va") as c2r:
@@ -194,6 +208,7 @@ def test_rhsm_error_logged(convert2rhel):
             assert "ERROR - OSError(2): No such file or directory" not in line
 
 
+@pytest.mark.test_variant_message
 def test_check_variant_message(convert2rhel):
     """
     Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
@@ -227,12 +242,12 @@ def test_check_variant_message(convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.data_collection_acknowledgement
+@pytest.mark.test_data_collection_acknowledgement
 def test_data_collection_acknowledgement(shell, convert2rhel):
     """
     This test verifies, that information about data collection is printed out
     and user is asked for acknowledgement to continue.
-    Verify, that without acknowledgement the convert2rhel.facts file is not created.
+    Verify that without acknowledgement the convert2rhel.facts file is not created.
     """
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
@@ -255,16 +270,15 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.disable_data_collection
+@pytest.mark.test_disable_data_collection
 def test_disable_data_collection(shell, convert2rhel):
     """
     This test verifies functionality of CONVERT2RHEL_DISABLE_TELEMETRY envar.
     The data collection should be disabled, therefore convert2rhel.facts file should not get created.
+    The environment variable is set by tmt test metadata.
     """
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
-    # Set envar to disable data collection
-    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
