@@ -333,6 +333,7 @@ def get_third_party_pkgs():
     third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_orig_os + system_info.fingerprints_rhel
     )
+
     return third_party_pkgs
 
 
