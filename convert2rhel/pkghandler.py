@@ -293,7 +293,7 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 def get_pkg_fingerprint(pkg_obj):
     """Get fingerprint of the key used to sign a package."""
-    pkg_sig = get_pkg_signature(pkg_obj)
+    pkg_sig = get_pkg_signature_with_cleanup(pkg_obj)
     fingerprint_match = re.search("Key ID (.*)", pkg_sig)
     if fingerprint_match:
         return fingerprint_match.group(1)
@@ -364,6 +364,7 @@ def get_rpm_header(pkg_obj):
         if rpm_hdr[rpm.RPMTAG_VERSION] == pkg_obj.v and rpm_hdr[rpm.RPMTAG_RELEASE] == pkg_obj.r:
             # One might think that we could have used the package EVR for comparison, instead of version and release
             #  separately, but there's a bug: https://bugzilla.redhat.com/show_bug.cgi?id=1876885.
+
             return rpm_hdr
     else:
         # Package not found in the rpm db
@@ -440,6 +441,7 @@ def get_third_party_pkgs():
     third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_orig_os + system_info.fingerprints_rhel
     )
+
     return third_party_pkgs
 
 

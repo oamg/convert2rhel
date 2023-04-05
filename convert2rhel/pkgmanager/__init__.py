@@ -113,17 +113,24 @@ def rpm_db_lock(pkg_obj):
         `yum.rpmsack.RPMInstalledPackage`, as it will access specific
         properties inside that class to close the RPM DB.
 
+    .. important::
+        This context manager will be used for both yum and dnf, but only yum
+        needs to do a manual cleanup after the usage. Dnf seems to handle this
+        properly.
+
     :param pkg_obj: Instace of a package RPM installed on the system.
-    :type pkg_obj: yum.rpmsack.RPMInstalledPackage
+    :type pkg_obj: yum.rpmsack.RPMInstalledPackage | dnf.package.Package
     """
     try:
         yield
     finally:
+        # Only execute the rpmdb cleanup if the property is present inside
+        # pkg_obj. That means we are dealing with yum.
+        # Do a manual cleanup of the rpmdb to not leave it open as the
+        # conversion goes through. This is the same strategy as YumBase() uses
+        # in their `close()` method, see:
+        # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/yum/__init__.py#L672-L675
         if hasattr(pkg_obj, "rpmdb"):
-            # Do a manual cleanup of the rpmdb to not leave it open as the
-            # conversion goes through. This is the same strategy as YumBase() uses
-            # in their `close()` method, see:
-            # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/yum/__init__.py#L672-L675
             if pkg_obj.rpmdb:
                 pkg_obj.rpmdb.ts = None
                 pkg_obj.rpmdb.dropCachedData()
