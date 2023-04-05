@@ -200,6 +200,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
         """Ensure that the host kernel modules are compatible with RHEL."""
         super(EnsureKernelModulesCompatibility, self).run()
 
+        logger.task("Prepare: Ensure kernel modules compatibility with RHEL")
+
         try:
             host_kmods = self._get_loaded_kmods()
             rhel_supported_kmods = self._get_rhel_supported_kmods()
