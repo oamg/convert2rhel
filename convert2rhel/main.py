@@ -126,7 +126,6 @@ def main():
         # ANALYZE_EXIT is an expected way of exiting.  So we don't want to
         # log a stacktrace or any other handling that is error related.
         if process_phase == ConversionPhase.ANALYZE_EXIT:
-            loggerinst.task("Conversion analysis report")
             rollback_changes()
             report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
             return 0

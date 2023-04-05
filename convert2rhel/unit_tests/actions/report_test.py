@@ -129,8 +129,8 @@ def test_summary(results, expected_results, include_all_reports, caplog):
             },
             False,
             [
-                (0, "(SKIP) PreSubscription2.SKIPPED: SKIP MESSAGE"),
-                (1, "(WARNING) PreSubscription1.SOME_WARNING: WARNING MESSAGE"),
+                "(SKIP) PreSubscription2.SKIPPED: SKIP MESSAGE",
+                "(WARNING) PreSubscription1.SOME_WARNING: WARNING MESSAGE",
             ],
         ),
         (
@@ -150,10 +150,10 @@ def test_summary(results, expected_results, include_all_reports, caplog):
             },
             False,
             [
-                (0, "(ERROR) ErrorAction.ERROR: ERROR MESSAGE"),
-                (1, "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE"),
-                (2, "(SKIP) SkipAction.SKIP: SKIP MESSAGE"),
-                (3, "(WARNING) WarningAction.WARNING: WARNING MESSAGE"),
+                "(ERROR) ErrorAction.ERROR: ERROR MESSAGE",
+                "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
+                "(SKIP) SkipAction.SKIP: SKIP MESSAGE",
+                "(WARNING) WarningAction.WARNING: WARNING MESSAGE",
             ],
         ),
         # Message order with `include_all_reports` set to True.
@@ -175,11 +175,11 @@ def test_summary(results, expected_results, include_all_reports, caplog):
             },
             True,
             [
-                (0, "(ERROR) ErrorAction.ERROR: ERROR MESSAGE"),
-                (1, "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE"),
-                (2, "(SKIP) SkipAction.SKIP: SKIP MESSAGE"),
-                (3, "(WARNING) WarningAction.WARNING: WARNING MESSAGE"),
-                (4, "(SUCCESS) PreSubscription: All good!"),
+                "(ERROR) ErrorAction.ERROR: ERROR MESSAGE",
+                "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
+                "(SKIP) SkipAction.SKIP: SKIP MESSAGE",
+                "(WARNING) WarningAction.WARNING: WARNING MESSAGE",
+                "(SUCCESS) PreSubscription: All good!",
             ],
         ),
     ),
@@ -187,6 +187,6 @@ def test_summary(results, expected_results, include_all_reports, caplog):
 def test_summary_ordering(results, include_all_reports, expected_results, caplog):
     report.summary(results, include_all_reports)
 
+    log_ordering = [record.message for record in caplog.records[-len(expected_results):]]
     # Get the order and the message
-    log_ordering = ((index, record.message) for index, record in enumerate(caplog.records))
-    assert expected_results == list(log_ordering)
+    assert expected_results == log_ordering
