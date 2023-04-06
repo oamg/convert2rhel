@@ -100,7 +100,11 @@ def main():
         #
 
         # Print the assessment just before we ask the user whether to continue past the PONR
-        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
+        report.summary(
+            pre_conversion_results,
+            include_all_reports=experimental_analysis,
+            with_colors=logger_module.should_disable_color_output(),
+        )
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -122,7 +126,11 @@ def main():
         breadcrumbs.breadcrumbs.finish_collection(success=True)
 
         rollback_changes()
-        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
+        report.summary(
+            pre_conversion_results,
+            include_all_reports=experimental_analysis,
+            with_colors=logger_module.should_disable_color_output(),
+        )
         return 0
 
     except (Exception, SystemExit, KeyboardInterrupt) as err:
@@ -141,7 +149,11 @@ def main():
             loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
-            report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
+            report.summary(
+                pre_conversion_results,
+                include_all_reports=experimental_analysis,
+                with_colors=logger_module.should_disable_color_output(),
+            )
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a
