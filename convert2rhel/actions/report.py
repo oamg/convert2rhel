@@ -72,6 +72,8 @@ def summary(results, include_all_reports=False):
         highest ones.
     :type include_all_reports: bool
     """
+    logger.task("Conversion analysis report")
+
     if include_all_reports:
         results = results.items()
     else:
