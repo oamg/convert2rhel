@@ -85,21 +85,22 @@ def main():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_actions()
 
-        ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
-        ### End calls that should be put into pre_ponr_changes(), rollback(), or post_ponr_changes()
-
         experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
-        loggerinst.task("Conversion analysis report")
-        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
-
         if experimental_analysis:
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
         pre_conversion_failures = actions.find_actions_of_severity(pre_conversion_results, "SKIP")
         if pre_conversion_failures:
-            # report.summary has already output more detailed information above
+            # The report will be handled in the error handler, after rollback.
             loggerinst.critical("Conversion failed.")
+
+        #
+        # Ready to convert
+        #
+
+        # Print the assessment just before we ask the user whether to continue past the PONR
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -117,16 +118,17 @@ def main():
         # restart system if required
         utils.restart_system()
 
+    except _AnalyzeExit:
+        breadcrumbs.breadcrumbs.finish_collection(success=True)
+
+        rollback_changes()
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
+        return 0
+
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
         breadcrumbs.breadcrumbs.finish_collection(success=False)
-
-        # ANALYZE_EXIT is an expected way of exiting.  So we don't want to
-        # log a stacktrace or any other handling that is error related.
-        if process_phase == ConversionPhase.ANALYZE_EXIT:
-            rollback_changes()
-            return 0
 
         no_changes_msg = "No changes were made to the system."
         utils.log_traceback(toolopts.tool_opts.debug)
@@ -139,6 +141,7 @@ def main():
             loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
+            report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a
