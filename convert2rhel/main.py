@@ -92,7 +92,7 @@ def main():
 
         pre_conversion_failures = actions.find_actions_of_severity(pre_conversion_results, "SKIP")
         if pre_conversion_failures:
-            # report.summary has already output more detailed information above
+            # The report will be handled in the error handler, after rollback.
             loggerinst.critical("Conversion failed.")
 
         #
@@ -118,17 +118,17 @@ def main():
         # restart system if required
         utils.restart_system()
 
+    except _AnalyzeExit:
+        breadcrumbs.breadcrumbs.finish_collection(success=True)
+
+        rollback_changes()
+        report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
+        return 0
+
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
         breadcrumbs.breadcrumbs.finish_collection(success=False)
-
-        # ANALYZE_EXIT is an expected way of exiting.  So we don't want to
-        # log a stacktrace or any other handling that is error related.
-        if process_phase == ConversionPhase.ANALYZE_EXIT:
-            rollback_changes()
-            report.summary(pre_conversion_results, include_all_reports=experimental_analysis)
-            return 0
 
         no_changes_msg = "No changes were made to the system."
         utils.log_traceback(toolopts.tool_opts.debug)
