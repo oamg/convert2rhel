@@ -569,6 +569,7 @@ def format_report_section_heading(status_code):
     Format a section heading for a status in the report.
 
     :param status_code: The status code that will be used in the heading
+    :type status_code: int
     :return: The formatted heading that the caller can log.
     :rtype: str
     """
