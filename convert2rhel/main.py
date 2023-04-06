@@ -77,6 +77,7 @@ def main():
 
     # handle command line arguments
     toolopts.CLI()
+
     try:
         process_phase = ConversionPhase.POST_CLI
 
@@ -124,6 +125,22 @@ def main():
         loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
+    except (Exception, SystemExit, KeyboardInterrupt):
+        # Catching the three exception types separately due to
+        # Python-2.7 (RHEL 7) compatibility.
+        utils.log_traceback(toolopts.tool_opts.debug)
+        no_changes_msg = "No changes were made to the system."
+        breadcrumbs.breadcrumbs.finish_collection(success=False)
+
+        if process_phase == ConversionPhase.INIT:
+            print(no_changes_msg)
+        elif process_phase == ConversionPhase.POST_CLI:
+            loggerinst.info(no_changes_msg)
+        elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
+            rollback_changes()
+        return 1
+
+    try:
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_ponr_conversion()
 
@@ -150,34 +167,26 @@ def main():
         utils.restart_system()
 
     except (Exception, SystemExit, KeyboardInterrupt) as err:
-        # Catching the three exception types separately due to python 2.4
-        # (RHEL 5) - 2.7 (RHEL 7) compatibility.
+        # Catching the three exception types separately due to
+        # Python-2.7 (RHEL 7) compatibility.
+
         utils.log_traceback(toolopts.tool_opts.debug)
-        no_changes_msg = "No changes were made to the system."
         breadcrumbs.breadcrumbs.finish_collection(success=False)
 
-        if is_help_msg_exit(process_phase, err):
-            return 0
-        elif process_phase == ConversionPhase.INIT:
-            print(no_changes_msg)
-        elif process_phase == ConversionPhase.POST_CLI:
-            loggerinst.info(no_changes_msg)
-        elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
-            rollback_changes()
-        elif process_phase == ConversionPhase.POST_PONR_CHANGES:
-            # After the process of subscription is done and the mass update of
-            # packages is started convert2rhel will not be able to guarantee a
-            # system rollback without user intervention. If a proper rollback
-            # solution is necessary it will need to be future implemented here
-            # or with the use of other backup tools.
-            loggerinst.warning(
-                "The conversion process failed.\n\n"
-                "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
-                " fully converted, and might incorrectly be reporting as a Red Hat Enterprise Linux machine.\n\n"
-                "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
-                " the system from a backup."
-            )
-            subscription.update_rhsm_custom_facts()
+        # After the process of subscription is done and the mass update of
+        # packages is started convert2rhel will not be able to guarantee a
+        # system rollback without user intervention. If a proper rollback
+        # solution is necessary it will need to be future implemented here
+        # or with the use of other backup tools.
+        loggerinst.warning(
+            "The conversion process failed.\n\n"
+            "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
+            " fully converted, and might incorrectly be reporting as a Red Hat Enterprise Linux machine.\n\n"
+            "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+            " the system from a backup."
+        )
+        subscription.update_rhsm_custom_facts()
+
         return 1
 
     return 0
@@ -272,15 +281,6 @@ def post_ponr_conversion():
     loggerinst.task("Convert: Lock releasever in RHEL repositories")
     subscription.lock_releasever_in_rhel_repositories()
     return
-
-
-def is_help_msg_exit(process_phase, err):
-    """After printing the help message, optparse within the toolopts.CLI()
-    call terminates the process with sys.exit(0).
-    """
-    if process_phase == ConversionPhase.INIT and isinstance(err, SystemExit) and err.args[0] == 0:
-        return True
-    return False
 
 
 def rollback_changes():
