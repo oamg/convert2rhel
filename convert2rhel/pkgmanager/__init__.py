@@ -109,14 +109,16 @@ def rpm_db_lock(pkg_obj):
     """Context manager to handle rpm database termination.
 
     .. note::
-        This context manager will only work with an instance of
+        This context manager will only do something with an instance of
         `yum.rpmsack.RPMInstalledPackage`, as it will access specific
-        properties inside that class to close the RPM DB.
+        properties inside that class to close the RPM DB.  pkg_obj's from
+        dnf are fine to pass in but will be a no-op as dnf manages the
+        lifetime of the rpm_db lock fine on its own.
 
     .. important::
         This context manager will be used for both yum and dnf, but only yum
-        needs to do a manual cleanup after the usage. Dnf seems to handle this
-        properly.
+        will actually do an explicit cleanup after the usage. Yum seems to need
+        to do that explicitly while Dnf handles it properly.
 
     :param pkg_obj: Instace of a package RPM installed on the system.
     :type pkg_obj: yum.rpmsack.RPMInstalledPackage | dnf.package.Package
