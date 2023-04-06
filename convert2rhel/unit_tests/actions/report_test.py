@@ -187,6 +187,6 @@ def test_summary(results, expected_results, include_all_reports, caplog):
 def test_summary_ordering(results, include_all_reports, expected_results, caplog):
     report.summary(results, include_all_reports)
 
-    log_ordering = [record.message for record in caplog.records[-len(expected_results):]]
+    log_ordering = [record.message for record in caplog.records[-len(expected_results) :]]
     # Get the order and the message
     assert expected_results == log_ordering
