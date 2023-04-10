@@ -68,7 +68,15 @@ TMP_DIR = "/var/lib/convert2rhel/"
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 
-# Code taken from https://stackoverflow.com/a/63773140
+class UnableToSerialize(Exception):
+    """
+    Internal class that is used to declare that a object was not able to be
+    serialized with Pickle inside the Process subclass.
+    """
+
+    pass
+
+
 class Process(multiprocessing.Process):
     """Overrides the implementation of the multiprocessing.Process class.
 
@@ -78,6 +86,9 @@ class Process(multiprocessing.Process):
     inside the child process will handle the exceptions, so in our case, if we
     raise SystemExit because we are using `logger.critical`, we wouldn't have a
     chance to catch that and enter the rollback.
+
+    .. note::
+        Code taken from https://stackoverflow.com/a/63773140
     """
 
     def __init__(self, *args, **kwargs):
@@ -87,7 +98,15 @@ class Process(multiprocessing.Process):
         self._exception = None
 
     def run(self):
-        """Overrides the `run` method to catch exceptions raised in child."""
+        """Overrides the `run` method to catch exceptions raised in child.
+
+        .. important::
+            Exceptions that bubble up to this point will deadlock if the
+            traceback are over 64KiB in size. It is not a good idea to let
+            unhandled exceptions go up this point as it could cause the threads
+            to lock indefinitely.
+            Link to comment: https://stackoverflow.com/questions/19924104/python-multiprocessing-handling-child-errors-in-parent/33599967#comment113491531_33599967
+        """
         try:
             multiprocessing.Process.run(self)
             self._cconn.send(None)
@@ -96,15 +115,20 @@ class Process(multiprocessing.Process):
         # is to catch `SystemExit` *and* any `Exception` that shows up as we do
         # a lot of logger.critical() and they do raise `SystemExit`.
         except (Exception, SystemExit) as e:
-            tb = traceback.format_exc()
-            self._cconn.send((e, tb))
+            try:
+                import cPickle as pickle
+            except ImportError:
+                import pickle
+
+            try:
+                self._cconn.send(e)
+            except pickle.PicklingError:
+                self._cconn.send(UnableToSerialize("Child process raised %s: %s" % (type(e), str(e))))
 
     @property
     def exception(self):
-        """Custom property to access the exception raised by the children."""
         if self._pconn.poll():
             self._exception = self._pconn.recv()
-
         return self._exception
 
 
@@ -177,7 +201,6 @@ def run_as_child_process(func):
             queue.put(result)
 
         queue = multiprocessing.Queue()
-
         kwargs.update({"func": func, "queue": queue})
         process = Process(target=inner_wrapper, args=args, kwargs=kwargs)
         try:

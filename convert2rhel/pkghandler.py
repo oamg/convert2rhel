@@ -1024,7 +1024,8 @@ def get_total_packages_to_update(reposdir):
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
-        # We're using the reposdir with dnf only because we currently hardcode the repofiles for RHEL 8 derivatives only.
+        # We're using the reposdir with dnf only because we currently hardcode
+        # the repofiles for RHEL 8 derivatives only.
         packages = _get_packages_to_update_dnf(reposdir=reposdir)
 
     return set(packages)
@@ -1042,11 +1043,11 @@ def _get_packages_to_update_yum():
         a rollback when the user presses Ctrl + C.
 
     :return: Return a list of packages that needs to be updated.
-    :rtype: list[str]
+    :rtype: list[str] | list
     """
+    all_packages = []
     base = pkgmanager.YumBase()
     packages = base.doPackageLists(pkgnarrow="updates")
-    all_packages = []
     for package in packages.updates:
         all_packages.append(package.name)
 
@@ -1064,19 +1065,17 @@ def _get_packages_to_update_dnf(reposdir):
     packages = []
     base = pkgmanager.Base()
 
-    # If we have an reposdir, that means we are trying to check the packages under
-    # CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4.
-    # That means we need to use our hardcoded repository files instead of the system ones.
+    # If we have an reposdir, that means we are trying to check the packages
+    # under CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4. That means we need to
+    # use our hardcoded repository files instead of the system ones.
     if reposdir:
         base.conf.reposdir = reposdir
 
     # Set DNF to read from the proper config files, at this moment, DNF can't
-    # automatically read and load the config files
-    # so we have to specify it to him.
-    # We set the PRIO_MAINCONFIG as the base config file to be read.
-    # We also set the folder /etc/dnf/vars as the main point for vars
-    # replacement in repo files.
-    # See this bugzilla comment:
+    # automatically read and load the config files so we have to specify it to
+    # him. We set the PRIO_MAINCONFIG as the base config file to be read. We
+    # also set the folder /etc/dnf/vars as the main point for vars replacement
+    # in repo files. See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
     base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
@@ -1087,8 +1086,7 @@ def _get_packages_to_update_dnf(reposdir):
     base.upgrade_all()
     base.resolve()
 
-    # Iterate over each and every one of them and append to
-    # the packages list
+    # Iterate over each and every one of them and append to the packages list
     for package in base.transaction:
         packages.append(package.name)
 
