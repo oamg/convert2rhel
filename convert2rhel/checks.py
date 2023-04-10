@@ -663,7 +663,7 @@ def check_package_updates():
 
     try:
         packages_to_update = get_total_packages_to_update(reposdir=reposdir)
-    except pkgmanager.RepoError as e:
+    except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
         # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
         # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
         # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
