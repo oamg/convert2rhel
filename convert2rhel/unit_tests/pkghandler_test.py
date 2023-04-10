@@ -1707,6 +1707,20 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
 
 
 @pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
+def test_get_packages_to_update_yum_no_more_mirrors(monkeypatch, caplog):
+    monkeypatch.setattr(
+        pkgmanager.YumBase,
+        "doPackageLists",
+        mock.Mock(side_effect=pkgmanager.Errors.NoMoreMirrorsRepoError("Failed to connect to repository.")),
+    )
+    with pytest.raises(pkgmanager.Errors.NoMoreMirrorsRepoError, match="Failed to connect to repository."):
+        _get_packages_to_update_yum()
+
+
+@pytest.mark.skipif(
     pkgmanager.TYPE != "dnf",
     reason="No dnf module detected on the system, skipping it.",
 )
