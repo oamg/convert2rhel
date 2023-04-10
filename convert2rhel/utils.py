@@ -130,7 +130,6 @@ class Process(multiprocessing.Process):
     def exception(self):
         if self._pconn.poll():
             self._exception = self._pconn.recv()
-
         return self._exception
 
 
