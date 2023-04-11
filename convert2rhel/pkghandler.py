@@ -293,7 +293,7 @@ def get_installed_pkgs_w_fingerprints(name=""):
 
 def get_pkg_fingerprint(pkg_obj):
     """Get fingerprint of the key used to sign a package."""
-    pkg_sig = get_pkg_signature_with_cleanup(pkg_obj)
+    pkg_sig = get_pkg_signature(pkg_obj)
     fingerprint_match = re.search("Key ID (.*)", pkg_sig)
     if fingerprint_match:
         return fingerprint_match.group(1)
@@ -481,8 +481,20 @@ def list_third_party_pkgs():
         loggerinst.info("No third party packages installed.")
 
 
+@utils.run_as_child_process
 def print_pkg_info(pkgs):
-    """Print package information."""
+    """Print package information.
+
+    .. important::
+        This function is being executed in a child process solely because of
+        the access to the internal properties of the package class for yum,
+        and help us to prevent that the package managers install their signal
+        handler globally and prevent the tool to handle the SIGINT when raised
+        by the user..
+
+    :param pkgs: List of packages to be printed
+    :type pkgs: list
+    """
     max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
     max_packager_length = max(
         max(
@@ -519,6 +531,7 @@ def print_pkg_info(pkgs):
 
     pkg_list = ""
     for pkg in pkgs:
+        # TODO(r0x0d): Take care of that in https://issues.redhat.com/browse/RHELC-160
         if pkgmanager.TYPE == "yum":
             try:
                 from_repo = pkg.yumdb_info.from_repo
