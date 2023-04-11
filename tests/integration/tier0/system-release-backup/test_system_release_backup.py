@@ -206,7 +206,6 @@ def test_backup_os_release_with_envar(
         c2r.expect(
             "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
         )
-        c2r.send(chr(3))
-        c2r.sendcontrol("d")
+        c2r.sendcontrol("c")
 
     assert shell("find /etc/os-release").returncode == 0
