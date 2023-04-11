@@ -74,6 +74,7 @@ def test_finish_collection(pretend_os, success, action, monkeypatch):
         assert not breadcrumbs.breadcrumbs.success
         assert breadcrumbs.breadcrumbs.target_os == "null"
 
+    assert breadcrumbs.breadcrumbs.data["action"] == action
     assert save_migration_results_mock.call_count == 1
     assert save_rhsm_facts_mock.call_count == 1
 
