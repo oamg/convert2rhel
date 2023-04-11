@@ -372,6 +372,7 @@ def list_third_party_pkgs():
         loggerinst.info("No third party packages installed.")
 
 
+@utils.run_as_child_process
 def print_pkg_info(pkgs):
     """Print package information.
 
