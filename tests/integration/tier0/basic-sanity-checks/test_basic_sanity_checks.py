@@ -206,7 +206,7 @@ def test_rhsm_error_logged(convert2rhel):
 
         # Wait until we reach that part, as the RHEL certificate will be
         # already be present.
-        assert c2r.expect("Convert: Subscription Manager - Subscribe system") == 0
+        assert c2r.expect("Prepare: Check that DBus Daemon is running") == 0
         c2r.sendcontrol("c")
 
         assert c2r.expect("No RHSM certificates found to be removed.", timeout=300) == 0
