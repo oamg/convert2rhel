@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, pkgmanager
+from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
@@ -49,7 +49,7 @@ class PackageUpdates(actions.Action):
 
         try:
             packages_to_update = get_total_packages_to_update(reposdir=reposdir)
-        except pkgmanager.RepoError as e:
+        except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
             # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
             # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
             # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
