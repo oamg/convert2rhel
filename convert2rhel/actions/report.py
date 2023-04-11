@@ -125,4 +125,4 @@ def summary(results, include_all_reports=False, with_colors=True):
     if not results:
         report.append("No problems detected during the analysis!")
 
-    logger.info("\n".join(report))
+    logger.info("%s\n" % "\n".join(report))
