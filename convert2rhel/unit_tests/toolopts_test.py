@@ -36,7 +36,10 @@ from six.moves import mock
 
 
 def mock_cli_arguments(args):
-    """Return a list of cli arguments where the first one is always the name of the executable, followed by 'args'."""
+    """
+    Return a list of cli arguments where the first one is always the name of
+    the executable, followed by 'args'.
+    """
     return sys.argv[0:1] + args
 
 
@@ -475,7 +478,7 @@ def test_validate_serverurl_parsing(url_parts, message):
         convert2rhel.toolopts._validate_serverurl_parsing(url_parts)
 
 
-def test__log_command_used(caplog, monkeypatch):
+def test_log_command_used(caplog, monkeypatch):
     obfuscation_string = "*" * 5
     input_command = mock_cli_arguments(
         ["--username", "uname", "--password", "123", "--activationkey", "456", "--org", "789"]
@@ -523,6 +526,22 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
         # Don't care about the exception, focus on output message
         pass
     assert message in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
+        (mock_cli_arguments(["--pre-check"]), True),
+        (mock_cli_arguments([]), False),
+    ),
+)
+def test_pre_assessment_set(argv, expected, monkeypatch):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+
+    convert2rhel.toolopts.CLI()
+
+    assert tool_opts.pre_assessment == expected
 
 
 @pytest.mark.parametrize(

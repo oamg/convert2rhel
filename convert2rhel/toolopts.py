@@ -55,6 +55,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.keep_rhsm = False
+        self.pre_assessment = False
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -69,16 +70,23 @@ class ToolOpts(object):
                 setattr(self, key, value)
 
 
+# Code to be executed upon module import
+tool_opts = ToolOpts()  # pylint: disable=C0103
+
+
 class CLI(object):
     def __init__(self):
         self._parser = self._get_argparser()
+        self._shared_options_parser = argparse.ArgumentParser(add_help=False)
         self._register_options()
+        self._register_commands()
         self._process_cli_options()
 
     @staticmethod
     def _get_argparser():
         usage = (
             "\n"
+            "  convert2rhel\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
@@ -87,15 +95,32 @@ class CLI(object):
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]"
+            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+            r"  convert2rhel {analyze}"
             "\n\n"
             "*WARNING* The tool needs to be run under the root user"
         )
         return argparse.ArgumentParser(
-            prog="convert2rhel",
-            conflict_handler="resolve",
-            usage=usage,
-            add_help=False,
+            conflict_handler="resolve", usage=usage, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+
+    def _register_commands(self):
+        """ """
+        subparsers = self._parser.add_subparsers(title="Subcommands", dest="command")
+        self._analyze_parser = subparsers.add_parser(
+            "analyze",
+            help="Run all Convert2RHEL initial checks up until the "
+            " Point of no Return (PONR) and generate a report with the findings."
+            " A rollback is initiated after the checks to put the system back"
+            " in the original state.",
+            parents=[self._shared_options_parser],
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
+        self._convert_parser = subparsers.add_parser(
+            "convert",
+            help="Convert the system.",
+            parents=[self._shared_options_parser],
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
     def _register_options(self):
@@ -112,7 +137,22 @@ class CLI(object):
             version=__version__,
             help="Show convert2rhel version and exit.",
         )
+        # TODO: check if this option is suited to be a shared option
         self._parser.add_argument(
+            "--config_file",
+            action="append",
+            help="The configuration file is an optional way to safely pass either a user password or an activation key",
+        )
+        # Duplicating both `--debug`` options here as we want to make it
+        # available for any other basic operation that we run without a
+        # subcommand in mind, and, it is a shared option so we can share it
+        # between any subcommands we may create in the future.
+        self._parser.add_argument(
+            "--debug",
+            action="store_true",
+            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
+        )
+        self._shared_options_parser.add_argument(
             "--debug",
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
@@ -120,7 +160,7 @@ class CLI(object):
         # Importing here instead of on top of the file to avoid cyclic dependency
         from convert2rhel.systeminfo import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
 
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
             "--no-rpm-va",
             action="store_true",
             help="Skip gathering changed rpm files using"
@@ -129,7 +169,7 @@ class CLI(object):
             " to show you what rpm files have been affected by the conversion."
             % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
             "--enablerepo",
             metavar="repoidglob",
             action="append",
@@ -139,7 +179,7 @@ class CLI(object):
             " to override the default RHEL repoids that convert2rhel enables through"
             " subscription-manager.",
         )
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
             "--disablerepo",
             metavar="repoidglob",
             action="append",
@@ -153,9 +193,9 @@ class CLI(object):
         self._add_automation_options()
 
     def _add_automation_options(self):
-        group = self._parser.add_argument_group(
-            "Automation Options",
-            "The following options are used to automate the installation",
+        group = self._shared_options_parser.add_argument_group(
+            title="Automation Options",
+            description="The following options are used to automate the installation",
         )
         group.add_argument(
             "-r",
@@ -170,9 +210,9 @@ class CLI(object):
         )
 
     def _add_alternative_installation_options(self):
-        group = self._parser.add_argument_group(
-            "Alternative Installation Options",
-            "The following options are required if you do not intend on using subscription-manager",
+        group = self._shared_options_parser.add_argument_group(
+            title="Alternative Installation Options",
+            description="The following options are required if you do not intend on using subscription-manager",
         )
         group.add_argument(
             "--disable-submgr",
@@ -182,15 +222,15 @@ class CLI(object):
         group.add_argument(
             "--no-rhsm",
             action="store_true",
-            help="Do not use subscription-manager. Use custom repositories instead. See --enablerepo/--disablerepo"
-            " options. Without this option, subscription-manager is used to access RHEL repositories by default."
-            " Using this option requires specifying --enablerepo as well.",
+            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
+            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
+            " Using this option requires to have the --enablerepo specified.",
         )
 
     def _add_subscription_manager_options(self):
-        group = self._parser.add_argument_group(
-            "Subscription Manager Options",
-            "The following options are specific to using subscription-manager.",
+        group = self._shared_options_parser.add_argument_group(
+            title="Subscription Manager Options",
+            description="The following options are specific to using subscription-manager.",
         )
         group.add_argument(
             "-u",
@@ -294,12 +334,25 @@ class CLI(object):
 
         warn_on_unsupported_options()
 
-        parsed_opts = self._parser.parse_args()
+        args = []
+        argv = sys.argv[1:]
 
-        global tool_opts  # pylint: disable=C0103
+        # If it returns an empty list, it means we don't have any of the
+        # commands in the argv.
+        has_subcommand = filter(lambda x: x in ("convert", "analyze"), argv)
+        if not has_subcommand:
+            args.append("convert")
+
+        args.extend(argv)
+
+        parsed_opts = self._parser.parse_args(args)
+        shared_parsed_opts = self._shared_options_parser.parse_args(args)
 
         if parsed_opts.debug:
             tool_opts.debug = True
+
+        if parsed_opts.command:
+            tool_opts.command = parsed_opts.command
 
         # Processing the configuration file
         conf_file_opts = options_from_config_files(parsed_opts.config_file)
@@ -308,30 +361,30 @@ class CLI(object):
         tool_opts.config_file = parsed_opts.config_file
         # corner case: password on CLI or in password file and activation-key in the config file
         # password from CLI has precedence and activation-key must be deleted (unused)
-        if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
+        if config_opts.activation_key and (shared_parsed_opts.password or shared_parsed_opts.password_from_file):
             tool_opts.activation_key = None
 
-        if parsed_opts.no_rpm_va:
+        if shared_parsed_opts.no_rpm_va:
             tool_opts.no_rpm_va = True
 
-        if parsed_opts.username:
-            tool_opts.username = parsed_opts.username
+        if shared_parsed_opts.username:
+            tool_opts.username = shared_parsed_opts.username
 
-        if parsed_opts.password:
-            tool_opts.password = parsed_opts.password
+        if shared_parsed_opts.password:
+            tool_opts.password = shared_parsed_opts.password
 
-        if parsed_opts.password_from_file:
+        if shared_parsed_opts.password_from_file:
             loggerinst.warning("Deprecated. Use -c | --config-file instead.")
-            tool_opts.password_file = parsed_opts.password_from_file
-            tool_opts.password = utils.get_file_content(parsed_opts.password_from_file)
+            tool_opts.password_file = shared_parsed_opts.password_from_file
+            tool_opts.password = utils.get_file_content(shared_parsed_opts.password_from_file)
 
-        if parsed_opts.enablerepo:
-            tool_opts.enablerepo = parsed_opts.enablerepo
-        if parsed_opts.disablerepo:
-            tool_opts.disablerepo = parsed_opts.disablerepo
+        if shared_parsed_opts.enablerepo:
+            tool_opts.enablerepo = shared_parsed_opts.enablerepo
+        if shared_parsed_opts.disablerepo:
+            tool_opts.disablerepo = shared_parsed_opts.disablerepo
 
         # Check if we have duplicate repositories specified
-        if parsed_opts.enablerepo or parsed_opts.disablerepo:
+        if shared_parsed_opts.enablerepo or shared_parsed_opts.disablerepo:
             duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
             if duplicate_repos:
                 message = "Duplicate repositories were found across disablerepo and enablerepo options:"
@@ -340,7 +393,7 @@ class CLI(object):
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 
-        if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
+        if shared_parsed_opts.no_rhsm or shared_parsed_opts.disable_submgr:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
                 loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
@@ -350,10 +403,10 @@ class CLI(object):
             # - the ones enabled through subscription-manager based on convert2rhel config files
             tool_opts.disablerepo = ["*"]
 
-        if parsed_opts.pool:
-            tool_opts.pool = parsed_opts.pool
+        if shared_parsed_opts.pool:
+            tool_opts.pool = shared_parsed_opts.pool
 
-        if parsed_opts.serverurl:
+        if shared_parsed_opts.serverurl:
             if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
@@ -361,7 +414,7 @@ class CLI(object):
             else:
                 # Parse the serverurl and save the components.
                 try:
-                    url_parts = _parse_subscription_manager_serverurl(parsed_opts.serverurl)
+                    url_parts = _parse_subscription_manager_serverurl(shared_parsed_opts.serverurl)
                     url_parts = _validate_serverurl_parsing(url_parts)
                 except ValueError as e:
                     # If we fail to parse, fail the conversion. The reason for
@@ -377,7 +430,7 @@ class CLI(object):
                     loggerinst.critical(
                         "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
                         "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-                        "Supplied serverurl: %s\nError: %s" % (parsed_opts.serverurl, e)
+                        "Supplied serverurl: %s\nError: %s" % (shared_parsed_opts.serverurl, e)
                     )
 
                 tool_opts.rhsm_hostname = url_parts.hostname
@@ -390,23 +443,23 @@ class CLI(object):
                 if url_parts.path:
                     tool_opts.rhsm_prefix = url_parts.path
 
-        if parsed_opts.keep_rhsm:
+        if shared_parsed_opts.keep_rhsm:
             if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --keep-rhsm option. It has no effect when --disable-submgr or --no-rhsm is used."
                 )
             else:
-                tool_opts.keep_rhsm = parsed_opts.keep_rhsm
+                tool_opts.keep_rhsm = shared_parsed_opts.keep_rhsm
 
-        tool_opts.autoaccept = parsed_opts.y
-        tool_opts.auto_attach = parsed_opts.auto_attach
-        tool_opts.restart = parsed_opts.restart
+        tool_opts.autoaccept = shared_parsed_opts.y
+        tool_opts.auto_attach = shared_parsed_opts.auto_attach
+        tool_opts.restart = shared_parsed_opts.restart
 
-        if parsed_opts.activationkey:
-            tool_opts.activation_key = parsed_opts.activationkey
+        if shared_parsed_opts.activationkey:
+            tool_opts.activation_key = shared_parsed_opts.activationkey
 
-        if parsed_opts.org:
-            tool_opts.org = parsed_opts.org
+        if shared_parsed_opts.org:
+            tool_opts.org = shared_parsed_opts.org
 
         # Checks of multiple authentication sources
         if tool_opts.password and tool_opts.activation_key:
@@ -420,19 +473,21 @@ class CLI(object):
                 " We're going to use the activation key."
             )
 
-        if parsed_opts.password and parsed_opts.password_from_file:
+        if shared_parsed_opts.password and shared_parsed_opts.password_from_file:
             loggerinst.warning(
                 "You have passed the RHSM password through both the --password-from-file and the --password option."
                 " We're going to use the password from file."
             )
 
-        if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
+        if (config_opts.activation_key or config_opts.password) and (
+            shared_parsed_opts.activationkey or shared_parsed_opts.password
+        ):
             loggerinst.warning(
                 "You have passed either the RHSM password or activation key through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
-        if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
+        if (config_opts.activation_key or config_opts.password) and shared_parsed_opts.password_from_file:
             loggerinst.warning(
                 "You have passed the RHSM credentials both through a config file and through a password file."
                 " We're going to use the password file."
@@ -557,7 +612,3 @@ def _validate_serverurl_parsing(url_parts):
         raise ValueError("A hostname must be specified in a subscription-manager serverurl")
 
     return url_parts
-
-
-# Code to be executed upon module import
-tool_opts = ToolOpts()  # pylint: disable=C0103

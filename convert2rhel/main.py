@@ -81,6 +81,11 @@ def main():
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
+        if toolopts.tool_opts.command == "analyze":
+            rollback()
+            # Return code here depends on the result of the action framework.
+            return 0
+
         post_ponr_changes()
 
         ### Port the code below into pre_ponr_changes(), rollback(), or post_ponr_changes().
@@ -167,7 +172,6 @@ def main():
             )
             subscription.update_rhsm_custom_facts()
         return 1
-
     return 0
 
 
