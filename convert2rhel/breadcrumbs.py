@@ -71,6 +71,8 @@ class Breadcrumbs(object):
         self._pkg_object = None
         # Flag to inform the user about DISABLE_TELEMETRY. If not informed, we shouldn't save rhsm_facts.
         self._inform_telemetry = False
+        # Flag that indicates if the conversion was an analysis or not.
+        self.conversion_analysis = False
 
     def collect_early_data(self):
         """Set data which is accessible before the conversion"""
@@ -81,12 +83,22 @@ class Breadcrumbs(object):
         self._set_source_os()
         self._set_started()
 
-    def finish_collection(self, success=False):
-        """Set the final data for breadcrumbs after the conversion ends."""
+    def finish_collection(self, success=False, action="convert"):
+        """Set the final data for breadcrumbs after the conversion ends.
+
+        :param success: Flag to determinate the if the conversion process was
+            successfull.
+        :type success: bool
+        :param action: The action used during the conversion
+        :type action: str
+        """
         self.success = success
 
-        if success:
+        if success and action == "convert":
             self._set_target_os()
+
+        if action == "analysis":
+            self.conversion_analysis = True
 
         self._set_ended()
 
@@ -162,6 +174,7 @@ class Breadcrumbs(object):
         return {
             "version": self.version,
             "activity": self.activity,
+            "analysis": self.conversion_analysis,
             "packages": [{"nevra": self.nevra, "signature": self.signature}],
             "executed": self.executed,
             "success": self.success,

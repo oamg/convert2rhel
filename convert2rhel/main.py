@@ -123,7 +123,7 @@ def main():
         utils.restart_system()
 
     except _AnalyzeExit:
-        breadcrumbs.breadcrumbs.finish_collection(success=True)
+        breadcrumbs.breadcrumbs.finish_collection(success=True, action="analysis")
 
         rollback_changes()
         report.summary(
@@ -136,7 +136,7 @@ def main():
     except (Exception, SystemExit, KeyboardInterrupt) as err:
         # Catching the three exception types separately due to python 2.4
         # (RHEL 5) - 2.7 (RHEL 7) compatibility.
-        breadcrumbs.breadcrumbs.finish_collection(success=False)
+        breadcrumbs.breadcrumbs.finish_collection()
 
         no_changes_msg = "No changes were made to the system."
         utils.log_traceback(toolopts.tool_opts.debug)
