@@ -82,6 +82,11 @@ def main():
         gather_system_info()
         prepare_system()
 
+        # Note: set pre_conversion_results before changing to the next phase so
+        # we don't fail in case rollback is triggered during
+        # actions.run_actions() (either from a bug or from the user hitting
+        # Ctrl-C)
+        pre_conversion_results = None
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_actions()
 
@@ -126,6 +131,7 @@ def main():
         breadcrumbs.breadcrumbs.finish_collection(success=True, action="analysis")
 
         rollback_changes()
+
         report.summary(
             pre_conversion_results,
             include_all_reports=experimental_analysis,
@@ -149,11 +155,14 @@ def main():
             loggerinst.info(no_changes_msg)
         elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
             rollback_changes()
-            report.summary(
-                pre_conversion_results,
-                include_all_reports=experimental_analysis,
-                with_colors=logger_module.should_disable_color_output(),
-            )
+            if pre_conversion_results is None:
+                loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
+            else:
+                report.summary(
+                    pre_conversion_results,
+                    include_all_reports=experimental_analysis,
+                    with_colors=logger_module.should_disable_color_output(),
+                )
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of
             # packages is started convert2rhel will not be able to guarantee a

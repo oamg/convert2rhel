@@ -875,9 +875,12 @@ def get_terminal_size():
         return (80, 24)
 
     terminal_size_c_struct = struct.pack("HHHH", 0, 0, 0, 0)
-    size = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, terminal_size_c_struct)
+    terminal_info = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, terminal_size_c_struct)
 
-    return struct.unpack("HHHH", size)[:2]
+    size = struct.unpack("HHHH", terminal_info)[:2]
+    # The fcntl data has height, width but shutil.get_terminal_size, which
+    # we're emulating uses width, height.
+    return (size[1], size[0])
 
 
 def hide_secrets(

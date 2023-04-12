@@ -93,7 +93,7 @@ def summary(results, include_all_reports=False, with_colors=True):
         highest ones.
     :type include_all_reports: bool
     """
-    logger.task("Conversion analysis report")
+    logger.task("Pre-conversion analysis report")
 
     if include_all_reports:
         results = results.items()
@@ -101,7 +101,7 @@ def summary(results, include_all_reports=False, with_colors=True):
         results = find_actions_of_severity(results, "WARNING")
 
     terminal_size = utils.get_terminal_size()
-    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0])
+    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.
     results = sorted(results, key=lambda item: item[1]["status"], reverse=True)
