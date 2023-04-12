@@ -40,8 +40,6 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("Continue with the system conversion?", timeout=300) == 0
-        c2r.sendline("y")
         assert (
             c2r.expect(
                 "Couldn't fetch the list of the most recent kernels available in the repositories. Skipping the loaded kernel check.",
@@ -49,8 +47,8 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
             )
             == 0
         )
-        assert c2r.expect("Continue with the system conversion?", timeout=300) == 0
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 

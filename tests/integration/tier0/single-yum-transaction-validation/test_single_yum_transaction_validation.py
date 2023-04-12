@@ -11,14 +11,14 @@ PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
 
 SERVER_SUB = "CentOS Linux"
 PKGMANAGER = "yum"
-FINAL_MESSAGE = "There are no suitable mirrors available for the loaded repositories."
+FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: There are no suitable mirrors available for the loaded repositories."
 
 if "oracle" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "Oracle Linux Server"
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
-    FINAL_MESSAGE = "Failed to download the transaction packages."
+    FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: Failed to download the transaction packages."
 
 
 @pytest.fixture()
@@ -119,7 +119,12 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
 
         remove_entitlement_certs()
-
-        assert c2r.expect_exact("Failed to validate the yum transaction.", timeout=600) == 0
+        assert (
+            c2r.expect_exact(
+                "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: Failed to validate the yum transaction.",
+                timeout=600,
+            )
+            == 0
+        )
 
     assert c2r.exitstatus == 1
