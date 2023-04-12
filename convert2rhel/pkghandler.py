@@ -489,7 +489,6 @@ def list_third_party_pkgs():
             " for the following third party packages:\n" % system_info.name
         )
         print_pkg_info(third_party_pkgs)
-        utils.ask_to_continue()
     else:
         loggerinst.info("No third party packages installed.")
 

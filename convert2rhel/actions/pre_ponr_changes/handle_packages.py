@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, pkghandler
+from convert2rhel import actions, pkghandler, utils
 from convert2rhel.systeminfo import system_info
 
 
@@ -36,16 +36,7 @@ class ListThirdPartyPackages(actions.Action):
 
         logger.task("Convert: List third-party packages")
 
-        third_party_pkgs = pkghandler.get_third_party_pkgs()
-        if third_party_pkgs:
-            logger.warning(
-                "Only packages signed by %s are to be"
-                " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n" % system_info.name
-            )
-            pkghandler.print_pkg_info(third_party_pkgs)
-        else:
-            logger.info("No third party packages installed.")
+        pkghandler.list_third_party_pkgs()
 
 
 class RemoveExcludedPackages(actions.Action):
