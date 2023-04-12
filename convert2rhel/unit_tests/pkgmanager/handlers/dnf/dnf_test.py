@@ -130,7 +130,7 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
 
         assert isinstance(instance._base, pkgmanager.Base)
-        assert instance._base.conf.substitutions["releasever"] == "8.4"
+        assert instance._base.conf.substitutions["releasever"] == "8.6"
         assert instance._base.conf.module_platform_id == "platform:el8"
         assert isinstance(instance._base._ds_callback, DependencySolverProgressIndicatorCallback)
 

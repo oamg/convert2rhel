@@ -282,8 +282,8 @@ all_systems = pytest.mark.parametrize(
     (
         ("7.9.1111", "CentOS Linux"),
         ("7.9.1111", "Oracle Linux Server"),
-        ("8.4.1111", "CentOS Linux"),
-        ("8.4.1111", "Oracle Linux Server"),
+        ("8.6.1111", "CentOS Linux"),
+        ("8.6.1111", "Oracle Linux Server"),
     ),
     indirect=True,
 )
@@ -294,7 +294,7 @@ centos7 = pytest.mark.parametrize(
 )
 centos8 = pytest.mark.parametrize(
     "pretend_os",
-    (("8.4.1111", "CentOS Linux"),),
+    (("8.6.1111", "CentOS Linux"),),
     indirect=True,
 )
 oracle7 = pytest.mark.parametrize(
@@ -304,6 +304,6 @@ oracle7 = pytest.mark.parametrize(
 )
 oracle8 = pytest.mark.parametrize(
     "pretend_os",
-    (("8.4.1111", "Oracle Linux Server"),),
+    (("8.6.1111", "Oracle Linux Server"),),
     indirect=True,
 )

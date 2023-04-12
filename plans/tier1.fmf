@@ -28,7 +28,7 @@
         - enabled: false
           # TODO EUS Bump disabled version
           when: >
-            distro != centos-8.4
+            distro != centos-8.6
     discover+:
         filter: tag:checks-after-conversion
     prepare+:

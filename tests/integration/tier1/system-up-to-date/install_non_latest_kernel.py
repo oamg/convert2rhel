@@ -6,10 +6,7 @@ def handle_centos8(shell):
     Install non latest kernel for each version that is available in the repository.
     """
 
-    if "centos-8.4" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install kernel-4.18.0-305.3.1.el8 -y").returncode == 0
-        shell("grub2-set-default 'CentOS Linux (4.18.0-305.3.1.el8.x86_64) 8'")
-    elif "centos-8.5" in SYSTEM_RELEASE_ENV:
+    if "centos-8.5" in SYSTEM_RELEASE_ENV:
         assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
         shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
 
