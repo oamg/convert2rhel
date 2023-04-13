@@ -6,7 +6,6 @@ description: |
 tier: 0
 
 tag+:
-    - nondestructive
     - modified-releasever
 
 /modified_releasever_in_configs:

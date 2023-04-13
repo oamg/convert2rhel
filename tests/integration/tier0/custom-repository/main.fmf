@@ -6,9 +6,7 @@ description: |
 tier: 0
 
 tag+:
-    - repository
     - custom-repository
-    - subscription-manager
 
 
 /custom_valid_repo_provided:

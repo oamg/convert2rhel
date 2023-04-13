@@ -15,9 +15,7 @@ adjust+:
           distro == centos-8
 
 tag+:
-    - certificate
-    - subscription-manager
-    - rollback
+    - sub-man-rollback
 
 /sub_man_rollback:
     environment+:

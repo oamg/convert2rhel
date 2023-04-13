@@ -4,9 +4,6 @@ summary: |
 tier: 0
 
 tag+:
-    - nondestructive
-    - registration
-    - rhsm
     - user-prompt-response
 
 /empty_username_and_password:
