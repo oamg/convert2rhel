@@ -20,6 +20,8 @@ import logging
 import os
 import re
 
+from collections import namedtuple
+
 import rpm
 
 from convert2rhel import backup, pkgmanager, utils
@@ -53,7 +55,7 @@ ENVRA_ENVR_FORMAT = re.compile(r"^\d:")
 
 # This regex finds if a package is in NEVRA/NEVR format by searching for any digit
 # found between a "-" and a ":"
-NEVRA_NEVR_FORMAT = re.compile(r"-\d:")
+NEVRA_NEVR_FORMAT = re.compile(r"-\d+:")
 
 # This regex ensures there are no whitespace charcters in the package name
 PKG_NAME = re.compile(r"^[^\s]+$")
@@ -80,12 +82,26 @@ _KNOWN_PKG_MESSAGE_KEYS = (
 _PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
 
 
-class PkgWFingerprint(object):
-    """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
-
-    def __init__(self, pkg_obj, fingerprint):
-        self.pkg_obj = pkg_obj
-        self.fingerprint = fingerprint
+PackageNevra = namedtuple(
+    "PackageNevra",
+    (
+        "name",
+        "epoch",
+        "version",
+        "release",
+        "arch",
+    ),
+)
+PackageInformation = namedtuple(
+    "PackageInformation",
+    (
+        "packager",
+        "vendor",
+        "nevra",
+        "fingerprint",
+        "signature",
+    ),
+)
 
 
 def call_yum_cmd(
@@ -259,10 +275,18 @@ def resolve_dep_errors(output, pkgs=frozenset()):
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
-    """Return list of names of installed packages that are signed
-    by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
-    list in the fingerprints parameter. The packages can be optionally
-    filtered by name.
+    """
+    Return list of names of installed packages that are signed by the specific
+    OS GPG keys. Fingerprints of the GPG keys are passed as a list in the
+    fingerprints parameter.
+    The packages can be optionally filtered by name.
+
+    :param fingerprints: Fingerprints to filter packages found
+    :type fingerprints: list[str]
+    :param name: Name of a package to filter. Defaults to empty string
+    :type name: str
+    :return: A list of packages with name and arch.
+    :rtype: list[str]
     """
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
 
@@ -272,84 +296,94 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     # architecture to make sure both of them will be passed to dnf and, if
     # possible, converted. This issue does not happen on yum, so we can still
     # use only the package name for it.
+
     return [
-        "%s.%s" % (pkg.pkg_obj.name, pkg.pkg_obj.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
+        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
     ]
 
 
 def get_installed_pkgs_w_fingerprints(name=""):
-    """Return a list of objects that hold one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
-    of yum and hawkey.Package in case of dnf) and GPG key fingerprints used to sign it. The packages can be
-    optionally filtered by name.
+    """
+    Return a list of objects that hold one of the installed packages
+    (yum.rpmsack.RPMInstalledPackage in case of yum and hawkey.Package in case
+    of dnf) and GPG key fingerprints used to sign it.
+
+    The packages can be optionally filtered by name.
+
+    :param name: Name of a package to use as a filter. Default to empty string.
+    :type name: str
+    :return: A list containing package information
+    :rtype: list[PackageInformation]
     """
     package_objects = get_installed_pkg_objects(name)
     pkgs_w_fingerprints = []
     for pkg_obj in package_objects:
-        fingerprint = get_pkg_fingerprint(pkg_obj)
-        pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, fingerprint))
+        package = get_package_information(str(pkg_obj))
+        if package:
+            package = package[0]
+            if package.fingerprint:
+                pkgs_w_fingerprints.append(package)
 
     return pkgs_w_fingerprints
 
 
-def get_pkg_fingerprint(pkg_obj):
+def _get_pkg_fingerprint(signature):
     """Get fingerprint of the key used to sign a package."""
-    pkg_sig = get_pkg_signature(pkg_obj)
-    fingerprint_match = re.search("Key ID (.*)", pkg_sig)
-    if fingerprint_match:
-        return fingerprint_match.group(1)
+    fingerprint_match = re.search("Key ID (.*)", signature)
+    return fingerprint_match.group(1) if fingerprint_match else "none"
+
+
+def get_package_information(pkg_name=""):
+    """
+    Get information about a package, such as signature from the RPM database,
+    packager, vendor, NEVRA and fingerprint.
+
+    :param pkg_name: Full name of a package to check their signature.
+    :type pkg_obj: str
+    :return: Return the package signature.
+    :rtype: list[PackageInformation]
+    """
+    cmd = [
+        "rpm",
+        "--qf",
+        "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+    ]
+
+    if pkg_name:
+        cmd.extend(
+            [
+                "-q",
+                pkg_name,
+            ]
+        )
     else:
-        return "none"
+        cmd.append("-qa")
 
+    output, _ = utils.run_subprocess(cmd, print_cmd=False, print_output=False)
 
-@utils.run_as_child_process
-def get_pkg_signature_with_cleanup(pkg_obj):
-    """
-    Wrapper function for get_pkg_signature that will run as child and handle
-    rpmdb termination.
+    # Filter out the empty values, u''
+    split_output = [value for value in output.split("\n") if value]
 
-    .. important::
-        This function will run as a child process of the main process. We
-        need to do it this way is to make it respect the SIGINT signal
-        when the user presses Ctrl + C (SIGINT) or sends a
-        `kill -<number> <pid>` to the main process. The reason this is
-        necessary is that librpm installs a global signal handler during
-        some functions calls which is not removed once those functions
-        return.  When those functions are run in the convert2rhel process,
-        the signal handler causes convert2rhel to exit immediately if SIGINT
-        is sent.  Running librpm code in a child process means the signal
-        handler only applies to the child, not to the main convert2rhel process.
+    normalized_list = []
+    for value in split_output:
+        if "C2R" in value:
+            try:
+                packager, vendor, name, signature = tuple(value.lstrip("C2R ").split("&"))
+                name, epoch, version, release, arch = tuple(parse_pkg_string(name))
 
-        Running the function in a child process does not change how the
-        function itself works.
+                # If a package has a signature, then proceed to get the package
+                # fingerprint. Otherwise, just set it to None.
+                fingerprint = _get_pkg_fingerprint(signature) if signature else None
 
-        In addition to it running as a child process, this function will handle
-        the closing of the rpmdb instance to prevent further problems when
-        using Yum in a CLI, or, when there is a call to the Yum python API.
+                normalized_list.append(
+                    PackageInformation(
+                        packager, vendor, PackageNevra(name, epoch, version, release, arch), fingerprint, signature
+                    )
+                )
+            except ValueError as e:
+                loggerinst.debug("Failed to parse a package: %s", e)
 
-    :param pkg_obj: Instace of a package RPM installed on the system.
-    :type pkg_obj: yum.rpmsack.RPMInstalledPackage
-    :return: Return the package signature.
-    :rtype: str
-    """
-    with pkgmanager.rpm_db_lock(pkg_obj):
-        return get_pkg_signature(pkg_obj)
-
-
-def get_pkg_signature(pkg_obj):
-    """Get information about a package signature from the RPM database.
-
-    :param pkg_obj: Instace of a package RPM installed on the system.
-    :type pkg_obj: yum.rpmsack.RPMInstalledPackage
-    :return: Return the package signature.
-    :rtype: str
-    """
-    if pkgmanager.TYPE == "yum":
-        hdr = pkg_obj.hdr
-    elif pkgmanager.TYPE == "dnf":
-        hdr = get_rpm_header(pkg_obj)
-
-    pkg_sig = hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|")
-    return pkg_sig
+    return normalized_list
 
 
 def get_rpm_header(pkg_obj):
@@ -400,6 +434,8 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
         return yum_base.rpmdb.returnPackages(patterns=[pattern])
 
     installed_packages = yum_base.rpmdb.returnPackages()
+    yum_base.close()
+    del yum_base
     return list(installed_packages)
 
 
@@ -437,12 +473,22 @@ def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=N
 
 
 def get_third_party_pkgs():
-    """Get all the third party packages (non-Red Hat and non-original OS-signed) that are going to be kept untouched."""
-    third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_orig_os + system_info.fingerprints_rhel
-    )
+    """
+    Get all the third party packages (non-Red Hat and non-original OS-signed)
+    that are going to be kept untouched.
+    """
+    fingerprints = system_info.fingerprints_orig_os + system_info.fingerprints_rhel
 
-    return third_party_pkgs
+    if not fingerprints:
+        return []
+
+    packages_with_fingerprints = get_package_information()
+
+    return [
+        pkg
+        for pkg in packages_with_fingerprints
+        if pkg.fingerprint not in fingerprints and pkg.nevra.name != "gpg-pubkey"
+    ]
 
 
 def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
@@ -456,11 +502,9 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
         # if fingerprints is None skip this check.
         return []
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
-    # Skip the gpg-pubkey package, it never has a signature
+
     return [
-        pkg.pkg_obj
-        for pkg in pkgs_w_fingerprints
-        if pkg.fingerprint not in fingerprints and pkg.pkg_obj.name != "gpg-pubkey"
+        pkg for pkg in pkgs_w_fingerprints if pkg.fingerprint not in fingerprints and pkg.nevra.name != "gpg-pubkey"
     ]
 
 
@@ -481,26 +525,18 @@ def list_third_party_pkgs():
         loggerinst.info("No third party packages installed.")
 
 
-@utils.run_as_child_process
 def print_pkg_info(pkgs):
     """Print package information.
-
-    .. important::
-        This function is being executed in a child process solely because of
-        the access to the internal properties of the package class for yum,
-        and help us to prevent that the package managers install their signal
-        handler globally and prevent the tool to handle the SIGINT when raised
-        by the user..
 
     :param pkgs: List of packages to be printed
     :type pkgs: list
     """
-    max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
+    max_nvra_length = max(map(len, [get_pkg_nvra(pkg.nevra) for pkg in pkgs]))
     max_packager_length = max(
         max(
             map(
                 len,
-                [get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg) for pkg in pkgs],
+                [get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg) for pkg in pkgs],
             )
         ),
         len("Vendor/Packager"),
@@ -531,26 +567,15 @@ def print_pkg_info(pkgs):
 
     pkg_list = ""
     for pkg in pkgs:
-        # TODO(r0x0d): Take care of that in https://issues.redhat.com/browse/RHELC-160
-        if pkgmanager.TYPE == "yum":
-            try:
-                from_repo = pkg.yumdb_info.from_repo
-            except AttributeError:
-                # A package may not have the installation repo set in case it was installed through rpm
-                from_repo = "N/A"
-
-        elif pkgmanager.TYPE == "dnf":
-            # There's no public attribute for getting the installation repository.
-            # Bug filed: https://bugzilla.redhat.com/show_bug.cgi?id=1879168
-            from_repo = pkg._from_repo
+        from_repo = _get_package_repository(pkg)
 
         pkg_list += (
             "%-*s  %-*s  %s"
             % (
                 max_nvra_length,
-                get_pkg_nvra(pkg),
+                get_pkg_nvra(pkg.nevra),
                 max_packager_length,
-                get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg),
+                get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg),
                 from_repo,
             )
             + "\n"
@@ -559,6 +584,20 @@ def print_pkg_info(pkgs):
     pkg_table = header + header_underline + pkg_list
     loggerinst.info(pkg_table)
     return pkg_table
+
+
+def _get_package_repository(pkg):
+    """Get package repository information."""
+    output, retcode = utils.run_subprocess(
+        ["repoquery", "--quiet", "-q", get_pkg_nevra(pkg.nevra), "--qf", "%{REPOID}"],
+        print_cmd=False,
+        print_output=False,
+    )
+
+    if retcode != 0:
+        return "N/A"
+
+    return output.strip()
 
 
 def get_pkg_nvra(pkg_obj):
@@ -614,10 +653,7 @@ def get_vendor(pkg_obj):
     The vendor information is provided by the yum/dnf python API on all systems except systems derived from
     RHEL 8.0-8.3 (see bug https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
-    if hasattr(pkg_obj, "vendor") and pkg_obj.vendor:
-        return pkg_obj.vendor
-    else:
-        return "N/A"
+    return pkg_obj.vendor if pkg_obj.vendor else "N/A"
 
 
 def list_non_red_hat_pkgs_left():
@@ -654,9 +690,21 @@ def remove_repofile_pkgs():
     remove_pkgs_with_confirm(system_info.repofile_pkgs)
 
 
+@utils.run_as_child_process
 def remove_pkgs_with_confirm(pkgs, backup=True):
     """
     Remove selected packages with a breakdown and user confirmation prompt.
+
+    .. important::
+        This function is being executed in a child process to prevent that the
+        user won't be able to hit Ctrl + C during the package print, if they
+        manage to do that.
+
+        The reason that this function is ran in a child process is that we are
+        using an YUM API to query installed package, to then, get the package
+        information with the rpm binary. This YUM API method we use calls
+        directly the rpmdb, which in its turn, traps the signal handler and
+        prevent the main process to handle the Ctrl + C.
     """
     pkgs_to_remove = []
     for pkg in pkgs:
@@ -672,7 +720,7 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    remove_pkgs([get_pkg_nvra(pkg.nevra) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
@@ -683,10 +731,10 @@ def get_system_packages_for_replacement():
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
-    submgr_pkgs = []
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    orig_os_pkgs += submgr_pkgs
-    return orig_os_pkgs
+    fingerprints = system_info.fingerprints_orig_os
+    packages_with_fingerprints = get_package_information()
+
+    return [pkg for pkg in packages_with_fingerprints if pkg.fingerprint in fingerprints]
 
 
 def install_gpg_keys():
@@ -735,7 +783,7 @@ def install_rhel_kernel():
         non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
         for non_rhel_kernel in non_rhel_kernels:
             # We're comparing to NEVRA since that's what yum/dnf prints out
-            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
+            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel.nevra):
                 # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
                 # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
                 # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
@@ -855,7 +903,7 @@ def remove_non_rhel_kernels():
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
         remove_pkgs(
-            pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
+            pkgs_to_remove=[get_pkg_nvra(pkg.nevra) for pkg in non_rhel_kernels],
             backup=False,
         )
     else:
@@ -940,7 +988,7 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     # package names need to be mapped to the RHEL kernel package names to have
     # them installed on the converted system.
     ol_kernel_ext = "-uek"
-    pkg_names = [p.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
+    pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)

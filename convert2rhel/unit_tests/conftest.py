@@ -1,3 +1,4 @@
+import functools
 import logging
 import sys
 
@@ -6,6 +7,7 @@ import six
 
 from convert2rhel import backup, cert, pkgmanager, redhatrelease, systeminfo, toolopts, utils
 from convert2rhel.logger import setup_logger_handler
+from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import get_pytest_marker
@@ -309,6 +311,23 @@ class TestPkgObj(object):
     hdr = PkgObjHdr()
 
 
+def create_pkg_information(
+    packager=None,
+    vendor=None,
+    name=None,
+    epoch="0",
+    version=None,
+    release=None,
+    arch=None,
+    fingerprint=None,
+    signature=None,
+):
+    obj = PackageInformation(
+        packager, vendor, PackageNevra(name, epoch, version, release, arch), fingerprint, signature
+    )
+    return obj
+
+
 def create_pkg_obj(
     name,
     epoch=0,
@@ -344,3 +363,11 @@ def create_pkg_obj(
         else:
             obj._from_repo = "@@System"
     return obj
+
+
+def mock_decorator(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped

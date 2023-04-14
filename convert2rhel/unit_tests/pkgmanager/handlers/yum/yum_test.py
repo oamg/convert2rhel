@@ -15,30 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import functools
+import os
 
+import pytest
 import six
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-import os
-
-import pytest
-
 from six.moves import mock
 
 from convert2rhel import pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests.conftest import centos7
-
-
-def mock_decorator(func):
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    return wrapped
+from convert2rhel.unit_tests.conftest import centos7, create_pkg_information
 
 
 class YumResolveDepsMocked(unit_tests.MockFunction):
@@ -94,7 +83,45 @@ class TestYumTransactionHandler(object):
     @centos7
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"],)),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ],
+            )
+        ),
     )
     def test_perform_operations(self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
@@ -108,7 +135,45 @@ class TestYumTransactionHandler(object):
     @centos7
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"],)),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ],
+            )
+        ),
     )
     def test_perform_operations_reinstall_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
@@ -125,7 +190,45 @@ class TestYumTransactionHandler(object):
     @centos7
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"],)),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ],
+            )
+        ),
     )
     def test_perform_operations_downgrade_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
@@ -142,7 +245,20 @@ class TestYumTransactionHandler(object):
 
     @centos7
     def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, _mock_yum_api_calls, monkeypatch):
-        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: ["pkg-1"])
+        package = [
+            create_pkg_information(
+                packager="test",
+                vendor="test",
+                name="pkg-1",
+                epoch="0",
+                version="1.0.0",
+                release="1",
+                arch="x86_64",
+                fingerprint="test",
+                signature="test",
+            ),
+        ]
+        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: package)
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
 
@@ -223,12 +339,6 @@ class TestYumTransactionHandler(object):
         ),
     )
     def test_run_transaction(self, pretend_os, validate_transaction, _mock_yum_api_calls, caplog, monkeypatch):
-        # Save original function as we need to override the decorator that is in place for `run_transaction`
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
-        )
-
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
@@ -252,12 +362,6 @@ class TestYumTransactionHandler(object):
     def test_run_transaction_resolve_dependencies_loop(
         self, pretend_os, start_at, loop_until, expected_count, _mock_yum_api_calls, monkeypatch
     ):
-        # Save original function as we need to override the decorator that is in place for `run_transaction`
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
-        )
-
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler,
