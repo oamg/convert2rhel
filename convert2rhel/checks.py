@@ -29,7 +29,7 @@ from convert2rhel.pkghandler import (
     call_yum_cmd,
     compare_package_versions,
     get_installed_pkg_objects,
-    get_pkg_fingerprint,
+    get_package_information,
     get_total_packages_to_update,
     parse_pkg_string,
 )
@@ -619,8 +619,8 @@ def _bad_kernel_package_signature(kernel_release):
     logger.debug("Booted kernel package name: {0}".format(name))
 
     kernel_pkg_obj = get_installed_pkg_objects(name, version, release, arch)[0]
-    kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
-    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
+    package = get_package_information(str(kernel_pkg_obj))[0]
+    bad_signature = system_info.cfg_content["gpg_fingerprints"] != package.fingerprint
 
     # e.g. Oracle Linux Server -> Oracle or
     #      Oracle Linux Server -> CentOS Linux

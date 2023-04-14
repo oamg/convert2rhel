@@ -21,7 +21,7 @@ import pytest
 import six
 
 from convert2rhel import breadcrumbs, pkghandler, pkgmanager, utils
-from convert2rhel.unit_tests.conftest import centos7, create_pkg_obj
+from convert2rhel.unit_tests.conftest import centos7, create_pkg_information, create_pkg_obj
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -33,11 +33,24 @@ def _mock_pkg_obj():
     return create_pkg_obj(name="convert2rhel", epoch=1, version="2", release="3", arch="x86_64")
 
 
+@pytest.fixture
+def _mock_pkg_information():
+    return create_pkg_information(
+        name="convert2rhel",
+        epoch="1",
+        version="2",
+        release="3",
+        arch="x86_64",
+        signature="73bde98381b46521",
+    )
+
+
 @centos7
-def test_collect_early_data(pretend_os, _mock_pkg_obj, monkeypatch):
+def test_collect_early_data(pretend_os, _mock_pkg_obj, _mock_pkg_information, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
     monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
+    monkeypatch.setattr(pkghandler, "get_package_information", lambda name: [_mock_pkg_information])
     breadcrumbs.breadcrumbs.collect_early_data()
 
     # Asserting that the populated fields are not null (or None), the value
@@ -235,9 +248,10 @@ def test_set_nevra_dnf(monkeypatch, _mock_pkg_obj):
     assert breadcrumbs.breadcrumbs.nevra == "convert2rhel-1:2-3.x86_64"
 
 
-def test_set_signature(monkeypatch, _mock_pkg_obj):
+def test_set_signature(monkeypatch, _mock_pkg_obj, _mock_pkg_information):
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    monkeypatch.setattr(pkghandler, "get_package_information", lambda name: [_mock_pkg_information])
     breadcrumbs.breadcrumbs._set_signature()
     assert "73bde98381b46521" in breadcrumbs.breadcrumbs.signature
 

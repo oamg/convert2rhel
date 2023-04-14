@@ -27,7 +27,7 @@ from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR, run_as_child_process
+from convert2rhel.utils import BACKUP_DIR
 
 
 loggerinst = logging.getLogger(__name__)
@@ -155,12 +155,12 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         try:
             for pkg in original_os_pkgs:
-                self._base.update(pattern=pkg)
+                self._base.update(pattern=pkg.nevra.name)
                 try:
-                    self._base.reinstall(pattern=pkg)
+                    self._base.reinstall(pattern=pkg.nevra.name)
                 except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
                     try:
-                        self._base.downgrade(pattern=pkg)
+                        self._base.downgrade(pattern=pkg.nevra.name)
                     except (
                         pkgmanager.Errors.ReinstallInstallError,
                         pkgmanager.Errors.ReinstallRemoveError,
@@ -274,7 +274,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("System packages replaced successfully.")
 
-    @run_as_child_process
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 

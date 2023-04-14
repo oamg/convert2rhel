@@ -117,12 +117,12 @@ class DnfTransactionHandler(TransactionHandlerBase):
         loggerinst.info("Adding %s packages to the dnf transaction set.", system_info.name)
 
         for pkg in original_os_pkgs:
-            self._base.upgrade(pkg_spec=pkg)
+            self._base.upgrade(pkg_spec=pkg.nevra.name)
             try:
-                self._base.reinstall(pkg_spec=pkg)
+                self._base.reinstall(pkg_spec=pkg.nevra.name)
             except pkgmanager.exceptions.PackagesNotAvailableError:
                 try:
-                    self._base.downgrade(pkg_spec=pkg)
+                    self._base.downgrade(pkg_spec=pkg.nevra.name)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
