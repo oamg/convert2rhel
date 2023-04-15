@@ -145,10 +145,13 @@ def register_system():
         )
 
         # Force the system to be unregistered
-        # The subscription-manager DBus API has a force parameter but there's
-        # a bug in susbcription-manager where that doesn't take effect.
-        # Explicitly unregister here to workaround that.
-        # Sub-man bug: https://bugzilla.redhat.com/show_bug.cgi?id=2118486
+        # The subscription-manager D-Bus API has a 'force' parameter, however
+        # it is not implemented (and thus it does not work)
+        # - in RHEL 7 and earlier
+        # - in RHEL 8 before 8.8: https://bugzilla.redhat.com/show_bug.cgi?id=2118486
+        # - in RHEL 9 before 9.2: https://bugzilla.redhat.com/show_bug.cgi?id=2121350
+        # Explicitly unregister here to workaround that in any version,
+        # to not have to do version checks, keeping things simpler.
         loggerinst.info("Unregistering the system to clear the server's state for our registration.")
         try:
             unregister_system()
@@ -374,7 +377,7 @@ class RegistrationCommand(object):
         """
         # Note: dbus doesn't understand empty python dicts. Use dbus.Dictionary({}, signature="ss")
         # if we need one in the future.
-        REGISTER_OPTS_DICT = dbus.Dictionary({"force": True}, signature="sv", variant_level=1)
+        REGISTER_OPTS_DICT = dbus.Dictionary({}, signature="sv", variant_level=1)
 
         loggerinst.debug("Getting a handle to the system dbus")
         system_bus = dbus.SystemBus()

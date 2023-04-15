@@ -800,7 +800,7 @@ class TestRegistrationCommand(object):
                 organization or "",
                 username,
                 password,
-                {"force": True},
+                {},
                 {},
                 "C",
             )
@@ -809,7 +809,7 @@ class TestRegistrationCommand(object):
             args = (
                 organization or "",
                 [activation_key],
-                {"force": True},
+                {},
                 {},
                 "C",
             )
