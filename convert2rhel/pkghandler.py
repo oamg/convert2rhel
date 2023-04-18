@@ -498,9 +498,10 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
     """
+    # if fingerprints is None skip this check.
     if not fingerprints:
-        # if fingerprints is None skip this check.
         return []
+
     pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
 
     return [
@@ -531,7 +532,9 @@ def print_pkg_info(pkgs):
     :param pkgs: List of packages to be printed
     :type pkgs: list
     """
-    max_nvra_length = max(map(len, [get_pkg_nvra(pkg.nevra) for pkg in pkgs]))
+    max_nvra_length = max(
+        map(len, [get_pkg_nvra(pkg.nevra) if hasattr(pkg, "nevra") else get_pkg_nevra(pkg) for pkg in pkgs])
+    )
     max_packager_length = max(
         max(
             map(
@@ -573,7 +576,7 @@ def print_pkg_info(pkgs):
             "%-*s  %-*s  %s"
             % (
                 max_nvra_length,
-                get_pkg_nvra(pkg.nevra),
+                get_pkg_nvra(pkg.nevra) if hasattr(pkg, "nevra") else get_pkg_nevra(pkg),
                 max_packager_length,
                 get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg),
                 from_repo,
@@ -588,8 +591,9 @@ def print_pkg_info(pkgs):
 
 def _get_package_repository(pkg):
     """Get package repository information."""
+    package = get_pkg_nevra(pkg.nevra) if hasattr(pkg, "nevra") else get_pkg_nevra(pkg)
     output, retcode = utils.run_subprocess(
-        ["repoquery", "--quiet", "-q", get_pkg_nevra(pkg.nevra), "--qf", "%{REPOID}"],
+        ["repoquery", "--quiet", "-q", package, "--qf", "%{REPOID}"],
         print_cmd=False,
         print_output=False,
     )
@@ -1139,6 +1143,13 @@ def _get_packages_to_update_dnf(reposdir):
     # in repo files. See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
+    loggerinst.info("DEBUGGING FAILURE ------------------------")
+    loggerinst.info("Reposdir: %s", base.conf.reposdir)
+    loggerinst.info("PRIO_MAINCONFIG: %s", pkgmanager.conf.PRIO_MAINCONFIG)
+    loggerinst.info("Install root: %s", base.conf.installroot)
+    loggerinst.info("Varsdir: %s", base.conf.varsdir)
+    loggerinst.info("DEBUGGING FAILURE ------------------------")
+
     base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()

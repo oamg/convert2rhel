@@ -23,10 +23,10 @@ tag+:
           when: distro == centos-8
         - environment+:
             PROMPT_AMOUNT: 4
-          when: distro == oraclelinux-7, centos-7
+          when: distro == oraclelinux-7
         - environment+:
             PROMPT_AMOUNT: 3
-          when: distro == oraclelinux-8
+          when: distro == oraclelinux-8, centos-7
 
     /custom_module_loaded:
         summary+: |
