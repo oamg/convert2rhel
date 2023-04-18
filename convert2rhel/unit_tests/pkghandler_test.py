@@ -53,6 +53,17 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
+class CommandCallableObject(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.command = None
+
+    def __call__(self, command):
+        self.called += 1
+        self.command = command
+        return
+
+
 class CallYumCmdMocked(unit_tests.MockFunction):
     def __init__(self):
         self.called = 0
@@ -275,16 +286,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         def __call__(self, *args, **kwargs):
             return self.is_file
-
-    class CommandCallableObject(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.command = None
-
-        def __call__(self, command):
-            self.called += 1
-            self.command = command
-            return
 
     class SysExitCallableObject(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -605,28 +606,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         pkgs = pkghandler.get_installed_pkg_objects("non_existing")
 
         self.assertEqual(len(pkgs), 0)
-
-    @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_excluded_pkgs(self):
-        pkghandler.remove_excluded_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.excluded_pkgs,
-        )
-
-    @unit_tests.mock(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_repofile_pkgs(self):
-        pkghandler.remove_repofile_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.repofile_pkgs,
-        )
 
     class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
         def __call__(self, fingerprints, name=""):
@@ -1074,6 +1053,10 @@ PACKAGE_FORMATS = (
     ),
     pytest.param(
         "NetworkManager-1.18.8-2.0.1.el7_9", ("NetworkManager", None, "1.18.8", "2.0.1.el7_9", None), id="NVR"
+    ),
+    pytest.param(
+        "bind-export-libs-32:9.11.4-26.P2.el7_9.13.x86_64",
+        ("bind-export-libs", "32", "9.11.4", "26.P2.el7_9.13", "x86_64"),
     ),
 )
 
@@ -2134,18 +2117,31 @@ class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
         return [pkg_obj]
 
 
-def test_remove_pkgs_with_confirm(monkeypatch):
-    monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
-    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallable())
+def test_get_packages_to_remove(monkeypatch):
     monkeypatch.setattr(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
-    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
     monkeypatch.setattr(
         pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgObjectsWDiffFingerprintMocked()
     )
-    original_func = pkghandler.remove_pkgs_with_confirm.__wrapped__
-    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", mock_decorator(original_func))
+    original_func = pkghandler._get_packages_to_remove.__wrapped__
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", mock_decorator(original_func))
 
-    pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
+    result = pkghandler._get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
+    assert len(result) == 1
+    assert result[0].nevra.name == "installed_pkg"
+
+
+def test_remove_pkgs_with_confirm(monkeypatch):
+    monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallable())
+    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
+
+    pkghandler.remove_pkgs_with_confirm(
+        [
+            create_pkg_information(
+                packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
+            )
+        ]
+    )
 
     assert len(pkghandler.remove_pkgs.pkgs) == 1
     assert pkghandler.remove_pkgs.pkgs[0] == "installed_pkg-0.1-1.x86_64"
@@ -2499,3 +2495,25 @@ def test_get_package_information(package_name, subprocess_output, expected, expe
     result = pkghandler.get_package_information(package_name)
     assert utils.run_subprocess.cmd == expected_command
     assert result == expected
+
+
+def test_remove_excluded_pkgs(monkeypatch):
+    monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    pkghandler.remove_excluded_pkgs()
+
+    assert pkghandler._get_packages_to_remove.called == 1
+    assert pkghandler.remove_pkgs_with_confirm.called == 1
+    assert pkghandler._get_packages_to_remove.command == system_info.excluded_pkgs
+
+
+def test_remove_repofile_pkgs(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    pkghandler.remove_repofile_pkgs()
+
+    assert pkghandler._get_packages_to_remove.called == 1
+    assert pkghandler.remove_pkgs_with_confirm.called == 1
+    assert pkghandler._get_packages_to_remove.command == system_info.repofile_pkgs
