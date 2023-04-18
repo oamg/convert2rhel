@@ -675,6 +675,16 @@ def attach_subscription():
     """
     # TODO: Support attaching multiple pool IDs.
 
+    # check if SCA is enabled
+    output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
+    if output == "Content Access Mode is set to Simple Content Access":
+        loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
+        if tool_opts.pool:
+            loggerinst.warning(
+                "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached"
+            )
+        return True
+
     if tool_opts.activation_key:
         loggerinst.info("Using the activation key provided through the command line...")
         return True
@@ -687,6 +697,14 @@ def attach_subscription():
         # option
         pool.extend(["--pool", tool_opts.pool])
         loggerinst.info("Attaching provided subscription pool ID to the system ...")
+
+    if not tool_opts.auto_attach and not tool_opts.pool:
+        loggerinst.critical(
+            "Stopping the conversion. When using --username and --password options without"
+            " having SCA enabled for the account, either the --pool or the --auto-attach"
+            " options are required to successfully convert the system."
+            " The activation key/organization options can be used as an alternative."
+        )
     else:
         subs_list = get_avail_subs()
 
@@ -701,14 +719,8 @@ def attach_subscription():
                 % subs_list[0].pool_id
             )
 
-        else:
-            # Let the user choose the subscription appropriate for the conversion
-            loggerinst.info("Manually select subscription appropriate for the conversion")
-            print_avail_subs(subs_list)
-            sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
-            loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
-
         pool.extend(["--pool", subs_list[sub_num].pool_id])
+
     _, ret_code = utils.run_subprocess(pool)
 
     if ret_code != 0:
