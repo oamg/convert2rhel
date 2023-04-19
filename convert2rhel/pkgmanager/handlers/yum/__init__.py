@@ -155,12 +155,12 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         try:
             for pkg in original_os_pkgs:
-                self._base.update(pattern=pkg.nevra.name)
+                self._base.update(pattern=pkg)
                 try:
-                    self._base.reinstall(pattern=pkg.nevra.name)
+                    self._base.reinstall(pattern=pkg)
                 except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
                     try:
-                        self._base.downgrade(pattern=pkg.nevra.name)
+                        self._base.downgrade(pattern=pkg)
                     except (
                         pkgmanager.Errors.ReinstallInstallError,
                         pkgmanager.Errors.ReinstallRemoveError,

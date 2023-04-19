@@ -743,16 +743,22 @@ def _get_packages_to_remove(pkgs):
 
 
 def get_system_packages_for_replacement():
-    """Get a list of packages in the system to be replaced.
-    This function will return a list of packages installed on the system by
-    using the `system_info.fingerprint_ori_os` signature.
+    """
+    Get a list of packages in the system to be replaced. This function will
+    return a list of packages installed on the system by using the
+    `system_info.fingerprint_ori_os` signature.
+
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
     fingerprints = system_info.fingerprints_orig_os
     packages_with_fingerprints = get_package_information()
 
-    return [pkg for pkg in packages_with_fingerprints if pkg.fingerprint in fingerprints]
+    return [
+        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch)
+        for pkg in packages_with_fingerprints
+        if pkg.fingerprint in fingerprints
+    ]
 
 
 def install_gpg_keys():

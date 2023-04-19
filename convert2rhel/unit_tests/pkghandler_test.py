@@ -1826,6 +1826,9 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
                     signature="test",
                 )
             ],
+            ["pkg-1.x86_64"],
+        ),
+        (
             [
                 PackageInformation(
                     packager="test",
@@ -1833,8 +1836,49 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
                     nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
-                )
+                ),
+                PackageInformation(
+                    packager="test",
+                    vendor="test",
+                    nevra=PackageNevra(name="pkg-2", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                PackageInformation(
+                    packager="test",
+                    vendor="test",
+                    nevra=PackageNevra(name="pkg-3", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                PackageInformation(
+                    packager="test",
+                    vendor="test",
+                    nevra=PackageNevra(name="pkg-4", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
             ],
+            ["pkg-1.x86_64", "pkg-2.x86_64", "pkg-3.x86_64", "pkg-4.x86_64"],
+        ),
+        (
+            [
+                PackageInformation(
+                    packager="test",
+                    vendor="test",
+                    nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                PackageInformation(
+                    packager="test",
+                    vendor="test",
+                    nevra=PackageNevra(name="pkg-2", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    fingerprint="this-is-a-fingerprint",
+                    signature="test",
+                ),
+            ],
+            ["pkg-1.x86_64"],
         ),
         (
             [
