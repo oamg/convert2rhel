@@ -148,14 +148,20 @@ def run_as_child_process(func):
         In `rpm` (version 4.11.3, RHEL 7), it's known that whenever there is a
         call to that library, it will install a global signal handler catching
         different types of signals, but most importantly, the SIGINT (Ctrl + C)
-        one, which causes a problem during the conversion as we can't replace or
-        override that signal as it was initiated in a C library rather than a
-        python library.
+        one, which causes a problem during the conversion as we can't replace
+        or override that signal as it was initiated in a C library rather than
+        a python library.
 
         By using this decorator, `rpm` will install the signal handler in the
         child process and leave the parent one with the original signal
         handling that is initiated by python itself (or, whatever signal is
         registered when the conversion starts as well).
+
+    .. important::
+        If a function that creates child processes is decorated with this
+        decorator, then it won't be possible to use it right away, since this
+        decorator spawn child processes as a daemon (which are normal
+        processes), but can't spawn child processes inside that child process.
 
     :param func: Function attached to the decorator
     :type func: Callable
@@ -203,6 +209,11 @@ def run_as_child_process(func):
         queue = multiprocessing.Queue()
         kwargs.update({"func": func, "queue": queue})
         process = Process(target=inner_wrapper, args=args, kwargs=kwargs)
+
+        # Running the process as a daemon prevents it from hanging if a SIGINT
+        # is raised, as all childs will be terminated with it.
+        # https://docs.python.org/2.7/library/multiprocessing.html#multiprocessing.Process.daemon
+        process.daemon = True
         try:
             process.start()
             process.join()
@@ -210,9 +221,9 @@ def run_as_child_process(func):
             if process.exception:
                 raise process.exception
 
-            # Only try to terminate a process if it is alive, otherwise, do
-            # nothing.
             if process.is_alive():
+                # If the process is still alive for some reason, try to
+                # terminate it.
                 process.terminate()
 
             if not queue.empty():
@@ -223,10 +234,18 @@ def run_as_child_process(func):
 
             return None
         except KeyboardInterrupt:
-            # Only try to terminate a process if it is alive, otherwise, do
-            # nothing.
+            # We have to check if the process if alive, and if it is (most
+            # probably it will be), then we can call for termination. On
+            # Python2 it is mostly likely that some processes (That calls yum
+            # API) will keep executing until they finish its execution and
+            # ignore the call for termination issued by the parent. To avoid
+            # having "zombie" processes, we need to wait for them to finish.
+            loggerinst.warning("Terminating child process...")
             if process.is_alive():
+                loggerinst.debug("Process with pid %s is alive", process.pid)
                 process.terminate()
+
+            loggerinst.debug("Process with pid %s exited", process.pid)
 
             # If there is a KeyboardInterrupt raised while the child process is
             # being executed, let's just re-raise it to the stack and move on.

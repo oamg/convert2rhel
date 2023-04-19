@@ -21,7 +21,7 @@ import logging
 import os
 import re
 
-from convert2rhel import pkgmanager
+from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
@@ -126,18 +126,18 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
-        """Enable a list of required repositories.
-
-        :raises SystemInfo: If there is no way to connect to the mirrors in the
-            repos.
-        """
+        """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
         enabled_repos = system_info.get_enabled_rhel_repos()
         loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
-        for repo in enabled_repos:
-            self._base.repos.enableRepo(repo)
+        try:
+            for repo in enabled_repos:
+                self._base.repos.enableRepo(repo)
+        except pkgmanager.Errors.RepoError as e:
+            loggerinst.debug("Loading repository metadata failed: %s" % e)
+            loggerinst.critical("Failed to populate repository metadata.")
 
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.

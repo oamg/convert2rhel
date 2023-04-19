@@ -934,6 +934,10 @@ class MockProcess:
     def __init__(self, exception):
         self._exception = exception
 
+    @property
+    def pid(self):
+        return 1000
+
     def __call__(self, *args, **kwargs):
         return self
 
