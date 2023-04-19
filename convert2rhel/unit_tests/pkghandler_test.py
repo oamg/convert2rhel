@@ -1057,7 +1057,9 @@ PACKAGE_FORMATS = (
     pytest.param(
         "bind-export-libs-32:9.11.4-26.P2.el7_9.13.x86_64",
         ("bind-export-libs", "32", "9.11.4", "26.P2.el7_9.13", "x86_64"),
+        id="high epoch number",
     ),
+    pytest.param("libgcc-8.5.0-4.el8_5.i686", ("libgcc", None, "8.5.0", "4.el8_5", "i686"), id="i686 package version"),
 )
 
 
@@ -2404,6 +2406,32 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
 @pytest.mark.parametrize(
     ("package_name", "subprocess_output", "expected", "expected_command"),
     (
+        (
+            "libgcc-0:8.5.0-4.el8_5.i686",
+            "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+            [
+                PackageInformation(
+                    packager="CentOS Buildsys <bugs@centos.org>",
+                    vendor="CentOS",
+                    nevra=PackageNevra(
+                        name="libgcc",
+                        epoch="0",
+                        version="8.5.0",
+                        release="4.el8_5",
+                        arch="i686",
+                    ),
+                    fingerprint="05b555b38483c65d",
+                    signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "libgcc-0:8.5.0-4.el8_5.i686",
+            ],
+        ),
         (
             "rpmlint-fedora-license-data-0:1.17-1.fc37.noarch",
             "C2R Fedora Project&Fedora Project&rpmlint-fedora-license-data-0:1.17-1.fc37.noarch&RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",

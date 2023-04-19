@@ -68,7 +68,7 @@ PKG_VERSION = re.compile(r"^[^\s-]+$")
 PKG_RELEASE = PKG_VERSION
 
 # Set of valid arches
-PKG_ARCH = ("x86_64", "s390x", "i86", "ppc64le", "aarch64", "noarch")
+PKG_ARCH = ("x86_64", "s390x", "i686", "i86", "ppc64le", "aarch64", "noarch")
 
 # It would be better to construct this dynamically but we don't have lru_cache
 # in Python-2.6 and modifying a global after your program initializes isn't a
@@ -368,7 +368,7 @@ def get_package_information(pkg_name=""):
     for value in split_output:
         if "C2R" in value:
             try:
-                packager, vendor, name, signature = tuple(value.lstrip("C2R ").split("&"))
+                packager, vendor, name, signature = tuple(value.replace("C2R", "").split("&"))
                 name, epoch, version, release, arch = tuple(parse_pkg_string(name))
 
                 # If a package has a signature, then proceed to get the package
@@ -377,7 +377,11 @@ def get_package_information(pkg_name=""):
 
                 normalized_list.append(
                     PackageInformation(
-                        packager, vendor, PackageNevra(name, epoch, version, release, arch), fingerprint, signature
+                        packager.strip(),
+                        vendor,
+                        PackageNevra(name, epoch, version, release, arch),
+                        fingerprint,
+                        signature,
                     )
                 )
             except ValueError as e:
@@ -1093,12 +1097,23 @@ def get_pkg_names_from_rpm_paths(rpm_paths):
     return pkg_names
 
 
+@utils.run_as_child_process
 def get_total_packages_to_update(reposdir):
-    """Return the total number of packages to update in the system
-    It uses both yum/dnf depending on whether they are installed on the system,
-    In case of RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
-    To check whether the system is updated or not, we use original vendor repofiles which we ship within the
-    convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
+    """
+    Return the total number of packages to update in the system It uses both
+    yum/dnf depending on whether they are installed on the system, In case of
+    RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`. To
+    check whether the system is updated or not, we use original vendor
+    repofiles which we ship within the convert2rhel RPM. The reason is that we
+    can't rely on the repofiles available on the to-be-converted system.
+
+    .. important::
+        This function is being executed in a child process so that yum does
+        not handle signals like SIGINT without us knowing about it.
+
+        We need to know about the signals to act on them, for example to
+        execute a rollback when the user presses Ctrl + C.
+
     :param reposdir: The path to the hardcoded repositories for EUS (If any).
     :type reposdir: str | None
     :return: The packages that need to be updated.
@@ -1116,16 +1131,8 @@ def get_total_packages_to_update(reposdir):
     return set(packages)
 
 
-@utils.run_as_child_process
 def _get_packages_to_update_yum():
     """Use yum to get all the installed packages that have an update available.
-
-    .. important::
-        This function is being executed in a child process so that yum does
-        not handle signals like SIGINT without us knowing about it.
-
-        We need to know about the signals to act on them, for example to execute
-        a rollback when the user presses Ctrl + C.
 
     :return: Return a list of packages that needs to be updated.
     :rtype: list[str] | list

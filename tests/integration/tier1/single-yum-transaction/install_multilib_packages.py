@@ -1,5 +1,5 @@
 def test_install_multilib_packages(shell):
-    """Install NTP package."""
+    """Install multilib packages."""
 
     assert (
         shell(
