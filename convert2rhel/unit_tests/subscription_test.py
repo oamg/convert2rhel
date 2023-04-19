@@ -78,7 +78,7 @@ class RunSubprocessMocked(unit_tests.MockFunction):
         self.called += 1
 
         if self.tuples:
-            return self.tuples.pop(0)
+            return self.tuples
         return self.default_tuple
 
 
@@ -100,88 +100,6 @@ class PromptUserLoopMocked(unit_tests.MockFunction):
         return return_value
 
 
-class LetUserChooseItemMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self, *args, **kwargs):
-        self.called += 1
-        return 0
-
-
-class GetOneSubMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        Sub = namedtuple("Sub", ["pool_id", "sub_raw"])
-
-        subscription1 = Sub("samplepool", "Subscription description")
-        return [subscription1]
-
-
-class GetAvailSubsMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        Sub = namedtuple("Sub", ["pool_id", "sub_raw"])
-
-        subscription1 = Sub("samplepool", "Subscription description")
-        subscription2 = Sub("pool0", "sub desc")
-        return [subscription1, subscription2]
-
-
-class GetNoAvailSubsMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        return []
-
-
-class GetNoAvailSubsOnceMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.empty_last_call = False
-
-    def __call__(self, *args, **kwargs):
-        if not self.empty_last_call:
-            self.empty_last_call = True
-            return []
-
-        self.empty_last_call = False
-        return [namedtuple("Sub", ["pool_id", "sub_raw"])("samplepool", "Subscription description")]
-
-
-class PromptUserMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        return True
-
-
-class TestCheckNeededReposAvailability(object):
-    def test_check_needed_repos_availability(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
-
-        avail_repos_message = "Needed RHEL repositories are available."
-        subscription.check_needed_repos_availability(["rhel_x"])
-
-        assert avail_repos_message in caplog.records[-1].message
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel_z."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-
-        subscription.check_needed_repos_availability(["rhel_z"])
-        assert no_avail_repos_message in caplog.records[-1].message
-
-    def test_check_needed_repos_availability_no_repo_available(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-        subscription.check_needed_repos_availability(["rhel"])
-
-        assert no_avail_repos_message in caplog.records[-1].message
-
-
 class TestSubscription(unittest.TestCase):
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
@@ -189,6 +107,10 @@ class TestSubscription(unittest.TestCase):
 
         def __call__(self, *args, **kwargs):
             return self.is_file
+
+    class PromptUserMocked(unit_tests.MockFunction):
+        def __call__(self, *args, **kwargs):
+            return True
 
     class RemoveFileMocked(unit_tests.MockFunction):
         def __init__(self, removed=True):
@@ -251,8 +173,27 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, msg):
             self.msg += "%s\n" % msg
 
+    @unit_tests.mock(logging.Logger, "info", LogMocked())
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
+    def test_check_needed_repos_availability(self):
+        subscription.check_needed_repos_availability(["rhel_x"])
+        self.assertIn("Needed RHEL repositories are available.", logging.Logger.info.msg)
+
+        subscription.check_needed_repos_availability(["rhel_z"])
+        self.assertIn("rhel_z repository is not available", logging.Logger.warning.msg)
+
+    @unit_tests.mock(logging.Logger, "warning", LogMocked())
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
+    @unit_tests.mock(subscription, "get_avail_repos", lambda: [])
+    def test_check_needed_repos_availability_no_repo_available(self):
+        subscription.check_needed_repos_availability(["rhel"])
+        self.assertIn("rhel repository is not available", logging.Logger.warning.msg)
+
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
@@ -267,6 +208,7 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
     @unit_tests.mock(system_info, "id", "centos")
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):
         subscription.remove_original_subscription_manager()
@@ -357,8 +299,6 @@ class TestInstallSubscriptionManager(object):
 class TestSubscribeSystem(object):
     def test_subscribe_system(self, tool_opts, monkeypatch):
         monkeypatch.setattr(subscription, "register_system", DumbCallable())
-        monkeypatch.setattr(subscription, "get_avail_subs", GetAvailSubsMocked())
-        monkeypatch.setattr(utils, "let_user_choose_item", LetUserChooseItemMocked())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         tool_opts.username = "user"
@@ -368,52 +308,44 @@ class TestSubscribeSystem(object):
 
         assert subscription.register_system.called == 1
 
-    def test_subscribe_system_fail_once(self, tool_opts, monkeypatch):
+    def test_subscribe_system_fail_once(self, tool_opts, monkeypatch, caplog):
         monkeypatch.setattr(subscription, "register_system", DumbCallable())
-        monkeypatch.setattr(subscription, "get_avail_subs", GetNoAvailSubsOnceMocked())
-        monkeypatch.setattr(utils, "let_user_choose_item", LetUserChooseItemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(tuples=("output", 1)))
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
 
-        subscription.subscribe_system()
-
-        assert subscription.register_system.called == 2
+        with pytest.raises(SystemExit):
+            subscription.subscribe_system()
+        assert caplog.records[-1].levelname == "CRITICAL"
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")
 class TestAttachSubscription(object):
-    def test_attach_subscription_one_sub_available(self, monkeypatch):
-        monkeypatch.setattr(subscription, "get_avail_subs", GetOneSubMocked())
-        monkeypatch.setattr(utils, "let_user_choose_item", LetUserChooseItemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-
+    def test_attach_subscription_sca_enabled(self, monkeypatch):
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            RunSubprocessMocked(tuples=("Content Access Mode is set to Simple Content Access", 0)),
+        )
         assert subscription.attach_subscription() is True
-        assert utils.let_user_choose_item.called == 0
 
-    def test_attach_subscription_multiple_subs_available(self, monkeypatch):
-        monkeypatch.setattr(subscription, "get_avail_subs", GetAvailSubsMocked())
-        monkeypatch.setattr(utils, "let_user_choose_item", LetUserChooseItemMocked())
+    def test_attach_subscription(self, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-
         assert subscription.attach_subscription() is True
-        assert utils.let_user_choose_item.called == 1
 
     def test_attach_subscription_available_with_activation_key(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_subs", GetAvailSubsMocked())
-        monkeypatch.setattr(utils, "let_user_choose_item", LetUserChooseItemMocked())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(toolopts.tool_opts, "activation_key", "dummy_activation_key")
-
         assert subscription.attach_subscription() is True
         assert len(caplog.records) == 1
         assert caplog.records[0].levelname == "INFO"
 
-    def test_attach_subscription_none_available(self, monkeypatch):
-        monkeypatch.setattr(subscription, "get_avail_subs", GetNoAvailSubsMocked())
-
-        assert subscription.attach_subscription() is False
+    def test_attach_subscription_fail(self, monkeypatch, caplog):
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(tuples=("output", 1)))
+        with pytest.raises(SystemExit):
+            subscription.attach_subscription()
+        assert caplog.records[-1].levelname == "CRITICAL"
 
 
 class TestRegisterSystem(object):
@@ -814,7 +746,7 @@ class TestRegistrationCommand(object):
                 organization or "",
                 username,
                 password,
-                {},
+                {"force": True},
                 {},
                 "C",
             )
@@ -823,7 +755,7 @@ class TestRegistrationCommand(object):
             args = (
                 organization or "",
                 [activation_key],
-                {},
+                {"force": True},
                 {},
                 "C",
             )
@@ -1511,84 +1443,3 @@ def test_update_rhsm_custom_facts_disable_telemetry(monkeypatch, caplog):
     subscription.update_rhsm_custom_facts()
 
     assert message in caplog.records[-1].message
-
-
-MOCK_LIST_AVAILABLE_SUBS_OUTPUT = """\
-Subscription Name:   Red Hat\n
-Provides:            Test\n
-SKU:                 RHTEST\n
-Contract:            123456\n
-Pool ID:             096fbb526ce611ed-97076c9466263bdf\n
-Provides Management: No\n
-Available:           Unlimited\n
-Suggested:           1\n
-Service Type:        L1-L3\n
-Roles:               \n
-Service Level:       Self-Support\n
-Usage:               \n
-Add-ons:             \n
-Subscription Type:   Standard\n
-Starts:              03/29/2000\n
-Ends:                03/29/2003\n
-Entitlement Type:    Physical\n
-"""
-
-
-@centos8
-def test_get_avail_subs(pretend_os, tmpdir, monkeypatch):
-    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 0)
-    cmd = ["subscription-manager", "list", "--available"]
-    tmpdir.join("releasever").write("8")
-    dnf_releasever_file = str(tmpdir)
-    run_subprocess_mock = mock.Mock(
-        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
-    )
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
-
-    result = subscription.get_avail_subs()
-    assert result[0].pool_id == "096fbb526ce611ed-97076c9466263bdf"
-
-
-@centos8
-def test_get_avail_subs_failed_command(pretend_os, tmpdir, monkeypatch, caplog):
-    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 1)
-    cmd = ["subscription-manager", "list", "--available"]
-    tmpdir.join("releasever").write("8")
-    dnf_releasever_file = str(tmpdir)
-    run_subprocess_mock = mock.Mock(
-        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
-    )
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
-
-    with pytest.raises(SystemExit):
-        subscription.get_avail_subs()
-    assert "Unable to get list of available subscriptions:" in caplog.records[-1].message
-
-
-@centos8
-def test_get_avail_subs_no_releasever_file(pretend_os, tmpdir, monkeypatch):
-    return_value = (MOCK_LIST_AVAILABLE_SUBS_OUTPUT, 0)
-    cmd = ["subscription-manager", "list", "--available"]
-    dnf_releasever_file = str(tmpdir.join("releasever"))
-    run_subprocess_mock = mock.Mock(
-        side_effect=unit_tests.run_subprocess_side_effect((cmd, return_value)),
-    )
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    monkeypatch.setattr(subscription, "DNF_RELEASEVER_FILE", dnf_releasever_file)
-
-    result = subscription.get_avail_subs()
-    assert result[0].pool_id == "096fbb526ce611ed-97076c9466263bdf"

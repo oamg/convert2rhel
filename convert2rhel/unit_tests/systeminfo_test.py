@@ -30,7 +30,7 @@ from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_t
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import is_rpm_based_os
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

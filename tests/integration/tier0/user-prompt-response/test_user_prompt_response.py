@@ -39,31 +39,7 @@ def test_check_user_response_user_and_password(convert2rhel):
                     raise
                 continue
 
-        c2r.sendcontrol("c")
+        # Due to inconsistent behavior of Ctrl+c
+        # the Ctrl+d is used to terminate the process instead
+        c2r.sendcontrol("d")
     assert c2r.exitstatus != 0
-
-
-@pytest.mark.test_auto_attach_pool
-def test_auto_attach_pool_submgr(convert2rhel):
-    """
-    Provide Convert2RHEL with username and password with just one subscription available.
-    Verify that the subscription is automatically selected.
-    """
-    single_pool_id = env.str("RHSM_SINGLE_SUB_POOL")
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_SINGLE_SUB_USERNAME"),
-            env.str("RHSM_SINGLE_SUB_PASSWORD"),
-        ),
-        unregister=True,
-    ) as c2r:
-        if (
-            c2r.expect(
-                f"{single_pool_id} is the only subscription available, it will automatically be selected for the conversion."
-            )
-            == 0
-        ):
-            c2r.sendcontrol("c")
-
-        assert c2r.exitstatus != 0
