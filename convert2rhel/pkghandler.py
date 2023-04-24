@@ -51,7 +51,7 @@ PKG_NEVR = r"\b(?:([0-9]+):)?(\S+)-(\S+)-(\S+)\b"
 
 # This regex finds if a package is in ENVR/ENVRA format by searching for the epoch field
 # being the first set of characters in the package string
-ENVRA_ENVR_FORMAT = re.compile(r"^\d:")
+ENVRA_ENVR_FORMAT = re.compile(r"^\d+:")
 
 # This regex finds if a package is in NEVRA/NEVR format by searching for any digit
 # found between a "-" and a ":"
@@ -81,7 +81,7 @@ _KNOWN_PKG_MESSAGE_KEYS = (
 )
 _PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
 
-
+# Namedtuple to represent a package NEVRA.
 PackageNevra = namedtuple(
     "PackageNevra",
     (
@@ -92,6 +92,8 @@ PackageNevra = namedtuple(
         "arch",
     ),
 )
+
+# Namedtuple that represents package information, including the NEVRA.
 PackageInformation = namedtuple(
     "PackageInformation",
     (
