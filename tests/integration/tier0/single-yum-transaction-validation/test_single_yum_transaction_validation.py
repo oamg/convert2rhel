@@ -78,6 +78,11 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
         c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
+
+        if "7" in SYSTEM_RELEASE_ENV:
+            # Remove the repomd.xml for rhel-7-server-rpms repo
+            assert shell("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
+
         remove_entitlement_certs()
 
         assert c2r.expect_exact(FINAL_MESSAGE, timeout=600) == 0

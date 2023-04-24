@@ -20,6 +20,7 @@ __metaclass__ = type
 import logging
 import os
 import re
+import shutil
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import remove_pkgs
@@ -153,11 +154,8 @@ class YumTransactionHandler(TransactionHandlerBase):
             internally.
         """
         original_os_pkgs = get_system_packages_for_replacement()
-        self._set_up_base()
-        self._enable_repos()
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
-
         try:
             for pkg in original_os_pkgs:
                 self._base.update(pattern=pkg)
@@ -327,10 +325,14 @@ class YumTransactionHandler(TransactionHandlerBase):
         :raises SystemExit: If we can't resolve the transaction dependencies.
         """
         resolve_deps_finished = False
-
         # Do not allow this to loop until eternity.
         attempts = 0
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
+            # Set up the base and repos, since the `_perform_operations` runs
+            # in a child process, the global state is not modified.
+            self._set_up_base()
+            self._enable_repos()
+
             self._perform_operations()
             resolved = self._resolve_dependencies(validate_transaction)
             if not resolved:

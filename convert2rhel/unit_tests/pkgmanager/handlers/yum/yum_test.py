@@ -130,6 +130,9 @@ class TestYumTransactionHandler(object):
         )
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         instance = YumTransactionHandler()
+        instance._set_up_base()
+        instance._enable_repos()
+
         instance._perform_operations()
 
         assert pkgmanager.YumBase.update.call_count == len(system_packages)
@@ -190,6 +193,9 @@ class TestYumTransactionHandler(object):
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         instance = YumTransactionHandler()
+        instance._set_up_base()
+        instance._enable_repos()
+
         instance._perform_operations()
 
         assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
@@ -251,6 +257,9 @@ class TestYumTransactionHandler(object):
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
         instance = YumTransactionHandler()
+        instance._set_up_base()
+        instance._enable_repos()
+
         instance._perform_operations()
 
         assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
@@ -272,9 +281,15 @@ class TestYumTransactionHandler(object):
                 signature="test",
             ),
         ]
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
+        )
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: package)
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
+        instance._set_up_base()
+        instance._enable_repos()
 
         with pytest.raises(SystemExit, match="There are no suitable mirrors available for the loaded repositories."):
             instance._perform_operations()
