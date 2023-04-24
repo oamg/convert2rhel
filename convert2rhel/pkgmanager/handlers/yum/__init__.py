@@ -139,6 +139,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Loading repository metadata failed: %s" % e)
             loggerinst.critical("Failed to populate repository metadata.")
 
+    @utils.run_as_child_process
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
 
@@ -146,6 +147,10 @@ class YumTransactionHandler(TransactionHandlerBase):
         transaction: downgrade, reinstall and downgrade. The downgrade only
         will be executed in case of the the reinstall step raises the
         `ReinstallInstallError`.
+
+        .. important::
+            This function runs in a child process since it deals with rpmdb
+            internally.
         """
         original_os_pkgs = get_system_packages_for_replacement()
         self._set_up_base()

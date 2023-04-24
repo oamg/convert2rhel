@@ -27,7 +27,7 @@ from six.moves import mock
 from convert2rhel import pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests.conftest import centos7, create_pkg_information
+from convert2rhel.unit_tests.conftest import centos7, create_pkg_information, mock_decorator
 
 
 class YumResolveDepsMocked(unit_tests.MockFunction):
@@ -124,6 +124,10 @@ class TestYumTransactionHandler(object):
         ),
     )
     def test_perform_operations(self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch):
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
+        )
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         instance = YumTransactionHandler()
         instance._perform_operations()
@@ -178,6 +182,11 @@ class TestYumTransactionHandler(object):
     def test_perform_operations_reinstall_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
     ):
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
+        )
+
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         instance = YumTransactionHandler()
@@ -233,6 +242,11 @@ class TestYumTransactionHandler(object):
     def test_perform_operations_downgrade_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
     ):
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
+        )
+
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
