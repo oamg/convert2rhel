@@ -596,15 +596,15 @@ def _get_package_repository(pkg):
     """Get package repository information."""
     package = get_pkg_nvra(pkg.nevra) if isinstance(pkg, PackageInformation) else get_pkg_nvra(pkg)
     output, retcode = utils.run_subprocess(
-        ["repoquery", "--quiet", "-q", package, "--qf", "%{REPOID}"],
+        ["repoquery", "--quiet", "-q", package, "--qf", "C2R %{REPOID}"],
         print_cmd=False,
         print_output=False,
     )
 
-    if retcode != 0:
+    if "C2R" not in output or retcode != 0:
         return "N/A"
 
-    return output.strip()
+    return output.lstrip("C2R ")
 
 
 def get_pkg_nvra(pkg_obj):

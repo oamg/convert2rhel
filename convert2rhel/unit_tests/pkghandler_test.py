@@ -2569,6 +2569,15 @@ def test_get_package_information(package_name, subprocess_output, expected, expe
     assert result == expected
 
 
+def test_get_package_information_value_error(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.output = "C2R Fedora Project&Fedora Project&fonts-filesystem-a:aabb.d.1-l.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a"
+
+    result = pkghandler.get_package_information()
+    assert not result
+    assert "Failed to parse a package" in caplog.records[-1].message
+
+
 def test_remove_excluded_pkgs(monkeypatch):
     monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
     monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
