@@ -124,14 +124,8 @@ class TestYumTransactionHandler(object):
         ),
     )
     def test_perform_operations(self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch):
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
-        )
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         instance = YumTransactionHandler()
-        instance._set_up_base()
-        instance._enable_repos()
 
         instance._perform_operations()
 
@@ -185,16 +179,9 @@ class TestYumTransactionHandler(object):
     def test_perform_operations_reinstall_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
     ):
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
-        )
-
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         instance = YumTransactionHandler()
-        instance._set_up_base()
-        instance._enable_repos()
 
         instance._perform_operations()
 
@@ -248,17 +235,10 @@ class TestYumTransactionHandler(object):
     def test_perform_operations_downgrade_exception(
         self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
     ):
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
-        )
-
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
         instance = YumTransactionHandler()
-        instance._set_up_base()
-        instance._enable_repos()
 
         instance._perform_operations()
 
@@ -281,15 +261,9 @@ class TestYumTransactionHandler(object):
                 signature="test",
             ),
         ]
-        original_func = pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.__wrapped__
-        monkeypatch.setattr(
-            pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock_decorator(original_func)
-        )
         monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: package)
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
-        instance._set_up_base()
-        instance._enable_repos()
 
         with pytest.raises(SystemExit, match="There are no suitable mirrors available for the loaded repositories."):
             instance._perform_operations()
@@ -373,6 +347,10 @@ class TestYumTransactionHandler(object):
             pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
         )
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_process_transaction", mock.Mock())
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
+        )
         instance = YumTransactionHandler()
         instance._set_up_base()
         instance.run_transaction(validate_transaction=validate_transaction)
@@ -396,6 +374,10 @@ class TestYumTransactionHandler(object):
             pkgmanager.handlers.yum.YumTransactionHandler,
             "_resolve_dependencies",
             YumResolveDepsMocked(start_at, loop_until),
+        )
+        original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
+        monkeypatch.setattr(
+            pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
         )
         instance = YumTransactionHandler()
 

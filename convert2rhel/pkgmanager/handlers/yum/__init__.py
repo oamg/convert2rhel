@@ -108,6 +108,19 @@ class YumTransactionHandler(TransactionHandlerBase):
         # method.
         self._base = None
 
+    def _close_yum_base(self):
+        """Helper method to close the yum object.
+
+        .. important::
+            Because we call the same thing multiple times, the rpm database is
+            not properly closed at the end of it, thus, having the need to call
+            `self._base.close()` explicitly before we delete the object. If we
+            use only `del self._base`, it seems that yum is not able to
+            properly clean everything in the database.
+        """
+        self._base.close()
+        del self._base
+
     def _set_up_base(self):
         """Create a new instance of the yum.YumBase() class
 
@@ -140,7 +153,6 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.debug("Loading repository metadata failed: %s" % e)
             loggerinst.critical("Failed to populate repository metadata.")
 
-    @utils.run_as_child_process
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
 
@@ -148,12 +160,10 @@ class YumTransactionHandler(TransactionHandlerBase):
         transaction: downgrade, reinstall and downgrade. The downgrade only
         will be executed in case of the the reinstall step raises the
         `ReinstallInstallError`.
-
-        .. important::
-            This function runs in a child process since it deals with rpmdb
-            internally.
         """
         original_os_pkgs = get_system_packages_for_replacement()
+        self._set_up_base()
+        self._enable_repos()
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
         try:
@@ -171,6 +181,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                     ):
                         loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
         except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
+            self._close_yum_base()
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("There are no suitable mirrors available for the loaded repositories.")
 
@@ -268,7 +279,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumDownloadError
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
-
+            self._close_yum_base()
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
@@ -277,6 +288,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("System packages replaced successfully.")
 
+    @utils.run_as_child_process
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 
@@ -328,11 +340,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         # Do not allow this to loop until eternity.
         attempts = 0
         while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
-            # Set up the base and repos, since the `_perform_operations` runs
-            # in a child process, the global state is not modified.
-            self._set_up_base()
-            self._enable_repos()
-
             self._perform_operations()
             resolved = self._resolve_dependencies(validate_transaction)
             if not resolved:
@@ -346,10 +353,4 @@ class YumTransactionHandler(TransactionHandlerBase):
             loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
         self._process_transaction(validate_transaction)
-        # Because we call the same thing multiple times, the rpm database is
-        # not properly closed at the end of it, thus, having the need to call
-        # `self._base.close()` explicitly before we delete the object. If we
-        # use only `del self._base`, it seems that yum is not able to properly
-        # clean everything in the database.
-        self._base.close()
-        del self._base
+        self._close_yum_base()

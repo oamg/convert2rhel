@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 
@@ -79,9 +80,9 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
         c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
 
-        if "7" in SYSTEM_RELEASE_ENV:
+        if re.match(r"^(centos|oracle)-7$", SYSTEM_RELEASE_ENV):
             # Remove the repomd.xml for rhel-7-server-rpms repo
-            assert shell("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
+            os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
 
         remove_entitlement_certs()
 
@@ -112,7 +113,13 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
         c2r.expect(
             "Downloading and validating the yum transaction set, no modifications to the system will happen this time."
         )
+
+        if re.match(r"^(centos|oracle)-7$", SYSTEM_RELEASE_ENV):
+            # Remove the repomd.xml for rhel-7-server-rpms repo
+            os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
+
         remove_entitlement_certs()
+
         assert c2r.expect_exact("Failed to validate the yum transaction.", timeout=600) == 0
 
     assert c2r.exitstatus == 1
