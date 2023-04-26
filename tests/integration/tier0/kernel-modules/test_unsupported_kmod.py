@@ -74,7 +74,11 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, shell, con
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect("CRITICAL - The following loaded kernel modules are not available in RHEL")
+        c2r.expect(
+            "ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES: The following loaded kernel modules are not available in RHEL"
+        )
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 
@@ -119,9 +123,9 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
 
         # Stop conversion before the point of no return as we do not need to run the full conversion
         assert c2r.expect("All loaded kernel modules are available in RHEL", timeout=600) == 0
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
-        assert c2r.exitstatus != 0
+        c2r.sendcontrol("c")
+
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_force_loaded_kmod
@@ -142,7 +146,8 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
         c2r.sendline("y")
 
         assert c2r.expect("Tainted kernel modules detected") == 0
-        assert c2r.exitstatus != 0
+
+    assert c2r.exitstatus != 0
 
     # Clean up - unload kmod and check for force loaded modules not being in /proc/modules
     assert shell("modprobe -r -v bonding").returncode == 0
@@ -194,8 +199,8 @@ def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, 
         c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
         c2r.expect("We will continue the conversion with the following kernel modules")
 
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     # Remove the set environment variable
