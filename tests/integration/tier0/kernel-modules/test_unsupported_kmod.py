@@ -60,7 +60,7 @@ def kmod_in_different_directory(shell):
 
 
 @pytest.mark.test_custom_module_loaded
-def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, shell, convert2rhel):
+def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rhel):
     """
     This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
     If custom module is loaded the conversion has to be inhibited.
@@ -77,7 +77,6 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, shell, con
         c2r.expect(
             "ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES: The following loaded kernel modules are not available in RHEL"
         )
-        c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
 
@@ -91,8 +90,6 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     The kmod compatibility check is right before the point of no return.
     Abort the conversion right after the check.
     """
-    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
-
     # Move the kmod to a custom location
     shell(f"mkdir {CUSTOM_KMOD_DIRECTORY.as_posix()}")
     shell(f"mv {ORIGIN_KMOD_LOCATION.as_posix()} {CUSTOM_KMOD_DIRECTORY.as_posix()}")
@@ -116,10 +113,8 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         ),
         unregister=True,
     ) as c2r:
-        while prompt_amount > 0:
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("y")
-            prompt_amount -= 1
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
 
         # Stop conversion before the point of no return as we do not need to run the full conversion
         assert c2r.expect("All loaded kernel modules are available in RHEL", timeout=600) == 0
@@ -155,7 +150,7 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
 
 
 @pytest.mark.test_tainted_kernel
-def test_tainted_kernel_inhibitor(custom_kmod, shell, convert2rhel):
+def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
     """
     This test marks the kernel as tainted which is not supported by convert2rhel.
     We need to install specific kernel packages to build own custom kernel module.
@@ -181,7 +176,6 @@ def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, 
     will override the inhibition when there is RHEL unsupported kernel module detected.
     The environment variable is set through the test metadata.
     """
-    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
 
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -191,10 +185,8 @@ def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, 
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        while prompt_amount > 0:
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("y")
-            prompt_amount -= 1
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
 
         c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
         c2r.expect("We will continue the conversion with the following kernel modules")

@@ -44,6 +44,7 @@ def test_verify_logfile_starts_with_command(convert2rhel):
             c2r.sendline("y")
 
             # After that we can stop the execution at the following prompt.
+            c2r.expect("Prepare: Clear YUM/DNF version locks")
             c2r.sendcontrol("c")
 
         with open(C2R_LOG, "r") as logfile:
