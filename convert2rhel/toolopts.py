@@ -269,7 +269,8 @@ class CLI(object):
             "--pool",
             help="Subscription pool ID. A list of the available"
             " subscriptions is possible to obtain by running"
-            " 'subscription-manager list --available'.",
+            " 'subscription-manager list --available'."
+            " If no pool ID is provided, the --auto option is used",
         )
         group.add_argument(
             "-v",

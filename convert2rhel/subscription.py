@@ -674,11 +674,11 @@ def attach_subscription():
 
     # check if SCA is enabled
     output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
-    if "Content Access Mode is set to Simple Content Access." in output:
+    if "content access mode is set to simple content access." in output.lower():
         loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
         if tool_opts.pool:
             loggerinst.warning(
-                "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached"
+                "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached."
             )
         return True
 

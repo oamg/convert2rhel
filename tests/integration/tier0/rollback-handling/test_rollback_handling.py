@@ -73,15 +73,13 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    # Use 'Ctrl + c' to check for unexpected behaviour
+    # Use 'Ctrl + c' first to check for unexpected behaviour
     # of the rollback feature after process termination
     c2r.sendcontrol("c")
-    assert c2r.exitstatus != 1
 
-    # Verify the last step of the rollback is present in the log file
-    with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
-        for line in logfile:
-            assert "Rollback: Remove installed RHSM certificate" not in line
+    # Assert the rollback finished all tasks by going through its last task
+    assert c2r.expect("Rollback: Remove installed RHSM certificate", timeout=120) == 0
+    assert c2r.exitstatus != 1
 
 
 @pytest.mark.test_rhsm_cleanup
@@ -148,7 +146,7 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.test_terminate_on_registration
+@pytest.mark.test_terminate_on_registration_start
 def test_terminate_registration_start(convert2rhel):
     """
     Send termination signal immediately after c2r tries the registration.
@@ -162,37 +160,16 @@ def test_terminate_registration_start(convert2rhel):
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect("Registering the system using subscription-manager")
-        terminate_and_assert_good_rollback(c2r)
+        if c2r.expect("Registering the system using subscription-manager") == 0:
+            terminate_and_assert_good_rollback(c2r)
 
 
-@pytest.mark.test_terminate_on_username
-def test_terminate_on_username_prompt(convert2rhel):
+@pytest.mark.test_terminate_on_registration_success
+def test_terminate_registration_success(convert2rhel):
     """
-    Send termination signal on the user prompt for username.
+    Send termination signal immediately after c2r successfully finishes the registration.
     Verify that c2r goes successfully through the rollback.
-    """
-    with convert2rhel("--debug -y --no-rpm-va") as c2r:
-        c2r.expect("Username:")
-        terminate_and_assert_good_rollback(c2r)
-
-
-@pytest.mark.test_terminate_on_password
-def test_terminate_on_password_prompt(convert2rhel):
-    """
-    Send termination signal on the user prompt for password.
-    Verify that c2r goes successfully through the rollback.
-    """
-    with convert2rhel("--debug -y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
-        c2r.expect("Password:")
-        terminate_and_assert_good_rollback(c2r)
-
-
-@pytest.mark.test_terminate_on_subscription
-def test_terminate_on_subscription_prompt(convert2rhel):
-    """
-    Send termination signal on the user prompt for subscription number.
-    Verify that c2r goes successfully through the rollback.
+    Verify that the subscription is auto-attached.
     """
     with convert2rhel(
         "--debug -y --no-rpm-va --serverurl {} --username {} --password {}".format(
@@ -202,5 +179,32 @@ def test_terminate_on_subscription_prompt(convert2rhel):
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect("Enter number of the chosen subscription:")
-        terminate_and_assert_good_rollback(c2r)
+        c2r.expect("Registering the system using subscription-manager")
+        assert c2r.expect("System registration succeeded.", timeout=180) == 0
+        # Verify auto-attachment of the subscription
+        assert c2r.expect("Auto-attaching compatible subscriptions to the system ...", timeout=180) == 0
+        assert c2r.expect("DEBUG - Calling command 'subscription-manager attach --auto'", timeout=180) == 0
+        if c2r.expect("Status:       Subscribed", timeout=180) == 0:
+            terminate_and_assert_good_rollback(c2r)
+
+
+@pytest.mark.test_terminate_on_username
+def test_terminate_on_username_prompt(convert2rhel):
+    """
+    Send termination signal on the user prompt for username.
+    Verify that c2r goes successfully through the rollback.
+    """
+    with convert2rhel("--debug -y --no-rpm-va") as c2r:
+        if c2r.expect("Username:") == 0:
+            terminate_and_assert_good_rollback(c2r)
+
+
+@pytest.mark.test_terminate_on_password
+def test_terminate_on_password_prompt(convert2rhel):
+    """
+    Send termination signal on the user prompt for password.
+    Verify that c2r goes successfully through the rollback.
+    """
+    with convert2rhel("--debug -y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
+        if c2r.expect("Password:") == 0:
+            terminate_and_assert_good_rollback(c2r)

@@ -51,12 +51,28 @@ tag+:
     summary+: |
         Rollback during registration
     description+: |
-        Send termination signal immediately after c2r tries the registration.
-        Verify that c2r goes successfully through the rollback.
-    tag+:
-        - terminate-on-registration
-    test: |
-        pytest -svv -m test_terminate_on_registration
+        Send termination signal during the registration phase.
+    /registration_start:
+        summary+: |
+            Terminate at the start of the registration
+        description+: |
+            Terminate immediately after c2r tries the registration.
+            Verify that c2r goes successfully through the rollback.
+        tag+:
+            - terminate-on-registration-start
+        test: |
+            pytest -svv -m test_terminate_on_registration_start
+    /registration_success:
+        summary+: |
+            Terminate after successful registration
+        description+: |
+            Terminate immediately after c2r successfully finishes the registration.
+            Verify, that the subscription is auto-attached.
+            Verify that c2r goes successfully through the rollback.
+        tag+:
+            - terminate-on-registration-success
+        test: |
+            pytest -svv -m test_terminate_on_registration_success
 
 /terminate_on_username:
     summary+: |
@@ -79,14 +95,3 @@ tag+:
         - terminate-on-password
     test: |
         pytest -svv -m test_terminate_on_password
-
-/terminate_on_subscription:
-    summary+: |
-        Rollback from subscription prompt
-    description+: |
-        Send termination signal on the user prompt for subscription number.
-        Verify that c2r goes successfully through the rollback.
-    tag+:
-        - terminate-on-subscription
-    test: |
-        pytest -svv -m test_terminate_on_subscription
