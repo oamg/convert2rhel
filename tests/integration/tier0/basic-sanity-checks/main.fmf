@@ -11,7 +11,6 @@ description: |
 tier: 0
 
 tag+:
-    - nondestructive
     - sanity
 
 /root_privileges:

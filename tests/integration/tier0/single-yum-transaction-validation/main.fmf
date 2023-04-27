@@ -15,8 +15,6 @@ link: https://issues.redhat.com/browse/RHELC-576
 tier: 0
 
 tag+:
-    - yum
-    - dnf
     - transaction
 
 

@@ -8,8 +8,6 @@ tier: 0
 
 tag+:
     - latest-kernel-check
-    - kernel
-    - repository
 
 /failed_repoquery:
     summary+: |

@@ -17,8 +17,6 @@ adjust+:
 tier: 0
 
 tag+:
-    - nondestructive
-    - rollback
     - rollback-handling
 
 /rhsm_cleanup:

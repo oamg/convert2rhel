@@ -7,7 +7,6 @@ description: |
 tier: 0
 
 tag+:
-    - repo
     - system-release-backup
 
 /os_release_restored:
