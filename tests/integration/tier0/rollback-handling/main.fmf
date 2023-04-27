@@ -4,16 +4,6 @@ description: |
     Terminate the conversion at various points and verify that the rollback finishes successfully.
     Verify that unnecessary packages are backed up and not removed.
 
-adjust+:
-    - environment+:
-        PROMPT_AMOUNT: 4
-      when: distro == oraclelinux
-    - environment+:
-        PROMPT_AMOUNT: 5
-      when: distro == centos
-      because: |
-        There is one more user prompt asking for removal of python[3]?-syspurpose
-
 tier: 0
 
 tag+:

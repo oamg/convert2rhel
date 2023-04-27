@@ -140,7 +140,8 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("Tainted kernel modules detected") == 0
+        assert c2r.expect("TAINTED_KMODS.TAINTED_KMODS_DETECTED: Tainted kernel modules detected") == 0
+        c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
 
@@ -166,6 +167,8 @@ def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
         unregister=True,
     ) as c2r:
         c2r.expect("Tainted kernel modules detected")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 
