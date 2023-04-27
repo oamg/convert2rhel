@@ -191,15 +191,12 @@
         - enabled: true
           when: >
               distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
 
     discover+:
         filter: tag:sub-man-rollback
-
-    /sub_man_rollback:
-        environment+:
-            TEST_REQUIRES: subscription-manager
-        discover+:
-            filter: tag:sub-man-rollback
 
 
 /single_yum_transaction_validation:
