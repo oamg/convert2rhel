@@ -13,16 +13,11 @@ adjust+:
     - enabled: true
       when: >
           distro == centos-8
+    - environment+:
+        TEST_REQUIRES: subscription-manager
+
+test: |
+    pytest -svv -m test_sub_man_rollback
 
 tag+:
-    - certificate
-    - subscription-manager
-    - rollback
-
-/sub_man_rollback:
-    environment+:
-        TEST_REQUIRES: subscription-manager
-    tag+:
-        - sub-man-rollback
-    test: |
-      pytest -svv -m test_sub_man_rollback
+    - sub-man-rollback
