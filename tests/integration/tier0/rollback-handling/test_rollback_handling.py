@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from conftest import SYSTEM_RELEASE_ENV
@@ -7,6 +5,10 @@ from envparse import env
 
 
 def assign_packages(packages=None):
+    # If nothing was passed down to packages, set it to an empty list
+    if not packages:
+        packages = []
+
     ol_7_pkgs = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
     ol_8_pkgs = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
     cos_7_pkgs = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
@@ -14,18 +16,18 @@ def assign_packages(packages=None):
     # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
     # and Oracle Linux 8.2 respectively.
     if "centos-7" in SYSTEM_RELEASE_ENV:
-        packages = cos_7_pkgs
+        packages += cos_7_pkgs
     elif "centos-8" in SYSTEM_RELEASE_ENV:
-        packages = cos_8_pkgs
+        packages += cos_8_pkgs
     elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        packages = ol_7_pkgs
+        packages += ol_7_pkgs
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        packages = ol_8_pkgs
+        packages += ol_8_pkgs
 
     return packages
 
 
-def install_packages(shell, packages=None):
+def install_packages(shell, packages):
     """
     Helper function.
     Install packages that cause trouble/needs to be checked during/after rollback.
@@ -34,24 +36,28 @@ def install_packages(shell, packages=None):
     packages_to_remove_at_cleanup = []
     for package in packages:
         if f"{package} is not installed" in shell(f"rpm -q {package}").output:
-            print(f"PREP: Setting up {package}")
-            assert shell(f"yum install -y {package}").returncode == 0
             packages_to_remove_at_cleanup.append(package)
 
+    # Run this only once as package managers take too long to figure out
+    # dependencies and install the packages.
+    print(f"PREP: Setting up {','.join(packages_to_remove_at_cleanup)}")
+    assert shell(f"yum install -y {' '.join(packages_to_remove_at_cleanup)}").returncode == 0
     return packages_to_remove_at_cleanup
 
 
-def remove_packages(shell, packages=None):
+def remove_packages(shell, packages):
     """
     Helper function.
     Remove additionally installed packages.
     """
-    for package in packages:
-        print(f"CLEAN: Removing {package}")
-        assert shell(f"yum remove -y {package}").returncode == 0
+    if not packages:
+        return
+
+    print(f"CLEAN: Removing {','.join(packages)}")
+    assert shell(f"yum remove -y {' '.join(packages)}").returncode == 0
 
 
-def is_installed_post_rollback(shell, packages=None):
+def is_installed_post_rollback(shell, packages):
     """
     Helper function.
     Iterate over list of packages and verify that untracked packages remain installed after the rollback.
@@ -84,7 +90,6 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     Verify that the system has been successfully unregistered after the rollback.
     Verify that usermode, rhn-setup and os-release packages are not removed.
     """
-    prompt_amount = int(os.environ["PROMPT_AMOUNT"])
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
@@ -95,13 +100,16 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        while prompt_amount > 0:
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("y")
-            prompt_amount -= 1
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
+        assert c2r.expect("Successfully attached a subscription") == 0
+        c2r.sendcontrol("c")
 
         c2r.expect("Calling command 'subscription-manager unregister'")
         c2r.expect("System unregistered successfully.")
+
+    assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -133,7 +141,8 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     with convert2rhel("--debug -y --no-rpm-va") as c2r:
         c2r.expect("Username")
         c2r.sendcontrol("c")
-        assert c2r.exitstatus != 0
+
+    assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)

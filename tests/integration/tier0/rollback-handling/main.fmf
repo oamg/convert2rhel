@@ -28,7 +28,6 @@ tag+:
         Verify that usermode, rhn-setup and os-release packages are not removed.
     adjust+:
         - environment+:
-            PROMPT_AMOUNT: 6
             CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
           when: distro == centos-8-latest
     tag+:
