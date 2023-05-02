@@ -13,3 +13,5 @@
     - role: packaging
 
     - role: install-testing-deps
+
+    - role: update-ca-trust
