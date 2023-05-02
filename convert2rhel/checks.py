@@ -15,7 +15,6 @@
 
 import logging
 import os
-import os.path
 
 from convert2rhel import grub
 from convert2rhel.systeminfo import system_info

@@ -104,9 +104,9 @@ class IsLoadedKernelLatest(actions.Action):
                 # of the line.
                 logger.debug("Got a line without the C2R identifier: %s" % line)
 
-        # If we don't have any packages, then something went wrong, we need to
-        # decide whether to bail out or output a warning (only if the user used the
-        # special environment variable for it.
+        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
+
+        # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
             unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
             if not unsupported_skip:
@@ -122,6 +122,9 @@ class IsLoadedKernelLatest(actions.Action):
                 )
                 return
 
+        # Skip kernel package check and output a warning (only if the user used the
+        # special environment variable for it.
+        if unsupported_skip:
             logger.warning(
                 "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the %s comparison.\n"
