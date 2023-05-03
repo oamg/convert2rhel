@@ -26,6 +26,6 @@ def test_missing_os_release(shell, convert2rhel):
             env.str("SATELLITE_ORG"),
         )
     ) as c2r:
-        c2r.expect("WARNING - rhel-8-for-x86_64-baseos-eus-rpms repository is not available")
-        c2r.expect("WARNING - rhel-8-for-x86_64-appstream-eus-rpms repository is not available")
+        c2r.expect("WARNING - Some repositories are not available: rhel-8-for-x86_64-baseos-eus-rpms")
+        c2r.expect("WARNING - Some repositories are not available: rhel-8-for-x86_64-appstream-eus-rpms")
     assert c2r.exitstatus == 0
