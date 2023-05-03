@@ -719,3 +719,55 @@
             automatically selects the subscription.
         discover+:
             filter: tag:auto-attach-pool
+
+/sub_man_rollback:
+    summary: |
+        Back up and restore subscription-manager
+    description: |
+        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+        backed up and re-installed during the rollback together with the certificate.
+
+
+    enabled: false
+
+    adjust+:
+        - enabled: true
+          when: >
+              distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
+
+    discover+:
+        filter: tag:sub-man-rollback
+/assessment_report:
+    summary: Pre-Assessment report
+    description: |
+        # TODO(r0x0d): Improve it later.
+        Verify that the Pre-Assessment report is working
+
+    discover+:
+        filter: tag:pre-assessment-report
+
+    /failures_and_skips_in_report:
+        summary+: |
+            Verify that some actions failures and skips appeared in the report.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            even with failures and skips, and then, output the report to the user.
+        environment+:
+            CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
+        discover+:
+            filter: tag:failed-report
+
+    /successfull_report:
+        summary+: |
+            Verify that the report was successfull.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            and then, output the report to the user.
+        environment+:
+            CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
+        discover+:
+            filter: tag:success-report
