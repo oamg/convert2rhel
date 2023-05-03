@@ -1,0 +1,754 @@
+/basic_sanity_checks:
+    summary: |
+        Basic sanity checks
+    description: |
+        Verify basic sanity behavior.
+            - Display help
+            - Only last version of Convert2RHEL supported
+            - Yum cache cleaned before any other check
+            - Missing RHSM certificates logged properly
+            - Deprecated --variant message displayed
+
+
+    discover+:
+        filter: tag:sanity
+
+    /root_privileges:
+        summary+: |
+            Enforced root privileges
+        description+: |
+            Verify that convert2rhel enforces root privileges
+        discover+:
+            filter: tag:root-privileges
+
+
+    /manpage:
+        summary+: |
+            Manpage exists
+        description+: |
+            Verify that man page exists and is printed out
+        discover+:
+            filter: tag:manpage
+
+
+    /smoke:
+        summary+: |
+            Basic smoke test
+        description+: |
+            Display help and exit.
+            Exit on first prompt passing 'no'.
+        discover+:
+            filter: tag:smoke
+
+
+    /log_file_exists:
+        summary+: |
+            Log file exists
+        description+: |
+            Verify that the log file is created at the expected location.
+        discover+:
+            filter: tag:log-file
+
+
+    /convert2rhel_version:
+        summary+: |
+            convert2rhel version check
+        /c2r_version_latest_or_newer:
+            summary+: |
+                Latest or newer version of convert2rhel
+            description+: |
+                Verify that running the latest or newer than latest version does not inhibit the conversion.
+            discover+:
+                filter: tag:version-latest-or-newer
+
+        /c2r_version_older_no_envar:
+            summary+: |
+                Older convert2rhel version without envar
+            description+: |
+                Verify that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
+                environment variable in place, does inhibit the conversion.
+            discover+:
+                filter: tag:version-older-no-envar
+
+        /c2r_version_older_with_envar:
+            summary+: |
+                Older convert2rhel version with envar
+            description+: |
+                Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
+                environment variable in place, does inhibit the conversion.
+            discover+:
+                filter: tag:version-older-with-envar
+
+
+    /clean_cache:
+        summary+: |
+            Clean yum cache
+        description+: |
+            Verify that the yum cache clean is performed before any other check.
+        discover+:
+            filter: tag:clean-cache
+
+
+    /log_rhsm_error:
+        summary+: |
+            RHSM error not logged
+        description+: |
+            Verify that the OSError raised by RHSM certificate being removed
+            is not being logged in cases the certificate is not installed yet.
+        discover+:
+            filter: tag:log-rhsm-error
+
+
+    /variant_message:
+        summary+: |
+            Deprecated variant message
+        description+: |
+            Verify that the message about deprecated --variant option is printed.
+        discover+:
+            filter: tag:variant-message
+
+
+    /data_collection:
+        summary+: |
+            Data collection sanity test
+        /data_collection_acknowledgement:
+            summary+: |
+                Data collection acknowledgement
+            description+: |
+                Verify that the user is asked to acknowledge the data collection.
+            discover+:
+                filter: tag:data-collection-acknowledgement
+
+        /disable_data_collection:
+            summary+: |
+                Disabled data collection.
+            description+: |
+                Verify that disabling the data collection inhibits the conversion.
+                The convert2rhel.facts file is not created.
+            adjust+:
+                - environment+:
+                    CONVERT2RHEL_DISABLE_TELEMETRY: 1
+            discover+:
+                filter: tag:disable-data-collection
+
+
+/sub_man_rollback:
+    summary: |
+        Back up and restore subscription-manager
+    description: |
+        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+        backed up and re-installed during the rollback together with the certificate.
+
+
+    enabled: false
+
+    adjust+:
+        - enabled: true
+          when: >
+              distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
+
+    discover+:
+        filter: tag:sub-man-rollback
+
+
+/custom_kernel:
+    summary: |
+        Custom kernel
+    description: |
+        Install custom kernel with different signature than allowed on the on the running system.
+        Verify that convert2rhel inhibits the conversion.
+
+
+    /custom_kernel:
+        discover+:
+            filter: tag:custom-kernel
+
+
+/latest_kernel_check:
+    summary: |
+        Repoquery call on the latest kernel check
+    description: |
+        This test verifies the repoquery call does not affect
+        the check of the latest kernel available on the system.
+
+
+    discover+:
+        filter: tag:latest-kernel-check
+
+    /failed_repoquery:
+        summary+: |
+            Failed repoquery
+        description+: |
+            Verify the convert2rhel handles the repoquery call failure properly
+            and proceeds with the conversion.
+        discover+:
+            filter: tag:failed-repoquery
+
+    /yum_excld_kernel:
+        summary+: |
+            Exclude defined in yum config
+        description+: |
+            Verify that the repoquery call succeeds with an `exclude` option present in the config.
+            Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
+            'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
+        discover+:
+            filter: tag:yum-excld-kernel
+
+
+/config_file:
+    summary: |
+        Config file
+    description: |
+        Verify that different methods of using a config file work as expected.
+
+    #TODO(danmyway) create test case with config file with insufficient permissions.
+
+
+    discover+:
+        filter: tag:config-file
+
+    /config_custom_path_custom_filename:
+        summary+: |
+            Config with custom name at custom path
+        description+: |
+            Verify that both custom path and custom filename are accepted.
+            The config file is created at a custom path with a custom filename
+            and the path is passed to the utility command.
+        discover+:
+            filter: tag:config-custom-path-custom-filename
+
+    /config_custom_path_standard_filename:
+        summary+: |
+            Confing with standard name at custom path
+        description+: |
+            Verify that the custom path to the config file is accepted,
+            with the config file having standard filename.
+        discover+:
+            filter: tag:config-custom-path-standard-filename
+
+    /config_cli_priority:
+        summary+: |
+            CLI provided values preferred
+        description+: |
+            Verify that the values provided to the CLI command are preferred
+            to those provided in the config file.
+        discover+:
+            filter: tag:config-cli-priority
+
+    /config_password_file_priority:
+        summary+: |
+            Password file preferred
+        description+: |
+            Verify that passing the password through the password file
+            is preferred to the config file.
+        discover+:
+            filter: tag:config-password-file-priority
+
+    /config_standard_paths_priority_diff_methods:
+        summary+: |
+            Activation key preferred to password
+        description+: |
+            Verify that with multiple config files each providing different method
+            (password and activation key) the activation key is preferred.
+        discover+:
+            filter: tag:config-standard-paths-priority-diff-methods
+
+    /config_standard_paths_priority:
+        summary+: |
+            Standard paths priorities
+        description+: |
+            Verify priorities of standard config file paths.
+            Config file located in the home folder to be preferred.
+        discover+:
+            filter: tag:config-standard-paths-priority
+
+
+/custom_repository:
+    summary: |
+        Enable custom repositories
+    description: |
+        Verify scenarios with enabled custom repositories and subscription-manager disabled.
+
+
+    discover+:
+        filter: tag:custom-repository
+
+
+    /custom_valid_repo_provided:
+        summary+: |
+            Valid custom repository enabled
+        description+: |
+            Provide valid custom repository and verify that the conversion proceeds.
+        discover+:
+            filter: tag:custom-valid-repo-provided
+
+    /custom_invalid_repo_provided:
+        summary+: |
+            Invalid custom repository enabled
+        description+: |
+            Provide invalid values for custom repository options and verify that the conversion is inhibited.
+        discover+:
+            filter: tag:custom-invalid-repo-provided
+
+
+/cve_2022_1662:
+    summary: |
+        Verify the 2022-1662 CVE fixes
+    description: |
+        2022-1662 CVE fixes leaking password and activation key
+        to the command line when passing the value to subscription manager.
+
+
+    discover+:
+        filter: tag:cve-2022-1662
+
+    /passing_password_to_submgr:
+        summary+: |
+            Password not leaked
+        description+: |
+            Verify that the password does not get leaked when passed to the subscription manager.
+        discover+:
+            filter: tag:passing-password-to-submgr
+
+    /passing_activation_key_to_submgr:
+        summary+: |
+            Activation key not leaked
+        description+: |
+            Verify that the activation key does not get leaked when passed to the subscription manager.
+        discover+:
+            filter: tag:passing-activation-key-to-submgr
+
+
+/internet_connection_check:
+    summary: |
+        Internet connection checks
+    description: |
+        Verify that internet connection check works as expected
+        trying to reach 'https://static.redhat.com/test/rhel-networkmanager.txt'
+
+
+    discover+:
+        filter: tag:internet-connection-check
+
+    /available_connection:
+        summary+: |
+            Connection is available
+        description+: |
+            Verify that convert2rhel checks for internet connection
+            and notifies user, that the connection seems to be available.
+        discover+:
+            filter: tag:available-connection
+
+    /unavailable_connection:
+        summary+: |
+            Connection unavailable
+        description+: |
+            Modify the '/etc/dnsmasq.conf' and '/etc/resolv.conf' files
+            so everything gets resolved to localhost.
+            Verify that the internet connection check fails and
+            the user is notified, that there was a problem,
+            therefore the connection seems to be unavailable.
+        discover+:
+            filter: tag:unavailable-connection
+
+
+/kernel_modules:
+    summary: |
+        Kernel modules
+    description: |
+        Load kernel module that is not supported in RHEL and verify the utility works as expected.
+        Verify that removing this kmod does not interfere with new conversion run.
+        Verify that loading custom kernel module, that marks the kernel as "tainted", inhibits the conversion.
+
+
+    discover+:
+        filter: tag:kernel-modules
+
+
+    /custom_kernel_module:
+        summary+: |
+            Custom kernel module
+        description+:
+            One kernel module is moved to a custom location,
+            therefore denoted as custom by the running system.
+
+        /custom_module_loaded:
+            summary+: |
+                Load custom kernel module
+            description+: |
+                This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
+                If custom module is loaded the conversion has to be inhibited.
+            discover+:
+                filter: tag:custom-module-loaded
+
+        /custom_module_not_loaded:
+            summary+: |
+                Remove custom kernel module
+            description+: |
+                Load the kmod from custom location.
+                Verify that it is loaded.
+                Remove the previously loaded 'custom' kmod and verify, the conversion is not inhibited.
+                The kmod compatibility check is right before the point of no return.
+                Abort the conversion right after the check.
+            discover+:
+                filter: tag:custom-module-not-loaded
+
+        /unsupported_kmod_with_envar:
+            summary+: |
+                Bypass loaded custom kernel module
+            description+: |
+                This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
+                will override the inhibition when there is RHEL unsupported kernel module detected.
+                The environment variable is set through the test metadata.
+            adjust+:
+                - environment+:
+                    CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+            discover+:
+                filter: tag:unsupported-kmod-with-envar
+            link:
+                verifies: https://issues.redhat.com/browse/RHELC-244
+
+
+    /force_loaded_kmod:
+        summary+: |
+            Force load a kernel module
+        description+: |
+            In this test case we force load kmod and verify that the convert2rhel run is inhibited.
+            Force loaded kmods are denoted (FE) where F = module was force loaded and E = unsigned module was loaded.
+            The utility handles force loaded kmod as tainted.
+        adjust+:
+            - enabled: false
+              when: distro == centos-7 or distro == oraclelinux-7
+              because: |
+                Force loading the kernel module on RHEL7 like distros is flaky.
+        discover+:
+            filter: tag:force-loaded-kmod
+
+
+    /tainted_kernel:
+        summary+: |
+            Build own custom kernel module
+        description+: |
+            This test marks the kernel as tainted which is not supported by convert2rhel.
+            We need to install specific kernel packages to build own custom kernel module.
+            Verify the conversion is inhibited.
+        discover+:
+            filter: tag:tainted-kernel
+
+
+/logged_command:
+    summary: |
+        Passed command at the top of a log file
+    description: |
+        Verify log file is generated and the passed command is in first lines of the log file.
+
+
+    discover+:
+        filter: tag:logged-command
+
+    /logfile_starts_with_command:
+        discover+:
+            filter: tag:logfile-starts-with-command
+
+
+/modified_releasever:
+    summary: |
+        Modified `releasever` variable
+    description: |
+        Modify the releasever in multiple scenarios and verify the expected behavior.
+
+
+    discover+:
+        filter: tag:modified-releasever
+
+    /modified_releasever_in_configs:
+        summary+: |
+            Releasever in /usr/share/convert2rhel/configs/
+        description+: |
+            Verify that modifying the releasever value in config files
+            at `/usr/share/convert2rhel/configs/` will override the $releasever
+            when calling the `yumdownloader` command.
+        discover+:
+            filter: tag:modified-releasever-in-configs
+
+    /modified_releasever_to_unknown_release:
+        summary+: |
+            Set /etc/system-release to unsupported version
+        description+: |
+            Verify that running the utility with unsupported version inhibits the conversion.
+            Set the releasever to unsupported version (e.g. x.1.1111)
+        discover+:
+            filter: tag:releasever-unknown-release
+
+
+/oracle_linux_unbreakable_enterprise_kernel:
+    summary: |
+        Oracle Linux unsupported Unbreakable Enterprise Kernel
+    description: |
+        Install unsupported Unbreakable Enterprise Kernel (UEK) on an Oracle Linux machine
+        and verify, that the conversion is inhibited.
+
+
+    discover+:
+        filter: tag:oraclelinux-unbreakable-enterprise-kernel
+
+    adjust+:
+        - enabled: false
+          when: >
+              distro != oraclelinux
+          because: The test case applies to Oracle Linux (Unbreakable Enterprise Kernel) only.
+
+    /unsupported_kernel:
+        discover+:
+            filter: tag:unsupported-kernel
+
+
+/rollback_handling:
+    summary: |
+        Correct rollback behavior
+    description: |
+        Terminate the conversion at various points and verify that the rollback finishes successfully.
+        Verify that unnecessary packages are backed up and not removed.
+
+
+    discover+:
+        filter: tag:rollback-handling
+
+    /rhsm_cleanup:
+        summary+: |
+            Rollback at PONR
+        description+: |
+            Get right to the point of no return and end the conversion.
+            Verify that the system has been successfully unregistered after the rollback.
+            Verify that usermode, rhn-setup and os-release packages are not removed.
+        adjust+:
+            - environment+:
+                CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
+              when: distro == centos-8-latest
+        discover+:
+            filter: tag:rhsm-cleanup
+
+    /packages_untracked_graceful_rollback:
+        summary+: |
+            Rollback with failed registration
+        description+: |
+            Provide c2r with incorrect username and password, so the registration fails and c2r performs rollback.
+            Primary issue - checking for python[3]?-syspurpose not being removed.
+        discover+:
+            filter: tag:packages-untracked-graceful-rollback
+
+    /packages_untracked_forced_rollback:
+        summary+: |
+            Forced rollback
+        description+: |
+            Terminate the c2r process forcefully, so the rollback is performed.
+            Primary issue - verify that python[3]?-syspurpose is not removed.
+        discover+:
+            filter: tag:packages-untracked-forced-rollback
+
+    /terminate_on_registration:
+        summary+: |
+            Rollback during registration
+        description+: |
+            Send termination signal immediately after c2r tries the registration.
+            Verify that c2r goes successfully through the rollback.
+        discover+:
+            filter: tag:terminate-on-registration
+
+    /terminate_on_username:
+        summary+: |
+            Rollback from username prompt
+        description+: |
+            Send termination signal on the user prompt for username.
+            Verify that c2r goes successfully through the rollback.
+        discover+:
+            filter: tag:terminate-on-username
+
+    /terminate_on_password:
+        summary+: |
+            Rollback from password prompt
+        description+: |
+            Send termination signal on the user prompt for password.
+            Verify that c2r goes successfully through the rollback.
+        discover+:
+            filter: tag:terminate-on-password
+
+    /terminate_on_subscription:
+        summary+: |
+            Rollback from subscription prompt
+        description+: |
+            Send termination signal on the user prompt for subscription number.
+            Verify that c2r goes successfully through the rollback.
+        discover+:
+            filter: tag:terminate-on-subscription
+
+
+/single_yum_transaction_validation:
+    summary: |
+        Single yum transaction validation
+
+    description: |
+        Verify that we are doing a proper rollback during the validation phase in
+        our transactions.
+        If any errors occurs during the transaction resolution, either by
+        downloading a package, dependency resolver and etc., the rollback should
+        start and revert the changes to the system.
+        We simulate the error by removing the entitlement certs found at /etc/pki/entitlement
+        at a specific times during the transaction validation.
+
+    link: https://issues.redhat.com/browse/RHELC-576
+
+
+    discover+:
+        filter: tag:transaction
+
+
+    /transaction_validation_error:
+        summary+: |
+            Error during processing the transaction
+        description+: |
+            This test case removes the certs during the transaction processing
+            to throw the following yum error: pkgmanager.Errors.YumDownloadError
+        adjust+:
+            - enabled: false
+              when: distro == centos-8 or distro == oraclelinux-8
+        discover+:
+            filter: tag:transaction-validation-error
+
+
+    /package_download_error:
+        summary+: |
+            Error during the package download
+        description+: |
+            This test case removes the certs during the package download phase for both yum and dnf transactions.
+        discover+:
+            filter: tag:package-download-error
+
+
+/system_release_backup:
+    summary: |
+        Handle os-release and system-release
+    description: |
+        Verify that os-release is backed up and restored properly.
+        The Satellite is used for all the test cases.
+
+
+    discover+:
+        filter: tag:system-release-backup
+
+    /os_release_restored:
+        summary+: |
+            Restore the os-release file during rollback
+        /related_environment_variable:
+            description+: |
+                Install subscription-manager and katello package from the Satellite.
+                Remove all repositories from the system.
+                Set the "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
+                Verify that the /etc/os-release file is restored after the rollback.
+            /backup_os_release_no_envar:
+                summary+: |
+                    Restore os-release without CONVERT2RHEL_INCOMPLETE_ROLLBACK
+                description+: |
+                    This case runs the conversion with no repositories available.
+                    Verify that this condition disables the package backup,
+                    convert2rhel warns the user and inhibits the conversion.
+                discover+:
+                    filter: tag:no-envar
+
+            /backup_os_release_with_envar:
+                summary+: |
+                    Restore os-release with CONVERT2RHEL_INCOMPLETE_ROLLBACK
+                description+: |
+                    This case runs the conversion with no repositories available
+                    and "CONVERT2RHEL_INCOMPLETE_ROLLBACK" envar set.
+                    Verify that this condition disables the package backup,
+                    convert2rhel warns the user, but continues the conversion.
+                discover+:
+                    filter: tag:with-envar
+                link:
+                    - verifies: https://issues.redhat.com/browse/OAMG-5457
+
+        /unsuccessful_satellite_registration:
+            summary+: |
+                Rollback caused by failed registration
+            description+: |
+                Verify that the os-release is restored, when the registration to the Satellite servers fails.
+            discover+:
+                filter: tag:unsuccessful-satellite-registration
+            link:
+                - verifies: https://issues.redhat.com/browse/RHELC-51
+
+
+    /missing_system_release:
+        summary+: |
+            Removed system-release inhibits the conversion
+        description+: |
+            Verify that missing /etc/system-release (removed pre-conversion) inhibits the conversion.
+        discover+:
+            filter: tag:missing-system-release
+
+
+/user_prompt_response:
+    summary: |
+        User response is empty
+
+
+    discover+:
+        filter: tag:user-prompt-response
+
+    /empty_username_and_password:
+        summary+: |
+            Pass an empty string for username and password
+        description+: |
+            Verify that the user is enforced to input a value and passing an empty string
+            loops back to the user prompt.
+            Verify for both username and password.
+            The functionality is generic enough, so there is no need to verify other prompts.
+        discover+:
+            filter: tag:empty-username-and-password
+
+    /auto_attach_pool:
+        summary: |
+            One subscription attached auto-selected
+        description+: |
+            Verify that passing username and password with just one subscription attached
+            automatically selects the subscription.
+        discover+:
+            filter: tag:auto-attach-pool
+
+
+/assessment_report:
+    summary+: |
+        Pre-Assessment report
+
+    description+: |
+        Verify that the Pre-Assessment report is working as intended.
+
+
+    discover+:
+        filter: tag:pre-assessment-report
+
+    environment+:
+        CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
+
+    /failures_and_skips_in_report:
+        summary+: |
+            Verify that some actions failures and skips appeared in the report.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            even with failures and skips, and then, output the report to the user.
+        discover+:
+            filter: tag:failed-report
+
+    /successful_report:
+        summary+: |
+            Verify that the report was successful.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            and then, output the report to the user.
+        discover+:
+            filter: tag:success-report
