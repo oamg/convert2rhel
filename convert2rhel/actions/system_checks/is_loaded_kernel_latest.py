@@ -71,6 +71,17 @@ class IsLoadedKernelLatest(actions.Action):
         # Append the package name as the last item on the list
         cmd.append(package_to_check)
 
+        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
+
+        # Skip the kernel package check and print a warning if the user used the special environment variable for it
+        if unsupported_skip:
+            logger.warning(
+                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                "the %s comparison.\n"
+                "Beware, this could leave your system in a broken state. " % package_to_check
+            )
+            return
+
         # Look up for available kernel (or kernel-core) packages versions available
         # in different repositories using the `repoquery` command.  If convert2rhel
         # detects that it is running on a EUS system, then repoquery will use the
@@ -104,31 +115,17 @@ class IsLoadedKernelLatest(actions.Action):
                 # of the line.
                 logger.debug("Got a line without the C2R identifier: %s" % line)
 
-        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
-
         # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
-            unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
-            if not unsupported_skip:
-                self.set_result(
-                    status="ERROR",
-                    error_id="KERNEL_CURRENCY_CHECK_FAIL",
-                    message=(
-                        "Could not find any %s from repositories to compare against the loaded kernel.\n"
-                        "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
-                        "If you wish to ignore this message, set the environment variable "
-                        "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
-                    ),
-                )
-                return
-
-        # Skip kernel package check and output a warning (only if the user used the
-        # special environment variable for it.
-        if unsupported_skip:
-            logger.warning(
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                "the %s comparison.\n"
-                "Beware, this could leave your system in a broken state. " % package_to_check
+            self.set_result(
+                status="ERROR",
+                error_id="KERNEL_CURRENCY_CHECK_FAIL",
+                message=(
+                    "Could not find any %s from repositories to compare against the loaded kernel.\n"
+                    "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                    "If you wish to ignore this message, set the environment variable "
+                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
+                ),
             )
             return
 
