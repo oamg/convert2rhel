@@ -1,2 +1,3 @@
 ---
+### We need to update the ca trust in order to reach some of the internal URLs
 - include_tasks: update-ca-trust.yml
