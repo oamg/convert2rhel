@@ -158,10 +158,27 @@ def run_as_child_process(func):
         registered when the conversion starts as well).
 
     .. important::
-        If a function that creates child processes is decorated with this
-        decorator, then it won't be possible to use it right away, since this
-        decorator spawn child processes as a daemon (which are normal
-        processes), but can't spawn child processes inside that child process.
+        It is important to know that if a function is using this decorator,
+        then it won't be possible for that function to spawn new child
+        processes inside their workflow. This is a limitation imposed by the
+        `daemon` property used to spawn the the first child process (the
+        function being decorated), as it won't let a grandchild process being
+        created inside an child process.
+        For more information about that, refer to the Python Multiprocessing
+        docs: https://docs.python.org/2.7/library/multiprocessing.html#multiprocessing.Process.daemon
+
+        For example::
+            # A perfect normal function that spawn a child process
+            def functionB():
+                ...
+                multiprocessing.Process(...)
+
+            # If we want to use this decorator in `functionB()`, we would leave the child process of `functionB()` orphans when the parent process exits.
+            @utils.run_as_child_process
+            def functionB():
+                ...
+                multiprocessing.Process(...)
+                ...
 
     :param func: Function attached to the decorator
     :type func: Callable

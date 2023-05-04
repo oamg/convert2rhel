@@ -181,7 +181,6 @@ class YumTransactionHandler(TransactionHandlerBase):
                     ):
                         loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
         except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
-            self._close_yum_base()
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("There are no suitable mirrors available for the loaded repositories.")
 
@@ -279,7 +278,6 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumDownloadError
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
-            self._close_yum_base()
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
@@ -339,18 +337,20 @@ class YumTransactionHandler(TransactionHandlerBase):
         resolve_deps_finished = False
         # Do not allow this to loop until eternity.
         attempts = 0
-        while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
-            self._perform_operations()
-            resolved = self._resolve_dependencies(validate_transaction)
-            if not resolved:
-                loggerinst.info("Retrying to resolve dependencies %s", attempts)
-                attempts += 1
-            else:
-                resolve_deps_finished = True
-                break
+        try:
+            while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
+                self._perform_operations()
+                resolved = self._resolve_dependencies(validate_transaction)
+                if not resolved:
+                    loggerinst.info("Retrying to resolve dependencies %s", attempts)
+                    attempts += 1
+                else:
+                    resolve_deps_finished = True
+                    break
 
-        if not resolve_deps_finished:
-            loggerinst.critical("Failed to resolve dependencies in the transaction.")
+            if not resolve_deps_finished:
+                loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
-        self._process_transaction(validate_transaction)
-        self._close_yum_base()
+            self._process_transaction(validate_transaction)
+        finally:
+            self._close_yum_base()

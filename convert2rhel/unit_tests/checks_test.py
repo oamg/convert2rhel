@@ -1007,7 +1007,7 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("kernel_release", "kernel_pkg", "kernel_pkg_information", "get_installed_pkg_objects", "exp_return"),
+    ("kernel_release", "kernel_pkg", "kernel_pkg_information", "exp_return"),
     (
         (
             "4.18.0-240.22.1.el8_3.x86_64",
@@ -1020,7 +1020,6 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
                 arch="x86_64",
                 fingerprint="05b555b38483c65d",
             ),
-            "yajl.x86_64",
             False,
         ),
         (
@@ -1034,7 +1033,6 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
                 arch="x86_64",
                 fingerprint="somebadsig",
             ),
-            "somepkgobj",
             True,
         ),
     ),
@@ -1044,21 +1042,14 @@ def test_bad_kernel_package_signature(
     kernel_release,
     kernel_pkg,
     kernel_pkg_information,
-    get_installed_pkg_objects,
     exp_return,
     monkeypatch,
     pretend_os,
 ):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
-    get_installed_pkg_objects_mocked = mock.Mock(spec=get_installed_pkg_objects, return_value=[kernel_pkg])
-    get_package_information_mocked = mock.Mock(return_value=[kernel_pkg_information])
-    monkeypatch.setattr(
-        checks,
-        "get_installed_pkg_objects",
-        get_installed_pkg_objects_mocked,
-    )
-    monkeypatch.setattr(checks, "get_package_information", get_package_information_mocked)
+    get_installed_pkg_information_mocked = mock.Mock(return_value=[kernel_pkg_information])
+    monkeypatch.setattr(checks, "get_installed_pkg_information", get_installed_pkg_information_mocked)
     assert _bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
         ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],

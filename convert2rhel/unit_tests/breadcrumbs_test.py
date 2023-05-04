@@ -50,7 +50,7 @@ def test_collect_early_data(pretend_os, _mock_pkg_obj, _mock_pkg_information, mo
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
     monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
-    monkeypatch.setattr(pkghandler, "get_package_information", lambda name: [_mock_pkg_information])
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: [_mock_pkg_information])
     breadcrumbs.breadcrumbs.collect_early_data()
 
     # Asserting that the populated fields are not null (or None), the value
@@ -251,7 +251,7 @@ def test_set_nevra_dnf(monkeypatch, _mock_pkg_obj):
 def test_set_signature(monkeypatch, _mock_pkg_obj, _mock_pkg_information):
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
-    monkeypatch.setattr(pkghandler, "get_package_information", lambda name: [_mock_pkg_information])
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: [_mock_pkg_information])
     breadcrumbs.breadcrumbs._set_signature()
     assert "73bde98381b46521" in breadcrumbs.breadcrumbs.signature
 

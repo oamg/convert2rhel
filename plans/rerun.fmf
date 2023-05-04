@@ -176,6 +176,71 @@
             filter: tag:yum-excld-kernel
 
 
+/sub_man_rollback:
+    summary: |
+        Back up and restore subscription-manager
+    description: |
+        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+        backed up and re-installed during the rollback together with the certificate.
+
+
+    enabled: false
+
+    adjust+:
+        - enabled: true
+          when: >
+              distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
+
+    discover+:
+        filter: tag:sub-man-rollback
+
+
+/single_yum_transaction_validation:
+    summary: |
+        Single yum transaction validation
+
+    description: |
+        Verify that we are doing a proper rollback during the validation phase in
+        our transactions.
+        If any errors occurs during the transaction resolution, either by
+        downloading a package, dependency resolver and etc., the rollback should
+        start and revert the changes to the system.
+        We simulate the error by removing the entitlement certs found at /etc/pki/entitlement
+        at a specific times during the transaction validation.
+
+    link: https://issues.redhat.com/browse/RHELC-576
+
+
+    discover+:
+        filter: tag:transaction
+
+
+    /transaction_validation_error:
+        summary+: |
+            Error during processing the transaction
+        description+: |
+            This test case removes the certs during the transaction processing
+            to throw the following yum error: pkgmanager.Errors.YumDownloadError
+        adjust+:
+            - enabled: false
+              when: distro == centos-8 or distro == oraclelinux-8
+        discover+:
+            filter: tag:transaction-validation-error
+
+
+    /package_download_error:
+        summary+: |
+            Error during the package download
+        description+: |
+            This test case removes the certs during the package download phase for both yum and dnf transactions.
+        discover+:
+            filter: tag:package-download-error
+
+
 /config_file:
     summary: |
         Config file
@@ -584,48 +649,6 @@
             filter: tag:terminate-on-subscription
 
 
-/single_yum_transaction_validation:
-    summary: |
-        Single yum transaction validation
-
-    description: |
-        Verify that we are doing a proper rollback during the validation phase in
-        our transactions.
-        If any errors occurs during the transaction resolution, either by
-        downloading a package, dependency resolver and etc., the rollback should
-        start and revert the changes to the system.
-        We simulate the error by removing the entitlement certs found at /etc/pki/entitlement
-        at a specific times during the transaction validation.
-
-    link: https://issues.redhat.com/browse/RHELC-576
-
-
-    discover+:
-        filter: tag:transaction
-
-
-    /transaction_validation_error:
-        summary+: |
-            Error during processing the transaction
-        description+: |
-            This test case removes the certs during the transaction processing
-            to throw the following yum error: pkgmanager.Errors.YumDownloadError
-        adjust+:
-            - enabled: false
-              when: distro == centos-8 or distro == oraclelinux-8
-        discover+:
-            filter: tag:transaction-validation-error
-
-
-    /package_download_error:
-        summary+: |
-            Error during the package download
-        description+: |
-            This test case removes the certs during the package download phase for both yum and dnf transactions.
-        discover+:
-            filter: tag:package-download-error
-
-
 /system_release_backup:
     summary: |
         Handle os-release and system-release
@@ -716,26 +739,3 @@
             automatically selects the subscription.
         discover+:
             filter: tag:auto-attach-pool
-
-
-/sub_man_rollback:
-    summary: |
-        Back up and restore subscription-manager
-    description: |
-        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
-        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
-        backed up and re-installed during the rollback together with the certificate.
-
-
-    enabled: false
-
-    adjust+:
-        - enabled: true
-          when: >
-              distro == centos-8
-        - environment+:
-            TEST_REQUIRES: subscription-manager
-
-
-    discover+:
-        filter: tag:sub-man-rollback

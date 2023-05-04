@@ -382,6 +382,7 @@ class TestYumTransactionHandler(object):
             pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
         )
         instance = YumTransactionHandler()
+        instance._set_up_base()
 
         with pytest.raises(SystemExit, match="Failed to resolve dependencies in the transaction."):
             instance.run_transaction(validate_transaction=False)

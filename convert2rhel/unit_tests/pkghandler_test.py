@@ -1898,7 +1898,7 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
 )
 @centos7
 def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch):
-    monkeypatch.setattr(pkghandler, "get_package_information", value=lambda: pkgs)
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", value=lambda: pkgs)
 
     result = pkghandler.get_system_packages_for_replacement()
     assert expected == result
@@ -1983,7 +1983,7 @@ def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monke
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "get_installed_pkgs_w_fingerprints", lambda name: package)
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
     pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
 
     for pkg in pkgs_by_fingerprint:
@@ -2027,7 +2027,7 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "get_installed_pkgs_w_fingerprints", lambda name: package)
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
     pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
 
     assert not pkgs_by_fingerprint
@@ -2070,7 +2070,21 @@ def test_print_pkg_info_yum(pretend_os, monkeypatch):
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "_get_package_repository", mock.Mock(side_effect=["anaconda", "N/A", "test"]))
+
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(
+            return_value=(
+                """\
+C2R 0:pkg1-0.1-1.x86_64&anaconda
+C2R 0:pkg2-0.1-1.x86_64&
+C2R 0:gpg-pubkey-0.1-1.x86_64&test
+    """,
+                0,
+            )
+        ),
+    )
 
     result = pkghandler.print_pkg_info(packages)
     assert re.search(
@@ -2079,13 +2093,13 @@ def test_print_pkg_info_yum(pretend_os, monkeypatch):
         re.MULTILINE,
     )
     assert re.search(
-        r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
+        r"^0:pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
         result,
         re.MULTILINE,
     )
-    assert re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE)
+    assert re.search(r"^0:pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE)
     assert re.search(
-        r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
+        r"^0:gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
         result,
         re.MULTILINE,
     )
@@ -2128,17 +2142,32 @@ def test_print_pkg_info_dnf(pretend_os, monkeypatch):
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "_get_package_repository", mock.Mock(side_effect=["anaconda", "@@System", "test"]))
+
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(
+            return_value=(
+                """\
+C2R pkg1-0:0.1-1.x86_64&anaconda
+C2R pkg2-0:0.1-1.x86_64&@@System
+C2R gpg-pubkey-0:0.1-1.x86_64&test
+    """,
+                0,
+            )
+        ),
+    )
+
     result = pkghandler.print_pkg_info(packages)
 
     assert re.search(
-        r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
+        r"^pkg1-0:0\.1-1\.x86_64\s+Oracle\s+anaconda$",
         result,
         re.MULTILINE,
     )
-    assert re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+@@System$", result, re.MULTILINE)
+    assert re.search(r"^pkg2-0:0\.1-1\.x86_64\s+N/A\s+@@System$", result, re.MULTILINE)
     assert re.search(
-        r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
+        r"^gpg-pubkey-0:0\.1-1\.x86_64\s+N/A\s+test$",
         result,
         re.MULTILINE,
     )
@@ -2191,48 +2220,6 @@ def test_remove_pkgs_with_confirm(monkeypatch):
 
     assert len(pkghandler.remove_pkgs.pkgs) == 1
     assert pkghandler.remove_pkgs.pkgs[0] == "installed_pkg-0.1-1.x86_64"
-
-
-@pytest.mark.parametrize(
-    ("package_name", "expected"),
-    (
-        (
-            "installed_pkg",
-            (1, "installed_pkg", "rhel_fingerprint"),
-        ),
-        (
-            "not-a-package",
-            (0, None, None),
-        ),
-    ),
-)
-def test_get_installed_pkgs_w_fingerprints(package_name, expected, monkeypatch):
-    installed_packages = GetInstalledPkgObjectsMocked()
-    packages_information = [
-        create_pkg_information(
-            name=package.name,
-            epoch=package.epoch,
-            version=package.version,
-            release=package.release,
-            arch=package.release,
-            fingerprint="rhel_fingerprint",
-        )
-        for package in installed_packages.__call__(package_name)
-        if package
-    ]
-
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", installed_packages)
-    monkeypatch.setattr(pkghandler, "get_package_information", lambda name: packages_information)
-    expected_len, expected_name, expected_fingerprint = expected
-
-    pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
-
-    if pkgs:
-        assert len(pkgs) == expected_len
-        assert pkgs[0].nevra.name == expected_name
-        assert pkgs[0].fingerprint == expected_fingerprint
-    else:
-        assert not pkgs
 
 
 @pytest.mark.parametrize(
@@ -2300,7 +2287,7 @@ def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs
     monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
     monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
     monkeypatch.setattr(system_info, "fingerprints_orig_os", fingerprint_orig_os)
-    monkeypatch.setattr(pkghandler, "get_package_information", GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
 
     pkgs = pkghandler.get_third_party_pkgs()
 
@@ -2310,7 +2297,7 @@ def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs
 
 def test_list_non_red_hat_pkgs_left(monkeypatch):
     monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    monkeypatch.setattr(pkghandler, "get_installed_pkgs_w_fingerprints", GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
     pkghandler.list_non_red_hat_pkgs_left()
 
     assert len(pkghandler.print_pkg_info.pkgs) == 1
@@ -2326,7 +2313,11 @@ def test_install_rhel_kernel(pretend_os, monkeypatch):
     )
 
     # 1st scenario: kernels collide; the installed one is already a RHEL kernel = no action.
-    utils.run_subprocess.output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
+    kernel_package = "0:kernel-3.10.0-1127.19.1.el7.x86_64"
+    if pkgmanager.TYPE == "dnf":
+        kernel_package = "kernel-0:3.10.0-1127.19.1.el7.x86_64"
+
+    utils.run_subprocess.output = "Package %s already installed and latest version" % kernel_package
     pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = True
 
     update_kernel = pkghandler.install_rhel_kernel()
@@ -2357,14 +2348,14 @@ def test_install_rhel_kernel_already_installed_regexp(pretend_os, monkeypatch):
     )
 
     # RHEL 7
-    utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+    utils.run_subprocess.output = "Package 0:kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
 
     pkghandler.install_rhel_kernel()
 
     assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 1
 
     # RHEL 8
-    utils.run_subprocess.output = "Package kernel-4.18.0-193.el8.x86_64 is already installed."
+    utils.run_subprocess.output = "Package kernel-0:4.18.0-193.el8.x86_64 is already installed."
 
     pkghandler.install_rhel_kernel()
     assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 2
@@ -2560,20 +2551,20 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
         ),
     ),
 )
-def test_get_package_information(package_name, subprocess_output, expected, expected_command, monkeypatch):
+def test_get_installed_pkg_information(package_name, subprocess_output, expected, expected_command, monkeypatch):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
     utils.run_subprocess.output = subprocess_output
 
-    result = pkghandler.get_package_information(package_name)
+    result = pkghandler.get_installed_pkg_information(package_name)
     assert utils.run_subprocess.cmd == expected_command
     assert result == expected
 
 
-def test_get_package_information_value_error(monkeypatch, caplog):
+def test_get_installed_pkg_information_value_error(monkeypatch, caplog):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
     utils.run_subprocess.output = "C2R Fedora Project&Fedora Project&fonts-filesystem-a:aabb.d.1-l.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a"
 
-    result = pkghandler.get_package_information()
+    result = pkghandler.get_installed_pkg_information()
     assert not result
     assert "Failed to parse a package" in caplog.records[-1].message
 
