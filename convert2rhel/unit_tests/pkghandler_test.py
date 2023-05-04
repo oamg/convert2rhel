@@ -2273,7 +2273,7 @@ def test_get_vendor(package, expected):
 )
 def test_get_pkg_nevra(pkgmanager_name, package, expected, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", pkgmanager_name)
-    assert pkghandler.get_pkg_nevra(package.nevra) == expected
+    assert pkghandler.get_pkg_nevra(package) == expected
 
 
 @pytest.mark.parametrize(

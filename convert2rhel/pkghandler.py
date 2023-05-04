@@ -505,7 +505,7 @@ def print_pkg_info(pkgs):
     """
     package_info = {}
     for pkg in pkgs:
-        nevra = get_pkg_nevra(pkg.nevra)
+        nevra = get_pkg_nevra(pkg)
         packager = get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg)
         package_info[nevra] = {"packager": packager}
 
@@ -540,6 +540,7 @@ def print_pkg_info(pkgs):
     )
 
     packages_with_repos = _get_package_repository(list(package_info))
+    print(packages_with_repos)
     # Update package_info reference with repoid
     for nevra, repoid in packages_with_repos.items():
         package_info[nevra]["repoid"] = repoid
@@ -559,7 +560,6 @@ def print_pkg_info(pkgs):
         )
 
     pkg_table = header + header_underline + pkg_list
-    loggerinst.info(pkg_table)
     return pkg_table
 
 
@@ -578,10 +578,11 @@ def _get_package_repository(pkgs):
         query_format = "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
 
     output, retcode = utils.run_subprocess(
-        ["repoquery", "--verbose", "-q"] + pkgs + ["--qf", query_format],
+        ["repoquery", "--quiet", "-q"] + pkgs + ["--qf", query_format],
         print_cmd=False,
         print_output=False,
     )
+    output = [line for line in output.split("\n") if line]
 
     # In case of repoquery returning an retcode different from 0, let's log the
     # output as a debug and return N/A for the caller.
@@ -590,8 +591,9 @@ def _get_package_repository(pkgs):
         for package in pkgs:
             repositories_mapping[package] = "N/A"
     else:
-        for line in output.split("\n"):
+        for line in output:
             if "C2R" in line:
+                print(line)
                 split_output = line.lstrip("C2R ").split("&")
                 nevra = split_output[0]
                 repoid = split_output[1] if split_output[1] else "N/A"
@@ -602,15 +604,35 @@ def _get_package_repository(pkgs):
     return repositories_mapping
 
 
+def _get_nevra_from_pkg_obj(pkg_obj):
+    """
+    Helper function to convert from a RPMInstalledPackage object to a
+    PackageNevra object.
+
+    :param pkg_obj: Instance of a RPMInstalledPackage.
+    :type pkg_obj: RPMInstalledPackage
+    :return: A new instance of PackageNevra if `pkg_obj` is a
+        RPMInstalledPackage instance, otherwise, just return the nevra from the
+        PackageInformation instance.
+    :rtype: PackageNevra
+    """
+    if isinstance(pkg_obj, PackageInformation):
+        return pkg_obj.nevra
+    return PackageNevra(
+        name=pkg_obj.name, epoch=pkg_obj.epoch, version=pkg_obj.version, release=pkg_obj.release, arch=pkg_obj.arch
+    )
+
+
 def get_pkg_nvra(pkg_obj):
     """Get package NVRA as a string: name, version, release, architecture.
     Some utilities don't accept the full NEVRA of a package, for example rpm.
     """
+    nevra = _get_nevra_from_pkg_obj(pkg_obj)
     return "%s-%s-%s.%s" % (
-        pkg_obj.name,
-        pkg_obj.version,
-        pkg_obj.release,
-        pkg_obj.arch,
+        nevra.name,
+        nevra.version,
+        nevra.release,
+        nevra.arch,
     )
 
 
@@ -620,22 +642,23 @@ def get_pkg_nevra(pkg_obj):
       YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
       DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
     """
-    epoch = "" if not str(pkg_obj.epoch) else str(pkg_obj.epoch) + ":"
+    nevra = _get_nevra_from_pkg_obj(pkg_obj)
+    epoch = "" if not str(nevra.epoch) else str(nevra.epoch) + ":"
     if pkgmanager.TYPE == "yum":
         return "%s%s-%s-%s.%s" % (
             epoch,
-            pkg_obj.name,
-            pkg_obj.version,
-            pkg_obj.release,
-            pkg_obj.arch,
+            nevra.name,
+            nevra.version,
+            nevra.release,
+            nevra.arch,
         )
 
     return "%s-%s%s-%s.%s" % (
-        pkg_obj.name,
+        nevra.name,
         epoch,
-        pkg_obj.version,
-        pkg_obj.release,
-        pkg_obj.arch,
+        nevra.version,
+        nevra.release,
+        nevra.arch,
     )
 
 
@@ -711,7 +734,7 @@ def remove_pkgs_with_confirm(pkgs_to_remove, backup=True):
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
     utils.ask_to_continue()
-    remove_pkgs([get_pkg_nvra(pkg.nevra) for pkg in pkgs_to_remove], backup=backup)
+    remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
@@ -809,8 +832,7 @@ def install_rhel_kernel():
         non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
         for non_rhel_kernel in non_rhel_kernels:
             # We're comparing to NEVRA since that's what yum/dnf prints out
-            print(rhel_kernel_nevra, get_pkg_nevra(non_rhel_kernel.nevra))
-            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel.nevra):
+            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
                 # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
                 # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
                 # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
@@ -930,7 +952,7 @@ def remove_non_rhel_kernels():
         loggerinst.info("Removing non-RHEL kernels")
         print_pkg_info(non_rhel_kernels)
         remove_pkgs(
-            pkgs_to_remove=[get_pkg_nvra(pkg.nevra) for pkg in non_rhel_kernels],
+            pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
             backup=False,
         )
     else:
