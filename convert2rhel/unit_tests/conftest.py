@@ -322,10 +322,10 @@ def create_pkg_information(
     fingerprint=None,
     signature=None,
 ):
-    obj = PackageInformation(
+    pkg_info = PackageInformation(
         packager, vendor, PackageNevra(name, epoch, version, release, arch), fingerprint, signature
     )
-    return obj
+    return pkg_info
 
 
 def create_pkg_obj(

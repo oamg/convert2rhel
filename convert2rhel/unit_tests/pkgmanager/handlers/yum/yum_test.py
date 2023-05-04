@@ -347,6 +347,7 @@ class TestYumTransactionHandler(object):
             pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
         )
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_process_transaction", mock.Mock())
+        # Save original function as we need to override the decorator that is in place for `run_transaction`
         original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)
@@ -375,6 +376,7 @@ class TestYumTransactionHandler(object):
             "_resolve_dependencies",
             YumResolveDepsMocked(start_at, loop_until),
         )
+        # Save original function as we need to override the decorator that is in place for `run_transaction`
         original_func = pkgmanager.handlers.yum.YumTransactionHandler.run_transaction.__wrapped__
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler, "run_transaction", mock_decorator(original_func)

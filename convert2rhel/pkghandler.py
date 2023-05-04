@@ -335,12 +335,12 @@ def _get_pkg_fingerprint(signature):
     return fingerprint_match.group(1) if fingerprint_match else "none"
 
 
-def get_package_information(pkg_name=""):
+def get_installed_pkg_information(pkg_name=""):
     """
     Get information about a package, such as signature from the RPM database,
     packager, vendor, NEVRA and fingerprint.
 
-    :param pkg_name: Full name of a package to check their signature.
+    :param pkg_name: Full name of a package to check their signature.  If not given, information about all installed packages is returned.
     :type pkg_obj: str
     :return: Return the package signature.
     :rtype: list[PackageInformation]
@@ -352,12 +352,11 @@ def get_package_information(pkg_name=""):
     ]
 
     if pkg_name:
-        cmd.extend(
-            [
-                "-q",
-                pkg_name,
-            ]
-        )
+        if "*" in pkg_name:
+            cmd.append("-qa")
+        else:
+            cmd.append("-q")
+        cmd.append(pkg_name)
     else:
         cmd.append("-qa")
 
@@ -504,7 +503,7 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
     """
-    # if fingerprints is None skip this check.
+    # if no fingerprints, skip this check.
     if not fingerprints:
         return []
 
@@ -539,14 +538,15 @@ def print_pkg_info(pkgs):
     :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
     """
     # Get package nvra length
-    packages_nvra = [
-        get_pkg_nvra(pkg.nevra) if isinstance(pkg, PackageInformation) else get_pkg_nvra(pkg) for pkg in pkgs
-    ]
-    max_nvra_length = max(map(len, packages_nvra))
+    packages_nvra = [get_pkg_nvra(pkg) for pkg in pkgs]
+    max_nvra_length = max(len(nvra) for nvra in packages_nvra)
 
     # Get packager length
-    packager_length = [get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg) for pkg in pkgs]
-    max_packager_length = max(max(map(len, packager_length)), len("Vendor/Packager"))
+    packagers = set()
+    for pkg in pkgs:
+        packagers.add(get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg))
+    packager_field_lengths = (len(pkger) for pkger in packagers)
+    max_packager_length = max(max(packager_field_lengths), len("Vendor/Packager"))
 
     header = (
         "%-*s  %-*s  %s"
@@ -1102,7 +1102,7 @@ def get_pkg_names_from_rpm_paths(rpm_paths):
 @utils.run_as_child_process
 def get_total_packages_to_update(reposdir):
     """
-    Return the total number of packages to update in the system It uses both
+    Return the total number of packages to update in the system. It uses both
     yum/dnf depending on whether they are installed on the system, In case of
     RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`. To
     check whether the system is updated or not, we use original vendor
@@ -1159,7 +1159,7 @@ def _get_packages_to_update_dnf(reposdir):
     packages = []
     base = pkgmanager.Base()
 
-    # If we have an reposdir, that means we are trying to check the packages
+    # If we have a reposdir, that means we are trying to check the packages
     # under CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4. That means we need to
     # use our hardcoded repository files instead of the system ones.
     if reposdir:

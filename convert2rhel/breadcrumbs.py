@@ -110,7 +110,6 @@ class Breadcrumbs(object):
 
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""
-        # Use full package name with version, release and arch.
         package = pkghandler.get_package_information(str(self._pkg_object))[0]
         self.signature = package.signature
 

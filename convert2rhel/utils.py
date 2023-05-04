@@ -236,8 +236,8 @@ def run_as_child_process(func):
         except KeyboardInterrupt:
             # We have to check if the process if alive, and if it is (most
             # probably it will be), then we can call for termination. On
-            # Python2 it is mostly likely that some processes (That calls yum
-            # API) will keep executing until they finish its execution and
+            # Python2 it is most likely that some processes (That calls yum
+            # API) will keep executing until they finish their execution and
             # ignore the call for termination issued by the parent. To avoid
             # having "zombie" processes, we need to wait for them to finish.
             loggerinst.warning("Terminating child process...")
