@@ -435,3 +435,34 @@
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
+
+/latest_kernel_check_skip:
+    #TODO(danmyway) merge under system_not_updated in #757
+    enabled: false
+    adjust+:
+        - enabled: true
+          when: distro == centos-7, oraclelinux-7
+    environment+:
+        CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK: 1
+        # Since we are removing all the repositories other than rhel-7-server-rpms
+        # we need pass CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK due to the inability
+        # to download and backup packages
+        CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK: 1
+        # Unavailable kmods may be present on the system due to the kernel package
+        # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
+        CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+    discover+:
+        filter: tag:checks-after-conversion
+    prepare+:
+        - name: prepare non latest kernel
+          how: shell
+          script: pytest -svv tests/integration/tier1/system-up-to-date/install_non_latest_kernel.py
+        - name: add custom repos
+          how: ansible
+          playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+        - name: reboot machine
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+        - name: main conversion
+          how: shell
+          script: pytest -svv tests/integration/tier1/kernel-check-skip/test_latest_kernel_check_skip.py
