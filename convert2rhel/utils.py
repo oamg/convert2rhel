@@ -697,69 +697,67 @@ def download_pkg(
 
     output, ret_code = run_cmd_in_pty(cmd, print_output=False)
     if ret_code != 0:
-        report_on_a_download_error(output, pkg)
-        return None
+       
+        loggerinst.warning("Output from the yumdownloader call:\n%s" % output)
 
-    path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
-    if not path:
-        report_on_a_download_error(output, pkg)
-        return None
+        # Note: Using toolopts here is a temporary solution. We need to
+        # restructure this to raise an exception on error and have the caller
+        # handle whether to use INCOMPLETE_ROLLBACK to do something for several
+        # reasons:
+        # (1) utils should be simple functions that take input and produce
+        #     output from it. Having knowledge of things specific to the
+        #     program (for instance, the environment variable that convert2rhel
+        #     uses) makes the utils depend on the specific place that they are
+        #     run instead.
+        # (2) Where an error condition arises, they should "return" that to the
+        #     caller to decide how to handle it by using an exception. Handling
+        #     it inside the function ties us to one specific behaviour on
+        #     error. (For instance, the incomplete rollback message here ties
+        #     downloading packages and performing rollbacks. But what about
+        #     downloading packages that are not tied to rollbacks. Maybe we
+        #     have to download a package in order for insights or
+        #     subscription-manager to run. In those cases, we either cannot use
+        #     this function or we might show the user a misleading message).
+        # (3) Functions in utils should be free of other dependencies within
+        #     convert2rhel.  That allows us to use utils with no fear of
+        #     circular dependency issues.
+        # (4) Making the choices here mean that when used inside of the Action
+        #     framework, we are limited to returning a FAILURE for the Action
+        #     plugin whereas returning SKIP would be more accurate.
+        from convert2rhel import toolopts
+        from convert2rhel.systeminfo import system_info
 
-    loggerinst.info("Successfully downloaded the %s package." % pkg)
-    loggerinst.debug("Path of the downloaded package: %s" % path)
+        if toolopts.tool_opts.activity == "conversion":
+            # add in the new envar that should be changed to along with the old one
+            allow_old_envar_names = ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
 
-    return path
+            # search for either envar in the system to see if it has been set
+            if any(envvar in os.environ for envvar in allow_old_envar_names):
 
+                # check to see which envar was used
+                if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+                    # give the warning about the old envar not being used anymore if it is used
+                    loggerinst.warning(
+                        "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                        " environment variable. Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
+                    )
 
-def report_on_a_download_error(output, pkg):
-    """
-    Report on a failure to download a package we need for a complete rollback.
-
-    :param output: Output of the yumdownloader call
-    :param pkg: Name of a package to be downloaded
-    """
-    loggerinst.warning("Output from the yumdownloader call:\n%s" % output)
-
-    # Note: Using toolopts here is a temporary solution. We need to
-    # restructure this to raise an exception on error and have the caller
-    # handle whether to use INCOMPLETE_ROLLBACK to do something for several
-    # reasons:
-    # (1) utils should be simple functions that take input and produce
-    #     output from it. Having knowledge of things specific to the
-    #     program (for instance, the environment variable that convert2rhel
-    #     uses) makes the utils depend on the specific place that they are
-    #     run instead.
-    # (2) Where an error condition arises, they should "return" that to the
-    #     caller to decide how to handle it by using an exception. Handling
-    #     it inside the function ties us to one specific behaviour on
-    #     error. (For instance, the incomplete rollback message here ties
-    #     downloading packages and performing rollbacks. But what about
-    #     downloading packages that are not tied to rollbacks. Maybe we
-    #     have to download a package in order for insights or
-    #     subscription-manager to run. In those cases, we either cannot use
-    #     this function or we might show the user a misleading message).
-    # (3) Functions in utils should be free of other dependencies within
-    #     convert2rhel.  That allows us to use utils with no fear of
-    #     circular dependency issues.
-    # (4) Making the choices here mean that when used inside of the Action
-    #     framework, we are limited to returning a FAILURE for the Action
-    #     plugin whereas returning SKIP would be more accurate.
-    from convert2rhel import toolopts
-    from convert2rhel.systeminfo import system_info
-
-    if toolopts.tool_opts.activity == "conversion":
-        # add in the new envar that should be changed to along with the old one
-        allow_old_envar_names = ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
-
-        # search for either envar in the system to see if it has been set
-        if any(envvar in os.environ for envvar in allow_old_envar_names):
-
-            # check to see which envar was used
-            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
-                # give the warning about the old envar not being used anymore if it is used
+                # give regular warning if the new envar is used
                 loggerinst.warning(
-                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
-                    " environment variable. Please switch to 'CONVERT2RHEL_INCOMPLETE_ROLLBACK' instead."
+                    "Couldn't download the %s package. This means we will not be able to do a"
+                    " complete rollback and may put the system in a broken state.\n"
+                    "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' environment variable detected, continuing"
+                    " conversion." % pkg
+                )
+            else:
+                loggerinst.critical(
+                    "Couldn't back up the packages: %s. This means that if a rollback is needed,"
+                    "there is no guarantee that the packages will be restored on rollback, which"
+                    "could put the system in a broken state.\nCheck to ensure that the %s "
+                    "repositories are enabled, and the packages are updated to their latest "
+                    "versions.\nIf this error still occurs after re-running the conversion, "
+                    "you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
+                    "to ignore this check." % (pkg, system_info.name)
                 )
 
             # give regular warning if the new envar is used

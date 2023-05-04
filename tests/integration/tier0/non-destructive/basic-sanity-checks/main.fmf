@@ -159,9 +159,10 @@ tag+:
         test: |
           pytest -svv -m test_disable_data_collection
 
-/incomplete_rollback_in_analyze:
+
+/deprecated_envars:
     summary+: |
-        Incomplete rollback envar not honored in analyze
+        Deprecated environment variables allowed
     description+: |
         This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
         is not honored when running with the analyze switch.
@@ -189,3 +190,17 @@ tag+:
         - sanity
     test: |
         pytest -svv -m test_analyze_no_rpm_va_option
+        - deprecated-envars
+
+/incomplete_rollback_envar:
+    summary+: |
+        CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK allowed
+    description+: |
+        This test verifies it's still allowed to use the deprecated
+        envar CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK".
+        Move all repositories away prior to the conversion to simulate
+        inability to back up the packages by convert2rhel.
+    tag+:
+        - incomplete-rollback-envar
+    test: |
+        pytest -svv -m test_deprecated_envar_incomplete_rollback

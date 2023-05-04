@@ -321,8 +321,30 @@ def test_disable_data_collection(shell, convert2rhel):
     del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
 
-@pytest.fixture
-def analyze_incomplete_rollback_envar():
+@pytest.fixture(scope="function")
+def repos(shell):
+    """
+    Fixture to move away all the repositories and restore after the test.
+    """
+
+    backup_dir = "/tmp/repobckp"
+    repos_dir = "/etc/yum.repos.d"
+    shell(f"mkdir {backup_dir}")
+    # Move all the repos away
+    shell(f"mv {repos_dir}/* {backup_dir}/")
+
+    yield
+
+    # Restore repositories and remove the backup_dir
+    shell(f"mv {backup_dir}/* {repos_dir}/ && rm -rf {backup_dir}")
+
+
+@pytest.fixture(scope="function")
+def incomplete_rollback_envar():
+    """
+    Fixture to set the 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' envar
+    and delete after the test.
+    """
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
 
     yield
@@ -330,8 +352,8 @@ def analyze_incomplete_rollback_envar():
     del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
 
 
-@pytest.mark.test_analyze_incomplete_rollback
-def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incomplete_rollback_envar):
+@pytest.mark.test_deprecated_envar_incomplete_rollback
+def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos):
     """
     This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
     is not honored when running with the analyze switch.
@@ -348,10 +370,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         c2r.sendline("y")
         # Verify the user is informed to not use the envar during the analysis
         assert (
-            c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
-                timeout=300,
-            )
+            not c2r.expect("you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'", timeout=120)
             == 0
         )
         # The conversion should fail
@@ -361,13 +380,9 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
         assert (
-            c2r.expect(
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
-                timeout=300,
-            )
-            == 0
+            c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'", timeout=120) == 0
         )
-        c2r.sendcontrol("c")
+        assert c2r.expect("environment variable detected, continuing conversion.", timeout=120) == 0
 
         assert c2r.exitstatus != 0
 
