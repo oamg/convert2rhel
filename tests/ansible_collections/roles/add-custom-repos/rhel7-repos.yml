@@ -4,7 +4,7 @@
       yum_repository:
         name: rhel-7-server-rpms
         description: RHEL 7.9 for $basearch
-        baseurl: http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/os/
+        baseurl: https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/os/
         gpgcheck: no
         enabled: no
         file: rhel7
@@ -13,7 +13,7 @@
       yum_repository:
         name: rhel-7-server-optional-rpms
         description: RHEL 7.9 Optional for $basearch
-        baseurl: http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os/
+        baseurl: https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/optional/os/
         gpgcheck: no
         enabled: no
         file: rhel7
@@ -22,7 +22,7 @@
       yum_repository:
         name: rhel-7-server-extras-rpms
         description: RHEL 7 Extras for $basearch
-        baseurl: http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/extras/os/
+        baseurl: https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/extras/os/
         gpgcheck: no
         enabled: no
         file: rhel7

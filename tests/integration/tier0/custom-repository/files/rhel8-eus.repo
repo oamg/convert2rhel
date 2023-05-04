@@ -1,11 +1,11 @@
 [rhel-8-for-x86_64-baseos-eus-rpms]
 name=RHEL 8 BaseOS for $basearch
-baseurl=http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/$releasever/$basearch/baseos/os/
+baseurl=https://rhsm-pulp.corp.redhat.com/content/eus/rhel8/$releasever/$basearch/baseos/os/
 gpgcheck=0
 enabled=0
 
 [rhel-8-for-x86_64-appstream-eus-rpms]
 name=RHEL 8 AppStream for $basearch
-baseurl=http://rhsm-pulp.corp.redhat.com/content/eus/rhel8/$releasever/$basearch/appstream/os/
+baseurl=https://rhsm-pulp.corp.redhat.com/content/eus/rhel8/$releasever/$basearch/appstream/os/
 gpgcheck=0
 enabled=0
