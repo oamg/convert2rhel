@@ -309,7 +309,7 @@ def _get_pkg_fingerprint(signature):
     return fingerprint_match.group(1) if fingerprint_match else "none"
 
 
-def get_installed_pkg_information(pkg_name=""):
+def get_installed_pkg_information(pkg_name="*"):
     """
     Get information about a package, such as signature from the RPM database,
     packager, vendor, NEVRA and fingerprint.
@@ -325,13 +325,10 @@ def get_installed_pkg_information(pkg_name=""):
         "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
     ]
 
-    if pkg_name:
-        if "*" in pkg_name:
-            cmd.append("-qa")
-        else:
-            cmd.extend(["-q", pkg_name])
+    if "*" in pkg_name:
+        cmd.extend(["-qa", pkg_name])
     else:
-        cmd.append("-qa")
+        cmd.extend(["-q", pkg_name])
 
     output, _ = utils.run_subprocess(cmd, print_cmd=False, print_output=False)
 
@@ -461,7 +458,7 @@ def get_third_party_pkgs():
     return third_party_pkgs
 
 
-def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
+def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
     """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
     of yum and hawkey.Package objects in case of dnf) that are not signed
     by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
@@ -506,7 +503,9 @@ def print_pkg_info(pkgs):
     for pkg in pkgs:
         nevra = get_pkg_nevra(pkg)
         packager = get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg)
-        package_info[nevra] = {"packager": packager}
+        # Setting repoid as N/A to make it default. Later in the function this
+        # value is changed to the actual repoid, if there is one.
+        package_info[nevra] = {"packager": packager, "repoid": "N/A"}
 
     # Get packager length
     packager_field_lengths = (len(package["packager"]) for package in package_info.values())
@@ -538,13 +537,11 @@ def print_pkg_info(pkgs):
         + "\n"
     )
 
-    packages_with_repos = _get_package_repository(list(package_info))
+    packages_with_repos = _get_package_repositories(list(package_info))
     # Update package_info reference with repoid
     for nevra, repoid in packages_with_repos.items():
-        print(nevra, repoid)
-        package_info[nevra]["repoid"] = repoid if repoid else "N/A"
+        package_info[nevra]["repoid"] = repoid
 
-    print(package_info)
     pkg_list = ""
     for package, info in package_info.items():
         pkg_list += (
@@ -560,10 +557,11 @@ def print_pkg_info(pkgs):
         )
 
     pkg_table = header + header_underline + pkg_list
+    loggerinst.info(pkg_table)
     return pkg_table
 
 
-def _get_package_repository(pkgs):
+def _get_package_repositories(pkgs):
     """Retrieve repository information from packages.
 
     :param pkgs: List of packages to get their associated repositories
@@ -596,7 +594,7 @@ def _get_package_repository(pkgs):
                 split_output = line.lstrip("C2R ").split("&")
                 nevra = split_output[0]
                 repoid = split_output[1]
-                repositories_mapping[nevra] = repoid
+                repositories_mapping[nevra] = repoid if repoid else "N/A"
             else:
                 loggerinst.debug("Got a line without the C2R identifier: %s", line)
 
@@ -774,7 +772,7 @@ def get_system_packages_for_replacement():
     """
     Get a list of packages in the system to be replaced. This function will
     return a list of packages installed on the system by using the
-    `system_info.fingerprint_ori_os` signature.
+    `system_info.fingerprint_orig_os` signature.
 
     :return: A list of packages installed on the system.
     :rtype: list[str]

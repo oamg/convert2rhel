@@ -2433,7 +2433,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
     ("package_name", "subprocess_output", "expected", "expected_command"),
     (
         (
-            "*",
+            "libgcc*",
             "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
             [
                 PackageInformation(
@@ -2455,6 +2455,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                 "--qf",
                 "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
                 "-qa",
+                "libgcc*",
             ],
         ),
         (
@@ -2543,7 +2544,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
             ],
         ),
         (
-            None,
+            "*",
             """
             C2R Fedora Project&Fedora Project&fonts-filesystem-1:2.0.5-9.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a
             C2R Fedora Project&Fedora Project&fedora-logos-0:36.0.0-3.fc37.noarch&RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a
@@ -2573,10 +2574,11 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                 "--qf",
                 "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
                 "-qa",
+                "*",
             ],
         ),
         (
-            None,
+            "*",
             """
             C2R Fedora Project&Fedora Project&fonts-filesystem-1:2.0.5-9.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a
             C2R Fedora Project&Fedora Project&fedora-logos-0:36.0.0-3.fc37.noarch&RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a
@@ -2607,6 +2609,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                 "--qf",
                 "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
                 "-qa",
+                "*",
             ],
         ),
     ),
@@ -2691,24 +2694,24 @@ def test_remove_repofile_pkgs(monkeypatch):
     ),
 )
 @centos7
-def test_get_package_repository(pretend_os, packages, subprocess_output, expected_result, monkeypatch, caplog):
+def test_get_package_repositories(pretend_os, packages, subprocess_output, expected_result, monkeypatch, caplog):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
     utils.run_subprocess.output = subprocess_output
 
-    result = pkghandler._get_package_repository(packages)
+    result = pkghandler._get_package_repositories(packages)
     assert expected_result == result
     if caplog.records[-1].message:
         assert "Got a line without the C2R identifier" in caplog.records[-1].message
 
 
 @centos7
-def test_get_package_repository_repoquery_failure(pretend_os, monkeypatch, caplog):
+def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, caplog):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
     utils.run_subprocess.ret_code = 1
     utils.run_subprocess.output = "failed"
 
     packages = ["0:gnome-backgrounds-44.0-1.fc38.noarch", "0:eog-44.1-1.fc38.x86_64", "0:gnome-maps-44.1-1.fc38.x86_64"]
-    result = pkghandler._get_package_repository(packages)
+    result = pkghandler._get_package_repositories(packages)
 
     assert "Repoquery exited with return code 1 and with output: failed" in caplog.records[-1].message
     for package in result:

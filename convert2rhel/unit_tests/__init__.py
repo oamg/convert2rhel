@@ -19,8 +19,6 @@ import functools
 import os
 import unittest
 
-from functools import wraps
-
 import pytest
 import six
 
@@ -70,7 +68,7 @@ def mock(class_or_module, orig_obj, mock_obj):
     def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
-        @wraps(func)
+        @functools.wraps(func)
         def wrapped_fn(*args, **kwargs):
             # Save temporarily the original object
             orig_obj_saved = getattr(class_or_module, orig_obj)
