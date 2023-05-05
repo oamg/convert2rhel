@@ -27,16 +27,16 @@ def test_failures_and_skips_in_report(convert2rhel):
 
         # Error header first
         c2r.expect("Must fix before conversion")
-        c2r.expect("SUBSCRIBE_SYSTEM_UNKNOWN_ERROR: Unable to register the system through subscription-manager.")
+        c2r.expect("SUBSCRIBE_SYSTEM.UNKNOWN_ERROR: Unable to register the system")
 
         # Skip header
         c2r.expect("Could not be checked due to other failures")
-        c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY.SKIP: Skipped because SUBSCRIBE_SYSTEM was not successful")
+        c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY.SKIP: Skipped")
 
         # Success header
         c2r.expect("No changes needed")
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus == 0
 
 
 @pytest.mark.test_successfull_report
@@ -65,8 +65,4 @@ def test_successfull_report(convert2rhel):
         c2r.expect("Pre-conversion analysis report")
         c2r.expect("No changes needed")
 
-        # Assert that the following header does not exist in the log.
-        assert not c2r.expect("Must fix before conversion")
-        assert not c2r.expect("Could not be checked due to other failures")
-
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus == 0

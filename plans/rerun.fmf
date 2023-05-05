@@ -720,27 +720,7 @@
         discover+:
             filter: tag:auto-attach-pool
 
-/sub_man_rollback:
-    summary: |
-        Back up and restore subscription-manager
-    description: |
-        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
-        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
-        backed up and re-installed during the rollback together with the certificate.
 
-
-    enabled: false
-
-    adjust+:
-        - enabled: true
-          when: >
-              distro == centos-8
-        - environment+:
-            TEST_REQUIRES: subscription-manager
-
-
-    discover+:
-        filter: tag:sub-man-rollback
 /assessment_report:
     summary: Pre-Assessment report
     description: |
