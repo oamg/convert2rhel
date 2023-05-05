@@ -329,8 +329,7 @@ def get_installed_pkg_information(pkg_name=""):
         if "*" in pkg_name:
             cmd.append("-qa")
         else:
-            cmd.append("-q")
-        cmd.append(pkg_name)
+            cmd.extend(["-q", pkg_name])
     else:
         cmd.append("-qa")
 
@@ -540,11 +539,12 @@ def print_pkg_info(pkgs):
     )
 
     packages_with_repos = _get_package_repository(list(package_info))
-    print(packages_with_repos)
     # Update package_info reference with repoid
     for nevra, repoid in packages_with_repos.items():
-        package_info[nevra]["repoid"] = repoid
+        print(nevra, repoid)
+        package_info[nevra]["repoid"] = repoid if repoid else "N/A"
 
+    print(package_info)
     pkg_list = ""
     for package, info in package_info.items():
         pkg_list += (
@@ -587,16 +587,15 @@ def _get_package_repository(pkgs):
     # In case of repoquery returning an retcode different from 0, let's log the
     # output as a debug and return N/A for the caller.
     if retcode != 0:
-        loggerinst.debug("Repoquery exited with %s and with output: %s", retcode, output)
+        loggerinst.debug("Repoquery exited with return code %s and with output: %s", retcode, " ".join(output))
         for package in pkgs:
             repositories_mapping[package] = "N/A"
     else:
         for line in output:
             if "C2R" in line:
-                print(line)
                 split_output = line.lstrip("C2R ").split("&")
                 nevra = split_output[0]
-                repoid = split_output[1] if split_output[1] else "N/A"
+                repoid = split_output[1]
                 repositories_mapping[nevra] = repoid
             else:
                 loggerinst.debug("Got a line without the C2R identifier: %s", line)
@@ -619,7 +618,11 @@ def _get_nevra_from_pkg_obj(pkg_obj):
     if isinstance(pkg_obj, PackageInformation):
         return pkg_obj.nevra
     return PackageNevra(
-        name=pkg_obj.name, epoch=pkg_obj.epoch, version=pkg_obj.version, release=pkg_obj.release, arch=pkg_obj.arch
+        name=pkg_obj.name,
+        epoch=pkg_obj.epoch,
+        version=pkg_obj.version,
+        release=pkg_obj.release,
+        arch=pkg_obj.arch,
     )
 
 
