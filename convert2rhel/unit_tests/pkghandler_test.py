@@ -36,16 +36,15 @@ from convert2rhel.pkghandler import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import (
+from convert2rhel.unit_tests import (
+    GetLoggerMocked,
     TestPkgObj,
-    all_systems,
-    centos7,
-    centos8,
     create_pkg_information,
     create_pkg_obj,
+    is_rpm_based_os,
     mock_decorator,
 )
+from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
 from convert2rhel.unit_tests.subscription_test import DumbCallable
 
 
@@ -1808,10 +1807,14 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
     (
         (
             [
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="not-the-centos7-fingerprint",
                     signature="test",
                 )
@@ -1820,10 +1823,14 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
         ),
         (
             [
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 )
@@ -1832,31 +1839,47 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
         ),
         (
             [
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-2", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-2",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-3", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-3",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-4", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-4",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
@@ -1865,17 +1888,25 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
         ),
         (
             [
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-1", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="pkg-2", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="pkg-2",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="this-is-a-fingerprint",
                     signature="test",
                 ),
@@ -1884,10 +1915,14 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
         ),
         (
             [
-                PackageInformation(
+                create_pkg_information(
                     packager="test",
                     vendor="test",
-                    nevra=PackageNevra(name="gpg-pubkey", epoch="0", release="1.0.0", version="1", arch="x86_64"),
+                    name="gpg-pubkey",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
                     fingerprint="test",
                     signature="test",
                 )
@@ -2398,6 +2433,31 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
     ("package_name", "subprocess_output", "expected", "expected_command"),
     (
         (
+            "*",
+            "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+            [
+                PackageInformation(
+                    packager="CentOS Buildsys <bugs@centos.org>",
+                    vendor="CentOS",
+                    nevra=PackageNevra(
+                        name="libgcc",
+                        epoch="0",
+                        version="8.5.0",
+                        release="4.el8_5",
+                        arch="i686",
+                    ),
+                    fingerprint="05b555b38483c65d",
+                    signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-qa",
+            ],
+        ),
+        (
             "libgcc-0:8.5.0-4.el8_5.i686",
             "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
             [
@@ -2589,3 +2649,68 @@ def test_remove_repofile_pkgs(monkeypatch):
     assert pkghandler._get_packages_to_remove.called == 1
     assert pkghandler.remove_pkgs_with_confirm.called == 1
     assert pkghandler._get_packages_to_remove.command == system_info.repofile_pkgs
+
+
+@pytest.mark.parametrize(
+    ("packages", "subprocess_output", "expected_result"),
+    (
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                C2R 0:eog-44.1-1.fc38.x86_64&updates
+                C2R 0:gnome-backgrounds-44.0-1.fc38.noarch&fedora
+                C2R 0:gnome-maps-44.1-1.fc38.x86_64&updates
+            """,
+            {
+                "0:eog-44.1-1.fc38.x86_64": "updates",
+                "0:gnome-backgrounds-44.0-1.fc38.noarch": "fedora",
+                "0:gnome-maps-44.1-1.fc38.x86_64": "updates",
+            },
+        ),
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                C2R 0:eog-44.1-1.fc38.x86_64&updates
+                C2R 0:gnome-backgrounds-44.0-1.fc38.noarch&fedora
+                C2R 0:gnome-maps-44.1-1.fc38.x86_64&updates
+                test line without identifier
+            """,
+            {
+                "0:eog-44.1-1.fc38.x86_64": "updates",
+                "0:gnome-backgrounds-44.0-1.fc38.noarch": "fedora",
+                "0:gnome-maps-44.1-1.fc38.x86_64": "updates",
+            },
+        ),
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                test line without identifier
+            """,
+            {},
+        ),
+    ),
+)
+@centos7
+def test_get_package_repository(pretend_os, packages, subprocess_output, expected_result, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.output = subprocess_output
+
+    result = pkghandler._get_package_repository(packages)
+    assert expected_result == result
+    if caplog.records[-1].message:
+        assert "Got a line without the C2R identifier" in caplog.records[-1].message
+
+
+@centos7
+def test_get_package_repository_repoquery_failure(pretend_os, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.ret_code = 1
+    utils.run_subprocess.output = "failed"
+
+    packages = ["0:gnome-backgrounds-44.0-1.fc38.noarch", "0:eog-44.1-1.fc38.x86_64", "0:gnome-maps-44.1-1.fc38.x86_64"]
+    result = pkghandler._get_package_repository(packages)
+
+    assert "Repoquery exited with return code 1 and with output: failed" in caplog.records[-1].message
+    for package in result:
+        assert package in packages
+        assert result[package] == "N/A"

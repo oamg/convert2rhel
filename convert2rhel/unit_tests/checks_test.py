@@ -35,8 +35,13 @@ from convert2rhel.checks import (
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
-from convert2rhel.unit_tests.conftest import centos7, centos8, create_pkg_information, oracle8
+from convert2rhel.unit_tests import (
+    GetFileContentMocked,
+    GetLoggerMocked,
+    create_pkg_information,
+    run_subprocess_side_effect,
+)
+from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
 
 

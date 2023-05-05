@@ -27,7 +27,8 @@ from six.moves import mock
 from convert2rhel import pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests.conftest import centos7, create_pkg_information, mock_decorator
+from convert2rhel.unit_tests import create_pkg_information, mock_decorator
+from convert2rhel.unit_tests.conftest import centos7
 
 
 class YumResolveDepsMocked(unit_tests.MockFunction):
@@ -79,6 +80,19 @@ class TestYumTransactionHandler(object):
         assert "Enabling RHEL repositories:\n%s" % "\n".join(enabled_rhel_repos) in caplog.records[-1].message
         assert pkgmanager.RepoStorage.disableRepo.called_once()
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_rhel_repos)
+
+    @centos7
+    @pytest.mark.parametrize(("enabled_rhel_repos"), ((["rhel-7-test-repo"])))
+    def test_enable_repos_repo_error(self, pretend_os, enabled_rhel_repos, _mock_yum_api_calls, caplog, monkeypatch):
+        instance = YumTransactionHandler()
+        instance._set_up_base()
+
+        monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
+        monkeypatch.setattr(pkgmanager.RepoStorage, "enableRepo", mock.Mock(side_effect=pkgmanager.Errors.RepoError))
+        with pytest.raises(SystemExit, match="Failed to populate repository metadata."):
+            instance._enable_repos()
+
+        assert pkgmanager.RepoStorage.disableRepo.called_once()
 
     @centos7
     @pytest.mark.parametrize(

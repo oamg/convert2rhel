@@ -22,7 +22,8 @@ from convert2rhel import pkgmanager
 from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
 from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgressIndicatorCallback
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests.conftest import centos8, create_pkg_information
+from convert2rhel.unit_tests import create_pkg_information
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

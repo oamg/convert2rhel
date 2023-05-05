@@ -22,6 +22,8 @@ import shutil
 import sys
 import unittest
 
+from pickle import PicklingError
+
 import pexpect
 import pytest
 import six
@@ -892,6 +894,10 @@ class RunAsChildProcessFunctions:
     def raise_bare_system_exit_exception():
         raise SystemExit
 
+    @staticmethod
+    def raise_pickling_error_exception():
+        raise PicklingError("pickling error")
+
 
 @pytest.mark.parametrize(
     ("func", "args", "kwargs", "expected"),
@@ -930,6 +936,19 @@ def test_run_as_child_process(func, args, kwargs, expected):
     assert decorated.__wrapped__ == func
 
 
+@pytest.mark.parametrize(
+    ("func", "args", "kwargs", "expected_exception"),
+    (
+        (RunAsChildProcessFunctions.raise_bare_system_exit_exception, (), {}, SystemExit),
+        (RunAsChildProcessFunctions.raise_pickling_error_exception, (), {}, PicklingError),
+    ),
+)
+def test_run_as_child_process_with_exceptions(func, args, kwargs, expected_exception):
+    decorated = utils.run_as_child_process(func)
+    with pytest.raises(expected_exception):
+        decorated(*args, **kwargs)
+
+
 class MockProcess:
     def __init__(self, exception):
         self._exception = exception
@@ -958,15 +977,8 @@ class MockProcess:
         return self._exception
 
 
-@pytest.mark.parametrize(
-    ("func", "args", "kwargs", "expected_exception"),
-    (
-        (RunAsChildProcessFunctions.raise_keyboard_interrupt_exception, (), {}, KeyboardInterrupt),
-        (RunAsChildProcessFunctions.raise_bare_system_exit_exception, (), {}, SystemExit),
-    ),
-)
-def test_run_as_child_process_with_exceptions(func, args, kwargs, expected_exception, monkeypatch):
-    monkeypatch.setattr(utils, "Process", MockProcess(expected_exception))
-    decorated = utils.run_as_child_process(func)
-    with pytest.raises(expected_exception):
-        decorated(*args, **kwargs)
+def test_run_as_child_process_with_keyboard_interrupt(monkeypatch):
+    monkeypatch.setattr(utils, "Process", MockProcess(KeyboardInterrupt))
+    decorated = utils.run_as_child_process(RunAsChildProcessFunctions.raise_keyboard_interrupt_exception)
+    with pytest.raises(KeyboardInterrupt):
+        decorated((), {})
