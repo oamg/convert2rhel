@@ -531,8 +531,9 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
 @pytest.mark.parametrize(
     ("argv", "expected"),
     (
-        (mock_cli_arguments(["--pre-check"]), True),
-        (mock_cli_arguments([]), False),
+        (mock_cli_arguments(["convert"]), "convert"),
+        (mock_cli_arguments(["analyze"]), "analyze"),
+        (mock_cli_arguments([]), "convert"),
     ),
 )
 def test_pre_assessment_set(argv, expected, monkeypatch):
@@ -541,7 +542,7 @@ def test_pre_assessment_set(argv, expected, monkeypatch):
 
     convert2rhel.toolopts.CLI()
 
-    assert tool_opts.pre_assessment == expected
+    assert tool_opts.command == expected
 
 
 @pytest.mark.parametrize(
@@ -590,3 +591,22 @@ def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypat
     convert2rhel.toolopts.CLI()
 
     assert expected not in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
+        ([], ["convert"]),
+        (["convert", "--debug"], ["--debug", "convert"]),
+        (["analyze", "--debug"], ["--debug", "analyze"]),
+        (["--password=convert", "--debug", "convert"], ["--debug", "convert", "--password=convert"]),
+        (
+            ["--username", "convert", "-h", "--password", "xxxx", "--debug", "convert", "--pool", "xxxx"],
+            ["-h", "--debug", "convert", "--username", "convert", "--password", "xxxx", "--pool", "xxxx"],
+        ),
+    ),
+)
+def test_organize_cli_options(argv, expected, monkeypatch):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+    assert convert2rhel.toolopts.CLI._organize_cli_options(tool_opts, argv) == expected

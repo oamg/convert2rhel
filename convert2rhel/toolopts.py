@@ -32,6 +32,22 @@ loggerinst = logging.getLogger(__name__)
 # Paths for configuration files
 CONFIG_PATHS = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
 
+ARGS_WITH_VALUES = [
+    "-u",
+    "--username",
+    "-p",
+    "--password",
+    "-f",
+    "--password-from-file",
+    "-k",
+    "--activationkey",
+    "-o",
+    "--org",
+    "--pool",
+    "--serverurl",
+]
+PARENT_ARGS = ["--debug", "--help", "-h", "--version"]
+
 
 class ToolOpts(object):
     def __init__(self):
@@ -55,8 +71,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.keep_rhsm = False
-        self.pre_assessment = False
-
+        self.command = None
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
 
@@ -328,6 +343,29 @@ class CLI(object):
             " re-registration fails, there's no automated rollback to the original registration.",
         )
 
+    def _organize_cli_options(self, argv):
+        """Organize the command line options used with the tool"""
+        # if an arg is a command or parent parser (_parser) we need to reorganize them to be infront of the other args
+        args = []
+        arg_pos = 0
+        if len(argv):
+            # Add each argument based on the position of the parent options
+            # Reorder each to be before options other than parent ones.
+            for index, argument in enumerate(argv):
+                if argument in PARENT_ARGS and argv[index - 1] not in ARGS_WITH_VALUES:
+                    args.insert(arg_pos, argument)
+                    arg_pos += 1
+                # If the argument is either `convert` or `analyze` and not after
+                # an argument that accepts a value, then we do the reordering
+                elif argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
+                    args.insert(arg_pos, argument)
+                else:
+                    # Append here anything else that is in the argv.
+                    args.append(argument)
+        else:
+            args.append("convert")
+        return args
+
     def _process_cli_options(self):
         """Process command line options used with the tool."""
         _log_command_used()
@@ -337,16 +375,23 @@ class CLI(object):
         args = []
         argv = sys.argv[1:]
 
-        # If it returns an empty list, it means we don't have any of the
-        # commands in the argv.
-        has_subcommand = filter(lambda x: x in ("convert", "analyze"), argv)
+        # add algorithm function to properly organize all CLI args
+        argv = self._organize_cli_options(argv)
+
+        has_subcommand = False
+        for index, argument in enumerate(argv):
+            if argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
+                # subcommand is present in argv list
+                has_subcommand = True
+                break
+
         if not has_subcommand:
-            args.append("convert")
+            args.insert(0, "convert")
 
         args.extend(argv)
+        print(args)
 
         parsed_opts = self._parser.parse_args(args)
-        shared_parsed_opts = self._shared_options_parser.parse_args(args)
 
         if parsed_opts.debug:
             tool_opts.debug = True
@@ -361,30 +406,30 @@ class CLI(object):
         tool_opts.config_file = parsed_opts.config_file
         # corner case: password on CLI or in password file and activation-key in the config file
         # password from CLI has precedence and activation-key must be deleted (unused)
-        if config_opts.activation_key and (shared_parsed_opts.password or shared_parsed_opts.password_from_file):
+        if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
             tool_opts.activation_key = None
 
-        if shared_parsed_opts.no_rpm_va:
+        if parsed_opts.no_rpm_va:
             tool_opts.no_rpm_va = True
 
-        if shared_parsed_opts.username:
-            tool_opts.username = shared_parsed_opts.username
+        if parsed_opts.username:
+            tool_opts.username = parsed_opts.username
 
-        if shared_parsed_opts.password:
-            tool_opts.password = shared_parsed_opts.password
+        if parsed_opts.password:
+            tool_opts.password = parsed_opts.password
 
-        if shared_parsed_opts.password_from_file:
+        if parsed_opts.password_from_file:
             loggerinst.warning("Deprecated. Use -c | --config-file instead.")
-            tool_opts.password_file = shared_parsed_opts.password_from_file
-            tool_opts.password = utils.get_file_content(shared_parsed_opts.password_from_file)
+            tool_opts.password_file = parsed_opts.password_from_file
+            tool_opts.password = utils.get_file_content(parsed_opts.password_from_file)
 
-        if shared_parsed_opts.enablerepo:
-            tool_opts.enablerepo = shared_parsed_opts.enablerepo
-        if shared_parsed_opts.disablerepo:
-            tool_opts.disablerepo = shared_parsed_opts.disablerepo
+        if parsed_opts.enablerepo:
+            tool_opts.enablerepo = parsed_opts.enablerepo
+        if parsed_opts.disablerepo:
+            tool_opts.disablerepo = parsed_opts.disablerepo
 
         # Check if we have duplicate repositories specified
-        if shared_parsed_opts.enablerepo or shared_parsed_opts.disablerepo:
+        if parsed_opts.enablerepo or parsed_opts.disablerepo:
             duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
             if duplicate_repos:
                 message = "Duplicate repositories were found across disablerepo and enablerepo options:"
@@ -393,7 +438,7 @@ class CLI(object):
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 
-        if shared_parsed_opts.no_rhsm or shared_parsed_opts.disable_submgr:
+        if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
                 loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
@@ -403,10 +448,10 @@ class CLI(object):
             # - the ones enabled through subscription-manager based on convert2rhel config files
             tool_opts.disablerepo = ["*"]
 
-        if shared_parsed_opts.pool:
-            tool_opts.pool = shared_parsed_opts.pool
+        if parsed_opts.pool:
+            tool_opts.pool = parsed_opts.pool
 
-        if shared_parsed_opts.serverurl:
+        if parsed_opts.serverurl:
             if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
@@ -414,7 +459,7 @@ class CLI(object):
             else:
                 # Parse the serverurl and save the components.
                 try:
-                    url_parts = _parse_subscription_manager_serverurl(shared_parsed_opts.serverurl)
+                    url_parts = _parse_subscription_manager_serverurl(parsed_opts.serverurl)
                     url_parts = _validate_serverurl_parsing(url_parts)
                 except ValueError as e:
                     # If we fail to parse, fail the conversion. The reason for
@@ -430,7 +475,7 @@ class CLI(object):
                     loggerinst.critical(
                         "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
                         "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-                        "Supplied serverurl: %s\nError: %s" % (shared_parsed_opts.serverurl, e)
+                        "Supplied serverurl: %s\nError: %s" % (parsed_opts.serverurl, e)
                     )
 
                 tool_opts.rhsm_hostname = url_parts.hostname
@@ -443,23 +488,23 @@ class CLI(object):
                 if url_parts.path:
                     tool_opts.rhsm_prefix = url_parts.path
 
-        if shared_parsed_opts.keep_rhsm:
+        if parsed_opts.keep_rhsm:
             if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --keep-rhsm option. It has no effect when --disable-submgr or --no-rhsm is used."
                 )
             else:
-                tool_opts.keep_rhsm = shared_parsed_opts.keep_rhsm
+                tool_opts.keep_rhsm = parsed_opts.keep_rhsm
 
-        tool_opts.autoaccept = shared_parsed_opts.y
-        tool_opts.auto_attach = shared_parsed_opts.auto_attach
-        tool_opts.restart = shared_parsed_opts.restart
+        tool_opts.autoaccept = parsed_opts.y
+        tool_opts.auto_attach = parsed_opts.auto_attach
+        tool_opts.restart = parsed_opts.restart
 
-        if shared_parsed_opts.activationkey:
-            tool_opts.activation_key = shared_parsed_opts.activationkey
+        if parsed_opts.activationkey:
+            tool_opts.activation_key = parsed_opts.activationkey
 
-        if shared_parsed_opts.org:
-            tool_opts.org = shared_parsed_opts.org
+        if parsed_opts.org:
+            tool_opts.org = parsed_opts.org
 
         # Checks of multiple authentication sources
         if tool_opts.password and tool_opts.activation_key:
@@ -473,21 +518,19 @@ class CLI(object):
                 " We're going to use the activation key."
             )
 
-        if shared_parsed_opts.password and shared_parsed_opts.password_from_file:
+        if parsed_opts.password and parsed_opts.password_from_file:
             loggerinst.warning(
                 "You have passed the RHSM password through both the --password-from-file and the --password option."
                 " We're going to use the password from file."
             )
 
-        if (config_opts.activation_key or config_opts.password) and (
-            shared_parsed_opts.activationkey or shared_parsed_opts.password
-        ):
+        if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
             loggerinst.warning(
                 "You have passed either the RHSM password or activation key through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
-        if (config_opts.activation_key or config_opts.password) and shared_parsed_opts.password_from_file:
+        if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
             loggerinst.warning(
                 "You have passed the RHSM credentials both through a config file and through a password file."
                 " We're going to use the password file."

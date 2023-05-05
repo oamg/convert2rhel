@@ -81,10 +81,10 @@ def main():
         ### FIXME: After talking with mbocek, let's merge this in with the actions framework
         pre_ponr_changes()
 
-        if toolopts.tool_opts.command == "analyze":
-            rollback()
-            # Return code here depends on the result of the action framework.
-            return 0
+        # if toolopts.tool_opts.command == "analyze":
+        #     rollback()
+        #     # Return code here depends on the result of the action framework.
+        #     return 0
 
         post_ponr_changes()
 
