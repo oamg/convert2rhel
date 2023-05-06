@@ -1,4 +1,4 @@
-# Copyright(C) 2016 Red Hat, Inc.
+# Copyright: 2023, Red Hat
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,7 @@ import collections
 import importlib
 import itertools
 import logging
-import os
-import os.path
 import pkgutil
-import re
 import traceback
 
 from functools import wraps
@@ -32,22 +29,10 @@ from functools import wraps
 import six
 
 from convert2rhel import utils
-from convert2rhel.utils import format_sequence_as_message
 
 
 logger = logging.getLogger(__name__)
 
-KERNEL_REPO_RE = re.compile(r"^.+:(?P<version>.+).el.+$")
-KERNEL_REPO_VER_SPLIT_RE = re.compile(r"\W+")
-BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
-
-RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
-# The SSL certificate of the https://cdn.redhat.com/ server
-SSL_CERT_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
-
-
-LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
-LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 
 #: Status code of an Action.
 #:
@@ -392,7 +377,10 @@ class Stage:
                 to_be = "was"
                 if len(failed_deps) > 1:
                     to_be = "were"
-                message = "Skipped because %s %s not successful" % (format_sequence_as_message(failed_deps), to_be)
+                message = "Skipped because %s %s not successful" % (
+                    utils.format_sequence_as_message(failed_deps),
+                    to_be,
+                )
 
                 action.set_result(status="SKIP", error_id="SKIP", message=message)
                 skips.append(action)
@@ -420,7 +408,7 @@ class Stage:
                 successes.append(action)
 
             if action.status > STATUS_CODE["WARNING"]:
-                message = format_report_message(action.status, action.id, action.error_id, action.message)
+                message = format_action_status_message(action.status, action.id, action.error_id, action.message)
                 logger.error(message)
                 failures.append(action)
                 failed_action_ids.add(action.id)
@@ -464,9 +452,14 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
     # algorithm has not changed)
     potential_actions = sorted(potential_actions, key=lambda action: action.id)
 
-    # actions which have yet to be sorted
+    # We have pre-sorted action by their id so that there is a stable sort order.
+    # Now we have to sort them further so that dependencies are run before
+    # the Actions which depend upon them.
+
+    # Actions which have yet to be resolved.  A resolved Action has been sorted
+    # into its final order and yielded to the caller.
     unresolved_actions = []
-    # ids of the actions which have already been sorted
+    # ids of the actions which have already been resolved
     resolved_action_ids = set(action.id for action in previously_resolved_actions)
 
     for action in potential_actions:
@@ -492,7 +485,7 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
         previous_number_of_unresolved_actions = len(unresolved_actions)
 
         # Examine each action.  (Utilize a copy of unresolved_actions for the
-        # loop since we add to unresolved_actions inside of the loop)]
+        # loop since we add to unresolved_actions inside of the loop)
         for action in unresolved_actions[:]:
             # We can only run the action if all of its dependencies have
             # previously been run
@@ -519,6 +512,11 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
 
 
 def run_actions():
+    """
+    Run all of the pre-ponr Actions.
+
+    This function runs the Actions that occur before the Point of no Return.
+    """
     pre_ponr_changes = Stage("pre_ponr_changes", "Making recoverable changes")
     system_checks = Stage("system_checks", "Check whether system is ready for conversion", pre_ponr_changes)
 
@@ -564,23 +562,7 @@ def find_actions_of_severity(results, severity):
     return matched_actions
 
 
-def format_report_section_heading(status_code):
-    """
-    Format a section heading for a status in the report.
-
-    :param status_code: The status code that will be used in the heading
-    :type status_code: int
-    :return: The formatted heading that the caller can log.
-    :rtype: str
-    """
-    status_header = _STATUS_HEADER[status_code]
-    highlight = "=" * 10
-
-    heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
-    return heading
-
-
-def format_report_message(status_code, action_id, error_id, message):
+def format_action_status_message(status_code, action_id, error_id, message):
     """Helper function to format a message about each Action result.
 
     :param status_code: The status code that will be used in the template.

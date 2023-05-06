@@ -15,12 +15,13 @@
 
 __metaclass__ = type
 
+
 import logging
 import textwrap
 
 from convert2rhel import utils
-from convert2rhel.actions import find_actions_of_severity, format_report_message, format_report_section_heading
-from convert2rhel.logger import bcolors, colorize
+from convert2rhel.actions import _STATUS_HEADER, find_actions_of_severity, format_action_status_message
+from convert2rhel.logger import colorize
 
 
 logger = logging.getLogger(__name__)
@@ -114,7 +115,7 @@ def summary(results, include_all_reports=False, with_colors=True):
             report.append(format_report_section_heading(result["status"]))
             last_status = result["status"]
 
-        entry = format_report_message(result["status"], action_id, result["error_id"], result["message"])
+        entry = format_action_status_message(result["status"], action_id, result["error_id"], result["message"])
         entry = word_wrapper.fill(entry)
         if with_colors:
             entry = colorize(entry, _STATUS_TO_COLOR[result["status"]])
@@ -126,3 +127,19 @@ def summary(results, include_all_reports=False, with_colors=True):
         report.append("No problems detected during the analysis!")
 
     logger.info("%s\n" % "\n".join(report))
+
+
+def format_report_section_heading(status_code):
+    """
+    Format a section heading for a status in the report.
+
+    :param status_code: The status code that will be used in the heading
+    :type status_code: int
+    :return: The formatted heading that the caller can log.
+    :rtype: str
+    """
+    status_header = _STATUS_HEADER[status_code]
+    highlight = "=" * 10
+
+    heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
+    return heading
