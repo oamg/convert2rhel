@@ -330,7 +330,7 @@ class TestResolveActionOrder:
                 ["One", "Two", "Three", "Four"],
             ),
             # Multiple dependencies (Slight differences in order to show
-            # that order of deps and Actions doesn't matter.  The sort is
+            # that order of deps and Actions doesn't matter).  The sort is
             # still stable.
             (
                 [
