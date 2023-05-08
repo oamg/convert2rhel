@@ -688,10 +688,10 @@ def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
         loggerinst.info("\nNothing to do.")
         return
 
+    loggerinst.warning("Removing the following %s packages:" % str(len(pkgs_to_remove)))
+    print_pkg_info(pkgs_to_remove)
     loggerinst.info("\n")
     remove_pkgs([get_pkg_nvra(pkg.nevra) for pkg in pkgs_to_remove], backup=backup)
-    loggerinst.warning("Successfully removed the following %s packages:" % str(len(pkgs_to_remove)))
-    print_pkg_info(pkgs_to_remove)
 
 
 @utils.run_as_child_process
