@@ -32,6 +32,15 @@ loggerinst = logging.getLogger(__name__)
 # Paths for configuration files
 CONFIG_PATHS = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
 
+#: Map name of the convert2rhel mode to run in from the command line to the
+#: activity name that we use in the code and breadcrumbs.  CLI commands should
+#: be verbs but an activity is a noun.
+_COMMAND_TO_ACTIVITY = {
+    "convert": "conversion",
+    "analyze": "analysis",
+    "analyse": "analysis",
+}
+
 
 class ToolOpts(object):
     def __init__(self):
@@ -55,6 +64,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.keep_rhsm = False
+        self.activity = None
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -300,6 +310,17 @@ class CLI(object):
 
         if parsed_opts.debug:
             tool_opts.debug = True
+
+        if hasattr(parsed_opts, "command"):
+            # Once we use a subcommand to set the activity that convert2rhel will perform
+            tool_opts.activity = _COMMAND_TO_ACTIVITY[parsed_opts.command]
+        else:
+            # At first, in tech preview, we use an environment variable to set the activity.
+            experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
+            if experimental_analysis:
+                tool_opts.activity = "analysis"
+            else:
+                tool_opts.activity = "conversion"
 
         # Processing the configuration file
         conf_file_opts = options_from_config_files(parsed_opts.config_file)
