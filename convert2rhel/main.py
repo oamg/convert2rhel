@@ -90,8 +90,7 @@ def main():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_actions()
 
-        experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
-        if experimental_analysis:
+        if toolopts.tool_opts.activity == "analysis":
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
@@ -103,7 +102,7 @@ def main():
         # Print the assessment just before we ask the user whether to continue past the PONR
         report.summary(
             pre_conversion_results,
-            include_all_reports=experimental_analysis,
+            include_all_reports=False,
             with_colors=logger_module.should_disable_color_output(),
         )
 
@@ -130,7 +129,7 @@ def main():
 
         report.summary(
             pre_conversion_results,
-            include_all_reports=experimental_analysis,
+            include_all_reports=True,
             with_colors=logger_module.should_disable_color_output(),
         )
         return 0
@@ -156,7 +155,7 @@ def main():
             else:
                 report.summary(
                     pre_conversion_results,
-                    include_all_reports=experimental_analysis,
+                    include_all_reports=(toolopts.tool_opts.activity == "analysis"),
                     with_colors=logger_module.should_disable_color_output(),
                 )
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
