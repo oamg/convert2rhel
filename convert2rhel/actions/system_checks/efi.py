@@ -64,7 +64,7 @@ class Efi(actions.Action):
             return
 
         # Get information about the bootloader. Currently the data is not used, but it's
-        # good to check that we can obtain all the required data before the PONR. 
+        # good to check that we can obtain all the required data before the PONR.
         try:
             efiboot_info = grub.EFIBootInfo()
         except grub.BootloaderError as e:
