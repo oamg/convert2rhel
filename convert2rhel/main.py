@@ -100,9 +100,6 @@ def main():
             # The report will be handled in the error handler, after rollback.
             loggerinst.critical("Conversion failed.")
 
-        #
-        # Ready to convert
-        #
 
         # Print the assessment just before we ask the user whether to continue past the PONR
         report.summary(

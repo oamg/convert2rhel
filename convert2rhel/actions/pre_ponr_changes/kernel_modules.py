@@ -217,8 +217,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 )
                 return
 
-            # Validate the best case first. If we don't have any unsupported_kmods,
-            # this means that everything is compatible and good to go.
+            # If there is any unsupported kmods found, set the result to error
             if unsupported_kmods:
                 self.set_result(
                     status="ERROR",

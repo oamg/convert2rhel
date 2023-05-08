@@ -1,4 +1,4 @@
-# Copyright(C) 2023 Red Hat, Inc.
+# Copyright(C) 2016 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,7 +44,6 @@ class TaintedKmods(actions.Action):
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         if unsigned_modules:
-
             self.set_result(
                 status="ERROR",
                 error_id="TAINTED_KMODS_DETECTED",
