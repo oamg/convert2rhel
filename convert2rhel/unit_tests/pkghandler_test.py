@@ -426,53 +426,85 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ],
         )
 
-    def test_get_pkgs_to_distro_sync(self):
-        problematic_pkgs = {
-            "protected": set(["a"]),
-            "errors": set(["b"]),
-            "multilib": set(["c", "a"]),
-            "required": set(["d", "a"]),
-            "mismatches": set(["e", "a"]),
-        }
-        all_pkgs = pkghandler.get_pkgs_to_distro_sync(problematic_pkgs)
-        self.assertEqual(
-            all_pkgs,
-            problematic_pkgs["errors"]
-            | problematic_pkgs["protected"]
-            | problematic_pkgs["multilib"]
-            | problematic_pkgs["required"],
-        )
+    class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
+        def prepare_test_pkg_tuples_w_fingerprints(self):
+            class PkgData:
+                def __init__(self, pkg_obj, fingerprint):
+                    self.pkg_obj = pkg_obj
+                    self.fingerprint = fingerprint
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_resolve_dep_errors_one_downgrade_fixes_the_error(self):
-        pkghandler.call_yum_cmd.fail_once = True
+            obj1 = create_pkg_obj("pkg1")
+            obj2 = create_pkg_obj("pkg2")
+            obj3 = create_pkg_obj("gpg-pubkey")
+            pkgs = [
+                PkgData(obj1, "199e2f91fd431d51"),  # RHEL
+                PkgData(obj2, "72f97b74ec551f03"),  # OL
+                PkgData(obj3, "199e2f91fd431d51"),
+            ]  # RHEL
+            return pkgs
 
-        pkghandler.resolve_dep_errors(YUM_PROTECTED_ERROR, set())
+        def __call__(self, *args, **kwargs):
+            return self.prepare_test_pkg_tuples_w_fingerprints()
 
-        self.assertEqual(pkghandler.call_yum_cmd.called, 1)
+    @unit_tests.mock(
+        pkghandler,
+        "get_installed_pkgs_w_fingerprints",
+        GetInstalledPkgsWFingerprintsMocked(),
+    )
+    def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
+        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
+        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_resolve_dep_errors_unable_to_fix_by_downgrades(self):
-        pkghandler.call_yum_cmd.return_code = 1
-        pkghandler.call_yum_cmd.return_string = YUM_MULTILIB_ERROR
+        self.assertEqual(pkgs_by_fingerprint, ["pkg1.", "gpg-pubkey."])
 
-        pkghandler.resolve_dep_errors(YUM_PROTECTED_ERROR, set())
+    @unit_tests.mock(
+        pkghandler,
+        "get_installed_pkgs_w_fingerprints",
+        GetInstalledPkgsWFingerprintsMocked(),
+    )
+    def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(self):
+        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
 
-        # Firts call of the resolve_dep_errors, pkgs from protected error
-        # are detected, the second call pkgs from multilib error are detected,
-        # the third call yum_cmd is not called anymore, because the
-        # problematic packages then remain the same (simulating that the
-        # downgrades do not solve the yum errors)
-        self.assertEqual(pkghandler.call_yum_cmd.called, 2)
+        self.assertEqual(pkgs_by_fingerprint, [])
 
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_resolve_dep_errors_unable_to_detect_problematic_pkgs(self):
-        # Even though resolve_dep_errors was called (meaning that the previous
-        # yum call ended with non-zero status), the string returned by yum
-        # does not hold information recognizable by get_problematic_pkgs
-        pkghandler.resolve_dep_errors("No info about problematic pkgs.", set())
+    class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
+        def __call__(self, name=""):
+            if name and name != "installed_pkg":
+                return []
+            pkg_obj = create_pkg_obj(
+                name="installed_pkg",
+                version="0.1",
+                release="1",
+                arch="x86_64",
+                packager="Oracle",
+                from_repo="repoid",
+            )
+            return [pkg_obj]
 
-        self.assertEqual(pkghandler.call_yum_cmd.called, 0)
+    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
+    @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
+    def test_get_installed_pkgs_w_fingerprints(self):
+        pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
+
+        self.assertEqual(len(pkgs), 1)
+        self.assertEqual(pkgs[0].pkg_obj.name, "installed_pkg")
+        self.assertEqual(pkgs[0].fingerprint, "some_fingerprint")
+
+        pkgs = pkghandler.get_installed_pkgs_w_fingerprints("non_existing")
+
+        self.assertEqual(len(pkgs), 0)
+
+    @unit_tests.mock(
+        pkghandler,
+        "get_rpm_header",
+        lambda pkg: TestPkgObj.PkgObjHdr(),
+    )
+    def test_get_pkg_fingerprint(self):
+        pkg = create_pkg_obj("pkg")
+
+        fingerprint = pkghandler.get_pkg_fingerprint(pkg)
+
+        self.assertEqual(fingerprint, "73bde98381b46521")
 
     class TransactionSetMocked(unit_tests.MockFunction):
         def __call__(self):
@@ -1524,210 +1556,6 @@ with open(
     )
 ) as f:
     YUM_DISTRO_SYNC_OUTPUT = f.read()
-
-
-@pytest.mark.parametrize(
-    "yum_output, expected",
-    (
-        (
-            "",
-            {
-                "protected": set(),
-                "errors": set(),
-                "multilib": set(),
-                "required": set(),
-                "mismatches": set(),
-            },
-        ),
-        (
-            YUM_PROTECTED_ERROR,
-            {
-                "protected": set(("systemd", "yum")),
-                "errors": set(),
-                "multilib": set(),
-                "required": set(),
-                "mismatches": set(),
-            },
-        ),
-        (
-            YUM_MULTILIB_ERROR,
-            {
-                "protected": set(),
-                "errors": set(),
-                "multilib": set(("libstdc++", "openldap", "p11-kit")),
-                "required": set(),
-                "mismatches": set(),
-            },
-        ),
-        (
-            YUM_MISMATCHED_PKGS_ERROR,
-            {
-                "protected": set(),
-                "errors": set(),
-                "multilib": set(),
-                "required": set(),
-                "mismatches": set(("python39-psycopg2-debug",)),
-            },
-        ),
-        # These currently do not pass because the Requires handling
-        # misparses a Requires in the test data (It turns
-        # python2_hawkey into python2).  Testing it in its own function
-        # for now.
-        # (
-        #     YUM_REQUIRES_ERROR,
-        #     {
-        #         "protected": set(),
-        #         "errors": set(("gcc-c++", "libreport-anaconda", "abrt-cli", "mod_ldap", "redhat-lsb-trialuse")),
-        #         "multilib": set(),
-        #         "required": set(("gcc", "libreport-plugin-rhtsupport", "python2-hawkey", "redhat-lsb-core")),
-        #         "mismatches": set(),
-        #     },
-        # ),
-        # (
-        #     YUM_UNUSUAL_PKG_NAME_REQUIRES_ERROR,
-        #     {
-        #         "protected": set(),
-        #         "errors": set(("gcc-c++", "NetworkManager", "ImageMagick-c++",
-        #         "devtoolset-11-libstdc++-devel", "java-1.8.0-openjdk", "389-ds-base")),
-        #         "multilib": set(),
-        #         "required": set(("gcc-c++", "NetworkManager", "ImageMagick-c++",
-        #         "devtoolset-11-libstdc++-devel", "java-1.8.0-openjdk", "389-ds-base")),
-        #         "mismatches": set(),
-        #     },
-        # ),
-    ),
-)
-def test_get_problematic_pkgs(yum_output, expected):
-    error_pkgs = pkghandler.get_problematic_pkgs(yum_output, set())
-
-    assert error_pkgs == expected
-
-
-# FIXME: There is a bug in requires handling.  We're detecting the python2
-# package is a problem because there's a Requires: python2_hawkey line.  Until
-# that's fixed, the following two test cases will test the things that work
-# (Errors parsing).  Once it is fixed, re-implement this test via parametrize
-# on test_get_problematic_pkgs instead of a standalone test case.
-# https://github.com/oamg/convert2rhel/issues/378
-def test_get_problematic_pkgs_requires():
-    """Merge into test_get_problematic_pkgs once requires parsing bug is fixed."""
-    error_pkgs = pkghandler.get_problematic_pkgs(YUM_REQUIRES_ERROR, set())
-    assert "libreport-anaconda" in error_pkgs["errors"]
-    assert "abrt-cli" in error_pkgs["errors"]
-    assert "libreport-plugin-rhtsupport" in error_pkgs["required"]
-    assert "python2-hawkey" in error_pkgs["required"]
-    assert "mod_ldap" in error_pkgs["errors"]
-    assert "redhat-lsb-trialuse" in error_pkgs["errors"]
-    assert "redhat-lsb-core" in error_pkgs["required"]
-    assert "gcc-c++" in error_pkgs["errors"]
-    assert "gcc" in error_pkgs["required"]
-
-
-def test_get_problematic_pkgs_requires_unusual_names():
-    """Merge into test_get_problematic_pkgs once requires parsing bug is fixed."""
-    error_pkgs = pkghandler.get_problematic_pkgs(YUM_UNUSUAL_PKG_NAME_REQUIRES_ERROR, set())
-    assert "gcc-c++" in error_pkgs["errors"]
-    assert "NetworkManager" in error_pkgs["errors"]
-    assert "ImageMagick-c++" in error_pkgs["errors"]
-    assert "devtoolset-11-libstdc++-devel" in error_pkgs["errors"]
-    assert "java-1.8.0-openjdk" in error_pkgs["errors"]
-    assert "389-ds-base" in error_pkgs["errors"]
-
-
-@pytest.mark.parametrize(
-    "output, message, expected_names",
-    (
-        # Test just the regex itself
-        ("Test", "%s", set()),
-        ("Error: Package: not_a_package_name", "%s", set()),
-        ("gcc-10.3.1-1.el8.x86_64", "%s", set(["gcc"])),
-        ("gcc-c++-10.3.1-1.el8.x86_64", "%s", set(["gcc-c++"])),
-        (
-            "ImageMagick-c++-6.9.10.68-6.el7_9.i686",
-            "%s",
-            set(["ImageMagick-c++"]),
-        ),
-        ("389-ds-base-1.3.10.2-14.el7_9.x86_64", "%s", set(["389-ds-base"])),
-        (
-            "devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64",
-            "%s",
-            set(["devtoolset-11-libstdc++-devel"]),
-        ),
-        (
-            "devtoolset-1.1-libstdc++-devel-11.2.1-1.2.el7.x86_64",
-            "%s",
-            set(["devtoolset-1.1-libstdc++-devel"]),
-        ),
-        (
-            "java-1.8.0-openjdk-1.8.0.312.b07-2.fc33.x86_64",
-            "%s",
-            set(["java-1.8.0-openjdk"]),
-        ),
-        # Test NEVR with an epoch
-        (
-            "NetworkManager-1:1.18.8-2.0.1.el7_9.x86_64",
-            "%s",
-            set(["NetworkManager"]),
-        ),
-        # Test with simple error messages that we've pre-compiled the regex for
-        (
-            "Error: Package: gcc-10.3.1-1.el8.x86_64",
-            "Error: Package: %s",
-            set(["gcc"]),
-        ),
-        (
-            "multilib versions: gcc-10.3.1-1.el8.i686",
-            "multilib versions: %s",
-            set(["gcc"]),
-        ),
-        (
-            "problem with installed package: gcc-10.3.1-1.el8.x86_64",
-            "problem with installed package: %s",
-            set(["gcc"]),
-        ),
-        # Test that a template that was not pre-compiled works
-        (
-            """Some Test Junk
-     Test gcc-1-2.i686""",
-            "Test %s",
-            set(["gcc"]),
-        ),
-        # Test with multiple packages to be found
-        (
-            """Junk
-     Test gcc-1-2.i686
-     Test gcc-c++-1-2.i686
-     More Junk
-     Test bash-3-4.x86_64""",
-            "Test %s",
-            set(["gcc", "gcc-c++", "bash"]),
-        ),
-        # Test with actual yum output
-        (
-            YUM_DISTRO_SYNC_OUTPUT,
-            "Error: Package: %s",
-            set(["gcc", "gcc-c++", "libstdc++-devel"]),
-        ),
-    ),
-)
-def test_find_pkg_names(output, message, expected_names):
-    """Test that find_pkg_names finds the expected packages."""
-    assert pkghandler.find_pkg_names(output, message) == expected_names
-
-
-@pytest.mark.parametrize(
-    "output, message",
-    (
-        # Test just the regex itself
-        ("Test", "%s"),
-        ("Error: Package: not_a_package_name", "%s"),
-        # Test that the message key is having an influence
-        ("multilib versions: gcc-10.3.1-1.el8.i686", "Error: Package: %s"),
-    ),
-)
-def test_find_pkg_names_no_names(output, message):
-    """Test that find_pkg_names does not find any names in these outputs."""
-    assert pkghandler.find_pkg_names(output, message) == set()
 
 
 class TestInstallGpgKeys(object):

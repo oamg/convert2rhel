@@ -70,17 +70,6 @@ PKG_RELEASE = PKG_VERSION
 # Set of valid arches
 PKG_ARCH = ("x86_64", "s390x", "i686", "i86", "ppc64le", "aarch64", "noarch")
 
-# It would be better to construct this dynamically but we don't have lru_cache
-# in Python-2.6 and modifying a global after your program initializes isn't a
-# good idea.
-_KNOWN_PKG_MESSAGE_KEYS = (
-    "%s",
-    "Error: Package: %s",
-    "multilib versions: %s",
-    "problem with installed package %s",
-)
-_PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
-
 # Namedtuple to represent a package NEVRA.
 PackageNevra = namedtuple(
     "PackageNevra",
@@ -168,112 +157,6 @@ def call_yum_cmd(
         loggerinst.debug("Yum has nothing to do. Ignoring.")
         returncode = 0
     return stdout, returncode
-
-
-def get_problematic_pkgs(output, excluded_pkgs=frozenset()):
-    """Parse the YUM/DNF output to find which packages are causing a transaction failure."""
-    loggerinst.info("Checking for problematic packages")
-    problematic_pkgs = {
-        "protected": set(),
-        "errors": set(),
-        "multilib": set(),
-        "required": set(),
-        "mismatches": set(),
-    }
-    loggerinst.info("\n\n")
-
-    protected = re.findall('Error.*?"(.*?)".*?protected', output, re.MULTILINE)
-    if protected:
-        loggerinst.info("Found protected packages: %s" % set(protected))
-        problematic_pkgs["protected"] = set(protected) - excluded_pkgs
-
-    deps = find_pkg_names(output, "Error: Package: %s")
-    if deps:
-        loggerinst.info("Found packages causing dependency errors: %s" % deps)
-        problematic_pkgs["errors"] = deps - excluded_pkgs
-
-    multilib = find_pkg_names(output, "multilib versions: %s")
-    if multilib:
-        loggerinst.info("Found multilib packages: %s" % multilib)
-        problematic_pkgs["multilib"] = multilib - excluded_pkgs
-
-    mismatches = find_pkg_names(output, "problem with installed package %s")
-    if mismatches:
-        loggerinst.info("Found mismatched packages: %s" % mismatches)
-        problematic_pkgs["mismatches"] = mismatches - excluded_pkgs
-
-    # What yum prints in the Requires is a capability, not a package name. And capability can be an arbitrary string,
-    # e.g. perl(Carp) or redhat-lsb-core(x86-64).
-    # Yet, passing a capability to yum distro-sync does not yield the expected result - the packages that provide the
-    # capability are not getting downgraded. So here we're getting only the part of a capability that consists of
-    # package name characters only. It will work in most cases but not in all (e.g. "perl(Carp)").
-    #
-    # We can fix this with another yum or rpm call.  This rpm command line will print the package name:
-    #   rpm -q --whatprovides "CAPABILITY"
-    package_name_re = r"([a-z][a-z0-9-]*)"
-    req = re.findall("Requires: %s" % package_name_re, output, re.MULTILINE)
-    if req:
-        loggerinst.info("Unavailable packages required by others: %s" % set(req))
-        problematic_pkgs["required"] = set(req) - excluded_pkgs
-
-    return problematic_pkgs
-
-
-def find_pkg_names(output, message_key="%s"):
-    """
-    Find all the package names of a "type" from amongst a string of output from yum.
-    :arg output: The yum output to parse for package names
-    :arg message_key: This function tries to retrieve "types" of packages from the yum output.
-        Packages that have multilib problems or dependency errors for instance.
-        The message_key is a format string which contains some of the yum
-        message which can be used as context for finding the type.  ie:
-        "multilib versions: %s" would be enough to only select package names
-        that yum said were multilib problems.
-    :returns: A set of the package names found.
-    """
-    try:
-        regular_expression = _PKG_REGEX_CACHE[message_key]
-    except KeyError:
-        regular_expression = re.compile(message_key % PKG_NEVR, re.MULTILINE)
-
-    names = set()
-    nvrs = regular_expression.findall(output)
-    for _epoch, name, _version, _release in nvrs:
-        names.add(name)
-
-    return names
-
-
-def get_pkgs_to_distro_sync(problematic_pkgs):
-    """Consolidate all the different problematic packages to one list."""
-    return (
-        problematic_pkgs["errors"]
-        | problematic_pkgs["protected"]
-        | problematic_pkgs["multilib"]
-        | problematic_pkgs["required"]
-    )
-
-
-def resolve_dep_errors(output, pkgs=frozenset()):
-    """Recursive function. If there are dependency errors in the yum output,
-    try to resolve them by yum downgrades.
-    """
-
-    problematic_pkgs = get_problematic_pkgs(output, excluded_pkgs=pkgs)
-    pkgs_to_distro_sync = get_pkgs_to_distro_sync(problematic_pkgs)
-    if not pkgs_to_distro_sync:
-        # No package has been added to the list of packages to be downgraded.
-        # There's no point in calling the yum downgrade command again.
-        loggerinst.info("No other package to try to downgrade in order to resolve yum dependency errors.")
-        return output
-    pkgs_to_distro_sync = pkgs_to_distro_sync.union(pkgs)
-    cmd = "distro-sync"
-    loggerinst.info("\n\nTrying to resolve the following packages: %s" % ", ".join(pkgs_to_distro_sync))
-    output, ret_code = call_yum_cmd(command=cmd, args=list(pkgs_to_distro_sync))
-
-    if ret_code != 0:
-        return resolve_dep_errors(output, pkgs_to_distro_sync)
-    return output
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
