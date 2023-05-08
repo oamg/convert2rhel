@@ -30,13 +30,12 @@ class PreSubscription(actions.Action):
     def run(self):
         super(PreSubscription, self).run()
 
-        print(toolopts.tool_opts.no_rhsm)
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
             return
 
         try:
-            # TODO: Check later if we can move this piece to be an independant
+            # TODO(r0x0d): Check later if we can move this piece to be an independant
             # check, rather than one step in the pre-subscription, as this is
             # not only used for subscription-manager, but for installing the
             # packages later with yum transaction.

@@ -65,10 +65,6 @@ def summary(results, include_all_reports=False, with_colors=True):
         * Some action_id have results that are not successes (warnings, errors...)
             * For those cases, we only want to print whatever is higher than
                 STATUS_CODE['WARNING']
-            * If we print something, let's try to use the correct logger
-                instead of just relying on `info`
-            * If one of the status has no corresponding logger function, we
-                should use just `info`
 
         The order of the message is from the highest priority (ERROR) to the
         lowest priority (WARNING).

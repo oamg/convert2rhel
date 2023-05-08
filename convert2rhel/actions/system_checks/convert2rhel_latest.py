@@ -1,4 +1,4 @@
-# Copyright(C) 2023 Red Hat, Inc.
+# Copyright(C) 2016 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -121,7 +121,6 @@ class Convert2rhelLatest(actions.Action):
         for raw_pkg in raw_output_convert2rhel_versions:
             try:
                 parsed_pkg = parse_pkg_string(raw_pkg)
-
             except ValueError as exc:
                 # Not a valid package string input
                 logger.debug(exc)
