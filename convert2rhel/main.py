@@ -123,7 +123,7 @@ def main():
         utils.restart_system()
 
     except _AnalyzeExit:
-        breadcrumbs.breadcrumbs.finish_collection(success=True, action="analysis")
+        breadcrumbs.breadcrumbs.finish_collection(success=True)
 
         rollback_changes()
 

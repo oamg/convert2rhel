@@ -25,6 +25,7 @@ from datetime import datetime
 
 from convert2rhel import pkghandler, utils
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 
 
 # Path to the migration results of the old breadcrumbs.
@@ -48,7 +49,8 @@ class Breadcrumbs(object):
     """
 
     def __init__(self):
-        self.activity = "conversion"
+        # Record what type of convert2rhel run we are performing.  Valid options right now are convert or analyze.
+        self.activity = "null"
         # Version of the JSON schema of the breadcrumbs file. To be changed when the JSON schema changes.
         self.version = "1"
         # The convert2rhel command as executed by the user including all the options.
@@ -71,11 +73,10 @@ class Breadcrumbs(object):
         self._pkg_object = None
         # Flag to inform the user about DISABLE_TELEMETRY. If not informed, we shouldn't save rhsm_facts.
         self._inform_telemetry = False
-        # Record what type of convert2rhel run we are performing.  Valid options right now are convert or analyze.
-        self.action = "convert"
 
     def collect_early_data(self):
         """Set data which is accessible before the conversion"""
+        self._set_activity()
         self._set_pkg_object()
         self._set_executed()
         self._set_nevra()
@@ -83,19 +84,16 @@ class Breadcrumbs(object):
         self._set_source_os()
         self._set_started()
 
-    def finish_collection(self, success=False, action="convert"):
+    def finish_collection(self, success=False):
         """Set the final data for breadcrumbs after the conversion ends.
 
         :param success: Flag to determinate the if the conversion process was
             successfull.
         :type success: bool
-        :param action: The action used during the conversion
-        :type action: str
         """
         self.success = success
-        self.action = action
 
-        if success and action == "convert":
+        if success and self.activity == "conversion":
             self._set_target_os()
 
         self._set_ended()
@@ -103,6 +101,10 @@ class Breadcrumbs(object):
         self._save_migration_results()
         if self._inform_telemetry and "CONVERT2RHEL_DISABLE_TELEMETRY" not in os.environ:
             self._save_rhsm_facts()
+
+    def _set_activity(self):
+        """Set the activity that convert2rhel is going to perform"""
+        self.activity = tool_opts.command
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
@@ -173,7 +175,6 @@ class Breadcrumbs(object):
         return {
             "version": self.version,
             "activity": self.activity,
-            "action": self.action,
             "packages": [{"nevra": self.nevra, "signature": self.signature}],
             "executed": self.executed,
             "success": self.success,
