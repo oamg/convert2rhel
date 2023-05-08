@@ -41,6 +41,28 @@ _COMMAND_TO_ACTIVITY = {
     "analyse": "analysis",
 }
 
+ARGS_WITH_VALUES = [
+    "-u",
+    "--username",
+    "-p",
+    "--password",
+    "-f",
+    "--password-from-file",
+    "-k",
+    "--activationkey",
+    "-o",
+    "--org",
+    "--pool",
+    "--serverurl",
+]
+PARENT_ARGS = ["--debug", "--help", "-h", "--version"]
+
+# For a list of modified rpm files before the conversion starts
+PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
+
+# For a list of modified rpm files after the conversion finishes for comparison purposes
+POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
+
 
 class ToolOpts(object):
     def __init__(self):
@@ -82,13 +104,16 @@ class ToolOpts(object):
 class CLI(object):
     def __init__(self):
         self._parser = self._get_argparser()
+        self._shared_options_parser = argparse.ArgumentParser(add_help=False)
         self._register_options()
+        self._register_commands()
         self._process_cli_options()
 
     @staticmethod
     def _get_argparser():
         usage = (
             "\n"
+            "  convert2rhel\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
@@ -97,15 +122,32 @@ class CLI(object):
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]"
+            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+            r"  convert2rhel {analyze}"
             "\n\n"
             "*WARNING* The tool needs to be run under the root user"
         )
         return argparse.ArgumentParser(
-            prog="convert2rhel",
-            conflict_handler="resolve",
-            usage=usage,
-            add_help=False,
+            conflict_handler="resolve", usage=usage, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+
+    def _register_commands(self):
+        """ """
+        subparsers = self._parser.add_subparsers(title="Subcommands", dest="command")
+        self._analyze_parser = subparsers.add_parser(
+            "analyze",
+            help="Run all Convert2RHEL initial checks up until the "
+            " Point of no Return (PONR) and generate a report with the findings."
+            " A rollback is initiated after the checks to put the system back"
+            " in the original state.",
+            parents=[self._shared_options_parser],
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
+        self._convert_parser = subparsers.add_parser(
+            "convert",
+            help="Convert the system.",
+            parents=[self._shared_options_parser],
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
     def _register_options(self):
@@ -122,15 +164,27 @@ class CLI(object):
             version=__version__,
             help="Show convert2rhel version and exit.",
         )
+        # TODO: check if this option is suited to be a shared option
+        self._parser.add_argument(
+            "--config_file",
+            action="append",
+            help="The configuration file is an optional way to safely pass either a user password or an activation key",
+        )
+        # Duplicating both `--debug`` options here as we want to make it
+        # available for any other basic operation that we run without a
+        # subcommand in mind, and, it is a shared option so we can share it
+        # between any subcommands we may create in the future.
         self._parser.add_argument(
             "--debug",
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
         )
-        # Importing here instead of on top of the file to avoid cyclic dependency
-        from convert2rhel.systeminfo import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
-
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
+            "--debug",
+            action="store_true",
+            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
+        )
+        self._shared_options_parser.add_argument(
             "--no-rpm-va",
             action="store_true",
             help="Skip gathering changed rpm files using"
@@ -139,7 +193,7 @@ class CLI(object):
             " to show you what rpm files have been affected by the conversion."
             % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
             "--enablerepo",
             metavar="repoidglob",
             action="append",
@@ -149,7 +203,7 @@ class CLI(object):
             " to override the default RHEL repoids that convert2rhel enables through"
             " subscription-manager.",
         )
-        self._parser.add_argument(
+        self._shared_options_parser.add_argument(
             "--disablerepo",
             metavar="repoidglob",
             action="append",
@@ -163,9 +217,9 @@ class CLI(object):
         self._add_automation_options()
 
     def _add_automation_options(self):
-        group = self._parser.add_argument_group(
-            "Automation Options",
-            "The following options are used to automate the installation",
+        group = self._shared_options_parser.add_argument_group(
+            title="Automation Options",
+            description="The following options are used to automate the installation",
         )
         group.add_argument(
             "-r",
@@ -180,9 +234,9 @@ class CLI(object):
         )
 
     def _add_alternative_installation_options(self):
-        group = self._parser.add_argument_group(
-            "Alternative Installation Options",
-            "The following options are required if you do not intend on using subscription-manager",
+        group = self._shared_options_parser.add_argument_group(
+            title="Alternative Installation Options",
+            description="The following options are required if you do not intend on using subscription-manager",
         )
         group.add_argument(
             "--disable-submgr",
@@ -192,15 +246,15 @@ class CLI(object):
         group.add_argument(
             "--no-rhsm",
             action="store_true",
-            help="Do not use subscription-manager. Use custom repositories instead. See --enablerepo/--disablerepo"
-            " options. Without this option, subscription-manager is used to access RHEL repositories by default."
-            " Using this option requires specifying --enablerepo as well.",
+            help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
+            " options. Without this option, the subscription-manager is used to access RHEL repositories by default."
+            " Using this option requires to have the --enablerepo specified.",
         )
 
     def _add_subscription_manager_options(self):
-        group = self._parser.add_argument_group(
-            "Subscription Manager Options",
-            "The following options are specific to using subscription-manager.",
+        group = self._shared_options_parser.add_argument_group(
+            title="Subscription Manager Options",
+            description="The following options are specific to using subscription-manager.",
         )
         group.add_argument(
             "-u",
@@ -303,9 +357,26 @@ class CLI(object):
 
         warn_on_unsupported_options()
 
-        parsed_opts = self._parser.parse_args()
+        args = []
+        argv = sys.argv[1:]
 
-        global tool_opts  # pylint: disable=C0103
+        # algorithm function to properly organize all CLI args
+        argv = _organize_cli_options(argv)
+
+        has_subcommand = False
+        for index, argument in enumerate(argv):
+            if argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
+                # subcommand is present in argv list
+                has_subcommand = True
+                break
+
+        if not has_subcommand:
+            args.insert(0, "convert")
+
+        args.extend(argv)
+        print(args)
+
+        parsed_opts = self._parser.parse_args(args)
 
         if parsed_opts.debug:
             tool_opts.debug = True
@@ -591,6 +662,30 @@ def _validate_serverurl_parsing(url_parts):
         raise ValueError("A hostname must be specified in a subscription-manager serverurl")
 
     return url_parts
+
+
+def _organize_cli_options(argv):
+    """Organize the command line options used with the tool"""
+    # if an arg is a command or parent parser (_parser) we need to reorganize them to be infront of the other args
+    args = []
+    arg_pos = 0
+    if len(argv):
+        # Add each argument based on the position of the parent options
+        # Reorder each to be before options other than parent ones.
+        for index, argument in enumerate(argv):
+            if argument in PARENT_ARGS and argv[index - 1] not in ARGS_WITH_VALUES:
+                args.insert(arg_pos, argument)
+                arg_pos += 1
+            # If the argument is either `convert` or `analyze` and not after
+            # an argument that accepts a value, then we do the reordering
+            elif argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
+                args.insert(arg_pos, argument)
+            else:
+                # Append here anything else that is in the argv.
+                args.append(argument)
+    else:
+        args.append("convert")
+    return args
 
 
 # Code to be executed upon module import

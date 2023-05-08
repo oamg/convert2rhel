@@ -33,7 +33,10 @@ from six.moves import mock
 
 
 def mock_cli_arguments(args):
-    """Return a list of cli arguments where the first one is always the name of the executable, followed by 'args'."""
+    """
+    Return a list of cli arguments where the first one is always the name of
+    the executable, followed by 'args'.
+    """
     return sys.argv[0:1] + args
 
 
@@ -557,7 +560,7 @@ def test_validate_serverurl_parsing(url_parts, message):
         convert2rhel.toolopts._validate_serverurl_parsing(url_parts)
 
 
-def test__log_command_used(caplog, monkeypatch):
+def test_log_command_used(caplog, monkeypatch):
     obfuscation_string = "*" * 5
     input_command = mock_cli_arguments(
         ["--username", "uname", "--password", "123", "--activationkey", "456", "--org", "789"]
@@ -610,6 +613,23 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
 @pytest.mark.parametrize(
     ("argv", "expected"),
     (
+        (mock_cli_arguments(["convert"]), "convert"),
+        (mock_cli_arguments(["analyze"]), "analyze"),
+        (mock_cli_arguments([]), "convert"),
+    ),
+)
+def test_pre_assessment_set(argv, expected, monkeypatch):
+    tool_opts.__init__()
+    monkeypatch.setattr(sys, "argv", argv)
+
+    convert2rhel.toolopts.CLI()
+
+    assert tool_opts.command == expected
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
         (
             mock_cli_arguments(["--disablerepo", "*", "--enablerepo", "*"]),
             "Duplicate repositories were found across disablerepo and enablerepo options",
@@ -653,3 +673,21 @@ def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypat
     convert2rhel.toolopts.CLI()
 
     assert expected not in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    (
+        ([], ["convert"]),
+        (["convert", "--debug"], ["--debug", "convert"]),
+        (["analyze", "--debug"], ["--debug", "analyze"]),
+        (["--password=convert", "--debug", "convert"], ["--debug", "convert", "--password=convert"]),
+        (
+            ["--username", "convert", "-h", "--password", "xxxx", "--debug", "convert", "--pool", "xxxx"],
+            ["-h", "--debug", "convert", "--username", "convert", "--password", "xxxx", "--pool", "xxxx"],
+        ),
+    ),
+)
+def test_organize_cli_options(argv, expected, monkeypatch):
+    monkeypatch.setattr(sys, "argv", argv)
+    assert convert2rhel.toolopts._organize_cli_options(argv) == expected
