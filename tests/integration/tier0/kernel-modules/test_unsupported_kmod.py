@@ -117,7 +117,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
         c2r.sendline("y")
 
         # Stop conversion before the point of no return as we do not need to run the full conversion
-        assert c2r.expect("All loaded kernel modules are available in RHEL", timeout=600) == 0
+        assert c2r.expect("All loaded kernel modules are available in RHEL") == 0
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
