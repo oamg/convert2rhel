@@ -44,11 +44,6 @@ versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C01
 # Regular expressions used to find package names in yum output
 #
 
-# This regex finds package NEVRs + arch (name epoch version release and
-# architechture) in a string.  Note that the regex requires at least two dashes but the
-# NEVR can contain more than that.  For instance: gcc-c++-4.8.5-44.0.3.el7.x86_64
-PKG_NEVR = r"\b(?:([0-9]+):)?(\S+)-(\S+)-(\S+)\b"
-
 # This regex finds if a package is in ENVR/ENVRA format by searching for the epoch field
 # being the first set of characters in the package string
 ENVRA_ENVR_FORMAT = re.compile(r"^\d+:")
