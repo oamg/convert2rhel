@@ -177,6 +177,18 @@ class bcolors:
 
 
 def colorize(message, color="OKGREEN"):
+    """
+    Add ANSI color escapes around a message.
+
+    :param message: The message to add ANSI color escapes to.
+    :type message: str
+    :keyword color: The "color" to make the message.  Colors are taken from
+        :class:`bcolors`. default: "OKGREEN"
+    :type color: str
+    :returns: String that contains the message encased in the ANSI escape
+        sequence for `color`
+    :rtype: str
+    """
     return "".join((getattr(bcolors, color), message, bcolors.ENDC))
 
 
