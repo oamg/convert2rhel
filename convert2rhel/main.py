@@ -118,6 +118,7 @@ def main():
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_ponr_changes()
+        loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
         utils.restart_system()
@@ -178,11 +179,12 @@ def main():
 
 
 #
-# Boilerplate Task
+# Boilerplate Tasks
 #
 
 
 def perform_boilerplate():
+    """Standard interactions with the user prior to doing any conversion work."""
     # license agreement
     loggerinst.task("Prepare: Show Red Hat software EULA")
     show_eula()
@@ -205,11 +207,12 @@ def show_eula():
 
 
 #
-# Gathering system information
+# Preparing the System
 #
 
 
 def gather_system_info():
+    """Retrieve information about the system to be converted"""
     # gather system information
     loggerinst.task("Prepare: Gather system information")
     systeminfo.system_info.resolve_system_info()
@@ -218,6 +221,7 @@ def gather_system_info():
 
 
 def prepare_system():
+    """Setup the environment to do the conversion within"""
     loggerinst.task("Prepare: Clear YUM/DNF version locks")
     pkghandler.clear_versionlock()
 
@@ -225,7 +229,13 @@ def prepare_system():
     pkgmanager.clean_yum_metadata()
 
 
+#
+# Running the conversion
+#
+
+
 def post_ponr_changes():
+    """Start the conversion itself"""
     loggerinst.info("Starting Conversion")
     post_ponr_conversion()
 
@@ -246,8 +256,6 @@ def post_ponr_changes():
     loggerinst.task("Final: Update RHSM custom facts")
     subscription.update_rhsm_custom_facts()
 
-    loggerinst.info("\nConversion successful!\n")
-
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
@@ -264,7 +272,11 @@ def post_ponr_conversion():
     redhatrelease.YumConf().patch()
     loggerinst.task("Convert: Lock releasever in RHEL repositories")
     subscription.lock_releasever_in_rhel_repositories()
-    return
+
+
+#
+# Cleanup and exit
+#
 
 
 def is_help_msg_exit(process_phase, err):
@@ -296,5 +308,3 @@ def rollback_changes():
             loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
-
-    return

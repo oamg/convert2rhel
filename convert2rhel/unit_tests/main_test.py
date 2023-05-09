@@ -353,7 +353,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     assert caplog.records[-2].levelname == "CRITICAL"
 
 
-def test_main_rollback_analyze_exit_phase(monkeypatch):
+def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
@@ -385,8 +385,8 @@ def test_main_rollback_analyze_exit_phase(monkeypatch):
     monkeypatch.setattr(report, "summary", report_summary_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
-
     monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
+    global_tool_opts.activity = "analysis"
 
     assert main.main() == 0
     assert require_root_mock.call_count == 1

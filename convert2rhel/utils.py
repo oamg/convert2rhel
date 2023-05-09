@@ -897,6 +897,7 @@ def remove_orphan_folders():
 
 
 def get_terminal_size():
+    """Retrieve the terminal size on Linux systems"""
     try:
         # Python 3.2+
         return shutil.get_terminal_size()

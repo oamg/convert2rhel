@@ -46,50 +46,105 @@ def _mock_pkg_information():
     )
 
 
-@centos7
-def test_collect_early_data(pretend_os, _mock_pkg_obj, _mock_pkg_information, monkeypatch):
+@pytest.fixture
+def breadcrumbs_instance(_mock_pkg_obj, _mock_pkg_information, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
     monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
     monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: [_mock_pkg_information])
     breadcrumbs.breadcrumbs.collect_early_data()
 
-    # Asserting that the populated fields are not null (or None), the value
-    # checks for them is actually checked in their individual unit_tests.
-    assert breadcrumbs.breadcrumbs.signature != "null"
-    assert breadcrumbs.breadcrumbs.source_os != "null"
-    assert breadcrumbs.breadcrumbs.nevra != "null"
-    assert breadcrumbs.breadcrumbs.executed != "null"
-    assert breadcrumbs.breadcrumbs.activity_started != "null"
-    assert breadcrumbs.breadcrumbs._pkg_object is not None
+    yield breadcrumbs.Breadcrumbs()
 
 
-@pytest.mark.parametrize(
-    ("success", "action"),
-    ((False, "convert"), (False, "analysis"), (True, "convert"), (True, "analysis")),
-)
-@centos7
-def test_finish_collection(pretend_os, success, action, monkeypatch):
+@pytest.fixture
+def finish_collection_mocks(monkeypatch):
     save_migration_results_mock = mock.Mock()
     save_rhsm_facts_mock = mock.Mock()
 
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_migration_results", save_migration_results_mock)
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_rhsm_facts", save_rhsm_facts_mock)
+    yield {"save_migration_results": save_migration_results_mock, "save_rhsm_facts": save_rhsm_facts_mock}
+
+
+@centos7
+def test_collect_early_data(pretend_os, breadcrumbs_instance, global_tool_opts, monkeypatch):
+    global_tool_opts.activity = "analysis"
+
+    breadcrumbs_instance.collect_early_data()
+
+    # Asserting that the populated fields are not null (or None), the value
+    # checks for them is actually checked in their individual unit_tests.
+    assert breadcrumbs_instance.activity == "analysis"
+    assert breadcrumbs_instance.signature != "null"
+    assert breadcrumbs_instance.source_os != "null"
+    assert breadcrumbs_instance.nevra != "null"
+    assert breadcrumbs_instance.executed != "null"
+    assert breadcrumbs_instance.activity_started != "null"
+    assert breadcrumbs_instance._pkg_object is not None
+
+
+@pytest.mark.parametrize(
+    ("activity"),
+    (
+        "conversion",
+        "analysis",
+    ),
+)
+@centos7
+def test_finish_collection_success(
+    pretend_os, activity, breadcrumbs_instance, global_tool_opts, finish_collection_mocks, monkeypatch
+):
+    monkeypatch.setattr(
+        breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
+    )
+    monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
     # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_inform_telemetry", True)
+    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
 
-    breadcrumbs.breadcrumbs.finish_collection(success=success, action=action)
+    global_tool_opts.activity = activity
+    breadcrumbs_instance.collect_early_data()
 
-    if success:
-        assert breadcrumbs.breadcrumbs.success
-        assert breadcrumbs.breadcrumbs.target_os != "null"
+    breadcrumbs_instance.finish_collection(success=True)
+
+    assert breadcrumbs_instance.success
+    assert breadcrumbs_instance.activity == activity
+
+    if breadcrumbs_instance.activity == "conversion":
+        assert breadcrumbs_instance.target_os != "null"
     else:
-        assert not breadcrumbs.breadcrumbs.success
-        assert breadcrumbs.breadcrumbs.target_os == "null"
+        assert breadcrumbs_instance.target_os == "null"
 
-    assert breadcrumbs.breadcrumbs.data["action"] == action
-    assert save_migration_results_mock.call_count == 1
-    assert save_rhsm_facts_mock.call_count == 1
+    assert finish_collection_mocks["save_migration_results"].call_count == 1
+    assert finish_collection_mocks["save_rhsm_facts"].call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("activity"),
+    (
+        "conversion",
+        "analysis",
+    ),
+)
+@centos7
+def test_finish_collection_failure(
+    pretend_os, activity, breadcrumbs_instance, global_tool_opts, finish_collection_mocks, monkeypatch
+):
+    monkeypatch.setattr(
+        breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
+    )
+    monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
+    # Set to true, pretend that user was informed about collecting data
+    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
+
+    global_tool_opts.activity = activity
+    breadcrumbs_instance.collect_early_data()
+
+    breadcrumbs_instance.finish_collection(success=False)
+
+    assert not breadcrumbs_instance.success
+    assert breadcrumbs_instance.target_os == "null"
+    assert breadcrumbs_instance.activity == activity
+    assert finish_collection_mocks["save_migration_results"].call_count == 1
+    assert finish_collection_mocks["save_rhsm_facts"].call_count == 1
 
 
 @pytest.mark.parametrize(
