@@ -106,7 +106,7 @@ class Breadcrumbs(object):
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
-        self.nevra = pkghandler.get_pkg_nevra(self._pkg_object)
+        self.nevra = pkghandler.get_pkg_nevra(self._pkg_object, include_zero_epoch=True)
 
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""

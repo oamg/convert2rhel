@@ -2292,23 +2292,43 @@ def test_get_vendor(package, expected):
 
 
 @pytest.mark.parametrize(
-    ("pkgmanager_name", "package", "expected"),
+    ("pkgmanager_name", "package", "include_zero_epoch", "expected"),
     (
         (
             "dnf",
             create_pkg_information(name="pkg", epoch="1", version="2", release="3", arch="x86_64"),
+            True,
             "pkg-1:2-3.x86_64",
         ),
         (
             "yum",
             create_pkg_information(name="pkg", epoch="1", version="2", release="3", arch="x86_64"),
+            True,
             "1:pkg-2-3.x86_64",
+        ),
+        (
+            "dnf",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            False,
+            "pkg-2-3.x86_64",
+        ),
+        (
+            "yum",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            False,
+            "pkg-2-3.x86_64",
+        ),
+        (
+            "yum",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            True,
+            "0:pkg-2-3.x86_64",
         ),
     ),
 )
-def test_get_pkg_nevra(pkgmanager_name, package, expected, monkeypatch):
+def test_get_pkg_nevra(pkgmanager_name, package, include_zero_epoch, expected, monkeypatch):
     monkeypatch.setattr(pkgmanager, "TYPE", pkgmanager_name)
-    assert pkghandler.get_pkg_nevra(package) == expected
+    assert pkghandler.get_pkg_nevra(package, include_zero_epoch) == expected
 
 
 @pytest.mark.parametrize(
@@ -2348,9 +2368,7 @@ def test_install_rhel_kernel(pretend_os, monkeypatch):
     )
 
     # 1st scenario: kernels collide; the installed one is already a RHEL kernel = no action.
-    kernel_package = "0:kernel-3.10.0-1127.19.1.el7.x86_64"
-    if pkgmanager.TYPE == "dnf":
-        kernel_package = "kernel-0:3.10.0-1127.19.1.el7.x86_64"
+    kernel_package = "kernel-3.10.0-1127.19.1.el7.x86_64"
 
     utils.run_subprocess.output = "Package %s already installed and latest version" % kernel_package
     pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = True
@@ -2383,14 +2401,14 @@ def test_install_rhel_kernel_already_installed_regexp(pretend_os, monkeypatch):
     )
 
     # RHEL 7
-    utils.run_subprocess.output = "Package 0:kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+    utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
 
     pkghandler.install_rhel_kernel()
 
     assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 1
 
     # RHEL 8
-    utils.run_subprocess.output = "Package kernel-0:4.18.0-193.el8.x86_64 is already installed."
+    utils.run_subprocess.output = "Package kernel-4.18.0-193.el8.x86_64 is already installed."
 
     pkghandler.install_rhel_kernel()
     assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 2

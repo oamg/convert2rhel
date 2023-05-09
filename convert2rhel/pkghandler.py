@@ -501,7 +501,7 @@ def print_pkg_info(pkgs):
     """
     package_info = {}
     for pkg in pkgs:
-        nevra = get_pkg_nevra(pkg)
+        nevra = get_pkg_nevra(pkg, include_zero_epoch=True)
         packager = get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg)
         # Setting repoid as N/A to make it default. Later in the function this
         # value is changed to the actual repoid, if there is one.
@@ -606,6 +606,9 @@ def _get_nevra_from_pkg_obj(pkg_obj):
     Helper function to convert from a RPMInstalledPackage object to a
     PackageNevra object.
 
+    If the `pkg_obj` param is already an instance of `PackageInformation`, we
+    just return the `nevra` property from it.
+
     :param pkg_obj: Instance of a RPMInstalledPackage.
     :type pkg_obj: RPMInstalledPackage
     :return: A new instance of PackageNevra if `pkg_obj` is a
@@ -625,8 +628,14 @@ def _get_nevra_from_pkg_obj(pkg_obj):
 
 
 def get_pkg_nvra(pkg_obj):
-    """Get package NVRA as a string: name, version, release, architecture.
-    Some utilities don't accept the full NEVRA of a package, for example rpm.
+    """
+    Get package NVRA as a string: name, version, release, architecture. Some
+    utilities don't accept the full NEVRA of a package, for example rpm.
+
+    :param pkg_obj: The package object to extract its NVRA
+    :type pkg_obj: RPMInstalledPackage | PackageInformation
+    :return: A formatted string with a package NVRA
+    :rtype: str
     """
     nevra = _get_nevra_from_pkg_obj(pkg_obj)
     return "%s-%s-%s.%s" % (
@@ -637,14 +646,25 @@ def get_pkg_nvra(pkg_obj):
     )
 
 
-def get_pkg_nevra(pkg_obj):
-    """Get package NEVRA as a string: name, epoch, version, release, architecture.
-    Epoch is included when it is present. However it's on a different position when printed by YUM or DNF:
-      YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
-      DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+def get_pkg_nevra(pkg_obj, include_zero_epoch=False):
+    """
+    Get package NEVRA as a string: name, epoch, version, release, architecture.
+    Epoch is included when it is present. However it's on a different position
+    when printed by YUM or DNF.
+
+    Example's::
+        YUM - epoch before name: 7:oraclelinux-release-7.9-1.0.9.el7.x86_64
+        DNF - epoch before version: oraclelinux-release-8:8.2-1.0.8.el8.x86_64
+
+    :param pkg_obj: The package object to extract its NEVRA
+    :type pkg_obj: RPMInstalledPackage | PackageInformation
+    :param include_zero_epoch: Whether to include the epoch as 0 in the string.
+    :type include_zero_epoch: bool
+    :return: A formatted string with a package NEVRA
+    :rtype: str
     """
     nevra = _get_nevra_from_pkg_obj(pkg_obj)
-    epoch = "" if not str(nevra.epoch) else str(nevra.epoch) + ":"
+    epoch = "" if str(nevra.epoch) == "0" and not include_zero_epoch else str(nevra.epoch) + ":"
     if pkgmanager.TYPE == "yum":
         return "%s%s-%s-%s.%s" % (
             epoch,
