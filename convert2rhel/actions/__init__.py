@@ -517,16 +517,26 @@ def run_actions():
 
     This function runs the Actions that occur before the Point of no Return.
     """
+    # Stages are created in the opposite order that they are run in so that
+    # each Stage can know about the Stage that comes after it (via the
+    # next_stage parameter).
+    #
+    # When we call check_dependencies() or run() on the first Stage
+    # (system_checks), it will operate on the first Stage and then recursively
+    # call check_dependencies() or run() on the next_stage.
     pre_ponr_changes = Stage("pre_ponr_changes", "Making recoverable changes")
-    system_checks = Stage("system_checks", "Check whether system is ready for conversion", pre_ponr_changes)
+    system_checks = Stage("system_checks", "Check whether system is ready for conversion", next_stage=pre_ponr_changes)
 
     try:
+        # Check dependencies are satisfied for system_checks and all subsequent
+        # Stages.
         system_checks.check_dependencies()
     except DependencyError as e:
         # We want to fail early if dependencies are not properly set.  This
         # way we should fail in testing before release.
         logger.critical("Some dependencies were set on Actions but not present in convert2rhel: %s" % e)
 
+    # Run the Actions in system_checks and all subsequent Stages.
     results = system_checks.run()
 
     # Format results as a dictionary:
