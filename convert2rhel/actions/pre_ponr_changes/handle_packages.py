@@ -37,12 +37,18 @@ class ListThirdPartyPackages(actions.Action):
         logger.task("Convert: List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
         if third_party_pkgs:
-            logger.warning(
+            pkg_list = pkghandler.format_pkg_info(third_party_pkgs)
+            message = (
                 "Only packages signed by %s are to be"
                 " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n" % system_info.name
+                " for the following third party packages:\n%s" % (system_info.name, ", ".join(pkg_list))
             )
-            pkghandler.print_pkg_info(third_party_pkgs)
+            logger.warning(message)
+            self.add_message(
+                level="WARNING",
+                id="THIRD_PARTY_PACKAGE_DETECTED",
+                message=message,
+            )
         else:
             logger.info("No third party packages installed.")
 
@@ -60,8 +66,8 @@ class RemoveExcludedPackages(actions.Action):
         logger.task("Convert: Remove excluded packages")
         logger.info("Searching for the following excluded packages:\n")
         try:
-            pkgs_to_remove = pkghandler._get_packages_to_remove(system_info.excluded_pkgs)
-            pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove)
+            pkgs_to_remove = sorted(pkghandler._get_packages_to_remove(system_info.excluded_pkgs))
+            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove))
 
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.
@@ -69,7 +75,23 @@ class RemoveExcludedPackages(actions.Action):
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
             #   - When we can't remove a package.
-            self.set_result(level="ERROR", id="PACKAGE_REMOVAL_FAILED", message=str(e))
+            self.set_result(level="ERROR", id="EXCLUDED_PACKAGE_REMOVAL_FAILED", message=str(e))
+            return
+
+        # shows which packages were not removed, if false, all packages were removed
+        pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+        if pkgs_not_removed:
+            self.add_message(
+                level="WARNING",
+                id="EXCLUDED_PACKAGES_NOT_REMOVED",
+                message="The following packages were not removed: %s" % ", ".join(pkgs_not_removed),
+            )
+        else:
+            self.add_message(
+                level="INFO",
+                id="EXCLUDED_PACKAGES_REMOVED",
+                message="The following packages were removed: %s" % ", ".join(pkgs_removed),
+            )
 
 
 class RemoveRepositoryFilesPackages(actions.Action):
@@ -96,8 +118,8 @@ class RemoveRepositoryFilesPackages(actions.Action):
         logger.task("Convert: Remove packages containing .repo files")
         logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
         try:
-            pkgs_to_remove = pkghandler._get_packages_to_remove(system_info.repofile_pkgs)
-            pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove)
+            pkgs_to_remove = sorted(pkghandler._get_packages_to_remove(system_info.repofile_pkgs))
+            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove))
 
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.
@@ -105,4 +127,20 @@ class RemoveRepositoryFilesPackages(actions.Action):
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
             #   - When we can't remove a package.
-            self.set_result(level="ERROR", id="PACKAGE_REMOVAL_FAILED", message=str(e))
+            self.set_result(level="ERROR", id="REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED", message=str(e))
+            return
+
+        # shows which packages were not removed, if false, all packages were removed
+        pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+        if pkgs_not_removed:
+            self.add_message(
+                level="WARNING",
+                id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
+                message="The following packages were not removed: %s" % ", ".join(pkgs_not_removed),
+            )
+        else:
+            self.add_message(
+                level="INFO",
+                id="REPOSITORY_FILE_PACKAGES_REMOVED",
+                message="The following packages were removed: %s" % ", ".join(pkgs_removed),
+            )

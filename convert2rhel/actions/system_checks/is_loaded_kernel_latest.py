@@ -55,6 +55,11 @@ class IsLoadedKernelLatest(actions.Action):
         reposdir = get_hardcoded_repofiles_dir()
         if reposdir and not system_info.has_internet_access:
             logger.warning("Skipping the check as no internet connection has been detected.")
+            self.add_message(
+                level="WARNING",
+                id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
+                message=("Skipping the check as no internet connection has been detected."),
+            )
             return
 
         # If the reposdir variable is not empty, meaning that it detected the
@@ -80,6 +85,15 @@ class IsLoadedKernelLatest(actions.Action):
                 "the %s comparison.\n"
                 "Beware, this could leave your system in a broken state." % package_to_check
             )
+            self.add_message(
+                level="WARNING",
+                id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                message=(
+                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                    "the %s comparison.\n"
+                    "Beware, this could leave your system in a broken state." % package_to_check
+                ),
+            )
             return
 
         # Look up for available kernel (or kernel-core) packages versions available
@@ -95,6 +109,14 @@ class IsLoadedKernelLatest(actions.Action):
             logger.warning(
                 "Couldn't fetch the list of the most recent kernels available in "
                 "the repositories. Skipping the loaded kernel check."
+            )
+            self.add_message(
+                level="WARNING",
+                id="UNABLE_TO_FETCH_RECENT_KERNELS",
+                message=(
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                ),
             )
             return
 

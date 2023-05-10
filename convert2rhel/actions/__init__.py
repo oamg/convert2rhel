@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 #:      and start to use it with console.redhat.com
 #:
 #: :SUCCESS: no problem.
+#: :INFO: informational message to the user, no problem.
 #: :WARNING: the problem is just a warning displayed to the user. (unused,
 #:      warnings are currently emitted directly from the Action).
 #: :SKIP: the action could not be run because a dependent Action failed.
@@ -67,6 +68,7 @@ logger = logging.getLogger(__name__)
 #:        runs the Actions will set this.
 STATUS_CODE = {
     "SUCCESS": 0,
+    "INFO": 25,
     "WARNING": 51,
     "SKIP": 101,
     "OVERRIDABLE": 152,
@@ -109,10 +111,6 @@ def _action_defaults_to_success(func):
         return return_value
 
     return wrapper
-
-
-#: Used as a sentinel value for Action.set_result() method.
-_NO_USER_VALUE = object()
 
 
 class ActionError(Exception):
@@ -277,6 +275,22 @@ class ActionMessageBase:
         self.id = id
         self.level = STATUS_CODE[level]
         self.message = message
+
+    def __eq__(self, other):
+        if self.level == other.level and self.id == other.id and self.message == other.message:
+            return True
+        return False
+
+    def __hash__(self):
+        return hash((self.level, self.id, self.message))
+
+    def __repr__(self):
+        return "%s(level=%s, id=%s, message=%s)" % (
+            self.__class__.__name__,
+            _STATUS_NAME_FROM_CODE[self.level],
+            self.id,
+            self.message,
+        )
 
     def to_dict(self):
         """

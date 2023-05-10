@@ -39,6 +39,12 @@ class CustomReposAreValid(actions.Action):
 
         if not tool_opts.no_rhsm:
             logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
+
+            self.add_message(
+                level="INFO",
+                id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                message="Skipping the check of repositories due to the use of RHSM for the conversion.",
+            )
             return
 
         output, ret_code = call_yum_cmd(

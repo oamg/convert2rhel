@@ -129,6 +129,21 @@ class TestEFIChecks(unittest.TestCase):
         )
         self.assertIn(warn_msg, efi.logger.warning_msgs)
 
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="UEFI_BOOTLOADER_MISMATCH",
+                    message=(
+                        "The current UEFI bootloader '0002' is not referring to any binary UEFI"
+                        " file located on local EFI System Partition (ESP)."
+                    ),
+                ),
+            )
+        )
+        assert expected.issuperset(self.efi_action.messages)
+        assert expected.issubset(self.efi_action.messages)
+
     @unit_tests.mock(grub, "is_efi", lambda: True)
     @unit_tests.mock(grub, "is_secure_boot", lambda: False)
     @unit_tests.mock(efi.system_info, "arch", "x86_64")

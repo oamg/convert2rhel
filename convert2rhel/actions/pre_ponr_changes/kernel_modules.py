@@ -215,6 +215,15 @@ class EnsureKernelModulesCompatibility(actions.Action):
                     " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
                 )
+                self.add_message(
+                    level="WARNING",
+                    id="ALLOW_UNAVAILABLE_KERNEL_MODULES",
+                    message=(
+                        "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
+                        " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
+                        "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
+                    ),
+                )
                 return
 
             # If there is any unsupported kmods found, set the result to error

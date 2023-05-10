@@ -78,3 +78,18 @@ class TestCustomReposAreValid(unittest.TestCase):
             "Unable to access the repositories passed through the --enablerepo option. ",
             self.custom_repos_are_valid_action.result.message,
         )
+
+    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", False)
+    def test_custom_repos_are_valid_skip(self):
+        self.custom_repos_are_valid_action.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="INFO",
+                    id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                    message="Skipping the check of repositories due to the use of RHSM for the conversion.",
+                ),
+            )
+        )
+        assert expected.issuperset(self.custom_repos_are_valid_action.messages)
+        assert expected.issubset(self.custom_repos_are_valid_action.messages)

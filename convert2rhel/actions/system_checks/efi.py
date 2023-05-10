@@ -63,7 +63,7 @@ class Efi(actions.Action):
             )
             return
 
-        # Get information about the bootloader. Currently the data is not used, but it's
+        # Get information about the bootloader. Currently, the data is not used, but it's
         # good to check that we can obtain all the required data before the PONR.
         try:
             efiboot_info = grub.EFIBootInfo()
@@ -77,6 +77,14 @@ class Efi(actions.Action):
             logger.warning(
                 "The current UEFI bootloader '%s' is not referring to any binary UEFI"
                 " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+            )
+            self.add_message(
+                level="WARNING",
+                id="UEFI_BOOTLOADER_MISMATCH",
+                message=(
+                    "The current UEFI bootloader '%s' is not referring to any binary UEFI"
+                    " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+                ),
             )
         # TODO(pstodulk): print warning when multiple orig. UEFI entries point
         # to the original system (e.g. into the centos/ directory..). The point is

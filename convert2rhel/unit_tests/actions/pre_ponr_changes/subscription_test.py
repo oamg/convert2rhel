@@ -117,9 +117,10 @@ def test_subscribe_system_no_rhsm_option_detected(subscribe_system_instance, mon
 
 
 def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
+    non_available_repos = ["subscription_repo", "rhel_repo"]
     monkeypatch.setattr(subscription, "subscribe_system", mock.Mock())
     monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
-    monkeypatch.setattr(subscription, "check_needed_repos_availability", mock.Mock())
+    monkeypatch.setattr(subscription, "check_needed_repos_availability", mock.Mock(return_value=non_available_repos))
     monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
     monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
 

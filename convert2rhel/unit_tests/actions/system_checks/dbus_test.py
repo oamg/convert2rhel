@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 
-from convert2rhel import unit_tests
+from convert2rhel import actions, unit_tests
 from convert2rhel.actions.system_checks import dbus
 
 
@@ -65,3 +65,22 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global
             " start dbus`"
         ),
     )
+
+
+def test_check_dbus_is_running_warning_message(
+    monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action
+):
+    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = True
+    dbus_is_running_action.run()
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="WARNING",
+                id="DBUS_IS_RUNNING_CHECK_SKIP",
+                message="Skipping the check because we have been asked not to subscribe this system to RHSM.",
+            ),
+        )
+    )
+    assert expected.issuperset(dbus_is_running_action.messages)
+    assert expected.issubset(dbus_is_running_action.messages)

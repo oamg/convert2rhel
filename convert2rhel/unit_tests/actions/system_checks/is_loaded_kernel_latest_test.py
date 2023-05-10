@@ -51,7 +51,6 @@ class TestIsLoadedKernelLatest:
         message = (
             "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
         )
-
         is_loaded_kernel_latest_action.run()
 
         assert message in caplog.records[-1].message
@@ -325,9 +324,20 @@ class TestIsLoadedKernelLatest:
     ):
         monkeypatch.setattr(is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
         monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", False)
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
+                    message=("Skipping the check as no internet connection has been detected."),
+                ),
+            )
+        )
 
         is_loaded_kernel_latest_action.run()
         assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
+        assert expected.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     @pytest.mark.parametrize(
@@ -335,21 +345,34 @@ class TestIsLoadedKernelLatest:
             "repoquery_stdout",
             "return_code",
             "unsupported_skip",
-            "expected",
+            "expected_level",
+            "expected_id",
+            "expected_message",
         ),
         (
             pytest.param(
                 "",
                 0,
                 "1",
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+                "WARNING",
+                "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                (
+                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                    "the kernel-core comparison.\n"
+                    "Beware, this could leave your system in a broken state."
+                ),
                 id="Unsupported skip with environment var set to 1",
             ),
             pytest.param(
                 "",
                 1,
                 None,
-                "Couldn't fetch the list of the most recent kernels available",
+                "WARNING",
+                "UNABLE_TO_FETCH_RECENT_KERNELS",
+                (
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                ),
                 id="Unsupported skip with environment var not set",
             ),
         ),
@@ -360,7 +383,9 @@ class TestIsLoadedKernelLatest:
         repoquery_stdout,
         return_code,
         unsupported_skip,
-        expected,
+        expected_level,
+        expected_id,
+        expected_message,
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
@@ -394,10 +419,13 @@ class TestIsLoadedKernelLatest:
             "environ",
             {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
         )
-
+        expected_set = set((actions.ActionMessage(level=expected_level, id=expected_id, message=expected_message),))
         is_loaded_kernel_latest_action.run()
-
-        assert expected in caplog.records[-1].message
+        print(is_loaded_kernel_latest_action.messages)
+        print(expected_set)
+        assert expected_message in caplog.records[-1].message
+        assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected_set.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     @pytest.mark.parametrize(

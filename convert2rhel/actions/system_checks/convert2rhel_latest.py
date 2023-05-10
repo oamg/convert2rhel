@@ -60,6 +60,11 @@ class Convert2rhelLatest(actions.Action):
 
         if not system_info.has_internet_access:
             logger.warning("Skipping the check because no internet connection has been detected.")
+            self.add_message(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
+                message="Skipping the check because no internet connection has been detected.",
+            )
             return
 
         repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
@@ -90,6 +95,14 @@ class Convert2rhelLatest(actions.Action):
             logger.warning(
                 "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
                 "repoquery failed with the following output:\n%s" % (raw_output_convert2rhel_versions)
+            )
+            self.add_message(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_SKIP",
+                message=(
+                    "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
+                    "repoquery failed with the following output:\n%s" % (raw_output_convert2rhel_versions)
+                ),
             )
             return
 
@@ -164,11 +177,28 @@ class Convert2rhelLatest(actions.Action):
                         " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
                         " instead."
                     )
-
+                    self.add_message(
+                        level="WARNING",
+                        id="DEPRECATED_ENVIRONMENT_VARIABLE",
+                        message=(
+                            "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
+                            " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
+                            " instead."
+                        ),
+                    )
                 logger.warning(
                     "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
                     % (installed_convert2rhel_version, latest_available_version[1])
+                )
+                self.add_message(
+                    level="WARNING",
+                    id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
+                    message=(
+                        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                        "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
+                        % (installed_convert2rhel_version, latest_available_version[1])
+                    ),
                 )
 
             else:
@@ -177,6 +207,15 @@ class Convert2rhelLatest(actions.Action):
                         "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                         "We encourage you to update to the latest version."
                         % (installed_convert2rhel_version, latest_available_version[1])
+                    )
+                    self.add_message(
+                        level="WARNING",
+                        id="OUTDATED_CONVERT2RHEL_VERSION",
+                        message=(
+                            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                            "We encourage you to update to the latest version."
+                            % (installed_convert2rhel_version, latest_available_version[1])
+                        ),
                     )
 
                 else:
