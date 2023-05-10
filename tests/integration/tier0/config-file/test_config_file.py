@@ -49,14 +49,28 @@ def test_user_path_std_filename(convert2rhel):
 
 @pytest.mark.test_config_cli_priority
 def test_user_path_cli_priority(convert2rhel):
-    config = [Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]
+    config = [
+        Config(
+            "~/.convert2rhel.ini",
+            "[subscription_manager]\nusername = config_username\npassword = config_password\nacitvation_key = config_key\norg = config_org",
+        )
+    ]
     create_files(config)
 
     with convert2rhel("--no-rpm-va --password password --debug") as c2r:
+        # Found options in config file
+        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
+
+        c2r.expect(
+            "WARNING - You have passed either the RHSM password or activation key through both the command line and"
+            " the configuration file. We're going to use the command line values."
+        )
         if (
             c2r.expect(
-                "WARNING - You have passed either the RHSM password or activation key through both the command line and"
+                "WARNING - You have passed either the RHSM username or org through both the command line and"
                 " the configuration file. We're going to use the command line values."
             )
             == 0

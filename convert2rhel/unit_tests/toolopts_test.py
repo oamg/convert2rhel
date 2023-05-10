@@ -358,19 +358,30 @@ def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch):
     ("content", "output"),
     (
         (
+            "[subscription_manager]\nusername = correct_username",
+            {"username": "correct_username", "password": None, "activation_key": None, "org": None},
+        ),
+        (
             "[subscription_manager]\npassword = correct_password",
-            {"password": "correct_password", "activation_key": None},
+            {"username": None, "password": "correct_password", "activation_key": None, "org": None},
         ),
         (
             "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
-            {"password": "correct_password", "activation_key": "correct_key"},
+            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+        ),
+        (
+            "[subscription_manager]\norg = correct_org",
+            {"username": None, "password": None, "activation_key": None, "org": "correct_org"},
         ),
         (
             "[subscription_manager]\nincorrect_option = incorrect_content",
-            {"password": None, "activation_key": None},
+            {"username": None, "password": None, "activation_key": None, "org": None},
         ),
-        ("[INVALID_HEADER]\nactivation_key = correct_key", {"password": None, "activation_key": None}),
-        (None, {"password": None, "activation_key": None}),
+        (
+            "[INVALID_HEADER]\nusername = correct_username\npassword = correct_password\nactivation_key = correct_key\norg = correct_org",
+            {"username": None, "password": None, "activation_key": None, "org": None},
+        ),
+        (None, {"username": None, "password": None, "activation_key": None, "org": None}),
     ),
 )
 def test_options_from_config_files_default(content, output, monkeypatch, tmpdir, caplog):
@@ -385,8 +396,11 @@ def test_options_from_config_files_default(content, output, monkeypatch, tmpdir,
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
     opts = convert2rhel.toolopts.options_from_config_files()
 
+    assert opts["username"] == output["username"]
     assert opts["password"] == output["password"]
     assert opts["activation_key"] == output["activation_key"]
+    assert opts["org"] == output["org"]
+
     if content:
         if "INVALID_HEADER" in content:
             assert "Unsupported header" in caplog.text
@@ -398,18 +412,28 @@ def test_options_from_config_files_default(content, output, monkeypatch, tmpdir,
     ("content", "output", "content_lower_priority"),
     (
         (
+            "[subscription_manager]\nusername = correct_username\nactivation_key = correct_key",
+            {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
+            "[subscription_manager]\nusername = low_prior_username",
+        ),
+        (
+            "[subscription_manager]\nactivation_key = correct_key\norg = correct_org",
+            {"username": None, "password": None, "activation_key": "correct_key", "org": "correct_org"},
+            "[subscription_manager]\norg = low_prior_org",
+        ),
+        (
             "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
-            {"password": "correct_password", "activation_key": "correct_key"},
+            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
             "[subscription_manager]\npassword = low_prior_pass",
         ),
         (
             "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
-            {"password": "correct_password", "activation_key": "correct_key"},
-            "[INVALID_HEADER]\nincorrect_option = incorrect_option",
+            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+            "[INVALID_HEADER]\npassword = low_prior_pass",
         ),
         (
             "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
-            {"password": "correct_password", "activation_key": "correct_key"},
+            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
             "[subscription_manager]\nincorrect_option = incorrect_option",
         ),
     ),
@@ -422,7 +446,6 @@ def test_options_from_config_files_specified(content, output, content_lower_prio
     os.chmod(path, 0o600)
 
     path_lower_priority = os.path.join(str(tmpdir), "convert2rhel_lower.ini")
-    content_lower_priority = "[subscription_manager]\npassword = low_prior_pass"
     with open(path_lower_priority, "w") as file:
         file.write(content_lower_priority)
     os.chmod(path_lower_priority, 0o600)
@@ -432,8 +455,11 @@ def test_options_from_config_files_specified(content, output, content_lower_prio
     # user specified path
     opts = convert2rhel.toolopts.options_from_config_files(path)
 
+    assert opts["username"] == output["username"]
     assert opts["password"] == output["password"]
     assert opts["activation_key"] == output["activation_key"]
+    assert opts["org"] == output["org"]
+
     if "INVALID_HEADER" in content or "INVALID_HEADER" in content_lower_priority:
         assert "Unsupported header" in caplog.text
     if "incorrect_option" in content or "incorrect_option" in content_lower_priority:
@@ -443,16 +469,29 @@ def test_options_from_config_files_specified(content, output, content_lower_prio
 @pytest.mark.parametrize(
     "supported_opts",
     (
-        {"password": "correct_password", "activation_key": "correct_key"},
-        {"password": "correct_password", "activation_key": "correct_key", "invalid_key": "invalid_key"},
+        {
+            "username": "correct_username",
+            "password": "correct_password",
+            "activation_key": "correct_key",
+            "org": "correct_org",
+        },
+        {
+            "username": "correct_username",
+            "password": "correct_password",
+            "activation_key": "correct_key",
+            "org": "correct_org",
+            "invalid_key": "invalid_key",
+        },
     ),
 )
 def test_set_opts(supported_opts):
     tool_opts.__init__()
     convert2rhel.toolopts.ToolOpts.set_opts(tool_opts, supported_opts)
 
+    assert tool_opts.username == supported_opts["username"]
     assert tool_opts.password == supported_opts["password"]
     assert tool_opts.activation_key == supported_opts["activation_key"]
+    assert tool_opts.org == supported_opts["org"]
     assert not hasattr(tool_opts, "invalid_key")
 
 
