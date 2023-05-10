@@ -32,6 +32,11 @@ class PreSubscription(actions.Action):
 
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
+            self.add_message(
+                level="WARNING",
+                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                message="Detected --no-rhsm option. Skipping.",
+            )
             return
 
         try:
@@ -89,6 +94,11 @@ class SubscribeSystem(actions.Action):
 
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
+            self.add_message(
+                level="WARNING",
+                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                message="Detected --no-rhsm option. Skipping.",
+            )
             return
 
         try:
@@ -99,7 +109,15 @@ class SubscribeSystem(actions.Action):
             rhel_repoids = repo.get_rhel_repoids()
 
             logger.task("Convert: Subscription Manager - Check required repositories")
-            subscription.check_needed_repos_availability(rhel_repoids)
+            non_available_repos = subscription.check_needed_repos_availability(rhel_repoids)
+            if non_available_repos:
+
+                self.add_message(
+                    level="WARNING",
+                    id="NON_AVAILABLE_REPOSITORIES_DETECTED",
+                    message="%s repositories are not available - some packages"
+                    " may not be replaced and thus not supported." % ", ".join(non_available_repos),
+                )
 
             logger.task("Convert: Subscription Manager - Disable all repositories")
             subscription.disable_repos()

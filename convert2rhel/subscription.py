@@ -561,7 +561,6 @@ def remove_original_subscription_manager():
         return
 
     loggerinst.info("We will now uninstall the following subscription-manager/katello-ca-consumer packages:\n")
-
     pkghandler.print_pkg_info(submgr_pkgs)
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
 
@@ -867,8 +866,9 @@ def check_needed_repos_availability(repo_ids_needed):
     loggerinst.info("Verifying needed RHEL repositories are available ... ")
     avail_repos = get_avail_repos()
     loggerinst.info("Repositories available through RHSM:\n%s" % "\n".join(avail_repos) + "\n")
-
+    non_avail_repos = []
     all_repos_avail = True
+
     for repo_id in repo_ids_needed:
         if repo_id not in avail_repos:
             # TODO: List the packages that would be left untouched
@@ -878,9 +878,12 @@ def check_needed_repos_availability(repo_ids_needed):
                 " RHEL packages when converting. The converted system will end up"
                 " with a mixture of packages from RHEL and your current distribution." % repo_id
             )
+            non_avail_repos.append(repo_id)
             all_repos_avail = False
+
     if all_repos_avail:
         loggerinst.info("Needed RHEL repositories are available.")
+    return non_avail_repos
 
 
 def download_rhsm_pkgs():

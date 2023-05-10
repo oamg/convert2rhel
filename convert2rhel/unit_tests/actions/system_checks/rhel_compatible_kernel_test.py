@@ -24,6 +24,11 @@ import six
 
 from convert2rhel import unit_tests
 from convert2rhel.actions.system_checks import rhel_compatible_kernel
+from convert2rhel.actions.system_checks.rhel_compatible_kernel import (
+    BAD_KERNEL_RELEASE_SUBSTRINGS,
+    COMPATIBLE_KERNELS_VERS,
+    KernelIncompatibleError,
+)
 from convert2rhel.unit_tests import create_pkg_information
 from convert2rhel.unit_tests.conftest import centos8
 from convert2rhel.utils import run_subprocess
@@ -38,24 +43,16 @@ def rhel_compatible_kernel_action():
     return rhel_compatible_kernel.RhelCompatibleKernel()
 
 
-@pytest.mark.parametrize(
-    # i.e. _bad_kernel_version...
-    ("any_of_the_subchecks_is_true",),
-    (
-        (True,),
-        (False,),
-    ),
-)
-def test_check_rhel_compatible_kernel_is_used(
-    any_of_the_subchecks_is_true,
+def test_check_rhel_compatible_kernel_failure(
     monkeypatch,
-    caplog,
     rhel_compatible_kernel_action,
 ):
     monkeypatch.setattr(
         rhel_compatible_kernel,
         "_bad_kernel_version",
-        value=mock.Mock(return_value=any_of_the_subchecks_is_true),
+        value=mock.Mock(
+            side_effect=KernelIncompatibleError("UNEXPECTED_VERSION", "Bad kernel version", dict(fake_data="fake"))
+        ),
     )
     monkeypatch.setattr(
         rhel_compatible_kernel,
@@ -73,41 +70,71 @@ def test_check_rhel_compatible_kernel_is_used(
         "version",
         value=Version(major=1, minor=0),
     )
+    monkeypatch.setattr(
+        rhel_compatible_kernel.system_info,
+        "name",
+        value="Kernel-core",
+    )
     rhel_compatible_kernel_action.run()
-    if any_of_the_subchecks_is_true:
-        unit_tests.assert_actions_result(
-            rhel_compatible_kernel_action,
-            level="ERROR",
-            id="BOOTED_KERNEL_INCOMPATIBLE",
-            message=(
-                "The booted kernel version is incompatible with the standard RHEL kernel. "
-                "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
-                " by executing the following steps:\n\n"
-                "1. Ensure that the {0} {1} base repository is enabled\n"
-                "2. Run: yum install kernel\n"
-                "3. (optional) Run: grubby --set-default "
-                '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
-                "4. Reboot the machine and if step 3 was not applied choose the kernel"
-                " installed in step 2 manually".format(
-                    rhel_compatible_kernel.system_info.name,
-                    rhel_compatible_kernel.system_info.version.major,
-                )
-            ),
-        )
-    else:
-        assert "is compatible with RHEL" in caplog.records[-1].message
+    unit_tests.assert_actions_result(
+        rhel_compatible_kernel_action,
+        level="ERROR",
+        id="UNEXPECTED_VERSION",
+        message=(
+            "The booted kernel version is incompatible with the standard RHEL kernel. "
+            "Diagnosis message: Bad kernel version"
+            "To proceed with the conversion, boot into a kernel that is available in the Kernel-core 1 base repository"
+            " by executing the following steps:\n\n"
+            "1. Ensure that the Kernel-core 1 base repository is enabled\n"
+            "2. Run: yum install kernel\n"
+            "3. (optional) Run: grubby --set-default "
+            '/boot/vmlinuz-`rpm -q --qf "%{BUILDTIME}\\t%{EVR}.%{ARCH}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
+            "4. Reboot the machine and if step 3 was not applied choose the kernel"
+            " installed in step 2 manually"
+        ),
+    )
+
+
+def test_rhel_compatible_kernel_success(monkeypatch, caplog, rhel_compatible_kernel_action):
+    monkeypatch.setattr(
+        rhel_compatible_kernel,
+        "_bad_kernel_version",
+        value=mock.Mock(return_value=False),
+    )
+    monkeypatch.setattr(
+        rhel_compatible_kernel,
+        "_bad_kernel_substring",
+        value=mock.Mock(return_value=False),
+    )
+    monkeypatch.setattr(
+        rhel_compatible_kernel,
+        "_bad_kernel_package_signature",
+        value=mock.Mock(return_value=False),
+    )
+    Version = namedtuple("Version", ("major", "minor"))
+    monkeypatch.setattr(
+        rhel_compatible_kernel.system_info,
+        "version",
+        value=Version(major=1, minor=0),
+    )
+    monkeypatch.setattr(
+        rhel_compatible_kernel.system_info,
+        "name",
+        value="Kernel-core",
+    )
+    rhel_compatible_kernel_action.run()
+
+    assert "is compatible with RHEL" in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
     ("kernel_release", "major_ver", "exp_return"),
     (
-        ("5.11.0-7614-generic", None, True),
         ("3.10.0-1160.24.1.el7.x86_64", 7, False),
-        ("5.4.17-2102.200.13.el8uek.x86_64", 8, True),
         ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
     ),
 )
-def test_bad_kernel_version(kernel_release, major_ver, exp_return, monkeypatch):
+def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monkeypatch):
     Version = namedtuple("Version", ("major", "minor"))
     monkeypatch.setattr(
         rhel_compatible_kernel.system_info,
@@ -118,15 +145,81 @@ def test_bad_kernel_version(kernel_release, major_ver, exp_return, monkeypatch):
 
 
 @pytest.mark.parametrize(
+    ("kernel_release", "major_ver", "error_id", "template", "variables"),
+    (
+        (
+            "5.11.0-7614-generic",
+            None,
+            "UNEXPECTED_VERSION",
+            "Unexpected OS major version. Expected: {compatible_version}",
+            dict(compatible_version=COMPATIBLE_KERNELS_VERS.keys()),
+        ),
+        (
+            "5.4.17-2102.200.13.el8uek.x86_64",
+            8,
+            "INCOMPATIBLE_VERSION",
+            "Booted kernel version '{kernel_version}' does not correspond to the version "
+            "'{compatible_version}' available in RHEL {rhel_major_version}",
+            dict(kernel_version="5.4.17", compatible_version=COMPATIBLE_KERNELS_VERS[8], rhel_major_version=8),
+        ),
+    ),
+)
+def test_bad_kernel_version_invalid_version(kernel_release, major_ver, error_id, template, variables, monkeypatch):
+    Version = namedtuple("Version", ("major", "minor"))
+    monkeypatch.setattr(
+        rhel_compatible_kernel.system_info,
+        "version",
+        value=Version(major=major_ver, minor=0),
+    )
+    with pytest.raises(KernelIncompatibleError) as excinfo:
+        rhel_compatible_kernel._bad_kernel_version(kernel_release)
+    assert excinfo.value.error_id == error_id
+    assert excinfo.value.template == template
+    assert excinfo.value.variables == variables
+
+
+@pytest.mark.parametrize(
     ("kernel_release", "exp_return"),
     (
         ("3.10.0-1160.24.1.el7.x86_64", False),
-        ("5.4.17-2102.200.13.el8uek.x86_64", True),
-        ("3.10.0-514.2.2.rt56.424.el7.x86_64", True),
+        ("5.04.0-1240.41.0.el8.x86_64", False),
     ),
 )
-def test_bad_kernel_substring(kernel_release, exp_return):
+def test_bad_kernel_substring_success(kernel_release, exp_return):
     assert rhel_compatible_kernel._bad_kernel_substring(kernel_release) == exp_return
+
+
+@pytest.mark.parametrize(
+    ("kernel_release", "error_id", "template", "variables"),
+    (
+        (
+            "5.4.17-2102.200.13.el8uek.x86_64",
+            "INVALID_PACKAGE_SUBSTRING",
+            "The booted kernel '{kernel_release}' contains one of the disallowed "
+            "substrings: {bad_kernel_release_substrings}",
+            dict(
+                kernel_release="5.4.17-2102.200.13.el8uek.x86_64",
+                bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS,
+            ),
+        ),
+        (
+            "3.10.0-514.2.2.rt56.424.el7.x86_64",
+            "INVALID_PACKAGE_SUBSTRING",
+            "The booted kernel '{kernel_release}' contains one of the disallowed "
+            "substrings: {bad_kernel_release_substrings}",
+            dict(
+                kernel_release="3.10.0-514.2.2.rt56.424.el7.x86_64",
+                bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS,
+            ),
+        ),
+    ),
+)
+def test_bad_kernel_substring_invalid_substring(kernel_release, error_id, template, variables, monkeypatch):
+    with pytest.raises(KernelIncompatibleError) as excinfo:
+        rhel_compatible_kernel._bad_kernel_substring(kernel_release)
+    assert excinfo.value.error_id == error_id
+    assert excinfo.value.template == template
+    assert excinfo.value.variables == variables
 
 
 @pytest.mark.parametrize(
@@ -146,24 +239,10 @@ def test_bad_kernel_substring(kernel_release, exp_return):
             "yajl.x86_64",
             False,
         ),
-        (
-            "4.18.0-240.22.1.el8_3.x86_64",
-            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
-            create_pkg_information(
-                name="kernel-core",
-                epoch="0",
-                version="4.18.0",
-                release="240.22.1.el8_3",
-                arch="x86_64",
-                fingerprint="somebadsig",
-            ),
-            "somepkgobj",
-            True,
-        ),
     ),
 )
 @centos8
-def test_bad_kernel_package_signature(
+def test_bad_kernel_package_signature_success(
     kernel_release,
     kernel_pkg,
     kernel_pkg_information,
@@ -191,13 +270,89 @@ def test_bad_kernel_package_signature(
     )
 
 
+@pytest.mark.parametrize(
+    (
+        "kernel_release",
+        "kernel_pkg",
+        "kernel_pkg_information",
+        "get_installed_pkg_objects",
+        "error_id",
+        "template",
+        "variables",
+    ),
+    (
+        (
+            "4.18.0-240.22.1.el8_3.x86_64",
+            "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
+            create_pkg_information(
+                name="kernel-core",
+                epoch="0",
+                version="4.18.0",
+                release="240.22.1.el8_3",
+                arch="x86_64",
+                fingerprint="somebadsig",
+            ),
+            "somepkgobj",
+            "INVALID_KERNEL_PACKAGE_SIGNATURE",
+            "Custom kernel detected. The booted kernel needs to be signed by {os_vendor}.",
+            dict(os_vendor="CentOS"),
+        ),
+    ),
+)
 @centos8
-def test_kernel_not_installed(pretend_os, caplog, monkeypatch):
+def test_bad_kernel_package_signature_invalid_signature(
+    kernel_release,
+    kernel_pkg,
+    kernel_pkg_information,
+    get_installed_pkg_objects,
+    error_id,
+    template,
+    variables,
+    monkeypatch,
+    pretend_os,
+):
+    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
+    monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
+    get_installed_pkg_objects_mocked = mock.Mock(
+        spec=rhel_compatible_kernel.get_installed_pkg_objects, return_value=[kernel_pkg]
+    )
+    get_installed_pkg_information_mocked = mock.Mock(return_value=[kernel_pkg_information])
+    monkeypatch.setattr(
+        rhel_compatible_kernel,
+        "get_installed_pkg_objects",
+        get_installed_pkg_objects_mocked,
+    )
+    monkeypatch.setattr(rhel_compatible_kernel, "get_installed_pkg_information", get_installed_pkg_information_mocked)
+
+    with pytest.raises(KernelIncompatibleError) as excinfo:
+        rhel_compatible_kernel._bad_kernel_package_signature(kernel_release)
+    assert excinfo.value.error_id == error_id
+    assert excinfo.value.template == template
+    assert excinfo.value.variables == variables
+    run_subprocess_mocked.assert_called_with(
+        ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],
+        print_output=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("error_id", "template", "variables"),
+    (
+        (
+            "UNSIGNED_PACKAGE",
+            "The booted kernel {vmlinuz_path} is not owned by any installed package."
+            " It needs to be owned by a package signed by {os_vendor}.",
+            dict(vmlinuz_path="/boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64", os_vendor="CentOS"),
+        ),
+    ),
+)
+@centos8
+def test_kernel_not_installed(pretend_os, error_id, template, variables, monkeypatch):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(" ", 1))
     monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
-    assert rhel_compatible_kernel._bad_kernel_package_signature("4.18.0-240.22.1.el8_3.x86_64")
-    log_message = (
-        "The booted kernel /boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64 is not owned by any installed package."
-        " It needs to be owned by a package signed by CentOS."
-    )
-    assert log_message in caplog.text
+
+    with pytest.raises(KernelIncompatibleError) as excinfo:
+        rhel_compatible_kernel._bad_kernel_package_signature("4.18.0-240.22.1.el8_3.x86_64")
+    assert excinfo.value.error_id == error_id
+    assert excinfo.value.template == template
+    assert excinfo.value.variables == variables

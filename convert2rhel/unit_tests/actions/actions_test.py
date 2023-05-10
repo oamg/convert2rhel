@@ -127,12 +127,16 @@ class TestAction:
         action = _ActionForTesting(id="TestAction")
         action.add_message(level="WARNING", id="WARNING_ID", message="warning message 1")
         action.add_message(level="WARNING", id="WARNING_ID", message="warning message 2")
+        action.add_message(level="INFO", id="INFO_ID", message="info message 1")
+        action.add_message(level="INFO", id="INFO_ID", message="info message 2")
         actual_messages = []
         for msg in action.messages:
             actual_messages.append(msg.to_dict())
         assert actual_messages == [
             {"level": STATUS_CODE["WARNING"], "id": "WARNING_ID", "message": "warning message 1"},
             {"level": STATUS_CODE["WARNING"], "id": "WARNING_ID", "message": "warning message 2"},
+            {"level": STATUS_CODE["INFO"], "id": "INFO_ID", "message": "info message 1"},
+            {"level": STATUS_CODE["INFO"], "id": "INFO_ID", "message": "info message 2"},
         ]
 
 
@@ -1036,6 +1040,12 @@ class TestActionClasses:
                 "WARNING",
                 "Warning message",
                 dict(id="WARNING_ID", level=STATUS_CODE["WARNING"], message="Warning message"),
+            ),
+            (
+                "INFO_ID",
+                "INFO",
+                "Info message",
+                dict(id="INFO_ID", level=STATUS_CODE["INFO"], message="Info message"),
             ),
         ),
     )

@@ -151,7 +151,7 @@ def test_ensure_compatibility_of_kmods(
 
 
 @centos8
-def test_ensure_compatibility_of_kmods_check_env(
+def test_ensure_compatibility_of_kmods_check_env_and_message(
     ensure_kernel_modules_compatibility_instance,
     monkeypatch,
     pretend_os,
@@ -181,6 +181,12 @@ def test_ensure_compatibility_of_kmods_check_env(
         " We will continue the conversion with the following kernel modules unavailable in RHEL:.*"
     )
     assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
+    # cannot assert exact action message contents as the kmods arrangement in the message is not static
+    assert "level=WARNING" in str(ensure_kernel_modules_compatibility_instance.messages)
+    assert "id=ALLOW_UNAVAILABLE_KERNEL_MODULES" in str(ensure_kernel_modules_compatibility_instance.messages)
+    assert "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable." in str(
+        ensure_kernel_modules_compatibility_instance.messages
+    )
 
 
 @pytest.mark.parametrize(
