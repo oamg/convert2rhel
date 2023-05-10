@@ -23,24 +23,24 @@ def test_failures_and_skips_in_report(convert2rhel):
         assert c2r.expect("Rollback: RHSM-related actions") == 0
 
         # Then, verify that the analysis report is printed
-        c2r.expect("Pre-conversion analysis report")
+        assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0
 
         # Error header first
-        c2r.expect("Must fix before conversion")
+        assert c2r.expect("Must fix before conversion", timeout=600) == 0
         c2r.expect("SUBSCRIBE_SYSTEM.UNKNOWN_ERROR: Unable to register the system")
 
         # Skip header
-        c2r.expect("Could not be checked due to other failures")
+        assert c2r.expect("Could not be checked due to other failures", timeout=600) == 0
         c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY.SKIP: Skipped")
 
         # Success header
-        c2r.expect("No changes needed")
+        assert c2r.expect("No changes needed", timeout=600) == 0
 
     assert c2r.exitstatus == 0
 
 
-@pytest.mark.test_successfull_report
-def test_successfull_report(convert2rhel):
+@pytest.mark.test_successful_report
+def test_successful_report(convert2rhel):
     """
     Test if the assessment report contains the following header: Success header.
 
@@ -62,7 +62,18 @@ def test_successfull_report(convert2rhel):
         assert c2r.expect("Rollback: RHSM-related actions") == 0
 
         # Then, verify that the analysis report is printed
-        c2r.expect("Pre-conversion analysis report")
-        c2r.expect("No changes needed")
+        assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0
+
+        # Verify that only success header printed out, assert if error or skip header appears
+        c2r_report_header_index = c2r.expect(
+            ["No changes needed", "Must fix before conversion", "Could not be checked due to other failures"],
+            timeout=300,
+        )
+        if c2r_report_header_index == 0:
+            pass
+        elif c2r_report_header_index == 1:
+            assert AssertionError("Error header in the analysis report.")
+        elif c2r_report_header_index == 2:
+            assert AssertionError("Skip header in the analysis report.")
 
     assert c2r.exitstatus == 0

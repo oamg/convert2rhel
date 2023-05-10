@@ -20,6 +20,7 @@ def test_no_sub_manager_installed(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
+        # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 

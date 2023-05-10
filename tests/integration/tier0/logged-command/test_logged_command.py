@@ -43,7 +43,7 @@ def test_verify_logfile_starts_with_command(convert2rhel):
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
 
-            # After that we can stop the execution at the following prompt.
+            # After that we can stop the execution.
             c2r.expect("Prepare: Clear YUM/DNF version locks")
             c2r.sendcontrol("c")
 

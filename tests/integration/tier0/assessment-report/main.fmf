@@ -1,11 +1,16 @@
-summary: Pre-Assessment report
-description: |
-    # TODO(r0x0d): Improve it later.
-    Verify that the Pre-Assessment report is working
+summary+: |
+    Pre-Assessment report
+
+description+: |
+    Verify that the Pre-Assessment report is working as intended.
+
 tier: 0
 
 tag+:
     - pre-assessment-report
+
+environment+:
+    CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
 
 /failures_and_skips_in_report:
     summary+: |
@@ -13,22 +18,18 @@ tag+:
     description+: |
         Verify that the conversion will proceed until the point of no return
         even with failures and skips, and then, output the report to the user.
-    environment+:
-        CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
     tag+:
         - failed-report
     test: |
         pytest -svv -m test_failures_and_skips_in_report
 
-/successfull_report:
+/successful_report:
     summary+: |
-        Verify that the report was successfull.
+        Verify that the report was successful.
     description+: |
         Verify that the conversion will proceed until the point of no return
         and then, output the report to the user.
-    environment+:
-        CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
     tag+:
         - success-report
     test: |
-        pytest -svv -m test_successfull_report
+        pytest -svv -m test_successful_report
