@@ -175,22 +175,6 @@ class PrintPkgInfoMocked(unit_tests.MockFunction):
         self.pkgs = pkgs
 
 
-class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
-    def __call__(self, name=""):
-        if name and name != "installed_pkg":
-            return []
-
-        pkg_obj = create_pkg_obj(
-            name="installed_pkg",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            packager="Oracle",
-            from_repo="repoid",
-        )
-        return [pkg_obj]
-
-
 class RemovePkgsMocked(unit_tests.MockFunction):
     def __init__(self):
         self.pkgs = None
@@ -425,86 +409,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                 "pkg",
             ],
         )
-
-    class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
-        def prepare_test_pkg_tuples_w_fingerprints(self):
-            class PkgData:
-                def __init__(self, pkg_obj, fingerprint):
-                    self.pkg_obj = pkg_obj
-                    self.fingerprint = fingerprint
-
-            obj1 = create_pkg_obj("pkg1")
-            obj2 = create_pkg_obj("pkg2")
-            obj3 = create_pkg_obj("gpg-pubkey")
-            pkgs = [
-                PkgData(obj1, "199e2f91fd431d51"),  # RHEL
-                PkgData(obj2, "72f97b74ec551f03"),  # OL
-                PkgData(obj3, "199e2f91fd431d51"),
-            ]  # RHEL
-            return pkgs
-
-        def __call__(self, *args, **kwargs):
-            return self.prepare_test_pkg_tuples_w_fingerprints()
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
-        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
-        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
-
-        self.assertEqual(pkgs_by_fingerprint, ["pkg1.", "gpg-pubkey."])
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(self):
-        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
-
-        self.assertEqual(pkgs_by_fingerprint, [])
-
-    class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
-        def __call__(self, name=""):
-            if name and name != "installed_pkg":
-                return []
-            pkg_obj = create_pkg_obj(
-                name="installed_pkg",
-                version="0.1",
-                release="1",
-                arch="x86_64",
-                packager="Oracle",
-                from_repo="repoid",
-            )
-            return [pkg_obj]
-
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
-    @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
-    def test_get_installed_pkgs_w_fingerprints(self):
-        pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
-
-        self.assertEqual(len(pkgs), 1)
-        self.assertEqual(pkgs[0].pkg_obj.name, "installed_pkg")
-        self.assertEqual(pkgs[0].fingerprint, "some_fingerprint")
-
-        pkgs = pkghandler.get_installed_pkgs_w_fingerprints("non_existing")
-
-        self.assertEqual(len(pkgs), 0)
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_rpm_header",
-        lambda pkg: TestPkgObj.PkgObjHdr(),
-    )
-    def test_get_pkg_fingerprint(self):
-        pkg = create_pkg_obj("pkg")
-
-        fingerprint = pkghandler.get_pkg_fingerprint(pkg)
-
-        self.assertEqual(fingerprint, "73bde98381b46521")
 
     class TransactionSetMocked(unit_tests.MockFunction):
         def __call__(self):
@@ -1470,14 +1374,6 @@ kernel.x86_64    4.7.2-201.fc24   @updates
 kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
-
-with open(
-    os.path.join(
-        os.path.dirname(__file__),
-        "data/pkghandler_yum_distro_sync_output_expect_deps_for_3_pkgs_found.txt",
-    )
-) as f:
-    YUM_DISTRO_SYNC_OUTPUT = f.read()
 
 
 class TestInstallGpgKeys(object):
