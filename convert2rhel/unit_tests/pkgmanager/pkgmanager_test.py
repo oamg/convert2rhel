@@ -73,3 +73,12 @@ def test_clean_yum_metadata(ret_code, expected, monkeypatch, caplog):
     pkgmanager.clean_yum_metadata()
 
     assert expected in caplog.records[-1].message
+
+
+def test_rpm_db_lock():
+    pkg_obj_mock = mock.Mock()
+
+    with pkgmanager.rpm_db_lock(pkg_obj_mock):
+        pass
+
+    assert pkg_obj_mock.rpmdb is None

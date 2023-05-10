@@ -1,4 +1,5 @@
 import json
+import os.path
 
 import pytest
 
@@ -13,17 +14,22 @@ def test_verify_logfile_starts_with_command(shell):
     This test verifies, that the command passed to the command line is at the beginning of the log file.
     Also verify, that the passed password is obfuscated.
     """
+    # Clean artifacts from previous run
+    for artifact in [C2R_LOG, C2R_FACTS]:
+        if os.path.exists(artifact):
+            os.unlink(artifact)
+
     serverurl = "subscription.pls.register.me"
     username = "jdoe"
     password = "foobar"
-    activationkey = "a-map-of-a-key"
+    activation_key = "a-map-of-a-key"
     organization = "SoMe_NumberS-8_a_lettER"
 
     command_long = "convert2rhel --debug --no-rpm-va --serverurl {} --username {} --password {} --activationkey {} --org {}".format(
-        serverurl, username, password, activationkey, organization
+        serverurl, username, password, activation_key, organization
     )
     command_short = "convert2rhel --debug --no-rpm-va --serverurl {} -u {} -p {} -k {} -o {}".format(
-        serverurl, username, password, activationkey, organization
+        serverurl, username, password, activation_key, organization
     )
 
     command_verification = "convert2rhel --debug --no-rpm-va --serverurl {}".format(serverurl)
@@ -35,7 +41,7 @@ def test_verify_logfile_starts_with_command(shell):
         # We need to get past the first prompt acknowledging the data collection,
         # to make sure the convert2rhel.facts file is created.
         # After that we can stop the execution at the following prompt.
-        assert shell(f"{command} <<< y n").returncode != 0
+        assert shell(f"{command} <<< y && <<< n").returncode != 0
 
         with open(C2R_LOG, "r") as logfile:
             command_line = None
@@ -47,7 +53,7 @@ def test_verify_logfile_starts_with_command(shell):
 
             assert command_verification in command_line
             assert password not in command_line
-            assert activationkey not in command_line
+            assert activation_key not in command_line
             assert username not in command_line
             assert organization not in command_line
 
@@ -56,6 +62,6 @@ def test_verify_logfile_starts_with_command(shell):
             command = data.get("conversions.executed")
 
             assert password not in command
-            assert activationkey not in command
+            assert activation_key not in command
             assert username not in command
             assert organization not in command

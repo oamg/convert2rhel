@@ -20,8 +20,9 @@ __metaclass__ = type
 import logging
 import os
 import re
+import shutil
 
-from convert2rhel import pkgmanager
+from convert2rhel import pkgmanager, utils
 from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
@@ -107,6 +108,19 @@ class YumTransactionHandler(TransactionHandlerBase):
         # method.
         self._base = None
 
+    def _close_yum_base(self):
+        """Helper method to close the yum object.
+
+        .. important::
+            Because we call the same thing multiple times, the rpm database is
+            not properly closed at the end of it, thus, having the need to call
+            `self._base.close()` explicitly before we delete the object. If we
+            use only `del self._base`, it seems that yum is not able to
+            properly clean everything in the database.
+        """
+        self._base.close()
+        del self._base
+
     def _set_up_base(self):
         """Create a new instance of the yum.YumBase() class
 
@@ -126,18 +140,18 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
-        """Enable a list of required repositories.
-
-        :raises SystemInfo: If there is no way to connect to the mirrors in the
-            repos.
-        """
+        """Enable a list of required repositories."""
         self._base.repos.disableRepo("*")
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
         enabled_repos = system_info.get_enabled_rhel_repos()
         loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
-        for repo in enabled_repos:
-            self._base.repos.enableRepo(repo)
+        try:
+            for repo in enabled_repos:
+                self._base.repos.enableRepo(repo)
+        except pkgmanager.Errors.RepoError as e:
+            loggerinst.debug("Loading repository metadata failed: %s" % e)
+            loggerinst.critical("Failed to populate repository metadata.")
 
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
@@ -152,7 +166,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._enable_repos()
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
-
         try:
             for pkg in original_os_pkgs:
                 self._base.update(pattern=pkg)
@@ -265,7 +278,6 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumDownloadError
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
-
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical("Failed to validate the yum transaction.")
 
@@ -274,12 +286,23 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("System packages replaced successfully.")
 
+    @utils.run_as_child_process
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 
         Perform the transaction. If the `validate_transaction` parameter set to
         true, it means the transaction will not be executed, but rather verify
         everything and do an early return.
+
+        .. important::
+            This function is being executed in a child process so we will be
+            able to raise SIGINT or any other signal that is sent to the main
+            process.
+
+            The function calls here do not affect the others subprocess
+            calls that are called after this function during the conversion,
+            but, it does affect the signal handling while the user tries to
+            send that signal while this function is executing.
 
         ..notes::
             The implementation of this yum transaction is different from the
@@ -308,33 +331,26 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         :param vaidate_transaction: Determines if the transaction needs to be
             validated or not.
-        :type valiate_transaction: bool
+        :type validate_transaction: bool
         :raises SystemExit: If we can't resolve the transaction dependencies.
         """
         resolve_deps_finished = False
-
         # Do not allow this to loop until eternity.
         attempts = 0
-        while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
-            self._perform_operations()
-            resolved = self._resolve_dependencies(validate_transaction)
+        try:
+            while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
+                self._perform_operations()
+                resolved = self._resolve_dependencies(validate_transaction)
+                if not resolved:
+                    loggerinst.info("Retrying to resolve dependencies %s", attempts)
+                    attempts += 1
+                else:
+                    resolve_deps_finished = True
+                    break
 
-            if not resolved:
-                loggerinst.info("Retrying to resolve dependencies %s", attempts)
-                attempts += 1
-            else:
-                resolve_deps_finished = True
-                break
+            if not resolve_deps_finished:
+                loggerinst.critical("Failed to resolve dependencies in the transaction.")
 
-        if not resolve_deps_finished:
-            loggerinst.critical("Failed to resolve dependencies in the transaction.")
-
-        self._process_transaction(validate_transaction)
-
-        # Because we call the same thing multiple times, the rpm database is not
-        # properly closed at the end of it, thus, having the need to call
-        # `self._base.close()` explicitly before we delete the object. If we use
-        # only `del self._base`, it seems that yum is not able to properly clean
-        # everything in the database.
-        self._base.close()
-        del self._base
+            self._process_transaction(validate_transaction)
+        finally:
+            self._close_yum_base()

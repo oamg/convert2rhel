@@ -28,8 +28,7 @@ from convert2rhel import grub, pkgmanager, utils
 from convert2rhel.pkghandler import (
     call_yum_cmd,
     compare_package_versions,
-    get_installed_pkg_objects,
-    get_pkg_fingerprint,
+    get_installed_pkg_information,
     get_total_packages_to_update,
     parse_pkg_string,
 )
@@ -386,9 +385,7 @@ def validate_package_manager_transaction():
     """Validate the package manager transaction is passing the tests."""
     logger.task("Prepare: Validate the %s transaction", pkgmanager.TYPE)
     transaction_handler = pkgmanager.create_transaction_handler()
-    transaction_handler.run_transaction(
-        validate_transaction=True,
-    )
+    transaction_handler.run_transaction(validate_transaction=True)
 
 
 def get_loaded_kmods():
@@ -620,9 +617,8 @@ def _bad_kernel_package_signature(kernel_release):
     version, release, arch, name = tuple(kernel_pkg.split("&"))
     logger.debug("Booted kernel package name: {0}".format(name))
 
-    kernel_pkg_obj = get_installed_pkg_objects(name, version, release, arch)[0]
-    kernel_pkg_gpg_fingerprint = get_pkg_fingerprint(kernel_pkg_obj)
-    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_gpg_fingerprint
+    kernel_pkg = get_installed_pkg_information("%s-%s-%s.%s" % (name, version, release, arch))[0]
+    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg.fingerprint
 
     # e.g. Oracle Linux Server -> Oracle or
     #      Oracle Linux Server -> CentOS Linux
@@ -665,7 +661,7 @@ def check_package_updates():
 
     try:
         packages_to_update = get_total_packages_to_update(reposdir=reposdir)
-    except pkgmanager.RepoError as e:
+    except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
         # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
         # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
         # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output

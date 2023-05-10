@@ -33,10 +33,14 @@ from convert2rhel.checks import (
     get_loaded_kmods,
     is_loaded_kernel_latest,
 )
-from convert2rhel.pkghandler import get_pkg_fingerprint
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests import (
+    GetFileContentMocked,
+    GetLoggerMocked,
+    create_pkg_information,
+    run_subprocess_side_effect,
+)
 from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
 from convert2rhel.utils import run_subprocess
 
@@ -1008,20 +1012,32 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("kernel_release", "kernel_pkg", "kernel_pkg_fingerprint", "get_installed_pkg_objects", "exp_return"),
+    ("kernel_release", "kernel_pkg", "kernel_pkg_information", "exp_return"),
     (
         (
             "4.18.0-240.22.1.el8_3.x86_64",
             "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
-            "05b555b38483c65d",
-            "yajl.x86_64",
+            create_pkg_information(
+                name="kernel-core",
+                epoch="0",
+                version="4.18.0",
+                release="240.22.1.el8_3",
+                arch="x86_64",
+                fingerprint="05b555b38483c65d",
+            ),
             False,
         ),
         (
             "4.18.0-240.22.1.el8_3.x86_64",
             "4.18.0&240.22.1.el8_3&x86_64&kernel-core",
-            "somebadsig",
-            "somepkgobj",
+            create_pkg_information(
+                name="kernel-core",
+                epoch="0",
+                version="4.18.0",
+                release="240.22.1.el8_3",
+                arch="x86_64",
+                fingerprint="somebadsig",
+            ),
             True,
         ),
     ),
@@ -1030,22 +1046,15 @@ def test_bad_kernel_substring(kernel_release, exp_return, monkeypatch):
 def test_bad_kernel_package_signature(
     kernel_release,
     kernel_pkg,
-    kernel_pkg_fingerprint,
-    get_installed_pkg_objects,
+    kernel_pkg_information,
     exp_return,
     monkeypatch,
     pretend_os,
 ):
     run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
-    get_pkg_fingerprint_mocked = mock.Mock(spec=get_pkg_fingerprint, return_value=kernel_pkg_fingerprint)
     monkeypatch.setattr(checks, "run_subprocess", run_subprocess_mocked)
-    get_installed_pkg_objects_mocked = mock.Mock(spec=get_installed_pkg_objects, return_value=[kernel_pkg])
-    monkeypatch.setattr(
-        checks,
-        "get_installed_pkg_objects",
-        get_installed_pkg_objects_mocked,
-    )
-    monkeypatch.setattr(checks, "get_pkg_fingerprint", get_pkg_fingerprint_mocked)
+    get_installed_pkg_information_mocked = mock.Mock(return_value=[kernel_pkg_information])
+    monkeypatch.setattr(checks, "get_installed_pkg_information", get_installed_pkg_information_mocked)
     assert _bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
         ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", "/boot/vmlinuz-%s" % kernel_release],

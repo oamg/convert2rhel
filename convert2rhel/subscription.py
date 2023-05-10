@@ -555,12 +555,14 @@ def remove_original_subscription_manager():
     submgr_pkgs += pkghandler.get_installed_pkg_objects("python3-cloud-what")
     # Satellite-server related package
     submgr_pkgs += pkghandler.get_installed_pkg_objects("katello-ca-consumer*")
+
     if not submgr_pkgs:
         loggerinst.info("No packages related to subscription-manager installed.")
         return
     loggerinst.info(
         "Upon continuing, we will uninstall the following subscription-manager/katello-ca-consumer packages:\n"
     )
+
     pkghandler.print_pkg_info(submgr_pkgs)
     utils.ask_to_continue()
     submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]

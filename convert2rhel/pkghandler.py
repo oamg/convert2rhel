@@ -20,6 +20,8 @@ import logging
 import os
 import re
 
+from collections import namedtuple
+
 import rpm
 
 from convert2rhel import backup, pkgmanager, utils
@@ -49,11 +51,11 @@ PKG_NEVR = r"\b(?:([0-9]+):)?(\S+)-(\S+)-(\S+)\b"
 
 # This regex finds if a package is in ENVR/ENVRA format by searching for the epoch field
 # being the first set of characters in the package string
-ENVRA_ENVR_FORMAT = re.compile(r"^\d:")
+ENVRA_ENVR_FORMAT = re.compile(r"^\d+:")
 
 # This regex finds if a package is in NEVRA/NEVR format by searching for any digit
 # found between a "-" and a ":"
-NEVRA_NEVR_FORMAT = re.compile(r"-\d:")
+NEVRA_NEVR_FORMAT = re.compile(r"-\d+:")
 
 # This regex ensures there are no whitespace charcters in the package name
 PKG_NAME = re.compile(r"^[^\s]+$")
@@ -66,7 +68,7 @@ PKG_VERSION = re.compile(r"^[^\s-]+$")
 PKG_RELEASE = PKG_VERSION
 
 # Set of valid arches
-PKG_ARCH = ("x86_64", "s390x", "i86", "ppc64le", "aarch64", "noarch")
+PKG_ARCH = ("x86_64", "s390x", "i686", "i86", "ppc64le", "aarch64", "noarch")
 
 # It would be better to construct this dynamically but we don't have lru_cache
 # in Python-2.6 and modifying a global after your program initializes isn't a
@@ -79,13 +81,29 @@ _KNOWN_PKG_MESSAGE_KEYS = (
 )
 _PKG_REGEX_CACHE = dict((k, re.compile(k % PKG_NEVR, re.MULTILINE)) for k in _KNOWN_PKG_MESSAGE_KEYS)
 
+# Namedtuple to represent a package NEVRA.
+PackageNevra = namedtuple(
+    "PackageNevra",
+    (
+        "name",
+        "epoch",
+        "version",
+        "release",
+        "arch",
+    ),
+)
 
-class PkgWFingerprint(object):
-    """Tuple-like storage for a package object and a fingerprint with which the package was signed."""
-
-    def __init__(self, pkg_obj, fingerprint):
-        self.pkg_obj = pkg_obj
-        self.fingerprint = fingerprint
+# Namedtuple that represents package information, including the NEVRA.
+PackageInformation = namedtuple(
+    "PackageInformation",
+    (
+        "packager",
+        "vendor",
+        "nevra",
+        "fingerprint",
+        "signature",
+    ),
+)
 
 
 def call_yum_cmd(
@@ -259,12 +277,20 @@ def resolve_dep_errors(output, pkgs=frozenset()):
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
-    """Return list of names of installed packages that are signed
-    by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
-    list in the fingerprints parameter. The packages can be optionally
-    filtered by name.
     """
-    pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
+    Return list of names of installed packages that are signed by the specific
+    OS GPG keys. Fingerprints of the GPG keys are passed as a list in the
+    fingerprints parameter.
+    The packages can be optionally filtered by name.
+
+    :param fingerprints: Fingerprints to filter packages found
+    :type fingerprints: list[str]
+    :param name: Name of a package to filter. Defaults to empty string
+    :type name: str
+    :return: A list of packages with name and arch.
+    :rtype: list[str]
+    """
+    pkgs_w_fingerprints = get_installed_pkg_information(name)
 
     # We have a problem regarding the package names not being converted and
     # causing duplicate problems if they are both installed on their i686 and
@@ -273,43 +299,66 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     # possible, converted. This issue does not happen on yum, so we can still
     # use only the package name for it.
     return [
-        "%s.%s" % (pkg.pkg_obj.name, pkg.pkg_obj.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
+        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
     ]
 
 
-def get_installed_pkgs_w_fingerprints(name=""):
-    """Return a list of objects that hold one of the installed packages (yum.rpmsack.RPMInstalledPackage in case
-    of yum and hawkey.Package in case of dnf) and GPG key fingerprints used to sign it. The packages can be
-    optionally filtered by name.
-    """
-    package_objects = get_installed_pkg_objects(name)
-    pkgs_w_fingerprints = []
-    for pkg_obj in package_objects:
-        fingerprint = get_pkg_fingerprint(pkg_obj)
-        pkgs_w_fingerprints.append(PkgWFingerprint(pkg_obj, fingerprint))
-
-    return pkgs_w_fingerprints
-
-
-def get_pkg_fingerprint(pkg_obj):
+def _get_pkg_fingerprint(signature):
     """Get fingerprint of the key used to sign a package."""
-    pkg_sig = get_pkg_signature(pkg_obj)
-    fingerprint_match = re.search("Key ID (.*)", pkg_sig)
-    if fingerprint_match:
-        return fingerprint_match.group(1)
+    fingerprint_match = re.search("Key ID (.*)", signature)
+    return fingerprint_match.group(1) if fingerprint_match else "none"
+
+
+def get_installed_pkg_information(pkg_name="*"):
+    """
+    Get information about a package, such as signature from the RPM database,
+    packager, vendor, NEVRA and fingerprint.
+
+    :param pkg_name: Full name of a package to check their signature.  If not given, information about all installed packages is returned.
+    :type pkg_obj: str
+    :return: Return the package signature.
+    :rtype: list[PackageInformation]
+    """
+    cmd = [
+        "rpm",
+        "--qf",
+        "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+    ]
+
+    if "*" in pkg_name:
+        cmd.extend(["-qa", pkg_name])
     else:
-        return "none"
+        cmd.extend(["-q", pkg_name])
 
+    output, _ = utils.run_subprocess(cmd, print_cmd=False, print_output=False)
 
-def get_pkg_signature(pkg_obj):
-    """Get information about a package signature from the RPM database."""
-    if pkgmanager.TYPE == "yum":
-        hdr = pkg_obj.hdr
-    elif pkgmanager.TYPE == "dnf":
-        hdr = get_rpm_header(pkg_obj)
+    # Filter out the empty values, u''
+    split_output = [value for value in output.split("\n") if value]
 
-    pkg_sig = hdr.sprintf("%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{(none)}|}|")
-    return pkg_sig
+    normalized_list = []
+    for value in split_output:
+        if "C2R" in value:
+            try:
+                packager, vendor, name, signature = tuple(value.replace("C2R", "").split("&"))
+                name, epoch, version, release, arch = tuple(parse_pkg_string(name))
+
+                # If a package has a signature, then proceed to get the package
+                # fingerprint. Otherwise, just set it to None.
+                fingerprint = _get_pkg_fingerprint(signature) if signature else None
+
+                normalized_list.append(
+                    PackageInformation(
+                        packager.strip(),
+                        vendor,
+                        PackageNevra(name, epoch, version, release, arch),
+                        fingerprint,
+                        signature,
+                    )
+                )
+            except ValueError as e:
+                loggerinst.debug("Failed to parse a package: %s", e)
+
+    return normalized_list
 
 
 def get_rpm_header(pkg_obj):
@@ -324,6 +373,7 @@ def get_rpm_header(pkg_obj):
         if rpm_hdr[rpm.RPMTAG_VERSION] == pkg_obj.v and rpm_hdr[rpm.RPMTAG_RELEASE] == pkg_obj.r:
             # One might think that we could have used the package EVR for comparison, instead of version and release
             #  separately, but there's a bug: https://bugzilla.redhat.com/show_bug.cgi?id=1876885.
+
             return rpm_hdr
     else:
         # Package not found in the rpm db
@@ -358,7 +408,10 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
 
         return yum_base.rpmdb.returnPackages(patterns=[pattern])
 
-    return yum_base.rpmdb.returnPackages()
+    installed_packages = yum_base.rpmdb.returnPackages()
+    yum_base.close()
+    del yum_base
+    return installed_packages
 
 
 def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=None):
@@ -395,29 +448,31 @@ def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=N
 
 
 def get_third_party_pkgs():
-    """Get all the third party packages (non-Red Hat and non-original OS-signed) that are going to be kept untouched."""
+    """
+    Get all the third party packages (non-Red Hat and non-original OS-signed)
+    that are going to be kept untouched.
+    """
     third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
         system_info.fingerprints_orig_os + system_info.fingerprints_rhel
     )
     return third_party_pkgs
 
 
-def get_installed_pkgs_w_different_fingerprint(fingerprints, name=""):
+def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
     """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
     of yum and hawkey.Package objects in case of dnf) that are not signed
     by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
     list in the fingerprints parameter. The packages can be optionally
     filtered by name.
     """
+    # if no fingerprints, skip this check.
     if not fingerprints:
-        # if fingerprints is None skip this check.
         return []
-    pkgs_w_fingerprints = get_installed_pkgs_w_fingerprints(name)
-    # Skip the gpg-pubkey package, it never has a signature
+
+    pkgs_w_fingerprints = get_installed_pkg_information(name)
+
     return [
-        pkg.pkg_obj
-        for pkg in pkgs_w_fingerprints
-        if pkg.fingerprint not in fingerprints and pkg.pkg_obj.name != "gpg-pubkey"
+        pkg for pkg in pkgs_w_fingerprints if pkg.fingerprint not in fingerprints and pkg.nevra.name != "gpg-pubkey"
     ]
 
 
@@ -439,17 +494,25 @@ def list_third_party_pkgs():
 
 
 def print_pkg_info(pkgs):
-    """Print package information."""
-    max_nvra_length = max(map(len, [get_pkg_nvra(pkg) for pkg in pkgs]))
-    max_packager_length = max(
-        max(
-            map(
-                len,
-                [get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg) for pkg in pkgs],
-            )
-        ),
-        len("Vendor/Packager"),
-    )
+    """Print package information.
+
+    :param pkgs: List of packages to be printed
+    :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
+    """
+    package_info = {}
+    for pkg in pkgs:
+        nevra = get_pkg_nevra(pkg, include_zero_epoch=True)
+        packager = get_vendor(pkg) if pkg.vendor != "(none)" else get_packager(pkg)
+        # Setting repoid as N/A to make it default. Later in the function this
+        # value is changed to the actual repoid, if there is one.
+        package_info[nevra] = {"packager": packager, "repoid": "N/A"}
+
+    # Get packager length
+    packager_field_lengths = (len(package["packager"]) for package in package_info.values())
+    max_packager_length = max(max(packager_field_lengths), len("Vendor/Packager"))
+
+    # Get nevra length
+    max_nvra_length = max(len(nvra) for nvra in package_info)
 
     header = (
         "%-*s  %-*s  %s"
@@ -474,28 +537,21 @@ def print_pkg_info(pkgs):
         + "\n"
     )
 
+    packages_with_repos = _get_package_repositories(list(package_info))
+    # Update package_info reference with repoid
+    for nevra, repoid in packages_with_repos.items():
+        package_info[nevra]["repoid"] = repoid
+
     pkg_list = ""
-    for pkg in pkgs:
-        if pkgmanager.TYPE == "yum":
-            try:
-                from_repo = pkg.yumdb_info.from_repo
-            except AttributeError:
-                # A package may not have the installation repo set in case it was installed through rpm
-                from_repo = "N/A"
-
-        elif pkgmanager.TYPE == "dnf":
-            # There's no public attribute for getting the installation repository.
-            # Bug filed: https://bugzilla.redhat.com/show_bug.cgi?id=1879168
-            from_repo = pkg._from_repo
-
+    for package, info in package_info.items():
         pkg_list += (
             "%-*s  %-*s  %s"
             % (
                 max_nvra_length,
-                get_pkg_nvra(pkg),
+                package,
                 max_packager_length,
-                get_vendor(pkg) if hasattr(pkg, "vendor") else get_packager(pkg),
-                from_repo,
+                info["packager"],
+                info["repoid"],
             )
             + "\n"
         )
@@ -505,39 +561,125 @@ def print_pkg_info(pkgs):
     return pkg_table
 
 
-def get_pkg_nvra(pkg_obj):
-    """Get package NVRA as a string: name, version, release, architecture.
-    Some utilities don't accept the full NEVRA of a package, for example rpm.
+def _get_package_repositories(pkgs):
+    """Retrieve repository information from packages.
+
+    :param pkgs: List of packages to get their associated repositories
+    :type pkgs: list[PackageInformation]
+    :return: Mapping of packages with their repositories names
+    :rtype: dict[str, dict[str, str]
     """
-    return "%s-%s-%s.%s" % (
-        pkg_obj.name,
-        pkg_obj.version,
-        pkg_obj.release,
-        pkg_obj.arch,
+    repositories_mapping = {}
+
+    query_format = "C2R %{EPOCH}:%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
+    if system_info.version.major == 8:
+        query_format = "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
+
+    output, retcode = utils.run_subprocess(
+        ["repoquery", "--quiet", "-q"] + pkgs + ["--qf", query_format],
+        print_cmd=False,
+        print_output=False,
+    )
+    output = [line for line in output.split("\n") if line]
+
+    # In case of repoquery returning an retcode different from 0, let's log the
+    # output as a debug and return N/A for the caller.
+    if retcode != 0:
+        loggerinst.debug("Repoquery exited with return code %s and with output: %s", retcode, " ".join(output))
+        for package in pkgs:
+            repositories_mapping[package] = "N/A"
+    else:
+        for line in output:
+            if "C2R" in line:
+                split_output = line.lstrip("C2R ").split("&")
+                nevra = split_output[0]
+                repoid = split_output[1]
+                repositories_mapping[nevra] = repoid if repoid else "N/A"
+            else:
+                loggerinst.debug("Got a line without the C2R identifier: %s", line)
+
+    return repositories_mapping
+
+
+def _get_nevra_from_pkg_obj(pkg_obj):
+    """
+    Helper function to convert from a RPMInstalledPackage object to a
+    PackageNevra object.
+
+    If the `pkg_obj` param is already an instance of `PackageInformation`, we
+    just return the `nevra` property from it.
+
+    :param pkg_obj: Instance of a RPMInstalledPackage.
+    :type pkg_obj: RPMInstalledPackage
+    :return: A new instance of PackageNevra if `pkg_obj` is a
+        RPMInstalledPackage instance, otherwise, just return the nevra from the
+        PackageInformation instance.
+    :rtype: PackageNevra
+    """
+    if isinstance(pkg_obj, PackageInformation):
+        return pkg_obj.nevra
+    return PackageNevra(
+        name=pkg_obj.name,
+        epoch=pkg_obj.epoch,
+        version=pkg_obj.version,
+        release=pkg_obj.release,
+        arch=pkg_obj.arch,
     )
 
 
-def get_pkg_nevra(pkg_obj):
-    """Get package NEVRA as a string: name, epoch, version, release, architecture.
-    Epoch is included only when non-zero. However it's on a different position when printed by YUM or DNF:
-      YUM - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
-      DNF - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+def get_pkg_nvra(pkg_obj):
     """
+    Get package NVRA as a string: name, version, release, architecture. Some
+    utilities don't accept the full NEVRA of a package, for example rpm.
+
+    :param pkg_obj: The package object to extract its NVRA
+    :type pkg_obj: RPMInstalledPackage | PackageInformation
+    :return: A formatted string with a package NVRA
+    :rtype: str
+    """
+    nevra = _get_nevra_from_pkg_obj(pkg_obj)
+    return "%s-%s-%s.%s" % (
+        nevra.name,
+        nevra.version,
+        nevra.release,
+        nevra.arch,
+    )
+
+
+def get_pkg_nevra(pkg_obj, include_zero_epoch=False):
+    """
+    Get package NEVRA as a string: name, epoch, version, release, architecture.
+    Epoch is included when it is present. However it's on a different position
+    when printed by YUM or DNF.
+
+    Example's::
+        YUM - epoch before name: 7:oraclelinux-release-7.9-1.0.9.el7.x86_64
+        DNF - epoch before version: oraclelinux-release-8:8.2-1.0.8.el8.x86_64
+
+    :param pkg_obj: The package object to extract its NEVRA
+    :type pkg_obj: RPMInstalledPackage | PackageInformation
+    :param include_zero_epoch: Whether to include the epoch as 0 in the string.
+    :type include_zero_epoch: bool
+    :return: A formatted string with a package NEVRA
+    :rtype: str
+    """
+    nevra = _get_nevra_from_pkg_obj(pkg_obj)
+    epoch = "" if str(nevra.epoch) == "0" and not include_zero_epoch else str(nevra.epoch) + ":"
     if pkgmanager.TYPE == "yum":
         return "%s%s-%s-%s.%s" % (
-            "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
-            pkg_obj.name,
-            pkg_obj.version,
-            pkg_obj.release,
-            pkg_obj.arch,
+            epoch,
+            nevra.name,
+            nevra.version,
+            nevra.release,
+            nevra.arch,
         )
 
     return "%s-%s%s-%s.%s" % (
-        pkg_obj.name,
-        "" if str(pkg_obj.epoch) == "0" else str(pkg_obj.epoch) + ":",
-        pkg_obj.version,
-        pkg_obj.release,
-        pkg_obj.arch,
+        nevra.name,
+        epoch,
+        nevra.version,
+        nevra.release,
+        nevra.arch,
     )
 
 
@@ -558,10 +700,7 @@ def get_vendor(pkg_obj):
     The vendor information is provided by the yum/dnf python API on all systems except systems derived from
     RHEL 8.0-8.3 (see bug https://bugzilla.redhat.com/show_bug.cgi?id=1876561).
     """
-    if hasattr(pkg_obj, "vendor") and pkg_obj.vendor:
-        return pkg_obj.vendor
-    else:
-        return "N/A"
+    return pkg_obj.vendor if pkg_obj.vendor else "N/A"
 
 
 def list_non_red_hat_pkgs_left():
@@ -582,7 +721,8 @@ def remove_excluded_pkgs():
     depending on the system to be converted.
     """
     loggerinst.info("Searching for the following excluded packages:\n")
-    remove_pkgs_with_confirm(system_info.excluded_pkgs)
+    pkgs_to_remove = _get_packages_to_remove(system_info.excluded_pkgs)
+    remove_pkgs_with_confirm(pkgs_to_remove)
 
 
 def remove_repofile_pkgs():
@@ -595,23 +735,22 @@ def remove_repofile_pkgs():
     subscription-manager installation.
     """
     loggerinst.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
-    remove_pkgs_with_confirm(system_info.repofile_pkgs)
+    pkgs_to_remove = _get_packages_to_remove(system_info.repofile_pkgs)
+    remove_pkgs_with_confirm(pkgs_to_remove)
 
 
-def remove_pkgs_with_confirm(pkgs, backup=True):
+def remove_pkgs_with_confirm(pkgs_to_remove, backup=True):
+    """Remove packages with user confirmation and backup.
+
+    :param pkgs_to_remove: List of packages that will be removed
+    :type pkgs_to_remove: list[PackageInformation]
+    :param backup: If the package should be in a backup. Defaults to True
+    :type backup: bool
     """
-    Remove selected packages with a breakdown and user confirmation prompt.
-    """
-    pkgs_to_remove = []
-    for pkg in pkgs:
-        temp = "." * (50 - len(pkg) - 2)
-        pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
-        pkgs_to_remove.extend(pkg_objects)
-        loggerinst.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
-
     if not pkgs_to_remove:
         loggerinst.info("\nNothing to do.")
         return
+
     loggerinst.info("\n")
     loggerinst.warning("The following packages will be removed...")
     print_pkg_info(pkgs_to_remove)
@@ -620,17 +759,52 @@ def remove_pkgs_with_confirm(pkgs, backup=True):
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
 
+@utils.run_as_child_process
+def _get_packages_to_remove(pkgs):
+    """
+    Get packages information that will be removed.
+
+    .. important::
+        This function is being executed in a child process to prevent that the
+        user won't be able to hit Ctrl + C during the package print, if they
+        manage to do that.
+
+        The reason that this function is ran in a child process is that we are
+        using an YUM API to query installed package, to then, get the package
+        information with the rpm binary. This YUM API method we use calls
+        directly the rpmdb, which in its turn, traps the signal handler and
+        prevent the main process to handle the Ctrl + C.
+
+    :param pkgs: List of packages that will be removed
+    :type pkgs: list[PackageInformation]
+    """
+    pkgs_to_remove = []
+    for pkg in pkgs:
+        temp = "." * (50 - len(pkg) - 2)
+        pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
+        pkgs_to_remove.extend(pkg_objects)
+        loggerinst.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
+
+    return pkgs_to_remove
+
+
 def get_system_packages_for_replacement():
-    """Get a list of packages in the system to be replaced.
-    This function will return a list of packages installed on the system by
-    using the `system_info.fingerprint_ori_os` signature.
+    """
+    Get a list of packages in the system to be replaced. This function will
+    return a list of packages installed on the system by using the
+    `system_info.fingerprint_orig_os` signature.
+
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
-    submgr_pkgs = []
-    orig_os_pkgs = get_installed_pkgs_by_fingerprint(system_info.fingerprints_orig_os)
-    orig_os_pkgs += submgr_pkgs
-    return orig_os_pkgs
+    fingerprints = system_info.fingerprints_orig_os
+    packages_with_fingerprints = get_installed_pkg_information()
+
+    return [
+        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch)
+        for pkg in packages_with_fingerprints
+        if pkg.fingerprint in fingerprints
+    ]
 
 
 def install_gpg_keys():
@@ -884,7 +1058,7 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     # package names need to be mapped to the RHEL kernel package names to have
     # them installed on the converted system.
     ol_kernel_ext = "-uek"
-    pkg_names = [p.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
+    pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
@@ -965,12 +1139,23 @@ def get_pkg_names_from_rpm_paths(rpm_paths):
     return pkg_names
 
 
+@utils.run_as_child_process
 def get_total_packages_to_update(reposdir):
-    """Return the total number of packages to update in the system
-    It uses both yum/dnf depending on whether they are installed on the system,
-    In case of RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`.
-    To check whether the system is updated or not, we use original vendor repofiles which we ship within the
-    convert2rhel RPM. The reason is that we can't rely on the repofiles available on the to-be-converted system.
+    """
+    Return the total number of packages to update in the system. It uses both
+    yum/dnf depending on whether they are installed on the system, In case of
+    RHEL 7 derivative distributions, it uses `yum`, otherwise it uses `dnf`. To
+    check whether the system is updated or not, we use original vendor
+    repofiles which we ship within the convert2rhel RPM. The reason is that we
+    can't rely on the repofiles available on the to-be-converted system.
+
+    .. important::
+        This function is being executed in a child process so that yum does
+        not handle signals like SIGINT without us knowing about it.
+
+        We need to know about the signals to act on them, for example to
+        execute a rollback when the user presses Ctrl + C.
+
     :param reposdir: The path to the hardcoded repositories for EUS (If any).
     :type reposdir: str | None
     :return: The packages that need to be updated.
@@ -981,20 +1166,27 @@ def get_total_packages_to_update(reposdir):
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
-        # We're using the reposdir with dnf only because we currently hardcode the repofiles for RHEL 8 derivatives only.
+        # We're using the reposdir with dnf only because we currently hardcode
+        # the repofiles for RHEL 8 derivatives only.
         packages = _get_packages_to_update_dnf(reposdir=reposdir)
 
     return set(packages)
 
 
 def _get_packages_to_update_yum():
-    """Query all the packages with yum that has an update pending on the system."""
+    """Use yum to get all the installed packages that have an update available.
+
+    :return: Return a list of packages that needs to be updated.
+    :rtype: list[str] | list
+    """
+    all_packages = []
     base = pkgmanager.YumBase()
     packages = base.doPackageLists(pkgnarrow="updates")
-    all_packages = []
     for package in packages.updates:
         all_packages.append(package.name)
 
+    base.close()
+    del base
     return all_packages
 
 
@@ -1007,19 +1199,17 @@ def _get_packages_to_update_dnf(reposdir):
     packages = []
     base = pkgmanager.Base()
 
-    # If we have an reposdir, that means we are trying to check the packages under
-    # CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4.
-    # That means we need to use our hardcoded repository files instead of the system ones.
+    # If we have a reposdir, that means we are trying to check the packages
+    # under CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4. That means we need to
+    # use our hardcoded repository files instead of the system ones.
     if reposdir:
         base.conf.reposdir = reposdir
 
     # Set DNF to read from the proper config files, at this moment, DNF can't
-    # automatically read and load the config files
-    # so we have to specify it to him.
-    # We set the PRIO_MAINCONFIG as the base config file to be read.
-    # We also set the folder /etc/dnf/vars as the main point for vars
-    # replacement in repo files.
-    # See this bugzilla comment:
+    # automatically read and load the config files so we have to specify it to
+    # him. We set the PRIO_MAINCONFIG as the base config file to be read. We
+    # also set the folder /etc/dnf/vars as the main point for vars replacement
+    # in repo files. See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
     base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
@@ -1030,8 +1220,7 @@ def _get_packages_to_update_dnf(reposdir):
     base.upgrade_all()
     base.resolve()
 
-    # Iterate over each and every one of them and append to
-    # the packages list
+    # Iterate over each and every one of them and append to the packages list
     for package in base.transaction:
         packages.append(package.name)
 

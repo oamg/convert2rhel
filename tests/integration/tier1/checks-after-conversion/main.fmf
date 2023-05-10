@@ -14,9 +14,14 @@ link:
   - https://issues.redhat.com/browse/RHELC-411
   - https://issues.redhat.com/browse/RHELC-291
 
-/disable_data_collection:
-    tag: CONVERT2RHEL_DISABLE_TELEMETRY
-    test: pytest -svv -m disable_data_collection
+/data_collection:
+    summary+: |
+        Data collection
+    description: |
+        Verify, that when the data collection is disabled with CONVERT2RHEL_DISABLE_TELEMETRY,
+        the convert2rhel.facts file is not present on the system after the conversion.
+        When data collection is enabled, verify, the convert2rhel.facts file exists.
+    test: pytest -svv -m test_check_data_collection
 
 /delete_temporary_folder:
     test: pytest -svv -m delete_temporary_folder
