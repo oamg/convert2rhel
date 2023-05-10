@@ -47,13 +47,17 @@ class TaintedKmods(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="TAINTED_KMODS_DETECTED",
-                message=(
+                description="Please refer to the diagnosis for further information",
+                title="Tainted kernel modules detected",
+                diagnosis=(
                     "Tainted kernel modules detected:\n  {0}\n"
                     "Third-party components are not supported per our "
-                    "software support policy:\n {1}\n"
-                    "Prevent the modules from loading by following {2}"
+                    "software support policy:\n {1}\n".format(module_names, LINK_KMODS_RH_POLICY)
+                ),
+                remediation=(
+                    "Prevent the modules from loading by following {0}"
                     " and run convert2rhel again to continue with the conversion.".format(
-                        module_names, LINK_KMODS_RH_POLICY, LINK_PREVENT_KMODS_FROM_LOADING
+                        LINK_PREVENT_KMODS_FROM_LOADING
                     )
                 ),
             )

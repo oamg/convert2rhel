@@ -28,14 +28,13 @@ def test_failures_and_skips_in_report(convert2rhel):
 
         # Error header first
         assert c2r.expect("Must fix before conversion", timeout=600) == 0
-        c2r.expect("SUBSCRIBE_SYSTEM::UNKNOWN_ERROR - Unable to register the system")
+        c2r.expect("SUBSCRIBE_SYSTEM::UNKNOWN_ERROR - Unknown error")
+        c2r.expect("Unable to register the system through subscription-manager.")
 
         # Skip header
         assert c2r.expect("Could not be checked due to other failures", timeout=600) == 0
         c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY::SKIP - Skipped")
-
-        # Success header
-        assert c2r.expect("No changes needed", timeout=600) == 0
+        c2r.expect("Skipped because SUBSCRIBE_SYSTEM was not successful")
 
     assert c2r.exitstatus == 0
 

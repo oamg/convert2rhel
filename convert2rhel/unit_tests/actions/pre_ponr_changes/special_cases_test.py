@@ -109,3 +109,47 @@ def test_remove_iwlax2xx_firmware_not_ol8(pretend_os, caplog):
 
     assert "Relevant to Oracle Linux 8 only. Skipping." in caplog.records[-1].message
     assert instance.result.level == actions.STATUS_CODE["SUCCESS"]
+
+
+@oracle8
+@pytest.mark.parametrize(
+    (
+        "is_iwl7260_installed",
+        "is_iwlax2xx_installed",
+        "subprocess_output",
+        "subprocess_call_count",
+    ),
+    ((True, True, ("output", 1), 1),),
+)
+def test_remove_iwlax2xx_firmware_message(
+    pretend_os, is_iwl7260_installed, is_iwlax2xx_installed, subprocess_output, subprocess_call_count, monkeypatch
+):
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (("rpm", "-e", "--nodeps", "iwlax2xx-firmware"), subprocess_output),
+        )
+    )
+    is_rpm_installed_mock = mock.Mock(side_effect=[is_iwl7260_installed, is_iwlax2xx_installed])
+    monkeypatch.setattr(
+        special_cases,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(special_cases.system_info, "is_rpm_installed", value=is_rpm_installed_mock)
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="WARNING",
+                id="IWLAX2XX_FIRMWARE_REMOVAL_FAILED",
+                title="Package removal failed",
+                description="Unable to remove the package iwlax2xx-firmware.",
+                diagnosis=None,
+                remediation=None,
+            ),
+        )
+    )
+
+    instance = special_cases.RemoveIwlax2xxFirmware()
+    instance.run()
+    assert expected.issuperset(instance.messages)
+    assert expected.issubset(instance.messages)

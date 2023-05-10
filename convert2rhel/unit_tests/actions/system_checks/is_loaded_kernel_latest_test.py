@@ -51,7 +51,6 @@ class TestIsLoadedKernelLatest:
         message = (
             "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
         )
-
         is_loaded_kernel_latest_action.run()
 
         assert message in caplog.records[-1].message
@@ -82,7 +81,6 @@ class TestIsLoadedKernelLatest:
         package_name,
         tmpdir,
         monkeypatch,
-        caplog,
         is_loaded_kernel_latest_action,
     ):
         fake_reposdir_path = str(tmpdir)
@@ -123,37 +121,49 @@ class TestIsLoadedKernelLatest:
 
         is_loaded_kernel_latest_action.run()
 
-        repoquery_kernel_version = repoquery_version.split("\t")[2]
-        uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert is_loaded_kernel_latest_action.result.id == "INVALID_KERNEL_VERSION"
-        assert is_loaded_kernel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
-        assert (
-            "The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
-            % fake_reposdir_path
-            in is_loaded_kernel_latest_action.result.message
+        unit_tests.assert_actions_result(
+            is_loaded_kernel_latest_action,
+            id="INVALID_KERNEL_VERSION",
+            level="ERROR",
+            title="Invalid kernel version detected",
+            description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
+            % fake_reposdir_path,
+            diagnosis="The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
+            % fake_reposdir_path,
+            remediation="To proceed with the conversion, update the kernel version by executing the following step:\n\n",
         )
-        assert (
-            "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version
-            in is_loaded_kernel_latest_action.result.message
-        )
-        assert "Loaded kernel version: %s\n" % uname_kernel_version in is_loaded_kernel_latest_action.result.message
 
     @pytest.mark.parametrize(
-        ("repoquery_version", "uname_version", "return_code", "package_name", "expected"),
+        (
+            "repoquery_version",
+            "uname_version",
+            "return_code",
+            "package_name",
+            "title",
+            "description",
+            "diagnosis",
+            "remediation",
+        ),
         (
             (
                 "C2R\t1634146676\t1-1.01-5.02\tbaseos",
                 "2-1.01-5.02",
                 0,
                 "kernel-core",
+                "Invalid kernel package found",
+                "Please refer to the diagnosis for further information",
                 "The package names ('kernel-core-1' and 'kernel-core-2') do not match. Can only compare versions for the same packages.",
+                None,
             ),
             (
                 "C2R\t1634146676\t1 .01-5.02\tbaseos",
                 "1 .01-5.03",
                 0,
                 "kernel-core",
+                "Invalid kernel package found",
+                "Please refer to the diagnosis for further information",
                 "Invalid package - kernel-core-1 .01-5.02, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR.",
+                None,
             ),
         ),
     )
@@ -166,7 +176,10 @@ class TestIsLoadedKernelLatest:
         uname_version,
         return_code,
         package_name,
-        expected,
+        title,
+        description,
+        diagnosis,
+        remediation,
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
@@ -199,30 +212,47 @@ class TestIsLoadedKernelLatest:
         )
 
         is_loaded_kernel_latest_action.run()
-
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
             level="ERROR",
             id="INVALID_KERNEL_PACKAGE",
-            message=expected,
+            title=title,
+            description=description,
+            diagnosis=diagnosis,
+            remediation=remediation,
         )
 
     @pytest.mark.parametrize(
-        ("repoquery_version", "uname_version", "return_code", "package_name", "expected"),
+        (
+            "repoquery_version",
+            "uname_version",
+            "return_code",
+            "package_name",
+            "title",
+            "description",
+            "diagnosis",
+            "remediation",
+        ),
         (
             (
                 "C2R\t1634146676\t1-1.01-5.02\tbaseos",
                 "2-1.01-5.02",
                 0,
                 "kernel",
+                "Invalid kernel package found",
+                "Please refer to the diagnosis for further information",
                 "The following field(s) are invalid - release : 1.01-5",
+                None,
             ),
             (
                 "C2R\t1634146676\t1 .01-5.02\tbaseos",
                 "1 .01-5.03",
                 0,
                 "kernel",
+                "Invalid kernel package found",
+                "Please refer to the diagnosis for further information",
                 "The following field(s) are invalid - version : 1 .01",
+                None,
             ),
         ),
     )
@@ -235,7 +265,10 @@ class TestIsLoadedKernelLatest:
         uname_version,
         return_code,
         package_name,
-        expected,
+        title,
+        description,
+        diagnosis,
+        remediation,
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
@@ -273,7 +306,10 @@ class TestIsLoadedKernelLatest:
             is_loaded_kernel_latest_action,
             level="ERROR",
             id="INVALID_KERNEL_PACKAGE",
-            message=expected,
+            title=title,
+            description=description,
+            diagnosis=diagnosis,
+            remediation=remediation,
         )
 
     @centos8
@@ -325,9 +361,23 @@ class TestIsLoadedKernelLatest:
     ):
         monkeypatch.setattr(is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
         monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", False)
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
+                    title="Skipping the is loaded kernel latest check",
+                    description="Skipping the check as no internet connection has been detected.",
+                    diagnosis=None,
+                    remediation=None,
+                ),
+            )
+        )
 
         is_loaded_kernel_latest_action.run()
         assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
+        assert expected.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     @pytest.mark.parametrize(
@@ -335,21 +385,43 @@ class TestIsLoadedKernelLatest:
             "repoquery_stdout",
             "return_code",
             "unsupported_skip",
-            "expected",
+            "level",
+            "id",
+            "title",
+            "description",
+            "diagnosis",
+            "remediation",
         ),
         (
             pytest.param(
                 "",
                 0,
                 "1",
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
+                "WARNING",
+                "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                "Skipping the kernel currency check",
+                (
+                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                    "the kernel-core comparison.\n"
+                    "Beware, this could leave your system in a broken state."
+                ),
+                None,
+                None,
                 id="Unsupported skip with environment var set to 1",
             ),
             pytest.param(
                 "",
                 1,
                 None,
-                "Couldn't fetch the list of the most recent kernels available",
+                "WARNING",
+                "UNABLE_TO_FETCH_RECENT_KERNELS",
+                "Unable to fetch recent kernels",
+                (
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                ),
+                None,
+                None,
                 id="Unsupported skip with environment var not set",
             ),
         ),
@@ -360,7 +432,12 @@ class TestIsLoadedKernelLatest:
         repoquery_stdout,
         return_code,
         unsupported_skip,
-        expected,
+        level,
+        id,
+        title,
+        description,
+        diagnosis,
+        remediation,
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
@@ -394,10 +471,22 @@ class TestIsLoadedKernelLatest:
             "environ",
             {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
         )
-
+        expected_set = set(
+            (
+                actions.ActionMessage(
+                    level=level,
+                    id=id,
+                    title=title,
+                    description=description,
+                    diagnosis=diagnosis,
+                    remediation=remediation,
+                ),
+            )
+        )
         is_loaded_kernel_latest_action.run()
-
-        assert expected in caplog.records[-1].message
+        assert description in caplog.records[-1].message
+        assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected_set.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     @pytest.mark.parametrize(
@@ -405,16 +494,20 @@ class TestIsLoadedKernelLatest:
             "repoquery_version",
             "return_code",
             "package_name",
-            "unsupported_skip",
-            "expected",
+            "title",
+            "description",
+            "diagnosis",
+            "remediation",
         ),
         (
             pytest.param(
                 "",
                 0,
                 "kernel-core",
-                None,
+                "Kernel currency check failed",
+                "Please refer to the diagnosis for further information",
                 "Could not find any {0} from repositories to compare against the loaded kernel.",
+                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\nIf you wish to ignore this message, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1.",
                 id="Repoquery failure without environment var",
             ),
         ),
@@ -425,10 +518,11 @@ class TestIsLoadedKernelLatest:
         repoquery_version,
         return_code,
         package_name,
-        unsupported_skip,
-        expected,
+        title,
+        description,
+        remediation,
+        diagnosis,
         monkeypatch,
-        caplog,
         is_loaded_kernel_latest_action,
     ):
         run_subprocess_mocked = mock.Mock(
@@ -456,9 +550,15 @@ class TestIsLoadedKernelLatest:
             value=run_subprocess_mocked,
         )
         is_loaded_kernel_latest_action.run()
-        expected = expected.format(package_name)
+        diagnosis = diagnosis.format(package_name)
         unit_tests.assert_actions_result(
-            is_loaded_kernel_latest_action, level="ERROR", id="KERNEL_CURRENCY_CHECK_FAIL", message=expected
+            is_loaded_kernel_latest_action,
+            level="ERROR",
+            id="KERNEL_CURRENCY_CHECK_FAIL",
+            title=title,
+            description=description,
+            diagnosis=diagnosis,
+            remediation=remediation,
         )
 
     @pytest.mark.parametrize(
@@ -614,13 +714,12 @@ class TestIsLoadedKernelLatest:
         )
 
         is_loaded_kernel_latest_action.run()
-
-        repoquery_kernel_version = repoquery_version.split("\t")[2]
-        uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert is_loaded_kernel_latest_action.result.id == "INVALID_KERNEL_VERSION"
-        assert is_loaded_kernel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
-        assert (
-            "Latest kernel version available in baseos: %s" % repoquery_kernel_version
-            in is_loaded_kernel_latest_action.result.message
+        unit_tests.assert_actions_result(
+            is_loaded_kernel_latest_action,
+            level="ERROR",
+            id="INVALID_KERNEL_VERSION",
+            title="Invalid kernel version detected",
+            description="The loaded kernel version mismatch the latest one available in the enabled system repositories",
+            diagnosis="The version of the loaded kernel is different from the latest version in the enabled system repositories.",
+            remediation="To proceed with the conversion, update the kernel version by executing the following step:",
         )
-        assert "Loaded kernel version: %s\n\n" % uname_kernel_version in is_loaded_kernel_latest_action.result.message

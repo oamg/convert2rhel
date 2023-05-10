@@ -59,7 +59,14 @@ class Convert2rhelLatest(actions.Action):
         super(Convert2rhelLatest, self).run()
 
         if not system_info.has_internet_access:
-            logger.warning("Skipping the check because no internet connection has been detected.")
+            description = "Skipping the check because no internet connection has been detected."
+            logger.warning(description)
+            self.add_message(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
+                title="Skipping convert2rhel latest version check",
+                description=description,
+            )
             return
 
         repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
@@ -87,9 +94,17 @@ class Convert2rhelLatest(actions.Action):
             shutil.rmtree(repo_dir)
 
         if return_code != 0:
-            logger.warning(
-                "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
+            diagnosis = (
+                "Couldn't check if the current installed convert2rhel is the latest version.\n"
                 "repoquery failed with the following output:\n%s" % (raw_output_convert2rhel_versions)
+            )
+            logger.warning(diagnosis)
+            self.add_message(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_SKIP",
+                title="convert2rhel latest version check skip",
+                description="Skipping the convert2hel latest version check",
+                diagnosis=diagnosis,
             )
             return
 
@@ -147,7 +162,7 @@ class Convert2rhelLatest(actions.Action):
 
         logger.debug("Found %s to be latest available version" % (latest_available_version[1]))
         # After the for loop, the latest_available_version variable will gain the epoch, version, and release
-        # (e.g. ("0" "0.26" "1.el7")) information from the Convert2RHEL yum repo
+        # (e.g. ("0" "0.26" "1.el7")) information from the convert2rhel yum repo
         # when the versions are the same the latest_available_version's release field will cause it to evaluate as a later version.
         # Therefore we need to hardcode "0" for both the epoch and release below for installed_convert2rhel_version
         # and latest_available_version respectively, to compare **just** the version field.
@@ -164,32 +179,60 @@ class Convert2rhelLatest(actions.Action):
                         " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
                         " instead."
                     )
+                    self.add_message(
+                        level="WARNING",
+                        id="DEPRECATED_ENVIRONMENT_VARIABLE",
+                        title="Deprecated environment variable",
+                        description="A deprecated environment variable has been detected",
+                        diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
+                        remediation="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
+                    )
 
-                logger.warning(
-                    "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                diagnosis = (
+                    "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
                     % (installed_convert2rhel_version, latest_available_version[1])
                 )
-
+                logger.warning(diagnosis)
+                self.add_message(
+                    level="WARNING",
+                    id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
+                    title="Outdated convert2rhel version detected",
+                    description="An outdated convert2rhel version has been detected",
+                    diagnosis=diagnosis,
+                )
             else:
                 if int(system_info.version.major) <= 6:
                     logger.warning(
-                        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+                        "You are currently running %s and the latest version of convert2rhel is %s.\n"
                         "We encourage you to update to the latest version."
                         % (installed_convert2rhel_version, latest_available_version[1])
+                    )
+                    self.add_message(
+                        level="WARNING",
+                        id="OUTDATED_CONVERT2RHEL_VERSION",
+                        title="Outdated convert2rhel version detected",
+                        description="An outdated convert2rhel version has been detected",
+                        diagnosis=(
+                            "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                            "We encourage you to update to the latest version."
+                            % (installed_convert2rhel_version, latest_available_version[1])
+                        ),
                     )
 
                 else:
                     self.set_result(
                         level="ERROR",
                         id="OUT_OF_DATE",
-                        message=(
-                            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                            "Only the latest version is supported for conversion. If you want to ignore"
-                            " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
+                        title="Outdated convert2rhel version detected",
+                        description="An outdated convert2rhel version has been detected",
+                        diagnosis=(
+                            "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                            "Only the latest version is supported for conversion."
                             % (installed_convert2rhel_version, latest_available_version[1])
                         ),
+                        remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
                     )
                     return
 
-        logger.info("Latest available Convert2RHEL version is installed.")
+        logger.info("Latest available convert2rhel version is installed.")

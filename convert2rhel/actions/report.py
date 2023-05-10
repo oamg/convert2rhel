@@ -42,6 +42,8 @@ CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.j
 _STATUS_TO_COLOR = {
     # SUCCESS
     0: "OKGREEN",
+    # INFO
+    25: "INFO",
     # WARNING
     51: "WARNING",
     # SKIP
@@ -87,6 +89,33 @@ def summary_as_json(results, json_file=CONVERT2RHEL_JSON_RESULTS):
 
     with open(json_file, "w") as f:
         json.dump(envelope, f)
+
+
+def wrap_paragraphs(text, width=70, **kwargs):
+    """
+    Wrap the paragraphs for a given text respecting the line breaks defined in
+    the string (if any).
+
+    This solution was taken from
+    https://github.com/python/cpython/issues/46167#issuecomment-1093406764,
+    which is a solution to textwrap not properly respecting line breaks inside
+    strings.
+    """
+    output = []
+    first = True
+    indent = ""
+    subsequent_indent = "    "
+    for paragraph in text.splitlines():
+        for line in textwrap.wrap(
+            paragraph, width, initial_indent=indent, subsequent_indent=subsequent_indent, **kwargs
+        ) or [""]:
+            output.append(line)
+        if first:
+            indent = subsequent_indent
+            subsequent_indent = ""
+            first = False
+
+    return "\n".join(output)
 
 
 def summary(results, include_all_reports=False, with_colors=True):
@@ -146,12 +175,18 @@ def summary(results, include_all_reports=False, with_colors=True):
     for action_id, action_value in results.items():
         combined_results_and_message[(action_id, action_value["result"]["id"])] = {
             "level": action_value["result"]["level"],
-            "message": action_value["result"]["message"],
+            "title": action_value["result"]["title"],
+            "description": action_value["result"]["description"],
+            "remediation": action_value["result"]["remediation"],
+            "diagnosis": action_value["result"]["diagnosis"],
         }
         for message in action_value["messages"]:
             combined_results_and_message[(action_id, message["id"])] = {
                 "level": message["level"],
-                "message": message["message"],
+                "title": message["title"],
+                "description": message["description"],
+                "remediation": message["remediation"],
+                "diagnosis": message["diagnosis"],
             }
 
     if include_all_reports:
@@ -174,10 +209,8 @@ def summary(results, include_all_reports=False, with_colors=True):
             report.append(format_report_section_heading(combined_result["level"]))
             last_level = combined_result["level"]
 
-        entry = format_action_status_message(
-            combined_result["level"], message_id[0], message_id[1], combined_result["message"]
-        )
-        entry = word_wrapper.fill(entry)
+        entry = format_action_status_message(combined_result["level"], message_id[0], message_id[1], combined_result)
+        entry = wrap_paragraphs(entry, width=terminal_size[0])
         if with_colors:
             entry = colorize(entry, _STATUS_TO_COLOR[combined_result["level"]])
         report.append(entry)

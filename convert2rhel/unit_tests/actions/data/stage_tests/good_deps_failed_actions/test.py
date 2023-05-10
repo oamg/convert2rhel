@@ -15,4 +15,11 @@ class BTest(actions.Action):
 
     def run(self):
         super(BTest, self).run()
-        self.set_status(level=actions.STATUS_CODES["ERROR"], id="BTEST_FAILURE", message="failure message")
+        self.set_status(
+            level=actions.STATUS_CODES["ERROR"],
+            id="BTEST_FAILURE",
+            title="failure title",
+            description="failure description",
+            diagnosis="failure diagnosis",
+            remediation="failure remediation",
+        )

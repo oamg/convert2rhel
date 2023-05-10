@@ -40,7 +40,7 @@ jobs:
 
 # TEST JOBS
 ## Tests on pull request stage
-- &tests-tier0
+- &tests-tier0-destructive-manual
   job: tests
   # Run tests on-demand
   manual_trigger: true
@@ -56,8 +56,8 @@ jobs:
         # to tag the updated system correctly
       distros: [centos-8-latest, oraclelinux-8.6]
   trigger: pull_request
-  identifier: "tier0"
-  tmt_plan: "tier0"
+  identifier: "tier0-destructive"
+  tmt_plan: "tier0/destructive"
   # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
   use_internal_tf: True
   tf_extra_params:
@@ -68,33 +68,39 @@ jobs:
               BusinessUnit: sst_conversions
   labels:
     - tier0
+    - tier0-destructive
+    - destructive
 
 - &tests-tier0-non-destructive-manual
-  <<: *tests-tier0
+  <<: *tests-tier0-destructive-manual
   identifier: "tier0-non-destructive"
   tmt_plan: "tier0/non-destructive"
   labels:
+    - tier0
     - tier0-non-destructive
     - non-destructive
 
-- &tests-tier1-manual
-  <<: *tests-tier0
-  identifier: "tier1"
-  tmt_plan: "tier1"
+- &tests-tier1-destructive-manual
+  <<: *tests-tier0-destructive-manual
+  identifier: "tier1-destructive"
+  tmt_plan: "tier1/destructive"
   labels:
     - tier1
+    - tier1-destructive
+    - destructive
 
-- &tests-tier1-non-destructive-manual
-  <<: *tests-tier0
-  identifier: "tier1-non-destructive"
-  tmt_plan: "tier1/non-destructive"
-  labels:
-    - tier1-non-destructive
-    - non-destructive
+# Disabled for now
+#- &tests-tier1-non-destructive-manual
+#  <<: *tests-tier0-destructive-manual
+#  identifier: "tier1-non-destructive"
+#  tmt_plan: "tier1/non-destructive"
+#  labels:
+#    - tier1-non-destructive
+#    - non-destructive
 
 # Tests on merge to main stage
 - &tests-tier1
-  <<: *tests-tier0
+  <<: *tests-tier0-destructive-manual
   # Run test automatically with merge commit to main branch
   manual_trigger: false
   identifier: "tier1"

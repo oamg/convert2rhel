@@ -419,24 +419,17 @@ def mock_decorator(func):
 
 
 class GetInstalledPkgsWFingerprintsMocked(MockFunction):
-    def prepare_test_pkg_tuples_w_fingerprints(self):
-        class PkgData:
-            def __init__(self, pkg_obj, fingerprint):
-                self.pkg_obj = pkg_obj
-                self.fingerprint = fingerprint
-
-        obj1 = create_pkg_obj("pkg1")
-        obj2 = create_pkg_obj("pkg2")
-        obj3 = create_pkg_obj("gpg-pubkey")
-        pkgs = [
-            PkgData(obj1, "199e2f91fd431d51"),  # RHEL
-            PkgData(obj2, "72f97b74ec551f03"),  # OL
-            PkgData(obj3, "199e2f91fd431d51"),
-        ]  # RHEL
-        return pkgs
+    obj1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
+    obj2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
+    obj3 = create_pkg_information(
+        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
+    )
 
     def __call__(self, *args, **kwargs):
-        return self.prepare_test_pkg_tuples_w_fingerprints()
+        return self.get_packages()
+
+    def get_packages(self):
+        return [self.obj1, self.obj2, self.obj3]
 
 
 #: Used as a sentinel value for assert_action_result() so we only check
@@ -444,17 +437,34 @@ class GetInstalledPkgsWFingerprintsMocked(MockFunction):
 _NO_USER_VALUE = object()
 
 
-def assert_actions_result(instance, level=_NO_USER_VALUE, id=_NO_USER_VALUE, message=_NO_USER_VALUE):
+def assert_actions_result(
+    instance,
+    level=_NO_USER_VALUE,
+    id=_NO_USER_VALUE,
+    title=_NO_USER_VALUE,
+    description=_NO_USER_VALUE,
+    diagnosis=_NO_USER_VALUE,
+    remediation=_NO_USER_VALUE,
+):
     """Helper function to assert result set by Actions Framework."""
 
-    if level != _NO_USER_VALUE:
+    if level and level != _NO_USER_VALUE:
         assert instance.result.level == STATUS_CODE[level]
 
-    if id != _NO_USER_VALUE:
+    if id and id != _NO_USER_VALUE:
         assert instance.result.id == id
 
-    if message != _NO_USER_VALUE:
-        assert message in instance.result.message
+    if title and title != _NO_USER_VALUE:
+        assert title in instance.result.title
+
+    if description and description != _NO_USER_VALUE:
+        assert description in instance.result.description
+
+    if diagnosis and diagnosis != _NO_USER_VALUE:
+        assert diagnosis in instance.result.diagnosis
+
+    if remediation and remediation != _NO_USER_VALUE:
+        assert remediation in instance.result.remediation
 
 
 class EFIBootInfoMocked:

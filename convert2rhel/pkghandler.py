@@ -361,10 +361,10 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
 
 
 @utils.run_as_child_process
-def print_pkg_info(pkgs):
-    """Print package information.
+def format_pkg_info(pkgs):
+    """Format package information.
 
-    :param pkgs: List of packages to be printed
+    :param pkgs: List of packages to be formatted
     :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
     """
     package_info = {}
@@ -425,8 +425,19 @@ def print_pkg_info(pkgs):
         )
 
     pkg_table = header + header_underline + pkg_list
-    loggerinst.info(pkg_table)
+
     return pkg_table
+
+
+def print_pkg_info(pkgs):
+    """
+    Print the results of format_pkg_info
+
+    :param pkgs: List of packages to be printed
+    :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
+    """
+
+    loggerinst.info(format_pkg_info(pkgs))
 
 
 def _get_package_repositories(pkgs):
@@ -578,7 +589,7 @@ def list_non_red_hat_pkgs_left():
     loggerinst.info("Listing packages not signed by Red Hat")
     non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
     if non_red_hat_pkgs:
-        loggerinst.info("The following packages were left unchanged.")
+        loggerinst.info("The following packages were left unchanged.\n")
         print_pkg_info(non_red_hat_pkgs)
     else:
         loggerinst.info("All packages are now signed by Red Hat.")
@@ -596,15 +607,17 @@ def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
         loggerinst.info("\nNothing to do.")
         return
 
-    loggerinst.warning("Removing the following %s packages:" % str(len(pkgs_to_remove)))
+    loggerinst.warning("\nRemoving the following %s packages:\n" % str(len(pkgs_to_remove)))
     print_pkg_info(pkgs_to_remove)
     loggerinst.info("\n")
-    remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    pkgs_removed = remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
+
+    return pkgs_removed
 
 
 @utils.run_as_child_process
-def _get_packages_to_remove(pkgs):
+def get_packages_to_remove(pkgs):
     """
     Get packages information that will be removed.
 
@@ -815,7 +828,7 @@ def remove_non_rhel_kernels():
     loggerinst.info("Searching for non-RHEL kernels ...")
     non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel*")
     if non_rhel_kernels:
-        loggerinst.info("Removing non-RHEL kernels")
+        loggerinst.info("Removing non-RHEL kernels\n")
         print_pkg_info(non_rhel_kernels)
         remove_pkgs(
             pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],

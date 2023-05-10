@@ -33,6 +33,21 @@ COMPATIBLE_KERNELS_VERS = {
 BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
 
 
+class KernelIncompatibleError(Exception):
+    """
+    Exception raised when errors are found when rhel incompatible kernels are discovered
+    """
+
+    def __init__(self, error_id, template, variables):
+        self.error_id = error_id
+        self.template = template
+        self.variables = variables
+
+    def __str__(self):
+        # substitute this for the jinga template format
+        return self.template.format(**self.variables)
+
+
 class RhelCompatibleKernel(actions.Action):
     id = "RHEL_COMPATIBLE_KERNEL"
 
@@ -43,57 +58,66 @@ class RhelCompatibleKernel(actions.Action):
         """
         super(RhelCompatibleKernel, self).run()
         logger.task("Prepare: Check kernel compatibility with RHEL")
-        if any(
-            (
-                _bad_kernel_version(system_info.booted_kernel),
-                _bad_kernel_package_signature(system_info.booted_kernel),
-                _bad_kernel_substring(system_info.booted_kernel),
-            )
-        ):
-            self.set_result(
-                level="ERROR",
-                id="BOOTED_KERNEL_INCOMPATIBLE",
-                message=(
-                    "The booted kernel version is incompatible with the standard RHEL kernel. "
-                    "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
-                    " by executing the following steps:\n\n"
-                    "1. Ensure that the {0} {1} base repository is enabled\n"
-                    "2. Run: yum install kernel\n"
-                    "3. (optional) Run: grubby --set-default "
-                    '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
-                    "4. Reboot the machine and if step 3 was not applied choose the kernel"
-                    " installed in step 2 manually".format(system_info.name, system_info.version.major)
-                ),
-            )
-            return
-        else:
-            logger.info("The booted kernel %s is compatible with RHEL." % system_info.booted_kernel)
+        for check_function in (_bad_kernel_version, _bad_kernel_package_signature, _bad_kernel_substring):
+            try:
+                check_function(system_info.booted_kernel)
+            except KernelIncompatibleError as e:
+                bad_kernel_message = str(e)
+                logger.warning(bad_kernel_message)
+
+                self.set_result(
+                    level="ERROR",
+                    id=e.error_id,
+                    title="Incompatible booted kernel version",
+                    description="Please refer to the diagnosis for further information",
+                    diagnosis=(
+                        "The booted kernel version is incompatible with the standard RHEL kernel. %s"
+                        % bad_kernel_message
+                    ),
+                    remediation=(
+                        "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
+                        " by executing the following steps:\n\n"
+                        "1. Ensure that the {0} {1} base repository is enabled\n"
+                        "2. Run: yum install kernel\n"
+                        "3. (optional) Run: grubby --set-default "
+                        '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
+                        "4. Reboot the machine and if step 3 was not applied choose the kernel"
+                        " installed in step 2 manually".format(system_info.name, system_info.version.major)
+                    ),
+                )
+                return
+        logger.info("The booted kernel %s is compatible with RHEL." % system_info.booted_kernel)
 
 
 def _bad_kernel_version(kernel_release):
-    """Return True if the booted kernel version does not correspond to the kernel version available in RHEL."""
+    """Raises exception if the booted kernel version does not correspond to the kernel version available in RHEL."""
     kernel_version = kernel_release.split("-")[0]
     try:
         incompatible_version = COMPATIBLE_KERNELS_VERS[system_info.version.major] != kernel_version
-        if incompatible_version:
-            logger.warning(
-                "Booted kernel version '%s' does not correspond to the version "
-                "'%s' available in RHEL %d"
-                % (
-                    kernel_version,
-                    COMPATIBLE_KERNELS_VERS[system_info.version.major],
-                    system_info.version.major,
-                )
-            )
-        else:
-            logger.debug(
-                "Booted kernel version '%s' corresponds to the version available in RHEL %d"
-                % (kernel_version, system_info.version.major)
-            )
-        return incompatible_version
     except KeyError:
-        logger.debug("Unexpected OS major version. Expected: %r" % COMPATIBLE_KERNELS_VERS.keys())
-        return True
+        raise KernelIncompatibleError(
+            "UNEXPECTED_VERSION",
+            "Unexpected OS major version. Expected: {compatible_version}",
+            dict(compatible_version=COMPATIBLE_KERNELS_VERS.keys()),
+        )
+
+    if incompatible_version:
+        raise KernelIncompatibleError(
+            "INCOMPATIBLE_VERSION",
+            "Booted kernel version '{kernel_version}' does not correspond to the version "
+            "'{compatible_version}' available in RHEL {rhel_major_version}",
+            dict(
+                kernel_version=kernel_version,
+                compatible_version=COMPATIBLE_KERNELS_VERS[system_info.version.major],
+                rhel_major_version=system_info.version.major,
+            ),
+        )
+
+    logger.debug(
+        "Booted kernel version '%s' corresponds to the version available in RHEL %d"
+        % (kernel_version, system_info.version.major)
+    )
+    return False
 
 
 def _bad_kernel_package_signature(kernel_release):
@@ -106,12 +130,12 @@ def _bad_kernel_package_signature(kernel_release):
 
     os_vendor = system_info.name.split()[0]
     if return_code == 1:
-        logger.warning(
-            "The booted kernel %s is not owned by any installed package."
-            " It needs to be owned by a package signed by %s." % (vmlinuz_path, os_vendor)
+        raise KernelIncompatibleError(
+            "UNSIGNED_PACKAGE",
+            "The booted kernel {vmlinuz_path} is not owned by any installed package."
+            " It needs to be owned by a package signed by {os_vendor}.",
+            dict(vmlinuz_path=vmlinuz_path, os_vendor=os_vendor),
         )
-
-        return True
 
     version, release, arch, name = tuple(kernel_pkg.split("&"))
     logger.debug("Booted kernel package name: {0}".format(name))
@@ -123,8 +147,11 @@ def _bad_kernel_package_signature(kernel_release):
     # e.g. Oracle Linux Server -> Oracle or
     #      Oracle Linux Server -> CentOS Linux
     if bad_signature:
-        logger.warning("Custom kernel detected. The booted kernel needs to be signed by %s." % os_vendor)
-        return True
+        raise KernelIncompatibleError(
+            "INVALID_KERNEL_PACKAGE_SIGNATURE",
+            "Custom kernel detected. The booted kernel needs to be signed by {os_vendor}.",
+            dict(os_vendor=os_vendor),
+        )
 
     logger.debug("The booted kernel is signed by %s." % os_vendor)
     return False
@@ -134,9 +161,10 @@ def _bad_kernel_substring(kernel_release):
     """Return True if the booted kernel release contains one of the strings that identify it as non-standard kernel."""
     bad_substring = any(bad_substring in kernel_release for bad_substring in BAD_KERNEL_RELEASE_SUBSTRINGS)
     if bad_substring:
-        logger.debug(
-            "The booted kernel '{0}' contains one of the disallowed "
-            "substrings: {1}".format(kernel_release, BAD_KERNEL_RELEASE_SUBSTRINGS)
+        raise KernelIncompatibleError(
+            "INVALID_PACKAGE_SUBSTRING",
+            "The booted kernel '{kernel_release}' contains one of the disallowed "
+            "substrings: {bad_kernel_release_substrings}",
+            dict(kernel_release=kernel_release, bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS),
         )
-        return True
     return False

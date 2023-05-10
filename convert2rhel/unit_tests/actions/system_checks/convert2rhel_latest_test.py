@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import actions, systeminfo, utils
+from convert2rhel import actions, systeminfo, unit_tests, utils
 from convert2rhel.actions.system_checks import convert2rhel_latest
 
 
@@ -52,6 +52,11 @@ def convert2rhel_latest_version_test(monkeypatch, tmpdir, request, global_system
     return marker["local_version"], marker["package_version"]
 
 
+@pytest.fixture
+def current_version(request):
+    return request.param
+
+
 class TestCheckConvert2rhelLatest:
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -67,10 +72,24 @@ class TestCheckConvert2rhelLatest:
     ):
         global_system_info.has_internet_access = False
         convert2rhel_latest_action.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
+                    title="Skipping convert2rhel latest version check",
+                    description="Skipping the check because no internet connection has been detected.",
+                    diagnosis=None,
+                    remediation=None,
+                ),
+            )
+        )
 
         log_msg = "Skipping the check because no internet connection has been detected."
         assert log_msg in caplog.text
         assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["SUCCESS"]
+        assert expected.issuperset(convert2rhel_latest_action.messages)
+        assert expected.issubset(convert2rhel_latest_action.messages)
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -84,11 +103,7 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_convert2rhel_latest_action_error(self, convert2rhel_latest_action, convert2rhel_latest_version_test):
-
         convert2rhel_latest_action.run()
-
-        assert convert2rhel_latest_action.result.id == "OUT_OF_DATE"
-        assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
         if len(package_version) > 36:
@@ -96,13 +111,60 @@ class TestCheckConvert2rhelLatest:
             package_version = package_version[19:25]
         else:
             package_version = package_version[19:23]
-        msg = (
-            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-            "Only the latest version is supported for conversion. If you want to ignore"
-            " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
-            % (local_version, package_version)
+
+        unit_tests.assert_actions_result(
+            convert2rhel_latest_action,
+            level="ERROR",
+            id="OUT_OF_DATE",
+            title="Outdated convert2rhel version detected",
+            description="An outdated convert2rhel version has been detected",
+            diagnosis=(
+                "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                "Only the latest version is supported for conversion." % (local_version, package_version)
+            ),
+            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
-        assert convert2rhel_latest_action.result.message == msg
+
+    @pytest.mark.parametrize(
+        ("convert2rhel_latest_version_test",),
+        (
+            [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "6"}],
+        ),
+        indirect=True,
+    )
+    def test_convert2rhel_latest_action_outdated_version(
+        self, convert2rhel_latest_action, convert2rhel_latest_version_test
+    ):
+        convert2rhel_latest_action.run()
+
+        local_version, package_version = convert2rhel_latest_version_test
+        if len(package_version) > 36:
+
+            package_version = package_version[19:25]
+        else:
+            package_version = package_version[19:23]
+
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="OUTDATED_CONVERT2RHEL_VERSION",
+                    title="Outdated convert2rhel version detected",
+                    description="An outdated convert2rhel version has been detected",
+                    diagnosis=(
+                        "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                        "We encourage you to update to the latest version." % (local_version, package_version)
+                    ),
+                    remediation=None,
+                ),
+            )
+        )
+        assert expected.issuperset(convert2rhel_latest_action.messages)
+        assert expected.issubset(convert2rhel_latest_action.messages)
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -162,7 +224,7 @@ class TestCheckConvert2rhelLatest:
         else:
             package_version = package_version[19:23]
         log_msg = (
-            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
+            "You are currently running %s and the latest version of convert2rhel is %s.\n"
             "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
             % (local_version, package_version)
         )
@@ -188,7 +250,7 @@ class TestCheckConvert2rhelLatest:
     def test_c2r_up_to_date(self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test):
         convert2rhel_latest_action.run()
 
-        log_msg = "Latest available Convert2RHEL version is installed."
+        log_msg = "Latest available convert2rhel version is installed."
         assert log_msg in caplog.text
 
     @pytest.mark.parametrize(
@@ -204,14 +266,30 @@ class TestCheckConvert2rhelLatest:
         self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
     ):
         monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("Repoquery did not run", 1)))
-
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="CONVERT2RHEL_LATEST_CHECK_SKIP",
+                    title="convert2rhel latest version check skip",
+                    description="Skipping the convert2hel latest version check",
+                    diagnosis=(
+                        "Couldn't check if the current installed convert2rhel is the latest version.\n"
+                        "repoquery failed with the following output:\nRepoquery did not run"
+                    ),
+                    remediation=None,
+                ),
+            )
+        )
         convert2rhel_latest_action.run()
 
         log_msg = (
-            "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
+            "Couldn't check if the current installed convert2rhel is the latest version.\n"
             "repoquery failed with the following output:\nRepoquery did not run"
         )
         assert log_msg in caplog.text
+        assert expected.issuperset(convert2rhel_latest_action.messages)
+        assert expected.issubset(convert2rhel_latest_action.messages)
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -241,11 +319,7 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_c2r_up_to_date_multiple_packages(self, convert2rhel_latest_action, convert2rhel_latest_version_test):
-
         convert2rhel_latest_action.run()
-
-        assert convert2rhel_latest_action.result.id == "OUT_OF_DATE"
-        assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
 
@@ -254,29 +328,67 @@ class TestCheckConvert2rhelLatest:
         else:
             package_version = package_version[93:97]
 
-        msg = (
-            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-            "Only the latest version is supported for conversion. If you want to ignore"
-            " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
-            % (local_version, package_version)
+        unit_tests.assert_actions_result(
+            convert2rhel_latest_action,
+            level="ERROR",
+            id="OUT_OF_DATE",
+            title="Outdated convert2rhel version detected",
+            description="An outdated convert2rhel version has been detected",
+            diagnosis=(
+                "You are currently running %s and the latest version of convert2rhel is %s.\n"
+                "Only the latest version is supported for conversion." % (local_version, package_version)
+            ),
+            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
-        assert convert2rhel_latest_action.result.message == msg
 
     @pytest.mark.parametrize(
-        ("convert2rhel_latest_version_test",),
         (
-            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
-            [{"local_version": "0.17", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"}],
-            [{"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"}],
+            "convert2rhel_latest_version_test",
+            "current_version",
+        ),
+        (
+            [
+                {"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"},
+                "0.18.0",
+            ],
+            [
+                {"local_version": "0.17", "package_version": "C2R convert2rhel-0:0.18.0-1.el7.noarch", "pmajor": "8"},
+                "0.18.0",
+            ],
+            [
+                {"local_version": "0.17.0", "package_version": "C2R convert2rhel-0:0.18-1.el7.noarch", "pmajor": "8"},
+                "0.18",
+            ],
         ),
         indirect=True,
     )
     def test_c2r_up_to_date_deprecated_env_var(
-        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
+        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test, current_version
     ):
         env = {"CONVERT2RHEL_UNSUPPORTED_VERSION": 1}
         monkeypatch.setattr(os, "environ", env)
-
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="DEPRECATED_ENVIRONMENT_VARIABLE",
+                    title="Deprecated environment variable",
+                    description="A deprecated environment variable has been detected",
+                    diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
+                    remediation="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
+                ),
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
+                    title="Outdated convert2rhel version detected",
+                    description="An outdated convert2rhel version has been detected",
+                    diagnosis="You are currently running %s and the latest version of convert2rhel is %s.\n"
+                    "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
+                    % (convert2rhel_latest_version_test[0], current_version),
+                    remediation=None,
+                ),
+            )
+        )
         convert2rhel_latest_action.run()
 
         log_msg = (
@@ -284,5 +396,6 @@ class TestCheckConvert2rhelLatest:
             " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
             " instead."
         )
-
+        assert expected.issuperset(convert2rhel_latest_action.messages)
+        assert expected.issubset(convert2rhel_latest_action.messages)
         assert log_msg in caplog.text

@@ -7,7 +7,14 @@ class ErrorTest(actions.Action):
 
     def run(self):
         super(ErrorTest, self).run()
-        self.set_result(level="ERROR", id="ERROR_ID", message="Failed on an error")
+        self.set_result(
+            level="ERROR",
+            id="ERROR_ID",
+            title="Failed on an error",
+            description="error",
+            diagnosis="error",
+            remediation="error",
+        )
 
 
 class OverridableTest(actions.Action):
@@ -16,7 +23,14 @@ class OverridableTest(actions.Action):
 
     def run(self):
         super(OverridableTest, self).run()
-        self.set_result(level="OVERRIDABLE", id="OVERRIDABLE_ID", message="Check failed but user may override")
+        self.set_result(
+            level="OVERRIDABLE",
+            id="OVERRIDABLE_ID",
+            title="Check failed but user may override",
+            description="overridable",
+            diagnosis="overridable",
+            remediation="overridable",
+        )
 
 
 # Skip because one dependency has failed
@@ -44,7 +58,14 @@ class WarningTest(actions.Action):
 
     def run(self):
         super(WarningTest, self).run()
-        self.add_message(level="WARNING", id="WARNING_ID", message="User disabled check")
+        self.add_message(
+            level="WARNING",
+            id="WARNING_ID",
+            title="User disabled check",
+            description="warning",
+            diagnosis="warning",
+            remediation="warning",
+        )
 
 
 class SuccessTest(actions.Action):

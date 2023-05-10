@@ -32,6 +32,12 @@ class PreSubscription(actions.Action):
 
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
+            self.add_message(
+                level="WARNING",
+                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                title="Pre-subscription check skip",
+                description="Detected --no-rhsm option. Skipping.",
+            )
             return
 
         try:
@@ -67,12 +73,21 @@ class PreSubscription(actions.Action):
 
             # TODO(r0x0d): This should be refactored to handle each case
             # individually rather than relying on SystemExit.
-            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(
+                level="ERROR",
+                id="UNKNOWN_ERROR",
+                title="Unknown error",
+                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                diagnosis=str(e),
+            )
         except subscription.UnregisterError as e:
             self.set_result(
                 level="ERROR",
                 id="UNABLE_TO_REGISTER",
-                message="Failed to unregister the system: %s" % e,
+                title="System unregistration failure",
+                description="The system is already registered with subscription-manager even though it is running CentOS not RHEL. We have failed to remove that registration.",
+                diagnosis="Failed to unregister the system: %s" % e,
+                remediation="You may want to unregister the system manually and re-run convert2rhel.",
             )
 
 
@@ -89,6 +104,12 @@ class SubscribeSystem(actions.Action):
 
         if toolopts.tool_opts.no_rhsm:
             logger.warning("Detected --no-rhsm option. Skipping.")
+            self.add_message(
+                level="WARNING",
+                id="SUBSCRIPTION_CHECK_SKIP",
+                title="Subscription check skip",
+                description="Detected --no-rhsm option. Skipping.",
+            )
             return
 
         try:
@@ -97,9 +118,6 @@ class SubscribeSystem(actions.Action):
 
             logger.task("Convert: Get RHEL repository IDs")
             rhel_repoids = repo.get_rhel_repoids()
-
-            logger.task("Convert: Subscription Manager - Check required repositories")
-            subscription.check_needed_repos_availability(rhel_repoids)
 
             logger.task("Convert: Subscription Manager - Disable all repositories")
             subscription.disable_repos()
@@ -117,7 +135,9 @@ class SubscribeSystem(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
-                message="Failed to execute command: %s" % e,
+                title="Missing subscription-manager binary",
+                description="There is a missing subscription-manager binary",
+                diagnosis="Failed to execute command: %s" % e,
             )
         except SystemExit as e:
             # TODO(r0x0d): This should be refactored to handle each case
@@ -128,10 +148,18 @@ class SubscribeSystem(actions.Action):
             #   - Maximum sub-man retries reached
             #   - If the return-code is different from 0 in disabling repos,
             #     SystemExit is raised.
-            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(
+                level="ERROR",
+                id="UNKNOWN_ERROR",
+                title="Unknown error",
+                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                diagnosis=str(e),
+            )
         except ValueError as e:
             self.set_result(
                 level="ERROR",
                 id="MISSING_REGISTRATION_COMBINATION",
-                message="One or more combinations were missing for subscription-manager parameters: %s" % e,
+                title="Missing registration combination",
+                description="There are missing registration combinations",
+                diagnosis="One or more combinations were missing for subscription-manager parameters: %s" % str(e),
             )

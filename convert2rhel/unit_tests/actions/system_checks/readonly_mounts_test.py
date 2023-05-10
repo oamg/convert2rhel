@@ -84,14 +84,17 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     )
     def test_mounted_are_readonly_mnt(self):
         self.readonly_mounts_action_mnt.run()
-        self.assertEqual(self.readonly_mounts_action_mnt.result.level, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.readonly_mounts_action_mnt.result.id, "MNT_DIR_READONLY_MOUNT")
-        self.assertEqual(
-            self.readonly_mounts_action_mnt.result.message,
-            (
+        unit_tests.assert_actions_result(
+            self.readonly_mounts_action_mnt,
+            level="ERROR",
+            id="MNT_DIR_READONLY_MOUNT",
+            title="Read-only mount in /mnt directory",
+            description=(
                 "Stopping conversion due to read-only mount to /mnt directory.\n"
                 "Mount at a subdirectory of /mnt to have /mnt writeable."
             ),
+            diagnosis=None,
+            remediation=None,
         )
 
     @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
@@ -108,12 +111,15 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     )
     def test_mounted_are_readonly_sys(self):
         self.readonly_mounts_action_sys.run()
-        self.assertEqual(self.readonly_mounts_action_sys.result.level, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.readonly_mounts_action_sys.result.id, "SYS_DIR_READONLY_MOUNT")
-        self.assertEqual(
-            self.readonly_mounts_action_sys.result.message,
-            (
+        unit_tests.assert_actions_result(
+            self.readonly_mounts_action_sys,
+            level="ERROR",
+            id="SYS_DIR_READONLY_MOUNT",
+            title="Read-only mount in /sys directory",
+            description=(
                 "Stopping conversion due to read-only mount to /sys directory.\n"
                 "Ensure mount point is writable before executing convert2rhel."
             ),
+            diagnosis=None,
+            remediation=None,
         )

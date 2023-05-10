@@ -100,39 +100,6 @@ class PromptUserLoopMocked(unit_tests.MockFunction):
         return return_value
 
 
-class TestCheckNeededReposAvailability(object):
-    def test_check_needed_repos_availability(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
-
-        avail_repos_message = "Needed RHEL repositories are available."
-        subscription.check_needed_repos_availability(["rhel_x"])
-
-        assert avail_repos_message in caplog.records[-1].message
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel_z."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-
-        subscription.check_needed_repos_availability(["rhel_z"])
-        assert no_avail_repos_message in caplog.records[-1].message
-
-    def test_check_needed_repos_availability_no_repo_available(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-        subscription.check_needed_repos_availability(["rhel"])
-
-        assert no_avail_repos_message in caplog.records[-1].message
-
-
 class TestSubscription(unittest.TestCase):
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
@@ -207,7 +174,7 @@ class TestSubscription(unittest.TestCase):
             self.msg += "%s\n" % msg
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
-    @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(pkghandler, "format_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
@@ -222,7 +189,7 @@ class TestSubscription(unittest.TestCase):
     )
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
     @unit_tests.mock(system_info, "id", "centos")
-    @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
+    @unit_tests.mock(pkghandler, "format_pkg_info", lambda x: None)
     @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):

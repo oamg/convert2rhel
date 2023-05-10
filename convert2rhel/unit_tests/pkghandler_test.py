@@ -154,17 +154,6 @@ class RunSubprocessMocked(unit_tests.MockFunction):
         return self.output, self.ret_code
 
 
-class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
-    obj1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
-    obj2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
-    obj3 = create_pkg_information(
-        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
-    )
-
-    def __call__(self, *args, **kwargs):
-        return [self.obj1, self.obj2, self.obj3]
-
-
 class PrintPkgInfoMocked(unit_tests.MockFunction):
     def __init__(self):
         self.called = 0
@@ -1684,7 +1673,7 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
     reason="No yum module detected on the system, skipping it.",
 )
 @centos7
-def test_print_pkg_info_yum(pretend_os, monkeypatch):
+def test_format_pkg_info_yum(pretend_os, monkeypatch):
     packages = [
         create_pkg_information(
             packager="Oracle",
@@ -1732,7 +1721,7 @@ C2R 0:gpg-pubkey-0.1-1.x86_64&test
         ),
     )
 
-    result = pkghandler.print_pkg_info(packages)
+    result = pkghandler.format_pkg_info(packages)
     assert re.search(
         r"^Package\s+Vendor/Packager\s+Repository$",
         result,
@@ -1756,7 +1745,7 @@ C2R 0:gpg-pubkey-0.1-1.x86_64&test
     reason="No dnf module detected on the system, skipping it.",
 )
 @centos8
-def test_print_pkg_info_dnf(pretend_os, monkeypatch):
+def test_format_pkg_info_dnf(pretend_os, monkeypatch):
     packages = [
         create_pkg_information(
             packager="Oracle",
@@ -1804,7 +1793,7 @@ C2R gpg-pubkey-0:0.1-1.x86_64&test
         ),
     )
 
-    result = pkghandler.print_pkg_info(packages)
+    result = pkghandler.format_pkg_info(packages)
 
     assert re.search(
         r"^pkg1-0:0\.1-1\.x86_64\s+Oracle\s+anaconda$",
@@ -1838,22 +1827,22 @@ class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
         return [pkg_obj]
 
 
-def test_get_packages_to_remove(monkeypatch):
+def testget_packages_to_remove(monkeypatch):
     monkeypatch.setattr(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
     monkeypatch.setattr(
         pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgObjectsWDiffFingerprintMocked()
     )
-    original_func = pkghandler._get_packages_to_remove.__wrapped__
-    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", mock_decorator(original_func))
+    original_func = pkghandler.get_packages_to_remove.__wrapped__
+    monkeypatch.setattr(pkghandler, "get_packages_to_remove", mock_decorator(original_func))
 
-    result = pkghandler._get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
+    result = pkghandler.get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
     assert len(result) == 1
     assert result[0].nevra.name == "installed_pkg"
 
 
 def test_remove_pkgs_with_confirm(monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
-    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallable())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", DumbCallable())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
 
     pkghandler.remove_pkgs_unless_from_redhat(
@@ -1951,23 +1940,23 @@ def test_get_pkg_nevra(pkgmanager_name, package, include_zero_epoch, expected, m
 )
 def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs, monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
-    monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked())
     monkeypatch.setattr(system_info, "fingerprints_orig_os", fingerprint_orig_os)
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", unit_tests.GetInstalledPkgsWFingerprintsMocked())
 
     pkgs = pkghandler.get_third_party_pkgs()
 
-    assert pkghandler.print_pkg_info.called == expected_count
+    assert pkghandler.format_pkg_info.called == expected_count
     assert len(pkgs) == expected_pkgs
 
 
 def test_list_non_red_hat_pkgs_left(monkeypatch):
-    monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked())
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     pkghandler.list_non_red_hat_pkgs_left()
 
-    assert len(pkghandler.print_pkg_info.pkgs) == 1
-    assert pkghandler.print_pkg_info.pkgs[0].nevra.name == "pkg2"
+    assert len(pkghandler.format_pkg_info.pkgs) == 1
+    assert pkghandler.format_pkg_info.pkgs[0].nevra.name == "pkg2"
 
 
 @centos7
@@ -2029,7 +2018,7 @@ def test_remove_non_rhel_kernels(monkeypatch):
     monkeypatch.setattr(
         pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
     )
-    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", DumbCallableObject())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
 
     removed_pkgs = pkghandler.remove_non_rhel_kernels()
@@ -2049,7 +2038,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
     monkeypatch.setattr(
         pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
     )
-    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", DumbCallableObject())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
     monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
 
