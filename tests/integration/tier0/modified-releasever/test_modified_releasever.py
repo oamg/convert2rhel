@@ -26,7 +26,7 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
             unregister=True,
         ) as c2r:
             c2r.expect("--releasever=333")
-            c2r.send(chr(3))
+            c2r.sendcontrol("c")
     assert c2r.exitstatus == 1
 
     # Restore configs

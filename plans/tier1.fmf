@@ -314,7 +314,7 @@
               distro != centos-8 and
               distro != oraclelinux-8.
     discover+:
-        test: checks-after-conversion
+        filter: tag:checks-after-conversion
     prepare+:
         - name: make sure the 'kernel-core' is the only installed kernel package
           how: shell

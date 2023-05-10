@@ -28,18 +28,188 @@ import six
 
 from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.pkghandler import (
+    PackageInformation,
+    PackageNevra,
     _get_packages_to_update_dnf,
     _get_packages_to_update_yum,
     get_total_packages_to_update,
 )
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import GetLoggerMocked, is_rpm_based_os
-from convert2rhel.unit_tests.conftest import TestPkgObj, all_systems, centos8, create_pkg_obj
+from convert2rhel.unit_tests import (
+    GetLoggerMocked,
+    TestPkgObj,
+    create_pkg_information,
+    create_pkg_obj,
+    is_rpm_based_os,
+    mock_decorator,
+)
+from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.unit_tests.subscription_test import DumbCallable
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
+
+class CommandCallableObject(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.command = None
+
+    def __call__(self, command):
+        self.called += 1
+        self.command = command
+        return
+
+
+class CallYumCmdMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.return_code = 0
+        self.return_string = "Test output"
+        self.fail_once = False
+        self.command = None
+        self.args = None
+
+    def __call__(self, command, args, *other_args, **kwargs):
+        if self.fail_once and self.called == 0:
+            self.return_code = 1
+        if self.fail_once and self.called > 0:
+            self.return_code = 0
+        self.called += 1
+        self.command = command
+        self.args = args
+        return self.return_string, self.return_code
+
+
+class GetInstalledPkgsWDifferentFingerprintMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.is_only_rhel_kernel_installed = False
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        if self.is_only_rhel_kernel_installed:
+            return []  # No third-party kernel
+        else:
+            return [
+                create_pkg_information(
+                    name="kernel",
+                    version="3.10.0",
+                    release="1127.19.1.el7",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+                create_pkg_information(
+                    name="kernel-uek",
+                    version="0.1",
+                    release="1",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+                create_pkg_information(
+                    name="kernel-headers",
+                    version="0.1",
+                    release="1",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+                create_pkg_information(
+                    name="kernel-uek-headers",
+                    version="0.1",
+                    release="1",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+                create_pkg_information(
+                    name="kernel-firmware",
+                    version="0.1",
+                    release="1",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+                create_pkg_information(
+                    name="kernel-uek-firmware",
+                    version="0.1",
+                    release="1",
+                    arch="x86_64",
+                    packager="Oracle",
+                ),
+            ]
+
+
+class RunSubprocessMocked(unit_tests.MockFunction):
+    def __init__(self, output_text="Test output"):
+        self.cmd = []
+        self.cmds = []
+        self.called = 0
+        self.output = output_text
+        self.ret_code = 0
+
+    def __call__(self, cmd, print_cmd=True, print_output=True):
+        self.cmd = cmd
+        self.cmds.append(cmd)
+        self.called += 1
+        return self.output, self.ret_code
+
+
+class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
+    obj1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
+    obj2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
+    obj3 = create_pkg_information(
+        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
+    )
+
+    def __call__(self, *args, **kwargs):
+        return [self.obj1, self.obj2, self.obj3]
+
+
+class PrintPkgInfoMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.pkgs = []
+
+    def __call__(self, pkgs):
+        self.called += 1
+        self.pkgs = pkgs
+
+
+class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
+    def __call__(self, name=""):
+        if name and name != "installed_pkg":
+            return []
+
+        pkg_obj = create_pkg_obj(
+            name="installed_pkg",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            packager="Oracle",
+            from_repo="repoid",
+        )
+        return [pkg_obj]
+
+
+class RemovePkgsMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.pkgs = None
+        self.should_bkp = False
+        self.critical = False
+
+    def __call__(self, pkgs_to_remove, backup=False, critical=False):
+        self.pkgs = pkgs_to_remove
+        self.should_bkp = backup
+        self.critical = critical
+
+
+class DumbCallableObject(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self, *args, **kwargs):
+        self.called += 1
+        return
 
 
 class QueryMocked(unit_tests.MockFunction):
@@ -105,42 +275,9 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.called += 1
             return self.data
 
-    class CallYumCmdMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.return_code = 0
-            self.return_string = "Test output"
-            self.fail_once = False
-            self.command = None
-            self.args = None
-
-        def __call__(self, command, args, *other_args, **kwargs):
-            if self.fail_once and self.called == 0:
-                self.return_code = 1
-            if self.fail_once and self.called > 0:
-                self.return_code = 0
-            self.called += 1
-            self.command = command
-            self.args = args
-            return self.return_string, self.return_code
-
     class GetInstalledPkgsByFingerprintMocked(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
             return ["pkg1", "pkg2"]
-
-    class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self, output_text="Test output"):
-            self.cmd = []
-            self.cmds = []
-            self.called = 0
-            self.output = output_text
-            self.ret_code = 0
-
-        def __call__(self, cmd, print_cmd=True, print_output=True):
-            self.cmd = cmd
-            self.cmds.append(cmd)
-            self.called += 1
-            return self.output, self.ret_code
 
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):
@@ -148,24 +285,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         def __call__(self, *args, **kwargs):
             return self.is_file
-
-    class DumbCallableObject(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-
-        def __call__(self, *args, **kwargs):
-            self.called += 1
-            return
-
-    class CommandCallableObject(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.command = None
-
-        def __call__(self, command):
-            self.called += 1
-            self.command = command
-            return
 
     class SysExitCallableObject(unit_tests.MockFunction):
         def __call__(self, *args, **kwargs):
@@ -188,17 +307,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.content = content
             self.filename = filename
             self.called += 1
-
-    class RemovePkgsMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.pkgs = None
-            self.should_bkp = False
-            self.critical = False
-
-        def __call__(self, pkgs_to_remove, backup=False, critical=False):
-            self.pkgs = pkgs_to_remove
-            self.should_bkp = backup
-            self.critical = critical
 
     @unit_tests.mock(pkghandler, "loggerinst", GetLoggerMocked())
     @unit_tests.mock(os.path, "isfile", IsFileMocked(is_file=False))
@@ -366,86 +474,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
-    class GetInstalledPkgsWFingerprintsMocked(unit_tests.MockFunction):
-        def prepare_test_pkg_tuples_w_fingerprints(self):
-            class PkgData:
-                def __init__(self, pkg_obj, fingerprint):
-                    self.pkg_obj = pkg_obj
-                    self.fingerprint = fingerprint
-
-            obj1 = create_pkg_obj("pkg1")
-            obj2 = create_pkg_obj("pkg2")
-            obj3 = create_pkg_obj("gpg-pubkey")
-            pkgs = [
-                PkgData(obj1, "199e2f91fd431d51"),  # RHEL
-                PkgData(obj2, "72f97b74ec551f03"),  # OL
-                PkgData(obj3, "199e2f91fd431d51"),
-            ]  # RHEL
-            return pkgs
-
-        def __call__(self, *args, **kwargs):
-            return self.prepare_test_pkg_tuples_w_fingerprints()
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(self):
-        system_info.version = namedtuple("Version", ["major", "minor"])(7, 0)
-        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
-
-        self.assertEqual(pkgs_by_fingerprint, ["pkg1.", "gpg-pubkey."])
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(self):
-        pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
-
-        self.assertEqual(pkgs_by_fingerprint, [])
-
-    class GetInstalledPkgObjectsMocked(unit_tests.MockFunction):
-        def __call__(self, name=""):
-            if name and name != "installed_pkg":
-                return []
-            pkg_obj = create_pkg_obj(
-                name="installed_pkg",
-                version="0.1",
-                release="1",
-                arch="x86_64",
-                packager="Oracle",
-                from_repo="repoid",
-            )
-            return [pkg_obj]
-
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", GetInstalledPkgObjectsMocked())
-    @unit_tests.mock(pkghandler, "get_pkg_fingerprint", lambda pkg: "some_fingerprint")
-    def test_get_installed_pkgs_w_fingerprints(self):
-        pkgs = pkghandler.get_installed_pkgs_w_fingerprints()
-
-        self.assertEqual(len(pkgs), 1)
-        self.assertEqual(pkgs[0].pkg_obj.name, "installed_pkg")
-        self.assertEqual(pkgs[0].fingerprint, "some_fingerprint")
-
-        pkgs = pkghandler.get_installed_pkgs_w_fingerprints("non_existing")
-
-        self.assertEqual(len(pkgs), 0)
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_rpm_header",
-        lambda pkg: TestPkgObj.PkgObjHdr(),
-    )
-    def test_get_pkg_fingerprint(self):
-        pkg = create_pkg_obj("pkg")
-
-        fingerprint = pkghandler.get_pkg_fingerprint(pkg)
-
-        self.assertEqual(fingerprint, "73bde98381b46521")
-
     class TransactionSetMocked(unit_tests.MockFunction):
         def __call__(self):
             return self
@@ -578,202 +606,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(len(pkgs), 0)
 
-    class PrintPkgInfoMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.pkgs = []
-
-        def __call__(self, pkgs):
-            self.called += 1
-            self.pkgs = pkgs
-
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(
-        system_info,
-        "fingerprints_orig_os",
-        ["24c6a8a7f4a80eb5", "a963bbdbf533f4fa"],
-    )
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_get_third_party_pkgs(self):
-        # This test covers also get_installed_pkgs_w_different_fingerprint
-        pkgs = pkghandler.get_third_party_pkgs()
-
-        self.assertEqual(pkghandler.print_pkg_info.called, 0)
-        self.assertEqual(len(pkgs), 1)
-
-        system_info.fingerprints_orig_os = ["72f97b74ec551f03"]
-        pkghandler.print_pkg_info.called = 0
-
-        pkghandler.get_third_party_pkgs()
-
-        self.assertEqual(pkghandler.print_pkg_info.called, 0)
-
-    @staticmethod
-    def prepare_pkg_obj_for_print_with_yum():
-        obj1 = create_pkg_obj(
-            name="pkg1",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            packager="Oracle",
-            from_repo="anaconda",
-        )
-        obj2 = create_pkg_obj(name="pkg2", epoch=1, version="0.1", release="1", arch="x86_64")
-        obj3 = create_pkg_obj(
-            name="gpg-pubkey",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            from_repo="test",
-        )
-        return [obj1, obj2, obj3]
-
-    @unit_tests.mock(pkgmanager, "TYPE", "yum")
-    def test_print_pkg_info_yum(self):
-        pkgs = TestPkgHandler.prepare_pkg_obj_for_print_with_yum()
-        result = pkghandler.print_pkg_info(pkgs)
-        self.assertTrue(
-            re.search(
-                r"^Package\s+Vendor/Packager\s+Repository$",
-                result,
-                re.MULTILINE,
-            )
-        )
-        self.assertTrue(
-            re.search(
-                r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
-                result,
-                re.MULTILINE,
-            )
-        )
-        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE))
-        self.assertTrue(
-            re.search(
-                r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
-                result,
-                re.MULTILINE,
-            )
-        )
-
-    @staticmethod
-    def prepare_pkg_obj_for_print_with_dnf():
-        obj1 = create_pkg_obj(
-            name="pkg1",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            vendor="Oracle",
-            from_repo="anaconda",
-            manager="dnf",
-        )
-        obj2 = create_pkg_obj(
-            name="pkg2",
-            epoch=1,
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            manager="dnf",
-        )
-        obj3 = create_pkg_obj(
-            name="gpg-pubkey",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            from_repo="test",
-            manager="dnf",
-        )
-        return [obj1, obj2, obj3]
-
-    def test_get_vendor(self):
-        pkg_with_vendor = create_pkg_obj(
-            name="pkg1",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            vendor="Oracle",
-            from_repo="anaconda",
-            manager="dnf",
-        )
-        pkg_with_packager = create_pkg_obj(
-            name="pkg1",
-            version="0.1",
-            release="1",
-            arch="x86_64",
-            packager="Oracle",
-            from_repo="anaconda",
-            manager="dnf",
-        )
-        self.assertTrue(pkghandler.get_vendor(pkg_with_vendor), "Oracle")
-        self.assertTrue(pkghandler.get_vendor(pkg_with_packager), "N/A")
-
-    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
-    def test_print_pkg_info_dnf(self):
-        pkgs = TestPkgHandler.prepare_pkg_obj_for_print_with_dnf()
-        result = pkghandler.print_pkg_info(pkgs)
-        self.assertTrue(
-            re.search(
-                r"^pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
-                result,
-                re.MULTILINE,
-            )
-        )
-        self.assertTrue(re.search(r"^pkg2-0\.1-1\.x86_64\s+N/A\s+@@System$", result, re.MULTILINE))
-        self.assertTrue(
-            re.search(
-                r"^gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
-                result,
-                re.MULTILINE,
-            )
-        )
-
-    @unit_tests.mock(pkgmanager, "TYPE", "dnf")
-    def test_get_pkg_nevra(self):
-        obj = create_pkg_obj(name="pkg", epoch=1, version="2", release="3", arch="x86_64")
-        # The DNF style is the default
-        self.assertEqual(pkghandler.get_pkg_nevra(obj), "pkg-1:2-3.x86_64")
-
-        pkgmanager.TYPE = "yum"
-        self.assertEqual(pkghandler.get_pkg_nevra(obj), "1:pkg-2-3.x86_64")
-
-    @unit_tests.mock(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_fingerprints",
-        GetInstalledPkgsWFingerprintsMocked(),
-    )
-    def test_list_non_red_hat_pkgs_left(self):
-        pkghandler.list_non_red_hat_pkgs_left()
-
-        self.assertEqual(len(pkghandler.print_pkg_info.pkgs), 1)
-        self.assertEqual(pkghandler.print_pkg_info.pkgs[0].name, "pkg2")
-
-    @unit_tests.mock(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_excluded_pkgs(self):
-        pkghandler.remove_excluded_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.excluded_pkgs,
-        )
-
-    @unit_tests.mock(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    @unit_tests.mock(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
-    def test_remove_repofile_pkgs(self):
-        pkghandler.remove_repofile_pkgs()
-
-        self.assertEqual(pkghandler.remove_pkgs_with_confirm.called, 1)
-        self.assertEqual(
-            pkghandler.remove_pkgs_with_confirm.command,
-            system_info.repofile_pkgs,
-        )
-
     class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
         def __call__(self, fingerprints, name=""):
             if name and name != "installed_pkg":
@@ -797,21 +629,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
                     from_repo="repoid",
                 )
             return [pkg_obj]
-
-    @unit_tests.mock(utils, "ask_to_continue", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
-    @unit_tests.mock(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
-    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgObjectsWDiffFingerprintMocked(),
-    )
-    def test_remove_pkgs_with_confirm(self):
-        pkghandler.remove_pkgs_with_confirm(["installed_pkg", "not_installed_pkg"])
-
-        self.assertEqual(len(pkghandler.remove_pkgs.pkgs), 1)
-        self.assertEqual(pkghandler.remove_pkgs.pkgs[0], "installed_pkg-0.1-1.x86_64")
 
     class CallYumCmdWDowngradesMocked(unit_tests.MockFunction):
         def __init__(self):
@@ -842,124 +659,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "kernel"])
         self.assertEqual(pkghandler.get_installed_pkgs_by_fingerprint.called, 1)
-
-    class GetInstalledPkgsWDifferentFingerprintMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.is_only_rhel_kernel_installed = False
-            self.called = 0
-
-        def __call__(self, *args, **kwargs):
-            self.called += 1
-            if self.is_only_rhel_kernel_installed:
-                return []  # No third-party kernel
-            else:
-                return [
-                    create_pkg_obj(
-                        name="kernel",
-                        version="3.10.0",
-                        release="1127.19.1.el7",
-                        arch="x86_64",
-                        packager="Oracle",
-                    ),
-                    create_pkg_obj(
-                        name="kernel-uek",
-                        version="0.1",
-                        release="1",
-                        arch="x86_64",
-                        packager="Oracle",
-                        from_repo="repoid",
-                    ),
-                    create_pkg_obj(
-                        name="kernel-headers",
-                        version="0.1",
-                        release="1",
-                        arch="x86_64",
-                        packager="Oracle",
-                        from_repo="repoid",
-                    ),
-                    create_pkg_obj(
-                        name="kernel-uek-headers",
-                        version="0.1",
-                        release="1",
-                        arch="x86_64",
-                        packager="Oracle",
-                        from_repo="repoid",
-                    ),
-                    create_pkg_obj(
-                        name="kernel-firmware",
-                        version="0.1",
-                        release="1",
-                        arch="x86_64",
-                        packager="Oracle",
-                        from_repo="repoid",
-                    ),
-                    create_pkg_obj(
-                        name="kernel-uek-firmware",
-                        version="0.1",
-                        release="1",
-                        arch="x86_64",
-                        packager="Oracle",
-                        from_repo="repoid",
-                    ),
-                ]
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(
-        pkghandler,
-        "handle_no_newer_rhel_kernel_available",
-        DumbCallableObject(),
-    )
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(),
-    )
-    def test_install_rhel_kernel(self):
-        # 1st scenario: kernels collide; the installed one is already a RHEL kernel = no action.
-        utils.run_subprocess.output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
-        pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = True
-
-        update_kernel = pkghandler.install_rhel_kernel()
-
-        self.assertFalse(update_kernel)
-
-        # 2nd scenario: kernels collide; the installed one is from third party
-        # = older-version RHEL kernel is to be installed.
-        pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = False
-
-        update_kernel = pkghandler.install_rhel_kernel()
-
-        self.assertTrue(update_kernel)
-
-        # 3rd scenario: kernels do not collide; the RHEL one gets installed.
-        utils.run_subprocess.output = "Installed:\nkernel"
-
-        update_kernel = pkghandler.install_rhel_kernel()
-
-        self.assertFalse(update_kernel)
-
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(),
-    )
-    def test_install_rhel_kernel_already_installed_regexp(self):
-        # RHEL 7
-        utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
-
-        pkghandler.install_rhel_kernel()
-
-        self.assertEqual(pkghandler.get_installed_pkgs_w_different_fingerprint.called, 1)
-
-        # RHEL 8
-        utils.run_subprocess.output = "Package kernel-4.18.0-193.el8.x86_64 is already installed."
-
-        pkghandler.install_rhel_kernel()
-
-        self.assertEqual(pkghandler.get_installed_pkgs_w_different_fingerprint.called, 2)
 
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -1124,29 +823,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_is_rhel_kernel_installed_yes(self):
         self.assertTrue(pkghandler.is_rhel_kernel_installed())
 
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(),
-    )
-    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
-    def test_remove_non_rhel_kernels(self):
-        removed_pkgs = pkghandler.remove_non_rhel_kernels()
-
-        self.assertEqual(len(removed_pkgs), 6)
-        self.assertEqual(
-            [p.name for p in removed_pkgs],
-            [
-                "kernel",
-                "kernel-uek",
-                "kernel-headers",
-                "kernel-uek-headers",
-                "kernel-firmware",
-                "kernel-uek-firmware",
-            ],
-        )
-
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(system_info, "arch", "x86_64")
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
@@ -1184,19 +860,6 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(os.remove.called, 3)
         self.assertEqual(utils.run_subprocess.called, 2)
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(),
-    )
-    @unit_tests.mock(pkghandler, "print_pkg_info", DumbCallableObject())
-    @unit_tests.mock(pkghandler, "remove_pkgs", RemovePkgsMocked())
-    @unit_tests.mock(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-    def test_install_additional_rhel_kernel_pkgs(self):
-        removed_pkgs = pkghandler.remove_non_rhel_kernels()
-        pkghandler.install_additional_rhel_kernel_pkgs(removed_pkgs)
-        self.assertEqual(pkghandler.call_yum_cmd.called, 2)
 
     @unit_tests.mock(
         pkghandler,
@@ -1390,6 +1053,12 @@ PACKAGE_FORMATS = (
     pytest.param(
         "NetworkManager-1.18.8-2.0.1.el7_9", ("NetworkManager", None, "1.18.8", "2.0.1.el7_9", None), id="NVR"
     ),
+    pytest.param(
+        "bind-export-libs-32:9.11.4-26.P2.el7_9.13.x86_64",
+        ("bind-export-libs", "32", "9.11.4", "26.P2.el7_9.13", "x86_64"),
+        id="high epoch number",
+    ),
+    pytest.param("libgcc-8.5.0-4.el8_5.i686", ("libgcc", None, "8.5.0", "4.el8_5", "i686"), id="i686 package version"),
 )
 
 
@@ -1704,6 +1373,20 @@ def test_get_packages_to_update_yum(packages, monkeypatch):
     monkeypatch.setattr(pkgmanager.YumBase, "doPackageLists", value=pkg_lists_mock)
 
     assert _get_packages_to_update_yum() == packages
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
+def test_get_packages_to_update_yum_no_more_mirrors(monkeypatch, caplog):
+    monkeypatch.setattr(
+        pkgmanager.YumBase,
+        "doPackageLists",
+        mock.Mock(side_effect=pkgmanager.Errors.NoMoreMirrorsRepoError("Failed to connect to repository.")),
+    )
+    with pytest.raises(pkgmanager.Errors.NoMoreMirrorsRepoError, match="Failed to connect to repository."):
+        _get_packages_to_update_yum()
 
 
 @pytest.mark.skipif(
@@ -2119,14 +1802,141 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
     assert pkghandler.get_pkg_names_from_rpm_paths(rpm_paths) == expected
 
 
-@all_systems
-def test_get_system_packages_for_replacement(pretend_os, monkeypatch):
-    pkgs = ["pkg-1", "pkg-2"]
-    monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", value=lambda _: pkgs)
+@pytest.mark.parametrize(
+    ("pkgs", "expected"),
+    (
+        (
+            [
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="not-the-centos7-fingerprint",
+                    signature="test",
+                )
+            ],
+            [],
+        ),
+        (
+            [
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                )
+            ],
+            ["pkg-1.x86_64"],
+        ),
+        (
+            [
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-2",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-3",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-4",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+            ],
+            ["pkg-1.x86_64", "pkg-2.x86_64", "pkg-3.x86_64", "pkg-4.x86_64"],
+        ),
+        (
+            [
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-1",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="24c6a8a7f4a80eb5",
+                    signature="test",
+                ),
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="pkg-2",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="this-is-a-fingerprint",
+                    signature="test",
+                ),
+            ],
+            ["pkg-1.x86_64"],
+        ),
+        (
+            [
+                create_pkg_information(
+                    packager="test",
+                    vendor="test",
+                    name="gpg-pubkey",
+                    epoch="0",
+                    release="1.0.0",
+                    version="1",
+                    arch="x86_64",
+                    fingerprint="test",
+                    signature="test",
+                )
+            ],
+            [],
+        ),
+    ),
+)
+@centos7
+def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch):
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", value=lambda: pkgs)
 
     result = pkghandler.get_system_packages_for_replacement()
-    for pkg in pkgs:
-        assert pkg in result
+    assert expected == result
 
 
 @pytest.mark.skipif(
@@ -2169,3 +1979,759 @@ def test_get_installed_pkg_objects_dnf(name, version, release, arch, total_pkgs_
     assert len(pkgs) == total_pkgs_installed
     if total_pkgs_installed > 0:
         assert pkgs[0].name == "installed_pkg"
+
+
+@centos7
+def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monkeypatch):
+    package = [
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="pkg1",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),  # RHEL
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="pkg2",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="72f97b74ec551f03",
+            signature="test",
+        ),  # OL
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="gpg-pubkey",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),
+    ]
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
+    pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
+
+    for pkg in pkgs_by_fingerprint:
+        assert pkg in ("pkg1.x86_64", "gpg-pubkey.x86_64")
+
+
+@centos7
+def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, monkeypatch):
+    package = [
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="pkg1",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),  # RHEL
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="pkg2",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="72f97b74ec551f03",
+            signature="test",
+        ),  # OL
+        create_pkg_information(
+            packager="test",
+            vendor="test",
+            name="gpg-pubkey",
+            epoch="0",
+            version="1.0.0",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),
+    ]
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
+    pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
+
+    assert not pkgs_by_fingerprint
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
+@centos7
+def test_print_pkg_info_yum(pretend_os, monkeypatch):
+    packages = [
+        create_pkg_information(
+            packager="Oracle",
+            vendor="(none)",
+            name="pkg1",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),  # RHEL
+        create_pkg_information(
+            name="pkg2",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="72f97b74ec551f03",
+            signature="test",
+        ),  # OL
+        create_pkg_information(
+            name="gpg-pubkey",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),
+    ]
+
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(
+            return_value=(
+                """\
+C2R 0:pkg1-0.1-1.x86_64&anaconda
+C2R 0:pkg2-0.1-1.x86_64&
+C2R 0:gpg-pubkey-0.1-1.x86_64&test
+    """,
+                0,
+            )
+        ),
+    )
+
+    result = pkghandler.print_pkg_info(packages)
+    assert re.search(
+        r"^Package\s+Vendor/Packager\s+Repository$",
+        result,
+        re.MULTILINE,
+    )
+    assert re.search(
+        r"^0:pkg1-0\.1-1\.x86_64\s+Oracle\s+anaconda$",
+        result,
+        re.MULTILINE,
+    )
+    assert re.search(r"^0:pkg2-0\.1-1\.x86_64\s+N/A\s+N/A$", result, re.MULTILINE)
+    assert re.search(
+        r"^0:gpg-pubkey-0\.1-1\.x86_64\s+N/A\s+test$",
+        result,
+        re.MULTILINE,
+    )
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "dnf",
+    reason="No dnf module detected on the system, skipping it.",
+)
+@centos8
+def test_print_pkg_info_dnf(pretend_os, monkeypatch):
+    packages = [
+        create_pkg_information(
+            packager="Oracle",
+            vendor="(none)",
+            name="pkg1",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",  # RHEL
+            signature="test",
+        ),
+        create_pkg_information(
+            name="pkg2",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="72f97b74ec551f03",
+            signature="test",
+        ),  # OL
+        create_pkg_information(
+            name="gpg-pubkey",
+            epoch="0",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+            fingerprint="199e2f91fd431d51",
+            signature="test",
+        ),
+    ]
+
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(
+            return_value=(
+                """\
+C2R pkg1-0:0.1-1.x86_64&anaconda
+C2R pkg2-0:0.1-1.x86_64&@@System
+C2R gpg-pubkey-0:0.1-1.x86_64&test
+    """,
+                0,
+            )
+        ),
+    )
+
+    result = pkghandler.print_pkg_info(packages)
+
+    assert re.search(
+        r"^pkg1-0:0\.1-1\.x86_64\s+Oracle\s+anaconda$",
+        result,
+        re.MULTILINE,
+    )
+    assert re.search(r"^pkg2-0:0\.1-1\.x86_64\s+N/A\s+@@System$", result, re.MULTILINE)
+    assert re.search(
+        r"^gpg-pubkey-0:0\.1-1\.x86_64\s+N/A\s+test$",
+        result,
+        re.MULTILINE,
+    )
+
+
+class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
+    def __call__(self, fingerprints, name=""):
+        if name and name != "installed_pkg":
+            return []
+        if "rhel_fingerprint" in fingerprints:
+            pkg_obj = create_pkg_information(
+                packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
+            )
+        else:
+            pkg_obj = create_pkg_information(
+                packager="Red Hat",
+                name="installed_pkg",
+                version="0.1",
+                release="1",
+                arch="x86_64",
+            )
+        return [pkg_obj]
+
+
+def test_get_packages_to_remove(monkeypatch):
+    monkeypatch.setattr(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgObjectsWDiffFingerprintMocked()
+    )
+    original_func = pkghandler._get_packages_to_remove.__wrapped__
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", mock_decorator(original_func))
+
+    result = pkghandler._get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
+    assert len(result) == 1
+    assert result[0].nevra.name == "installed_pkg"
+
+
+def test_remove_pkgs_with_confirm(monkeypatch):
+    monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallable())
+    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
+
+    pkghandler.remove_pkgs_with_confirm(
+        [
+            create_pkg_information(
+                packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
+            )
+        ]
+    )
+
+    assert len(pkghandler.remove_pkgs.pkgs) == 1
+    assert pkghandler.remove_pkgs.pkgs[0] == "installed_pkg-0.1-1.x86_64"
+
+
+@pytest.mark.parametrize(
+    ("signature", "expected"),
+    (
+        ("RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521", "73bde98381b46521"),
+        ("RSA/SHA256, Sun Feb  7 18:35:40 2016, teest ID 73bde98381b46521", "none"),
+        ("test", "none"),
+    ),
+)
+def test_get_pkg_fingerprint(signature, expected):
+    fingerprint = pkghandler._get_pkg_fingerprint(signature)
+    assert fingerprint == expected
+
+
+@pytest.mark.parametrize(
+    ("package", "expected"),
+    (
+        (
+            create_pkg_information(
+                vendor="Oracle",
+            ),
+            "Oracle",
+        ),
+        (
+            create_pkg_information(
+                packager="Oracle",
+            ),
+            "N/A",
+        ),
+    ),
+)
+def test_get_vendor(package, expected):
+    assert pkghandler.get_vendor(package) == expected
+
+
+@pytest.mark.parametrize(
+    ("pkgmanager_name", "package", "include_zero_epoch", "expected"),
+    (
+        (
+            "dnf",
+            create_pkg_information(name="pkg", epoch="1", version="2", release="3", arch="x86_64"),
+            True,
+            "pkg-1:2-3.x86_64",
+        ),
+        (
+            "yum",
+            create_pkg_information(name="pkg", epoch="1", version="2", release="3", arch="x86_64"),
+            True,
+            "1:pkg-2-3.x86_64",
+        ),
+        (
+            "dnf",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            False,
+            "pkg-2-3.x86_64",
+        ),
+        (
+            "yum",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            False,
+            "pkg-2-3.x86_64",
+        ),
+        (
+            "yum",
+            create_pkg_information(name="pkg", epoch="0", version="2", release="3", arch="x86_64"),
+            True,
+            "0:pkg-2-3.x86_64",
+        ),
+    ),
+)
+def test_get_pkg_nevra(pkgmanager_name, package, include_zero_epoch, expected, monkeypatch):
+    monkeypatch.setattr(pkgmanager, "TYPE", pkgmanager_name)
+    assert pkghandler.get_pkg_nevra(package, include_zero_epoch) == expected
+
+
+@pytest.mark.parametrize(
+    ("fingerprint_orig_os", "expected_count", "expected_pkgs"),
+    (
+        (["24c6a8a7f4a80eb5", "a963bbdbf533f4fa"], 0, 1),
+        (["72f97b74ec551f03"], 0, 0),
+    ),
+)
+def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs, monkeypatch):
+    monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
+    monkeypatch.setattr(system_info, "fingerprints_orig_os", fingerprint_orig_os)
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
+
+    pkgs = pkghandler.get_third_party_pkgs()
+
+    assert pkghandler.print_pkg_info.called == expected_count
+    assert len(pkgs) == expected_pkgs
+
+
+def test_list_non_red_hat_pkgs_left(monkeypatch):
+    monkeypatch.setattr(pkghandler, "print_pkg_info", PrintPkgInfoMocked())
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", GetInstalledPkgsWFingerprintsMocked())
+    pkghandler.list_non_red_hat_pkgs_left()
+
+    assert len(pkghandler.print_pkg_info.pkgs) == 1
+    assert pkghandler.print_pkg_info.pkgs[0].nevra.name == "pkg2"
+
+
+@centos7
+def test_install_rhel_kernel(pretend_os, monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", DumbCallableObject())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+    )
+
+    # 1st scenario: kernels collide; the installed one is already a RHEL kernel = no action.
+    kernel_package = "kernel-3.10.0-1127.19.1.el7.x86_64"
+
+    utils.run_subprocess.output = "Package %s already installed and latest version" % kernel_package
+    pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = True
+
+    update_kernel = pkghandler.install_rhel_kernel()
+
+    assert not update_kernel
+
+    # 2nd scenario: kernels collide; the installed one is from third party
+    # = older-version RHEL kernel is to be installed.
+    pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = False
+
+    update_kernel = pkghandler.install_rhel_kernel()
+
+    assert update_kernel
+
+    # 3rd scenario: kernels do not collide; the RHEL one gets installed.
+    utils.run_subprocess.output = "Installed:\nkernel"
+
+    update_kernel = pkghandler.install_rhel_kernel()
+
+    assert not update_kernel
+
+
+@centos7
+def test_install_rhel_kernel_already_installed_regexp(pretend_os, monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+    )
+
+    # RHEL 7
+    utils.run_subprocess.output = "Package kernel-2.6.32-754.33.1.el6.x86_64 already installed and latest version"
+
+    pkghandler.install_rhel_kernel()
+
+    assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 1
+
+    # RHEL 8
+    utils.run_subprocess.output = "Package kernel-4.18.0-193.el8.x86_64 is already installed."
+
+    pkghandler.install_rhel_kernel()
+    assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 2
+
+
+def test_remove_non_rhel_kernels(monkeypatch):
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+    )
+    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
+
+    removed_pkgs = pkghandler.remove_non_rhel_kernels()
+
+    assert len(removed_pkgs) == 6
+    assert [p.nevra.name for p in removed_pkgs] == [
+        "kernel",
+        "kernel-uek",
+        "kernel-headers",
+        "kernel-uek-headers",
+        "kernel-firmware",
+        "kernel-uek-firmware",
+    ]
+
+
+def test_install_additional_rhel_kernel_pkgs(monkeypatch):
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+    )
+    monkeypatch.setattr(pkghandler, "print_pkg_info", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
+    monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+
+    removed_pkgs = pkghandler.remove_non_rhel_kernels()
+    pkghandler.install_additional_rhel_kernel_pkgs(removed_pkgs)
+    assert pkghandler.call_yum_cmd.called == 2
+
+
+@pytest.mark.parametrize(
+    ("package_name", "subprocess_output", "expected", "expected_command"),
+    (
+        (
+            "libgcc*",
+            "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+            [
+                PackageInformation(
+                    packager="CentOS Buildsys <bugs@centos.org>",
+                    vendor="CentOS",
+                    nevra=PackageNevra(
+                        name="libgcc",
+                        epoch="0",
+                        version="8.5.0",
+                        release="4.el8_5",
+                        arch="i686",
+                    ),
+                    fingerprint="05b555b38483c65d",
+                    signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-qa",
+                "libgcc*",
+            ],
+        ),
+        (
+            "libgcc-0:8.5.0-4.el8_5.i686",
+            "C2R CentOS Buildsys <bugs@centos.org>&CentOS&libgcc-0:8.5.0-4.el8_5.i686&RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+            [
+                PackageInformation(
+                    packager="CentOS Buildsys <bugs@centos.org>",
+                    vendor="CentOS",
+                    nevra=PackageNevra(
+                        name="libgcc",
+                        epoch="0",
+                        version="8.5.0",
+                        release="4.el8_5",
+                        arch="i686",
+                    ),
+                    fingerprint="05b555b38483c65d",
+                    signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "libgcc-0:8.5.0-4.el8_5.i686",
+            ],
+        ),
+        (
+            "rpmlint-fedora-license-data-0:1.17-1.fc37.noarch",
+            "C2R Fedora Project&Fedora Project&rpmlint-fedora-license-data-0:1.17-1.fc37.noarch&RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",
+            [
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="rpmlint-fedora-license-data", epoch="0", version="1.17", release="1.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "rpmlint-fedora-license-data-0:1.17-1.fc37.noarch",
+            ],
+        ),
+        (
+            "rpmlint-fedora-license-data-0:1.17-1.fc37.noarch",
+            """
+            C2R Fedora Project&Fedora Project&rpmlint-fedora-license-data-0:1.17-1.fc37.noarch&RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a
+            test test what a line
+            """,
+            [
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="rpmlint-fedora-license-data", epoch="0", version="1.17", release="1.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "rpmlint-fedora-license-data-0:1.17-1.fc37.noarch",
+            ],
+        ),
+        (
+            "whatever",
+            "random line",
+            [],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "whatever",
+            ],
+        ),
+        (
+            "*",
+            """
+            C2R Fedora Project&Fedora Project&fonts-filesystem-1:2.0.5-9.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a
+            C2R Fedora Project&Fedora Project&fedora-logos-0:36.0.0-3.fc37.noarch&RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a
+            """,
+            [
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="fonts-filesystem", epoch="1", version="2.0.5", release="9.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a",
+                ),
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="fedora-logos", epoch="0", version="36.0.0", release="3.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a",
+                ),
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-qa",
+                "*",
+            ],
+        ),
+        (
+            "*",
+            """
+            C2R Fedora Project&Fedora Project&fonts-filesystem-1:2.0.5-9.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a
+            C2R Fedora Project&Fedora Project&fedora-logos-0:36.0.0-3.fc37.noarch&RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a
+            testest what a line
+            """,
+            [
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="fonts-filesystem", epoch="1", version="2.0.5", release="9.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a",
+                ),
+                PackageInformation(
+                    packager="Fedora Project",
+                    vendor="Fedora Project",
+                    nevra=PackageNevra(
+                        name="fedora-logos", epoch="0", version="36.0.0", release="3.fc37", arch="noarch"
+                    ),
+                    fingerprint="f55ad3fb5323552a",
+                    signature="RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a",
+                ),
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-qa",
+                "*",
+            ],
+        ),
+    ),
+)
+def test_get_installed_pkg_information(package_name, subprocess_output, expected, expected_command, monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.output = subprocess_output
+
+    result = pkghandler.get_installed_pkg_information(package_name)
+    assert utils.run_subprocess.cmd == expected_command
+    assert result == expected
+
+
+def test_get_installed_pkg_information_value_error(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.output = "C2R Fedora Project&Fedora Project&fonts-filesystem-a:aabb.d.1-l.fc37.noarch&RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a"
+
+    result = pkghandler.get_installed_pkg_information()
+    assert not result
+    assert "Failed to parse a package" in caplog.records[-1].message
+
+
+def test_remove_excluded_pkgs(monkeypatch):
+    monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    pkghandler.remove_excluded_pkgs()
+
+    assert pkghandler._get_packages_to_remove.called == 1
+    assert pkghandler.remove_pkgs_with_confirm.called == 1
+    assert pkghandler._get_packages_to_remove.command == system_info.excluded_pkgs
+
+
+def test_remove_repofile_pkgs(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
+    monkeypatch.setattr(pkghandler, "_get_packages_to_remove", CommandCallableObject())
+    monkeypatch.setattr(pkghandler, "remove_pkgs_with_confirm", CommandCallableObject())
+    pkghandler.remove_repofile_pkgs()
+
+    assert pkghandler._get_packages_to_remove.called == 1
+    assert pkghandler.remove_pkgs_with_confirm.called == 1
+    assert pkghandler._get_packages_to_remove.command == system_info.repofile_pkgs
+
+
+@pytest.mark.parametrize(
+    ("packages", "subprocess_output", "expected_result"),
+    (
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                C2R 0:eog-44.1-1.fc38.x86_64&updates
+                C2R 0:gnome-backgrounds-44.0-1.fc38.noarch&fedora
+                C2R 0:gnome-maps-44.1-1.fc38.x86_64&updates
+            """,
+            {
+                "0:eog-44.1-1.fc38.x86_64": "updates",
+                "0:gnome-backgrounds-44.0-1.fc38.noarch": "fedora",
+                "0:gnome-maps-44.1-1.fc38.x86_64": "updates",
+            },
+        ),
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                C2R 0:eog-44.1-1.fc38.x86_64&updates
+                C2R 0:gnome-backgrounds-44.0-1.fc38.noarch&fedora
+                C2R 0:gnome-maps-44.1-1.fc38.x86_64&updates
+                test line without identifier
+            """,
+            {
+                "0:eog-44.1-1.fc38.x86_64": "updates",
+                "0:gnome-backgrounds-44.0-1.fc38.noarch": "fedora",
+                "0:gnome-maps-44.1-1.fc38.x86_64": "updates",
+            },
+        ),
+        (
+            ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                test line without identifier
+            """,
+            {},
+        ),
+    ),
+)
+@centos7
+def test_get_package_repositories(pretend_os, packages, subprocess_output, expected_result, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.output = subprocess_output
+
+    result = pkghandler._get_package_repositories(packages)
+    assert expected_result == result
+    if caplog.records[-1].message:
+        assert "Got a line without the C2R identifier" in caplog.records[-1].message
+
+
+@centos7
+def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    utils.run_subprocess.ret_code = 1
+    utils.run_subprocess.output = "failed"
+
+    packages = ["0:gnome-backgrounds-44.0-1.fc38.noarch", "0:eog-44.1-1.fc38.x86_64", "0:gnome-maps-44.1-1.fc38.x86_64"]
+    result = pkghandler._get_package_repositories(packages)
+
+    assert "Repoquery exited with return code 1 and with output: failed" in caplog.records[-1].message
+    for package in result:
+        assert package in packages
+        assert result[package] == "N/A"

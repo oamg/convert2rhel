@@ -22,6 +22,7 @@ from convert2rhel import pkgmanager
 from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
 from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgressIndicatorCallback
 from convert2rhel.systeminfo import system_info
+from convert2rhel.unit_tests import create_pkg_information
 from convert2rhel.unit_tests.conftest import centos8
 
 
@@ -155,7 +156,45 @@ class TestDnfTransactionHandler:
     @centos8
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"]),),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ]
+            ),
+        ),
     )
     def test_perform_operations(self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(
@@ -174,7 +213,45 @@ class TestDnfTransactionHandler:
     @centos8
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"]),),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ]
+            ),
+        ),
     )
     def test_perform_operations_reinstall_exception(
         self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch
@@ -196,7 +273,45 @@ class TestDnfTransactionHandler:
     @centos8
     @pytest.mark.parametrize(
         ("system_packages"),
-        ((["pkg-1", "pkg-2", "pkg-3"]),),
+        (
+            (
+                [
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-1",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-2",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                    create_pkg_information(
+                        packager="test",
+                        vendor="test",
+                        name="pkg-3",
+                        epoch="0",
+                        version="1.0.0",
+                        release="1",
+                        arch="x86_64",
+                        fingerprint="test",
+                        signature="test",
+                    ),
+                ]
+            ),
+        ),
     )
     def test_perform_operations_downgrade_exception(
         self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch

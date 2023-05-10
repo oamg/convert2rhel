@@ -39,9 +39,7 @@ def test_check_user_response_user_and_password(convert2rhel):
                     raise
                 continue
 
-        # Due to inconsistent behavior of Ctrl+c
-        # the Ctrl+d is used to terminate the process instead
-        c2r.sendcontrol("d")
+        c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
 
@@ -66,6 +64,6 @@ def test_auto_attach_pool_submgr(convert2rhel):
             )
             == 0
         ):
-            c2r.send(chr(3))
+            c2r.sendcontrol("c")
 
         assert c2r.exitstatus != 0

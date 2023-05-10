@@ -106,11 +106,12 @@ class Breadcrumbs(object):
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
-        self.nevra = pkghandler.get_pkg_nevra(self._pkg_object)
+        self.nevra = pkghandler.get_pkg_nevra(self._pkg_object, include_zero_epoch=True)
 
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""
-        self.signature = pkghandler.get_pkg_signature(self._pkg_object)
+        package = pkghandler.get_installed_pkg_information(str(self._pkg_object))[0]
+        self.signature = package.signature
 
     def _set_started(self):
         """Set start time of activity"""

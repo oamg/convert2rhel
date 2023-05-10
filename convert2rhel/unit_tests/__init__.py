@@ -15,14 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
 import os
 import unittest
 
-from functools import wraps
-
 import pytest
+import six
 
+from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock as six_mock
 
 
 TMP_DIR = "/tmp/convert2rhel_test/"
@@ -63,7 +68,7 @@ def mock(class_or_module, orig_obj, mock_obj):
     def wrap(func):
         # The @wraps decorator below makes sure the original object name
         # and docstring (in case of a method/function) are preserved.
-        @wraps(func)
+        @functools.wraps(func)
         def wrapped_fn(*args, **kwargs):
             # Save temporarily the original object
             orig_obj_saved = getattr(class_or_module, orig_obj)
@@ -282,3 +287,77 @@ def run_subprocess_side_effect(*stubs):
             return run_subprocess(*args, **kwargs)
 
     return factory
+
+
+def create_pkg_information(
+    packager=None,
+    vendor=None,
+    name=None,
+    epoch="0",
+    version=None,
+    release=None,
+    arch=None,
+    fingerprint=None,
+    signature=None,
+):
+    pkg_info = PackageInformation(
+        packager,
+        vendor,
+        PackageNevra(name, epoch, version, release, arch),
+        fingerprint,
+        signature,
+    )
+    return pkg_info
+
+
+class TestPkgObj(object):
+    class PkgObjHdr(object):
+        def sprintf(self, *args, **kwargs):
+            return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
+
+    hdr = PkgObjHdr()
+
+
+def create_pkg_obj(
+    name,
+    epoch=0,
+    version="",
+    release="",
+    arch="",
+    packager=None,
+    from_repo="",
+    manager="yum",
+    vendor=None,
+):
+    class DumbObj(object):
+        pass
+
+    obj = TestPkgObj()
+    obj.yumdb_info = DumbObj()
+    obj.name = name
+    obj.epoch = obj.e = epoch
+    obj.version = obj.v = version
+    obj.release = obj.r = release
+    obj.evr = version + "-" + release
+    obj.arch = arch
+    obj.packager = packager
+    if vendor:
+        obj.vendor = vendor
+    if manager == "yum":
+        obj.rpmdb = six_mock.Mock()
+        if from_repo:
+            obj.yumdb_info.from_repo = from_repo
+    elif manager == "dnf":
+        if from_repo:
+            obj._from_repo = from_repo
+        else:
+            obj._from_repo = "@@System"
+    return obj
+
+
+def mock_decorator(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped

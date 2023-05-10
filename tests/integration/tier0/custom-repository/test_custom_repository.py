@@ -92,7 +92,7 @@ def test_good_conversion_without_rhsm(shell, convert2rhel):
     ) as c2r:
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
         # Send Ctrl-C
-        c2r.send(chr(3))
+        c2r.sendcontrol("c")
 
     # Clean up
     teardown_custom_repositories(shell)

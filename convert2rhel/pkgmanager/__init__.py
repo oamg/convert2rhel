@@ -17,6 +17,8 @@
 
 import logging
 
+from contextlib import contextmanager
+
 from convert2rhel import utils
 
 
@@ -100,3 +102,38 @@ def clean_yum_metadata():
         return
 
     loggerinst.info("Cached repositories metadata cleaned successfully.")
+
+
+@contextmanager
+def rpm_db_lock(pkg_obj):
+    """Context manager to handle rpm database termination.
+
+    .. note::
+        This context manager will only do something with an instance of
+        `yum.rpmsack.RPMInstalledPackage`, as it will access specific
+        properties inside that class to close the RPM DB.  pkg_obj's from
+        dnf are fine to pass in but will be a no-op as dnf manages the
+        lifetime of the rpm_db lock fine on its own.
+
+    .. important::
+        This context manager will be used for both yum and dnf, but only yum
+        will actually do an explicit cleanup after the usage. Yum seems to need
+        to do that explicitly while Dnf handles it properly.
+
+    :param pkg_obj: Instace of a package RPM installed on the system.
+    :type pkg_obj: yum.rpmsack.RPMInstalledPackage | dnf.package.Package
+    """
+    try:
+        yield
+    finally:
+        # Only execute the rpmdb cleanup if the property is present inside
+        # pkg_obj. That means we are dealing with yum.
+        # Do a manual cleanup of the rpmdb to not leave it open as the
+        # conversion goes through. This is the same strategy as YumBase() uses
+        # in their `close()` method, see:
+        # https://github.com/rpm-software-management/yum/blob/4ed25525ee4781907bd204018c27f44948ed83fe/yum/__init__.py#L672-L675
+        if hasattr(pkg_obj, "rpmdb"):
+            if pkg_obj.rpmdb:
+                pkg_obj.rpmdb.ts = None
+                pkg_obj.rpmdb.dropCachedData()
+                pkg_obj.rpmdb = None
