@@ -910,10 +910,10 @@ def check_needed_repos_availability(repo_ids_needed):
         if repo_id not in avail_repos:
             # TODO: List the packages that would be left untouched
             loggerinst.warning(
-                "Some repositories are not available: %s. "
-                " Some pacakges may not be replaced with their corrisponding"
+                "Some repositories are not available: %s."
+                " Some packages may not be replaced with their corresponding"
                 " RHEL packages when converting. The converted system will end up"
-                " with a mixture of packages from RHEL and from your current distibution." % repo_id
+                " with a mixture of packages from RHEL and your current distribution." % repo_id
             )
             utils.ask_to_continue()
             all_repos_avail = False

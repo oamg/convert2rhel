@@ -160,10 +160,10 @@ class TestCheckNeededReposAvailability(object):
         assert avail_repos_message in caplog.records[-1].message
 
         no_avail_repos_message = (
-            "Some repositories are not available: rhel_z. "
-            " Some pacakges may not be replaced with their corrispomding"
-            " RHEL packages when converting. The converted system will be"
-            " running a mixture of packages form RHEL and from your current distibution"
+            "Some repositories are not available: rhel_z."
+            " Some packages may not be replaced with their corresponding"
+            " RHEL packages when converting. The converted system will end up"
+            " with a mixture of packages from RHEL and your current distribution."
         )
 
         subscription.check_needed_repos_availability(["rhel_z"])
@@ -174,10 +174,10 @@ class TestCheckNeededReposAvailability(object):
         monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
 
         no_avail_repos_message = (
-            "Some repositories are not available: rhel. "
-            " Some pacakges may not be replaced with their corrispomding"
-            " RHEL packages when converting. The converted system will be"
-            " running a mixture of packages form RHEL and from your current distibution"
+            "Some repositories are not available: rhel."
+            " Some packages may not be replaced with their corresponding"
+            " RHEL packages when converting. The converted system will end up"
+            " with a mixture of packages from RHEL and your current distribution."
         )
         subscription.check_needed_repos_availability(["rhel"])
 
