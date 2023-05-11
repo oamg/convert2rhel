@@ -52,7 +52,7 @@ def test_user_path_cli_priority(convert2rhel):
     config = [
         Config(
             "~/.convert2rhel.ini",
-            "[subscription_manager]\nusername = config_username\npassword = config_password\nacitvation_key = config_key\norg = config_org",
+            "[subscription_manager]\nusername = config_username\npassword = config_password\nactivation_key = config_key\norg = config_org",
         )
     ]
     create_files(config)
@@ -65,21 +65,18 @@ def test_user_path_cli_priority(convert2rhel):
         c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
 
         c2r.expect(
-            "WARNING - You have passed either the RHSM password or activation key through both the command line and"
-            " the configuration file. We're going to use the command line values."
-        )
-        c2r.expect(
             "WARNING - You have passed the RHSM username through both the command line and"
             " the configuration file. We're going to use the command line values."
         )
         if (
             c2r.expect(
-                "WARNING - You have passed the RHSM org through both the command line and"
+                "WARNING - You have passed either the RHSM password or activation key through both the command line and"
                 " the configuration file. We're going to use the command line values."
             )
             == 0
         ):
             c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
