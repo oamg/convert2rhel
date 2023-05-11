@@ -36,6 +36,9 @@ jobs:
 
 - &tests
   job: tests
+  # Do not merge the PR into the target branch, in case the merge is broken
+  # Given we are rebasing the source branches regularly, we do not need this feature enabled
+  merge_pr_in_ci: false
   targets:
     epel-7-x86_64:
       distros: [centos-7, oraclelinux-7]

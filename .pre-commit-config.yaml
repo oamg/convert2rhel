@@ -21,7 +21,7 @@ repos:
             sed -i '/^[[:space:]]*tier: 0/d' plans/rerun.fmf
             sed -i 's/\s\+$//' plans/rerun.fmf
         language: system
-        stages: [ commit ]
+        stages: [ manual ]
   - repo: local
     hooks:
       - id: black
