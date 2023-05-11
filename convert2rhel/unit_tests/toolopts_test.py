@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Required imports:
-
-
 import os
 import sys
 
@@ -198,6 +195,13 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
 @pytest.mark.parametrize(
     ("argv", "content", "output", "message"),
     (
+        pytest.param(
+            mock_cli_arguments([]),
+            "[subscription_manager]\nusername=conf_user\npassword=conf_pass\nactivation_key=conf_key\norg=conf_org",
+            {"username": "conf_user", "password": "conf_pass", "activation_key": "conf_key", "org": "conf_org"},
+            None,
+            id="All values set in config",
+        ),
         (
             mock_cli_arguments([]),
             "[subscription_manager]\npassword=conf_pass",
@@ -239,6 +243,20 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
             "Either a password or an activation key can be used for system registration. We're going to use the"
             " activation key.",
         ),
+        (
+            mock_cli_arguments(["-u", "McLOVIN"]),
+            "[subscription_manager]\nusername=NotMcLOVIN\n",
+            {"username": "McLOVIN"},
+            "You have passed the RHSM username through both the command line and"
+            " the configuration file. We're going to use the command line values.",
+        ),
+        (
+            mock_cli_arguments(["-o", "some-org"]),
+            "[subscription_manager]\org=a-different-org\nactivation_key=conf_key",
+            {"org": "some-org"},
+            "You have passed the RHSM org through both the command line and"
+            " the configuration file. We're going to use the command line values.",
+        ),
     ),
 )
 def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog):
@@ -254,8 +272,18 @@ def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[path])
     convert2rhel.toolopts.CLI()
 
-    assert convert2rhel.toolopts.tool_opts.activation_key == output["activation_key"]
-    assert convert2rhel.toolopts.tool_opts.password == output["password"]
+    if "activation_key" in output:
+        assert convert2rhel.toolopts.tool_opts.activation_key == output["activation_key"]
+
+    if "password" in output:
+        assert convert2rhel.toolopts.tool_opts.password == output["password"]
+
+    if "username" in output:
+        assert convert2rhel.toolopts.tool_opts.username == output["username"]
+
+    if "org" in output:
+        assert convert2rhel.toolopts.tool_opts.org == output["org"]
+
     if message:
         assert message in caplog.text
 
@@ -365,9 +393,19 @@ def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch):
             "[subscription_manager]\npassword = correct_password",
             {"username": None, "password": "correct_password", "activation_key": None, "org": None},
         ),
-        (
-            "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
-            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+        pytest.param(
+            "[subscription_manager]\n"
+            "activation_key = correct_key\n"
+            "Password = correct_password\n"
+            "username = correct_username\n"
+            "org = correct_org\n",
+            {
+                "username": "correct_username",
+                "password": "correct_password",
+                "activation_key": "correct_key",
+                "org": "correct_org",
+            },
+            id="All options used together",
         ),
         (
             "[subscription_manager]\norg = correct_org",
@@ -415,6 +453,11 @@ def test_options_from_config_files_default(content, output, monkeypatch, tmpdir,
             "[subscription_manager]\nusername = correct_username\nactivation_key = correct_key",
             {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
             "[subscription_manager]\nusername = low_prior_username",
+        ),
+        (
+            "[subscription_manager]\nusername = correct_username\nactivation_key = correct_key",
+            {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
+            "[subscription_manager]\nactivation_key = low_prior_key",
         ),
         (
             "[subscription_manager]\nactivation_key = correct_key\norg = correct_org",

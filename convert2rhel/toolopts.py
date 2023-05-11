@@ -448,9 +448,15 @@ class CLI(object):
             )
 
         # Config files matches
-        if (config_opts.username or config_opts.org) and (parsed_opts.username or parsed_opts.org):
+        if config_opts.username or config_opts.org:
             loggerinst.warning(
-                "You have passed either the RHSM username or org through both the command line and the"
+                "You have passed the RHSM username through both the command line and the"
+                " configuration file. We're going to use the command line values."
+            )
+
+        if parsed_opts.username or parsed_opts.org:
+            loggerinst.warning(
+                "You have passed the RHSM org through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
