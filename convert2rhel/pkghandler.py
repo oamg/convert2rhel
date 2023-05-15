@@ -1227,7 +1227,7 @@ def _validate_parsed_fields(package, name, epoch, version, release, arch):
     parsed_pkg_length = len("".join(pkg_fields)) + seperators
     if pkg_length != parsed_pkg_length:
         raise ValueError(
-            "Invalid package - %s, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
+            "Invalid package - %s, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
             " Reason: The total length of the parsed package fields does not equal the package length," % package
         )
 
@@ -1316,8 +1316,8 @@ def _parse_pkg_with_dnf(pkg):
         # therefore the package entered is invalid and/or in the wrong format
         if no_arch_data is None:
             raise ValueError(
-                "Invalid package string - %s, enter a package in one of the formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
-                % pkg
+                "Invalid package - %s, packages need to be in one of the following"
+                " formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR." % pkg
             )
 
         name = no_arch_data.name

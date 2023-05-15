@@ -1155,13 +1155,13 @@ def test_validate_parsed_fields_invalid(package, name, epoch, version, release, 
         (
             "foo-15.x86_64",
             re.escape(
-                "Invalid package - foo-15.x86_64, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
+                "Invalid package - foo-15.x86_64, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
             ),
         ),
         (
             "notavalidpackage",
             re.escape(
-                "Invalid package - notavalidpackage, enter a package in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
+                "Invalid package - notavalidpackage, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR. Reason: The total length of the parsed package fields does not equal the package length,"
             ),
         ),
     ),
