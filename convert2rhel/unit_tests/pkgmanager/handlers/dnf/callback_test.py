@@ -33,7 +33,7 @@ class TestDependencySolverProgressIndicatorCallback:
             ("package-1", "u", "package-1 will be an update."),
             ("package-1", "e", "package-1 will be erased."),
             ("package-1", "r", "package-1 will be reinstalled."),
-            ("package-1", "d", "package-1 will be an downgrade."),
+            ("package-1", "d", "package-1 will be a downgrade."),
             ("package-1", "o", "package-1 will obsolete another package."),
             ("package-1", "ud", "package-1 will be updated."),
             ("package-1", "od", "package-1 will be obsoleted."),
