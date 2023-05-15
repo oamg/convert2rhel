@@ -151,7 +151,6 @@ class PromptUserMocked(unit_tests.MockFunction):
 
 class TestCheckNeededReposAvailability(object):
     def test_check_needed_repos_availability(self, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "ask_to_continue", PromptUserMocked())
         monkeypatch.setattr(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
 
         avail_repos_message = "Needed RHEL repositories are available."
@@ -170,7 +169,6 @@ class TestCheckNeededReposAvailability(object):
         assert no_avail_repos_message in caplog.records[-1].message
 
     def test_check_needed_repos_availability_no_repo_available(self, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "ask_to_continue", PromptUserMocked())
         monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
 
         no_avail_repos_message = (

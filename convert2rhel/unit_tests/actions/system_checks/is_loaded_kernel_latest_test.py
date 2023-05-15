@@ -153,7 +153,7 @@ class TestIsLoadedKernelLatest:
                 "1 .01-5.03",
                 0,
                 "kernel-core",
-                "Invalid package string - kernel-core-1 .01-5.02, enter a package in one of the formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR.",
+                "Invalid package - kernel-core-1 .01-5.02, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR.",
             ),
         ),
     )
