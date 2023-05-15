@@ -61,13 +61,13 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.22.0"
+    rev: "1.23.0"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
 
   - repo: https://github.com/packit/pre-commit-hooks
-    rev: v1.1.0
+    rev: v1.2.0
     hooks:
       - id: check-rebase
         args:
