@@ -75,7 +75,7 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
         "u": "%s will be an update.",
         "e": "%s will be erased.",
         "r": "%s will be reinstalled.",
-        "d": "%s will be an downgrade.",
+        "d": "%s will be a downgrade.",
         "dd": "%s will be downgraded.",
         "o": "%s will obsolete another package.",
         "ud": "%s will be updated.",
