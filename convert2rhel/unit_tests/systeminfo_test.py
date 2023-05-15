@@ -442,6 +442,6 @@ def test_print_system_information(pretend_os, caplog):
     system_info.print_system_information()
 
     assert "CentOS Linux" in caplog.records[-4].message
-    assert "8.6" in caplog.records[-3].message
+    assert "8.5" in caplog.records[-3].message
     assert "x86_64" in caplog.records[-2].message
     assert "centos-8-x86_64.cfg" in caplog.records[-1].message

@@ -59,7 +59,7 @@ def test_get_rhel_repoids(pretend_os, is_eus_release, expected, monkeypatch):
     (
         (
             True,
-            "/usr/share/convert2rhel/repos/centos-8.6",
+            "/usr/share/convert2rhel/repos/centos-8.5",
         ),
         (
             False,
