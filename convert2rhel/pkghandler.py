@@ -355,23 +355,6 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
     ]
 
 
-def list_third_party_pkgs():
-    """List packages not packaged by the original OS vendor or Red Hat and warn that these are not going
-    to be converted.
-    """
-    third_party_pkgs = get_third_party_pkgs()
-    if third_party_pkgs:
-        loggerinst.warning(
-            "Only packages signed by %s are to be"
-            " replaced. Red Hat support won't be provided"
-            " for the following third party packages:\n" % system_info.name
-        )
-        print_pkg_info(third_party_pkgs)
-        utils.ask_to_continue()
-    else:
-        loggerinst.info("No third party packages installed.")
-
-
 @utils.run_as_child_process
 def print_pkg_info(pkgs):
     """Print package information.

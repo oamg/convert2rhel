@@ -93,7 +93,12 @@ def test_custom_kernel(convert2rhel, shell):
             c2r.sendline("y")
 
             c2r.expect("WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor))
-            c2r.expect("CRITICAL - The booted kernel version is incompatible with the standard RHEL kernel.")
+            c2r.expect(
+                "RHEL_COMPATIBLE_KERNEL.BOOTED_KERNEL_INCOMPATIBLE: The booted kernel version is incompatible with the standard RHEL kernel."
+            )
+
+            c2r.sendcontrol("c")
+
         assert c2r.exitstatus != 0
 
         # Restore the system.

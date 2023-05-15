@@ -35,7 +35,6 @@ class ListThirdPartyPackages(actions.Action):
         super(ListThirdPartyPackages, self).run()
 
         logger.task("Convert: List third-party packages")
-
         third_party_pkgs = pkghandler.get_third_party_pkgs()
         if third_party_pkgs:
             logger.warning(

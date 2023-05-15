@@ -28,7 +28,7 @@ def tainted_repository(shell):
 
 
 @pytest.mark.test_failed_repoquery
-def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2rhel, tainted_repository):
+def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, tainted_repository):
     """
     This test verifies, that failed repoquery is handled correctly.
     Failed repoquery subsequently caused the latest kernel check to fail.
@@ -40,8 +40,6 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("Continue with the system conversion?", timeout=300) == 0
-        c2r.sendline("y")
         assert (
             c2r.expect(
                 "Couldn't fetch the list of the most recent kernels available in the repositories. Skipping the loaded kernel check.",
@@ -49,8 +47,8 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(shell, convert2
             )
             == 0
         )
-        assert c2r.expect("Continue with the system conversion?", timeout=300) == 0
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 
@@ -95,7 +93,7 @@ def yum_conf_exclude_kernel(shell):
 
 
 @pytest.mark.test_yum_excld_kernel
-def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel, yum_conf_exclude_kernel):
+def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude_kernel):
     """
     Verify, the conversion is not inhibited with:
     'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
@@ -106,6 +104,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(shell, convert2rhel, yum
     with convert2rhel("-y --debug --no-rpm-va") as c2r:
         c2r.expect("Prepare: Check if the loaded kernel version is the most recent")
         assert c2r.expect("Convert: List third-party packages", timeout=300) == 0
+
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
