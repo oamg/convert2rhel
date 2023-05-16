@@ -106,8 +106,9 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
 
         assert c2r.expect("Latest available Convert2RHEL version is installed.", timeout=300) == 0
 
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
+
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_version_older_no_envar
@@ -124,8 +125,11 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("CRITICAL - You are currently running 0.01", timeout=300) == 0
+        assert c2r.expect("CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE: You are currently running 0.01", timeout=300) == 0
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
+
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 
@@ -165,8 +169,9 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
             )
             == 0
         )
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
 
@@ -183,8 +188,9 @@ def test_clean_cache(convert2rhel):
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
         assert c2r.expect("Cached repositories metadata cleaned successfully.", timeout=300) == 0
 
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
+
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_log_rhsm_error
@@ -198,8 +204,11 @@ def test_rhsm_error_logged(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        # Wait until we reach that part, as the RHEL certificate will be
+        # already be present.
+        assert c2r.expect("Prepare: Check that DBus Daemon is running") == 0
+        c2r.sendcontrol("c")
+
         assert c2r.expect("No RHSM certificates found to be removed.", timeout=300) == 0
 
     # Verify the error message is not present in the log file
@@ -216,29 +225,25 @@ def test_check_variant_message(convert2rhel):
     # Run c2r with --variant option
     with convert2rhel("--no-rpm-va --debug --variant Server") as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
     # Run c2r with --variant option empty
     with convert2rhel("--no-rpm-va --debug --variant") as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
     # Run c2r with -v option
     with convert2rhel("--no-rpm-va --debug -v Client") as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
     # Run c2r with -v option empty
     with convert2rhel("--no-rpm-va --debug -v") as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
     assert c2r.exitstatus != 0
 
 
@@ -284,8 +289,7 @@ def test_disable_data_collection(shell, convert2rhel):
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
         assert c2r.expect("Skipping, telemetry disabled.", timeout=300) == 0
 
-        c2r.expect("Continue with the system conversion", timeout=300)
-        c2r.sendline("n")
+        c2r.sendcontrol("c")
 
         # Verify the file is not created if CONVERT2RHEL_DISABLE_TELEMETRY is set.
         assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)

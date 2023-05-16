@@ -14,7 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__metaclass__ = type
+
 import errno
+import fcntl
 import getpass
 import inspect
 import json
@@ -23,9 +27,11 @@ import multiprocessing
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
+import termios
 import traceback
 
 from functools import wraps
@@ -133,7 +139,7 @@ class Process(multiprocessing.Process):
 
 
 def run_as_child_process(func):
-    """Decorator to execute a function in a child process.
+    """Decorator to execute functions as child process.
 
     This decorator will use `multiprocessing.Process` class to initiate the
     function as a child process to the parent process with the intention to
@@ -318,14 +324,13 @@ def store_content_to_file(filename, content):
     """
     if isinstance(content, list):
         content = "\n".join(content)
+
     if len(content) > 0 and content[-1] != "\n":
         # append the missing newline to comply with standard about text files
         content += "\n"
-    file_to_write = open(filename, "w")
-    try:
-        file_to_write.write(content)
-    finally:
-        file_to_write.close()
+
+    with open(filename, "w") as handler:
+        handler.write(content)
 
 
 def restart_system():
@@ -891,6 +896,30 @@ def remove_orphan_folders():
             os.rmdir(path)
 
 
+def get_terminal_size():
+    """Retrieve the terminal size on Linux systems"""
+    try:
+        # Python 3.2+
+        return shutil.get_terminal_size()
+    except AttributeError:
+        pass
+
+    # Retrieve the terminal size on Linux systems in Python2
+
+    # We can't query the terminal size if it isn't a tty (For instance, if
+    # output is piped.  Use a default value in that case)
+    if not sys.stdout.isatty():
+        return (80, 24)
+
+    terminal_size_c_struct = struct.pack("HHHH", 0, 0, 0, 0)
+    terminal_info = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, terminal_size_c_struct)
+
+    size = struct.unpack("HHHH", terminal_info)[:2]
+    # The fcntl data has height, width but shutil.get_terminal_size, which
+    # we're emulating uses width, height.
+    return (size[1], size[0])
+
+
 def hide_secrets(
     args, secret_options=frozenset(("--username", "--password", "--activationkey", "--org", "-u", "-p", "-k", "-o"))
 ):
@@ -940,6 +969,28 @@ def hide_secrets(
     return sanitized_list
 
 
+def format_sequence_as_message(sequence_of_items):
+    """
+    Format a sequence of items for display to the user.
+
+    :param sequence_of_items: Sequence of items which should be formatted for
+        a message to be printed to the user.
+    :type sequence_of_items: Sequence
+    :returns: Items formatted appropriately for end user output.
+    :rtype: str
+    """
+    if len(sequence_of_items) < 1:
+        message = ""
+    elif len(sequence_of_items) == 1:
+        message = sequence_of_items[0]
+    elif len(sequence_of_items) == 2:
+        message = " and ".join(sequence_of_items)
+    else:
+        message = ", ".join(sequence_of_items[:-1]) + ", and " + sequence_of_items[-1]
+
+    return message
+
+
 def flatten(dictionary, parent_key=False, separator="."):
     """Turn a nested dictionary into a flattened dictionary.
 
@@ -973,7 +1024,7 @@ def flatten(dictionary, parent_key=False, separator="."):
 
 
 def write_json_object_to_file(path, data, mode=0o600):
-    """Write a JSOn object to a file in the system.
+    """Write a Json object to a file in the system.
 
     :param path: The path of the file to be written.
     :type path: str

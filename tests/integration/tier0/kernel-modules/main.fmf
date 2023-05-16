@@ -17,16 +17,6 @@ tag+:
     description+:
         One kernel module is moved to a custom location,
         therefore denoted as custom by the running system.
-    adjust+:
-        - environment+:
-            PROMPT_AMOUNT: 5
-          when: distro == centos-8
-        - environment+:
-            PROMPT_AMOUNT: 4
-          when: distro == oraclelinux-7, centos-7
-        - environment+:
-            PROMPT_AMOUNT: 3
-          when: distro == oraclelinux-8
 
     /custom_module_loaded:
         summary+: |

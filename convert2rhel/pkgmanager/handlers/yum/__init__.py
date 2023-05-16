@@ -28,7 +28,7 @@ from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR
+from convert2rhel.utils import BACKUP_DIR, run_as_child_process
 
 
 loggerinst = logging.getLogger(__name__)
@@ -140,7 +140,11 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
-        """Enable a list of required repositories."""
+        """Enable a list of required repositories.
+
+        :raises SystemInfo: If there is no way to connect to the mirrors in the
+            repos.
+        """
         self._base.repos.disableRepo("*")
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
@@ -166,6 +170,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         self._enable_repos()
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
+
         try:
             for pkg in original_os_pkgs:
                 self._base.update(pattern=pkg)

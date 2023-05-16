@@ -32,6 +32,15 @@ loggerinst = logging.getLogger(__name__)
 # Paths for configuration files
 CONFIG_PATHS = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
 
+#: Map name of the convert2rhel mode to run in from the command line to the
+#: activity name that we use in the code and breadcrumbs.  CLI commands should
+#: be verbs but an activity is a noun.
+_COMMAND_TO_ACTIVITY = {
+    "convert": "conversion",
+    "analyze": "analysis",
+    "analyse": "analysis",
+}
+
 
 class ToolOpts(object):
     def __init__(self):
@@ -55,6 +64,7 @@ class ToolOpts(object):
         self.arch = None
         self.no_rpm_va = False
         self.keep_rhsm = False
+        self.activity = None
 
         # set True when credentials (username & password) are given through CLI
         self.credentials_thru_cli = False
@@ -301,6 +311,17 @@ class CLI(object):
         if parsed_opts.debug:
             tool_opts.debug = True
 
+        if hasattr(parsed_opts, "command"):
+            # Once we use a subcommand to set the activity that convert2rhel will perform
+            tool_opts.activity = _COMMAND_TO_ACTIVITY[parsed_opts.command]
+        else:
+            # At first, in tech preview, we use an environment variable to set the activity.
+            experimental_analysis = bool(os.getenv("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS", None))
+            if experimental_analysis:
+                tool_opts.activity = "analysis"
+            else:
+                tool_opts.activity = "conversion"
+
         # Processing the configuration file
         conf_file_opts = options_from_config_files(parsed_opts.config_file)
         ToolOpts.set_opts(tool_opts, conf_file_opts)  # pylint: disable=E0601
@@ -329,6 +350,17 @@ class CLI(object):
             tool_opts.enablerepo = parsed_opts.enablerepo
         if parsed_opts.disablerepo:
             tool_opts.disablerepo = parsed_opts.disablerepo
+
+        # Check if we have duplicate repositories specified
+        if parsed_opts.enablerepo or parsed_opts.disablerepo:
+            duplicate_repos = set(tool_opts.disablerepo) & set(tool_opts.enablerepo)
+            if duplicate_repos:
+                message = "Duplicate repositories were found across disablerepo and enablerepo options:"
+                for repo in duplicate_repos:
+                    message += "\n%s" % repo
+                message += "\nThis ambiguity may have unintended consequences."
+                loggerinst.warning(message)
+
         if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:

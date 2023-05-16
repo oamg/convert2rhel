@@ -176,6 +176,22 @@ class bcolors:
     ENDC = "\033[0m"
 
 
+def colorize(message, color="OKGREEN"):
+    """
+    Add ANSI color escapes around a message.
+
+    :param message: The message to add ANSI color escapes to.
+    :type message: str
+    :keyword color: The "color" to make the message.  Colors are taken from
+        :class:`bcolors`. default: "OKGREEN"
+    :type color: str
+    :returns: String that contains the message encased in the ANSI escape
+        sequence for `color`
+    :rtype: str
+    """
+    return "".join((getattr(bcolors, color), message, bcolors.ENDC))
+
+
 class CustomFormatter(logging.Formatter, object):
     """Custom formatter to handle different logging formats based on logging level
 
@@ -193,7 +209,7 @@ class CustomFormatter(logging.Formatter, object):
         if record.levelno == LogLevelTask.level:
             temp = "*" * (90 - len(record.msg) - 25)
             fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
-            new_fmt = fmt_orig if self.color_disabled else bcolors.OKGREEN + fmt_orig + bcolors.ENDC
+            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "OKGREEN")
             self._fmt = new_fmt
             self.datefmt = "%m/%d/%Y %H:%M:%S"
         elif record.levelno in [logging.INFO]:
@@ -201,12 +217,12 @@ class CustomFormatter(logging.Formatter, object):
             self.datefmt = ""
         elif record.levelno in [logging.WARNING]:
             fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else bcolors.WARNING + fmt_orig + bcolors.ENDC
+            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "WARNING")
             self._fmt = new_fmt
             self.datefmt = ""
         elif record.levelno in [logging.CRITICAL, logging.ERROR]:
             fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else bcolors.FAIL + fmt_orig + bcolors.ENDC
+            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "FAIL")
             self._fmt = new_fmt
             self.datefmt = ""
         else:

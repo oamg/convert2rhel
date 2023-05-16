@@ -15,6 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
+
+import six
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import os
 
 import pytest
