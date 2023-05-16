@@ -374,7 +374,6 @@ class CLI(object):
             args.insert(0, "convert")
 
         args.extend(argv)
-        print(args)
 
         parsed_opts = self._parser.parse_args(args)
 

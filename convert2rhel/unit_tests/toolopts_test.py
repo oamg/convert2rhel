@@ -613,9 +613,9 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
 @pytest.mark.parametrize(
     ("argv", "expected"),
     (
-        (mock_cli_arguments(["convert"]), "convert"),
-        (mock_cli_arguments(["analyze"]), "analyze"),
-        (mock_cli_arguments([]), "convert"),
+        (mock_cli_arguments(["convert"]), "conversion"),
+        (mock_cli_arguments(["analyze"]), "analysis"),
+        (mock_cli_arguments([]), "conversion"),
     ),
 )
 def test_pre_assessment_set(argv, expected, monkeypatch):
@@ -624,7 +624,7 @@ def test_pre_assessment_set(argv, expected, monkeypatch):
 
     convert2rhel.toolopts.CLI()
 
-    assert tool_opts.command == expected
+    assert tool_opts.activity == expected
 
 
 @pytest.mark.parametrize(
