@@ -1533,9 +1533,9 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
                     epoch="0",
                     release="1.0.0",
                     version="1",
-                    arch="x86_64",
-                    fingerprint="test",
-                    signature="test",
+                    arch=".(none)",
+                    fingerprint="none",
+                    signature="(none)",
                 )
             ],
             [],
@@ -2086,6 +2086,33 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                 "-qa",
                 "libgcc*",
             ],
+        ),
+        pytest.param(
+            "gpg-pubkey",
+            "C2R Fedora (37) <fedora-37-primary@fedoraproject.org>&(none)&gpg-pubkey-0:5323552a-6112bcdc.(none)&(none)",
+            [
+                PackageInformation(
+                    packager="Fedora (37) <fedora-37-primary@fedoraproject.org>",
+                    vendor="(none)",
+                    nevra=PackageNevra(
+                        name="gpg-pubkey",
+                        epoch="0",
+                        version="5323552a",
+                        release="6112bcdc",
+                        arch=None,
+                    ),
+                    fingerprint="none",
+                    signature="(none)",
+                )
+            ],
+            [
+                "rpm",
+                "--qf",
+                "C2R %{PACKAGER}&%{VENDOR}&%{NAME}-%|EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}.%{ARCH}&%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|\n",
+                "-q",
+                "gpg-pubkey",
+            ],
+            id="gpg-pubkey case with .(none) as arch",
         ),
         (
             "libgcc-0:8.5.0-4.el8_5.i686",

@@ -51,6 +51,10 @@ link:
         tag+:
             - initramfs-and-vmlinuz-present
         test: pytest -svv -m initramfs_and_vmlinuz_present
+    /failed_to_parse_package_not_present:
+        tag+:
+            - failed-to-parse-package-not-present
+        test: pytest -svv -m test_failed_to_parse_package_info_empty_arch_not_present
 
 /log_lines_not_duplicated:
     summary+: Logged lines are not duplicated

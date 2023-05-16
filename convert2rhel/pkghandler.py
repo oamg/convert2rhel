@@ -218,6 +218,11 @@ def get_installed_pkg_information(pkg_name="*"):
         if "C2R" in value:
             try:
                 packager, vendor, name, signature = tuple(value.replace("C2R", "").split("&"))
+                # Special case for `gpg-pubkeys` package that does not contain
+                # an arch set.
+                if name.endswith(".(none)"):
+                    name = name.rstrip(".(none)")
+
                 name, epoch, version, release, arch = tuple(parse_pkg_string(name))
 
                 # If a package has a signature, then proceed to get the package
