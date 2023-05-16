@@ -78,7 +78,7 @@ class IsLoadedKernelLatest(actions.Action):
             logger.warning(
                 "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the %s comparison.\n"
-                "Beware, this could leave your system in a broken state. " % package_to_check
+                "Beware, this could leave your system in a broken state." % package_to_check
             )
             return
 
