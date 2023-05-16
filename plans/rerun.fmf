@@ -417,16 +417,6 @@
         description+:
             One kernel module is moved to a custom location,
             therefore denoted as custom by the running system.
-        adjust+:
-            - environment+:
-                PROMPT_AMOUNT: 5
-              when: distro == centos-8
-            - environment+:
-                PROMPT_AMOUNT: 4
-              when: distro == oraclelinux-7, centos-7
-            - environment+:
-                PROMPT_AMOUNT: 3
-              when: distro == oraclelinux-8
 
         /custom_module_loaded:
             summary+: |
@@ -566,16 +556,6 @@
         Terminate the conversion at various points and verify that the rollback finishes successfully.
         Verify that unnecessary packages are backed up and not removed.
 
-    adjust+:
-        - environment+:
-            PROMPT_AMOUNT: 4
-          when: distro == oraclelinux
-        - environment+:
-            PROMPT_AMOUNT: 5
-          when: distro == centos
-          because: |
-            There is one more user prompt asking for removal of python[3]?-syspurpose
-
 
     discover+:
         filter: tag:rollback-handling
@@ -589,7 +569,7 @@
             Verify that usermode, rhn-setup and os-release packages are not removed.
         adjust+:
             - environment+:
-                PROMPT_AMOUNT: 6
+                CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
               when: distro == centos-8-latest
         discover+:
             filter: tag:rhsm-cleanup
@@ -739,3 +719,36 @@
             automatically selects the subscription.
         discover+:
             filter: tag:auto-attach-pool
+
+
+/assessment_report:
+    summary+: |
+        Pre-Assessment report
+
+    description+: |
+        Verify that the Pre-Assessment report is working as intended.
+
+
+    discover+:
+        filter: tag:pre-assessment-report
+
+    environment+:
+        CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
+
+    /failures_and_skips_in_report:
+        summary+: |
+            Verify that some actions failures and skips appeared in the report.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            even with failures and skips, and then, output the report to the user.
+        discover+:
+            filter: tag:failed-report
+
+    /successful_report:
+        summary+: |
+            Verify that the report was successful.
+        description+: |
+            Verify that the conversion will proceed until the point of no return
+            and then, output the report to the user.
+        discover+:
+            filter: tag:success-report

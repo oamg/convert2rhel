@@ -151,7 +151,6 @@ class PromptUserMocked(unit_tests.MockFunction):
 
 class TestCheckNeededReposAvailability(object):
     def test_check_needed_repos_availability(self, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "ask_to_continue", PromptUserMocked())
         monkeypatch.setattr(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
 
         avail_repos_message = "Needed RHEL repositories are available."
@@ -170,7 +169,6 @@ class TestCheckNeededReposAvailability(object):
         assert no_avail_repos_message in caplog.records[-1].message
 
     def test_check_needed_repos_availability_no_repo_available(self, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "ask_to_continue", PromptUserMocked())
         monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
 
         no_avail_repos_message = (
@@ -255,7 +253,6 @@ class TestSubscription(unittest.TestCase):
 
     @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager(self):
         subscription.remove_original_subscription_manager()
@@ -270,7 +267,6 @@ class TestSubscription(unittest.TestCase):
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
     @unit_tests.mock(system_info, "id", "centos")
     @unit_tests.mock(pkghandler, "print_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
     @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
     def test_remove_original_subscription_manager_missing_package_ol_85(self):
         subscription.remove_original_subscription_manager()

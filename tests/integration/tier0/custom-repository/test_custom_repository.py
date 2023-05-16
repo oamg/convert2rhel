@@ -91,7 +91,6 @@ def test_good_conversion_without_rhsm(shell, convert2rhel):
         "-y --no-rpm-va --disable-submgr {} --debug".format(AssignRepositoryVariables.enable_repo_opt), unregister=True
     ) as c2r:
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
-        # Send Ctrl-C
         c2r.sendcontrol("c")
 
     # Clean up
@@ -111,7 +110,7 @@ def test_bad_conversion_without_rhsm(shell, convert2rhel):
         "-y --no-rpm-va --disable-submgr --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True
     ) as c2r:
         c2r.expect(
-            "CRITICAL - Unable to access the repositories passed through the --enablerepo option. "
+            "CUSTOM_REPOSITORIES_ARE_VALID.UNABLE_TO_ACCESS_REPOSITORIES: Unable to access the repositories passed through the --enablerepo option. "
             "For more details, see YUM/DNF output"
         )
 
