@@ -332,9 +332,8 @@ class TestIsLoadedKernelLatest:
     @centos8
     @pytest.mark.parametrize(
         (
-            "repoquery_version",
+            "repoquery_stdout",
             "return_code",
-            "package_name",
             "unsupported_skip",
             "expected",
         ),
@@ -342,27 +341,24 @@ class TestIsLoadedKernelLatest:
             pytest.param(
                 "",
                 0,
-                "kernel-core",
                 "1",
                 "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
                 id="Unsupported skip with environment var set to 1",
             ),
             pytest.param(
                 "",
-                0,
-                "kernel-core",
-                "0",
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable",
-                id="Unsupported skip with environment var set to 0",
+                1,
+                None,
+                "Couldn't fetch the list of the most recent kernels available",
+                id="Unsupported skip with environment var not set",
             ),
         ),
     )
     def test_is_loaded_kernel_latest_unsupported_skip_warnings(
         self,
         pretend_os,
-        repoquery_version,
+        repoquery_stdout,
         return_code,
-        package_name,
         unsupported_skip,
         expected,
         monkeypatch,
@@ -379,10 +375,10 @@ class TestIsLoadedKernelLatest:
                         "--quiet",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                        package_name,
+                        "kernel-core",
                     ),
                     (
-                        repoquery_version,
+                        repoquery_stdout,
                         return_code,
                     ),
                 ),
@@ -393,18 +389,13 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
-        if unsupported_skip:
-            monkeypatch.setattr(
-                os,
-                "environ",
-                {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
-            )
+        monkeypatch.setattr(
+            os,
+            "environ",
+            {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
+        )
 
-        if not unsupported_skip:
-            is_loaded_kernel_latest_action.run()
-            expected = expected.format(package_name)
-        else:
-            is_loaded_kernel_latest_action.run()
+        is_loaded_kernel_latest_action.run()
 
         assert expected in caplog.records[-1].message
 
