@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import pytest
 import six
 
-from convert2rhel import pkgmanager
+from convert2rhel import pkghandler, pkgmanager
 from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
 from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgressIndicatorCallback
 from convert2rhel.systeminfo import system_info
@@ -45,6 +47,66 @@ class RepoDict:
         self.disabled = False
 
 
+class SackMock:
+    def __init__(self, packages=None):
+        if not packages:
+            packages = []
+
+        self.packages = packages
+
+    def __call__(self, *args, **kwds):
+        return self
+
+    def query(self):
+        return self
+
+    def upgrades(self):
+        return self
+
+    def latest(self):
+        return self
+
+    def filter(self, *args, **kwargs):
+        return self.packages
+
+
+SYSTEM_PACKAGES = [
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-1",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="05b555b38483c65d",
+        signature="test",
+    ),
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-2",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="05b555b38483c65d",
+        signature="test",
+    ),
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-3",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="05b555b38483c65d",
+        signature="test",
+    ),
+]
+
+
 @pytest.mark.skipif(
     pkgmanager.TYPE != "dnf",
     reason="No dnf module detected on the system, skipping it.",
@@ -63,6 +125,7 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(pkgmanager.Base, "download_packages", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "do_transaction", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "transaction", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.Base, "sack", value=SackMock())
 
     @centos8
     def test_set_up_base(self, pretend_os):
@@ -154,172 +217,59 @@ class TestDnfTransactionHandler:
         assert "Failed to populate repository metadata." in caplog.records[-1].message
 
     @centos8
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ]
-            ),
-        ),
-    )
-    def test_perform_operations(self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_perform_operations(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(
-            pkgmanager.handlers.dnf,
-            "get_system_packages_for_replacement",
-            value=lambda: system_packages,
+            pkghandler,
+            "get_installed_pkg_information",
+            value=lambda: SYSTEM_PACKAGES,
         )
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.upgrade.call_count == len(system_packages)
-        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
+        assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.Base.downgrade.call_count == 0
 
     @centos8
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ]
-            ),
-        ),
-    )
-    def test_perform_operations_reinstall_exception(
-        self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch
-    ):
+    def test_package_marked_for_update(self, pretend_os, _mock_dnf_api_calls, monkeypatch):
+        """
+        Test that if a package is marked for update, we won't call reinstall or
+        downgrade after that.
+
+        This comes from: https://issues.redhat.com/browse/RHELC-899
+        """
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", value=lambda: SYSTEM_PACKAGES)
+        monkeypatch.setattr(pkgmanager.Base, "sack", value=SackMock(packages=SYSTEM_PACKAGES))
+        instance = DnfTransactionHandler()
+        instance._set_up_base()
+        instance._perform_operations()
+
+        assert pkgmanager.Base.upgrade.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.Base.reinstall.call_count == 0
+        assert pkgmanager.Base.downgrade.call_count == 0
+
+    @centos8
+    def test_perform_operations_reinstall_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(
-            pkgmanager.handlers.dnf,
-            "get_system_packages_for_replacement",
-            value=lambda: system_packages,
+            pkghandler,
+            "get_installed_pkg_information",
+            value=lambda: SYSTEM_PACKAGES,
         )
         pkgmanager.Base.reinstall.side_effect = pkgmanager.exceptions.PackagesNotAvailableError
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
-        assert pkgmanager.Base.downgrade.call_count == len(system_packages)
+        assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.Base.downgrade.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos8
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ]
-            ),
-        ),
-    )
-    def test_perform_operations_downgrade_exception(
-        self, pretend_os, system_packages, _mock_dnf_api_calls, caplog, monkeypatch
-    ):
+    def test_perform_operations_downgrade_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
         monkeypatch.setattr(
-            pkgmanager.handlers.dnf,
-            "get_system_packages_for_replacement",
-            value=lambda: system_packages,
+            pkghandler,
+            "get_installed_pkg_information",
+            value=lambda: SYSTEM_PACKAGES,
         )
         pkgmanager.Base.reinstall.side_effect = pkgmanager.exceptions.PackagesNotAvailableError
         pkgmanager.Base.downgrade.side_effect = pkgmanager.exceptions.PackagesNotInstalledError
@@ -328,8 +278,8 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
         instance._perform_operations()
 
-        assert pkgmanager.Base.reinstall.call_count == len(system_packages)
-        assert pkgmanager.Base.downgrade.call_count == len(system_packages)
+        assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.Base.downgrade.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories" in caplog.records[-1].message
 
     @centos8

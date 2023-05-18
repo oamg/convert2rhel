@@ -173,7 +173,15 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         try:
             for pkg in original_os_pkgs:
-                self._base.update(pattern=pkg)
+                can_update = self._base.update(pattern=pkg)
+
+                # If a package is marked for update, then we don't need to
+                # proceed with reinstall, and possibly, the downgrade of this
+                # package. This is an inconsistency that could lead to packages
+                # being outdated in the system after the conversion.
+                if can_update:
+                    continue
+
                 try:
                     self._base.reinstall(pattern=pkg)
                 except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):

@@ -113,16 +113,29 @@ class DnfTransactionHandler(TransactionHandlerBase):
         `PackagesNotAvailableError`.
         """
         original_os_pkgs = get_system_packages_for_replacement()
+        upgrades = self._base.sack.query().upgrades().latest()
 
         loggerinst.info("Adding %s packages to the dnf transaction set.", system_info.name)
 
         for pkg in original_os_pkgs:
-            self._base.upgrade(pkg_spec=pkg)
+            # Splitting the name and arch so we can filter it out in the list
+            # of packages to upgrade.
+            name, arch = tuple(pkg.rsplit("."))
+            upgrade_pkg = next(iter(upgrades.filter(name=name, arch=arch)), None)
+
+            # If a package is marked for update, then we don't need to
+            # proceed with reinstall, and possibly, the downgrade of this
+            # package. This is an inconsistency that could lead to packages
+            # being outdated in the system after the conversion.
+            if upgrade_pkg:
+                self._base.upgrade(pkg)
+                continue
+
             try:
-                self._base.reinstall(pkg_spec=pkg)
+                self._base.reinstall(pkg)
             except pkgmanager.exceptions.PackagesNotAvailableError:
                 try:
-                    self._base.downgrade(pkg_spec=pkg)
+                    self._base.downgrade(pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
