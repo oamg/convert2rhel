@@ -19,3 +19,6 @@ system_tests/vmdefs/centos*/.vagrant/
 .cache/
 .pytest_cache/*
 .mypy_cache/*
+
+.vscode/*
+!.vscode/extensions.json
