@@ -743,28 +743,33 @@ def download_pkg(
         #     plugin whereas returning SKIP would be more accurate.
         from convert2rhel import toolopts
 
-        if (
-            "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ
-            or toolopts.tool_opts.activity != "conversion"
-        ):
-            loggerinst.critical(
-                "Couldn't download the %s package. This means we will not be able to do a"
-                " complete rollback and may put the system in a broken state.\n"
-                "Check to make sure that the %s repositories are enabled"
-                " and the package is updated to its latest version.\n"
-                "If you would rather ignore this check set the environment variable"
-                " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'. Note that the"
-                " environment variable is only consulted when actually converting a"
-                " system. It is disabled when performing a pre-conversion analysis." % (pkg, system_info.name)
-            )
+        if toolopts.tool_opts.activity == "conversion":
+            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+                loggerinst.critical(
+                    "Couldn't download the %s package. This means we will not be able to do a"
+                    " complete rollback and may put the system in a broken state.\n"
+                    "Check to make sure that the %s repositories are enabled"
+                    " and the package is updated to its latest version.\n"
+                    "If you would rather ignore this check set the environment variable"
+                    " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'." % (pkg, system_info.name)
+                )
+            else:
+                loggerinst.warning(
+                    "Couldn't download the %s package. This means we will not be able to do a"
+                    " complete rollback and may put the system in a broken state.\n"
+                    "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
+                    % (pkg)
+                )
+            return None
         else:
-            loggerinst.warning(
-                "Couldn't download the %s package. This means we will not be able to do a"
-                " complete rollback and may put the system in a broken state.\n"
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
-                % (pkg)
+            loggerinst.critical(
+                "Couldn't download the %s package which is needed to do a rollback of this action."
+                " Check to make sure that the %s repositories are enabled and the package is"
+                " updated to its latest version.\n"
+                "Note that you can choose to ignore this check when actually running a conversion by"
+                " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                " but not during pre-conversion analysis."
             )
-        return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
     if path:
