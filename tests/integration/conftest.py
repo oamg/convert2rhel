@@ -22,8 +22,6 @@ try:
 except ImportError:
     from pathlib2 import Path
 
-env.read_envfile(str(Path(__file__).parents[2] / ".env"))
-
 logging.basicConfig(level="DEBUG" if env.str("DEBUG") else "INFO", stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
