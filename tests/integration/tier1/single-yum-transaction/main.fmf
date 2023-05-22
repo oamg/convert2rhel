@@ -5,7 +5,13 @@ description: |
     error. Previous iterations used a lot of different steps, whereas now it is
     one transaction that can be rolled back more easily.
 
-link: https://issues.redhat.com/browse/RHELC-576
+    Verify that packages got upgraded by the end of conversion instead of
+    reinstalled/downgraded.
+
+
+link:
+   - https://issues.redhat.com/browse/RHELC-576
+   - https://issues.redhat.com/browse/RHELC-899
 
 tier: 1
 

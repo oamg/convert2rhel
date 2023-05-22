@@ -7,5 +7,4 @@ description: |
     Verify that the conversion emits a warning if the yum versionlock plugin is being used.
 
 tier: 1
-
 test: pytest -svv

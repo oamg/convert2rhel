@@ -41,7 +41,6 @@ try:
 except ImportError as e:
 
     import hawkey
-    import libdnf
 
     from dnf import *  # pylint: disable=import-error
     from dnf.callback import Depsolve, DownloadProgress

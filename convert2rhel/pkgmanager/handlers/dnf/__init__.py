@@ -128,14 +128,14 @@ class DnfTransactionHandler(TransactionHandlerBase):
             # package. This is an inconsistency that could lead to packages
             # being outdated in the system after the conversion.
             if upgrade_pkg:
-                self._base.upgrade(pkg)
+                self._base.upgrade(pkg_spec=pkg)
                 continue
 
             try:
-                self._base.reinstall(pkg)
+                self._base.reinstall(pkg_spec=pkg)
             except pkgmanager.exceptions.PackagesNotAvailableError:
                 try:
-                    self._base.downgrade(pkg)
+                    self._base.downgrade(pkg_spec=pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
