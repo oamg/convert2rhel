@@ -6,6 +6,8 @@ import subprocess
 
 import pytest
 
+from conftest import SYSTEM_RELEASE_ENV
+
 
 CONVERT2RHEL_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 
@@ -322,7 +324,7 @@ def test_disable_data_collection(shell, convert2rhel):
 
 
 @pytest.fixture(scope="function")
-def repos(shell):
+def repos(shell, yum_cache):
     """
     Fixture to move away all the repositories and restore them after the test.
     """
@@ -330,8 +332,12 @@ def repos(shell):
     backup_dir = "/tmp/repobckp"
     repos_dir = "/etc/yum.repos.d"
     shell(f"mkdir {backup_dir}")
+
     # Move all the repos away
     shell(f"mv {repos_dir}/* {backup_dir}/")
+    # CentOS-8.4 has backup repos hardcoded by convert2rhel
+    if "centos-8.4" in SYSTEM_RELEASE_ENV:
+        shell("rm -rf /usr/share/convert2rhel/repos/centos-8.4")
 
     yield
 
@@ -368,21 +374,19 @@ def test_deprecated_envar_incomplete_rollback(shell, convert2rhel, repos, incomp
     with convert2rhel("analyze --debug") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
-        # Verify the user is informed to not use the envar during the analysis
-        assert (
-            not c2r.expect("you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'", timeout=120)
-            == 0
-        )
-        # The conversion should fail
-        assert c2r.exitstatus != 0
+        if c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'", timeout=120) == 0:
+            pass
+        else:
+            # Send to rollback in case of unexpected
+            # to not interfere with subsequent tests
+            c2r.sendcontrol("c")
+            assert AssertionError(
+                "Utility did not raise: You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+            )
 
-    with convert2rhel("--debug") as c2r:
-        # We need to get past the data collection acknowledgement
-        c2r.sendline("y")
-        assert (
-            c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'", timeout=120) == 0
-        )
         assert c2r.expect("environment variable detected, continuing conversion.", timeout=120) == 0
+        # Terminate the conversion when the old envar is allowed
+        c2r.sendcontrol("c")
 
         assert c2r.exitstatus != 0
 

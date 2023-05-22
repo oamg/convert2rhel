@@ -24,17 +24,6 @@ if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
 
 
-@pytest.fixture()
-def yum_cache(shell):
-    """
-    We need to clean yum cache of packages and metadata downloaded by the
-    previous test runs to correctly reproduce the transaction validation
-    download fail.
-    """
-    assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
-    assert shell(f"rm -rf /var/cache/{PKGMANAGER}")
-
-
 def remove_entitlement_certs():
     """
     Utility function to remove the entitlement certificate as soon as we
