@@ -1,7 +1,6 @@
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 DUPLICATE_PKG_URL_MAPPING = {
@@ -55,9 +54,9 @@ def test_duplicate_pkgs(convert2rhel, install_duplicate_pkg):
     """
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         )
     ) as c2r:
         # The error about duplicate packages should be included at the end of the pre-conversion analysis report
