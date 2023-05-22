@@ -1,7 +1,11 @@
 ---
+- name: Include .env file
+  include_vars:
+    file: /var/tmp/.env
+
 - name: Download the internal CA certificate
   get_url:
-    url: "{{ lookup('ansible.builtin.env', 'CACERT_URL') }}"
+    url: "{{ CACERT_URL }}"
     dest: /etc/pki/ca-trust/source/anchors/Current-IT-Root-CAs.pem
 
 - name: Add the certificate to trusted CA's

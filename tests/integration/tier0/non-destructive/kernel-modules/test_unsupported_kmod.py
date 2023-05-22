@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 ORIGIN_KMOD_LOCATION = Path("/lib/modules/$(uname -r)/kernel/drivers/net/bonding/bonding.ko.xz")
@@ -66,10 +66,10 @@ def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         ),
         unregister=True,
     ) as c2r:
@@ -104,10 +104,10 @@ def test_do_not_error_if_module_is_not_loaded(shell, convert2rhel):
     # If custom module is not loaded the conversion should not raise an error
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         ),
         unregister=True,
     ) as c2r:
@@ -167,9 +167,9 @@ def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods
     environment_variables(envars)
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -197,10 +197,10 @@ def test_tainted_kernel_modules_error(custom_kmod, convert2rhel):
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         ),
         unregister=True,
     ) as c2r:
@@ -226,10 +226,10 @@ def test_envar_overrides_unsupported_module_loaded(
     environment_variables(envars)
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")

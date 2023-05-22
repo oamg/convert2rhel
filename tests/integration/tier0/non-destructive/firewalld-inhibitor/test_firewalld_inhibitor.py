@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
@@ -26,7 +26,7 @@ def test_firewalld_inhibitor(shell, convert2rhel):
 
     with convert2rhel(
         "-y --debug --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
         ),
         unregister=True,
     ) as c2r:

@@ -19,7 +19,7 @@ import os
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture
@@ -69,9 +69,9 @@ def test_run_conversion_with_metering(shell, convert2rhel, force_hostmetering_en
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Installing host-metering packages")

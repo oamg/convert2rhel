@@ -1,8 +1,7 @@
 import re
 import socket
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL, SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL, SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 # Replace urls in rhsm.conf file to the satellite server
@@ -50,30 +49,34 @@ def test_prepare_system(shell):
     replace_urls_rhsm()
     shell("rm -rf /etc/yum.repos.d/*")
 
+    satellite_key = None
+
     # Subscribe system
     if "centos-7" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_CENTOS7")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_CENTOS7"]
     elif "centos-8" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_CENTOS8")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_CENTOS8"]
     elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ORACLE7")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE7"]
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ORACLE8")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE8"]
     elif "alma-8.6" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ALMA86")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA86"]
     elif "alma-8.8" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ALMA88")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA88"]
     elif "rocky-8.6" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ROCKY86")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY86"]
     elif "rocky-8.8" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ROCKY88")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY88"]
     elif "alma-8-latest" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ALMA8")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA8"]
     elif "rocky-8-latest" in SYSTEM_RELEASE_ENV:
-        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ROCKY8")
+        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY8"]
     assert (
         shell(
-            "subscription-manager register --org={} --activationkey={}".format(env.str("SATELLITE_ORG"), satellite_key)
+            ("subscription-manager register --org={} --activationkey={}").format(
+                TEST_VARS["SATELLITE_ORG"], satellite_key
+            )
         ).returncode
         == 0
     )

@@ -1,7 +1,6 @@
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(autouse=True)
@@ -158,10 +157,10 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
@@ -223,9 +222,9 @@ def test_terminate_registration_start(convert2rhel):
     """
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -244,9 +243,9 @@ def test_terminate_registration_success(convert2rhel):
     """
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:

@@ -1,6 +1,6 @@
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.mark.test_pre_registered_wont_unregister
@@ -44,7 +44,7 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     with convert2rhel(
         "--debug --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.

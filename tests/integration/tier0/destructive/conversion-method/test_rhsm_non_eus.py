@@ -1,6 +1,6 @@
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.mark.test_rhsm_non_eus_account_conversion
@@ -17,10 +17,10 @@ def test_rhsm_non_eus_account(convert2rhel):
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug --eus".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_NON_EUS_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_NON_EUS_POOL"],
         )
     ) as c2r:
         c2r.expect_exact("Error: 'rhel-8-for-x86_64-baseos-eus-rpms' does not match a valid repository ID.")
