@@ -768,7 +768,7 @@ def download_pkg(
                 " updated to its latest version.\n"
                 "Note that you can choose to ignore this check when actually running a conversion by"
                 " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
-                " but not during pre-conversion analysis."
+                " but not during pre-conversion analysis." % (pkg, system_info.name)
             )
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
