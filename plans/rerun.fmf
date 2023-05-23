@@ -131,72 +131,21 @@
             discover+:
                 filter: tag:disable-data-collection
 
-
-/sub_man_rollback:
-    summary: |
-        Back up and restore subscription-manager
-    description: |
-        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
-        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
-        backed up and re-installed during the rollback together with the certificate.
-
-
-    enabled: false
-
-    adjust+:
-        - enabled: true
-          when: >
-              distro == centos-8
-        - environment+:
-            TEST_REQUIRES: subscription-manager
-
-
-    discover+:
-        filter: tag:sub-man-rollback
-
-
-/custom_kernel:
-    summary: |
-        Custom kernel
-    description: |
-        Install custom kernel with different signature than allowed on the on the running system.
-        Verify that convert2rhel inhibits the conversion.
-
-
-    /custom_kernel:
-        discover+:
-            filter: tag:custom-kernel
-
-
-/latest_kernel_check:
-    summary: |
-        Repoquery call on the latest kernel check
-    description: |
-        This test verifies the repoquery call does not affect
-        the check of the latest kernel available on the system.
-
-
-    discover+:
-        filter: tag:latest-kernel-check
-
-    /failed_repoquery:
+    /incomplete_rollback_in_analyze:
         summary+: |
-            Failed repoquery
+            Incomplete rollback envar not honored in analyze
         description+: |
-            Verify the convert2rhel handles the repoquery call failure properly
-            and proceeds with the conversion.
+            This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
+            is not honored when running with the analyze switch.
+            Repositories are moved to a different location so the
+            `REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED`
+            error is raised.
+            1/ convert2rhel is run in the analyze mode, the envar should not be
+               honored and the conversion should end
+            2/ convert2rhel is run in conversion mode, the envar should be
+               accepted and conversion continues
         discover+:
-            filter: tag:failed-repoquery
-
-    /yum_excld_kernel:
-        summary+: |
-            Exclude defined in yum config
-        description+: |
-            Verify that the repoquery call succeeds with an `exclude` option present in the config.
-            Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
-            'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
-        discover+:
-            filter: tag:yum-excld-kernel
+            filter: tag:incomplete-rollback-in-analyze
 
 
 /config_file:
@@ -485,28 +434,6 @@
             filter: tag:releasever-unknown-release
 
 
-/oracle_linux_unbreakable_enterprise_kernel:
-    summary: |
-        Oracle Linux unsupported Unbreakable Enterprise Kernel
-    description: |
-        Install unsupported Unbreakable Enterprise Kernel (UEK) on an Oracle Linux machine
-        and verify, that the conversion is inhibited.
-
-
-    discover+:
-        filter: tag:oraclelinux-unbreakable-enterprise-kernel
-
-    adjust+:
-        - enabled: false
-          when: >
-              distro != oraclelinux
-          because: The test case applies to Oracle Linux (Unbreakable Enterprise Kernel) only.
-
-    /unsupported_kernel:
-        discover+:
-            filter: tag:unsupported-kernel
-
-
 /rollback_handling:
     summary: |
         Correct rollback behavior
@@ -719,6 +646,95 @@
             automatically selects the subscription.
         discover+:
             filter: tag:auto-attach-pool
+
+
+/custom_kernel:
+    summary: |
+        Custom kernel
+    description: |
+        Install custom kernel with different signature than allowed on the on the running system.
+        Verify that convert2rhel inhibits the conversion.
+
+
+    /custom_kernel:
+        discover+:
+            filter: tag:custom-kernel
+
+
+/latest_kernel_check:
+    summary: |
+        Repoquery call on the latest kernel check
+    description: |
+        This test verifies the repoquery call does not affect
+        the check of the latest kernel available on the system.
+
+
+    discover+:
+        filter: tag:latest-kernel-check
+
+    /failed_repoquery:
+        summary+: |
+            Failed repoquery
+        description+: |
+            Verify the convert2rhel handles the repoquery call failure properly
+            and proceeds with the conversion.
+        discover+:
+            filter: tag:failed-repoquery
+
+    /yum_excld_kernel:
+        summary+: |
+            Exclude defined in yum config
+        description+: |
+            Verify that the repoquery call succeeds with an `exclude` option present in the config.
+            Define `exclude=kernel` in /etc/yum.conf and verify, the conversion is not inhibited with:
+            'CRITICAL - Could not find any kernel from repositories to compare against the loaded kernel.'
+        discover+:
+            filter: tag:yum-excld-kernel
+
+
+/oracle_linux_unbreakable_enterprise_kernel:
+    summary: |
+        Oracle Linux unsupported Unbreakable Enterprise Kernel
+    description: |
+        Install unsupported Unbreakable Enterprise Kernel (UEK) on an Oracle Linux machine
+        and verify, that the conversion is inhibited.
+
+
+    discover+:
+        filter: tag:oraclelinux-unbreakable-enterprise-kernel
+
+    adjust+:
+        - enabled: false
+          when: >
+              distro != oraclelinux
+          because: The test case applies to Oracle Linux (Unbreakable Enterprise Kernel) only.
+
+    /unsupported_kernel:
+        discover+:
+            filter: tag:unsupported-kernel
+
+
+/sub_man_rollback:
+    summary: |
+        Back up and restore subscription-manager
+    description: |
+        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+        backed up and re-installed during the rollback together with the certificate.
+
+
+    enabled: false
+
+    adjust+:
+        - enabled: true
+          when: >
+              distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
+
+    discover+:
+        filter: tag:sub-man-rollback
 
 
 /assessment_report:
