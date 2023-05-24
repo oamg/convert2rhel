@@ -1,16 +1,26 @@
-from conftest import SYSTEM_RELEASE_ENV
+import pytest
+
 from envparse import env
 
 
-PACKAGES_TO_VERIFY_RHEL_7 = [("shim-x64", "shim-x64-15.6-3.el7_9.x86_64")]
-# Match the latest version used for conversion, currently Oracle Linux 8.7
-PACKAGES_TO_VERIFY_RHEL_8_X = [("shim-x64", "shim-x64-15.6-1.el8.x86_64")]
-# Mainly for CentOS Linux 8.5
-PACKAGES_TO_VERIFY_RHEL_8_5 = [("shim-x64", "shim-x64-15.4-2.el8_1.x86_64")]
-
-
+@pytest.mark.test_packages_upgraded_after_conversion
 def test_packages_upgraded_after_conversion(convert2rhel, shell):
-    """."""
+    """
+    Verify that packages get correctly reinstalled and not
+    downgraded during the conversion.
+    """
+
+    checked_packages = ["shim-x64"]
+
+    packages_to_verify = {}
+
+    for package in checked_packages:
+        latest_version = shell(f"repoquery --quiet {package}").output.strip("\n")
+        is_installed = shell(f"rpm -q {package}").output
+        if "is not installed" in is_installed:
+            shell(f"yum install -y {package}")
+        if latest_version:
+            packages_to_verify[package] = latest_version
 
     # Run utility until the reboot
     with convert2rhel(
@@ -24,13 +34,10 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
-    packages_to_verify = PACKAGES_TO_VERIFY_RHEL_7
-
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        packages_to_verify = PACKAGES_TO_VERIFY_RHEL_8_5
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        packages_to_verify = PACKAGES_TO_VERIFY_RHEL_8_X
-
-    cmd = "rpm -q %s"
-    for package, latest_version in packages_to_verify:
-        assert shell(cmd % package).output == latest_version
+    for package, latest_version in packages_to_verify.items():
+        assert (
+            shell(
+                f"rpm -q --queryformat='%{{name}}-%{{epoch}}:%{{version}}-%{{release}}.%{{arch}}' {package}"
+            ).output.strip("\n")
+            == latest_version
+        )
