@@ -70,7 +70,7 @@ class TestCheckConvert2rhelLatest:
 
         log_msg = "Skipping the check because no internet connection has been detected."
         assert log_msg in caplog.text
-        assert convert2rhel_latest_action.status == actions.STATUS_CODE["SUCCESS"]
+        assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["SUCCESS"]
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -87,8 +87,8 @@ class TestCheckConvert2rhelLatest:
 
         convert2rhel_latest_action.run()
 
-        assert convert2rhel_latest_action.error_id == "OUT_OF_DATE"
-        assert convert2rhel_latest_action.status == actions.STATUS_CODE["ERROR"]
+        assert convert2rhel_latest_action.result.id == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
         if len(package_version) > 36:
@@ -102,7 +102,7 @@ class TestCheckConvert2rhelLatest:
             " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
             % (local_version, package_version)
         )
-        assert convert2rhel_latest_action.message == msg
+        assert convert2rhel_latest_action.result.message == msg
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -244,8 +244,8 @@ class TestCheckConvert2rhelLatest:
 
         convert2rhel_latest_action.run()
 
-        assert convert2rhel_latest_action.error_id == "OUT_OF_DATE"
-        assert convert2rhel_latest_action.status == actions.STATUS_CODE["ERROR"]
+        assert convert2rhel_latest_action.result.id == "OUT_OF_DATE"
+        assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
 
         local_version, package_version = convert2rhel_latest_version_test
 
@@ -260,7 +260,7 @@ class TestCheckConvert2rhelLatest:
             " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
             % (local_version, package_version)
         )
-        assert convert2rhel_latest_action.message == msg
+        assert convert2rhel_latest_action.result.message == msg
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),

@@ -69,7 +69,7 @@ class RemoveExcludedPackages(actions.Action):
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
             #   - When we can't remove a package.
-            self.set_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message=str(e))
+            self.set_result(level="ERROR", id="PACKAGE_REMOVAL_FAILED", message=str(e))
 
 
 class RemoveRepositoryFilesPackages(actions.Action):
@@ -105,4 +105,4 @@ class RemoveRepositoryFilesPackages(actions.Action):
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
             #   - When we can't remove a package.
-            self.set_result(status="ERROR", error_id="PACKAGE_REMOVAL_FAILED", message=str(e))
+            self.set_result(level="ERROR", id="PACKAGE_REMOVAL_FAILED", message=str(e))

@@ -181,8 +181,8 @@ class Convert2rhelLatest(actions.Action):
 
                 else:
                     self.set_result(
-                        status="ERROR",
-                        error_id="OUT_OF_DATE",
+                        level="ERROR",
+                        id="OUT_OF_DATE",
                         message=(
                             "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                             "Only the latest version is supported for conversion. If you want to ignore"

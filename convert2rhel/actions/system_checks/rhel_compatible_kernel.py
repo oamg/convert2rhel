@@ -51,8 +51,8 @@ class RhelCompatibleKernel(actions.Action):
             )
         ):
             self.set_result(
-                status="ERROR",
-                error_id="BOOTED_KERNEL_INCOMPATIBLE",
+                level="ERROR",
+                id="BOOTED_KERNEL_INCOMPATIBLE",
                 message=(
                     "The booted kernel version is incompatible with the standard RHEL kernel. "
                     "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"

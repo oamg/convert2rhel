@@ -43,7 +43,7 @@ def test_check_dbus_is_running(
     global_system_info.dbus_running = dbus_running
 
     dbus_is_running_action.run()
-    unit_tests.assert_actions_result(dbus_is_running_action, status="SUCCESS")
+    unit_tests.assert_actions_result(dbus_is_running_action, level="SUCCESS")
     assert caplog.records[-1].message == log_msg
 
 
@@ -57,8 +57,8 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global
 
     unit_tests.assert_actions_result(
         dbus_is_running_action,
-        status="ERROR",
-        error_id="DBUS_DAEMON_NOT_RUNNING",
+        level="ERROR",
+        id="DBUS_DAEMON_NOT_RUNNING",
         message=(
             "Could not find a running DBus Daemon which is needed to"
             " register with subscription manager.\nPlease start dbus using `systemctl"

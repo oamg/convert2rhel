@@ -45,8 +45,8 @@ class TaintedKmods(actions.Action):
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         if unsigned_modules:
             self.set_result(
-                status="ERROR",
-                error_id="TAINTED_KMODS_DETECTED",
+                level="ERROR",
+                id="TAINTED_KMODS_DETECTED",
                 message=(
                     "Tainted kernel modules detected:\n  {0}\n"
                     "Third-party components are not supported per our "

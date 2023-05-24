@@ -21,7 +21,7 @@ import os
 from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
-from convert2rhel.actions import report
+from convert2rhel.actions import level_for_raw_action_data, report
 
 
 loggerinst = logging.getLogger(__name__)
@@ -94,7 +94,9 @@ def main():
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
-        pre_conversion_failures = actions.find_actions_of_severity(pre_conversion_results, "SKIP")
+        pre_conversion_failures = actions.find_actions_of_severity(
+            pre_conversion_results, "SKIP", level_for_raw_action_data
+        )
         if pre_conversion_failures:
             # The report will be handled in the error handler, after rollback.
             loggerinst.critical("Conversion failed.")

@@ -62,7 +62,7 @@ def test_validate_package_manager_transaction(pretend_os, validate_package_manag
 
     assert transaction_handler_instance.called == 1
     assert transaction_handler_instance.validate_transaction
-    assert validate_package_manager_transaction.status == STATUS_CODE["SUCCESS"]
+    assert validate_package_manager_transaction.result.level == STATUS_CODE["SUCCESS"]
 
 
 @all_systems
@@ -77,5 +77,5 @@ def test_validate_package_manager_transaction_unknown_error(
     validate_package_manager_transaction.run()
 
     unit_tests.assert_actions_result(
-        validate_package_manager_transaction, status="ERROR", error_id="UNKNOWN_ERROR", message="Exiting..."
+        validate_package_manager_transaction, level="ERROR", id="UNKNOWN_ERROR", message="Exiting..."
     )

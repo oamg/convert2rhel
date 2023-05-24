@@ -220,8 +220,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
             # If there is any unsupported kmods found, set the result to error
             if unsupported_kmods:
                 self.set_result(
-                    status="ERROR",
-                    error_id="UNSUPPORTED_KERNEL_MODULES",
+                    level="ERROR",
+                    id="UNSUPPORTED_KERNEL_MODULES",
                     message=(
                         "The following loaded kernel modules are not available in RHEL:\n{0}\n"
                         "Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
@@ -238,10 +238,10 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
             logger.debug("All loaded kernel modules are available in RHEL.")
         except RHELKernelModuleNotFound as e:
-            self.set_result(status="ERROR", error_id="NO_RHEL_KERNEL_MODULES_FOUND", message=str(e))
+            self.set_result(level="ERROR", id="NO_RHEL_KERNEL_MODULES_FOUND", message=str(e))
         except ValueError as e:
             self.set_result(
-                status="ERROR",
-                error_id="CANNOT_COMPARE_PACKAGE_VERSIONS",
+                level="ERROR",
+                id="CANNOT_COMPARE_PACKAGE_VERSIONS",
                 message="Package comparison failed: %s" % e,
             )

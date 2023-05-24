@@ -20,7 +20,12 @@ import logging
 import textwrap
 
 from convert2rhel import utils
-from convert2rhel.actions import _STATUS_HEADER, find_actions_of_severity, format_action_status_message
+from convert2rhel.actions import (
+    _STATUS_HEADER,
+    find_actions_of_severity,
+    format_action_status_message,
+    level_for_combined_action_data,
+)
 from convert2rhel.logger import colorize
 
 
@@ -52,9 +57,12 @@ def summary(results, include_all_reports=False, with_colors=True):
     .. note:: Expected results format is as following
         {
             "$Action_id": {
-                "status": int,
-                "error_id": "$error_id",
-                "message": None or "$message"
+                "messages" : [{"level": int, "id": "$id", "message": None or "$message"}],
+                "result" : {
+                    "level": int,
+                    "id": "$id",
+                    "message": "" or "$message"
+                }
             },
         }
 
@@ -72,7 +80,7 @@ def summary(results, include_all_reports=False, with_colors=True):
         Message example's::
             * (ERROR) SubscribeSystem.ERROR: Error message
             * (SKIP) SubscribeSystem.SKIP: Skip message
-            * (WARNING) SubscribeSystem.WARNING: Warning message
+            * (OVERRIDABLE) SubscribeSystem.OVERRIDABLE: overridable message
 
         In case of `message` being empty (as it is optional for some cases), a
         default message will be used::
@@ -91,35 +99,51 @@ def summary(results, include_all_reports=False, with_colors=True):
     :type include_all_reports: bool
     """
     logger.task("Pre-conversion analysis report")
+    combined_results_and_message = {}
+    report = []
+
+    for action_id, action_value in results.items():
+        combined_results_and_message[(action_id, action_value["result"]["id"])] = {
+            "level": action_value["result"]["level"],
+            "message": action_value["result"]["message"],
+        }
+        for message in action_value["messages"]:
+            combined_results_and_message[(action_id, message["id"])] = {
+                "level": message["level"],
+                "message": message["message"],
+            }
 
     if include_all_reports:
-        results = results.items()
-    else:
-        results = find_actions_of_severity(results, "WARNING")
+        combined_results_and_message = combined_results_and_message.items()
 
+    else:
+        combined_results_and_message = find_actions_of_severity(
+            combined_results_and_message, "WARNING", level_for_combined_action_data
+        )
     terminal_size = utils.get_terminal_size()
     word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.
-    results = sorted(results, key=lambda item: item[1]["status"], reverse=True)
+    combined_results_and_message = sorted(combined_results_and_message, key=lambda item: item[1]["level"], reverse=True)
 
-    report = []
-    last_status = ""
-    for action_id, result in results:
-        if last_status != result["status"]:
+    last_level = ""
+    for message_id, combined_result in combined_results_and_message:
+        if last_level != combined_result["level"]:
             report.append("")
-            report.append(format_report_section_heading(result["status"]))
-            last_status = result["status"]
+            report.append(format_report_section_heading(combined_result["level"]))
+            last_level = combined_result["level"]
 
-        entry = format_action_status_message(result["status"], action_id, result["error_id"], result["message"])
+        entry = format_action_status_message(
+            combined_result["level"], message_id[0], message_id[1], combined_result["message"]
+        )
         entry = word_wrapper.fill(entry)
         if with_colors:
-            entry = colorize(entry, _STATUS_TO_COLOR[result["status"]])
+            entry = colorize(entry, _STATUS_TO_COLOR[combined_result["level"]])
         report.append(entry)
 
     # If there is no other message sent to the user, then we just give a
     # happy message to them.
-    if not results:
+    if not combined_results_and_message:
         report.append("No problems detected during the analysis!")
 
     logger.info("%s\n" % "\n".join(report))

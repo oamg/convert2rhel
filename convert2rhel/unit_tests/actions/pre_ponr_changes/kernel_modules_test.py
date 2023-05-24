@@ -138,16 +138,16 @@ def test_ensure_compatibility_of_kmods(
     if exception:
         ensure_kernel_modules_compatibility_instance.run()
         assert_actions_result(
-            ensure_kernel_modules_compatibility_instance, status="ERROR", error_id="UNSUPPORTED_KERNEL_MODULES"
+            ensure_kernel_modules_compatibility_instance, level="ERROR", id="UNSUPPORTED_KERNEL_MODULES"
         )
     else:
         ensure_kernel_modules_compatibility_instance.run()
-        assert_actions_result(ensure_kernel_modules_compatibility_instance, status="SUCCESS")
+        assert_actions_result(ensure_kernel_modules_compatibility_instance, level="SUCCESS")
 
     if should_be_in_logs:
         assert should_be_in_logs in caplog.records[-1].message
     if shouldnt_be_in_logs:
-        assert shouldnt_be_in_logs not in ensure_kernel_modules_compatibility_instance.message
+        assert shouldnt_be_in_logs not in ensure_kernel_modules_compatibility_instance.result.message
 
 
 @centos8
@@ -247,13 +247,13 @@ def test_ensure_compatibility_of_kmods_excluded(
         ensure_kernel_modules_compatibility_instance.run()
         assert_actions_result(
             ensure_kernel_modules_compatibility_instance,
-            status="ERROR",
-            error_id="UNSUPPORTED_KERNEL_MODULES",
+            level="ERROR",
+            id="UNSUPPORTED_KERNEL_MODULES",
             message="The following loaded kernel modules are not available in RHEL",
         )
     else:
         ensure_kernel_modules_compatibility_instance.run()
-        assert_actions_result(ensure_kernel_modules_compatibility_instance, status="SUCCESS")
+        assert_actions_result(ensure_kernel_modules_compatibility_instance, level="SUCCESS")
 
     get_unsupported_kmods_mocked.assert_called_with(
         # host kmods

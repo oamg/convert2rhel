@@ -42,8 +42,8 @@ class DbusIsRunning(actions.Action):
             return
 
         self.set_result(
-            status="ERROR",
-            error_id="DBUS_DAEMON_NOT_RUNNING",
+            level="ERROR",
+            id="DBUS_DAEMON_NOT_RUNNING",
             message=(
                 "Could not find a running DBus Daemon which is needed to register with subscription manager.\n"
                 "Please start dbus using `systemctl start dbus`"
