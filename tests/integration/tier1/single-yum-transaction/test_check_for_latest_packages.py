@@ -1,5 +1,6 @@
 import pytest
 
+from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -12,13 +13,25 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
 
     checked_packages = ["shim-x64"]
 
+    if "oracle-7" in SYSTEM_RELEASE_ENV:
+        checked_packages = [
+            "krb5-libs.x86_64",
+            "nss-softokn-freebl.x86_64",
+            "nss-softokn.x86_64",
+            "expat.x86_64",
+            "krb5-libs.x86_64",
+        ]
+
     packages_to_verify = {}
 
     for package in checked_packages:
-        latest_version = shell(f"repoquery --quiet {package}").output.strip("\n")
+        latest_version = shell(f"repoquery --quiet --latest-limit=1 {package}").output.strip("\n")
         is_installed = shell(f"rpm -q {package}").output
         if "is not installed" in is_installed:
             shell(f"yum install -y {package}")
+        # although not really used, keep the assembled dictionary if needed for version comparison
+        # also the dictionary gets appended only when there is the package available to install
+        # (repoquery yields a value)
         if latest_version:
             packages_to_verify[package] = latest_version
 
@@ -34,10 +47,14 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
-    for package, latest_version in packages_to_verify.items():
-        assert (
-            shell(
-                f"rpm -q --queryformat='%{{name}}-%{{epoch}}:%{{version}}-%{{release}}.%{{arch}}' {package}"
-            ).output.strip("\n")
-            == latest_version
-        )
+    cmd = "yum check-update --quiet %s"
+    # We need to point the releasever to 8.5 with CentOS latest
+    # otherwise the yum check-update looks at releasever 8
+    # discovering package versions not available for 8.5
+    if "centos-8.5" in SYSTEM_RELEASE_ENV:
+        cmd = "yum check-update --quiet --releasever=8.5 %s"
+    for package in packages_to_verify:
+        # If tha package lands on latest version after conversion
+        # `yum check-update` will return 0
+        # If the package is possible to update the returncode yields 100
+        assert shell(cmd % package).returncode == 0
