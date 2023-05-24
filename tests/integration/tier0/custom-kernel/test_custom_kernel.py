@@ -30,7 +30,7 @@ DISTRO_KERNEL_MAPPING = {
         "grub_substring": "Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64",
     },
     # Install CentOS 8.5 kernel
-    "oracle-8.7": {
+    "oracle-8-latest": {
         "original_kernel": f"{ORIGINAL_KERNEL}",
         "custom_kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-348.7.1.el8_5.x86_64.rpm",
         "grub_substring": "CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8",
