@@ -1,0 +1,22 @@
+name: Run tests on run-tests Label
+
+on:
+  pull_request_target:
+    types: [
+      # Default types from `pull_request_target` event
+      opened, synchronize, reopened,
+      # Trigger on labels
+      labeled
+    ]
+    branches: [ main ]
+
+jobs:
+  add-comment:
+    if: contains(github.event.pull_request.labels.*.name, 'run-integration-tests')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: '/packit test'
