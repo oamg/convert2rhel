@@ -22,16 +22,15 @@ def remove_files(config):
 
 
 def test_conversion(convert2rhel):
-    activation_key = "[subscription_manager]\nactivation_key = {}".format(env.str("RHSM_KEY"))
+    activation_key = "[subscription_manager]\nactivation_key = {}\norg = {}".format(
+        env.str("RHSM_KEY"), env.str("RHSM_ORG")
+    )
     config = [Config("~/.convert2rhel.ini", activation_key)]
     create_files(config)
 
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {} -o {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_ORG"),
-        )
-    ) as c2r:
+    with convert2rhel("-y --no-rpm-va --serverurl {} --debug".format(env.str("RHSM_SERVER_URL"))) as c2r:
         c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
         c2r.expect("Conversion successful!")
+
     assert c2r.exitstatus == 0
