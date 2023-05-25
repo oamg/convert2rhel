@@ -18,7 +18,7 @@
 import os
 import re
 
-from build_manpages import build_manpages
+# from build_manpages import build_manpages
 from setuptools import find_packages, setup
 
 
@@ -65,6 +65,6 @@ setup(
             "convert2rhel = convert2rhel.initialize:run",
         ]
     },
-    cmdclass={"build_manpage": build_manpages},
+    # cmdclass={"build_manpage": build_manpages},
     include_package_data=True,
 )

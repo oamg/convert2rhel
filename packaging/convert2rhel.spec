@@ -21,7 +21,6 @@ BuildArch:      noarch
 BuildRequires:  python%{python_pkgversion}-devel
 BuildRequires:  python%{python_pkgversion}-setuptools
 BuildRequires:  python%{python_pkgversion}-six
-BuildRequires:  argparse-manpage
 %if 0%{?rhel} && 0%{?rhel} >= 8
 BuildRequires:  python3-pexpect
 # rpm is being imported through utils.py
@@ -75,7 +74,6 @@ and Scientific Linux 7 to the respective major version of RHEL.
 
 %build
 %{__python} setup.py build
-%{__python} setup.py build_manpage
 
 # Do not include unit tests in the package
 rm -rf build/lib/%{name}/unit_tests
