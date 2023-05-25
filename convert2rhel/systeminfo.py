@@ -102,7 +102,6 @@ class SystemInfo(object):
         self.kmods_to_ignore = []
         # Booted kernel VRA (version, release, architecture), e.g. "4.18.0-240.22.1.el8_3.x86_64"
         self.booted_kernel = ""
-        self.original_releasever = ""
 
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
@@ -125,7 +124,6 @@ class SystemInfo(object):
         self.booted_kernel = self._get_booted_kernel()
         self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
-        self.original_releasever = _get_original_releasever()
 
     def print_system_information(self):
         """Print system related information."""
@@ -460,21 +458,6 @@ class SystemInfo(object):
         }
 
         return release_info
-
-
-def _get_original_releasever():
-    """Get the original value for releasever using either YUM or DNF."""
-    from convert2rhel import pkgmanager
-
-    original_releasever = ""
-    if pkgmanager.TYPE == "yum":
-        yb = pkgmanager.YumBase()
-        original_releasever = yb.conf.yumvar["releasever"]
-    else:
-        db = pkgmanager.Base()
-        original_releasever = db.conf.releasever
-
-    return str(original_releasever)
 
 
 def _is_systemd_managed_dbus_running():

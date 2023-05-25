@@ -18,14 +18,3 @@ tag+:
         - empty-username-and-password
     test: |
       pytest -svv -m test_empty_username_and_password
-
-/auto_attach_pool:
-    summary: |
-        One subscription attached auto-selected
-    description+: |
-        Verify that passing username and password with just one subscription attached
-        automatically selects the subscription.
-    tag+:
-        - auto-attach-pool
-    test: |
-      pytest -svv -m test_auto_attach_pool
