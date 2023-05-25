@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.2.0
+Version:        1.3.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -123,6 +123,25 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu May 25 2023 Eric Gustavsson <egustavs@redhat.com> 1.3.0
+- Move adding of `NullHandler` to the root logger
+- Remove el6 related code
+- Improve package version comparison
+- Additional validation for package version comparison
+- Add ability to do micro releases
+- Porting out optparse to argparse
+- Rewrite the log messages in `check_needed_repos_availability()` to not use "unsupported"
+- Implement a pre-assessment tech preview
+- Prevent packages marked for update to reinstall
+- Improve UX with SCA enabled: Don't require --pool or --auto-attach
+- Fix CodeQL warnings
+- Fix Ctrl + C during conversion not starting rollback during certain tasks
+- RHSM: do not use the `force` D-Bus registration option
+- Fix the log message for invalid package detection
+- Handle empty arch in package information
+- Allow to skip kernel check even if packages are available
+- Prevent packages marked for update to reinstall
+
 * Wed Feb 22 2023 Eric Gustavsson <egustavs@redhat.com> 1.2
 - Remove RHEL 6 conversion capability
 - Check for kernel boot files after conversion
