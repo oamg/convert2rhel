@@ -12,7 +12,15 @@ def convert2rhel_repo(shell):
     # by running convert2rhel twice makes sure that the rollback of the first run correctly reinstalled the certificate
     # when installing subscription-manager-rhsm-certificates.
     c2r_repo = "/etc/yum.repos.d/convert2rhel.repo"
+    path_to_cert = "/etc/rhsm/ca/redhat-uep.pem"
 
+    # We also need to install the redhat-uep.pem certificate
+    assert (
+        shell(
+            f"curl --create-dirs -o {path_to_cert} https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
+        ).returncode
+        == 0
+    )
     assert shell(f"curl -o {c2r_repo} https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo").returncode == 0
     assert os.path.exists(c2r_repo) is True
 
