@@ -514,22 +514,6 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             self.setwinsize = real_setwinsize
 
 
-def let_user_choose_item(num_of_options, item_to_choose):
-    """Ask user to enter a number corresponding to the item they choose."""
-    while True:  # Loop until user enters a valid number
-        opt_num = prompt_user("Enter number of the chosen %s: " % item_to_choose)
-        try:
-            opt_num = int(opt_num)
-        except ValueError:
-            loggerinst.warning("Enter a valid number.")
-        # Ensure the entered number is in the proper range
-        if 0 < opt_num <= num_of_options:
-            break
-        else:
-            loggerinst.warning("The entered number is not in range 1 - %s." % num_of_options)
-    return opt_num - 1  # Get zero-based list index
-
-
 def mkdir_p(path):
     """Create all missing directories for the path and raise no exception
     if the path exists.
