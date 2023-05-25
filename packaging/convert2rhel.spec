@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.3.0
+Version:        1.3.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -121,6 +121,9 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu May 25 2023 Eric Gustavsson <egustavs@redhat.com> 1.3.1
+- Fix build failure by pre-generating man-pages
+
 * Thu May 25 2023 Eric Gustavsson <egustavs@redhat.com> 1.3.0
 - Move adding of `NullHandler` to the root logger
 - Remove el6 related code
