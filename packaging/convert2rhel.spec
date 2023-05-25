@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.3.0
+Version:        1.3.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -21,7 +21,6 @@ BuildArch:      noarch
 BuildRequires:  python%{python_pkgversion}-devel
 BuildRequires:  python%{python_pkgversion}-setuptools
 BuildRequires:  python%{python_pkgversion}-six
-BuildRequires:  argparse-manpage
 %if 0%{?rhel} && 0%{?rhel} >= 8
 BuildRequires:  python3-pexpect
 # rpm is being imported through utils.py
@@ -75,7 +74,6 @@ and Scientific Linux 7 to the respective major version of RHEL.
 
 %build
 %{__python} setup.py build
-%{__python} setup.py build_manpage
 
 # Do not include unit tests in the package
 rm -rf build/lib/%{name}/unit_tests
@@ -123,6 +121,9 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu May 25 2023 Eric Gustavsson <egustavs@redhat.com> 1.3.1
+- Fix build failure by pre-generating man-pages
+
 * Thu May 25 2023 Eric Gustavsson <egustavs@redhat.com> 1.3.0
 - Move adding of `NullHandler` to the root logger
 - Remove el6 related code
