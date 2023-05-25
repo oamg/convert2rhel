@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-import functools
-
 import six
 
 
@@ -30,7 +27,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import pkgmanager, unit_tests, utils
+from convert2rhel import pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import create_pkg_information, mock_decorator
@@ -50,6 +47,43 @@ class YumResolveDepsMocked(unit_tests.MockFunction):
             return False
 
 
+SYSTEM_PACKAGES = [
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-1",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="24c6a8a7f4a80eb5",
+        signature="test",
+    ),
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-2",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="24c6a8a7f4a80eb5",
+        signature="test",
+    ),
+    create_pkg_information(
+        packager="test",
+        vendor="test",
+        name="pkg-3",
+        epoch="0",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        fingerprint="24c6a8a7f4a80eb5",
+        signature="test",
+    ),
+]
+
+
 @pytest.mark.skipif(
     pkgmanager.TYPE != "yum",
     reason="No yum module detected on the system, skipping it.",
@@ -60,7 +94,7 @@ class TestYumTransactionHandler(object):
         """ """
         monkeypatch.setattr(pkgmanager.RepoStorage, "enableRepo", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.RepoStorage, "disableRepo", value=mock.Mock())
-        monkeypatch.setattr(pkgmanager.YumBase, "update", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.YumBase, "update", value=mock.Mock(return_value=[]))
         monkeypatch.setattr(pkgmanager.YumBase, "reinstall", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.YumBase, "downgrade", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.YumBase, "resolveDeps", value=mock.Mock(return_value=(0, "Success.")))
@@ -101,187 +135,44 @@ class TestYumTransactionHandler(object):
         assert pkgmanager.RepoStorage.disableRepo.called_once()
 
     @centos7
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ],
-            )
-        ),
-    )
-    def test_perform_operations(self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch):
-        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
+    def test_perform_operations(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         instance = YumTransactionHandler()
 
         instance._perform_operations()
 
-        assert pkgmanager.YumBase.update.call_count == len(system_packages)
-        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
+        assert pkgmanager.YumBase.update.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.YumBase.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.YumBase.downgrade.call_count == 0
 
     @centos7
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ],
-            )
-        ),
-    )
-    def test_perform_operations_reinstall_exception(
-        self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
-    ):
-        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
+    def test_perform_operations_reinstall_exception(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         instance = YumTransactionHandler()
 
         instance._perform_operations()
 
-        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
-        assert pkgmanager.YumBase.downgrade.call_count == len(system_packages)
+        assert pkgmanager.YumBase.reinstall.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.YumBase.downgrade.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos7
-    @pytest.mark.parametrize(
-        ("system_packages"),
-        (
-            (
-                [
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-1",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-2",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                    create_pkg_information(
-                        packager="test",
-                        vendor="test",
-                        name="pkg-3",
-                        epoch="0",
-                        version="1.0.0",
-                        release="1",
-                        arch="x86_64",
-                        fingerprint="test",
-                        signature="test",
-                    ),
-                ],
-            )
-        ),
-    )
-    def test_perform_operations_downgrade_exception(
-        self, pretend_os, system_packages, _mock_yum_api_calls, caplog, monkeypatch
-    ):
-        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: system_packages)
+    def test_perform_operations_downgrade_exception(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
         instance = YumTransactionHandler()
 
         instance._perform_operations()
 
-        assert pkgmanager.YumBase.reinstall.call_count == len(system_packages)
-        assert pkgmanager.YumBase.downgrade.call_count == len(system_packages)
+        assert pkgmanager.YumBase.reinstall.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.YumBase.downgrade.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories." in caplog.records[-1].message
 
     @centos7
     def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, _mock_yum_api_calls, monkeypatch):
-        package = [
-            create_pkg_information(
-                packager="test",
-                vendor="test",
-                name="pkg-1",
-                epoch="0",
-                version="1.0.0",
-                release="1",
-                arch="x86_64",
-                fingerprint="test",
-                signature="test",
-            ),
-        ]
-        monkeypatch.setattr(pkgmanager.handlers.yum, "get_system_packages_for_replacement", lambda: package)
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
 
@@ -299,15 +190,7 @@ class TestYumTransactionHandler(object):
         ),
     )
     def test_resolve_dependencies(
-        self,
-        pretend_os,
-        ret_code,
-        message,
-        validate_transaction,
-        expected,
-        _mock_yum_api_calls,
-        caplog,
-        monkeypatch,
+        self, pretend_os, ret_code, message, validate_transaction, expected, _mock_yum_api_calls, caplog, monkeypatch
     ):
         monkeypatch.setattr(
             pkgmanager.YumBase,
@@ -410,6 +293,26 @@ class TestYumTransactionHandler(object):
         perform_operations_count, resolve_dependencies_count = expected_count
         assert pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.call_count == perform_operations_count
         assert pkgmanager.handlers.yum.YumTransactionHandler._resolve_dependencies.called == resolve_dependencies_count
+
+    @centos7
+    def test_package_marked_for_update(self, pretend_os, _mock_yum_api_calls, monkeypatch):
+        """
+        Test that if a package is marked for update, we won't call reinstall or
+        downgrade after that.
+
+        This comes from: https://issues.redhat.com/browse/RHELC-899
+        """
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
+        pkgmanager.YumBase.update.return_value = [
+            "something"
+        ]  # We don't care about the value, only that if has something.
+
+        instance = YumTransactionHandler()
+        instance._perform_operations()
+
+        assert pkgmanager.YumBase.update.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.YumBase.reinstall.call_count == 0
+        assert pkgmanager.YumBase.downgrade.call_count == 0
 
 
 @centos7
