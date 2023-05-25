@@ -267,11 +267,10 @@ class CLI(object):
         )
         group.add_argument(
             "--pool",
-            help="Subscription pool ID. If not used,"
-            " the user is asked to choose from the available"
-            " subscriptions. A list of the available"
+            help="Subscription pool ID. A list of the available"
             " subscriptions is possible to obtain by running"
-            " 'subscription-manager list --available'.",
+            " 'subscription-manager list --available'."
+            " If no pool ID is provided, the --auto option is used",
         )
         group.add_argument(
             "-v",
@@ -447,6 +446,19 @@ class CLI(object):
                 " We're going to use the password from file."
             )
 
+        # Config files matches
+        if config_opts.username or config_opts.org:
+            loggerinst.warning(
+                "You have passed the RHSM username through both the command line and the"
+                " configuration file. We're going to use the command line values."
+            )
+
+        if parsed_opts.username or parsed_opts.org:
+            loggerinst.warning(
+                "You have passed the RHSM org through both the command line and the"
+                " configuration file. We're going to use the command line values."
+            )
+
         if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
             loggerinst.warning(
                 "You have passed either the RHSM password or activation key through both the command line and the"
@@ -503,16 +515,17 @@ def options_from_config_files(cfg_path=None):
     :type cfg_path: str
 
     :return: Dict with the supported options alongside their values.
-    :rtype: dict[str | None, str | None]
+    :rtype: dict[str, str | None]
     """
     headers = ["subscription_manager"]  # supported sections in config file
-    config_file = configparser.ConfigParser()
-    paths = [os.path.expanduser(path) for path in CONFIG_PATHS]
     # Create dict with all supported options, all of them set to None
     # needed for avoiding problems with files priority
     # The name of supported option MUST correspond with the name in ToolOpts()
     # Otherwise it won't be used
-    supported_opts = {"password": None, "activation_key": None}
+    supported_opts = {"username": None, "password": None, "activation_key": None, "org": None}
+
+    config_file = configparser.ConfigParser()
+    paths = [os.path.expanduser(path) for path in CONFIG_PATHS]
 
     if cfg_path:
         cfg_path = os.path.expanduser(cfg_path)

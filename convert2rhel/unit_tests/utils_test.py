@@ -36,7 +36,7 @@ from collections import namedtuple
 
 from six.moves import mock
 
-from convert2rhel import unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import toolopts, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import is_rpm_based_os
 
@@ -160,18 +160,27 @@ class TestUtils(unittest.TestCase):
     @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
-    @unit_tests.mock(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
-    def test_download_pkg_failed_download_overridden(self):
-        path = utils.download_pkg("kernel")
-
-        self.assertEqual(path, None)
+    @unit_tests.mock(os, "environ", {})
+    def test_download_pkg_failed_download_exit(self):
+        self.assertRaises(SystemExit, utils.download_pkg, "kernel")
 
     @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
     @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
-    @unit_tests.mock(os, "environ", {})
-    def test_download_pkg_failed_download_exit(self):
+    @unit_tests.mock(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
+    @unit_tests.mock(toolopts.tool_opts, "activity", "analysis")
+    def test_download_pkg_failed_during_analysis_download_exit(self):
         self.assertRaises(SystemExit, utils.download_pkg, "kernel")
+
+    @unit_tests.mock(system_info, "releasever", "7Server")
+    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+    @unit_tests.mock(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
+    @unit_tests.mock(toolopts.tool_opts, "activity", "conversion")
+    def test_download_pkg_failed_download_overridden(self):
+        path = utils.download_pkg("kernel")
+
+        self.assertEqual(path, None)
 
     @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))

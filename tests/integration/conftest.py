@@ -327,3 +327,48 @@ def required_packages(shell):
 
     except KeyError:
         raise
+
+
+@pytest.fixture(scope="function")
+def repositories(shell):
+    """
+    Fixture.
+    Move all repositories to another location, do the same for EUS if applicable.
+    """
+    backup_dir = "/tmp/test-backup-release_backup"
+    backup_dir_eus = "%s_eus" % backup_dir
+
+    # Move all repos to other location, so it is not being used
+    shell(f"mkdir {backup_dir}")
+    assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
+
+    # EUS version use hardcoded repos from c2r as well
+    if "centos-8" in SYSTEM_RELEASE_ENV:
+        shell(f"mkdir {backup_dir_eus}")
+        assert shell(f"mv /usr/share/convert2rhel/repos/* {backup_dir_eus}").returncode == 0
+
+    yield
+
+    # Return repositories to their original location
+    assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
+    assert shell(f"rm -rf {backup_dir}")
+    # Return EUS repositories to their original location
+    if "centos-8" in SYSTEM_RELEASE_ENV:
+        assert shell(f"mv {backup_dir_eus}/* /usr/share/convert2rhel/repos/").returncode == 0
+        assert shell(f"rm -rf {backup_dir_eus}")
+
+
+@pytest.fixture(autouse=True)
+def missing_centos_release_workaround(system_release, shell):
+    # TODO(danmyway) remove when/if the issue gets fixed
+    """
+    Fixture to workaround issues with missing `centos-linux-release`
+    after incomplete rollback.
+    """
+    # run only after the test finishes
+    yield
+
+    if "centos-8.5" in system_release:
+        rpm_output = shell("rpm -q centos-linux-release").output
+        if "not installed" in rpm_output:
+            shell("yum install -y --releasever=8 centos-linux-release")

@@ -514,22 +514,6 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             self.setwinsize = real_setwinsize
 
 
-def let_user_choose_item(num_of_options, item_to_choose):
-    """Ask user to enter a number corresponding to the item they choose."""
-    while True:  # Loop until user enters a valid number
-        opt_num = prompt_user("Enter number of the chosen %s: " % item_to_choose)
-        try:
-            opt_num = int(opt_num)
-        except ValueError:
-            loggerinst.warning("Enter a valid number.")
-        # Ensure the entered number is in the proper range
-        if 0 < opt_num <= num_of_options:
-            break
-        else:
-            loggerinst.warning("The entered number is not in range 1 - %s." % num_of_options)
-    return opt_num - 1  # Get zero-based list index
-
-
 def mkdir_p(path):
     """Create all missing directories for the path and raise no exception
     if the path exists.
@@ -717,23 +701,59 @@ def download_pkg(
     if ret_code != 0:
         loggerinst.warning("Output from the yumdownloader call:\n%s" % (output))
 
-        if not "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" in os.environ:
-            loggerinst.critical(
-                "Couldn't download the %s package. This means we will not be able to do a"
-                " complete rollback and may put the system in a broken state.\n"
-                "Check to make sure that the %s repositories are enabled"
-                " and the package is updated to its latest version.\n"
-                "If you would rather ignore this check set the environment variable"
-                " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'." % (pkg, system_info.name)
-            )
+        # Note: Checking toolopts here is a temporary solution. We need to
+        # restructure this to raise an exception on error and have the caller
+        # handle whether to use INCOMPLETE_ROLLBACK to do something for several
+        # reasons:
+        # (1) utils should be simple functions that take input and produce
+        #     output from it. Having knowledge of things specific to the
+        #     program (for instance, the environment variable that convert2rhel
+        #     uses) makes the utils depend on the specific place that they are
+        #     run instead.
+        # (2) Where an error condition arises, they should "return" that to the
+        #     caller to decide how to handle it by using an exception. Handling
+        #     it inside the function ties us to one specific behaviour on
+        #     error. (For instance, the incomplete rollback message here ties
+        #     downloading packages and performing rollbacks. But what about
+        #     downloading packages that are not tied to rollbacks. Maybe we
+        #     have to download a package in order for insights or
+        #     subscription-manager to run. In those cases, we either cannot use
+        #     this function or we might show the user a misleading message).
+        # (3) Functions in utils should be free of other dependencies within
+        #     convert2rhel.  That allows us to use utils with no fear of
+        #     circular dependency issues.
+        # (4) Making the choices here mean that when used inside of the Action
+        #     framework, we are limited to returning a FAILURE for the Action
+        #     plugin whereas returning SKIP would be more accurate.
+        from convert2rhel import toolopts
+
+        if toolopts.tool_opts.activity == "conversion":
+            if "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" not in os.environ:
+                loggerinst.critical(
+                    "Couldn't download the %s package. This means we will not be able to do a"
+                    " complete rollback and may put the system in a broken state.\n"
+                    "Check to make sure that the %s repositories are enabled"
+                    " and the package is updated to its latest version.\n"
+                    "If you would rather ignore this check set the environment variable"
+                    " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'." % (pkg, system_info.name)
+                )
+            else:
+                loggerinst.warning(
+                    "Couldn't download the %s package. This means we will not be able to do a"
+                    " complete rollback and may put the system in a broken state.\n"
+                    "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
+                    % (pkg)
+                )
+            return None
         else:
-            loggerinst.warning(
-                "Couldn't download the %s package. This means we will not be able to do a"
-                " complete rollback and may put the system in a broken state.\n"
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
-                % (pkg)
+            loggerinst.critical(
+                "Couldn't download the %s package which is needed to do a rollback of this action."
+                " Check to make sure that the %s repositories are enabled and the package is"
+                " updated to its latest version.\n"
+                "Note that you can choose to ignore this check when actually running a conversion by"
+                " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK'"
+                " but not during pre-conversion analysis." % (pkg, system_info.name)
             )
-        return None
 
     path = get_rpm_path_from_yumdownloader_output(cmd, output, dest)
     if path:

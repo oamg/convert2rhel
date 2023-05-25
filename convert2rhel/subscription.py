@@ -79,9 +79,6 @@ REGISTRATION_TIMEOUT = 180
 
 _SUBMGR_PKG_REMOVED_IN_CL_85 = "subscription-manager-initial-setup-addon"
 
-# Path to the releasever variable file for dnf.
-DNF_RELEASEVER_FILE = "/etc/yum/vars/releasever"
-
 
 class UnregisterError(Exception):
     """Raised with problems unregistering a system."""
@@ -577,7 +574,7 @@ def remove_original_subscription_manager():
             backup.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
             submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
 
-    # Remove any oter subscription-manager packages present on the system
+    # Remove any other subscription-manager packages present on the system
     backup.remove_pkgs(submgr_pkg_names, critical=False)
 
 
@@ -675,6 +672,16 @@ def attach_subscription():
     """
     # TODO: Support attaching multiple pool IDs.
 
+    # check if SCA is enabled
+    output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
+    if "content access mode is set to simple content access." in output.lower():
+        loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
+        if tool_opts.pool:
+            loggerinst.warning(
+                "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached."
+            )
+        return True
+
     if tool_opts.activation_key:
         loggerinst.info("Using the activation key provided through the command line...")
         return True
@@ -687,82 +694,22 @@ def attach_subscription():
         # option
         pool.extend(["--pool", tool_opts.pool])
         loggerinst.info("Attaching provided subscription pool ID to the system ...")
-    else:
-        subs_list = get_avail_subs()
+    elif not tool_opts.auto_attach and not tool_opts.pool:
+        # defaulting to --auto similiar to the functioning of subscription-manager
+        pool.append("--auto")
+        loggerinst.info("Auto-attaching compatible subscriptions to the system ...")
 
-        if len(subs_list) == 0:
-            loggerinst.warning("No subscription available for the conversion.")
-            return False
-
-        elif len(subs_list) == 1:
-            sub_num = 0
-            loggerinst.info(
-                " %s is the only subscription available, it will automatically be selected for the conversion."
-                % subs_list[0].pool_id
-            )
-
-        else:
-            # Let the user choose the subscription appropriate for the conversion
-            loggerinst.info("Manually select subscription appropriate for the conversion")
-            print_avail_subs(subs_list)
-            sub_num = utils.let_user_choose_item(len(subs_list), "subscription")
-            loggerinst.info("Attaching subscription with pool ID %s to the system ..." % subs_list[sub_num].pool_id)
-
-        pool.extend(["--pool", subs_list[sub_num].pool_id])
     _, ret_code = utils.run_subprocess(pool)
 
     if ret_code != 0:
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
-        loggerinst.critical("Unsuccessful attachment of a subscription.")
+        loggerinst.critical(
+            "Unsuccessful attachment of a subscription. Please refer to https://access.redhat.com/management/"
+            " where you can either enable the SCA, create an activation key, or find a Pool ID of the subscription"
+            " you wish to use and pass it to convert2rhel through the --pool CLI option."
+        )
     return True
-
-
-def get_avail_subs():
-    """Get list of all the subscriptions available to the user so they are
-    accessible by index once the user chooses one.
-
-    .. note::
-        Get multiline string holding all the subscriptions available to the
-        logged-in user
-    """
-    # With the current changes introduced in PR#627, we needed to remove the
-    # non-RHEL packages that contain repofiles before we do any call to
-    # subscription-manager, and since we are doing that, this function starts to
-    # fail because it doesn't have the package that sets the releasever anymore.
-    # For some reason, subscription-manager needs to call libdnf internally to
-    # read the repositories on the system, and since libdnf needs to do
-    # substitutions on those repofiles, mainly the releasever and any other file
-    # placed in /etc/dnf/vars, this command call fails as it cannot replace the
-    # releasever variable anymore.
-    releaver_created = False
-    if system_info.version.major >= 8:
-        if not os.path.exists(DNF_RELEASEVER_FILE):
-            with open(DNF_RELEASEVER_FILE, "w") as handler:
-                handler.write(system_info.original_releasever)
-
-            releaver_created = True
-
-    subs_raw, ret_code = utils.run_subprocess(["subscription-manager", "list", "--available"], print_output=False)
-
-    if releaver_created:
-        os.remove(DNF_RELEASEVER_FILE)
-
-    if ret_code != 0:
-        loggerinst.critical("Unable to get list of available subscriptions:\n%s" % subs_raw)
-    return list(get_sub(subs_raw))
-
-
-def get_sub(subs_raw):
-    """Generator that provides subscriptions available to a logged-in user."""
-    # Split all the available subscriptions per one subscription
-    for sub_raw in re.findall(
-        r"Subscription Name.*?Type:\s+\w+\n\n",
-        subs_raw,
-        re.DOTALL | re.MULTILINE,
-    ):
-        pool_id = get_pool_id(sub_raw)
-        yield namedtuple("Sub", ["pool_id", "sub_raw"])(pool_id, sub_raw)
 
 
 def get_pool_id(sub_raw_attrs):
