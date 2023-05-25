@@ -577,7 +577,7 @@ def remove_original_subscription_manager():
             backup.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
             submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
 
-    # Remove any oter subscription-manager packages present on the system
+    # Remove any other subscription-manager packages present on the system
     backup.remove_pkgs(submgr_pkg_names, critical=False)
 
 

@@ -6,10 +6,6 @@ from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV
 from envparse import env
 
 
-BACKUP_DIR = "/tmp/test-backup-release_backup"
-BACKUP_DIR_EUS = "%s_eus" % BACKUP_DIR
-
-
 @pytest.fixture(scope="function")
 def custom_subman(shell, repository=None):
     """ """
@@ -73,32 +69,17 @@ def katello_package(shell):
 
 
 @pytest.fixture(scope="function")
-def repositories(shell):
+def kernel_check_envar(shell):
     """
-    Preparation phase.
-    Move all repositories to another location, do the same for EUS if applicable.
+    Fixture.
+    Set CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK environment variable
+    to skip the kernel currency check.
     """
-    # Move all repos to other location, so it is not being used
-    shell(f"mkdir {BACKUP_DIR}")
-    assert shell(f"mv /etc/yum.repos.d/* {BACKUP_DIR}").returncode == 0
-
-    # EUS version use hardcoded repos from c2r as well
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        shell(f"mkdir {BACKUP_DIR_EUS}")
-        assert shell(f"mv /usr/share/convert2rhel/repos/* {BACKUP_DIR_EUS}").returncode == 0
-
     # Since we are moving all repos away, we need to bypass kernel check
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
     yield
 
-    # Return repositories to their original location
-    assert shell(f"mv {BACKUP_DIR}/* /etc/yum.repos.d/").returncode == 0
-    assert shell(f"rm -rf {BACKUP_DIR}")
-    # Return EUS repositories to their original location
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell(f"mv {BACKUP_DIR_EUS}/* /usr/share/convert2rhel/repos/").returncode == 0
-        assert shell(f"rm -rf {BACKUP_DIR_EUS}")
     # Remove the envar skipping the kernel check
     del os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"]
 
@@ -151,7 +132,9 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
 
 
 @pytest.mark.test_backup_os_release_no_envar
-def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, katello_package, repositories):
+def test_backup_os_release_no_envar(
+    shell, convert2rhel, custom_subman, katello_package, repositories, kernel_check_envar
+):
     """
     This test case removes all the repos on the system which prevents the backup of some files.
     Satellite is being used in all of test cases.
@@ -184,7 +167,7 @@ def unsupported_rollback_envar(shell):
 
 @pytest.mark.test_backup_os_release_with_envar
 def test_backup_os_release_with_envar(
-    shell, convert2rhel, custom_subman, katello_package, repositories, unsupported_rollback_envar
+    shell, convert2rhel, custom_subman, katello_package, repositories, unsupported_rollback_envar, kernel_check_envar
 ):
     """
     In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.

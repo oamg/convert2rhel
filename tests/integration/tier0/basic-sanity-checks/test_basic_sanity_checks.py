@@ -298,3 +298,63 @@ def test_disable_data_collection(shell, convert2rhel):
 
     # Remove envar disabling telemetry.
     del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
+
+
+@pytest.fixture
+def analyze_incomplete_rollback_envar():
+    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+    os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"] = "1"
+
+    yield
+
+    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
+    # Remove the `analyze` switch in case it won't get deleted in the test,
+    # so it won't interfere with other tests
+    if os.environ.get("CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"):
+        del os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"]
+
+
+@pytest.mark.test_analyze_incomplete_rollback
+def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incomplete_rollback_envar):
+    """
+    This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
+    is not honored when running with the analyze switch.
+    Repositories are moved to a different location so the
+    `REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED`
+    error is raised.
+    1/ convert2rhel is run in the analyze mode, the envar should not be
+       honored and the conversion should end
+    2/ convert2rhel is run in conversion mode, the envar should be
+       accepted and conversion continues
+    # TODO(danmyway) switch to `convert2rhel analyze` when available.
+    """
+    with convert2rhel("--debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement
+        c2r.sendline("y")
+        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED", timeout=300)
+        # Verify the user is informed to not use the envar during the analysis
+        assert (
+            c2r.expect(
+                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' but not during pre-conversion analysis",
+                timeout=300,
+            )
+            == 0
+        )
+        # The conversion should fail
+        assert c2r.exitstatus != 0
+
+    del os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"]
+
+    with convert2rhel("--debug --no-rpm-va") as c2r:
+        # We need to get past the data collection acknowledgement
+        c2r.sendline("y")
+        assert (
+            c2r.expect(
+                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                timeout=300,
+            )
+            == 0
+        )
+        c2r.sendcontrol("c")
+
+        assert c2r.exitstatus != 0
