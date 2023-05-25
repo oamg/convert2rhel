@@ -399,6 +399,17 @@
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
+/single_yum_transaction_check_for_latest_packages:
+    discover+:
+        filter: tag:checks-after-conversion
+    prepare+:
+        - name: main conversion preparation
+          how: shell
+          script: pytest -svv tests/integration/tier1/single-yum-transaction/test_check_for_latest_packages.py
+        - name: reboot after conversion
+          how: ansible
+          playbook: tests/ansible_collections/roles/reboot/main.yml
+
 /detect_correct_boot_partition:
     adjust+:
         - enabled: false
