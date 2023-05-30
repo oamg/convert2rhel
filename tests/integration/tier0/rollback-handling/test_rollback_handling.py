@@ -93,8 +93,8 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug --no-rpm-va".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
@@ -154,8 +154,8 @@ def test_terminate_registration_start(convert2rhel):
     with convert2rhel(
         "--debug -y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         ),
         unregister=True,
     ) as c2r:
@@ -173,8 +173,8 @@ def test_terminate_registration_success(convert2rhel):
     with convert2rhel(
         "--debug -y --no-rpm-va --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         ),
         unregister=True,
     ) as c2r:
@@ -204,6 +204,6 @@ def test_terminate_on_password_prompt(convert2rhel):
     Send termination signal on the user prompt for password.
     Verify that c2r goes successfully through the rollback.
     """
-    with convert2rhel("--debug -y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
+    with convert2rhel("--debug -y --no-rpm-va --username {}".format(env.str("RHSM_SCA_USERNAME"))) as c2r:
         if c2r.expect("Password:") == 0:
             terminate_and_assert_good_rollback(c2r)

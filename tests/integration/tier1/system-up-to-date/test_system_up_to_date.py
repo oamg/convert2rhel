@@ -23,8 +23,8 @@ def test_skip_kernel_check(shell, convert2rhel):
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
@@ -38,8 +38,8 @@ def test_skip_kernel_check(shell, convert2rhel):
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -90,8 +90,8 @@ def test_system_not_updated(shell, convert2rhel):
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")

@@ -68,8 +68,8 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rh
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         ),
         unregister=True,
     ) as c2r:
@@ -106,8 +106,8 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         ),
         unregister=True,
     ) as c2r:
@@ -158,8 +158,8 @@ def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         ),
         unregister=True,
     ) as c2r:
@@ -180,8 +180,8 @@ def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, 
     with convert2rhel(
         "--no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")

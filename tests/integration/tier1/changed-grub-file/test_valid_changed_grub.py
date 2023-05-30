@@ -36,8 +36,8 @@ def test_modify_grub_valid(convert2rhel):
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_SCA_USERNAME"),
+            env.str("RHSM_SCA_PASSWORD"),
         )
     ) as c2r:
         assert c2r.expect("Successfully updated GRUB2 on the system.") == 0

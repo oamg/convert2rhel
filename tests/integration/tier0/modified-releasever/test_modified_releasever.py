@@ -19,8 +19,8 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
         with convert2rhel(
             "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
                 env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
+                env.str("RHSM_SCA_USERNAME"),
+                env.str("RHSM_SCA_PASSWORD"),
             ),
             unregister=True,
         ) as c2r:
@@ -48,8 +48,8 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
         with convert2rhel(
             "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
                 env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
+                env.str("RHSM_SCA_USERNAME"),
+                env.str("RHSM_SCA_PASSWORD"),
             ),
             unregister=True,
         ) as c2r:
