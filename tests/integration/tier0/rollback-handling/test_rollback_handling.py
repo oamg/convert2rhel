@@ -91,11 +91,10 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va".format(
+        "--serverurl {} --username {} --password {} --debug --no-rpm-va".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")

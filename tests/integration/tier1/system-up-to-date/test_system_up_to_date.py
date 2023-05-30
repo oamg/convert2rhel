@@ -21,11 +21,10 @@ def test_skip_kernel_check(shell, convert2rhel):
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
@@ -37,11 +36,10 @@ def test_skip_kernel_check(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -90,11 +88,10 @@ def test_system_not_updated(shell, convert2rhel):
 
     # Run utility until the reboot
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")

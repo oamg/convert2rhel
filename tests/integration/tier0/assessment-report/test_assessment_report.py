@@ -47,11 +47,10 @@ def test_successful_report(convert2rhel):
     And does not contain: Error header, skip header, success header.
     """
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.

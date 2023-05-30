@@ -22,11 +22,10 @@ def test_yum_distro_sync(convert2rhel, shell):
     """
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         c2r.expect("Conversion successful!")

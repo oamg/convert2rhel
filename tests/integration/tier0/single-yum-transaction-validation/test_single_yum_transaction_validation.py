@@ -70,11 +70,10 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     transaction.
     """
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
@@ -103,11 +102,10 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     tool is doing a proper rollback when the transaction is being processed.
     """
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
         )
     ) as c2r:
         c2r.expect(
