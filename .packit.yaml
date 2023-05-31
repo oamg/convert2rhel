@@ -64,7 +64,14 @@ jobs:
   identifier: "tier1"
   tmt_plan: "tier1"
 
-- &main
+- &main-tier0
   <<: *tests
   trigger: commit
   branch: main
+
+- &main-tier1
+  <<: *tests
+  trigger: commit
+  branch: main
+  identifier: "tier1"
+  tmt_plan: "tier1"
