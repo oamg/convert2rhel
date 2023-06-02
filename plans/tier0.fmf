@@ -1,9 +1,200 @@
-summary: Set of non-destructive tests
-description: |
-    All tests in tier0 are non-destructive, meaning there is not a full conversion being done.
-    The latest point of verification for these tests is PONR (point of no return).
-    The preparation and cleanup phase is implemented in the test itself.
+summary+: |
+    Tier0 tests
+description+: |
+    Critical set of tests/plans to be run for each upstream PR
+    before merge commit to the main branch.
 
-discover+:
-    filter+:
-        'tier: 0'
+/non-destructive:
+    discover+:
+        filter+:
+            'tag: non-destructive'
+
+/destructive:
+    /conversion_methods:
+        /activation_key:
+            adjust+:
+                - environment+:
+                    CONVERT2RHEL_DISABLE_TELEMETRY: 1
+            discover+:
+                filter: tag:checks-after-conversion | tag:CONVERT2RHEL_DISABLE_TELEMETRY
+            prepare+:
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/activation_key.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /rhsm:
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/rhsm.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /rhsm_non_eus:
+            adjust+:
+                - enabled: false
+                  # TODO EUS Bump disabled version
+                  when: >
+                    distro != centos-8.4
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/rhsm_non_eus.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /satellite:
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/satellite.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /custom_repos:
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: add custom repos
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/custom_repos.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+
+    /single_yum_transaction:
+        /single_yum_transaction_all_errors:
+            adjust+:
+                - enabled: false
+                  when: >
+                      distro != oraclelinux-7
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: install ntp package and remove one dependency
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /single_yum_transaction_mismatch_errors:
+            adjust+:
+                - enabled: false
+                  when: >
+                      distro != centos-8-latest and
+                      distro != oraclelinux-8
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: install multilib packages with dnf
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/install_multilib_packages.py
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /single_yum_transaction_excld_pkgs:
+            adjust+:
+                - enabled: false
+                  when: >
+                    distro != centos-7
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: remove some pkgs from the excld pkgs config list
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /single_yum_transaction_check_for_latest_packages:
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_check_for_latest_packages.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /yum_distro_sync:
+            discover+:
+                  filter: tag:checks-after-conversion
+            prepare+:
+                  - name: enable extras repo for Oracle Linux
+                    how: ansible
+                    playbook: tests/integration/destructive/yum-distro-sync/add-extras-repo/main.yml
+                  - name: install problematic package
+                    how: shell
+                    script: pytest -svv tests/integration/destructive/yum-distro-sync/install_problematic_package.py
+                  - name: main conversion preparation
+                    how: shell
+                    script: pytest -svv tests/integration/destructive/yum-distro-sync/test_yum_distro_sync.py
+                  - name: reboot after conversion
+                    how: ansible
+                    playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /resolve_dependency:
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: install dependency packages
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/resolve-dependency/install_dependency_packages.py
+                - name: main conversion preparation
+                  how: shell
+                  script: pytest -svv tests/integration/destructive/method/rhsm.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
+
+    /convert_offline_systems:
+        # At the moment we have only CentOS7 repos available on Satellite server
+        adjust+:
+            - enabled: false
+              when: >
+                distro != centos-7
+        discover+:
+            filter: tag:checks-after-conversion
+        prepare+:
+            - name: install subscription manager
+              how: ansible
+              playbook: tests/ansible_collections/roles/install-submgr/main.yml
+            - name: allow access to Satellite only
+              how: shell
+              script: pytest -svv tests/integration/destructive/convert-offline-systems/prepare_system.py
+            - name: run offline conversion using the satellite
+              how: shell
+              script: pytest -svv tests/integration/destructive/convert-offline-systems/run_conversion.py
+            - name: reboot after conversion
+              how: ansible
+              playbook: tests/ansible_collections/roles/reboot/main.yml
