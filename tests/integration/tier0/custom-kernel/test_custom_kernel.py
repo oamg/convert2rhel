@@ -13,12 +13,7 @@ DISTRO_KERNEL_MAPPING = {
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.76.1.0.1.el7.x86_64.rpm",
         "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)",
     },
-    # We hardcode original kernel for both CentOS 8.4 and CentOS 8.5 as it won't receive any updates anymore
-    "centos-8.4": {
-        "original_kernel": "kernel-core-4.18.0-305.25.1.el8_4.x86_64",
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/4/baseos/base/x86_64/getPackage/kernel-core-4.18.0-305.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-305.el8.x86_64) 8.4",
-    },
+    # We hardcode original kernel for CentOS 8.5 as it won't receive any updates anymore
     "centos-8.5": {
         "original_kernel": "kernel-core-4.18.0-348.7.1.el8_5.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",

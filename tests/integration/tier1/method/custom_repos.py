@@ -34,7 +34,7 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
         if system_version.major == 7:
             enable_repo_opt = "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms --enablerepo rhel-7-server-extras-rpms"
         elif system_version.major == 8:
-            if system_version.minor in (4, 6):
+            if system_version.minor == 6:
                 enable_repo_opt = (
                     "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
                 )
@@ -47,13 +47,13 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
-    # after the conversion using custom repostitories it is expected to enable repos by yourself
+    # after the conversion using custom repositories it is expected to enable repos by yourself
     if system_version.major == 7:
         enable_repo_opt = (
             "--enable rhel-7-server-rpms --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms"
         )
     elif system_version.major == 8:
-        if system_version.minor in (4, 6):
+        if system_version.minor == 6:
             enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-eus-rpms --enable rhel-8-for-x86_64-appstream-eus-rpms"
         else:
             enable_repo_opt = "--enable rhel-8-for-x86_64-baseos-rpms --enable rhel-8-for-x86_64-appstream-rpms"

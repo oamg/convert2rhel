@@ -49,7 +49,7 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action,
     ):
         message = (
-            "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
+            "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
         )
 
         is_loaded_kernel_latest_action.run()

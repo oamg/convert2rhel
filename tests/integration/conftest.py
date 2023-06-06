@@ -244,7 +244,7 @@ def system_release(shell):
     Examples:
         Centos Linux 7.9 => centos-7.9\n
         Oracle Linux 8.6 => oracle-8.6\n
-        Alma Linux 8.4 => almalinux-8.4\n
+        Alma Linux 8.7 => almalinux-8.7\n
         Rocky Linux 8.5 => rocky-8.5
     """
     path = Path("/etc/system-release")

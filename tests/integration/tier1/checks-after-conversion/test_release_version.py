@@ -16,7 +16,6 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "Core", "name": "CentOS Linux", "version": "7.9"},
         {"id": "null", "name": "Oracle Linux Server", "version": "7.9"},
     ),
-    "Red Hat Enterprise Linux release 8.4 (Ootpa)": ({"id": "null", "name": "CentOS Linux", "version": "8.4"},),
     "Red Hat Enterprise Linux release 8.5 (Ootpa)": ({"id": "null", "name": "CentOS Linux", "version": "8.5"},),
     "Red Hat Enterprise Linux release 8.7 (Ootpa)": ({"id": "null", "name": "Oracle Linux Server", "version": "8.7"},),
     "Red Hat Enterprise Linux release 8.8 (Ootpa)": ({"id": "null", "name": "Oracle Linux Server", "version": "8.8"},),

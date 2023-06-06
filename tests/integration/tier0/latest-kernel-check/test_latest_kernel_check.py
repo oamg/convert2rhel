@@ -14,7 +14,7 @@ def tainted_repository(shell):
     repofile = "broken_repo"
     centos_custom_reposdir = "/usr/share/convert2rhel/repos/"
 
-    # For CentOS we are working with hardcoded repos in /usr/share/convert2rhel/repos/centos-8.{4,5}
+    # For CentOS, we are working with hardcoded repos in /usr/share/convert2rhel/repos/centos-8.5
     if "centos-8" in SYSTEM_RELEASE_ENV:
         shell(f"cp -r files/{repofile}.repo {centos_custom_reposdir}/{SYSTEM_RELEASE_ENV}/")
     shell(f"cp -r files/{repofile}.repo /etc/yum.repos.d/")

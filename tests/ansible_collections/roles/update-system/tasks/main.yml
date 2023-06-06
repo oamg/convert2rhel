@@ -1,4 +1,2 @@
 ---
-# The CentOS Linux can be updated using this role because the repositories on the system image has been
-# tweaked to point to the CentOS Linux 8.4 repositories in the Vault.
 - include_tasks: update-system.yml
