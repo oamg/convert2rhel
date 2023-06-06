@@ -24,11 +24,8 @@
           playbook: tests/ansible_collections/roles/reboot/main.yml
 
 /rhsm_non_eus:
-    adjust+:
-        - enabled: false
-          # TODO EUS Bump disabled version
-          when: >
-            distro != centos-8.4
+    #TODO(danmyway) when available, enable for EUS versions
+    enabled: false
     discover+:
         filter: tag:checks-after-conversion
     prepare+:

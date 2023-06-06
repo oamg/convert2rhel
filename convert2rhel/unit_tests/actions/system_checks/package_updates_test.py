@@ -39,7 +39,7 @@ def package_updates_action():
 @oracle8
 def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package_updates_action):
     message = (
-        "Skipping the check because there are no publicly available Oracle Linux Server 8.4 repositories available."
+        "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
     )
 
     package_updates_action.run()

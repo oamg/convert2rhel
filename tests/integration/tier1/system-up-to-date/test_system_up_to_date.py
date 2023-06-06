@@ -62,7 +62,7 @@ def test_system_not_updated(shell, convert2rhel):
     """
     System contains at least one package that is not updated to
     the latest version. The c2r has to display a warning message
-    about that. Also not updated package it's version
+    about that. Also, not updated package its version
     is locked. Display a warning about used version lock.
     """
     centos_8_pkg_url = "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm"

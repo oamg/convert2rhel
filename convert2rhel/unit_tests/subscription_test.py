@@ -28,7 +28,7 @@ import pytest
 import six
 
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, system_info
 from convert2rhel.unit_tests import GetLoggerMocked, get_pytest_marker, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
@@ -1394,8 +1394,7 @@ class TestRollback(object):
         (("output", 1), "Locking RHEL repositories failed"),
     ),
 )
-@centos8
-def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, monkeypatch, caplog):
+def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch, caplog):
     cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
     run_subprocess_mock = mock.Mock(
         side_effect=unit_tests.run_subprocess_side_effect(
@@ -1407,6 +1406,10 @@ def test_lock_releasever_in_rhel_repositories(pretend_os, subprocess, expected, 
         "run_subprocess",
         value=run_subprocess_mock,
     )
+    eus_version = EUS_MINOR_VERSIONS[0].split(".")
+    major_version = eus_version[0]
+    minor_version = eus_version[1]
+    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(major_version, minor_version))
     subscription.lock_releasever_in_rhel_repositories()
 
     assert expected in caplog.records[-1].message
