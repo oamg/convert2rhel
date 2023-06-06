@@ -15,7 +15,7 @@
 
 __metaclass__ = type
 
-
+import json
 import logging
 import textwrap
 
@@ -30,6 +30,9 @@ from convert2rhel.logger import colorize
 
 
 logger = logging.getLogger(__name__)
+
+#: The filename to store the results of running preassessment
+CONVERT2RHEL_JSON_RESULTS = "/etc/convert2rhel-assessment.json"
 
 #: Map Status codes (from convert2rhel.actions.STATUS_CODE) to color name (from
 #: convert2rhel.logger.bcolor)
@@ -46,6 +49,12 @@ _STATUS_TO_COLOR = {
     # ERROR
     202: "FAIL",
 }
+
+
+def summary_as_json(results, json_file=CONVERT2RHEL_JSON_RESULTS):
+    """Output the results as a json_file."""
+    with open(json_file, "w") as f:
+        json.dump(results, f)
 
 
 def summary(results, include_all_reports=False, with_colors=True):

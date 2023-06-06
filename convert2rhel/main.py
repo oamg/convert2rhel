@@ -75,6 +75,8 @@ def main():
 
     # handle command line arguments
     toolopts.CLI()
+
+    pre_conversion_results = None
     try:
         process_phase = ConversionPhase.POST_CLI
         perform_boilerplate()
@@ -86,7 +88,6 @@ def main():
         # we don't fail in case rollback is triggered during
         # actions.run_actions() (either from a bug or from the user hitting
         # Ctrl-C)
-        pre_conversion_results = None
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_actions()
 
@@ -176,6 +177,11 @@ def main():
             )
             subscription.update_rhsm_custom_facts()
         return 1
+    finally:
+        # Write the assessment to a file as json data so that other tools can
+        # parse and act upon it.
+        if pre_conversion_results:
+            actions.report.summary_as_json(pre_conversion_results)
 
     return 0
 

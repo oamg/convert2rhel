@@ -15,6 +15,8 @@
 
 __metaclass__ = type
 
+import json
+import os.path
 import re
 
 import pytest
@@ -25,6 +27,33 @@ from convert2rhel.logger import bcolors
 
 #: _LONG_MESSAGE since we do line wrapping
 _LONG_MESSAGE = "Will Robinson!  Will Robinson!  Danger Will Robinson...!  Please report directly to your parents in the spaceship immediately.  Danger!  Danger!  Danger!"
+
+
+@pytest.mark.parametrize(
+    ("results",),
+    (
+        (
+            {
+                "CONVERT2RHEL_LATEST_VERSION": {
+                    "result": dict(level=STATUS_CODE["SUCCESS"]),
+                    "messages": [
+                        dict(level=STATUS_CODE["WARNING"], id="WARNING_ONE", message="A warning message"),
+                    ],
+                },
+            },
+        ),
+    ),
+)
+def test_summary_as_json(results, tmpdir):
+    """Test that the results that we're given are what is written to the json log file."""
+    json_report_file = os.path.join(str(tmpdir), "c2r-assessment.json")
+
+    report.summary_as_json(results, json_report_file)
+
+    with open(json_report_file, "r") as f:
+        file_contents = json.load(f)
+
+    assert file_contents == results
 
 
 @pytest.mark.parametrize(
