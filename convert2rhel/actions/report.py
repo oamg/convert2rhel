@@ -32,7 +32,7 @@ from convert2rhel.logger import colorize
 logger = logging.getLogger(__name__)
 
 #: The filename to store the results of running preassessment
-CONVERT2RHEL_JSON_RESULTS = "/etc/convert2rhel-assessment.json"
+CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-report.json"
 
 #: Map Status codes (from convert2rhel.actions.STATUS_CODE) to color name (from
 #: convert2rhel.logger.bcolor)
