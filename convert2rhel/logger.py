@@ -229,7 +229,6 @@ class CustomFormatter(logging.Formatter, object):
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
             self.datefmt = "%Y-%m-%dT%H:%M:%S:Z"
 
-
         if hasattr(self, "_style"):
             # Python 3 has _style for formatter
             # Overwriting the style _fmt gets the result we want

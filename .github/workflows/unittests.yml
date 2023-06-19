@@ -6,17 +6,17 @@ on:
   pull_request:
     branches: [ master ]
 
-jobs:        
+jobs:
   unit_tests_centos5:
     runs-on: ubuntu-latest
     container: centos:centos6
 
     steps:
     - uses: actions/checkout@v1
-        
+
     - name: Install packages
       run: yum install -y python-nose gnupg
-      
+
     - name: Run unit tests
       run: |
         ./run_unit_tests.sh
@@ -27,10 +27,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-        
+
     - name: Install packages
       run: yum install -y python-nose gnupg
-      
+
     - name: Run unit tests
       run: |
         ./run_unit_tests.sh
@@ -41,10 +41,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-        
+
     - name: Install packages
       run: yum install -y python-nose gnupg
-      
+
     - name: Run unit tests
       run: |
         ./run_unit_tests.sh
