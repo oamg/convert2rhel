@@ -30,7 +30,7 @@ _LONG_MESSAGE = "Will Robinson!  Will Robinson!  Danger Will Robinson...!  Pleas
 
 
 @pytest.mark.parametrize(
-    ("results",),
+    ("results", "expected"),
     (
         (
             {
@@ -41,10 +41,21 @@ _LONG_MESSAGE = "Will Robinson!  Will Robinson!  Danger Will Robinson...!  Pleas
                     ],
                 },
             },
+            {
+                "format_version": "1.0",
+                "actions": {
+                    "CONVERT2RHEL_LATEST_VERSION": {
+                        "result": dict(level="SUCCESS"),
+                        "messages": [
+                            dict(level="WARNING", id="WARNING_ONE", message="A warning message"),
+                        ],
+                    },
+                },
+            },
         ),
     ),
 )
-def test_summary_as_json(results, tmpdir):
+def test_summary_as_json(results, expected, tmpdir):
     """Test that the results that we're given are what is written to the json log file."""
     json_report_file = os.path.join(str(tmpdir), "c2r-assessment.json")
 
@@ -53,7 +64,7 @@ def test_summary_as_json(results, tmpdir):
     with open(json_report_file, "r") as f:
         file_contents = json.load(f)
 
-    assert file_contents == results
+    assert file_contents == expected
 
 
 @pytest.mark.parametrize(

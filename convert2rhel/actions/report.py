@@ -15,6 +15,7 @@
 
 __metaclass__ = type
 
+import copy
 import json
 import logging
 import textwrap
@@ -22,6 +23,7 @@ import textwrap
 from convert2rhel import utils
 from convert2rhel.actions import (
     _STATUS_HEADER,
+    _STATUS_NAME_FROM_CODE,
     find_actions_of_severity,
     format_action_status_message,
     level_for_combined_action_data,
@@ -32,7 +34,7 @@ from convert2rhel.logger import colorize
 logger = logging.getLogger(__name__)
 
 #: The filename to store the results of running preassessment
-CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-report.json"
+CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
 
 #: Map Status codes (from convert2rhel.actions.STATUS_CODE) to color name (from
 #: convert2rhel.logger.bcolor)
@@ -52,9 +54,39 @@ _STATUS_TO_COLOR = {
 
 
 def summary_as_json(results, json_file=CONVERT2RHEL_JSON_RESULTS):
-    """Output the results as a json_file."""
+    """
+    Output the results as a json_file.
+
+    :param results: The results from the Actions which have been run.
+    :type results: dict
+    :keyword json_file: Filename of a file to write the json results to.
+    :type json_file: str
+
+    The json output is a slight modification to the results data that is passed in:
+
+    * The outermost container is a dictionary.  The current two fields are:
+        :format_version: This is currently "1.0".  It will be increased
+            whenever the version changes.
+        :actions: This contains a modified copy of the results
+
+    * The results are modified so that status codes use their symbolic names
+      instead of the numeric values.
+    """
+    # Use an envelope so we can add other, non-result info if necessary.
+    envelope = {
+        "format_version": "1.0",
+        "actions": copy.deepcopy(results),
+    }
+
+    # Use the symbolic name in the json output
+    for action in envelope["actions"].values():
+        action["result"]["level"] = _STATUS_NAME_FROM_CODE[action["result"]["level"]]
+
+        for message in action["messages"]:
+            message["level"] = _STATUS_NAME_FROM_CODE[message["level"]]
+
     with open(json_file, "w") as f:
-        json.dump(results, f)
+        json.dump(envelope, f)
 
 
 def summary(results, include_all_reports=False, with_colors=True):
