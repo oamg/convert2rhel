@@ -120,7 +120,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         for pkg in original_os_pkgs:
             # Splitting the name and arch so we can filter it out in the list
             # of packages to upgrade.
-            name, arch = tuple(pkg.rsplit("."), 1)
+            name, arch = tuple(pkg.rsplit(".", 1))
             upgrade_pkg = next(iter(upgrades.filter(name=name, arch=arch)), None)
 
             # If a package is marked for update, then we don't need to
