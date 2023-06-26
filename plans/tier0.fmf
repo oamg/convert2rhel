@@ -7,7 +7,7 @@ description+: |
 /non-destructive:
     discover+:
         filter+:
-            'tag: non-destructive'
+            ['tier: 0', 'tag: non-destructive']
 
 /destructive:
     /conversion_methods:
@@ -20,7 +20,7 @@ description+: |
             prepare+:
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/activation_key.py
+                  script: pytest -svv tests/integration/*/destructive/method/activation_key.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -31,7 +31,7 @@ description+: |
             prepare+:
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/rhsm.py
+                  script: pytest -svv tests/integration/*/destructive/method/rhsm.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -47,7 +47,7 @@ description+: |
             prepare+:
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/rhsm_non_eus.py
+                  script: pytest -svv tests/integration/*/destructive/method/rhsm_non_eus.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -58,7 +58,7 @@ description+: |
             prepare+:
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/satellite.py
+                  script: pytest -svv tests/integration/*/destructive/method/satellite.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -72,7 +72,7 @@ description+: |
                   playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/custom_repos.py
+                  script: pytest -svv tests/integration/*/destructive/method/custom_repos.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -89,10 +89,10 @@ description+: |
             prepare+:
                 - name: install ntp package and remove one dependency
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -108,10 +108,10 @@ description+: |
             prepare+:
                 - name: install multilib packages with dnf
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/install_multilib_packages.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -126,10 +126,10 @@ description+: |
             prepare+:
                 - name: remove some pkgs from the excld pkgs config list
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_single_yum_transaction.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -140,7 +140,7 @@ description+: |
             prepare+:
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/single-yum-transaction/test_check_for_latest_packages.py
+                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_check_for_latest_packages.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -151,13 +151,13 @@ description+: |
             prepare+:
                   - name: enable extras repo for Oracle Linux
                     how: ansible
-                    playbook: tests/integration/destructive/yum-distro-sync/add-extras-repo/main.yml
+                    playbook: tests/integration/*/destructive/yum-distro-sync/add-extras-repo/main.yml
                   - name: install problematic package
                     how: shell
-                    script: pytest -svv tests/integration/destructive/yum-distro-sync/install_problematic_package.py
+                    script: pytest -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
                   - name: main conversion preparation
                     how: shell
-                    script: pytest -svv tests/integration/destructive/yum-distro-sync/test_yum_distro_sync.py
+                    script: pytest -svv tests/integration/*/destructive/yum-distro-sync/test_yum_distro_sync.py
                   - name: reboot after conversion
                     how: ansible
                     playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -168,10 +168,10 @@ description+: |
             prepare+:
                 - name: install dependency packages
                   how: shell
-                  script: pytest -svv tests/integration/destructive/resolve-dependency/install_dependency_packages.py
+                  script: pytest -svv tests/integration/*/destructive/resolve-dependency/install_dependency_packages.py
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/destructive/method/rhsm.py
+                  script: pytest -svv tests/integration/*/destructive/method/rhsm.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -191,10 +191,10 @@ description+: |
               playbook: tests/ansible_collections/roles/install-submgr/main.yml
             - name: allow access to Satellite only
               how: shell
-              script: pytest -svv tests/integration/destructive/convert-offline-systems/prepare_system.py
+              script: pytest -svv tests/integration/*/destructive/convert-offline-systems/prepare_system.py
             - name: run offline conversion using the satellite
               how: shell
-              script: pytest -svv tests/integration/destructive/convert-offline-systems/run_conversion.py
+              script: pytest -svv tests/integration/*/destructive/convert-offline-systems/run_conversion.py
             - name: reboot after conversion
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml

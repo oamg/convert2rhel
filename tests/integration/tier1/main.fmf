@@ -1,0 +1,9 @@
+summary+: |
+    Tier1 tests
+
+description+: |
+    Set of tests/plans of less frequency demands
+    for each merge commit to the main branch.
+
+
+tier: 1

@@ -1,7 +1,7 @@
 summary+: |
     Tier1 tests
 description+: |
-    Set of tests/plans of less importance to be run
+    Set of tests/plans of less frequency demands
     for each merge commit to the main branch.
 
 /changed_yum_conf:
@@ -10,7 +10,7 @@ description+: |
     prepare+:
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/changed-yum-conf/test_patch_yum_conf.py
+          script: pytest -svv tests/integration/*/destructive/changed-yum-conf/test_patch_yum_conf.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -27,7 +27,7 @@ description+: |
     prepare+:
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/remove-excld-pkgs/test_remove_excld_pkgs.py
+          script: pytest -svv tests/integration/*/destructive/remove-excld-pkgs/test_remove_excld_pkgs.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -43,7 +43,7 @@ description+: |
     prepare+:
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/remove-excld-pkgs/test_remove_excld_pkgs.py
+          script: pytest -svv tests/integration/*/destructive/remove-excld-pkgs/test_remove_excld_pkgs.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -61,13 +61,13 @@ description+: |
     prepare+:
         - name: test no sub manager installed
           how: shell
-          script: pytest -svv tests/integration/destructive/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
+          script: pytest -svv tests/integration/*/destructive/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
         - name: install subscription manager
           how: ansible
           playbook: tests/ansible_collections/roles/install-submgr/main.yml
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
+          script: pytest -svv tests/integration/*/destructive/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -86,19 +86,19 @@ description+: |
           playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
         - name: install one kernel
           how: shell
-          script: pytest -svv tests/integration/destructive/one-kernel-scenario/install_one_kernel.py
+          script: pytest -svv tests/integration/*/destructive/one-kernel-scenario/install_one_kernel.py
         - name: reboot machine
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: remove other kernels
           how: shell
-          script: pytest -svv tests/integration/destructive/one-kernel-scenario/remove_other_kernels.py
+          script: pytest -svv tests/integration/*/destructive/one-kernel-scenario/remove_other_kernels.py
         - name: reboot machine
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: run conversion
           how: shell
-          script: pytest -svv tests/integration/destructive/one-kernel-scenario/run_conversion.py
+          script: pytest -svv tests/integration/*/destructive/one-kernel-scenario/run_conversion.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -109,10 +109,10 @@ description+: |
     prepare+:
         - name: set non english locale
           how: shell
-          script: pytest -svv tests/integration/destructive/set-locale/use_non_english_language.py
+          script: pytest -svv tests/integration/*/destructive/set-locale/use_non_english_language.py
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/method/activation_key.py
+          script: pytest -svv tests/integration/*/destructive/method/activation_key.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -123,10 +123,10 @@ description+: |
     prepare+:
         - name: remove os-release
           how: shell
-          script: pytest -svv tests/integration/destructive/os-release-removal/remove_os_release.py
+          script: pytest -svv tests/integration/*/destructive/os-release-removal/remove_os_release.py
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/method/rhsm.py
+          script: pytest -svv tests/integration/*/destructive/method/rhsm.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -137,19 +137,19 @@ description+: |
     prepare+:
         - name: prepare non latest kernel
           how: shell
-          script: pytest -svv tests/integration/destructive/system-up-to-date/install_non_latest_kernel.py
+          script: pytest -svv tests/integration/*/destructive/system-up-to-date/install_non_latest_kernel.py
         - name: reboot machine
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: test inhibitor on non latest kernels
           how: shell
-          script: pytest -svv tests/integration/destructive/system-up-to-date/test_non_latest_kernel_inhibitor.py
+          script: pytest -svv tests/integration/*/destructive/system-up-to-date/test_non_latest_kernel_inhibitor.py
         - name: reboot machine
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: test conversion non updated package
           how: shell
-          script: pytest -svv tests/integration/destructive/system-up-to-date/test_system_up_to_date.py
+          script: pytest -svv tests/integration/*/destructive/system-up-to-date/test_system_up_to_date.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -164,10 +164,10 @@ description+: |
     prepare+:
         - name: install removed pkgs from CentOS 8.5
           how: ansible
-          playbook: tests/integration/destructive/removed-pkgs-centos-85/ansible/install_removed_pkgs_from_centos_85_repos.yml
+          playbook: tests/integration/*/destructive/removed-pkgs-centos-85/ansible/install_removed_pkgs_from_centos_85_repos.yml
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/removed-pkgs-centos-85/test_removed_pkgs_centos_85.py
+          script: pytest -svv tests/integration/*/destructive/removed-pkgs-centos-85/test_removed_pkgs_centos_85.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -178,7 +178,7 @@ description+: |
     prepare+:
         - name: modify /etc/default/grub with valid changes
           how: shell
-          script: pytest -svv tests/integration/destructive/changed-grub-file/test_valid_changed_grub.py
+          script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_valid_changed_grub.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -189,7 +189,7 @@ description+: |
     prepare+:
         - name: modify /etc/default/grub with invalid changes
           how: shell
-          script: pytest -svv tests/integration/destructive/changed-grub-file/test_invalid_changed_grub.py
+          script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_invalid_changed_grub.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -205,13 +205,13 @@ description+: |
     prepare+:
         - name: make sure the 'kernel-core' is the only installed kernel package
           how: shell
-          script: pytest -svv tests/integration/destructive/kernel-core-only/remove_kernel_pkg.py
+          script: pytest -svv tests/integration/*/destructive/kernel-core-only/remove_kernel_pkg.py
         - name: reboot after kernel remove
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/method/activation_key.py
+          script: pytest -svv tests/integration/*/destructive/method/activation_key.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -226,7 +226,7 @@ description+: |
     prepare+:
         - name: main conversion preparation
           how: shell
-          script: pytest -svv tests/integration/destructive/config-file/test_config_file.py
+          script: pytest -svv tests/integration/*/destructive/config-file/test_config_file.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -241,7 +241,7 @@ description+: |
     prepare+:
         - name: main conversion part
           how: shell
-          script: pytest -svv tests/integration/destructive/detect-bootloader-partition/test_detect_correct_boot_partition.py
+          script: pytest -svv tests/integration/*/destructive/detect-bootloader-partition/test_detect_correct_boot_partition.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -252,7 +252,7 @@ description+: |
     prepare+:
         - name: main conversion part
           how: shell
-          script: pytest -svv tests/integration/destructive/kernel-boot-files/test_handle_missing_boot_files.py
+          script: pytest -svv tests/integration/*/destructive/kernel-boot-files/test_handle_missing_boot_files.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -263,7 +263,7 @@ description+: |
     prepare+:
         - name: main conversion part
           how: shell
-          script: pytest -svv tests/integration/destructive/kernel-boot-files/test_handle_corrupted_files.py
+          script: pytest -svv tests/integration/*/destructive/kernel-boot-files/test_handle_corrupted_files.py
         - name: reboot after conversion
           how: ansible
           playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -288,7 +288,7 @@ description+: |
     prepare+:
         - name: prepare non latest kernel
           how: shell
-          script: pytest -svv tests/integration/destructive/system-up-to-date/install_non_latest_kernel.py
+          script: pytest -svv tests/integration/*/destructive/system-up-to-date/install_non_latest_kernel.py
         - name: add custom repos
           how: ansible
           playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
@@ -297,4 +297,4 @@ description+: |
           playbook: tests/ansible_collections/roles/reboot/main.yml
         - name: main conversion
           how: shell
-          script: pytest -svv tests/integration/destructive/kernel-check-skip/test_latest_kernel_check_skip.py
+          script: pytest -svv tests/integration/*/destructive/kernel-check-skip/test_latest_kernel_check_skip.py

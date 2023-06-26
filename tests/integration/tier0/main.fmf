@@ -1,0 +1,8 @@
+summary+: |
+    Tier0 tests
+
+description+: |
+    Critical set of tests/plans to be run for each upstream PR
+    before merge commit to the main branch.
+
+tier: 0
