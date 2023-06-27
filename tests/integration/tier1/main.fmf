@@ -2,8 +2,8 @@ summary+: |
     Tier1 tests
 
 description+: |
-    Set of tests/plans of less frequency demands
-    for each merge commit to the main branch.
+    Set of tests/plans of less frequency demands.
+    tier1 is run when the PR gets merged to the main branch.
 
 
 tier: 1

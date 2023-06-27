@@ -2,7 +2,7 @@ summary+: |
     Set of non-destructive tests
 
 description+: |
-    All tests in tier0 are non-destructive, meaning there is not a full conversion being done.
+    All tests are non-destructive, meaning there is not a full conversion being done.
     The latest point of verification for these tests is PONR (point of no return).
     The preparation and cleanup phase is implemented in the test itself.
 

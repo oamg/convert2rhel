@@ -151,7 +151,7 @@ description+: |
             prepare+:
                   - name: enable extras repo for Oracle Linux
                     how: ansible
-                    playbook: tests/integration/*/destructive/yum-distro-sync/add-extras-repo/main.yml
+                    playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                   - name: install problematic package
                     how: shell
                     script: pytest -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
