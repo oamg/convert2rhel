@@ -1,7 +1,7 @@
 import re
 import socket
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL, SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -51,10 +51,18 @@ def test_prepare_system(shell):
     shell("rm -rf /etc/yum.repos.d/*")
 
     # Subscribe system
+    if "centos-7" in SYSTEM_RELEASE_ENV:
+        satellite_key = env.str("SATELLITE_OFFLINE_KEY_CENTOS7")
+    elif "centos-8" in SYSTEM_RELEASE_ENV:
+        satellite_key = env.str("SATELLITE_OFFLINE_KEY_CENTOS8")
+    elif "oracle-7" in SYSTEM_RELEASE_ENV:
+        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ORACLE7")
+    elif "oracle-8" in SYSTEM_RELEASE_ENV:
+        satellite_key = env.str("SATELLITE_OFFLINE_KEY_ORACLE8")
     assert (
         shell(
             ("subscription-manager register --org={} --activationkey={}").format(
-                env.str("SATELLITE_ORG"), env.str("SATELLITE_KEY_CENTOS7")
+                env.str("SATELLITE_ORG"), satellite_key
             )
         ).returncode
         == 0
