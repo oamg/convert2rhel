@@ -34,7 +34,7 @@ jobs:
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 
-- &tests
+- &tests-tier0
   job: tests
   # Do not merge the PR into the target branch, in case the merge is broken
   # Given we are rebasing the source branches regularly, we do not need this feature enabled
@@ -59,19 +59,9 @@ jobs:
             tags:
               BusinessUnit: sst_conversions
 
-- &tier1
-  <<: *tests
+- &tests-tier1
+  <<: *tests-tier0
   identifier: "tier1"
   tmt_plan: "tier1"
-
-- &main-tier0
-  <<: *tests
   trigger: commit
   branch: main
-
-- &main-tier1
-  <<: *tests
-  trigger: commit
-  branch: main
-  identifier: "tier1"
-  tmt_plan: "tier1"

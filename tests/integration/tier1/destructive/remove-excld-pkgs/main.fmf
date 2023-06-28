@@ -1,0 +1,4 @@
+summary: Check removal of excld packages
+
+
+test: pytest -svv

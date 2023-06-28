@@ -1,0 +1,12 @@
+summary+: |
+    Destructive plans
+
+description+: |
+    Set of destructive plans performing full conversion.
+    Plan usually consist of a preparation phase preparing the system for the main test run.
+    The reboot is performed by using tmt-reboot function with help of TMT_REBOOT_COUNT environment variable.
+    After rebooting to RHEL a set of after conversion checks is run.
+    For some plans there might be some checks excluded.
+
+tag+:
+    - destructive

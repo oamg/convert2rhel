@@ -1,0 +1,10 @@
+summary: Verify Convert2RHEL can handle dependency pkgs
+description: |
+    This test will install a couple of packages that we know cause dependency
+    problems during the package replacement, so the intention of this is to
+    assert that Convert2RHEL can handle those packages and not fail during the
+    replacement, especially with the yum transaction.
+
+
+test: |
+  pytest -svv
