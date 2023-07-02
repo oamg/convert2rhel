@@ -6,12 +6,13 @@
 	images \
 	image7 \
 	image8 \
+	image9 \
 	tests \
 	tests7 \
 	tests8 \
+	tests9 \
 	lint \
 	lint-errors \
-	tests8 \
 	rpms \
 
 # Project constants
@@ -74,14 +75,16 @@ clean:
 	@find . -name '*.pyo' -exec rm -f {} +
 
 ifeq ($(BUILD_IMAGES), 1)
-images: .build-image-message .build-image7 .build-image8
+images: .build-image-message .build-image7 .build-image8 .build-image9
 image7: .build-image-message .build-image7
 image8: .build-image-message .build-image8
+image9: .build-image-message .build-image9
 IMAGE=$(IMAGE_ORG)/$(IMAGE_PREFIX)
 else
-images: .fetch-image-message .fetch-image7 .fetch-image8
+images: .fetch-image-message .fetch-image7 .fetch-image8 .fetch-image9
 image7: .fetch-image-message .fetch-image7
 image8: .fetch-image-message .fetch-image8
+image9: .fetch-image-message .fetch-image9
 IMAGE=$(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)
 endif
 
@@ -99,6 +102,9 @@ endif
 .fetch-image8:
 	@echo "Pulling $(IMAGE)-centos8"
 	@$(PODMAN) pull $(IMAGE)-centos8
+.fetch-image9:
+	@echo "Pulling $(IMAGE)-oracle9"
+	@$(PODMAN) pull $(IMAGE)-oracle9
 
 .build-image-message:
 	@echo "Building images"
@@ -108,11 +114,14 @@ endif
 .build-image8:
 	@$(PODMAN) build -f Containerfiles/centos8.Containerfile -t $(IMAGE)-centos8 .
 	touch $@
+.build-image9:
+	@$(PODMAN) build -f Containerfiles/oracle9.Containerfile -t $(IMAGE)-oracle9 .
+	touch $@
 
 lint: images
 	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "$(PYLINT) --rcfile=.pylintrc $(PYLINT_ARGS) convert2rhel/"
 
-tests: tests7 tests8
+tests: tests7 tests8 tests9
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
@@ -126,9 +135,14 @@ tests8: image8
 	@echo 'CentOS Linux 8 tests'
 	@$(call CONTAINER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
 
+tests9: image9
+	@echo 'Oracle Linux 9 tests'
+	@$(call CONTAINER_TEST_FUNC,oracle9,--show-capture=$(SHOW_CAPTURE))
+
 rpms:
 	mkdir -p .rpms
 	rm -frv .rpms/*
+	$(PODMAN) build -f Containerfiles/rpmbuild.oracle9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-oracle9rpmbuild .
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos7.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
@@ -138,6 +152,7 @@ rpms:
 copr-build: rpms
 	mkdir -p .srpms
 	rm -frv .srpms/*
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-oracle9rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.srpms .
 	$(PODMAN) rm $$($(PODMAN) ps -aq) -f

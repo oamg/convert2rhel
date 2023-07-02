@@ -15,6 +15,7 @@ jobs:
   targets:
   - epel-7-x86_64
   - epel-8-x86_64
+  - epel-9-x86_64
   actions:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
@@ -29,6 +30,7 @@ jobs:
   targets:
   - epel-7-x86_64
   - epel-8-x86_64
+  - epel-9-x86_64
   actions:
     # bump spec so we get release starting with 2 and hence all the default branch builds will
     # have higher NVR than all the PR builds
@@ -55,6 +57,9 @@ jobs:
         # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE_ENV to 8.7
         # to tag the updated system correctly
       distros: [centos-8-latest, oraclelinux-8.6]
+    epel-9-x86_64:
+      # TBD: so far it's just guessing of the distro strings
+      distros: [oraclelinux-9-latest, AlmaLinux-OS-9.2, rocky-linux-9.2]
   trigger: pull_request
   identifier: "tier0"
   tmt_plan: "tier0"

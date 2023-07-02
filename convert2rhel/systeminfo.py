@@ -38,6 +38,9 @@ CHECK_INTERNET_CONNECTION_ADDRESS = "https://static.redhat.com/test/rhel-network
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
 RELEASE_VER_MAPPING = {
+    "9.2": "9.2",
+    "9.1": "9.1",
+    "9.0": "9.0",
     "8.10": "8.10",
     "8.9": "8.9",
     "8.8": "8.8",
