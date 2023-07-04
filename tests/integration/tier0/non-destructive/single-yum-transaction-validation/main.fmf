@@ -42,3 +42,25 @@ tag+:
         - package-download-error
     test: |
         pytest -svv -m test_package_download_error
+
+
+/validating_packages_with_in_name_period:
+    enabled: false
+    adjust+:
+        - enabled: true
+          when: >
+            distro == oraclelinux-8, centos-8
+    summary+: |
+        Unhandled exception for packages with in name period
+    description+: |
+        This test verifies that packages with period in their name are parsed correctly.
+        1/ Install problematic packages with period in name using packages_with_period fixture.
+            E.g. python3.11-3.11.2-2.el8.x86_64 java-1.8.0-openjdk-headless-1.8.0.372.b07-4.el8.x86_64
+        2/ Run conversion and expect no issues with the transaction validation.
+            If there are issues with the Unhandled exception was caught: too many values to unpack (expected 2),
+            raise AssertionError.
+        3/ End the conversion at the Point of no return
+    tag+:
+        - validation-packages-with-in-name-period
+    test: |
+        pytest -svv -m test_validation_packages_with_in_name_period
