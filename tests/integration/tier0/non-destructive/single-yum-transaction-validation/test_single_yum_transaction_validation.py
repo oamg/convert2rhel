@@ -128,3 +128,64 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
         )
 
     assert c2r.exitstatus == 1
+
+
+@pytest.fixture
+def packages_with_period(shell):
+    """
+    Fixture.
+    Install problematic packages with period in name.
+    E.g. python3.11-3.11.2-2.el8.x86_64 java-1.8.0-openjdk-headless-1.8.0.372.b07-4.el8.x86_64
+    """
+    problematic_packages = ["python3.11-3.11.2-2.el8.x86_64", "java-1.8.0-openjdk-headless-1.8.0.372.b07-4.el8.x86_64"]
+    # We don't care for the telemetry, disable the collection to skip over the acknowledgement
+    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
+
+    # Install packages with in name period
+    for package in problematic_packages:
+        shell(f"yum install -y {package}")
+
+    yield
+
+    # Remove problematic packages
+    for package in problematic_packages:
+        shell(f"yum remove -y {package}")
+
+    # Remove the envar
+    del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
+
+
+@pytest.mark.test_validation_packages_with_in_name_period
+def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_with_period):
+    """
+    This test verifies that packages with period in their name are parsed correctly.
+        1/ Install problematic packages with period in name using packages_with_period fixture.
+            E.g. python3.11-3.11.2-2.el8.x86_64 java-1.8.0-openjdk-headless-1.8.0.372.b07-4.el8.x86_64
+        2/ Run conversion and expect no issues with the transaction validation.
+            If there are issues with the Unhandled exception was caught: too many values to unpack (expected 2),
+            raise AssertionError.
+        3/ End the conversion at the Point of no return
+    """
+
+    with convert2rhel(
+        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        c2r_expect_index = c2r.expect(
+            [
+                "No problems detected during the analysis!",
+                "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNEXPECTED_ERROR: Unhandled exception was caught: too many values to unpack (expected 2)",
+            ]
+        )
+
+        if c2r_expect_index == 0:
+            c2r.expect("Continue with the system conversion")
+            c2r.sendline("n")
+        elif c2r_expect_index == 1:
+            assert AssertionError
+
+    assert c2r.exitstatus != 0
