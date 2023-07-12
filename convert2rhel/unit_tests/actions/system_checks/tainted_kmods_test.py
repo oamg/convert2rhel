@@ -59,8 +59,8 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
         tainted_kmods_action.run()
         unit_tests.assert_actions_result(
             tainted_kmods_action,
-            status="ERROR",
-            error_id="TAINTED_KMODS_DETECTED",
+            level="ERROR",
+            id="TAINTED_KMODS_DETECTED",
             message="Tainted kernel modules detected:\n  system76_io\n",
         )
 

@@ -52,8 +52,8 @@ class ReadonlyMountMnt(actions.Action):
 
         if readonly_mount_detection("/mnt"):
             self.set_result(
-                status="ERROR",
-                error_id="MNT_DIR_READONLY_MOUNT",
+                level="ERROR",
+                id="MNT_DIR_READONLY_MOUNT",
                 message=(
                     "Stopping conversion due to read-only mount to /mnt directory.\n"
                     "Mount at a subdirectory of /mnt to have /mnt writeable."
@@ -70,8 +70,8 @@ class ReadonlyMountSys(actions.Action):
 
         if readonly_mount_detection("/sys"):
             self.set_result(
-                status="ERROR",
-                error_id="SYS_DIR_READONLY_MOUNT",
+                level="ERROR",
+                id="SYS_DIR_READONLY_MOUNT",
                 message=(
                     "Stopping conversion due to read-only mount to /sys directory.\n"
                     "Ensure mount point is writable before executing convert2rhel."

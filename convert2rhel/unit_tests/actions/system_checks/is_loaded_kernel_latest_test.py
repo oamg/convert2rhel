@@ -125,18 +125,18 @@ class TestIsLoadedKernelLatest:
 
         repoquery_kernel_version = repoquery_version.split("\t")[2]
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert is_loaded_kernel_latest_action.error_id == "INVALID_KERNEL_VERSION"
-        assert is_loaded_kernel_latest_action.status == actions.STATUS_CODE["ERROR"]
+        assert is_loaded_kernel_latest_action.result.id == "INVALID_KERNEL_VERSION"
+        assert is_loaded_kernel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
         assert (
             "The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
             % fake_reposdir_path
-            in is_loaded_kernel_latest_action.message
+            in is_loaded_kernel_latest_action.result.message
         )
         assert (
             "Latest kernel version available in baseos: %s\n" % repoquery_kernel_version
-            in is_loaded_kernel_latest_action.message
+            in is_loaded_kernel_latest_action.result.message
         )
-        assert "Loaded kernel version: %s\n" % uname_kernel_version in is_loaded_kernel_latest_action.message
+        assert "Loaded kernel version: %s\n" % uname_kernel_version in is_loaded_kernel_latest_action.result.message
 
     @pytest.mark.parametrize(
         ("repoquery_version", "uname_version", "return_code", "package_name", "expected"),
@@ -202,8 +202,8 @@ class TestIsLoadedKernelLatest:
 
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
-            status="ERROR",
-            error_id="INVALID_KERNEL_PACKAGE",
+            level="ERROR",
+            id="INVALID_KERNEL_PACKAGE",
             message=expected,
         )
 
@@ -271,8 +271,8 @@ class TestIsLoadedKernelLatest:
 
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
-            status="ERROR",
-            error_id="INVALID_KERNEL_PACKAGE",
+            level="ERROR",
+            id="INVALID_KERNEL_PACKAGE",
             message=expected,
         )
 
@@ -458,7 +458,7 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action.run()
         expected = expected.format(package_name)
         unit_tests.assert_actions_result(
-            is_loaded_kernel_latest_action, status="ERROR", error_id="KERNEL_CURRENCY_CHECK_FAIL", message=expected
+            is_loaded_kernel_latest_action, level="ERROR", id="KERNEL_CURRENCY_CHECK_FAIL", message=expected
         )
 
     @pytest.mark.parametrize(
@@ -617,10 +617,10 @@ class TestIsLoadedKernelLatest:
 
         repoquery_kernel_version = repoquery_version.split("\t")[2]
         uname_kernel_version = uname_version.rsplit(".", 1)[0]
-        assert is_loaded_kernel_latest_action.error_id == "INVALID_KERNEL_VERSION"
-        assert is_loaded_kernel_latest_action.status == actions.STATUS_CODE["ERROR"]
+        assert is_loaded_kernel_latest_action.result.id == "INVALID_KERNEL_VERSION"
+        assert is_loaded_kernel_latest_action.result.level == actions.STATUS_CODE["ERROR"]
         assert (
             "Latest kernel version available in baseos: %s" % repoquery_kernel_version
-            in is_loaded_kernel_latest_action.message
+            in is_loaded_kernel_latest_action.result.message
         )
-        assert "Loaded kernel version: %s\n\n" % uname_kernel_version in is_loaded_kernel_latest_action.message
+        assert "Loaded kernel version: %s\n\n" % uname_kernel_version in is_loaded_kernel_latest_action.result.message

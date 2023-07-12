@@ -43,11 +43,11 @@ class TestEFIChecks(unittest.TestCase):
             self.assertIn("BIOS detected.", efi.logger.info_msgs)
             self.assertNotIn("UEFI detected.", efi.logger.info_msgs)
 
-    def _check_efi_critical(self, error_id, critical_msg):
+    def _check_efi_critical(self, id, critical_msg):
         self.efi_action.run()
-        self.assertEqual(self.efi_action.status, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.efi_action.error_id, error_id)
-        self.assertEqual(self.efi_action.message, critical_msg)
+        self.assertEqual(self.efi_action.result.level, actions.STATUS_CODE["ERROR"])
+        self.assertEqual(self.efi_action.result.id, id)
+        self.assertEqual(self.efi_action.result.message, critical_msg)
         self._check_efi_detection_log(True)
 
     @unit_tests.mock(grub, "is_efi", lambda: True)

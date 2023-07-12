@@ -55,7 +55,7 @@ def test_pre_subscription_no_rhsm_option_detected(pre_subscription_instance, mon
     pre_subscription_instance.run()
 
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
-    assert pre_subscription_instance.status == STATUS_CODE["SUCCESS"]
+    assert pre_subscription_instance.result.level == STATUS_CODE["SUCCESS"]
 
 
 def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
@@ -67,7 +67,7 @@ def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
 
     pre_subscription_instance.run()
 
-    assert pre_subscription_instance.status == STATUS_CODE["SUCCESS"]
+    assert pre_subscription_instance.result.level == STATUS_CODE["SUCCESS"]
     assert pkghandler.install_gpg_keys.call_count == 1
     assert subscription.download_rhsm_pkgs.call_count == 1
     assert subscription.replace_subscription_manager.call_count == 1
@@ -75,13 +75,13 @@ def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("exception", "expected_status"),
+    ("exception", "expected_level"),
     (
         (SystemExit("Exiting..."), ("ERROR", "UNKNOWN_ERROR", "Exiting...")),
         (subscription.UnregisterError, ("ERROR", "UNABLE_TO_REGISTER", "Failed to unregister the system:")),
     ),
 )
-def test_pre_subscription_exceptions(exception, expected_status, pre_subscription_instance, monkeypatch):
+def test_pre_subscription_exceptions(exception, expected_level, pre_subscription_instance, monkeypatch):
     # In the actual code, the exceptions can happen at different stages, but
     # since it is a unit test, it doesn't matter what function will raise the
     # exception we want.
@@ -89,8 +89,8 @@ def test_pre_subscription_exceptions(exception, expected_status, pre_subscriptio
 
     pre_subscription_instance.run()
 
-    status, error_id, message = expected_status
-    unit_tests.assert_actions_result(pre_subscription_instance, status=status, error_id=error_id, message=message)
+    level, id, message = expected_level
+    unit_tests.assert_actions_result(pre_subscription_instance, level=level, id=id, message=message)
 
 
 @pytest.fixture
@@ -113,7 +113,7 @@ def test_subscribe_system_no_rhsm_option_detected(subscribe_system_instance, mon
     subscribe_system_instance.run()
 
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
-    assert subscribe_system_instance.status == STATUS_CODE["SUCCESS"]
+    assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
 
 
 def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
@@ -125,7 +125,7 @@ def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
 
     subscribe_system_instance.run()
 
-    assert subscribe_system_instance.status == STATUS_CODE["SUCCESS"]
+    assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
     assert subscription.subscribe_system.call_count == 1
     assert repo.get_rhel_repoids.call_count == 1
     assert subscription.check_needed_repos_availability.call_count == 1
@@ -134,7 +134,7 @@ def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("exception", "expected_status"),
+    ("exception", "expected_level"),
     (
         (IOError("/usr/bin/t"), ("ERROR", "MISSING_SUBSCRIPTION_MANAGER_BINARY", "Failed to execute command:")),
         (SystemExit("Exiting..."), ("ERROR", "UNKNOWN_ERROR", "Exiting...")),
@@ -148,7 +148,7 @@ def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
         ),
     ),
 )
-def test_subscribe_system_exceptions(exception, expected_status, subscribe_system_instance, monkeypatch):
+def test_subscribe_system_exceptions(exception, expected_level, subscribe_system_instance, monkeypatch):
     # In the actual code, the exceptions can happen at different stages, but
     # since it is a unit test, it doesn't matter what function will raise the
     # exception we want.
@@ -156,5 +156,5 @@ def test_subscribe_system_exceptions(exception, expected_status, subscribe_syste
 
     subscribe_system_instance.run()
 
-    status, error_id, message = expected_status
-    unit_tests.assert_actions_result(subscribe_system_instance, status=status, error_id=error_id, message=message)
+    level, id, message = expected_level
+    unit_tests.assert_actions_result(subscribe_system_instance, level=level, id=id, message=message)

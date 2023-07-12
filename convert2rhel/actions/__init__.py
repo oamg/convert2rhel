@@ -22,6 +22,7 @@ import importlib
 import itertools
 import logging
 import pkgutil
+import re
 import traceback
 
 from functools import wraps
@@ -37,13 +38,13 @@ logger = logging.getLogger(__name__)
 #: Status code of an Action.
 #:
 #: When an action completes, it may have succeeded or failed.  We set the
-#: `Action.status` attribute to one of the following values so that we know
-#: what happened.  This mapping lets us use a symbolic name for the status
+#: `Action.level` attribute to one of the following values so that we know
+#: what happened.  This mapping lets us use a symbolic name for the level
 #: for readability but that is mapped to a specific integer for consumption
 #: by other tools.
 #:
 #: .. note:: At the moment, we only make use of SUCCESS and ERROR.  Other
-#:      statuses may be used in future releases as we refine this system
+#:      levels may be used in future releases as we refine this system
 #:      and start to use it with console.redhat.com
 #:
 #: :SUCCESS: no problem.
@@ -59,10 +60,10 @@ logger = logging.getLogger(__name__)
 #:      tests can be run.
 #:
 #: .. warning::
-#:      * Do not change the numeric value of these statuses once they
+#:      * Do not change the numeric value of these levels once they
 #:        have been in a public release as external tools may be depending on
 #:        the value.
-#:      * Actions should not set a status to ``SKIP``.  The code which
+#:      * Actions should not set a level to ``SKIP``.  The code which
 #:        runs the Actions will set this.
 STATUS_CODE = {
     "SUCCESS": 0,
@@ -102,8 +103,8 @@ def _action_defaults_to_success(func):
     def wrapper(self, *args, **kwargs):
         return_value = func(self, *args, **kwargs)
 
-        if self.status is None:
-            self.status = STATUS_CODE["SUCCESS"]
+        if self.result is None:
+            self.result = ActionResult("SUCCESS")
 
         return return_value
 
@@ -116,6 +117,10 @@ _NO_USER_VALUE = object()
 
 class ActionError(Exception):
     """Raised for errors related to the Action framework."""
+
+
+class InvalidMessageError(ActionError):
+    """Raised when invalid parameters are passed to set_result() or add_message()."""
 
 
 class DependencyError(ActionError):
@@ -137,7 +142,7 @@ class DependencyError(ActionError):
         self.resolved_actions = kwargs.pop("resolved_actions", [])
 
 
-#: Contains Actions which have run, separated into categories by status.
+#: Contains Actions which have run, separated into categories by level.
 #:
 #: :param successes: Actions which have run successfully
 #: :type: Sequence
@@ -183,10 +188,9 @@ class Action:
         They represent whether the Change succeeded or failed and if it failed,
         gives useful information to the user.
         """
-        self.status = None
-        self.message = None
-        self.error_id = None
         self._has_run = False
+        self._result = None
+        self.messages = []
 
     @_action_defaults_to_success
     @abc.abstractmethod
@@ -194,9 +198,8 @@ class Action:
         """
         The method that performs the action.
 
-        .. note:: This method should set :attr:`status`, :attr:`message`, and
-            attr:`error_id` before returning.  The @action_defaults_to_success
-            decorator takes care of setting a default success status but you
+        .. note:: This method should set self.result before returning.  The @action_defaults_to_success
+            decorator takes care of setting a default success level but you
             can either add more information (for instance, a message to
             display to the user) or make additional changes to return an error
             instead.
@@ -206,25 +209,128 @@ class Action:
 
         self._has_run = True
 
-    def set_result(self, status=_NO_USER_VALUE, error_id=_NO_USER_VALUE, message=_NO_USER_VALUE):
+    @property
+    def result(self):
         """
-        Helper method that sets the resulting values for status, error_id and message.
+        Once the :class:`Action` is run, this holds the `result`.  The result is an :class:`ActionResult`
+        which holds information of whether the Action succeeded or failed and why.
+        """
+        return self._result
 
-        :param status: The status to be set.
-        :type: status: str
-        :param error_id: The error_id to identify the error.
-        :type error_id: str
+    @result.setter
+    def result(self, action_message):
+        """
+        Make sure the correct policy for result messages is used.
+        """
+        if not isinstance(action_message, ActionResult):
+            raise TypeError()
+
+        self._result = action_message
+
+    def set_result(self, level, id=None, message=None):
+        """
+        Helper method that sets the resulting values for level, id and message.
+
+        :param id: The id to identify the result.
+        :type id: str
+        :param level: The status_code of the result .
+        :type: level: str
         :param message: The message to be set.
         :type message: str | None
         """
-        if status != _NO_USER_VALUE:
-            self.status = STATUS_CODE[status]
+        if level not in ("ERROR", "OVERRIDABLE", "SKIP", "SUCCESS"):
+            raise KeyError("The level of result must be FAILURE, OVERRIDABLE, SKIP, or SUCCESS.")
 
-        if error_id != _NO_USER_VALUE:
-            self.error_id = error_id
+        self.result = ActionResult(level, id, message)
 
-        if message != _NO_USER_VALUE:
-            self.message = message
+    def add_message(self, level, id=None, message=None):
+        """
+        Helper method that adds a new informational message to display to the user.
+        The passed in values for level, id and message of a warning or info log message are
+        saved in an :class:`ActionMessage` which is appended to ``self.messages``
+
+        :param id: The id to identify the message.
+        :type id: str
+        :param level: The level to be set.
+        :type: level: str
+        :param message: The message to be set.
+        :type message: str | None
+        """
+        msg = ActionMessage(level, id, message)
+        self.messages.append(msg)
+
+
+class ActionMessageBase:
+    """
+    Parent class for setting message and result variables and returning
+    those values in a dictionary format
+
+    :keyword id: The id to identify the message.
+    :type id: str
+    :keyword level: The level to be set, defaulting to SUCCESS.
+    :type: level: str
+    :keyword message: The message to be set.
+    :type message: str | None
+    """
+
+    def __init__(self, level="SUCCESS", id=None, message=""):
+        self.id = id
+        self.level = STATUS_CODE[level]
+        self.message = message
+
+    def to_dict(self):
+        """
+        Returns a dictionary representation of the :class:`ActionMessageBase`.
+        :returns: The attributes of :class:`ActionBase` expressed as a dictionary
+        :rtype: dict
+        """
+        return {
+            "id": self.id,
+            "level": self.level,
+            "message": self.message,
+        }
+
+
+class ActionMessage(ActionMessageBase):
+    """
+    A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
+    """
+
+    def __init__(self, level=None, id=None, message=None):
+        if not (id and level and message):
+            raise InvalidMessageError("Messages require id, level and message fields")
+
+        # None of the result status codes are legal as a message.  So we error if any
+        # of them were given here.
+        if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
+            raise InvalidMessageError("Invalid level '%s', set for a non-result message" % level)
+
+        super(ActionMessage, self).__init__(level, id, message)
+
+
+class ActionResult(ActionMessageBase):
+    """
+    A class that defines content and rules for messages set through :meth:`Action.set_result`.
+    """
+
+    def __init__(self, level="SUCCESS", id=None, message=""):
+
+        if STATUS_CODE[level] >= STATUS_CODE["SKIP"]:
+            if not id and not message:
+                raise InvalidMessageError("Non-success results require an id and a message")
+
+            if not id:
+                raise InvalidMessageError("Non-success results require an id")
+
+            if not message:
+                raise InvalidMessageError("Non-success results require a message")
+
+        elif STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]:
+            raise InvalidMessageError(
+                "Invalid level '%s', the level for result must be SKIP or more fatal or SUCCESS." % level
+            )
+
+        super(ActionResult, self).__init__(level, id, message)
 
 
 def get_actions(actions_path, prefix):
@@ -250,7 +356,7 @@ def get_actions(actions_path, prefix):
                                      system_checks.__name__ + ".")
         for action in resolve_action_order(action_classes):
             action.run()
-            if action.status = STATUS_CODE["SUCCESS"]:
+            if action.level == STATUS_CODE["SUCCESS"]:
                 successful_actions.append(action)
             else:
                 failed_actions.append(action)
@@ -345,7 +451,7 @@ class Stage:
             in addition to any that were run in this :class`Stage`.
 
         :rtype: FinishedActions
-        .. important:: Success is currently defined as an action whose status after
+        .. important:: Success is currently defined as an action whose level after
             running is WARNING or better (WARNING or SUCCESS) and
             failure as worse than WARNING (OVERRIDABLE, ERROR)
         """
@@ -382,7 +488,7 @@ class Stage:
                     to_be,
                 )
 
-                action.set_result(status="SKIP", error_id="SKIP", message=message)
+                action.set_result(level="SKIP", id="SKIP", message=message)
                 skips.append(action)
                 failed_action_ids.add(action.id)
                 logger.error("Skipped %s. %s" % (action.id, message))
@@ -400,15 +506,17 @@ class Stage:
                     " fixed or a specific error message added.\n"
                     "Traceback: %s" % (e, traceback.format_exc())
                 )
-                action.set_result(status="ERROR", error_id="UNEXPECTED_ERROR", message=message)
+                action.set_result(level="ERROR", id="UNEXPECTED_ERROR", message=message)
 
             # Categorize the results
-            if action.status <= STATUS_CODE["WARNING"]:
+            if action.result.level <= STATUS_CODE["WARNING"]:
                 logger.info("%s has succeeded" % action.id)
                 successes.append(action)
 
-            if action.status > STATUS_CODE["WARNING"]:
-                message = format_action_status_message(action.status, action.id, action.error_id, action.message)
+            if action.result.level > STATUS_CODE["WARNING"]:
+                message = format_action_status_message(
+                    action.result.level, action.id, action.result.id, action.result.message
+                )
                 logger.error(message)
                 failures.append(action)
                 failed_action_ids.add(action.id)
@@ -433,13 +541,10 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
         an Action.
     :returns: Iterator of Actions sorted so that all dependent Actions are run
         before actions which depend on them.
-
     .. note::
-
         * The sort is stable but not predictable. The order will be the same
           as long as the Actions given has not changed but adding or
           subtracting Actions or dependencies can alter the order a lot.
-
         * The returned actions do not include ``previously_resolved_actions``.
           It is up to the caller to processs those before the actions returned
           by this function.
@@ -540,23 +645,46 @@ def run_actions():
     results = system_checks.run()
 
     # Format results as a dictionary:
-    # {"$Action_id": {"status": int,
-    #                 "error_id": "$error_id",
-    #                 "message": "" or "$message"},
+    # {
+    #     "$Action_id": {
+    #         "messages": [
+    #             {
+    #                 "level": int,
+    #                 "id": "$id",
+    #                 "message": "" or "$message"
+    #             },
+    #         ]
+    #         "result": {
+    #             "level": int,
+    #             "id": "$id",
+    #             "message": "" or "$message"
+    #         },
+    #     },
     # }
     formatted_results = {}
     for action in itertools.chain(*results):
-        formatted_results[action.id] = {"status": action.status, "error_id": action.error_id, "message": action.message}
+        msgs = [msg.to_dict() for msg in action.messages]
+        formatted_results[action.id] = {"messages": msgs, "result": action.result.to_dict()}
     return formatted_results
 
 
-def find_actions_of_severity(results, severity):
+def level_for_raw_action_data(message):
+    return message["result"]["level"]
+
+
+def level_for_combined_action_data(message):
+    return message["level"]
+
+
+def find_actions_of_severity(results, severity, key):
     """
     Filter results from :func:`run_actions` to include only results of ``severity`` or higher.
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
     :param severity: The name of a ``STATUS_CODE`` for the severity to filter to.
+    :param key: A key function to return the level from one entry in results
+    :type key: callable
     :returns: List of actions which are at ``severity`` or higher result. Empty list
         if there were no failures.
     :rtype: Sequence
@@ -567,34 +695,33 @@ def find_actions_of_severity(results, severity):
         # matched_actions will contain all actions which were skipped
         # or failed while running.
     """
-    matched_actions = [action for action in results.items() if action[1]["status"] >= STATUS_CODE[severity]]
-
+    matched_actions = [message for message in results.items() if key(message[1]) >= STATUS_CODE[severity]]
     return matched_actions
 
 
-def format_action_status_message(status_code, action_id, error_id, message):
+def format_action_status_message(status_code, action_id, id, message):
     """Helper function to format a message about each Action result.
 
     :param status_code: The status code that will be used in the template.
     :type status_code: int
     :param action_id: Action id for the message
     :type action_id: str
-    :param error_id: Error id associated with the action
-    :type error_id: str
+    :param id: Error id associated with the action
+    :type id: str
     :param message: The message that was produced in the action
     :type message: str
 
     :return: The formatted message that will be logged to the user.
     :rtype: str
     """
-    status_name = _STATUS_NAME_FROM_CODE[status_code]
-    template = "({STATUS}) {ACTION_ID}"
-    # `error_id` and `message` may not be present everytime, since it
+    level_name = _STATUS_NAME_FROM_CODE[status_code]
+    template = "({LEVEL}) {ACTION_ID}"
+    # `id` and `message` may not be present everytime, since it
     # can be empty (either by mistake, or, intended), we only want to
     # apply these fields if they are present, with a special mention to
     # `message`.
-    if error_id:
-        template += ".{ERROR_ID}"
+    if id:
+        template += ".{ID}"
 
     # Special case for `message` to not output empty message to the
     # user without message.
@@ -604,8 +731,8 @@ def format_action_status_message(status_code, action_id, error_id, message):
         template += ": [No further information given]"
 
     return template.format(
-        STATUS=status_name,
+        LEVEL=level_name,
         ACTION_ID=action_id,
-        ERROR_ID=error_id,
+        ID=id,
         MESSAGE=message,
     )

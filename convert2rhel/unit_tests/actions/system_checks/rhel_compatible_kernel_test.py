@@ -77,8 +77,8 @@ def test_check_rhel_compatible_kernel_is_used(
     if any_of_the_subchecks_is_true:
         unit_tests.assert_actions_result(
             rhel_compatible_kernel_action,
-            status="ERROR",
-            error_id="BOOTED_KERNEL_INCOMPATIBLE",
+            level="ERROR",
+            id="BOOTED_KERNEL_INCOMPATIBLE",
             message=(
                 "The booted kernel version is incompatible with the standard RHEL kernel. "
                 "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"

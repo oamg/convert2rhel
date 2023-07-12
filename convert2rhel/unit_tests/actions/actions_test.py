@@ -30,7 +30,8 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 from convert2rhel import actions
-from convert2rhel.actions import STATUS_CODE
+from convert2rhel.actions import STATUS_CODE, ActionMessage, ActionMessageBase, ActionResult, InvalidMessageError
+from convert2rhel.main import level_for_raw_action_data
 
 
 class _ActionForTesting(actions.Action):
@@ -40,6 +41,7 @@ class _ActionForTesting(actions.Action):
 
     def __init__(self, **kwargs):
         super(_ActionForTesting, self).__init__()
+
         for attr_name, attr_value in kwargs.items():
             setattr(self, attr_name, attr_value)
 
@@ -56,50 +58,46 @@ class TestAction:
         (
             # Set one result field
             (
-                dict(status="ERROR"),
-                dict(status=actions.STATUS_CODE["ERROR"], error_id=None, message=None),
+                dict(level="SUCCESS"),
+                dict(level="SUCCESS", id=None, message=None),
             ),
             (
-                dict(error_id="NOTWELLEXPLAINEDERROR"),
-                dict(status=actions.STATUS_CODE["SUCCESS"], error_id="NOTWELLEXPLAINEDERROR", message=None),
-            ),
-            (
-                dict(message="Check was skipped because CONVERT2RHEL_SKIP_CHECK was set"),
+                dict(level="SUCCESS", message="Check was skipped because CONVERT2RHEL_SKIP_CHECK was set"),
                 dict(
-                    status=actions.STATUS_CODE["SUCCESS"],
-                    error_id=None,
+                    level="SUCCESS",
+                    id=None,
                     message="Check was skipped because CONVERT2RHEL_SKIP_CHECK was set",
                 ),
             ),
             # Set all result fields
             (
-                dict(status="ERROR", error_id="ERRORCASE", message="Problem detected"),
-                dict(status=actions.STATUS_CODE["ERROR"], error_id="ERRORCASE", message="Problem detected"),
+                dict(level="ERROR", id="ERRORCASE", message="Problem detected"),
+                dict(level="ERROR", id="ERRORCASE", message="Problem detected"),
             ),
         ),
     )
     def test_set_results_successful(self, set_result_params, expected):
         action = _ActionForTesting(id="TestAction")
-
-        action.set_result(**set_result_params)
+        level = set_result_params.pop("level")
+        action.set_result(level, **set_result_params)
         action.run()
 
-        assert action.status == expected["status"]
-        assert action.error_id == expected["error_id"]
-        assert action.message == expected["message"]
+        assert action.result.level == STATUS_CODE[expected["level"]]
+        assert action.result.id == expected["id"]
+        assert action.result.message == expected["message"]
 
     @pytest.mark.parametrize(
-        ("status",),
+        ("level",),
         (
             ("FOOBAR",),
             (actions.STATUS_CODE["ERROR"],),
         ),
     )
-    def test_set_results_bad_status(self, status):
+    def test_set_results_bad_level(self, level):
         action = _ActionForTesting(id="TestAction")
 
         with pytest.raises(KeyError):
-            action.set_result(status=status)
+            action.set_result(level=level)
 
     def test_no_duplicate_ids(self):
         """Test that each Action has its own unique id."""
@@ -123,6 +121,19 @@ class TestAction:
 
         with pytest.raises(actions.ActionError, match="Action TestAction has already run"):
             action.run()
+
+    def test_add_message(self, monkeypatch):
+        """Test that add_message formats messages correctly"""
+        action = _ActionForTesting(id="TestAction")
+        action.add_message(level="WARNING", id="WARNING_ID", message="warning message 1")
+        action.add_message(level="WARNING", id="WARNING_ID", message="warning message 2")
+        actual_messages = []
+        for msg in action.messages:
+            actual_messages.append(msg.to_dict())
+        assert actual_messages == [
+            {"level": STATUS_CODE["WARNING"], "id": "WARNING_ID", "message": "warning message 1"},
+            {"level": STATUS_CODE["WARNING"], "id": "WARNING_ID", "message": "warning message 2"},
+        ]
 
 
 class TestGetActions:
@@ -270,7 +281,7 @@ class TestStage:
                 ("good_deps1",),
                 (("REALTEST", "SECONDTEST", "THIRDTEST", "FOURTHTEST"), (), ()),
             ),
-            # Test that all action statuses are categorized correctly
+            # Test that all action levels are categorized correctly
             (
                 ("all_status_actions",),
                 (
@@ -318,8 +329,14 @@ class TestResolveActionOrder:
         (
             ([], []),
             ([_ActionForTesting(id="One")], ["One"]),
-            ([_ActionForTesting(id="One"), _ActionForTesting(id="Two", dependencies=("One",))], ["One", "Two"]),
-            ([_ActionForTesting(id="Two"), _ActionForTesting(id="One", dependencies=("Two",))], ["Two", "One"]),
+            (
+                [_ActionForTesting(id="One"), _ActionForTesting(id="Two", dependencies=("One",))],
+                ["One", "Two"],
+            ),
+            (
+                [_ActionForTesting(id="Two"), _ActionForTesting(id="One", dependencies=("Two",))],
+                ["Two", "One"],
+            ),
             (
                 [
                     _ActionForTesting(id="One"),
@@ -641,37 +658,23 @@ class TestRunActions:
             (
                 actions.FinishedActions(
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["SUCCESS"]),
+                        _ActionForTesting(id="One", messages=[], result=ActionResult(level="SUCCESS")),
                     ],
                     [],
                     [],
                 ),
-                {
-                    "One": {"error_id": None, "message": None, "status": STATUS_CODE["SUCCESS"]},
-                },
+                {"One": dict(messages=[], result=dict(level=STATUS_CODE["SUCCESS"], id=None, message=""))},
             ),
             (
                 actions.FinishedActions(
                     [
                         _ActionForTesting(
-                            id="One", status=STATUS_CODE["WARNING"], error_id="DANGER", message="Warned about danger"
+                            id="One", messages=[], result=ActionResult(level="SUCCESS"), dependencies=("One",)
                         ),
-                    ],
-                    [],
-                    [],
-                ),
-                {
-                    "One": {"error_id": "DANGER", "message": "Warned about danger", "status": STATUS_CODE["WARNING"]},
-                },
-            ),
-            (
-                actions.FinishedActions(
-                    [
-                        _ActionForTesting(id="One", status=STATUS_CODE["WARNING"]),
-                        _ActionForTesting(id="Two", status=STATUS_CODE["SUCCESS"], dependencies=("One",)),
                         _ActionForTesting(
-                            id="Three",
-                            status=STATUS_CODE["SUCCESS"],
+                            id="Two",
+                            messages=[],
+                            result=ActionResult(level="SUCCESS"),
                             dependencies=(
                                 "One",
                                 "Two",
@@ -682,9 +685,8 @@ class TestRunActions:
                     [],
                 ),
                 {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["WARNING"]),
-                    "Two": dict(error_id=None, message=None, status=STATUS_CODE["SUCCESS"]),
-                    "Three": dict(error_id=None, message=None, status=STATUS_CODE["SUCCESS"]),
+                    "One": dict(messages=[], result=dict(level=STATUS_CODE["SUCCESS"], id=None, message="")),
+                    "Two": dict(messages=[], result=dict(level=STATUS_CODE["SUCCESS"], id=None, message="")),
                 },
             ),
             # Single Failures
@@ -692,24 +694,36 @@ class TestRunActions:
                 actions.FinishedActions(
                     [],
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["ERROR"]),
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(level="ERROR", id="SOME_ERROR", message="message"),
+                        ),
                     ],
                     [],
                 ),
                 {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["ERROR"]),
+                    "One": dict(
+                        messages=[], result=dict(level=STATUS_CODE["ERROR"], id="SOME_ERROR", message="message")
+                    ),
                 },
             ),
             (
                 actions.FinishedActions(
                     [],
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["OVERRIDABLE"]),
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(level="OVERRIDABLE", id="SOME_ERROR", message="message"),
+                        ),
                     ],
                     [],
                 ),
                 {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["OVERRIDABLE"]),
+                    "One": dict(
+                        messages=[], result=dict(level=STATUS_CODE["OVERRIDABLE"], id="SOME_ERROR", message="message")
+                    ),
                 },
             ),
             (
@@ -717,32 +731,38 @@ class TestRunActions:
                     [],
                     [],
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["SKIP"]),
+                        _ActionForTesting(
+                            id="One", messages=[], result=ActionResult(level="SKIP", id="SOME_ERROR", message="message")
+                        ),
                     ],
                 ),
                 {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["SKIP"]),
+                    "One": dict(
+                        messages=[], result=dict(level=STATUS_CODE["SKIP"], id="SOME_ERROR", message="message")
+                    ),
                 },
             ),
             # Mixture of failures and successes.
             (
                 actions.FinishedActions(
                     [
-                        _ActionForTesting(id="One", status=STATUS_CODE["WARNING"]),
-                        _ActionForTesting(id="Four", status=STATUS_CODE["SUCCESS"]),
+                        _ActionForTesting(id="Three", messages=[], result=ActionResult(level="SUCCESS")),
                     ],
                     [
-                        _ActionForTesting(id="Two", status=STATUS_CODE["ERROR"]),
+                        _ActionForTesting(
+                            id="One", messages=[], result=ActionResult(level="ERROR", id="ERROR_ID", message="message")
+                        ),
                     ],
                     [
-                        _ActionForTesting(id="Three", status=STATUS_CODE["SKIP"]),
+                        _ActionForTesting(
+                            id="Two", messages=[], result=ActionResult(level="SKIP", id="SKIP_ID", message="message")
+                        ),
                     ],
                 ),
                 {
-                    "One": dict(error_id=None, message=None, status=STATUS_CODE["WARNING"]),
-                    "Two": dict(error_id=None, message=None, status=STATUS_CODE["ERROR"]),
-                    "Three": dict(error_id=None, message=None, status=STATUS_CODE["SKIP"]),
-                    "Four": dict(error_id=None, message=None, status=STATUS_CODE["SUCCESS"]),
+                    "One": dict(messages=[], result=dict(level=STATUS_CODE["ERROR"], id="ERROR_ID", message="message")),
+                    "Two": dict(messages=[], result=dict(level=STATUS_CODE["SKIP"], id="SKIP_ID", message="message")),
+                    "Three": dict(messages=[], result=dict(level=STATUS_CODE["SUCCESS"], id=None, message="")),
                 },
             ),
         ),
@@ -755,6 +775,172 @@ class TestRunActions:
         monkeypatch.setattr(actions.Stage, "run", run_mock)
 
         assert actions.run_actions() == expected
+
+    @pytest.mark.parametrize(
+        ("action_results", "expected"),
+        (
+            # Only successes
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="SUCCESS"),
+                        ),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["SUCCESS"], id=None, message=""),
+                    )
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="SUCCESS"),
+                            dependencies=("One",),
+                        ),
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="SUCCESS"),
+                            dependencies=(
+                                "One",
+                                "Two",
+                            ),
+                        ),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["SUCCESS"], id=None, message=""),
+                    ),
+                    "Two": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["SUCCESS"], id=None, message=""),
+                    ),
+                },
+            ),
+            # Single Failures
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="ERROR", id="SOME_ERROR", message="message"),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["ERROR"], id="SOME_ERROR", message="message"),
+                    ),
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="OVERRIDABLE", id="SOME_ERROR", message="message"),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["OVERRIDABLE"], id="SOME_ERROR", message="message"),
+                    ),
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE")],
+                            result=ActionResult(level="SKIP", id="SOME_ERROR", message="message"),
+                        ),
+                    ],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE")],
+                        result=dict(level=STATUS_CODE["SKIP"], id="SOME_ERROR", message="message"),
+                    ),
+                },
+            ),
+            # Mixture of failures and successes.
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="Three",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE 3")],
+                            result=ActionResult(level="SUCCESS"),
+                        ),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE 1")],
+                            result=ActionResult(level="ERROR", id="ERROR_ID", message="message"),
+                        ),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[ActionMessage(level="WARNING", id="WARNING_ID", message="WARNING MESSAGE 2")],
+                            result=ActionResult(level="SKIP", id="SKIP_ID", message="message"),
+                        ),
+                    ],
+                ),
+                {
+                    "One": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE 1")],
+                        result=dict(level=STATUS_CODE["ERROR"], id="ERROR_ID", message="message"),
+                    ),
+                    "Two": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE 2")],
+                        result=dict(level=STATUS_CODE["SKIP"], id="SKIP_ID", message="message"),
+                    ),
+                    "Three": dict(
+                        messages=[dict(level=STATUS_CODE["WARNING"], id="WARNING_ID", message="WARNING MESSAGE 3")],
+                        result=dict(level=STATUS_CODE["SUCCESS"], id=None, message=""),
+                    ),
+                },
+            ),
+        ),
+    )
+    def test_run_actions_with_messages(self, action_results, expected, monkeypatch):
+        check_deps_mock = mock.Mock()
+        run_mock = mock.Mock(return_value=action_results)
+
+        monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
+        monkeypatch.setattr(actions.Stage, "run", run_mock)
+
+        results = actions.run_actions()
+        assert results == expected
 
     def test_dependency_errors(self, monkeypatch, caplog):
         check_deps_mock = mock.Mock(side_effect=actions.DependencyError("Failure message"))
@@ -771,23 +957,137 @@ class TestRunActions:
 
 class TestFindFailedActions:
     test_results = {
-        "BAD": dict(status=STATUS_CODE["ERROR"], error_id="ERROR", message="Explosion"),
-        "BAD3": dict(status=STATUS_CODE["OVERRIDABLE"], error_id="OVERRIDABLE", message="Explosion"),
-        "BAD4": dict(status=STATUS_CODE["SKIP"], error_id="SKIP", message="Explosion"),
-        "GOOD": dict(status=STATUS_CODE["WARNING"], error_id="WARN", message="Danger"),
-        "GOOD2": dict(status=STATUS_CODE["SUCCESS"], error_id="", message="No Error here"),
+        "BAD": dict(result=dict(level=STATUS_CODE["ERROR"], id="ERROR", message="Explosion")),
+        "BAD2": dict(result=dict(level=STATUS_CODE["OVERRIDABLE"], id="OVERRIDABLE", message="Explosion")),
+        "BAD3": dict(result=dict(level=STATUS_CODE["SKIP"], id="SKIP", message="Explosion")),
+        "GOOD": dict(result=dict(level=STATUS_CODE["SUCCESS"], id="", message="No Error here")),
     }
 
     @pytest.mark.parametrize(
-        ("severity", "expected_ids"),
+        ("severity", "expected_ids", "key"),
         (
-            ("SUCCESS", ["BAD", "BAD3", "BAD4", "GOOD", "GOOD2"]),
-            ("WARNING", ["BAD", "BAD3", "BAD4", "GOOD"]),
-            ("SKIP", ["BAD", "BAD3", "BAD4"]),
-            ("OVERRIDABLE", ["BAD", "BAD3"]),
-            ("ERROR", ["BAD"]),
+            ("SUCCESS", ["BAD", "BAD2", "BAD3", "GOOD"], level_for_raw_action_data),
+            ("SKIP", ["BAD", "BAD2", "BAD3"], level_for_raw_action_data),
+            ("OVERRIDABLE", ["BAD", "BAD2"], level_for_raw_action_data),
+            ("ERROR", ["BAD"], level_for_raw_action_data),
         ),
     )
-    def test_find_actions_of_severity(self, severity, expected_ids):
-        found_action_ids = sorted(a[0] for a in actions.find_actions_of_severity(self.test_results, severity))
+    def test_find_actions_of_severity(self, severity, expected_ids, key):
+        found_action_ids = sorted(a[0] for a in actions.find_actions_of_severity(self.test_results, severity, key))
         assert sorted(found_action_ids) == sorted(expected_ids)
+
+
+class TestActionClasses:
+    @pytest.mark.parametrize(
+        ("id", "level", "message", "expected"),
+        (
+            (
+                "SUCCESS_ID",
+                "SUCCESS",
+                "Success message",
+                dict(id="SUCCESS_ID", level=STATUS_CODE["SUCCESS"], message="Success message"),
+            ),
+            ("SKIP_ID", "SKIP", "Skip message", dict(id="SKIP_ID", level=STATUS_CODE["SKIP"], message="Skip message")),
+            (
+                "OVERRIDABLE_ID",
+                "OVERRIDABLE",
+                "Overridable message",
+                dict(id="OVERRIDABLE_ID", level=STATUS_CODE["OVERRIDABLE"], message="Overridable message"),
+            ),
+            (
+                "ERROR_ID",
+                "ERROR",
+                "Error message",
+                dict(id="ERROR_ID", level=STATUS_CODE["ERROR"], message="Error message"),
+            ),
+        ),
+    )
+    def test_action_message_base(self, level, id, message, expected):
+        action_message_base = ActionMessageBase(level=level, id=id, message=message)
+        assert action_message_base.to_dict() == expected
+
+    @pytest.mark.parametrize(
+        ("id", "level", "message", "expected"),
+        (
+            (None, None, None, "Messages require id, level and message fields"),
+            ("SUCCESS_ID", None, None, "Messages require id, level and message fields"),
+            (None, "SUCCESS", None, "Messages require id, level and message fields"),
+            (None, None, "Success Message", "Messages require id, level and message fields"),
+            ("SUCCESS_ID", "SUCCESS", "Success message", "Invalid level 'SUCCESS', set for a non-result message"),
+            ("SKIP_ID", "SKIP", "Skip message", "Invalid level 'SKIP', set for a non-result message"),
+            (
+                "OVERRIDABLE_ID",
+                "OVERRIDABLE",
+                "Overridable message",
+                "Invalid level 'OVERRIDABLE', set for a non-result message",
+            ),
+            ("ERROR_ID", "ERROR", "Error message", "Invalid level 'ERROR', set for a non-result message"),
+        ),
+    )
+    def test_action_message_exceptions(self, level, id, message, expected):
+        with pytest.raises(InvalidMessageError, match=expected):
+            ActionMessage(level=level, id=id, message=message)
+
+    @pytest.mark.parametrize(
+        ("id", "level", "message", "expected"),
+        (
+            (
+                "WARNING_ID",
+                "WARNING",
+                "Warning message",
+                dict(id="WARNING_ID", level=STATUS_CODE["WARNING"], message="Warning message"),
+            ),
+        ),
+    )
+    def test_action_message_success(self, level, id, message, expected):
+        action_message = ActionMessage(level=level, id=id, message=message)
+        assert action_message.to_dict() == expected
+
+    @pytest.mark.parametrize(
+        ("id", "level", "message", "expected"),
+        (
+            (None, "ERROR", None, "Non-success results require an id and a message"),
+            (None, "ERROR", "Error message", "Non-success results require an id"),
+            ("ERROR_ID", "ERROR", None, "Non-success results require a message"),
+            (None, "OVERRIDABLE", None, "Non-success results require an id and a message"),
+            (None, "OVERRIDABLE", "Overiddable message", "Non-success results require an id"),
+            ("OVERRIDABLE_ID", "OVERRIDABLE", None, "Non-success results require a message"),
+            (
+                "WARNING_ID",
+                "WARNING",
+                "Warning message",
+                "Invalid level 'WARNING', the level for result must be SKIP or more fatal or SUCCESS.",
+            ),
+        ),
+    )
+    def test_action_result_exceptions(self, level, id, message, expected):
+        with pytest.raises(InvalidMessageError, match=expected):
+            ActionResult(level=level, id=id, message=message)
+
+    @pytest.mark.parametrize(
+        ("id", "level", "message", "expected"),
+        (
+            (
+                "SUCCESS_ID",
+                "SUCCESS",
+                "Success message",
+                dict(id="SUCCESS_ID", level=STATUS_CODE["SUCCESS"], message="Success message"),
+            ),
+            ("SKIP_ID", "SKIP", "Skip message", dict(id="SKIP_ID", level=STATUS_CODE["SKIP"], message="Skip message")),
+            (
+                "OVERRIDABLE_ID",
+                "OVERRIDABLE",
+                "Overridable message",
+                dict(id="OVERRIDABLE_ID", level=STATUS_CODE["OVERRIDABLE"], message="Overridable message"),
+            ),
+            (
+                "ERROR_ID",
+                "ERROR",
+                "Error message",
+                dict(id="ERROR_ID", level=STATUS_CODE["ERROR"], message="Error message"),
+            ),
+        ),
+    )
+    def test_action_result_success(self, level, id, message, expected):
+        action_message = ActionResult(level=level, id=id, message=message)
+        assert action_message.to_dict() == expected

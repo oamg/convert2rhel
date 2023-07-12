@@ -67,11 +67,11 @@ class PreSubscription(actions.Action):
 
             # TODO(r0x0d): This should be refactored to handle each case
             # individually rather than relying on SystemExit.
-            self.set_result(status="ERROR", error_id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
         except subscription.UnregisterError as e:
             self.set_result(
-                status="ERROR",
-                error_id="UNABLE_TO_REGISTER",
+                level="ERROR",
+                id="UNABLE_TO_REGISTER",
                 message="Failed to unregister the system: %s" % e,
             )
 
@@ -115,8 +115,8 @@ class SubscribeSystem(actions.Action):
             #  - Could fail in invoking subscirption-manager to disable repos (disable_repos)
             #  - ""                                          to enable repos  (enable_repos)
             self.set_result(
-                status="ERROR",
-                error_id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
+                level="ERROR",
+                id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
                 message="Failed to execute command: %s" % e,
             )
         except SystemExit as e:
@@ -128,10 +128,10 @@ class SubscribeSystem(actions.Action):
             #   - Maximum sub-man retries reached
             #   - If the return-code is different from 0 in disabling repos,
             #     SystemExit is raised.
-            self.set_result(status="ERROR", error_id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
         except ValueError as e:
             self.set_result(
-                status="ERROR",
-                error_id="MISSING_REGISTRATION_COMBINATION",
+                level="ERROR",
+                id="MISSING_REGISTRATION_COMBINATION",
                 message="One or more combinations were missing for subscription-manager parameters: %s" % e,
             )

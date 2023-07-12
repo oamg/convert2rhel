@@ -118,8 +118,8 @@ class IsLoadedKernelLatest(actions.Action):
         # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
             self.set_result(
-                status="ERROR",
-                error_id="KERNEL_CURRENCY_CHECK_FAIL",
+                level="ERROR",
+                id="KERNEL_CURRENCY_CHECK_FAIL",
                 message=(
                     "Could not find any %s from repositories to compare against the loaded kernel.\n"
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
@@ -142,8 +142,8 @@ class IsLoadedKernelLatest(actions.Action):
             match = compare_package_versions(latest_kernel_pkg, loaded_kernel_pkg)
         except ValueError as exc:
             self.set_result(
-                status="ERROR",
-                error_id="INVALID_KERNEL_PACKAGE",
+                level="ERROR",
+                id="INVALID_KERNEL_PACKAGE",
                 message=str(exc),
             )
             return
@@ -155,8 +155,8 @@ class IsLoadedKernelLatest(actions.Action):
                 else "in repositories defined in the %s folder" % reposdir
             )
             self.set_result(
-                status="ERROR",
-                error_id="INVALID_KERNEL_VERSION",
+                level="ERROR",
+                id="INVALID_KERNEL_VERSION",
                 message=(
                     "The version of the loaded kernel is different from the latest version %s.\n"
                     " Latest kernel version available in %s: %s\n"

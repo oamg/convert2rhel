@@ -99,7 +99,7 @@ def test_remove_iwlax2xx_firmware(
     assert is_rpm_installed_mock.call_count == 2
 
     assert expected_message in caplog.records[-1].message
-    assert instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
 @centos8
@@ -108,4 +108,4 @@ def test_remove_iwlax2xx_firmware_not_ol8(pretend_os, caplog):
     instance.run()
 
     assert "Relevant to Oracle Linux 8 only. Skipping." in caplog.records[-1].message
-    assert instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert instance.result.level == actions.STATUS_CODE["SUCCESS"]

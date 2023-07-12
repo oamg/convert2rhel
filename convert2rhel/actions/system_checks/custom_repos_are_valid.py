@@ -48,8 +48,8 @@ class CustomReposAreValid(actions.Action):
         )
         if ret_code != 0:
             self.set_result(
-                status="ERROR",
-                error_id="UNABLE_TO_ACCESS_REPOSITORIES",
+                level="ERROR",
+                id="UNABLE_TO_ACCESS_REPOSITORIES",
                 message=(
                     "Unable to access the repositories passed through the --enablerepo option. "
                     "For more details, see YUM/DNF output:\n{0}".format(output)

@@ -48,7 +48,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
     list_third_party_packages_instance.run()
 
     assert "No third party packages installed" in caplog.records[-1].message
-    assert list_third_party_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert list_third_party_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
 def test_list_third_party_packages(list_third_party_packages_instance, monkeypatch, caplog):
@@ -60,7 +60,7 @@ def test_list_third_party_packages(list_third_party_packages_instance, monkeypat
     assert len(pkghandler.print_pkg_info.pkgs) == 3
     assert "Only packages signed by" in caplog.records[-1].message
 
-    assert list_third_party_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert list_third_party_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
 class CommandCallableObject(unit_tests.MockFunction):
@@ -89,7 +89,7 @@ def test_remove_excluded_packages(remove_excluded_packages_instance, monkeypatch
     assert pkghandler._get_packages_to_remove.called == 1
     assert pkghandler.remove_pkgs_unless_from_redhat.called == 1
     assert pkghandler._get_packages_to_remove.command == system_info.excluded_pkgs
-    assert remove_excluded_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert remove_excluded_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
 def test_remove_excluded_packages_error(remove_excluded_packages_instance, monkeypatch):
@@ -103,8 +103,8 @@ def test_remove_excluded_packages_error(remove_excluded_packages_instance, monke
 
     unit_tests.assert_actions_result(
         remove_excluded_packages_instance,
-        status="ERROR",
-        error_id="PACKAGE_REMOVAL_FAILED",
+        level="ERROR",
+        id="PACKAGE_REMOVAL_FAILED",
         message="Raising SystemExit",
     )
 
@@ -124,7 +124,7 @@ def test_remove_repository_files_packages(remove_repository_files_packages_insta
     assert pkghandler._get_packages_to_remove.called == 1
     assert pkghandler.remove_pkgs_unless_from_redhat.called == 1
     assert pkghandler._get_packages_to_remove.command == system_info.repofile_pkgs
-    assert remove_repository_files_packages_instance.status == actions.STATUS_CODE["SUCCESS"]
+    assert remove_repository_files_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
 def test_remove_repository_files_packages_dependency_order(remove_repository_files_packages_instance):
@@ -143,7 +143,7 @@ def test_remove_repository_files_packages_error(remove_repository_files_packages
 
     unit_tests.assert_actions_result(
         remove_repository_files_packages_instance,
-        status="ERROR",
-        error_id="PACKAGE_REMOVAL_FAILED",
+        level="ERROR",
+        id="PACKAGE_REMOVAL_FAILED",
         message="Raising SystemExit",
     )

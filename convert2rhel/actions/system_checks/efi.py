@@ -39,23 +39,23 @@ class Efi(actions.Action):
         logger.info("UEFI detected.")
         if system_info.arch != "x86_64":
             self.set_result(
-                status="ERROR",
-                error_id="NON_x86_64",
+                level="ERROR",
+                id="NON_x86_64",
                 message="Only x86_64 systems are supported for UEFI conversions.",
             )
             return
         if not os.path.exists("/usr/sbin/efibootmgr"):
             self.set_result(
-                status="ERROR",
-                error_id="EFIBOOTMGR_NOT_FOUND",
+                level="ERROR",
+                id="EFIBOOTMGR_NOT_FOUND",
                 message="Install efibootmgr to continue converting the UEFI-based system.",
             )
             return
         if grub.is_secure_boot():
             logger.info("Secure boot detected.")
             self.set_result(
-                status="ERROR",
-                error_id="SECURE_BOOT_DETECTED",
+                level="ERROR",
+                id="SECURE_BOOT_DETECTED",
                 message=(
                     "The conversion with secure boot is currently not possible.\n"
                     "To disable it, follow the instructions available in this article: https://access.redhat.com/solutions/6753681"
@@ -68,7 +68,7 @@ class Efi(actions.Action):
         try:
             efiboot_info = grub.EFIBootInfo()
         except grub.BootloaderError as e:
-            self.set_result(status="ERROR", error_id="BOOTLOADER_ERROR", message=str(e))
+            self.set_result(level="ERROR", id="BOOTLOADER_ERROR", message=str(e))
             return
 
         if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
