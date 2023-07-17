@@ -38,7 +38,7 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
     # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
     os.environ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"] = "1"
 
-    with convert2rhel("-y --no-rpm-va --disable-submgr {} --debug".format(enable_repo_opt)) as c2r:
+    with convert2rhel("-y --no-rpm-va --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
         c2r.expect("Conversion successful!")
 
     assert c2r.exitstatus == 0
