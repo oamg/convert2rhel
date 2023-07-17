@@ -185,7 +185,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify /etc/default/grub with valid changes
+            - name: modify grub config file with valid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_valid_changed_grub.py
             - name: reboot after conversion
@@ -196,7 +196,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify /etc/default/grub with invalid changes
+            - name: modify grub config with invalid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_invalid_changed_grub.py
             - name: reboot after conversion

@@ -178,11 +178,11 @@ description+: |
 
 
     /convert_offline_systems:
-        # At the moment we have only CentOS7 repos available on Satellite server
         adjust+:
-            - enabled: false
-              when: >
-                distro != centos-7
+          # Disabled due to known issue: https://issues.redhat.com/browse/RHELC-1040
+          # Enable once this gets fixed
+          - enabled: false
+            when: distro == oraclelinux-7
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
