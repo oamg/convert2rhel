@@ -211,7 +211,7 @@ class CustomFormatter(logging.Formatter, object):
             fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
             new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "OKGREEN")
             self._fmt = new_fmt
-            self.datefmt = "%m/%d/%Y %H:%M:%S"
+            self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
         elif record.levelno in [logging.INFO]:
             self._fmt = "%(message)s"
             self.datefmt = ""
@@ -227,7 +227,7 @@ class CustomFormatter(logging.Formatter, object):
             self.datefmt = ""
         else:
             self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
-            self.datefmt = "%m/%d/%Y %H:%M:%S"
+            self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
 
         if hasattr(self, "_style"):
             # Python 3 has _style for formatter
