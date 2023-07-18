@@ -349,46 +349,37 @@ class RestorablePackage(object):
         :type reposdir: str
         """
         loggerinst.info("Backing up %s." % self.name)
-        if os.path.isdir(BACKUP_DIR):
-            # If we detect that the current system is an EUS release, then we
-            # proceed to use the hardcoded_repofiles, otherwise, we use the
-            # custom reposdir that comes from the method parameter. This is
-            # mainly because of CentOS Linux which we have hardcoded repofiles.
-            # If we ever put Oracle Linux repofiles to ship with convert2rhel,
-            # them the second part of this condition can be dropped.
-            if system_info.corresponds_to_rhel_eus_release() and system_info.id == "centos":
-                reposdir = get_hardcoded_repofiles_dir()
+        if not os.path.isdir(BACKUP_DIR):
+            loggerinst.warning("Can't access %s" % BACKUP_DIR)
+            return
 
-            # One of the reasons we hardcode repofiles pointing to archived
-            # repositories of older system minor versions is that we need to be
-            # able to download an older package version as a backup. Because for
-            # example the default repofiles on CentOS Linux 8.4 point only to
-            # 8.latest repositories that already don't contain 8.4 packages.
+        # If we detect that the current system version corresponds to a RHEL EUS release, we
+        # proceed with using hardcoded repofiles that point to the older system minor version. Otherwise, we use the
+        # custom reposdir that comes from the method parameter. This is mainly because of CentOS Linux for which we have
+        # hardcoded its repofiles.
+        # The reason is that we need to be able to back up a package which is available only in older minor version
+        # repositories. Because for example the default repofiles on CentOS Linux 8.4 point only to 8.latest
+        # repositories that already don't contain 8.4 packages.
+        if not reposdir and system_info.corresponds_to_rhel_eus_release():
+            hardcoded_repofiles_dir = get_hardcoded_repofiles_dir()
             if not system_info.has_internet_access:
-                if reposdir:
-                    loggerinst.debug(
-                        "Not using repository files stored in %s due to the absence of internet access." % reposdir
-                    )
-                self.path = download_pkg(
-                    self.name,
-                    dest=BACKUP_DIR,
-                    set_releasever=set_releasever,
-                    custom_releasever=custom_releasever,
-                    varsdir=varsdir,
+                loggerinst.debug(
+                    "Not using repository files stored in %s due to the absence of internet access."
+                    % hardcoded_repofiles_dir
                 )
             else:
-                if reposdir:
-                    loggerinst.debug("Using repository files stored in %s." % reposdir)
-                self.path = download_pkg(
-                    self.name,
-                    dest=BACKUP_DIR,
-                    set_releasever=set_releasever,
-                    reposdir=reposdir,
-                    custom_releasever=custom_releasever,
-                    varsdir=varsdir,
-                )
-        else:
-            loggerinst.warning("Can't access %s" % BACKUP_DIR)
+                reposdir = hardcoded_repofiles_dir
+
+        if reposdir:
+            loggerinst.debug("Using repository files stored in %s." % reposdir)
+        self.path = download_pkg(
+            self.name,
+            dest=BACKUP_DIR,
+            set_releasever=set_releasever,
+            reposdir=reposdir,
+            custom_releasever=custom_releasever,
+            varsdir=varsdir,
+        )
 
 
 def remove_pkgs(
