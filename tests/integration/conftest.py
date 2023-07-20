@@ -422,6 +422,7 @@ def repositories(shell):
     if "centos-8" in SYSTEM_RELEASE_ENV:
         assert shell(f"mv {backup_dir_eus}/* /usr/share/convert2rhel/repos/").returncode == 0
         assert shell(f"rm -rf {backup_dir_eus}")
+<<<<<<< HEAD
 @pytest.fixture()
 def yum_cache(shell):
     """
@@ -434,6 +435,8 @@ def yum_cache(shell):
     assert shell("yum clean all --enablerepo=* --quiet").returncode == 0
     for pkgmanager in pkgmanagers:
         shell(f"rm -rf /var/cache/{pkgmanager}")
+=======
+>>>>>>> b19beda (Fixed the conflits that where left in the code)
 
 
 @pytest.fixture(autouse=True)
