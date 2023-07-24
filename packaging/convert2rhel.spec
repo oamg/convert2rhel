@@ -37,6 +37,7 @@ BuildRequires:  rpm-python
 # We need to talk to subscription-manager over dbus
 Requires:       dbus
 Requires:       efibootmgr
+Requires:       kmod
 Requires:       rpm
 Requires:       python%{python_pkgversion}
 Requires:       python%{python_pkgversion}-setuptools
