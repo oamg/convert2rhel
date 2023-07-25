@@ -3,8 +3,14 @@ labels:
     labeled:
       pr:
         body: /packit test --labels tier0
+        footer: "\
+          ---\n\n\
+          @oamg/conversions-qe please review results."
 
   - name: tests-skip
     labeled:
       pr:
         body: This PR does not require integration tests to be run.
+        footer: "\
+          ---\n\n\
+          @oamg/conversions-qe please review and ack the `tests-skip`."
