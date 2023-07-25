@@ -10,7 +10,7 @@ labels:
   - name: tests-run-tier0
     labeled:
       pr:
-        body: This is a test comment. It will be changed to `/packit test` in the future
+        body: This is a test comment. It will be changed to `/packit test --labels tier0` in the future
     unlabeled:
       pr:
         body: This is a test comment, when the `tests-run-tier0` label is removed.
