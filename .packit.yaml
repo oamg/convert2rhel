@@ -60,6 +60,8 @@ jobs:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
+  labels:
+    - tier0
 
 - &tests-tier1
   <<: *tests-tier0
@@ -69,3 +71,5 @@ jobs:
   tmt_plan: "tier1"
   trigger: commit
   branch: main
+  labels:
+    - tier1

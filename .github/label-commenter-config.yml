@@ -1,19 +1,9 @@
-comment:
-  header: Hi, there.
-  footer: "\
-    ---\n\n\
-    > This is an automated comment created by the [peaceiris/actions-label-commenter]. \
-    Responding to the bot or mentioning it won't have any effect.\n\n\
-    [peaceiris/actions-label-commenter]: https://github.com/peaceiris/actions-label-commenter"
-
 labels:
   - name: tests-run-tier0
     labeled:
       pr:
-        body: This is a test comment. It will be changed to `/packit test` in the future
-    unlabeled:
-      pr:
-        body: This is a test comment, when the `tests-run-tier0` label is removed.
+        body: /packit test --labels tier0
+
   - name: tests-skip
     labeled:
       pr:
