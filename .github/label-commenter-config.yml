@@ -1,16 +1,25 @@
+comment:
+  footer: "\
+    ---\n\n\
+    @oamg/conversions-qe please review results and provide ack."
+
 labels:
   - name: tests-run-tier0
     labeled:
       pr:
         body: /packit test --labels tier0
-        footer: "\
-          ---\n\n\
-          @oamg/conversions-qe please review results."
+
+  - name: tests-run-tier1
+    labeled:
+      pr:
+        body: /packit test --labels tier1
+
+  - name: tests-run-all
+    labeled:
+      pr:
+        body: /packit test
 
   - name: tests-skip
     labeled:
       pr:
         body: This PR does not require integration tests to be run.
-        footer: "\
-          ---\n\n\
-          @oamg/conversions-qe please review and ack the `tests-skip`."
