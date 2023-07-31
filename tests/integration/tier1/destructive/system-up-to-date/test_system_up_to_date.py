@@ -68,15 +68,6 @@ def test_system_not_updated(shell, convert2rhel):
     centos_8_pkg_url = "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm"
 
     if "centos-8" in SYSTEM_RELEASE_ENV:
-        # The dnf transaction calculation fails if the maximum number of kernels that can be installed has been reached:
-        # "package kernel-4.18.0-348.23.1.el8_5.x86_64 requires kernel-core-uname-r = 4.18.0-348.23.1.el8_5.x86_64,
-        #     but none of the providers can be installed"
-        # To us now the only known solution is to remove the oldest kernel before proceeding.
-        oldest_kernel = shell(
-            "rpm -q --qf '%{BUILDTIME}\t%{EVR}.%{ARCH}\n' kernel | sort -n | head -1 | cut -f2"
-        ).output.strip()
-        assert shell("yum remove -y kernel*{0}".format(oldest_kernel)).returncode == 0
-
         # Try to downgrade two packages.
         # On CentOS-8 we cannot do the downgrade as the repos contain only the latest package version.
         # We need to install package from older repository as a workaround.
