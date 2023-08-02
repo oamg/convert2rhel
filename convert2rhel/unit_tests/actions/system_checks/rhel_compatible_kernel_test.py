@@ -159,8 +159,13 @@ def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monke
             8,
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
-            "'{compatible_version}' available in RHEL {rhel_major_version}",
-            dict(kernel_version="5.4.17", compatible_version=COMPATIBLE_KERNELS_VERS[8], rhel_major_version=8),
+            "'{compatible_version}' available in RHEL {rhel_major_version}.{rhel_minor_version}",
+            dict(
+                kernel_version="5.4.17",
+                compatible_version=COMPATIBLE_KERNELS_VERS[8],
+                rhel_major_version=8,
+                rhel_minor_version=0,
+            ),
         ),
     ),
 )

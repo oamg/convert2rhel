@@ -49,7 +49,6 @@ class TestReadOnlyMountsChecks(unittest.TestCase):
     )
     def test_mounted_mnt_is_readwrite(self):
         self.readonly_mounts_action_mnt.run()
-        print(readonly_mounts.logger.debug_msgs)
         self.assertEqual(len(readonly_mounts.logger.debug_msgs), 1)
         self.assertIn("/mnt mount point is not read-only.", readonly_mounts.logger.debug_msgs)
 

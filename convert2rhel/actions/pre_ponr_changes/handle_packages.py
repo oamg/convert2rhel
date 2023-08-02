@@ -16,6 +16,7 @@
 __metaclass__ = type
 
 import logging
+import os
 
 from convert2rhel import actions, pkghandler
 from convert2rhel.systeminfo import system_info
@@ -36,19 +37,35 @@ class ListThirdPartyPackages(actions.Action):
 
         logger.task("Convert: List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
+        third_party_package_skip = os.environ.get("CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP", None)
         if third_party_pkgs:
             pkg_list = pkghandler.format_pkg_info(third_party_pkgs)
-            message = (
+            warning_message = (
                 "Only packages signed by %s are to be"
                 " replaced. Red Hat support won't be provided"
                 " for the following third party packages:\n%s" % (system_info.name, ", ".join(pkg_list))
             )
-            logger.warning(message)
-            self.add_message(
-                level="WARNING",
-                id="THIRD_PARTY_PACKAGE_DETECTED",
-                message=message,
+
+            if not third_party_package_skip:
+                logger.warning(warning_message)
+                self.set_result(
+                    level="OVERRIDABLE",
+                    id="THIRD_PARTY_PACKAGE_DETECTED",
+                    message=warning_message,
+                )
+                return
+
+            skip_message = (
+                "Detected 'CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP' environment variable, we will skip "
+                "the third party package check.\n"
+                "Beware, this could leave your system in a broken state."
             )
+            logger.warning(skip_message)
+            self.add_message(level="WARNING", id="SKIP_THIRD_PARTY_PACKAGE_CHECK", message=skip_message)
+
+            logger.warning(warning_message)
+            self.add_message(level="WARNING", id="THIRD_PARTY_PACKAGE_DETECTED_MESSAGE", message=warning_message)
+            return
         else:
             logger.info("No third party packages installed.")
 

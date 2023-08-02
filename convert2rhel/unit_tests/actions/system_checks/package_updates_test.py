@@ -17,11 +17,12 @@
 
 __metaclass__ = type
 
+import os
 
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager
+from convert2rhel import actions, pkgmanager, unit_tests
 from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8, oracle8
@@ -79,14 +80,41 @@ def test_check_package_updates(pretend_os, packages, exception, expected, monkey
 
 
 @centos8
-def test_check_pacakge_updates_warning_message(pretend_os, monkeypatch, package_updates_action):
+def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog):
     packages = ["package-1", "package-2"]
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
+    package_updates_action.run()
+    unit_tests.assert_actions_result(
+        package_updates_action,
+        level="OVERRIDABLE",
+        id="OUT_OF_DATE_PACKAGES",
+        message=(
+            "The system has 2 package(s) not updated based on the enabled system repositories.\n"
+            "List of packages to update: package-1 package-2.\n\n"
+            "Not updating the packages may cause the conversion to fail.\n"
+            "Consider updating the packages before proceeding with the conversion."
+        ),
+    )
+    assert (
+        "The system has 2 package(s) not updated based on the enabled system repositories.\n"
+        in caplog.records[-1].message
+    )
+
+
+@centos8
+def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action, caplog):
+    packages = ["package-1", "package-2"]
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
+    monkeypatch.setattr(
+        os,
+        "environ",
+        {"CONVERT2RHEL_PACKAGE_NOT_UP_TO_DATE_SKIP": 1},
+    )
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="OUT_OF_DATE_PACKAGES",
+                id="PACKAGE_NOT_UP_TO_DATE_MESSAGE",
                 message=(
                     "The system has 2 package(s) not updated based on the enabled system repositories.\n"
                     "List of packages to update: package-1 package-2.\n\n"
@@ -94,9 +122,23 @@ def test_check_pacakge_updates_warning_message(pretend_os, monkeypatch, package_
                     "Consider updating the packages before proceeding with the conversion."
                 ),
             ),
+            actions.ActionMessage(
+                level="WARNING",
+                id="SKIP_PACKAGE_NOT_UP_TO_DATE",
+                message=(
+                    "Detected 'CONVERT2RHEL_PACKAGE_NOT_UP_TO_DATE_SKIP' environment variable, we will skip "
+                    "the package up-to-date check.\n"
+                    "Beware, this could leave your system in a broken state."
+                ),
+            ),
         )
     )
+
     package_updates_action.run()
+    assert (
+        "The system has 2 package(s) not updated based on the enabled system repositories.\n"
+        in caplog.records[-1].message
+    )
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)
 
@@ -105,24 +147,59 @@ def test_check_package_updates_with_repoerror(monkeypatch, caplog, package_updat
     get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError("This is an error"))
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
+    package_updates_action.run()
+    unit_tests.assert_actions_result(
+        package_updates_action,
+        level="OVERRIDABLE",
+        id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
+        message=(
+            "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
+            " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
+            " before proceeding with the conversion. This is an error"
+        ),
+    )
+
+    assert (
+        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-1].message
+    )
+
+
+def test_check_package_updates_with_repoerror_skip(monkeypatch, caplog, package_updates_action):
+    get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError("This is an error"))
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
+    monkeypatch.setattr(
+        os,
+        "environ",
+        {"CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP": 1},
+    )
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
+                id="PACKAGE_UP_TO_DATE_CHECK_MESSAGE",
                 message=(
                     "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                     " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
                     " before proceeding with the conversion. This is an error"
                 ),
             ),
+            actions.ActionMessage(
+                level="WARNING",
+                id="SKIP_PACKAGE_UP_TO_DATE_CHECK",
+                message=(
+                    "Detected 'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' environment variable, we will skip "
+                    "the package up-to-date check.\n"
+                    "Beware, this could leave your system in a broken state."
+                ),
+            ),
         )
     )
 
     package_updates_action.run()
-    # This is -2 because the last message is the error from the RepoError class.
+
     assert (
-        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-2].message
+        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-1].message
     )
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)

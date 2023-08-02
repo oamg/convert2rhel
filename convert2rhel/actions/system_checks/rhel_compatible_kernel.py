@@ -44,7 +44,7 @@ class KernelIncompatibleError(Exception):
         self.variables = variables
 
     def __str__(self):
-        # substitute this for the jinga template format
+        # substitute this for the jinja template format
         return self.template.format(**self.variables)
 
 
@@ -63,8 +63,6 @@ class RhelCompatibleKernel(actions.Action):
                 check_function(system_info.booted_kernel)
             except KernelIncompatibleError as e:
                 bad_kernel_message = str(e)
-                logger.warning(bad_kernel_message)
-
                 self.set_result(
                     level="ERROR",
                     id=e.error_id,
@@ -92,8 +90,6 @@ def _bad_kernel_version(kernel_release):
     kernel_version = kernel_release.split("-")[0]
     try:
         incompatible_version = COMPATIBLE_KERNELS_VERS[system_info.version.major] != kernel_version
-        print(kernel_version)
-        print(COMPATIBLE_KERNELS_VERS[system_info.version.major])
     except KeyError:
         raise KernelIncompatibleError(
             "UNEXPECTED_VERSION",
@@ -105,11 +101,12 @@ def _bad_kernel_version(kernel_release):
         raise KernelIncompatibleError(
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
-            "'{compatible_version}' available in RHEL {rhel_major_version}",
+            "'{compatible_version}' available in RHEL {rhel_major_version}.{rhel_minor_version}",
             dict(
                 kernel_version=kernel_version,
                 compatible_version=COMPATIBLE_KERNELS_VERS[system_info.version.major],
                 rhel_major_version=system_info.version.major,
+                rhel_minor_version=system_info.version.minor,
             ),
         )
 

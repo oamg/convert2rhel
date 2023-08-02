@@ -100,39 +100,6 @@ class PromptUserLoopMocked(unit_tests.MockFunction):
         return return_value
 
 
-class TestCheckNeededReposAvailability(object):
-    def test_check_needed_repos_availability(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: ["rhel_x", "rhel_y"])
-
-        avail_repos_message = "Needed RHEL repositories are available."
-        subscription.check_needed_repos_availability(["rhel_x"])
-
-        assert avail_repos_message in caplog.records[-1].message
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel_z."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-
-        subscription.check_needed_repos_availability(["rhel_z"])
-        assert no_avail_repos_message in caplog.records[-1].message
-
-    def test_check_needed_repos_availability_no_repo_available(self, monkeypatch, caplog):
-        monkeypatch.setattr(subscription, "get_avail_repos", lambda: [])
-
-        no_avail_repos_message = (
-            "Some repositories are not available: rhel."
-            " Some packages may not be replaced with their corresponding"
-            " RHEL packages when converting. The converted system will end up"
-            " with a mixture of packages from RHEL and your current distribution."
-        )
-        subscription.check_needed_repos_availability(["rhel"])
-
-        assert no_avail_repos_message in caplog.records[-1].message
-
-
 class TestSubscription(unittest.TestCase):
     class IsFileMocked(unit_tests.MockFunction):
         def __init__(self, is_file):

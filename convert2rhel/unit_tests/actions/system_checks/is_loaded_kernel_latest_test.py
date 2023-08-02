@@ -421,8 +421,7 @@ class TestIsLoadedKernelLatest:
         )
         expected_set = set((actions.ActionMessage(level=expected_level, id=expected_id, message=expected_message),))
         is_loaded_kernel_latest_action.run()
-        print(is_loaded_kernel_latest_action.messages)
-        print(expected_set)
+
         assert expected_message in caplog.records[-1].message
         assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
         assert expected_set.issubset(is_loaded_kernel_latest_action.messages)

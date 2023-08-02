@@ -67,9 +67,7 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global
     )
 
 
-def test_check_dbus_is_running_warning_message(
-    monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action
-):
+def test_check_dbus_is_running_warning_message(monkeypatch, global_tool_opts, dbus_is_running_action):
     monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
     global_tool_opts.no_rhsm = True
     dbus_is_running_action.run()

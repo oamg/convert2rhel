@@ -728,14 +728,6 @@ def print_avail_subs(subs):
         loggerinst.info("\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
 
 
-def get_avail_repos():
-    """Get list of all the repositories (their IDs) currently available for
-    the registered system through subscription-manager.
-    """
-    repos_raw, _ = utils.run_subprocess(["subscription-manager", "repos"], print_output=False)
-    return list(get_repo(repos_raw))
-
-
 def get_repo(repos_raw):
     """Generator that parses the raw string of available repositores and
     provides the repository IDs, one at a time.
@@ -857,33 +849,6 @@ def rollback():
         loggerinst.warning(str(e))
     except OSError:
         loggerinst.warning("subscription-manager not installed, skipping")
-
-
-def check_needed_repos_availability(repo_ids_needed):
-    """Check whether all the RHEL repositories needed for the system
-    conversion are available through subscription-manager.
-    """
-    loggerinst.info("Verifying needed RHEL repositories are available ... ")
-    avail_repos = get_avail_repos()
-    loggerinst.info("Repositories available through RHSM:\n%s" % "\n".join(avail_repos) + "\n")
-    non_avail_repos = []
-    all_repos_avail = True
-
-    for repo_id in repo_ids_needed:
-        if repo_id not in avail_repos:
-            # TODO: List the packages that would be left untouched
-            loggerinst.warning(
-                "Some repositories are not available: %s."
-                " Some packages may not be replaced with their corresponding"
-                " RHEL packages when converting. The converted system will end up"
-                " with a mixture of packages from RHEL and your current distribution." % repo_id
-            )
-            non_avail_repos.append(repo_id)
-            all_repos_avail = False
-
-    if all_repos_avail:
-        loggerinst.info("Needed RHEL repositories are available.")
-    return non_avail_repos
 
 
 def download_rhsm_pkgs():
