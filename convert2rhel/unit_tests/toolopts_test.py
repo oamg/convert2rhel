@@ -679,15 +679,11 @@ def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypat
     ("argv", "expected"),
     (
         ([], ["convert"]),
-        (["convert", "--debug"], ["--debug", "convert"]),
-        (["analyze", "--debug"], ["--debug", "analyze"]),
-        (["--password=convert", "--debug", "convert"], ["--debug", "convert", "--password=convert"]),
-        (
-            ["--username", "convert", "-h", "--password", "xxxx", "--debug", "convert", "--pool", "xxxx"],
-            ["-h", "--debug", "convert", "--username", "convert", "--password", "xxxx", "--pool", "xxxx"],
-        ),
+        (["--debug"], ["convert", "--debug"]),
+        (["analyze", "--debug"], ["analyze", "--debug"]),
+        (["--password=convert", "--debug"], ["convert", "--password=convert", "--debug"]),
     ),
 )
-def test_organize_cli_options(argv, expected, monkeypatch):
+def test_add_default_command(argv, expected, monkeypatch):
     monkeypatch.setattr(sys, "argv", argv)
-    assert convert2rhel.toolopts._organize_cli_options(argv) == expected
+    assert convert2rhel.toolopts._add_default_command(argv) == expected

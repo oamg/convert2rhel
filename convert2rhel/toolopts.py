@@ -22,6 +22,8 @@ import os
 import re
 import sys
 
+from argparse import SUPPRESS
+
 from six.moves import configparser, urllib
 
 from convert2rhel import __version__, utils
@@ -105,14 +107,19 @@ class CLI(object):
     def __init__(self):
         self._parser = self._get_argparser()
         self._shared_options_parser = argparse.ArgumentParser(add_help=False)
+        # Duplicating parent options here as we want to make it
+        # available for any other basic operation that we run without a
+        # subcommand in mind, and, it is a shared option so we can share it
+        # between any subcommands we may create in the future.
+        self._register_parent_options(self._parser)
+        self._register_parent_options(self._shared_options_parser)
         self._register_options()
-        self._register_commands()
         self._process_cli_options()
 
     @staticmethod
     def _get_argparser():
         usage = (
-            "\n"
+            "\n    "
             "  convert2rhel\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
@@ -125,14 +132,14 @@ class CLI(object):
             " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             r"  convert2rhel {analyze}"
             "\n\n"
-            "*WARNING* The tool needs to be run under the root user"
+            "*WARNING* The tool needs to be run under the root user\n"
         )
         return argparse.ArgumentParser(
-            conflict_handler="resolve", usage=usage, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            conflict_handler="resolve", usage=usage, formatter_class=argparse.RawTextHelpFormatter
         )
 
     def _register_commands(self):
-        """ """
+        """Configures parsers specific to the analyze and convert subcommands"""
         subparsers = self._parser.add_subparsers(title="Subcommands", dest="command")
         self._analyze_parser = subparsers.add_parser(
             "analyze",
@@ -141,13 +148,29 @@ class CLI(object):
             " A rollback is initiated after the checks to put the system back"
             " in the original state.",
             parents=[self._shared_options_parser],
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            formatter_class=argparse.RawTextHelpFormatter,
+            usage=SUPPRESS,
         )
         self._convert_parser = subparsers.add_parser(
             "convert",
             help="Convert the system.",
             parents=[self._shared_options_parser],
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            formatter_class=argparse.RawTextHelpFormatter,
+            usage=SUPPRESS,
+        )
+
+    def _register_parent_options(self, parser):
+        """Prescribe what parent command line options the tool accepts."""
+        parser.add_argument(
+            "--version",
+            action="version",
+            version=__version__,
+            help="Show convert2rhel version and exit.",
+        )
+        parser.add_argument(
+            "--debug",
+            action="store_true",
+            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
         )
 
     def _register_options(self):
@@ -157,32 +180,6 @@ class CLI(object):
             "--help",
             action="help",
             help="Show help message and exit.",
-        )
-        self._parser.add_argument(
-            "--version",
-            action="version",
-            version=__version__,
-            help="Show convert2rhel version and exit.",
-        )
-        # TODO: check if this option is suited to be a shared option
-        self._parser.add_argument(
-            "--config_file",
-            action="append",
-            help="The configuration file is an optional way to safely pass either a user password or an activation key",
-        )
-        # Duplicating both `--debug`` options here as we want to make it
-        # available for any other basic operation that we run without a
-        # subcommand in mind, and, it is a shared option so we can share it
-        # between any subcommands we may create in the future.
-        self._parser.add_argument(
-            "--debug",
-            action="store_true",
-            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
-        )
-        self._shared_options_parser.add_argument(
-            "--debug",
-            action="store_true",
-            help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
         )
         self._shared_options_parser.add_argument(
             "--no-rpm-va",
@@ -214,19 +211,23 @@ class CLI(object):
 
         self._add_subscription_manager_options()
         self._add_alternative_installation_options()
-        self._add_automation_options()
+        self._register_commands()
+        self._add_automation_options(self._convert_parser, restart=True)
+        self._add_automation_options(self._analyze_parser, restart=False)
 
-    def _add_automation_options(self):
-        group = self._shared_options_parser.add_argument_group(
+    def _add_automation_options(self, parser, restart):
+        """Prescribe what automation command line options the tool accepts."""
+        group = parser.add_argument_group(
             title="Automation Options",
             description="The following options are used to automate the installation",
         )
-        group.add_argument(
-            "-r",
-            "--restart",
-            help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
-            action="store_true",
-        )
+        if restart:
+            group.add_argument(
+                "-r",
+                "--restart",
+                help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
+                action="store_true",
+            )
         group.add_argument(
             "-y",
             help="Answer yes to all yes/no questions the tool asks.",
@@ -234,6 +235,7 @@ class CLI(object):
         )
 
     def _add_alternative_installation_options(self):
+        """Prescribe what alternative command line options the tool accepts."""
         group = self._shared_options_parser.add_argument_group(
             title="Alternative Installation Options",
             description="The following options are required if you do not intend on using subscription-manager",
@@ -252,6 +254,7 @@ class CLI(object):
         )
 
     def _add_subscription_manager_options(self):
+        """Prescribe what subscription manager command line options the tool accepts."""
         group = self._shared_options_parser.add_argument_group(
             title="Subscription Manager Options",
             description="The following options are specific to using subscription-manager.",
@@ -361,7 +364,7 @@ class CLI(object):
         argv = sys.argv[1:]
 
         # algorithm function to properly organize all CLI args
-        argv = _organize_cli_options(argv)
+        argv = _add_default_command(argv)
 
         has_subcommand = False
         for index, argument in enumerate(argv):
@@ -374,7 +377,6 @@ class CLI(object):
             args.insert(0, "convert")
 
         args.extend(argv)
-
         parsed_opts = self._parser.parse_args(args)
 
         if parsed_opts.debug:
@@ -490,7 +492,10 @@ class CLI(object):
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
-        tool_opts.restart = parsed_opts.restart
+
+        # conversion only options
+        if tool_opts.activity == "conversion":
+            tool_opts.restart = parsed_opts.restart
 
         if parsed_opts.activationkey:
             tool_opts.activation_key = parsed_opts.activationkey
@@ -663,27 +668,16 @@ def _validate_serverurl_parsing(url_parts):
     return url_parts
 
 
-def _organize_cli_options(argv):
-    """Organize the command line options used with the tool"""
-    # if an arg is a command or parent parser (_parser) we need to reorganize them to be infront of the other args
-    args = []
-    arg_pos = 0
-    if len(argv):
-        # Add each argument based on the position of the parent options
-        # Reorder each to be before options other than parent ones.
-        for index, argument in enumerate(argv):
-            if argument in PARENT_ARGS and argv[index - 1] not in ARGS_WITH_VALUES:
-                args.insert(arg_pos, argument)
-                arg_pos += 1
-            # If the argument is either `convert` or `analyze` and not after
-            # an argument that accepts a value, then we do the reordering
-            elif argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
-                args.insert(arg_pos, argument)
-            else:
-                # Append here anything else that is in the argv.
-                args.append(argument)
-    else:
-        args.append("convert")
+def _add_default_command(argv):
+    """Add the default command when none is given"""
+    args = argv
+    for index, argument in enumerate(args):
+        if argument in ("convert", "analyze"):
+            return args
+        if not argument in PARENT_ARGS and argv[index - 1] in ARGS_WITH_VALUES:
+            break
+
+    args.insert(0, "convert")
     return args
 
 
