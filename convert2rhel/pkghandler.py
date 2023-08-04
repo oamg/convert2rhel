@@ -18,6 +18,7 @@
 import glob
 import logging
 import os
+import os.path
 import re
 
 from collections import namedtuple
@@ -25,7 +26,7 @@ from collections import namedtuple
 import rpm
 
 from convert2rhel import backup, pkgmanager, utils
-from convert2rhel.backup import RestorableFile, RestorableRpmKey, remove_pkgs
+from convert2rhel.backup import RestorableFile, remove_pkgs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -36,6 +37,37 @@ loggerinst = logging.getLogger(__name__)
 # an error.
 MAX_YUM_CMD_CALLS = 3
 
+# Directory to temporarily store rpms to be installed
+SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
+# Dirctory to temporarily store yum repo configuration to download rhs packages
+# from
+_RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
+
+# Configuration of the repository to get Red Hat created packages for RHEL7
+# from before we have access to all of RHEL.
+_UBI_7_REPO_CONTENT = (
+    "[ubi-7-convert2rhel]\n"
+    "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
+    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
+    "gpgcheck=1\n"
+    "enabled=1\n"
+)
+# Path to the repository file that we store the RHEL7-compatible repo file.
+_UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
+
+# Configuration of the repository to get Red Hat created packages for RHEL8
+# from before we have access to all of RHEL
+# We are using UBI 8 instead of CentOS Linux 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS Linux 8
+# https://bugs.centos.org/view.php?id=17907
+_UBI_8_REPO_CONTENT = (
+    "[ubi-8-baseos-convert2rhel]\n"
+    "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
+    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
+    "gpgcheck=1\n"
+    "enabled=1\n"
+)
+# Path to the repository file that we store the RHEL8-compatible repo file.
+_UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
@@ -88,6 +120,167 @@ PackageInformation = namedtuple(
         "signature",
     ),
 )
+
+
+class RestorablePackageSet(backup.RestorableChange):
+    """Install a set of packages in a way that they can be uninstalled later.
+
+    .. warn:: This functionality is incomplete (These are things that need cleanup)
+        Installing and restoring packagesets are very complex. This class needs work before it is
+        generic for any set of packages. It currently hardcodes values that are specific to
+        downloading subscription-manager and how we do that.
+
+        Implementing it in a half-ready state because we need it to install and remove
+        subscription-manager rpms at the right time relative to unregistering the system. As such,
+        this class relies heavily on the implementation of downloading and installing
+        subscription-manager. To make this generic, some pieces of that will need to move into
+        this class:
+
+        * Need a generic way to specify the UBI_X_REPO_PATH and UBI_X_REPO_CONTENT vars. Parameters
+          to __init__?  Parameter to install pkgs from "symbolic name" (vendor, pre-rhel, rhel,
+          enablerepos)? which we map to specific repo configurations?
+        * Backup and restore the vendor versions of packages which are in update_pkgs.
+        * Rename the global variables for SUBMGR_RPS_DIR, _RHSM_TMP_DIR, _UBI_7_REPO_CONTENT,
+          _UBI_7_REPO_PATH, _UBI_8_REPO_CONTENT, _UBI_8_REPO_PATH to more generic names
+        * Rename the helper functions: download_rhsm_pkgs, _log_rhsm_download_directory_contents,
+          exit_on_failed_download
+        * Is the "We're using distro-sync" comment wrong?  We are using install, not distro-sync and
+          git log never shows us using distro-sync.
+        * This class is useful for package installation but not package removal. To replace backup.ChangedRPMPackagesController and back.RestorablePackage, we need to implement removal as well.  Should we do that here or in a second class?
+          * Note: ChangedRPMPackagesController might still have code that deals with package replacement.  AFAIK, that can be removed entirely.  As of 1.4, there's never a time where we replace rpms and can restore them.  (Installing might upgrade dependencies from the vendor to other vendor packages).
+        * Do we need to deal with dependency version issues?  With this code, if an installed dependency is an older version than the subscription-manager package we're installing needs to upgrade and the upgraded version is not present in the vendor's repo, then we will fail.
+        * Do we want to filter already installed packages from the package_list in this function
+          or leave it to the caller? If we leave it to the caller, then we need to backup vendor supplied previous files here and restore them on rollback. (Currently the
+          caller handles this via subscription.needed_subscription_manager_pkgs().  This could cause problems if we need to do extra handling in enable/restore for packages which already exist on the system.)
+        * Do we always want to pre-download the rpms and install from a directory of package files
+          or do we sometimes want yum to download and install as one step? (Current caller
+          doesn't care in subscription.install_rhel_subscription_manager().)
+        * Why is system_info.is_rpm_installed() implemented in syste_info? Evaluate if it should be
+          moved here.
+
+    .. warn:: Some things that are not handled by this class:
+        * Packages installed as a dependency on packages listed here will not be rolled back to the
+          system default if we rollback the changes.
+    """
+
+    def __init__(self, pkgs_to_install, pkgs_to_update=None):
+        self.pkgs_to_install = pkgs_to_install
+        self.pkgs_to_update = pkgs_to_update or []
+        self.installed_pkgs = []
+        self.updated_pkgs = []
+
+        super(RestorablePackageSet, self).__init__()
+
+    def enable(self):
+        if self.enabled:
+            return
+
+        self._enable()
+
+        super(RestorablePackageSet, self).enable()
+
+    def _enable(self):
+        """
+        Actually install packages.  Do it in a helper so that we always call super() even if we
+        exit early.
+        """
+        if not self.pkgs_to_install:
+            loggerinst.info("All packages were already installed")
+            return
+
+        # Note, this use of mkdir_p is secure because SUBMGR_RPMS_DIR and
+        # _RHSM_TMP_DIR do not contain any path components writable by
+        # a different user.
+        utils.mkdir_p(SUBMGR_RPMS_DIR)
+        utils.mkdir_p(_RHSM_TMP_DIR)
+
+        loggerinst.info("Downloading requested packages")
+        all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
+
+        if system_info.version.major == 7:
+            download_rhsm_pkgs(all_pkgs_to_install, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
+        elif system_info.version.major == 8:
+            download_rhsm_pkgs(all_pkgs_to_install, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
+
+        # installing the packages
+        rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
+
+        loggerinst.info("Installing subscription-manager RPMs.")
+        loggerinst.debug("Rpms scheduled to be installed: %s" % utils.format_sequence_as_message(rpms_to_install))
+
+        _, ret_code = call_yum_cmd(
+            # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
+            # and we need these packages to be replaced with the provided RPMs from RHEL.
+            command="install",
+            args=rpms_to_install,
+            print_output=True,
+            # When installing subscription-manager packages, the RHEL repos are
+            # not available yet for getting dependencies so we need to use the repos that are
+            # available on the system
+            enable_repos=[],
+            disable_repos=[],
+            # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
+            set_releasever=False,
+        )
+        if ret_code:
+            loggerinst.critical(
+                "Failed to install subscription-manager packages. See the above yum output for details."
+            )
+
+        installed_pkg_names = get_pkg_names_from_rpm_paths(rpms_to_install)
+        loggerinst.info(
+            "\nPackages we installed or updated:\n%s" % utils.format_sequence_as_message(installed_pkg_names)
+        )
+
+        # We could rely on these always being installed/updated when
+        # self.enabled is True but putting the values into separate attributes
+        # is more friendly if outside code needs to inspect the values.
+        # It is tempting to use the rpms we actually installed to populate these
+        # but we would have to extract both name and arch information from the
+        # rpms if we do that. (for the cornercases where a pkg for one arch is
+        # already installed and we have to install a different one.
+        self.installed_pkgs = self.pkgs_to_install[:]
+        self.updated_pkgs = self.pkgs_to_update[:]
+
+        super(RestorablePackageSet, self).enable()
+
+    def restore(self):
+        if not self.enabled:
+            return
+
+        loggerinst.task("Convert: Remove installed RHSM packages")
+        loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
+        backup.remove_pkgs(self.installed_pkgs, backup=False, critical=False)
+
+        super(RestorablePackageSet, self).restore()
+
+
+def download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
+    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
+
+    utils.store_content_to_file(filename=repo_path, content=repo_content)
+    paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
+
+    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")
+
+    if None in paths:
+        loggerinst.critical(
+            "Unable to download the subscription-manager package or its dependencies. See details of"
+            " the failed yumdownloader call above. These packages are necessary for the conversion"
+            " unless you use the --no-rhsm option."
+        )
+
+
+def _log_rhsm_download_directory_contents(directory, when_message):
+    pkgs = ["<download directory does not exist>"]
+    if os.path.isdir(SUBMGR_RPMS_DIR):
+        pkgs = os.listdir(SUBMGR_RPMS_DIR)
+    loggerinst.debug(
+        "Contents of %s directory %s:\n%s",
+        SUBMGR_RPMS_DIR,
+        when_message,
+        "\n".join(pkgs),
+    )
 
 
 def call_yum_cmd(
@@ -670,7 +863,7 @@ def install_gpg_keys():
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
         try:
-            restorable_key = RestorableRpmKey(gpg_key)
+            restorable_key = backup.RestorableRpmKey(gpg_key)
             backup.backup_control.push(restorable_key)
         except utils.ImportGPGKeyError as e:
             loggerinst.critical("Importing the GPG key into rpm failed:\n %s" % str(e))
@@ -952,25 +1145,6 @@ def clear_versionlock():
         call_yum_cmd("versionlock", args=["clear"], print_output=False)
     else:
         loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
-
-
-def filter_installed_pkgs(pkg_names):
-    """Check if a package is present on the system based on a list of package names.
-    This function aims to act as a filter for a list of pkg_names to return wether or not a package is present on the
-    system.
-    :param pkg_names: List of package names
-    :type pkg_names: list[str]
-    :return: A list of packages that are present on the system.
-    :rtype: list[str]
-    """
-    rpms_present = []
-    for pkg in pkg_names:
-        # Check for already installed packages.
-        # If a package is installed, add it to a list which is returned.
-        if system_info.is_rpm_installed(pkg):
-            rpms_present.append(pkg)
-
-    return rpms_present
 
 
 def get_pkg_names_from_rpm_paths(rpm_paths):

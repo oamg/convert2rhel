@@ -31,7 +31,7 @@ from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, 
 
 loggerinst = logging.getLogger(__name__)
 
-
+# Note: Currently the only use case for this is package removals
 class ChangedRPMPackagesController(object):
     """Keep control of installed/removed RPM pkgs for backup/restore."""
 
@@ -331,6 +331,8 @@ class RestorableFile(object):
             loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
 
 
+# Over time we want to replace this with pkghandler.RestorablePackageSet
+# Right now, this is still used for removed packages.  Installed packages are handled by pkghandler.RestorablePackageSet
 class RestorablePackage(object):
     def __init__(self, pkgname):
         self.name = pkgname

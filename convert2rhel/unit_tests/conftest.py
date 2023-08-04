@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 import pytest
@@ -8,7 +9,7 @@ from convert2rhel import backup, cert, pkgmanager, redhatrelease, systeminfo, to
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import get_pytest_marker
+from convert2rhel.unit_tests import MinimalRestorable
 
 
 if sys.version_info[:2] <= (2, 7):
@@ -112,33 +113,15 @@ def setup_logger(tmpdir):
 @pytest.fixture
 def system_cert_with_target_path(monkeypatch, tmpdir, request):
     """
-    Create a single SystemCert backed by a temp file.
+    Create a single PEMCert backed by a temp file.
 
-    Use it in unit tests when you need a SystemCert that has a real file backing it.
+    Use it in unit tests when you need a PEMCert that has a real file backing it.
 
-    You may use a custom pytest.mark named cert_filename to use a specific file name in the temp directory.
-    If you don't the file name will be arbitrary.
-
-    We use this mark instead of using parametrize because parametrize is mainly used to run a test multiple times
-    with diffrent data. For constant data, pytest recommends the use of custom markers.
-
-    .. seealso::
-        https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#using-markers-to-pass-data-to-fixtures
+    The cert to be copied is the RHEL8 cert, 479.pem.
     """
-    cert_file_returns = get_pytest_marker(request, "cert_filename")
+    pem_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/8/x86_64/rhel-certs"))
 
-    if not cert_file_returns:
-        temporary_filename = "filename"
-    else:
-        temporary_filename = cert_file_returns.args[0]
-
-    tmp_file = tmpdir / temporary_filename
-
-    monkeypatch.setattr(cert.SystemCert, "_get_cert", value=mock.Mock(return_value=("anything", "anything")))
-    monkeypatch.setattr(cert.SystemCert, "_get_target_cert_path", value=mock.Mock(return_value=str(tmp_file)))
-
-    sys_cert = cert.SystemCert()
-
+    sys_cert = cert.PEMCert(pem_dir, str(tmpdir))
     return sys_cert
 
 
@@ -307,3 +290,8 @@ oracle8 = pytest.mark.parametrize(
     (("8.6.1111", "Oracle Linux Server"),),
     indirect=True,
 )
+
+
+@pytest.fixture
+def restorable():
+    return MinimalRestorable()

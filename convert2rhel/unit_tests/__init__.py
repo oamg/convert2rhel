@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import collections
 import functools
 import os
 import unittest
@@ -22,7 +23,7 @@ import unittest
 import pytest
 import six
 
-from convert2rhel import grub
+from convert2rhel import backup, grub
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
@@ -514,3 +515,17 @@ class EFIBootInfoMocked:
                     efi_bin_source="FvVol(7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1)/FvFile(462caa21-7614-4503-836e-8ab6f4662331)",
                 ),
             }
+
+
+class MinimalRestorable(backup.RestorableChange):
+    def __init__(self):
+        self.called = collections.defaultdict(int)
+        super(MinimalRestorable, self).__init__()
+
+    def enable(self):
+        self.called["enable"] += 1
+        super(MinimalRestorable, self).enable()
+
+    def restore(self):
+        self.called["restore"] += 1
+        super(MinimalRestorable, self).restore()

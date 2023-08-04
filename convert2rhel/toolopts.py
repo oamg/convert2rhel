@@ -85,11 +85,7 @@ class ToolOpts(object):
         self.org = None
         self.arch = None
         self.no_rpm_va = False
-        self.keep_rhsm = False
         self.activity = None
-
-        # set True when credentials (username & password) are given through CLI
-        self.credentials_thru_cli = False
 
     def set_opts(self, supported_opts):
         """Set ToolOpts data using dict with values from config file.
@@ -122,12 +118,12 @@ class CLI(object):
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
             "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart]"
+            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart]"
             " [-y]\n"
             "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+            " repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             r" convert2rhel {analyze}"
             "\n\n"
             "*WARNING* The tool needs to be run under the root user\n"
@@ -344,11 +340,8 @@ class CLI(object):
         group.add_argument(
             "--keep-rhsm",
             action="store_true",
-            help="Keep the already installed Red Hat Subscription Management-related packages. By default,"
-            " during the conversion, these packages are removed, downloaded from verified sources and re-installed."
-            " This option is suitable for environments with no connection to the Internet, or for systems managed by"
-            " Red Hat Satellite. Warning: The system is being re-registered during the conversion and when the"
-            " re-registration fails, there's no automated rollback to the original registration.",
+            help="Deprecated. This option has no effect. Convert2rhel will now use whatever"
+            " subscription-manager packages are present on the system.",
         )
 
     def _process_cli_options(self):
@@ -377,7 +370,7 @@ class CLI(object):
 
         # Processing the configuration file
         conf_file_opts = options_from_config_files(parsed_opts.config_file)
-        ToolOpts.set_opts(tool_opts, conf_file_opts)  # pylint: disable=E0601
+        tool_opts.set_opts(conf_file_opts)
         config_opts = copy.copy(tool_opts)
         tool_opts.config_file = parsed_opts.config_file
         # corner case: password on CLI or in password file and activation-key in the config file
@@ -418,6 +411,7 @@ class CLI(object):
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
                 loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
+
         if not tool_opts.disablerepo:
             # Default to disable every repo except:
             # - the ones passed through --enablerepo
@@ -427,10 +421,22 @@ class CLI(object):
         if parsed_opts.pool:
             tool_opts.pool = parsed_opts.pool
 
+        if parsed_opts.activationkey:
+            tool_opts.activation_key = parsed_opts.activationkey
+
+        if parsed_opts.org:
+            tool_opts.org = parsed_opts.org
+
         if parsed_opts.serverurl:
             if tool_opts.no_rhsm:
                 loggerinst.warning(
                     "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
+                )
+            # WARNING: We cannot use the following helper until after no_rhsm,
+            # username, password, activation_key, and organization have been set.
+            elif not _should_subscribe(tool_opts):
+                loggerinst.warning(
+                    "Ignoring the --serverurl option. It has no effect when no credentials to subscribe the system were given."
                 )
             else:
                 # Parse the serverurl and save the components.
@@ -465,12 +471,12 @@ class CLI(object):
                     tool_opts.rhsm_prefix = url_parts.path
 
         if parsed_opts.keep_rhsm:
-            if tool_opts.no_rhsm:
-                loggerinst.warning(
-                    "Ignoring the --keep-rhsm option. It has no effect when --disable-submgr or --no-rhsm is used."
-                )
-            else:
-                tool_opts.keep_rhsm = parsed_opts.keep_rhsm
+            loggerinst.warning(
+                "The --keep-rhsm option is deprecated and will be removed in"
+                " the future. Convert2rhel will now always use the"
+                " subscription-manager packages which are already installed on"
+                " the system so this option has no effect."
+            )
 
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
@@ -479,19 +485,16 @@ class CLI(object):
         if tool_opts.activity == "conversion":
             tool_opts.restart = parsed_opts.restart
 
-        if parsed_opts.activationkey:
-            tool_opts.activation_key = parsed_opts.activationkey
-
-        if parsed_opts.org:
-            tool_opts.org = parsed_opts.org
-
-        # Checks of multiple authentication sources
-        if tool_opts.password and tool_opts.activation_key:
+        # Security notice
+        if tool_opts.password or tool_opts.activation_key:
             loggerinst.warning(
                 "Passing the RHSM password or activation key through the --activationkey or --password options is"
                 " insecure as it leaks the values through the list of running processes. We recommend using the safer"
                 " --config-file option instead."
             )
+
+        # Checks of multiple authentication sources
+        if tool_opts.password and tool_opts.activation_key:
             loggerinst.warning(
                 "Either a password or an activation key can be used for system registration."
                 " We're going to use the activation key."
@@ -504,13 +507,13 @@ class CLI(object):
             )
 
         # Config files matches
-        if config_opts.username or config_opts.org:
+        if config_opts.username and parsed_opts.username:
             loggerinst.warning(
                 "You have passed the RHSM username through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
-        if parsed_opts.username or parsed_opts.org:
+        if config_opts.org and parsed_opts.org:
             loggerinst.warning(
                 "You have passed the RHSM org through both the command line and the"
                 " configuration file. We're going to use the command line values."
@@ -532,9 +535,6 @@ class CLI(object):
             loggerinst.critical(
                 "Either the --organization or the --activationkey option is missing. You can't use one without the other."
             )
-
-        if tool_opts.username and tool_opts.password:
-            tool_opts.credentials_thru_cli = True
 
 
 def warn_on_unsupported_options():
@@ -661,6 +661,29 @@ def _add_default_command(argv):
 
     args.insert(0, "convert")
     return args
+
+
+def _should_subscribe(tool_opts):
+    """
+    Whether we should subscribe the system with subscription-manager.
+
+    If there are no ways to authenticate to subscription-manager, then we will attempt to convert
+    without subscribing the system.  The assumption is that the user has already subscribed the
+    system or that this machine does not need to subscribe to rhsm in order to get the RHEL rpm
+    packages.
+    """
+    # No means to authenticate with rhsm.
+    if not (tool_opts.username and tool_opts.password) and not (tool_opts.activation_key and tool_opts.org):
+        return False
+
+    # --no-rhsm means that there is no need to use any part of rhsm to
+    # convert this host.  (Usually used when you configure
+    # your RHEL repos another way, like a local mirror and telling
+    # convert2rhel about it using --enablerepo)
+    if tool_opts.no_rhsm:
+        return False
+
+    return True
 
 
 # Code to be executed upon module import

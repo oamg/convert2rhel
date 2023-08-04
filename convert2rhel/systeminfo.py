@@ -329,7 +329,7 @@ class SystemInfo(object):
     def get_enabled_rhel_repos(self):
         """Get a list of enabled repositories containing RHEL packages.
 
-        This function can return either the repositories enabled throught the RHSM tool during the conversion or, if
+        This function can return either the repositories enabled through the RHSM tool during the conversion or, if
         the user manually specified the repositories throught the CLI, it will return them based on the
         `tool_opts.enablerepo` option.
 

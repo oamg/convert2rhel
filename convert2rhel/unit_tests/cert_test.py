@@ -19,6 +19,8 @@ import shutil
 
 import pytest
 
+from six.moves import mock
+
 from convert2rhel import cert, unit_tests, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -58,7 +60,7 @@ def cert_dir(monkeypatch, request):
     ),
     (
         pytest.param(
-            "Error: System certificate (.pem) not found in %(cert_dir)s.",
+            "Error: No certificate (.pem) found in %(cert_dir)s.",
             {
                 "data_dir": unit_tests.TMP_DIR,
                 "arch": "arch",
@@ -79,80 +81,180 @@ def cert_dir(monkeypatch, request):
 def test_get_cert_path_missing_cert(message, caplog, cert_dir):
     # Check response for the non-existing certificate in the temporary dir
     with pytest.raises(SystemExit):
-        cert.SystemCert._get_cert()
+        cert._get_cert(cert_dir)
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "CRITICAL"
     assert caplog.records[0].message == message % {"cert_dir": cert_dir}
 
 
-@pytest.mark.parametrize(
-    ("arch", "rhel_version", "pem"),
-    (
-        ("ppc64", "7", "74.pem"),
-        ("x86_64", "7", "69.pem"),
-        ("x86_64", "8", "479.pem"),
-    ),
-)
-def test_get_cert_path(arch, rhel_version, pem, monkeypatch):
-    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, rhel_version, arch))
-    # Check there are certificates for all the supported RHEL variants
-    system_cert = cert.SystemCert()
-
-    cert_path = system_cert._source_cert_path
-    assert cert_path == "{0}/rhel-certs/{1}".format(utils.DATA_DIR, pem)
-
-
-def test_install_cert(monkeypatch, tmpdir):
-    monkeypatch.setattr(tool_opts, "arch", "x86_64")
-    monkeypatch.setattr(utils, "DATA_DIR", os.path.join(BASE_DATA_DIR, "7", "x86_64"))
-
-    # By initializing the cert object we get a path to an existing
-    # certificate based on the mocked parameters above
-    system_cert = cert.SystemCert()
-    system_cert._target_cert_dir = str(tmpdir)
-
-    system_cert.install()
-
-    installed_cert_path = os.path.join(system_cert._target_cert_dir, system_cert._cert_filename)
-    assert os.path.exists(installed_cert_path)
-
-
-@pytest.mark.cert_filename("filename")
-def test_remove_cert(caplog, system_cert_with_target_path):
-    cert_file_path = system_cert_with_target_path._target_cert_path
-    with open(cert_file_path, "wb") as cert_file:
-        cert_file.write(b"some content")
-
-    system_cert_with_target_path.remove()
-
-    assert "Certificate %s removed" % cert_file_path in caplog.messages[-1]
-
-
-@pytest.mark.parametrize(
-    (
-        "error_condition",
-        "text_not_expected_in_logs",
-    ),
-    (
+class TestPEMCert:
+    @pytest.mark.parametrize(
+        ("arch", "rhel_version", "pem"),
         (
-            OSError(2, "No such file or directory"),
-            "No such file or directory",
+            ("ppc64", "7", "74.pem"),
+            ("x86_64", "7", "69.pem"),
+            ("x86_64", "8", "479.pem"),
+        ),
+    )
+    def test_init_cert_paths(self, arch, rhel_version, pem, monkeypatch, tmpdir):
+        source_cert_dir = os.path.join(BASE_DATA_DIR, rhel_version, arch, "rhel-certs")
+        fake_target_dir = "/another/directory"
+        # Check there are certificates for all the supported RHEL variants
+        system_cert = cert.PEMCert(source_cert_dir, fake_target_dir)
+
+        # Check that the certificate paths were set properly
+        assert system_cert._cert_filename == pem
+        assert system_cert._source_cert_path == os.path.join(source_cert_dir, pem)
+        assert system_cert._target_cert_path == os.path.join(fake_target_dir, pem)
+        assert system_cert.previously_installed == False
+
+    def test_enable_cert(self, monkeypatch, system_cert_with_target_path):
+        system_cert_with_target_path.enable()
+
+        assert system_cert_with_target_path.enabled
+        assert system_cert_with_target_path.previously_installed is False
+        installed_cert = os.path.join(
+            system_cert_with_target_path._target_cert_dir, system_cert_with_target_path._cert_filename
+        )
+        assert os.path.exists(installed_cert)
+
+        with open(os.path.join(system_cert_with_target_path._source_cert_dir, "479.pem")) as f:
+            source_contents = f.read()
+
+        with open(installed_cert) as f:
+            installed_contents = f.read()
+
+        assert installed_contents == source_contents
+
+    def test_enable_already_enabled(self, monkeypatch, system_cert_with_target_path):
+        real_copy2 = shutil.copy2
+
+        class FakeCopy2:
+            def __init__(self):
+                self.call_count = 0
+
+            def __call__(self, *args, **kwargs):
+                self.call_count += 1
+                return real_copy2(*args, **kwargs)
+
+        monkeypatch.setattr(shutil, "copy2", FakeCopy2())
+
+        system_cert_with_target_path.enable()
+        previous_number_of_calls = shutil.copy2.call_count
+        system_cert_with_target_path.enable()
+
+        # Assert we did not double the actual enable
+        assert shutil.copy2.call_count == previous_number_of_calls
+        # Check that nothing has changed
+        assert system_cert_with_target_path.enabled
+        assert system_cert_with_target_path.previously_installed is False
+        installed_cert = os.path.join(
+            system_cert_with_target_path._target_cert_dir, system_cert_with_target_path._cert_filename
+        )
+        assert os.path.exists(installed_cert)
+
+        with open(os.path.join(system_cert_with_target_path._source_cert_dir, "479.pem")) as f:
+            source_contents = f.read()
+
+        with open(installed_cert) as f:
+            installed_contents = f.read()
+
+        assert installed_contents == source_contents
+
+    def test_enable_certificate_already_present(self, caplog, system_cert_with_target_path):
+        with open(system_cert_with_target_path._target_cert_path, "w") as f:
+            f.write("Content")
+
+        system_cert_with_target_path.enable()
+
+        assert system_cert_with_target_path.enabled
+        assert system_cert_with_target_path.previously_installed
+        assert (
+            "Certificate already present at %s. Skipping copy." % system_cert_with_target_path._target_cert_path
+            == caplog.messages[-1]
+        )
+
+    def test_enable_certificate_error(self, caplog, monkeypatch, system_cert_with_target_path):
+        fake_mkdir_p = mock.Mock(side_effect=OSError(13, "Permission denied"))
+        monkeypatch.setattr(utils, "mkdir_p", fake_mkdir_p)
+
+        with pytest.raises(SystemExit):
+            system_cert_with_target_path.enable()
+
+        assert "OSError(13): Permission denied" == caplog.messages[-1]
+
+    def test_restore_cert(self, caplog, monkeypatch, system_cert_with_target_path):
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("479.pem is not owned by any package", 1)))
+        system_cert_with_target_path.enable()
+
+        system_cert_with_target_path.restore()
+
+        assert "Certificate %s removed" % system_cert_with_target_path._target_cert_path in caplog.messages[-1]
+
+    def test_restore_cert_previously_installed(self, caplog, monkeypatch, system_cert_with_target_path):
+        monkeypatch.setattr(os.path, "exists", lambda x: True)
+        system_cert_with_target_path.enable()
+
+        system_cert_with_target_path.restore()
+
+        assert (
+            "Certificate %s was present before conversion. Skipping removal."
+            % system_cert_with_target_path._cert_filename
+            in caplog.messages[-1]
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "error_condition",
+            "text_not_expected_in_logs",
         ),
         (
-            OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"),
-            "OSError(13): Permission denied: '/tmpdir/certfile'",
+            (
+                OSError(2, "No such file or directory"),
+                "No such file or directory",
+            ),
+            (
+                OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"),
+                "OSError(13): Permission denied: '/tmpdir/certfile'",
+            ),
         ),
-    ),
-)
-def test_remove_cert_error_conditions(
-    error_condition, text_not_expected_in_logs, caplog, monkeypatch, system_cert_with_target_path
-):
-    def fake_os_remove(path):
-        raise error_condition
+    )
+    def test_restore_cert_error_conditions(
+        self, error_condition, text_not_expected_in_logs, caplog, monkeypatch, system_cert_with_target_path
+    ):
+        def fake_os_remove(path):
+            raise error_condition
 
-    monkeypatch.setattr(os, "remove", fake_os_remove)
+        monkeypatch.setattr(os, "remove", fake_os_remove)
+        system_cert_with_target_path.enable()
 
-    system_cert_with_target_path.remove()
+        system_cert_with_target_path.restore()
 
-    for message in caplog.messages:
-        assert text_not_expected_in_logs not in message
+        for message in caplog.messages:
+            assert text_not_expected_in_logs not in message
+
+    @pytest.mark.parametrize(
+        ("rpm_exit_code", "rpm_stdout", "expected"),
+        (
+            (
+                0,
+                "subscription-manager-1.0-1.noarch",
+                "A package was installed that owns the certificate %s. Skipping removal.",
+            ),
+            (1, "", "Unable to determine if a package owns certificate %s. Skipping removal."),
+            (
+                1,
+                "Error printed to stdout",
+                "Unable to determine if a package owns certificate" " %s. Skipping removal.",
+            ),
+        ),
+    )
+    def test_restore_rpm_package_owns(
+        self, caplog, monkeypatch, system_cert_with_target_path, rpm_exit_code, rpm_stdout, expected
+    ):
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=(rpm_stdout, rpm_exit_code)))
+        system_cert_with_target_path.enable()
+
+        system_cert_with_target_path.restore()
+
+        assert expected % system_cert_with_target_path._target_cert_path in caplog.messages[-1]

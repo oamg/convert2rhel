@@ -18,7 +18,7 @@
 import logging
 import os
 
-from convert2rhel import actions, backup, breadcrumbs, cert, checks, grub
+from convert2rhel import actions, backup, breadcrumbs, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
@@ -297,15 +297,12 @@ def rollback_changes():
     """Perform a rollback of changes made during conversion."""
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
-    subscription.rollback()
     backup.changed_pkgs_control.restore_pkgs()
     repo.restore_varsdir()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()
     pkghandler.versionlock_file.restore()
-    system_cert = cert.SystemCert()
-    system_cert.remove()
     try:
         backup.backup_control.pop_all()
     except IndexError as e:

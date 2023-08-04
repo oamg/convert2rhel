@@ -17,9 +17,8 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions
+from convert2rhel import actions, subscription
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ class DbusIsRunning(actions.Action):
         super(DbusIsRunning, self).run()
         logger.task("Prepare: Check that DBus Daemon is running")
 
-        if tool_opts.no_rhsm:
+        if not subscription.should_subscribe():
             logger.info("Skipping the check because we have been asked not to subscribe this system to RHSM.")
             self.add_message(
                 level="INFO",

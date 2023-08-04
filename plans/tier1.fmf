@@ -68,9 +68,6 @@ description+: |
                 PROMPT_AMOUNT: 2
               when: distro == oraclelinux-8
         prepare+:
-            - name: test no sub manager installed
-              how: shell
-              script: pytest -svv tests/integration/*/destructive/remove-all-submgr-pkgs/test_no_submgr_pkg_installed.py
             - name: install subscription manager
               how: ansible
               playbook: tests/ansible_collections/roles/install-submgr/main.yml

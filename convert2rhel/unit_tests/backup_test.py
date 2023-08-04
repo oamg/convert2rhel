@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 import collections
 import os
 import unittest
@@ -6,6 +8,7 @@ import pytest
 import six
 
 from convert2rhel import backup, repo, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel.unit_tests import MinimalRestorable
 from convert2rhel.unit_tests.conftest import centos8
 
 
@@ -403,25 +406,6 @@ def test_restorable_package_backup(pretend_os, is_eus_system, has_internet_acces
 @pytest.fixture
 def backup_controller():
     return backup.BackupController()
-
-
-@pytest.fixture
-def restorable():
-    return MinimalRestorable()
-
-
-class MinimalRestorable(backup.RestorableChange):
-    def __init__(self):
-        self.called = collections.defaultdict(int)
-        super(MinimalRestorable, self).__init__()
-
-    def enable(self):
-        self.called["enable"] += 1
-        super(MinimalRestorable, self).enable()
-
-    def restore(self):
-        self.called["restore"] += 1
-        super(MinimalRestorable, self).restore()
 
 
 class TestBackupController:

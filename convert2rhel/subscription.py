@@ -18,9 +18,8 @@
 import logging
 import os
 import re
-import shutil
 
-from collections import namedtuple
+from functools import partial
 from time import sleep
 
 import dbus
@@ -30,36 +29,10 @@ import dbus.exceptions
 from convert2rhel import backup, i18n, pkghandler, utils
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
+from convert2rhel.toolopts import _should_subscribe, tool_opts
 
 
 loggerinst = logging.getLogger(__name__)
-
-SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
-_RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
-_UBI_7_REPO_CONTENT = (
-    "[ubi-7-convert2rhel]\n"
-    "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
-    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
-    "gpgcheck=1\n"
-    "enabled=1\n"
-)
-_UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
-# We are using UBI 8 instead of CentOS Linux 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS Linux 8
-# https://bugs.centos.org/view.php?id=17907
-_UBI_8_REPO_CONTENT = (
-    "[ubi-8-baseos-convert2rhel]\n"
-    "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
-    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
-    "gpgcheck=1\n"
-    "enabled=1\n"
-)
-_UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
-
-# Directory and file that is used for the convert2rhel.repo ssl cert that we
-# tell customers to use to install convert2rhel:
-_RHSM_REPO_CAFILE_DIR = "/etc/rhsm/ca/"
-_CONVERT2RHEL_REPO_CAFILE_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
 
 # We need to translate config settings between names used for the subscription-manager DBus API and
 # names used for the RHSM config file.  This is the mapping for the settings we care about.
@@ -77,26 +50,50 @@ REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 REGISTRATION_TIMEOUT = 180
 
 
-_SUBMGR_PKG_REMOVED_IN_CL_85 = "subscription-manager-initial-setup-addon"
-
-
 class UnregisterError(Exception):
     """Raised with problems unregistering a system."""
+
+
+class RefreshSubscriptionManagerError(Exception):
+    """Raised for problems telling subscription-manager to refresh the subscription information."""
 
 
 class StopRhsmError(Exception):
     """Raised with problems stopping the rhsm daemon."""
 
 
-def subscribe_system():
-    """Register and attach a specific subscription to OS."""
-    while True:
+class RestorableSystemSubscription(backup.RestorableChange):
+    """
+    Register with RHSM in a fashion that can be reverted.
+    """
+
+    # We need this __init__ because it is an abstractmethod in the base class
+    def __init__(self):  # pylint: disable=useless-parent-delegation
+        super(RestorableSystemSubscription, self).__init__()
+
+    def enable(self):
+        """Register and attach a specific subscription to OS."""
+        if self.enabled:
+            return
+
         register_system()
-        if attach_subscription():
-            break
-        # Clear potentially wrong credentials
-        tool_opts.username = None
-        tool_opts.password = None
+        attach_subscription()
+
+        super(RestorableSystemSubscription, self).enable()
+
+    def restore(self):
+        """Rollback subscription related changes"""
+        loggerinst.task("Rollback: RHSM-related actions")
+
+        if self.enabled:
+            try:
+                unregister_system()
+            except UnregisterError as e:
+                loggerinst.warning(str(e))
+            except OSError:
+                loggerinst.warning("subscription-manager not installed, skipping")
+
+        super(RestorableSystemSubscription, self).restore()
 
 
 def unregister_system():
@@ -205,6 +202,24 @@ def register_system():
         loggerinst.critical("Unable to register the system through subscription-manager.")
 
     return None
+
+
+def refresh_subscription_info():
+    """
+    Have subscription-manager pull new subscription data from the server.
+
+    A byproduct of refreshing is that subscription-manager will reexamine the filesystem for the
+    RHSM product certificate.  This is the reason that we need to call this function.
+    """
+    cmd = ["subscription-manager", "refresh"]
+    output, ret_code = utils.run_subprocess(cmd, print_output=False)
+
+    if ret_code != 0:
+        raise RefreshSubscriptionManagerError(
+            "Asking subscription-manager to reexamine its configuration failed: %s; output: %s" % (ret_code, output)
+        )
+
+    loggerinst.info("subscription-manager has reloaded its configuration.")
 
 
 def _stop_rhsm():
@@ -473,7 +488,7 @@ class RegistrationCommand(object):
         """
         Set the connection opts in the rhsm config.
 
-        The command line subscriptioVn-manager register command sets the
+        The command line subscription-manager register command sets the
         config but the DBus API does not.  We need to set it so that
         subsequent subscription-manager cli calls will use the same connection
         settings.
@@ -523,145 +538,16 @@ def _is_registered():
     return False
 
 
-def replace_subscription_manager():
-    """Remove any previously installed subscription-manager packages and install the RHEL ones.
-
-    Make sure the system is unregistered before removing the subscription-manager as not doing so would leave the
-    system to be still registered on the server side, making it dificult for an admin to unregister it afterwards.
+def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     """
-    if tool_opts.keep_rhsm:
-        loggerinst.info("Skipping due to the use of --keep-rhsm.")
-        return
+    Install the RHEL versions of the subscription-manager packages.
 
-    if not os.path.isdir(SUBMGR_RPMS_DIR) or not os.listdir(SUBMGR_RPMS_DIR):
-        loggerinst.critical("The %s directory does not exist or is empty." % SUBMGR_RPMS_DIR)
-
-    try:
-        unregister_system()
-    except UnregisterError as e:
-        loggerinst.warning(str(e))
-
-    remove_original_subscription_manager()
-    install_rhel_subscription_manager()
-
-
-def remove_original_subscription_manager():
-    loggerinst.info("Removing installed subscription-manager/katello-ca-consumer packages.")
-    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
-    submgr_pkgs = pkghandler.get_installed_pkg_objects("*subscription-manager*")
-    # The python-syspurpose, python3-syspurpose, and python3-cloud-what packages are also built out of
-    # the subscription-manager SRPM.
-    submgr_pkgs += pkghandler.get_installed_pkg_objects("python*-syspurpose")
-    submgr_pkgs += pkghandler.get_installed_pkg_objects("python3-cloud-what")
-    # Satellite-server related package
-    submgr_pkgs += pkghandler.get_installed_pkg_objects("katello-ca-consumer*")
-
-    if not submgr_pkgs:
-        loggerinst.info("No packages related to subscription-manager installed.")
-        return
-
-    loggerinst.info("We will now uninstall the following subscription-manager/katello-ca-consumer packages:\n")
-    pkghandler.print_pkg_info(submgr_pkgs)
-    submgr_pkg_names = [pkg.name for pkg in submgr_pkgs]
-
-    if system_info.id == "centos" and system_info.version.major == 8 and system_info.version.minor == 5:
-        if _SUBMGR_PKG_REMOVED_IN_CL_85 in submgr_pkg_names:
-            # The package listed in _SUBMGR_PKG_REMOVED_IN_CL_85 has been
-            # removed from CentOS Linux 8.5 and causes conversion to fail if
-            # it's installed on that system because it's not possible to back it up.
-            # https://bugzilla.redhat.com/show_bug.cgi?id=2046292
-            backup.remove_pkgs([_SUBMGR_PKG_REMOVED_IN_CL_85], backup=False, critical=False)
-            submgr_pkg_names.remove(_SUBMGR_PKG_REMOVED_IN_CL_85)
-
-    # Remove any other subscription-manager packages present on the system
-    backup.remove_pkgs(submgr_pkg_names, critical=False)
-
-
-def install_rhel_subscription_manager():
-    loggerinst.info("Checking for subscription-manager RPMs.")
-    rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
-
-    if not rpms_to_install:
-        loggerinst.warning("No RPMs found in %s." % SUBMGR_RPMS_DIR)
-        return
-
-    # We need to make sure the redhat-uep.pem file exists since the convert2rhel
-    # yum repo file uses it.
-    _check_and_install_redhat_uep_pem()
-
-    # These functions have to be called before installation of the
-    # subscription-manager packages, otherwise
-    # `pkghandler.filter_installed_pkgs()` would return every single package
-    # that is listed in `rpms_to_install` and we don't want this to happen. We
-    # want to know about the packages that were installed before the
-    # installation of subscription-manager.
-    pkg_names = pkghandler.get_pkg_names_from_rpm_paths(rpms_to_install)
-    pkgs_to_not_track = pkghandler.filter_installed_pkgs(pkg_names)
-
-    loggerinst.info("Installing subscription-manager RPMs.")
-    _, ret_code = pkghandler.call_yum_cmd(
-        # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
-        # and we need these packages to be replaced with the provided RPMs from RHEL.
-        command="install",
-        args=rpms_to_install,
-        print_output=True,
-        # When installing subscription-manager packages, the RHEL repos are not available yet => we need to use
-        # the repos that are available on the system
-        enable_repos=[],
-        disable_repos=[],
-        # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
-        set_releasever=False,
-    )
-    if ret_code:
-        loggerinst.critical("Failed to install subscription-manager packages. See the above yum output for details.")
-
-    loggerinst.info("\nPackages installed:\n%s" % "\n".join(rpms_to_install))
-
-    track_installed_submgr_pkgs(pkg_names, pkgs_to_not_track)
-
-
-def _check_and_install_redhat_uep_pem():
+    ..seealso:: :func:`_relevant_subscription_manager_pkgs` for the list of packages that we install.
     """
-    Install the redhat-uep.pem certificate if it is needed.
 
-    We need this for the convert2rhel repo if the user installed using the
-    convert2rhel.repo file:
-    https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo
-
-    This is a workaround for https://issues.redhat.com/browse/RHELC-744
-    When we make uninstalling and reinstalling the RHEL subscription-manager
-    packages a single step process, we will no longer need this as there will
-    always be a redhat-uep.pem available from a package.
-    """
-    rhsm_ca_file = os.path.join(_RHSM_REPO_CAFILE_DIR, "redhat-uep.pem")
-    if not os.path.exists(rhsm_ca_file):
-        # Note: this mkdir_p is secure because CONVERT2RHEL_REPO_CAFILE_DIR is
-        # a constant that does not have any world-writable components.
-        utils.mkdir_p(_RHSM_REPO_CAFILE_DIR)
-
-        # Copy the CA file into place because the convert2rhel repo
-        # configuration needs it.
-        shutil.copy2(_CONVERT2RHEL_REPO_CAFILE_PATH, _RHSM_REPO_CAFILE_DIR)
-
-
-def track_installed_submgr_pkgs(installed_pkg_names, pkgs_to_not_track):
-    """Tracking newly installed subscription-manager pkgs to be able to remove them during a rollback if needed.
-
-    :param installed_pkg_names: List of packages that were installed on the system.
-    :type installed_pkg_names: list[str]
-    :param pkgs_to_not_track: List of packages that needs to be removed from tracking.
-    :type pkgs_to_not_track: list[str]
-    """
-    pkgs_to_track = []
-    for installed_pkg in installed_pkg_names:
-        if installed_pkg not in pkgs_to_not_track:
-            pkgs_to_track.append(installed_pkg)
-        else:
-            # Don't track packages that were present on the system before the installation
-            loggerinst.debug("Skipping tracking previously installed package: %s" % installed_pkg)
-
-    loggerinst.debug("Tracking installed packages: %r" % pkgs_to_track)
-    backup.changed_pkgs_control.track_installed_pkgs(pkgs_to_track)
+    pkgs_to_upgrade = pkgs_to_upgrade or []
+    installed_pkg_set = pkghandler.RestorablePackageSet(pkgs_to_install, pkgs_to_upgrade)
+    backup.backup_control.push(installed_pkg_set)
 
 
 def attach_subscription():
@@ -738,16 +624,10 @@ def get_repo(repos_raw):
 
 def verify_rhsm_installed():
     """Make sure that subscription-manager has been installed."""
-    if not pkghandler.get_installed_pkg_objects("subscription-manager"):
-        if tool_opts.keep_rhsm:
-            loggerinst.critical(
-                "When using the --keep-rhsm option, the subscription-manager needs to be installed before"
-                " executing convert2rhel."
-            )
-        else:
-            # Most probably this condition will not be hit. If the installation of subscription-manager fails, the
-            # conversion stops already at that point.
-            loggerinst.critical("The subscription-manager package is not installed correctly.")
+    if not pkghandler.get_installed_pkg_information("subscription-manager"):
+        loggerinst.critical(
+            "The subscription-manager package is not installed correctly.  You could try manually installing it before running convert2rhel"
+        )
     else:
         loggerinst.info("subscription-manager installed correctly.")
 
@@ -834,87 +714,107 @@ def _submgr_enable_repos(repos_to_enable):
     loggerinst.info("Repositories enabled through subscription-manager")
 
 
-def rollback():
-    """Rollback subscription related changes"""
-    # Systems using Satellite 6.10 need to stay registered otherwise admins
-    # will lose remote access from the Satellite server.
-    loggerinst.task("Rollback: RHSM-related actions")
-    if tool_opts.keep_rhsm:
-        loggerinst.info("Skipping due to the use of --keep-rhsm.")
-        return
-
-    try:
-        unregister_system()
-    except UnregisterError as e:
-        loggerinst.warning(str(e))
-    except OSError:
-        loggerinst.warning("subscription-manager not installed, skipping")
-
-
-def download_rhsm_pkgs():
-    """Download all the packages necessary for a successful registration to the Red Hat Subscription Management.
-
-    The packages are available in non-standard repositories, so additional repofiles need to be used. The downloaded
-    RPMs are to be installed in a later stage of the conversion.
+def needed_subscription_manager_pkgs():
     """
-    if tool_opts.keep_rhsm:
-        loggerinst.info("Skipping due to the use of --keep-rhsm.")
-        return
-    utils.mkdir_p(_RHSM_TMP_DIR)
+    Packages needed for subscription-manager which are not installed.
 
-    pkgs_to_download = [
+    :returns: A list of package names which are subscription-manager related and not presently
+        installed.
+    :rtype: list of str
+    """
+    # Packages to check for to determine if subscription-manager is installed
+    subscription_manager_pkgs = _relevant_subscription_manager_pkgs()
+
+    # filter pkgs which already installed out of the list of pkgs we will install.
+    installed_submgr_pkgs = []
+    to_install_pkgs = set()
+    for pkg in subscription_manager_pkgs:
+        installed_pkgs = pkghandler.get_installed_pkg_information(pkg)
+        installed_submgr_pkgs.extend(installed_pkgs)
+        if not installed_pkgs:
+            to_install_pkgs.add(pkg)
+
+    to_install_pkgs = list(to_install_pkgs)
+
+    # WARNING: Use to_install_pkgs for things that are returned.
+    # **installed_submgr_pkgs can only be used for human-readable display**.
+    # to_install_pkgs has properly dealt with arch but
+    # installed_submgr_pkgs has lost its arch'd information so we
+    # can't do comparisons with it unless we query
+    # `get_installed_pkg_information()` again.
+    installed_submgr_pkgs = [pkg.nevra.name for pkg in installed_submgr_pkgs]
+
+    loggerinst.debug("Need the following packages: %s" % utils.format_sequence_as_message(subscription_manager_pkgs))
+    loggerinst.debug("Detected the following packages: %s" % utils.format_sequence_as_message(installed_submgr_pkgs))
+
+    loggerinst.debug("Packages we will install: %s" % utils.format_sequence_as_message(to_install_pkgs))
+
+    return to_install_pkgs
+
+
+def _dependencies_to_update(pkg_list):
+    """
+    We are trying to get convert2rhel to only install the subset of subscription-manager packages
+    which it requires.  However, when we do have to install packages, we are getting them from the
+    UBI repositories where the version of subscription-manager may need a newer vrsion of
+    dependencies than the vendor has. For this reason, we may need to install some dependencies from
+    the UBI repositories even though the vendor versions of them are already installed.
+
+    Currently, python-syspurpose and json-c are the only problematic packages so make
+    sure that they are added to the install set.
+
+    .. seealso:: Bug report illustrating the version problem:
+        https://github.com/oamg/convert2rhel/pull/494
+    """
+    if not pkg_list:
+        return []
+
+    # Only apply this kludge on centos-8.  We assume that all other vendors
+    # will have dependencies of the needed version in their repositories.
+    if not (system_info.id == "centos" and system_info.version.major == 8):
+        return []
+
+    # Package names that we require differ on various platforms so we need to
+    # extract them from the list for this platform.
+    pkgs_for_this_platform = _relevant_subscription_manager_pkgs()
+    upgrade_deps = (p for p in pkgs_for_this_platform if "syspurpose" in p or "json-c" in p)
+
+    # Make sure we don't call these upgrades if they need to be installed.
+    upgrade_deps = [p for p in upgrade_deps if p not in pkg_list]
+
+    return upgrade_deps
+
+
+def _relevant_subscription_manager_pkgs():
+    """
+    Subscription-manager related packages that we check for and install.
+
+    :returns: a list of package names which we check are installed so subscription-manager will run.
+    :rtype: list of strings
+    """
+    relevant_pkgs = [
         "subscription-manager",
         "subscription-manager-rhsm-certificates",
     ]
 
     if system_info.version.major == 7:
-        pkgs_to_download += ["subscription-manager-rhsm", "python-syspurpose"]
-        _download_rhsm_pkgs(pkgs_to_download, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
+        relevant_pkgs += ["subscription-manager-rhsm", "python-syspurpose"]
 
     elif system_info.version.major == 8:
-        pkgs_to_download += [
+        relevant_pkgs += [
             "python3-subscription-manager-rhsm",
             "dnf-plugin-subscription-manager",
             "python3-syspurpose",
             "python3-cloud-what",
             "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
         ]
-        if system_info.is_rpm_installed("json-c.i686"):
-            # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
-            # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
-            pkgs_to_download.append("json-c.i686")
-        _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
 
+    if system_info.is_rpm_installed("json-c.i686"):
+        # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
+        # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
+        relevant_pkgs.append("json-c.i686")
 
-def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
-    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
-
-    utils.store_content_to_file(filename=repo_path, content=repo_content)
-    paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
-
-    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")
-    exit_on_failed_download(paths)
-
-
-def _log_rhsm_download_directory_contents(directory, when_message):
-    pkgs = ["<download directory does not exist>"]
-    if os.path.isdir(SUBMGR_RPMS_DIR):
-        pkgs = os.listdir(SUBMGR_RPMS_DIR)
-    loggerinst.debug(
-        "Contents of %s directory %s:\n%s",
-        SUBMGR_RPMS_DIR,
-        when_message,
-        "\n".join(pkgs),
-    )
-
-
-def exit_on_failed_download(paths):
-    if None in paths:
-        loggerinst.critical(
-            "Unable to download the subscription-manager package or its dependencies. See details of"
-            " the failed yumdownloader call above. These packages are necessary for the conversion"
-            " unless you use the --no-rhsm option."
-        )
+    return relevant_pkgs
 
 
 def lock_releasever_in_rhel_repositories():
@@ -981,3 +881,19 @@ def update_rhsm_custom_facts():
             loggerinst.info("RHSM custom facts uploaded successfully.")
     else:
         loggerinst.info("Skipping updating RHSM custom facts.")
+
+
+# subscription is the natural place to look for should_subscribe but it
+# is needed by toolopts.  So define it as a private function in toolopts but
+# create a public identifier to access it here.
+
+#: Whether we should subscribe the system with subscription-manager.
+#:
+#: If the user has specified some way to authenticate with subscription-manager
+#: then we need to subscribe the system. If not, the assumption is that the
+#: user has already subscribed the system or that this machine does not need to
+#: subscribe to rhsm in order to get the RHEL rpm packages.
+#:
+#: :returns: Returns True if we need to subscribe the system, otherwise return False.
+#: :rtype: bool
+should_subscribe = partial(_should_subscribe, tool_opts)

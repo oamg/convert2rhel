@@ -27,8 +27,9 @@ def test_user_path_custom_filename(convert2rhel):
     create_files(config)
 
     with convert2rhel('--no-rpm-va --debug -c "~/.convert2rhel_custom.ini"') as c2r:
-        if c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini") == 0:
-            c2r.sendcontrol("c")
+        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
@@ -40,8 +41,9 @@ def test_user_path_std_filename(convert2rhel):
     create_files(config)
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
-        if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
-            c2r.sendcontrol("c")
+        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
@@ -63,19 +65,11 @@ def test_user_path_cli_priority(convert2rhel):
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
-
         c2r.expect(
-            "WARNING - You have passed the RHSM username through both the command line and"
+            "WARNING - You have passed either the RHSM password or activation key through both the command line and"
             " the configuration file. We're going to use the command line values."
         )
-        if (
-            c2r.expect(
-                "WARNING - You have passed either the RHSM password or activation key through both the command line and"
-                " the configuration file. We're going to use the command line values."
-            )
-            == 0
-        ):
-            c2r.sendcontrol("c")
+        c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
 
@@ -93,14 +87,12 @@ def test_user_path_pswd_file_priority(convert2rhel):
     with convert2rhel('--no-rpm-va -f "~/password_file" --debug') as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
-        if (
-            c2r.expect(
-                "WARNING - You have passed the RHSM credentials both through a config file and through a password file."
-                " We're going to use the password file."
-            )
-            == 0
-        ):
-            c2r.sendcontrol("c")
+        c2r.expect(
+            "WARNING - You have passed the RHSM credentials both through a config file and through a password file."
+            " We're going to use the password file."
+        )
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
@@ -122,14 +114,13 @@ def test_std_paths_priority_diff_methods(convert2rhel):
             " is insecure as it leaks the values through the list of running processes."
             " We recommend using the safer --config-file option instead."
         )
-        if (
-            c2r.expect(
-                "WARNING - Either a password or an activation key can be used for system registration."
-                " We're going to use the activation key."
-            )
-            == 0
-        ):
-            c2r.sendcontrol("c")
+
+        c2r.expect(
+            "WARNING - Either a password or an activation key can be used for system registration."
+            " We're going to use the activation key."
+        )
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
@@ -144,8 +135,9 @@ def test_std_paths_priority(convert2rhel):
     create_files(config)
 
     with convert2rhel("--no-rpm-va --debug") as c2r:
-        if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
-            c2r.sendcontrol("c")
+        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
+        c2r.sendcontrol("c")
+
     assert c2r.exitstatus != 0
 
     remove_files(config)
