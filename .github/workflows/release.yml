@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Trigger Manpage Generation
+        uses: ./.github/workflows
+        with:
+          workflow: generate_manpage.yml
+
       - name: Build RPM package for EL7
         id: rpm_build_el7
         uses: bocekm/rpmbuild@el7
