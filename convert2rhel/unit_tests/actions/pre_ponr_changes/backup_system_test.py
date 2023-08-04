@@ -16,10 +16,12 @@
 __metaclass__ = type
 
 
+import os
+
 import pytest
 import six
 
-from convert2rhel import repo, unit_tests
+from convert2rhel import backup, repo, unit_tests, utils
 from convert2rhel.actions.pre_ponr_changes import backup_system
 
 
@@ -37,8 +39,14 @@ def backup_repository_action():
     return backup_system.BackupRepository()
 
 
+@pytest.fixture
+def backup_package_files_action():
+    return backup_system.BackupPackageFiles()
+
+
 class RestorableFileMock(unit_tests.MockFunction):
-    def __init__(self):
+    def __init__(self, filepath=None):
+        self.filepath = filepath
         self.called = 0
 
     def __call__(self, filepath):
@@ -100,3 +108,130 @@ class TestBackupSystem:
             title="An unknown error has occurred",
             description="File not found",
         )
+
+    @pytest.mark.parametrize(
+        ("rpm_verify", "caplog_message", "output"),
+        [
+            (
+                """     missing   d /usr/share/info/ed.info.gz
+                S.5.?..T. c     /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+                S.5.?..T.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+
+                S.5.?..5.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+                .......T.  c /etc/yum.repos.d/CentOS-Linux-Debuginfo.repo
+                SM.DLUGTP  c /etc/yum.repos.d/CentOS-Linux-Plus.repo
+                """,
+                "Skipping invalid output S.5.?..5.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                [
+                    {"status": "missing", "file_type": "d", "path": "/usr/share/info/ed.info.gz"},
+                    {
+                        "status": "S5T",
+                        "file_type": "c",
+                        "path": "/etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                        "backup": mock.ANY,
+                    },
+                    {
+                        "status": "S5T",
+                        "file_type": None,
+                        "path": "/etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                        "backup": mock.ANY,
+                    },
+                    {
+                        "status": "T",
+                        "file_type": "c",
+                        "path": "/etc/yum.repos.d/CentOS-Linux-Debuginfo.repo",
+                    },
+                    {
+                        "status": "SMDLUGTP",
+                        "file_type": "c",
+                        "path": "/etc/yum.repos.d/CentOS-Linux-Plus.repo",
+                    },
+                ],
+            ),
+            ("", None, []),
+        ],
+    )
+    def test_backup_package_files_run(
+        self, rpm_verify, caplog_message, output, caplog, backup_package_files_action, monkeypatch
+    ):
+        run_subprocess = mock.Mock(return_value=(rpm_verify, 0))
+
+        monkeypatch.setattr(utils, "run_subprocess", run_subprocess)
+        monkeypatch.setattr(backup, "RestorableFile", RestorableFileMock)
+
+        backup_package_files_action.run()
+
+        assert backup.package_files_changes == output
+        if caplog_message:
+            assert caplog_message in caplog.text
+
+        for value in backup.package_files_changes:
+            if value.get("backup"):
+                assert isinstance(value.get("backup"), backup.RestorableFile)
+
+    @pytest.mark.parametrize(
+        ("data", "path_exists", "remove_call", "restore_call"),
+        [
+            (
+                [
+                    {
+                        "status": "missing",
+                        "file_type": "c",
+                        "path": "anything",
+                        "backup": mock.Mock(),
+                    }
+                ],
+                True,
+                1,
+                0,
+            ),
+            (
+                [
+                    {
+                        "status": "missing",
+                        "file_type": "c",
+                        "path": "anything",
+                        "backup": mock.Mock(),
+                    },
+                    {
+                        "status": "5",
+                        "file_type": "c",
+                        "path": "anything",
+                        "backup": mock.Mock(),
+                    },
+                ],
+                True,
+                1,
+                1,
+            ),
+            (
+                [
+                    {
+                        "status": "missing",
+                        "file_type": "c",
+                        "path": "anything",
+                        "backup": mock.Mock(),
+                    }
+                ],
+                False,
+                0,
+                0,
+            ),
+        ],
+    )
+    def test_backup_package_files_rollback(self, data, path_exists, remove_call, restore_call, monkeypatch):
+        exists = mock.Mock(return_value=path_exists)
+        remove = mock.Mock()
+
+        monkeypatch.setattr(os.path, "exists", exists)
+        monkeypatch.setattr(os, "remove", remove)
+        backup.package_files_changes = data
+
+        backup_system.BackupPackageFiles.rollback_files()
+
+        assert remove.call_count == remove_call
+
+        restore_call_count = 0
+        for file in data:
+            restore_call_count += file["backup"].restore.call_count
+        assert restore_call_count == restore_call

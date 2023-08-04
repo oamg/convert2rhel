@@ -530,3 +530,4 @@ def remove_epoch_from_yum_nevra_notation(package_nevra):
 
 changed_pkgs_control = ChangedRPMPackagesController()  # pylint: disable=C0103
 backup_control = BackupController()
+package_files_changes = []  # control of changed package files

@@ -23,6 +23,7 @@ from convert2rhel import actions, applock, backup, breadcrumbs, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
+from convert2rhel.actions.pre_ponr_changes.backup_system import BackupPackageFiles
 
 
 loggerinst = logging.getLogger(__name__)
@@ -341,6 +342,7 @@ def rollback_changes():
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()
     pkghandler.versionlock_file.restore()
+    BackupPackageFiles().rollback_files()
 
     try:
         backup.backup_control.pop_all()
