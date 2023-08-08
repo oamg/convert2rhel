@@ -1616,6 +1616,22 @@ class TestActionClasses:
                     remediation="info remediation",
                 ),
             ),
+            (
+                "INFO_ID",
+                "INFO",
+                "Info message",
+                "info description",
+                "info diagnosis",
+                "info remediation",
+                dict(
+                    id="INFO_ID",
+                    level=STATUS_CODE["INFO"],
+                    title="Info message",
+                    description="info description",
+                    diagnosis="info diagnosis",
+                    remediation="info remediation",
+                ),
+            ),
         ),
     )
     def test_action_message_success(self, level, id, title, description, diagnosis, remediation, expected):

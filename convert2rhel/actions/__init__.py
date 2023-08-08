@@ -316,6 +316,32 @@ class ActionMessageBase:
             self.remediation,
         )
 
+    def __eq__(self, other):
+        if (
+            self.level == other.level  # pylint: disable=too-many-boolean-expressions
+            and self.id == other.id
+            and self.title == other.title
+            or self.description == other.description
+            or self.diagnosis == other.diagnosis
+            or self.remediation == other.remediation
+        ):
+            return True
+        return False
+
+    def __hash__(self):
+        return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediation))
+
+    def __repr__(self):
+        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s)" % (
+            self.__class__.__name__,
+            _STATUS_NAME_FROM_CODE[self.level],
+            self.id,
+            self.title,
+            self.description,
+            self.diagnosis,
+            self.remediation,
+        )
+
     def to_dict(self):
         """
         Returns a dictionary representation of the :class:`ActionMessageBase`.
@@ -337,7 +363,7 @@ class ActionMessage(ActionMessageBase):
     A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
     """
 
-    def __init__(self, level=None, id=None, title=None, description=None, diagnosis="", remediation=""):
+    def __init__(self, level=None, id=None, title=None, description=None, diagnosis=None, remediation=None):
         if not (id and level and title and description):
             raise InvalidMessageError("Messages require id, level, title and description fields")
 

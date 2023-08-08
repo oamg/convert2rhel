@@ -54,6 +54,8 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
             ),
         )
     )
+    assert expected.issuperset(package_updates_action.messages)
+    assert expected.issubset(package_updates_action.messages)
 
     package_updates_action.run()
 

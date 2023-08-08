@@ -45,7 +45,7 @@ class ListThirdPartyPackages(actions.Action):
             warning_message = (
                 "Only packages signed by %s are to be"
                 " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n" % system_info.name
+                " for the following third party packages:\n%s" % (system_info.name, pkg_list)
             )
 
             logger.warning(warning_message)
@@ -65,6 +65,10 @@ class ListThirdPartyPackages(actions.Action):
             return
         else:
             logger.info("No third party packages installed.")
+
+    def extract_packages(self, pkg):
+        """Key function to extract the package name from third_party_pkgs"""
+        return pkg.nevra.name
 
     def extract_packages(self, pkg):
         """Key function to extract the package name from third_party_pkgs"""

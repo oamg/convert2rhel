@@ -120,5 +120,26 @@ class PackageUpdates(actions.Action):
                 description="Please refer to the diagnosis for further information",
                 diagnosis=package_not_up_to_date_error_message,
             )
+            logger.warning(skip_package_not_up_to_date_message)
+            self.add_message(
+                level="WARNING",
+                id="SKIP_PACKAGE_NOT_UP_TO_DATE",
+                title="Skipping package not up to date check",
+                description=skip_package_not_up_to_date_message,
+            )
+
+            logger.warning(package_not_up_to_date_error_message)
+            self.set_result(
+                level="SUCCESS",
+                id="OUT_OF_DATE_PACKAGES",
+                title="Outdated packages detected",
+            )
+            self.add_message(
+                level="WARNING",
+                id="PACKAGE_NOT_UP_TO_DATE_MESSAGE",
+                title="Outdated packages detected",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=package_not_up_to_date_error_message,
+            )
         else:
             logger.info("System is up-to-date.")

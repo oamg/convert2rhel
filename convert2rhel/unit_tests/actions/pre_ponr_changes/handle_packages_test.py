@@ -73,6 +73,18 @@ def test_list_third_party_packages(pretend_os, list_third_party_packages_instanc
                 diagnosis=diagnosis,
                 remediation=None,
             ),
+            actions.ActionMessage(
+                level="WARNING",
+                id="SKIP_THIRD_PARTY_PACKAGE_CHECK",
+                title="Skipping the third party package check",
+                description=(
+                    "Detected 'CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP' environment variable, we will skip "
+                    "the third party package check.\n"
+                    "Beware, this could leave your system in a broken state."
+                ),
+                diagnosis=None,
+                remediation=None,
+            ),
         )
     )
     list_third_party_packages_instance.run()
