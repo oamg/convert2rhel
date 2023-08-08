@@ -289,13 +289,19 @@ class ActionMessageBase:
     :type remediation: str | None
     """
 
-    def __init__(self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""):
+    def __init__(
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+    ):
         self.id = id
         self.level = STATUS_CODE[level]
         self.title = title
         self.description = description
         self.diagnosis = diagnosis
         self.remediation = remediation
+
+        if variables is None:
+            variables = {}
+        self.variables = variables
 
     def __eq__(self, other):
         if hash(self) == hash(other):
@@ -355,6 +361,7 @@ class ActionMessageBase:
             "description": self.description,
             "diagnosis": self.diagnosis,
             "remediation": self.remediation,
+            "variables": self.variables,
         }
 
 
