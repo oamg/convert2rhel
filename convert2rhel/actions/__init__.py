@@ -299,6 +299,15 @@ class ActionMessageBase:
         self.diagnosis = diagnosis
         self.remediation = remediation
 
+        try:
+            title_end = message.index(".")
+        except Exception:
+            title_end = len(message) - 1
+        self.title = message[:title_end]
+        self.description = ""
+        self.diagnosis = message
+        self.remediation = ""
+
         if variables is None:
             variables = {}
         self.variables = variables
