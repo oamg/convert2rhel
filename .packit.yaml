@@ -6,6 +6,8 @@ upstream_project_url: https://github.com/oamg/convert2rhel
 srpm_build_deps: []
 
 jobs:
+# COPR BUILD JOBS
+## COPR build for pull requests
 - job: copr_build
   trigger: pull_request
   owner: "@oamg"
@@ -17,6 +19,8 @@ jobs:
     # do not get the version from a tag (git describe) but from the spec file
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+
+## COPR build for merge to main branch
 - job: copr_build
   trigger: commit
   branch: main
@@ -34,6 +38,8 @@ jobs:
     get-current-version:
     - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 
+# TEST JOBS
+## Tests on pull request stage
 - &tests-tier0
   job: tests
   # Run tests on-demand
@@ -60,7 +66,17 @@ jobs:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
+  labels:
+    - tier0
 
+- &tests-tier1-manual
+  <<: *tests-tier0
+  identifier: "tier1"
+  tmt_plan: "tier1"
+  labels:
+    - tier1
+
+# Tests on merge to main stage
 - &tests-tier1
   <<: *tests-tier0
   # Run test automatically with merge commit to main branch
