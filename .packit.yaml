@@ -124,7 +124,7 @@ jobs:
   tf_extra_params:
     environments:
       - os:
-          compose: "OL8.7-x86_64-HVM-2023-03-07"
+          compose: "OL8.8-x86_64-HVM-2023-06-21"
         tmt:
           context:
             distro: "oraclelinux-8-latest"
