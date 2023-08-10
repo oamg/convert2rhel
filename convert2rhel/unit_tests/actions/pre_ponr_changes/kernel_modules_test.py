@@ -287,7 +287,7 @@ def test_get_loaded_kmods(ensure_kernel_modules_compatibility_instance, monkeypa
         spec=run_subprocess,
         side_effect=run_subprocess_side_effect(
             (
-                ("lsmod",),
+                ("/usr/sbin/lsmod",),
                 (
                     "Module                  Size  Used by\n"
                     "a                 81920  4\n"
