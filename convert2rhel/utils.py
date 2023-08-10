@@ -692,8 +692,8 @@ def download_pkg(
     if varsdir:
         cmd.append("--setopt=varsdir=%s" % varsdir)
 
-    if system_info.version.major == 8:
-        cmd.append("--setopt=module_platform_id=platform:el8")
+    if system_info.version.major >= 8:
+        cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
 
     cmd.append(pkg)
 

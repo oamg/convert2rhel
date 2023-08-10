@@ -130,7 +130,7 @@ def backup_varsdir():
     loggerinst.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
     _backup_variables(path=DEFAULT_YUM_VARS_DIR)
 
-    if system_info.version.major == 8:
+    if system_info.version.major >= 8:
         loggerinst.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
         _backup_variables(path=DEFAULT_DNF_VARS_DIR)
     return
@@ -166,6 +166,6 @@ def restore_varsdir():
     loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_YUM_VARS_DIR)
     _restore_varsdir(DEFAULT_YUM_VARS_DIR)
 
-    if system_info.version.major == 8:
+    if system_info.version.major >= 8:
         loggerinst.task("Rollback: Restore variable files to %s", DEFAULT_DNF_VARS_DIR)
         _restore_varsdir(DEFAULT_DNF_VARS_DIR)

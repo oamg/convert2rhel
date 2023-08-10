@@ -129,8 +129,8 @@ def call_yum_cmd(
         cmd.append("--releasever=%s" % system_info.releasever)
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
-    if system_info.version.major == 8:
-        cmd.append("--setopt=module_platform_id=platform:el8")
+    if system_info.version.major >= 8:
+        cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
 
     repos_to_enable = []
     if isinstance(enable_repos, list):
@@ -299,7 +299,7 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
 
 def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=None):
     dnf_base = pkgmanager.Base()
-    dnf_base.conf.module_platform_id = "platform:el8"
+    dnf_base.conf.module_platform_id = "platform:el" + str(system_info.version.major)
     dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
     query = dnf_base.sack.query()
     installed = query.installed()
@@ -440,7 +440,7 @@ def _get_package_repositories(pkgs):
     repositories_mapping = {}
 
     query_format = "C2R %{EPOCH}:%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
-    if system_info.version.major == 8:
+    if system_info.version.major >= 8:
         query_format = "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
 
     output, retcode = utils.run_subprocess(

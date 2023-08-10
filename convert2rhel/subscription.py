@@ -37,24 +37,39 @@ loggerinst = logging.getLogger(__name__)
 
 SUBMGR_RPMS_DIR = os.path.join(utils.DATA_DIR, "subscription-manager")
 _RHSM_TMP_DIR = os.path.join(utils.TMP_DIR, "rhsm")
-_UBI_7_REPO_CONTENT = (
-    "[ubi-7-convert2rhel]\n"
-    "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
-    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
-    "gpgcheck=1\n"
-    "enabled=1\n"
-)
-_UBI_7_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_7.repo")
-# We are using UBI 8 instead of CentOS Linux 8 because there's a bug in subscription-manager-rhsm-certificates on CentOS Linux 8
-# https://bugs.centos.org/view.php?id=17907
-_UBI_8_REPO_CONTENT = (
-    "[ubi-8-baseos-convert2rhel]\n"
-    "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
-    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
-    "gpgcheck=1\n"
-    "enabled=1\n"
-)
-_UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
+
+_UBI_REPOS = {
+    7: {
+        "path": os.path.join(_RHSM_TMP_DIR, "ubi_7.repo"),
+        "content": (
+            "[ubi-7-convert2rhel]\n"
+            "name=Red Hat Universal Base Image 7 - added by Convert2RHEL\n"
+            "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/$basearch/os/\n"
+            "gpgcheck=1\n"
+            "enabled=1\n"
+        ),
+    },
+    8: {
+        "path": os.path.join(_RHSM_TMP_DIR, "ubi_8.repo"),
+        "content": (
+            "[ubi-8-baseos-convert2rhel]\n"
+            "name=Red Hat Universal Base Image 8 - BaseOS added by Convert2RHEL\n"
+            "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi8/8/$basearch/baseos/os/\n"
+            "gpgcheck=1\n"
+            "enabled=1\n"
+        ),
+    },
+    9: {
+        "path": os.path.join(_RHSM_TMP_DIR, "ubi_9.repo"),
+        "content": (
+            "[ubi-9-baseos-convert2rhel]\n"
+            "name=Red Hat Universal Base Image 9 - BaseOS added by Convert2RHEL\n"
+            "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/$basearch/baseos/os/\n"
+            "gpgcheck=1\n"
+            "enabled=1\n"
+        ),
+    },
+}
 
 # Directory and file that is used for the convert2rhel.repo ssl cert that we
 # tell customers to use to install convert2rhel:
@@ -901,9 +916,8 @@ def download_rhsm_pkgs():
 
     if system_info.version.major == 7:
         pkgs_to_download += ["subscription-manager-rhsm", "python-syspurpose"]
-        _download_rhsm_pkgs(pkgs_to_download, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
 
-    elif system_info.version.major == 8:
+    elif system_info.version.major >= 8:
         pkgs_to_download += [
             "python3-subscription-manager-rhsm",
             "dnf-plugin-subscription-manager",
@@ -915,13 +929,14 @@ def download_rhsm_pkgs():
             # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
             # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
             pkgs_to_download.append("json-c.i686")
-        _download_rhsm_pkgs(pkgs_to_download, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
+
+    _download_rhsm_pkgs(pkgs_to_download, _UBI_REPOS[system_info.version.major])
 
 
-def _download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
+def _download_rhsm_pkgs(pkgs_to_download, repo):
     _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
 
-    utils.store_content_to_file(filename=repo_path, content=repo_content)
+    utils.store_content_to_file(filename=repo["path"], content=repo["content"])
     paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
 
     _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")

@@ -64,8 +64,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
             "--releasever=%s" % system_info.releasever,
         ]
 
-        if system_info.version.major == 8:
-            basecmd.append("--setopt=module_platform_id=platform:el8")
+        if system_info.version.major >= 8:
+            basecmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
 
         for repoid in system_info.get_enabled_rhel_repos():
             basecmd.extend(("--repoid", repoid))

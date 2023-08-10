@@ -35,7 +35,7 @@ def get_release_pkg_name():
     """
     release_pkg_name = "redhat-release-server"
 
-    if system_info.version.major == 8:
+    if system_info.version.major >= 8:
         release_pkg_name = "redhat-release"
 
     return release_pkg_name

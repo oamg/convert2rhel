@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 COMPATIBLE_KERNELS_VERS = {
     7: "3.10.0",
     8: "4.18.0",
+    9: "5.14.0",
 }
 BAD_KERNEL_RELEASE_SUBSTRINGS = ("uek", "rt", "linode")
 

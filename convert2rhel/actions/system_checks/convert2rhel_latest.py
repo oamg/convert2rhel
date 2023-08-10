@@ -172,24 +172,16 @@ class Convert2rhelLatest(actions.Action):
                 )
 
             else:
-                if int(system_info.version.major) <= 6:
-                    logger.warning(
+                self.set_result(
+                    level="ERROR",
+                    id="OUT_OF_DATE",
+                    message=(
                         "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                        "We encourage you to update to the latest version."
+                        "Only the latest version is supported for conversion. If you want to ignore"
+                        " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
                         % (installed_convert2rhel_version, latest_available_version[1])
-                    )
-
-                else:
-                    self.set_result(
-                        level="ERROR",
-                        id="OUT_OF_DATE",
-                        message=(
-                            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                            "Only the latest version is supported for conversion. If you want to ignore"
-                            " this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue."
-                            % (installed_convert2rhel_version, latest_available_version[1])
-                        ),
-                    )
-                    return
+                    ),
+                )
+                return
 
         logger.info("Latest available Convert2RHEL version is installed.")
