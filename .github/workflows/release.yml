@@ -15,7 +15,7 @@ jobs:
 
       - name: Build RPM package for EL7
         id: rpm_build_el7
-        uses: bocekm/rpmbuild@el7
+        uses: oamg/rpmbuild@el7
         with:
           spec_path: "packaging/convert2rhel.spec"
 
@@ -39,7 +39,7 @@ jobs:
 
       - name: Build RPM package for EL8
         id: rpm_build_el8
-        uses: bocekm/rpmbuild@el8
+        uses: oamg/rpmbuild@el8
         with:
           spec_path: "packaging/convert2rhel.spec"
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: Build RPM package for EL9
         id: rpm_build_el9
-        uses: bocekm/rpmbuild@el9
+        uses: oamg/rpmbuild@el9
         with:
           spec_path: "packaging/convert2rhel.spec"
 
@@ -77,27 +77,3 @@ jobs:
           asset_path: ${{ steps.rpm_build_el9.outputs.rpm_path }}
           asset_name: ${{ steps.rpm_build_el9.outputs.rpm_name }}
           asset_content_type: ${{ steps.rpm_build_el9.outputs.content_type }}
-
-          build_el9_rpm:
-            name: Build EL9 RPM
-            runs-on: ubuntu-latest
-            steps:
-              - name: Checkout code
-                uses: actions/checkout@v3
-
-              - name: Build RPM package for EL9
-                id: rpm_build_el9
-                uses: bocekm/rpmbuild@el9
-                with:
-                  spec_path: "packaging/convert2rhel.spec"
-
-              - name: Upload EL9 RPM as release asset
-                id: upload_release_asset_el9
-                uses: actions/upload-release-asset@v1
-                env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ${{ steps.rpm_build_el9.outputs.rpm_path }}
-                  asset_name: ${{ steps.rpm_build_el9.outputs.rpm_name }}
-                  asset_content_type: ${{ steps.rpm_build_el9.outputs.content_type }}
