@@ -911,17 +911,16 @@ def download_rhsm_pkgs():
 
     pkgs_to_download = [
         "subscription-manager",
-        "subscription-manager-rhsm-certificates",
+        "subscription-manager-rhsm-certificates.x86_64",
     ]
 
     if system_info.version.major == 7:
         pkgs_to_download += ["subscription-manager-rhsm", "python-syspurpose"]
-
-    elif system_info.version.major >= 8:
+    if system_info.version.major == 8:
+        pkgs_to_download += ["python3-syspurpose", "dnf-plugin-subscription-manager"]
+    if system_info.version.major >= 8:
         pkgs_to_download += [
             "python3-subscription-manager-rhsm",
-            "dnf-plugin-subscription-manager",
-            "python3-syspurpose",
             "python3-cloud-what",
             "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
         ]
@@ -929,6 +928,8 @@ def download_rhsm_pkgs():
             # In case the json-c.i686 is installed we need to download it together with its x86_64 companion. The reason
             # is that it's not possible to install a 64-bit library that has a different version from the 32-bit one.
             pkgs_to_download.append("json-c.i686")
+    if system_info.version.major >= 9:
+        pkgs_to_download.append("libdnf-plugin-subscription-manager")
 
     _download_rhsm_pkgs(pkgs_to_download, _UBI_REPOS[system_info.version.major])
 
