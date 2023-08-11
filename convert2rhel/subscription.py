@@ -547,7 +547,7 @@ def replace_subscription_manager():
 
 def remove_original_subscription_manager():
     loggerinst.info("Removing installed subscription-manager/katello-ca-consumer packages.")
-    # python3-subscription-manager-rhsm, dnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
+    # python3-subscription-manager-rhsm, libdnf-plugin-subscription-manager, subscription-manager-rhsm-certificates, etc.
     submgr_pkgs = pkghandler.get_installed_pkg_objects("*subscription-manager*")
     # The python-syspurpose, python3-syspurpose, and python3-cloud-what packages are also built out of
     # the subscription-manager SRPM.
@@ -906,7 +906,7 @@ def download_rhsm_pkgs():
     elif system_info.version.major == 8:
         pkgs_to_download += [
             "python3-subscription-manager-rhsm",
-            "dnf-plugin-subscription-manager",
+            "libdnf-plugin-subscription-manager",
             "python3-syspurpose",
             "python3-cloud-what",
             "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
