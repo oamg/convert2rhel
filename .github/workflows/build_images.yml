@@ -6,10 +6,16 @@ on:
 
 jobs:
   build_and_publish:
-    name: build-centos${{ matrix.centos_ver }}
+    name: build-${{ matrix.el.distro }}${{ matrix.el.ver }}
     strategy:
       matrix:
-        centos_ver: [7, 8]
+        el:
+          - distro: centos
+            ver: 7
+          - distro: centos
+            ver: 8
+          - distro: oracle
+            ver: 9
 
     permissions:
       contents: read
@@ -34,7 +40,7 @@ jobs:
         with:
           push: true
           context: .
-          file: ./Containerfiles/centos${{ matrix.centos_ver }}.Containerfile
-          tags: ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/convert2rhel-centos${{ matrix.centos_ver }}:latest
+          file: ./Containerfiles/${{ matrix.el.distro }}${{ matrix.el.ver }}.Containerfile
+          tags: ghcr.io/${{ github.repository_owner }}/convert2rhel-${{ matrix.el.distro }}${{ matrix.el.ver }}:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/convert2rhel-${{ matrix.el.distro }}${{ matrix.el.ver }}:latest
           cache-to: type=inline

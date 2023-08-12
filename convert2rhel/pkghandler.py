@@ -71,6 +71,15 @@ _UBI_8_REPO_CONTENT = (
 # Path to the repository file that we store the RHEL8-compatible repo file.
 _UBI_8_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_8.repo")
 
+_UBI_9_REPO_CONTENT = (
+    "[ubi-9-baseos-convert2rhel]\n"
+    "name=Red Hat Universal Base Image 9 - BaseOS added by Convert2RHEL\n"
+    "baseurl=https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/$basearch/baseos/os/\n"
+    "gpgcheck=1\n"
+    "enabled=1\n"
+)
+_UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
+
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
@@ -203,6 +212,8 @@ class RestorablePackageSet(backup.RestorableChange):
             download_rhsm_pkgs(all_pkgs_to_install, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
         elif system_info.version.major == 8:
             download_rhsm_pkgs(all_pkgs_to_install, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
+        elif system_info.version.major == 9:
+            download_rhsm_pkgs(all_pkgs_to_install, _UBI_9_REPO_PATH, _UBI_9_REPO_CONTENT)
 
         # installing the packages
         rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
@@ -324,8 +335,8 @@ def call_yum_cmd(
         cmd.append("--releasever=%s" % system_info.releasever)
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
-    if system_info.version.major == 8:
-        cmd.append("--setopt=module_platform_id=platform:el8")
+    if system_info.version.major >= 8:
+        cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
 
     repos_to_enable = []
     if isinstance(enable_repos, list):
@@ -494,7 +505,7 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
 
 def _get_installed_pkg_objects_dnf(name=None, version=None, release=None, arch=None):
     dnf_base = pkgmanager.Base()
-    dnf_base.conf.module_platform_id = "platform:el8"
+    dnf_base.conf.module_platform_id = "platform:el" + str(system_info.version.major)
     dnf_base.fill_sack(load_system_repo=True, load_available_repos=False)
     query = dnf_base.sack.query()
     installed = query.installed()
@@ -646,7 +657,7 @@ def _get_package_repositories(pkgs):
     repositories_mapping = {}
 
     query_format = "C2R %{EPOCH}:%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
-    if system_info.version.major == 8:
+    if system_info.version.major >= 8:
         query_format = "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
 
     output, retcode = utils.run_subprocess(

@@ -67,8 +67,9 @@ Requires:       grub2-tools
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8
-and Scientific Linux 7 to the respective major version of RHEL.
+RHEL ones. Available are conversions of Scientific Linux 7, CentOS Linux 7/8,
+Oracle Linux 7/8/9, Alma Linux 8/9, and Rocky Linux 8/9 to the respective major
+version of RHEL.
 
 %prep
 %setup -q
