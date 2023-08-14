@@ -120,9 +120,8 @@ def test_check_package_updates_with_repoerror(monkeypatch, caplog, package_updat
     )
 
     package_updates_action.run()
-    # This is -2 because the last message is the error from the RepoError class.
     assert (
-        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-2].message
+        "There was an error while checking whether the installed packages are up-to-date." in caplog.records[-1].message
     )
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)

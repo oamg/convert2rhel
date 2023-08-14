@@ -53,6 +53,7 @@ class ListThirdPartyPackages(actions.Action):
             logger.info("No third party packages installed.")
 
     def extract_packages(self, pkg):
+        """Key function to extract the package name from third_party_pkgs"""
         return pkg.pkg_obj.name
 
 

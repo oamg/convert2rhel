@@ -35,13 +35,11 @@ class PackageUpdates(actions.Action):
         logger.task("Prepare: Check if the installed packages are up-to-date")
 
         if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
-            logger.info(
-                "Skipping the check because there are no publicly available %s %d.%d repositories available."
-                % (system_info.name, system_info.version.major, system_info.version.minor)
-            message = (
-                    "Skipping the check because there are no publicly available %s %d.%d repositories available."
-                    % (system_info.name, system_info.version.major, system_info.version.minor)
-                )
+            message = "Skipping the check because there are no publicly available %s %d.%d repositories available." % (
+                system_info.name,
+                system_info.version.major,
+                system_info.version.minor,
+            )
             logger.info(message)
             self.add_message(
                 level="INFO",
@@ -69,16 +67,16 @@ class PackageUpdates(actions.Action):
             # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
             # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
             # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
-            logger.warning(
+            warning_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
                 " before proceeding with the conversion."
             )
-            logger.warning(str(e))
+            logger.warning(warning_message + " %s" % str(e))
             self.add_message(
                 level="WARNING",
                 id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-                message=message + " %s" % str(e),
+                message=warning_message + " %s" % str(e),
             )
             return
 
@@ -88,20 +86,13 @@ class PackageUpdates(actions.Action):
                 if not reposdir
                 else "on repositories defined in the %s folder" % reposdir
             )
-            logger.warning(
+            message = (
                 "The system has %s package(s) not updated based %s.\n"
                 "List of packages to update: %s.\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
                 "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
             )
-            message = (
-                    "The system has %s package(s) not updated based %s.\n"
-                    "List of packages to update: %s.\n\n"
-                    "Not updating the packages may cause the conversion to fail.\n"
-                    "Consider updating the packages before proceeding with the conversion."
-                    % (len(packages_to_update), repos_message, " ".join(packages_to_update))
-                )
             logger.warning(message)
             self.add_message(
                 level="WARNING",

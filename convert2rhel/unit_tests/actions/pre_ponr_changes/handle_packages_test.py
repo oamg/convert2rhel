@@ -21,6 +21,7 @@ import six
 from convert2rhel import actions, pkghandler, unit_tests
 from convert2rhel.actions.pre_ponr_changes import handle_packages
 from convert2rhel.systeminfo import system_info
+from convert2rhel.unit_tests.conftest import centos7
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -51,17 +52,17 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
     assert list_third_party_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
-def test_list_third_party_packages(list_third_party_packages_instance, monkeypatch, caplog):
+@centos7
+def test_list_third_party_packages(list_third_party_packages_instance, pretend_os, monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked(["pytest", "ruby", "shim"]))
-    monkeypatch.setattr(system_info, "name", "Centos7")
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
                 id="THIRD_PARTY_PACKAGE_DETECTED",
                 message=(
-                    "Only packages signed by Centos7 are to be replaced. Red Hat support won't be provided"
+                    "Only packages signed by CentOS Linux are to be replaced. Red Hat support won't be provided"
                     " for the following third party packages:\npytest, ruby, shim"
                 ),
             ),

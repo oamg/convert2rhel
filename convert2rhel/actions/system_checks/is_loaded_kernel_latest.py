@@ -81,16 +81,11 @@ class IsLoadedKernelLatest(actions.Action):
 
         # Skip the kernel package check and print a warning if the user used the special environment variable for it
         if unsupported_skip:
-            logger.warning(
+            message = (
                 "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the %s comparison.\n"
                 "Beware, this could leave your system in a broken state." % package_to_check
             )
-            message = (
-                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                    "the %s comparison.\n"
-                    "Beware, this could leave your system in a broken state." % package_to_check
-                )
             logger.warning(message)
             self.add_message(
                 level="WARNING",
@@ -109,14 +104,10 @@ class IsLoadedKernelLatest(actions.Action):
         repoquery_output, return_code = run_subprocess(cmd, print_output=False)
         if return_code != 0:
             logger.debug("Got the following output: %s", repoquery_output)
-            logger.warning(
+            message = (
                 "Couldn't fetch the list of the most recent kernels available in "
                 "the repositories. Skipping the loaded kernel check."
             )
-            message = (
-                    "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Skipping the loaded kernel check."
-                )
             logger.warning(message)
             self.add_message(
                 level="WARNING",

@@ -93,7 +93,6 @@ class Convert2rhelLatest(actions.Action):
             shutil.rmtree(repo_dir)
 
         if return_code != 0:
-            logger.warning(
             message = (
                 "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
                 "repoquery failed with the following output:\n%s" % (raw_output_convert2rhel_versions)
@@ -172,49 +171,37 @@ class Convert2rhelLatest(actions.Action):
             allow_older_envvar_names = ("CONVERT2RHEL_ALLOW_OLDER_VERSION", "CONVERT2RHEL_UNSUPPORTED_VERSION")
             if any(envvar in os.environ for envvar in allow_older_envvar_names):
                 if "CONVERT2RHEL_ALLOW_OLDER_VERSION" not in os.environ:
-                    logger.warning(
+                    message = (
                         "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
                         " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
                         " instead."
                     )
-                    message = (
-                            "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
-                            " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
-                            " instead."
-                        )
                     logger.warning(message)
                     self.add_message(
                         level="WARNING",
                         id="DEPRECATED_ENVIRONMENT_VARIABLE",
                         message=message,
                     )
-                logger.warning(
+                message2 = (
                     "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
                     % (installed_convert2rhel_version, latest_available_version[1])
                 )
+                logger.warning(message2)
                 self.add_message(
                     level="WARNING",
                     id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
-                    message=(
-                        "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                        "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
-                        % (installed_convert2rhel_version, latest_available_version[1])
-                    ),
+                    message=message2,
                 )
 
             else:
                 if int(system_info.version.major) <= 6:
-                    logger.warning(
+
+                    message = (
                         "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
                         "We encourage you to update to the latest version."
                         % (installed_convert2rhel_version, latest_available_version[1])
                     )
-                    message = (
-                            "You are currently running %s and the latest version of Convert2RHEL is %s.\n"
-                            "We encourage you to update to the latest version."
-                            % (installed_convert2rhel_version, latest_available_version[1])
-                        )
                     logger.warning(message)
                     self.add_message(
                         level="WARNING",

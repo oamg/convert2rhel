@@ -210,16 +210,11 @@ class EnsureKernelModulesCompatibility(actions.Action):
             # Check if we have the environment variable set, if we do, send a
             # warning and return.
             if "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS" in os.environ:
-                logger.warning(
+                message = (
                     "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
                     " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
                 )
-                message = (
-                        "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
-                        " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
-                        "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
-                    )
                 logger.warning(message)
                 self.add_message(
                     level="WARNING",

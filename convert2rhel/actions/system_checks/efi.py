@@ -74,14 +74,10 @@ class Efi(actions.Action):
         if not efiboot_info.entries[efiboot_info.current_bootnum].is_referring_to_file():
             # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
             # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
-            logger.warning(
+            message = (
                 "The current UEFI bootloader '%s' is not referring to any binary UEFI"
                 " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
             )
-            message = (
-                    "The current UEFI bootloader '%s' is not referring to any binary UEFI"
-                    " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
-                )
             logger.warning(message)
             self.add_message(
                 level="WARNING",
