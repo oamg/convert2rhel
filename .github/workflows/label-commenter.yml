@@ -1,4 +1,4 @@
-name: Tests Label Commenter
+name: Verification Test Comment
 
 on:
   pull_request_target:
