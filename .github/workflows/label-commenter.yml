@@ -1,7 +1,7 @@
 name: Tests Label Commenter
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled, unlabeled]
 
 permissions:
@@ -11,10 +11,13 @@ permissions:
 
 jobs:
   comment:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
+        with:
+          sparse-checkout: |
+            .github/label-commenter-config.yml
+          sparse-checkout-cone-mode: false
       - name: Label Commenter
         uses: peaceiris/actions-label-commenter@v1.10.0
         env:
