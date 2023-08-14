@@ -84,18 +84,20 @@ class RemoveExcludedPackages(actions.Action):
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
         if pkgs_not_removed:
-            logger.warning("The following packages were not removed: %s" % ", ".join(pkgs_not_removed))
+            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="EXCLUDED_PACKAGES_NOT_REMOVED",
-                message="The following packages were not removed: %s" % ", ".join(pkgs_not_removed),
+                message=message,
             )
         else:
-            logger.info("The following packages were removed: %s" % ", ".join(pkgs_removed))
+            message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
+            logger.info(message)
             self.add_message(
                 level="INFO",
                 id="EXCLUDED_PACKAGES_REMOVED",
-                message="The following packages were removed: %s" % ", ".join(pkgs_removed),
+                message=message,
             )
 
 
@@ -138,16 +140,18 @@ class RemoveRepositoryFilesPackages(actions.Action):
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
         if pkgs_not_removed:
-            logger.warning("The following packages were not removed: %s" % ", ".join(pkgs_not_removed))
+            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
-                message="The following packages were not removed: %s" % ", ".join(pkgs_not_removed),
+                message=message,
             )
         else:
-            logger.info("The following packages were removed: %s" % ", ".join(pkgs_removed))
+            message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
+            logger.info(message)
             self.add_message(
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                message="The following packages were removed: %s" % ", ".join(pkgs_removed),
+                message=message,
             )

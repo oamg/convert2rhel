@@ -78,13 +78,15 @@ class Efi(actions.Action):
                 "The current UEFI bootloader '%s' is not referring to any binary UEFI"
                 " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
             )
+            message = (
+                    "The current UEFI bootloader '%s' is not referring to any binary UEFI"
+                    " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+                )
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="UEFI_BOOTLOADER_MISMATCH",
-                message=(
-                    "The current UEFI bootloader '%s' is not referring to any binary UEFI"
-                    " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
-                ),
+                message=message,
             )
         # TODO(pstodulk): print warning when multiple orig. UEFI entries point
         # to the original system (e.g. into the centos/ directory..). The point is

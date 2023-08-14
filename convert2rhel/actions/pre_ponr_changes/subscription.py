@@ -31,11 +31,12 @@ class PreSubscription(actions.Action):
         super(PreSubscription, self).run()
 
         if toolopts.tool_opts.no_rhsm:
-            logger.warning("Detected --no-rhsm option. Skipping.")
+            message = "Detected --no-rhsm option. Skipping."
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="PRE_SUBSCRIPTION_CHECK_SKIP",
-                message="Detected --no-rhsm option. Skipping.",
+                message=message,
             )
             return
 
@@ -93,11 +94,12 @@ class SubscribeSystem(actions.Action):
         super(SubscribeSystem, self).run()
 
         if toolopts.tool_opts.no_rhsm:
-            logger.warning("Detected --no-rhsm option. Skipping.")
+            message = "Detected --no-rhsm option. Skipping."
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="PRE_SUBSCRIPTION_CHECK_SKIP",
-                message="Detected --no-rhsm option. Skipping.",
+                message=message,
             )
             return
 

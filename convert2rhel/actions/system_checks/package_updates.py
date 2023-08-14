@@ -38,25 +38,27 @@ class PackageUpdates(actions.Action):
             logger.info(
                 "Skipping the check because there are no publicly available %s %d.%d repositories available."
                 % (system_info.name, system_info.version.major, system_info.version.minor)
-            )
+            message = (
+                    "Skipping the check because there are no publicly available %s %d.%d repositories available."
+                    % (system_info.name, system_info.version.major, system_info.version.minor)
+                )
+            logger.info(message)
             self.add_message(
                 level="INFO",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
-                message=(
-                    "Skipping the check because there are no publicly available %s %d.%d repositories available."
-                    % (system_info.name, system_info.version.major, system_info.version.minor)
-                ),
+                message=message,
             )
             return
 
         reposdir = get_hardcoded_repofiles_dir()
 
         if reposdir and not system_info.has_internet_access:
-            logger.warning("Skipping the check as no internet connection has been detected.")
+            message = "Skipping the check as no internet connection has been detected."
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
-                message="Skipping the check as no internet connection has been detected.",
+                message=message,
             )
             return
 
@@ -76,11 +78,7 @@ class PackageUpdates(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-                message=(
-                    "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
-                    " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
-                    " before proceeding with the conversion. %s" % str(e)
-                ),
+                message=message + " %s" % str(e),
             )
             return
 
@@ -97,16 +95,18 @@ class PackageUpdates(actions.Action):
                 "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
             )
-            self.add_message(
-                level="WARNING",
-                id="OUT_OF_DATE_PACKAGES",
-                message=(
+            message = (
                     "The system has %s package(s) not updated based %s.\n"
                     "List of packages to update: %s.\n\n"
                     "Not updating the packages may cause the conversion to fail.\n"
                     "Consider updating the packages before proceeding with the conversion."
                     % (len(packages_to_update), repos_message, " ".join(packages_to_update))
-                ),
+                )
+            logger.warning(message)
+            self.add_message(
+                level="WARNING",
+                id="OUT_OF_DATE_PACKAGES",
+                message=message,
             )
         else:
             logger.info("System is up-to-date.")

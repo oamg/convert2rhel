@@ -38,12 +38,12 @@ class CustomReposAreValid(actions.Action):
         logger.task("Prepare: Check if --enablerepo repositories are accessible")
 
         if not tool_opts.no_rhsm:
-            logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
-
+            message = "Skipping the check of repositories due to the use of RHSM for the conversion."
+            logger.info(message)
             self.add_message(
                 level="INFO",
                 id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
-                message="Skipping the check of repositories due to the use of RHSM for the conversion.",
+                message=message,
             )
             return
 

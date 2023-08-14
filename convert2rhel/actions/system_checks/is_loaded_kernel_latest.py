@@ -54,11 +54,12 @@ class IsLoadedKernelLatest(actions.Action):
 
         reposdir = get_hardcoded_repofiles_dir()
         if reposdir and not system_info.has_internet_access:
-            logger.warning("Skipping the check as no internet connection has been detected.")
+            message = "Skipping the check as no internet connection has been detected."
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
-                message=("Skipping the check as no internet connection has been detected."),
+                message=message,
             )
             return
 
@@ -85,14 +86,16 @@ class IsLoadedKernelLatest(actions.Action):
                 "the %s comparison.\n"
                 "Beware, this could leave your system in a broken state." % package_to_check
             )
-            self.add_message(
-                level="WARNING",
-                id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
-                message=(
+            message = (
                     "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                     "the %s comparison.\n"
                     "Beware, this could leave your system in a broken state." % package_to_check
-                ),
+                )
+            logger.warning(message)
+            self.add_message(
+                level="WARNING",
+                id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                message=message,
             )
             return
 
@@ -110,13 +113,15 @@ class IsLoadedKernelLatest(actions.Action):
                 "Couldn't fetch the list of the most recent kernels available in "
                 "the repositories. Skipping the loaded kernel check."
             )
+            message = (
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                )
+            logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="UNABLE_TO_FETCH_RECENT_KERNELS",
-                message=(
-                    "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Skipping the loaded kernel check."
-                ),
+                message=message,
             )
             return
 
