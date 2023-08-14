@@ -1,4 +1,4 @@
-name: Tests Label Commenter
+name: Test trigger comment
 
 on:
   pull_request_target:
