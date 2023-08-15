@@ -131,7 +131,7 @@ class TestDownloadPkg(object):
         expected_log = (
             "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
             "there is no guarantee that the packages will be restored on rollback, which"
-            "could put the system in a broken state.\nCheck to ensure that the None "
+            "could put the system in a broken state.\nCheck to ensure that the CentOS Linux "
             "repositories are enabled, and the packages are updated to their latest "
             "versions.\nIf this error still occurs after re-running the conversion, "
             "you can set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
