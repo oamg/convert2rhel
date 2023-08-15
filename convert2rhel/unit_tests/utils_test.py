@@ -127,7 +127,14 @@ def test_is_rpm_based_os():
 
 class TestDownloadPkg(object):
     @centos7
-    def test_download_pkg_failed_download_overridden(self, pretend_os, monkeypatch, caplog):
+    def test_download_pkg_failed_download_overridden(
+        self,
+        pretend_os,
+        monkeypatch,
+        caplog,
+        global_tool_opts,
+    ):
+        global_tool_opts.activity = "conversion"
         expected_log = (
             "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
             "there is no guarantee that the packages will be restored on rollback, which"
