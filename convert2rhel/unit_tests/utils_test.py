@@ -198,8 +198,7 @@ class TestDownloadPkg(object):
     ):
         global_tool_opts.activity = "conversion"
 
-        if incomplete_rollback == "1":
-            monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
+        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
 
         if unsupported_rollback == "1":
             monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": unsupported_rollback})
