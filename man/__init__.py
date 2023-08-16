@@ -33,5 +33,4 @@ def get_parser():
         "Oracle Linux 6/7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
         "to the respective major version of RHEL.".strip()
     )
-    parser.usage = None
     return parser

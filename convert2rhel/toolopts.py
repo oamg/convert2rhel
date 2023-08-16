@@ -116,10 +116,10 @@ class CLI(object):
         self._register_options()
         self._process_cli_options()
 
-    @staticmethod
-    def _get_argparser():
+    @property
+    def usage(self):
         usage = (
-            "\n    "
+            "\n"
             "  convert2rhel\n"
             "  convert2rhel [-h]\n"
             "  convert2rhel [--version]\n"
@@ -134,9 +134,10 @@ class CLI(object):
             "\n\n"
             "*WARNING* The tool needs to be run under the root user\n"
         )
-        return argparse.ArgumentParser(
-            conflict_handler="resolve", usage=usage, formatter_class=argparse.RawTextHelpFormatter
-        )
+        return usage
+
+    def _get_argparser(self):
+        return argparse.ArgumentParser(conflict_handler="resolve", usage=self.usage)
 
     def _register_commands(self):
         """Configures parsers specific to the analyze and convert subcommands"""
@@ -149,14 +150,14 @@ class CLI(object):
             " in the original state.",
             parents=[self._shared_options_parser],
             formatter_class=argparse.RawTextHelpFormatter,
-            usage=SUPPRESS,
+            usage=self.usage,
         )
         self._convert_parser = subparsers.add_parser(
             "convert",
             help="Convert the system.",
             parents=[self._shared_options_parser],
             formatter_class=argparse.RawTextHelpFormatter,
-            usage=SUPPRESS,
+            usage=self.usage,
         )
 
     def _register_parent_options(self, parser):
@@ -360,24 +361,11 @@ class CLI(object):
 
         warn_on_unsupported_options()
 
-        args = []
-        argv = sys.argv[1:]
-
         # algorithm function to properly organize all CLI args
-        argv = _add_default_command(argv)
-
-        has_subcommand = False
-        for index, argument in enumerate(argv):
-            if argument in ("convert", "analyze") and argv[index - 1] not in ARGS_WITH_VALUES:
-                # subcommand is present in argv list
-                has_subcommand = True
-                break
-
-        if not has_subcommand:
-            args.insert(0, "convert")
-
-        args.extend(argv)
-        parsed_opts = self._parser.parse_args(args)
+        argv = _add_default_command(sys.argv[1:])
+        parsed_opts = self._parser.parse_args(argv)
+        print(argv)
+        # sys.exit()
 
         if parsed_opts.debug:
             tool_opts.debug = True
