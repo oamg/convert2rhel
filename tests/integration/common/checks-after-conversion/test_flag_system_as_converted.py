@@ -4,13 +4,7 @@ import os
 import jsonschema
 import pytest
 
-
-def _load_json_schema(path):
-    """Load the JSON schema from the system."""
-    assert os.path.exists(path)
-
-    with open(path, mode="r") as handler:
-        return json.load(handler)
+from conftest import _load_json_schema
 
 
 C2R_MIGRATION_RESULTS_SCHEMA = _load_json_schema(path="artifacts/c2r_migration_results_schema.json")

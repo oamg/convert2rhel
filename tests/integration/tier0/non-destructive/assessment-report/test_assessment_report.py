@@ -1,15 +1,44 @@
+import json
+import os.path
+
+import jsonschema
 import pytest
 
+from conftest import _load_json_schema
 from envparse import env
 from pexpect import EOF
+
+
+PRE_CONVERSION_REPORT = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.0.json")
+
+
+def _validate_report():
+    """
+    Helper function.
+    Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
+    and it corresponds to its respective schema.
+    """
+    assert os.path.exists(PRE_CONVERSION_REPORT)
+
+    with open(PRE_CONVERSION_REPORT, "r") as data:
+        data_json = json.load(data)
+        # If some difference between generated json and its schema invoke exception
+        try:
+            jsonschema.validate(instance=data_json, schema=PRE_CONVERSION_REPORT_JSON_SCHEMA)
+        except Exception:
+            print(data_json)
+            raise
 
 
 @pytest.mark.test_failures_and_skips_in_report
 def test_failures_and_skips_in_report(convert2rhel):
     """
-    Test if the assessment report contains the following headers and messages:
-
+    Verify that the assessment report contains the following headers and messages:
     Error header, skip header, success header.
+
+    Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
+    and it corresponds to its respective schema.
     """
     with convert2rhel(
         "analyze --no-rpm-va --serverurl {} --username test --password test --pool a_pool --debug".format(
@@ -37,6 +66,8 @@ def test_failures_and_skips_in_report(convert2rhel):
         c2r.expect("Skipped because SUBSCRIBE_SYSTEM was not successful")
 
     assert c2r.exitstatus == 0
+
+    _validate_report()
 
 
 @pytest.mark.test_successful_report
