@@ -42,7 +42,14 @@ _LONG_MESSAGE = {
                 "CONVERT2RHEL_LATEST_VERSION": {
                     "result": dict(level=STATUS_CODE["SUCCESS"]),
                     "messages": [
-                        dict(level=STATUS_CODE["WARNING"], id="WARNING_ONE", message="A warning message"),
+                        dict(
+                            level=STATUS_CODE["WARNING"],
+                            id="WARNING_ONE",
+                            title="A warning message",
+                            description="",
+                            diagnosis="",
+                            remediation="",
+                        ),
                     ],
                 },
             },
@@ -52,7 +59,49 @@ _LONG_MESSAGE = {
                     "CONVERT2RHEL_LATEST_VERSION": {
                         "result": dict(level="SUCCESS"),
                         "messages": [
-                            dict(level="WARNING", id="WARNING_ONE", message="A warning message"),
+                            dict(
+                                level="WARNING",
+                                id="WARNING_ONE",
+                                title="A warning message",
+                                description="",
+                                diagnosis="",
+                                remediation="",
+                            ),
+                        ],
+                    },
+                },
+            },
+        ),
+        (
+            {
+                "CONVERT2RHEL_LATEST_VERSION": {
+                    "result": dict(level=STATUS_CODE["SUCCESS"]),
+                    "messages": [
+                        dict(
+                            level=STATUS_CODE["WARNING"],
+                            id="WARNING_ONE",
+                            title="A warning message",
+                            description="A description",
+                            diagnosis="A diagnosis",
+                            remediation="A remediation",
+                        ),
+                    ],
+                },
+            },
+            {
+                "format_version": "1.0",
+                "actions": {
+                    "CONVERT2RHEL_LATEST_VERSION": {
+                        "result": dict(level="SUCCESS"),
+                        "messages": [
+                            dict(
+                                level="WARNING",
+                                id="WARNING_ONE",
+                                title="A warning message",
+                                description="A description",
+                                diagnosis="A diagnosis",
+                                remediation="A remediation",
+                            ),
                         ],
                     },
                 },
@@ -989,9 +1038,88 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                 begin=bcolors.WARNING, end=bcolors.ENDC
             ),
         ),
+        # (
+        #     {
+        #         "OverridableAction": dict(
+        #             messages=[
+        #                 {
+        #                     "level": STATUS_CODE["WARNING"],
+        #                     "id": "WARNING_ID",
+        #                     "title": "Warning",
+        #                     "description": "Action warning",
+        #                     "diagnosis": "User warning",
+        #                     "remediation": "move on",
+        #                 }
+        #             ],
+        #             result={
+        #                 "level": STATUS_CODE["OVERRIDABLE"],
+        #                 "id": "OVERRIDABLE",
+        #                 "title": "Overridable",
+        #                 "description": "Action overridable",
+        #                 "diagnosis": "User overridable",
+        #                 "remediation": "move on",
+        #             },
+        #         )
+        #     },
+        #     "%s(OVERRIDABLE) OverridableAction.OVERRIDABLE: Overridable\n Description: Action overridable\n Diagnosis: User overridable\n Remediation: move on%s" % (bcolors.FAIL, bcolors.ENDC),
+        #     "%s(WARNING) OverridableAction.WARNING_ID: Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on%s" % (bcolors.WARNING, bcolors.ENDC),
+        # ),
+        # (
+        #     {
+        #         "SkipAction": dict(
+        #             messages=[
+        #                 {
+        #                     "level": STATUS_CODE["WARNING"],
+        #                     "id": "WARNING_ID",
+        #                     "title": "Warning",
+        #                     "description": "Action warning",
+        #                     "diagnosis": "User warning",
+        #                     "remediation": "move on",
+        #                 }
+        #             ],
+        #             result={
+        #                 "level": STATUS_CODE["SKIP"],
+        #                 "id": "SKIP",
+        #                 "title": "Skip",
+        #                 "description": "Action skip",
+        #                 "diagnosis": "User skip",
+        #                 "remediation": "move on",
+        #             },
+        #         )
+        #     },
+        #     "%s(SKIP) SkipAction.SKIP: Skip\n Description: Action skip\n Diagnosis: User skip\n Remediation: move on%s" % (bcolors.FAIL, bcolors.ENDC),
+        #     "%s(WARNING) SkipAction.WARNING_ID: Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on%s" % (bcolors.WARNING, bcolors.ENDC),
+        # ),
+        # (
+        #     {
+        #         "SuccessfulAction": dict(
+        #             messages=[
+        #                 {
+        #                     "level": STATUS_CODE["WARNING"],
+        #                     "id": "WARNING_ID",
+        #                     "title": "Warning",
+        #                     "description": "Action warning",
+        #                     "diagnosis": "User warning",
+        #                     "remediation": "move on",
+        #                 }
+        #             ],
+        #             result={
+        #                 "level": STATUS_CODE["SUCCESS"],
+        #                 "id": "",
+        #                 "title": "",
+        #                 "description": "",
+        #                 "diagnosis": "",
+        #                 "remediation": "",
+        #             },
+        #         )
+        #     },
+        #     "%s(SUCCESS) SuccessfulAction: [No further information given]%s" % (bcolors.OKGREEN, bcolors.ENDC),
+        #     "%s(WARNING) SuccessfulAction.WARNING_ID: Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on%s" % (bcolors.WARNING, bcolors.ENDC),
+        # ),
     ),
 )
 def test_summary_colors(results, expected_result, expected_message, caplog):
     report.summary(results, include_all_reports=True, with_colors=True)
+    print(expected_result)
     assert expected_result in caplog.records[-1].message
     assert expected_message in caplog.records[-1].message
