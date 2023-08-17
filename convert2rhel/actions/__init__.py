@@ -299,15 +299,6 @@ class ActionMessageBase:
         self.diagnosis = diagnosis
         self.remediation = remediation
 
-        try:
-            title_end = message.index(".")
-        except Exception:
-            title_end = len(message) - 1
-        self.title = message[:title_end]
-        self.description = ""
-        self.diagnosis = message
-        self.remediation = ""
-
         if variables is None:
             variables = {}
         self.variables = variables
@@ -396,7 +387,9 @@ class ActionResult(ActionMessageBase):
     A class that defines content and rules for messages set through :meth:`Action.set_result`.
     """
 
-    def __init__(self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""):
+    def __init__(
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+    ):
         if not id:
             raise InvalidMessageError("Results require the id field")
 
@@ -410,7 +403,7 @@ class ActionResult(ActionMessageBase):
                 "Invalid level '%s', the level for result must be SKIP or more fatal or SUCCESS." % level
             )
 
-        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediation)
+        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediation, variables)
 
 
 def get_actions(actions_path, prefix):
