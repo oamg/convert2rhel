@@ -127,11 +127,23 @@ def summary(results, include_all_reports=False, with_colors=True):
     .. note:: Expected results format is as following
         {
             "$Action_id": {
-                "messages" : [{"level": int, "id": "$id", "message": None or "$message"}],
+                "messages" : [
+                    {
+                        "level": int,
+                        "id": "$id",
+                        "title": None or "$title",
+                        "description": None or "$description",
+                        "diagnosis": None or "$diagnosis",
+                        "remediation": None or "$remediation"
+                    }
+                ],
                 "result" : {
                     "level": int,
                     "id": "$id",
-                    "message": "" or "$message"
+                    "title": "" or "$title",
+                    "description": "" or "$description",
+                    "diagnosis": "" or "$diagnosis",
+                    "remediation": "" or "$remediation"
                 }
             },
         }
@@ -197,7 +209,9 @@ def summary(results, include_all_reports=False, with_colors=True):
             combined_results_and_message, "WARNING", level_for_combined_action_data
         )
     terminal_size = utils.get_terminal_size()
-    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
+    # word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
+    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=240, replace_whitespace=False)
+
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.
     combined_results_and_message = sorted(combined_results_and_message, key=lambda item: item[1]["level"], reverse=True)
