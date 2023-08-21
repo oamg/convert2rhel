@@ -208,9 +208,9 @@ def summary(results, include_all_reports=False, with_colors=True):
         combined_results_and_message = find_actions_of_severity(
             combined_results_and_message, "WARNING", level_for_combined_action_data
         )
+
     terminal_size = utils.get_terminal_size()
-    # word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
-    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=240, replace_whitespace=False)
+    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
 
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.

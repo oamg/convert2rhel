@@ -1451,7 +1451,7 @@ class TestFindFailedActions:
         "BAD": dict(result=dict(level=STATUS_CODE["ERROR"], id="ERROR", message="Explosion")),
         "BAD2": dict(result=dict(level=STATUS_CODE["OVERRIDABLE"], id="OVERRIDABLE", message="Explosion")),
         "BAD3": dict(result=dict(level=STATUS_CODE["SKIP"], id="SKIP", message="Explosion")),
-        "GOOD": dict(result=dict(level=STATUS_CODE["SUCCESS"], id="", message="No Error here")),
+        "GOOD": dict(result=dict(level=STATUS_CODE["SUCCESS"], id="SUCCESS", message="No Error here")),
     }
 
     @pytest.mark.parametrize(
@@ -1840,9 +1840,9 @@ class TestActionClasses:
         (
             STATUS_CODE["SUCCESS"],
             "Test",
-            None,
+            "SUCCESS",
             {},
-            "(SUCCESS) Test: [No further information given]",
+            "(SUCCESS) Test.SUCCESS: [No further information given]",
         ),
         (
             STATUS_CODE["WARNING"],
