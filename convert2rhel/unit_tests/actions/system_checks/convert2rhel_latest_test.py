@@ -76,7 +76,7 @@ class TestCheckConvert2rhelLatest:
             (
                 actions.ActionMessage(
                     level="WARNING",
-                    id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
+                    id="NO_INTERNET_ACCESS_SKIP",
                     message="Skipping the check because no internet connection has been detected.",
                 ),
             )
@@ -263,7 +263,7 @@ class TestCheckConvert2rhelLatest:
             (
                 actions.ActionMessage(
                     level="WARNING",
-                    id="CONVERT2RHEL_LATEST_CHECK_SKIP",
+                    id="CONVERT2RHEL_LATEST_VERSION_SKIP",
                     message=(
                         "Couldn't check if the current installed Convert2RHEL is the latest version.\n"
                         "repoquery failed with the following output:\nRepoquery did not run"

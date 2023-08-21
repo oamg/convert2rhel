@@ -43,7 +43,7 @@ class PackageUpdates(actions.Action):
             logger.info(message)
             self.add_message(
                 level="INFO",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
+                id="NO_PUBLIC_REPOSITORIES_SKIP",
                 message=message,
             )
             return
@@ -55,7 +55,7 @@ class PackageUpdates(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
+                id="NO_INTERNET_ACCESS_SKIP",
                 message=message,
             )
             return

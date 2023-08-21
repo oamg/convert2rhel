@@ -58,7 +58,7 @@ class IsLoadedKernelLatest(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
+                id="NO_INTERNET_ACCESS_SKIP",
                 message=message,
             )
             return

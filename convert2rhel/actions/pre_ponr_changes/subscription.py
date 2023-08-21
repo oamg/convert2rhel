@@ -35,7 +35,7 @@ class PreSubscription(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                id="NO_RHSM_SKIP",
                 message=message,
             )
             return
@@ -98,7 +98,7 @@ class SubscribeSystem(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                id="NO_RHSM_SKIP",
                 message=message,
             )
             return

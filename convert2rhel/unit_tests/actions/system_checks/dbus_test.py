@@ -76,8 +76,8 @@ def test_check_dbus_is_running_warning_message(
     expected = set(
         (
             actions.ActionMessage(
-                level="WARNING",
-                id="DBUS_IS_RUNNING_CHECK_SKIP",
+                level="INFO",
+                id="NO_RHSM_SKIP",
                 message="Skipping the check because we have been asked not to subscribe this system to RHSM.",
             ),
         )

@@ -86,7 +86,7 @@ class TestCustomReposAreValid(unittest.TestCase):
             (
                 actions.ActionMessage(
                     level="INFO",
-                    id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                    id="RHSM_IN_USE_SKIP",
                     message="Skipping the check of repositories due to the use of RHSM for the conversion.",
                 ),
             )

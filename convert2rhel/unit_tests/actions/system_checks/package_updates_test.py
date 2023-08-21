@@ -45,7 +45,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
         (
             actions.ActionMessage(
                 level="INFO",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
+                id="NO_PUBLIC_REPOSITORIES_SKIP",
                 message=(
                     "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
                 ),
@@ -135,7 +135,7 @@ def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch,
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
+                id="NO_INTERNET_ACCESS_SKIP",
                 message="Skipping the check as no internet connection has been detected.",
             ),
         )

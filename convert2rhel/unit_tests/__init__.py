@@ -448,17 +448,12 @@ def assert_actions_result(instance, level=_NO_USER_VALUE, id=_NO_USER_VALUE, mes
     """Helper function to assert result set by Actions Framework."""
 
     if level != _NO_USER_VALUE:
-        print(instance.result.level)
-        print(STATUS_CODE[level])
         assert instance.result.level == STATUS_CODE[level]
 
     if id != _NO_USER_VALUE:
         assert instance.result.id == id
 
     if message != _NO_USER_VALUE:
-        print(instance.result.message)
-        print("\n")
-        print(message)
         assert message in instance.result.message
 
 

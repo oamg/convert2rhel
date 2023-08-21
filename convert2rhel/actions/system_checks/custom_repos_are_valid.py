@@ -42,7 +42,7 @@ class CustomReposAreValid(actions.Action):
             logger.info(message)
             self.add_message(
                 level="INFO",
-                id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                id="RHSM_IN_USE_SKIP",
                 message=message,
             )
             return

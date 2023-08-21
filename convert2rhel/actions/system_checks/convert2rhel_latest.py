@@ -63,7 +63,7 @@ class Convert2rhelLatest(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
+                id="NO_INTERNET_ACCESS_SKIP",
                 message=message,
             )
             return
@@ -100,7 +100,7 @@ class Convert2rhelLatest(actions.Action):
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="CONVERT2RHEL_LATEST_CHECK_SKIP",
+                id="CONVERT2RHEL_LATEST_VERSION_SKIP",
                 message=message,
             )
             return

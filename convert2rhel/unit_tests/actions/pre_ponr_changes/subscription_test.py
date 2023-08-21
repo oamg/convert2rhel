@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import cert, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, cert, pkghandler, repo, subscription, toolopts, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
 
@@ -51,11 +51,15 @@ def test_pre_subscription_dependency_order(pre_subscription_instance):
 
 def test_pre_subscription_no_rhsm_option_detected(pre_subscription_instance, monkeypatch, caplog):
     monkeypatch.setattr(toolopts.tool_opts, "no_rhsm", True)
-
+    expected = set(
+        (actions.ActionMessage(level="WARNING", id="NO_RHSM_SKIP", message="Detected --no-rhsm option. Skipping."),)
+    )
     pre_subscription_instance.run()
 
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
     assert pre_subscription_instance.result.level == STATUS_CODE["SUCCESS"]
+    assert expected.issuperset(pre_subscription_instance.messages)
+    assert expected.issubset(pre_subscription_instance.messages)
 
 
 def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
@@ -109,8 +113,15 @@ def test_subscribe_system_dependency_order(subscribe_system_instance):
 
 def test_subscribe_system_no_rhsm_option_detected(subscribe_system_instance, monkeypatch, caplog):
     monkeypatch.setattr(toolopts.tool_opts, "no_rhsm", True)
-
+    expected = set(
+        (actions.ActionMessage(level="WARNING", id="NO_RHSM_SKIP", message="Detected --no-rhsm option. Skipping."),)
+    )
     subscribe_system_instance.run()
+
+    assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
+    assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
+    assert expected.issuperset(subscribe_system_instance.messages)
+    assert expected.issubset(subscribe_system_instance.messages)
 
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
     assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
