@@ -16,9 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 import pytest
 
 from convert2rhel import applock
+
 
 def test_applock_basic():
     alock = applock.ApplicationLock("convert2rhelTEST")
@@ -30,12 +32,13 @@ def test_applock_basic():
     assert alock.is_locked() is False
     assert os.path.isfile(alock._pidfile) is False
 
+
 def test_applock_basic_islocked():
     alock = applock.ApplicationLock("convert2rhelTEST")
     alock.set_lock_dir("/tmp")
     with open(alock._pidfile, "w") as fileh:
         pid = os.getpid()
-        fileh.write(str(pid) + '\n')
+        fileh.write(str(pid) + "\n")
     saw_exception = False
     try:
         alock.trylock()
@@ -44,4 +47,3 @@ def test_applock_basic_islocked():
     finally:
         os.unlink(alock._pidfile)
     assert saw_exception == True
-

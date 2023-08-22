@@ -22,7 +22,9 @@ import logging
 import os
 import time
 
+
 loggerinst = logging.getLogger(__name__)
+
 
 class ApplicationLockedError(Exception):
     """Raised when this application is locked."""
@@ -39,6 +41,7 @@ class ApplicationLock(object):
     fact (and all implementation details) are hidden from the caller.
     To acquire and release the lock, use trylock() and unlock().
     """
+
     def __init__(self, name):
         # Our application name
         self._name = name
@@ -75,13 +78,12 @@ class ApplicationLock(object):
         :returns: True if we created the lock, False if we didn't.
         """
         try:
-            file_desc = os.open(self._pidfile,
-                                os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o755)
+            file_desc = os.open(self._pidfile, os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o755)
         except OSError as exc:
             if exc.errno == errno.EEXIST:
                 return False
             raise exc
-        encoded = (str(self._pid) + "\n").encode('ascii')
+        encoded = (str(self._pid) + "\n").encode("ascii")
         os.write(file_desc, encoded)
         os.close(file_desc)
         loggerinst.debug("%s." % self)
@@ -125,7 +127,7 @@ class ApplicationLock(object):
             try:
                 file_contents = fileh.read()
                 pid = int(file_contents.rstrip())
-                if file_contents[-1] != '\n' or pid == 0:
+                if file_contents[-1] != "\n" or pid == 0:
                     raise ValueError("Bogus file contents")
             except (OSError, ValueError):
                 #
@@ -139,8 +141,7 @@ class ApplicationLock(object):
                 self.trylock(loop_count + 1)
 
         if self._pid_exists(pid):
-            raise ApplicationLockedError(
-                "%s locked by process %d" % (self._name, pid))
+            raise ApplicationLockedError("%s locked by process %d" % (self._name, pid))
         else:
             loggerinst.info("Reaping lock held by process %d." % pid)
         try:
