@@ -22,7 +22,6 @@ import os
 import re
 import sys
 
-
 from six.moves import configparser, urllib
 
 from convert2rhel import __version__, utils
