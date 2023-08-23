@@ -22,7 +22,6 @@ import os
 import re
 import sys
 
-from argparse import SUPPRESS
 
 from six.moves import configparser, urllib
 
@@ -130,7 +129,7 @@ class CLI(object):
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
             "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--keep-rhsm] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            r"  convert2rhel {analyze}"
+            r" convert2rhel {analyze}"
             "\n\n"
             "*WARNING* The tool needs to be run under the root user\n"
         )
@@ -149,14 +148,12 @@ class CLI(object):
             " A rollback is initiated after the checks to put the system back"
             " in the original state.",
             parents=[self._shared_options_parser],
-            formatter_class=argparse.RawTextHelpFormatter,
             usage=self.usage,
         )
         self._convert_parser = subparsers.add_parser(
             "convert",
             help="Convert the system.",
             parents=[self._shared_options_parser],
-            formatter_class=argparse.RawTextHelpFormatter,
             usage=self.usage,
         )
 
@@ -364,8 +361,6 @@ class CLI(object):
         # algorithm function to properly organize all CLI args
         argv = _add_default_command(sys.argv[1:])
         parsed_opts = self._parser.parse_args(argv)
-        print(argv)
-        # sys.exit()
 
         if parsed_opts.debug:
             tool_opts.debug = True
