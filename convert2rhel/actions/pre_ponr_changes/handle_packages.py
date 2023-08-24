@@ -62,7 +62,6 @@ class ListThirdPartyPackages(actions.Action):
                 description="Third party packages will not be replaced during the conversion.",
                 diagnosis=warning_message + ", ".join(_get_pkg_names(third_party_pkgs)),
             )
-            return
         else:
             logger.info("No third party packages installed.")
 
