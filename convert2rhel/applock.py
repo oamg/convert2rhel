@@ -21,7 +21,7 @@ import logging
 import os
 import tempfile
 
-
+_DEFAULT_LOCK_DIR = "/var/lock/run"
 loggerinst = logging.getLogger(__name__)
 
 
@@ -54,11 +54,9 @@ class ApplicationLock(object):
     because something is obviously wrong.
     """
 
-    def __init__(self, name, lock_dir="/var/run/lock"):
+    def __init__(self, name):
         # Our application name
         self._name = name
-        # Directory in which the lockfile will be written
-        self._lock_dir = lock_dir
         # Do we think we locked the pid file?
         self._locked = False
         # Maximum number of tries to lock
@@ -66,7 +64,7 @@ class ApplicationLock(object):
         # Our process ID
         self._pid = os.getpid()
         # Path to the file that contains the process id
-        self._pidfile = os.path.join(self._lock_dir, self._name + ".pid")
+        self._pidfile = os.path.join(_DEFAULT_LOCK_DIR, self._name + ".pid")
 
     def __str__(self):
         if self._locked:
@@ -89,7 +87,7 @@ class ApplicationLock(object):
         # two processes attempt to create the file simultaneously. This
         # also guarantees that the lock file contains valid data.
         #
-        with tempfile.NamedTemporaryFile(mode="wt", suffix=".pid", prefix=self._name, dir=self._lock_dir) as fileh:
+        with tempfile.NamedTemporaryFile(mode="wt", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as fileh:
             fileh.write(str(self._pid) + "\n")
             fileh.flush()
             try:

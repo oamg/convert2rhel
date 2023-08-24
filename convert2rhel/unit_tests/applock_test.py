@@ -24,14 +24,16 @@ from convert2rhel import applock
 
 
 @pytest.fixture
-def tmp_lock():
-    alock = applock.ApplicationLock("convert2rhelTEST", lock_dir="/tmp")
+def tmp_lock(monkeypatch, tmp_path):
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    alock = applock.ApplicationLock("convert2rhelTEST")
     return alock
 
 
-def test_applock_context_manager():
+def test_applock_context_manager(monkeypatch, tmp_path):
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     pidfile = "/non/existent/file"
-    with applock.ApplicationLock("convert2rhelTEST", lock_dir="/tmp") as tmp_lock:
+    with applock.ApplicationLock("convert2rhelTEST") as tmp_lock:
         pidfile = tmp_lock._pidfile
         assert tmp_lock.is_locked is True
         assert os.path.isfile(pidfile) is True

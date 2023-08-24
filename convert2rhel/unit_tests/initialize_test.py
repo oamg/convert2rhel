@@ -17,7 +17,7 @@
 
 import pytest
 
-from convert2rhel import initialize, main
+from convert2rhel import applock, initialize, main
 
 
 @pytest.mark.parametrize(
@@ -27,7 +27,8 @@ from convert2rhel import initialize, main
         (1),
     ),
 )
-def test_run(monkeypatch, exit_code):
+def test_run(monkeypatch, exit_code, tmp_path):
     monkeypatch.setattr(main, "main", value=lambda: exit_code)
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     with pytest.raises(SystemExit):
         initialize.run()
