@@ -80,7 +80,7 @@ def test_summary_as_json(results, expected, tmpdir):
                 )
             },
             True,
-            ["(WARNING) PreSubscription.WARNING_ID: WARNING MESSAGE", "(SUCCESS) PreSubscription: All good!"],
+            ["(WARNING) PreSubscription::WARNING_ID - WARNING MESSAGE", "(SUCCESS) PreSubscription - All good!"],
         ),
         (
             {
@@ -91,8 +91,8 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             True,
             [
-                "(WARNING) PreSubscription.WARNING_ID: WARNING MESSAGE",
-                "(SUCCESS) PreSubscription: [No further information given]",
+                "(WARNING) PreSubscription::WARNING_ID - WARNING MESSAGE",
+                "(SUCCESS) PreSubscription - [No further information given]",
             ],
         ),
         (
@@ -111,9 +111,9 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             True,
             [
-                "(SUCCESS) PreSubscription: All good!",
-                "(WARNING) PreSubscription2.WARNING_ID: WARNING MESSAGE",
-                "(SKIP) PreSubscription2.SKIPPED: SKIP MESSAGE",
+                "(SUCCESS) PreSubscription - All good!",
+                "(WARNING) PreSubscription2::WARNING_ID - WARNING MESSAGE",
+                "(SKIP) PreSubscription2::SKIPPED - SKIP MESSAGE",
             ],
         ),
         # Test that messages that are below WARNING will not appear in
@@ -135,7 +135,7 @@ def test_summary_as_json(results, expected, tmpdir):
                 )
             },
             False,
-            ["(WARNING) PreSubscription.WARNING_ID: WARNING MESSAGE"],
+            ["(WARNING) PreSubscription::WARNING_ID - WARNING MESSAGE"],
         ),
         (
             {
@@ -154,9 +154,9 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             False,
             [
-                "(SKIP) PreSubscription2.SKIPPED: SKIP MESSAGE",
-                "(WARNING) PreSubscription.WARNING_ID: WARNING MESSAGE 1",
-                "(WARNING) PreSubscription2.WARNING_ID: WARNING MESSAGE 2",
+                "(SKIP) PreSubscription2::SKIPPED - SKIP MESSAGE",
+                "(WARNING) PreSubscription::WARNING_ID - WARNING MESSAGE 1",
+                "(WARNING) PreSubscription2::WARNING_ID - WARNING MESSAGE 2",
             ],
         ),
         # Test all messages are displayed, SKIP and higher
@@ -181,10 +181,10 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             False,
             [
-                "(OVERRIDABLE) PreSubscription2.OVERRIDABLE_ID: OVERRIDABLE MESSAGE",
-                "(SKIP) PreSubscription1.SKIPPED: SKIP MESSAGE",
-                "(WARNING) PreSubscription1.WARNING_ID: WARNING MESSAGE 1",
-                "(WARNING) PreSubscription2.WARNING_ID: WARNING MESSAGE 2",
+                "(OVERRIDABLE) PreSubscription2::OVERRIDABLE_ID - OVERRIDABLE MESSAGE",
+                "(SKIP) PreSubscription1::SKIPPED - SKIP MESSAGE",
+                "(WARNING) PreSubscription1::WARNING_ID - WARNING MESSAGE 1",
+                "(WARNING) PreSubscription2::WARNING_ID - WARNING MESSAGE 2",
             ],
         ),
         (
@@ -216,14 +216,14 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             False,
             [
-                "(ERROR) ErrorAction.ERROR: ERROR MESSAGE",
-                "(ERROR) TestAction.SECONDERROR: Test that two of the same level works",
-                "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
-                "(SKIP) SkipAction.SKIP: SKIP MESSAGE",
-                "(WARNING) SkipAction.WARNING_ID: WARNING MESSAGE 4",
-                "(WARNING) OverridableAction.WARNING_ID: WARNING MESSAGE 3",
-                "(WARNING) ErrorAction.WARNING_ID: WARNING MESSAGE 2",
-                "(WARNING) TestAction.WARNING_ID: WARNING MESSAGE 1",
+                "(ERROR) ErrorAction::ERROR - ERROR MESSAGE",
+                "(ERROR) TestAction::SECONDERROR - Test that two of the same level works",
+                "(OVERRIDABLE) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE",
+                "(SKIP) SkipAction::SKIP - SKIP MESSAGE",
+                "(WARNING) SkipAction::WARNING_ID - WARNING MESSAGE 4",
+                "(WARNING) OverridableAction::WARNING_ID - WARNING MESSAGE 3",
+                "(WARNING) ErrorAction::WARNING_ID - WARNING MESSAGE 2",
+                "(WARNING) TestAction::WARNING_ID - WARNING MESSAGE 1",
             ],
         ),
     ),
@@ -296,8 +296,8 @@ def test_messages_summary_with_long_message(caplog):
             },
             False,
             [
-                r"\(OVERRIDABLE\) PreSubscription1.SOME_OVERRIDABLE: OVERRIDABLE MESSAGE",
-                r"\(SKIP\) PreSubscription2.SKIPPED: SKIP MESSAGE",
+                r"\(OVERRIDABLE\) PreSubscription1::SOME_OVERRIDABLE - OVERRIDABLE MESSAGE",
+                r"\(SKIP\) PreSubscription2::SKIPPED - SKIP MESSAGE",
             ],
         ),
         (
@@ -321,9 +321,9 @@ def test_messages_summary_with_long_message(caplog):
             },
             False,
             [
-                r"\(ERROR\) ErrorAction.ERROR: ERROR MESSAGE",
-                r"\(OVERRIDABLE\) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
-                r"\(SKIP\) SkipAction.SKIP: SKIP MESSAGE",
+                r"\(ERROR\) ErrorAction::ERROR - ERROR MESSAGE",
+                r"\(OVERRIDABLE\) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE",
+                r"\(SKIP\) SkipAction::SKIP - SKIP MESSAGE",
             ],
         ),
         # Message order with `include_all_reports` set to True.
@@ -352,10 +352,10 @@ def test_messages_summary_with_long_message(caplog):
             },
             True,
             [
-                r"\(ERROR\) ErrorAction.ERROR: ERROR MESSAGE",
-                r"\(OVERRIDABLE\) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
-                r"\(SKIP\) SkipAction.SKIP: SKIP MESSAGE",
-                r"\(SUCCESS\) PreSubscription: All good!",
+                r"\(ERROR\) ErrorAction::ERROR - ERROR MESSAGE",
+                r"\(OVERRIDABLE\) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE",
+                r"\(SKIP\) SkipAction::SKIP - SKIP MESSAGE",
+                r"\(SUCCESS\) PreSubscription - All good!",
             ],
         ),
     ),
@@ -396,9 +396,9 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
             },
             False,
             [
-                "(OVERRIDABLE) PreSubscription1.SOME_OVERRIDABLE: OVERRIDABLE MESSAGE",
-                "(SKIP) PreSubscription2.SKIPPED: SKIP MESSAGE",
-                "(WARNING) PreSubscription2.WARNING_ID: WARNING MESSAGE",
+                "(OVERRIDABLE) PreSubscription1::SOME_OVERRIDABLE - OVERRIDABLE MESSAGE",
+                "(SKIP) PreSubscription2::SKIPPED - SKIP MESSAGE",
+                "(WARNING) PreSubscription2::WARNING_ID - WARNING MESSAGE",
             ],
         ),
         (
@@ -422,11 +422,11 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
             },
             False,
             [
-                "(ERROR) ErrorAction.ERROR: ERROR MESSAGE",
-                "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
-                "(SKIP) SkipAction.SKIP: SKIP MESSAGE",
-                "(WARNING) SkipAction.WARNING_ID: WARNING MESSAGE 1",
-                "(WARNING) OverridableAction.WARNING_ID: WARNING MESSAGE 2",
+                "(ERROR) ErrorAction::ERROR - ERROR MESSAGE",
+                "(OVERRIDABLE) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE",
+                "(SKIP) SkipAction::SKIP - SKIP MESSAGE",
+                "(WARNING) SkipAction::WARNING_ID - WARNING MESSAGE 1",
+                "(WARNING) OverridableAction::WARNING_ID - WARNING MESSAGE 2",
             ],
         ),
         # Message order with `include_all_reports` set to True.
@@ -451,14 +451,14 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
             },
             True,
             [
-                "(ERROR) ErrorAction.ERROR: ERROR MESSAGE",
-                "(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE",
-                "(SKIP) SkipAction.SKIP: SKIP MESSAGE",
-                "(WARNING) PreSubscription.WARNING_ID: WARNING MESSAGE 1",
-                "(WARNING) SkipAction.WARNING_ID: WARNING MESSAGE 2",
-                "(WARNING) OverridableAction.WARNING_ID: WARNING MESSAGE 3",
-                "(WARNING) ErrorAction.WARNING_ID: WARNING MESSAGE 4",
-                "(SUCCESS) PreSubscription: All good!",
+                "(ERROR) ErrorAction::ERROR - ERROR MESSAGE",
+                "(OVERRIDABLE) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE",
+                "(SKIP) SkipAction::SKIP - SKIP MESSAGE",
+                "(WARNING) PreSubscription::WARNING_ID - WARNING MESSAGE 1",
+                "(WARNING) SkipAction::WARNING_ID - WARNING MESSAGE 2",
+                "(WARNING) OverridableAction::WARNING_ID - WARNING MESSAGE 3",
+                "(WARNING) ErrorAction::WARNING_ID - WARNING MESSAGE 4",
+                "(SUCCESS) PreSubscription - All good!",
             ],
         ),
     ),
@@ -490,8 +490,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     result={"level": STATUS_CODE["ERROR"], "id": "ERROR", "message": "ERROR MESSAGE"},
                 )
             },
-            "%s(ERROR) ErrorAction.ERROR: ERROR MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
-            "%s(WARNING) ErrorAction.WARNING_ID: WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
+            "%s(ERROR) ErrorAction::ERROR - ERROR MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
+            "%s(WARNING) ErrorAction::WARNING_ID - WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
         ),
         (
             {
@@ -500,8 +500,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     result={"level": STATUS_CODE["OVERRIDABLE"], "id": "OVERRIDABLE", "message": "OVERRIDABLE MESSAGE"},
                 )
             },
-            "%s(OVERRIDABLE) OverridableAction.OVERRIDABLE: OVERRIDABLE MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
-            "%s(WARNING) OverridableAction.WARNING_ID: WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
+            "%s(OVERRIDABLE) OverridableAction::OVERRIDABLE - OVERRIDABLE MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
+            "%s(WARNING) OverridableAction::WARNING_ID - WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
         ),
         (
             {
@@ -510,8 +510,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     result={"level": STATUS_CODE["SKIP"], "id": "SKIP", "message": "SKIP MESSAGE"},
                 )
             },
-            "%s(SKIP) SkipAction.SKIP: SKIP MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
-            "%s(WARNING) SkipAction.WARNING_ID: WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
+            "%s(SKIP) SkipAction::SKIP - SKIP MESSAGE%s" % (bcolors.FAIL, bcolors.ENDC),
+            "%s(WARNING) SkipAction::WARNING_ID - WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
         ),
         (
             {
@@ -520,8 +520,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     result={"level": STATUS_CODE["SUCCESS"], "id": "SUCCESSFUL", "message": "SUCCESSFUL MESSAGE"},
                 )
             },
-            "%s(SUCCESS) SuccessfulAction.SUCCESSFUL: SUCCESSFUL MESSAGE%s" % (bcolors.OKGREEN, bcolors.ENDC),
-            "%s(WARNING) SuccessfulAction.WARNING_ID: WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
+            "%s(SUCCESS) SuccessfulAction::SUCCESSFUL - SUCCESSFUL MESSAGE%s" % (bcolors.OKGREEN, bcolors.ENDC),
+            "%s(WARNING) SuccessfulAction::WARNING_ID - WARNING MESSAGE%s" % (bcolors.WARNING, bcolors.ENDC),
         ),
     ),
 )

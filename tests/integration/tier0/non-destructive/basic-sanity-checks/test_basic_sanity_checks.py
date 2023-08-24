@@ -125,7 +125,7 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE: You are currently running 0.01", timeout=300) == 0
+        assert c2r.expect("CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - You are currently running 0.01", timeout=300) == 0
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
 
         c2r.sendcontrol("c")
@@ -320,7 +320,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
     This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
     is not honored when running with the analyze switch.
     Repositories are moved to a different location so the
-    `REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED`
+    `REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED`
     error is raised.
     1/ convert2rhel is run in the analyze mode, the envar should not be
        honored and the conversion should end
@@ -331,7 +331,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
     with convert2rhel("--debug --no-rpm-va") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
-        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES.PACKAGE_REMOVAL_FAILED", timeout=300)
+        c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED", timeout=300)
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
