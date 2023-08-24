@@ -21,6 +21,7 @@ import logging
 import os
 import tempfile
 
+
 _DEFAULT_LOCK_DIR = "/var/lock/run"
 loggerinst = logging.getLogger(__name__)
 
