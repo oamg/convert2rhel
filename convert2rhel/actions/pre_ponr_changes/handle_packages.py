@@ -41,7 +41,7 @@ class ListThirdPartyPackages(actions.Action):
             message = (
                 "Only packages signed by %s are to be"
                 " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n%s" % (system_info.name, ", ".join(pkg_list))
+                " for the following third party packages:\n%s" % (system_info.name, pkg_list)
             )
             logger.warning(message)
             self.add_message(
