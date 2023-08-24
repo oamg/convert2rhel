@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 
-from convert2rhel import i18n
+from convert2rhel import applock, i18n
 
 
 def disable_root_logger():
@@ -77,4 +77,11 @@ def run():
 
     from convert2rhel import main
 
-    sys.exit(main.main())
+    try:
+        retval = 1
+        with applock.ApplicationLock("convert2rhel") as _lock:
+            retval = main.main()
+    except applock.ApplicationLockedError:
+        sys.stderr.write("Another copy of convert2rhel is running.\n")
+        sys.stderr.write("\nNo changes were made to the system.\n")
+    sys.exit(retval)

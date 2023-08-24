@@ -15,12 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import atexit
 import errno
 import io
 import logging
 import os
-import time
+import tempfile
 
 
 loggerinst = logging.getLogger(__name__)
@@ -37,16 +36,29 @@ class ApplicationLockedError(Exception):
 class ApplicationLock(object):
     """Holds a lock for a particular application.
 
-    The implementation uses a standard Linux PID file, though that
-    fact (and all implementation details) are hidden from the caller.
-    To acquire and release the lock, use trylock() and unlock().
+    To acquire and release the lock, we recommend using the context
+    manager, though trylock() and unlock() methods are provided. You
+    may call unlock() without having called trylock() first, so it
+    can be used in a cleanup routine without worries.
+
+    The implementation uses a standard Linux PID file. When a program
+    that uses ApplicationLock starts, it writes its process ID to a
+    file in /var/run/lock. If the file already exists, it reads the
+    PID and checks to see if the process is still running. If the
+    process is still running, it raises ApplicationLockedError. If the
+    process is not running, it removes the file and tries to lock it
+    again.
+
+    For safety, unexpected conditions, like garbage in the file or
+    bad permissions, are treated as if the application is locked,
+    because something is obviously wrong.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, lock_dir="/var/run/lock"):
         # Our application name
         self._name = name
         # Directory in which the lockfile will be written
-        self._lock_dir = "/var/run/lock"
+        self._lock_dir = lock_dir
         # Do we think we locked the pid file?
         self._locked = False
         # Maximum number of tries to lock
@@ -63,32 +75,34 @@ class ApplicationLock(object):
             status = "unlocked"
         return "%s PID %d %s" % (self._pidfile, self._pid, status)
 
-    def set_lock_dir(self, new_tmp_dir):
-        """Set the lock directory. Used only for testing.
-
-        :param new_tmp_dir: the directory to be used for the lock file
-        """
-        self._lock_dir = new_tmp_dir
-        self._pidfile = os.path.join(self._lock_dir, self._name + ".pid")
-
-    def _try_creat(self):
+    def _try_create(self):
         """Try to create the lock file. If this succeeds, the lock file
-        exists and we created it.
+        exists and we created it. If an exception other than the one
+        we expect is raised, re-raises it.
 
         :returns: True if we created the lock, False if we didn't.
         """
-        try:
-            file_desc = os.open(self._pidfile, os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o755)
-        except OSError as exc:
-            if exc.errno == errno.EEXIST:
-                return False
-            raise exc
-        encoded = (str(self._pid) + "\n").encode("ascii")
-        os.write(file_desc, encoded)
-        os.close(file_desc)
+        #
+        # Create a temporary file that contains our PID and attempt
+        # to link it to the real pidfile location. The link will fail if
+        # the file already exists; this avoids a race condition when
+        # two processes attempt to create the file simultaneously. This
+        # also guarantees that the lock file contains valid data.
+        #
+        with tempfile.NamedTemporaryFile(mode="wt", suffix=".pid", prefix=self._name, dir=self._lock_dir) as fileh:
+            fileh.write(str(self._pid) + "\n")
+            fileh.flush()
+            try:
+                os.link(fileh.name, self._pidfile)
+            # In Python 3 this could be changed to catch FileExistsError.
+            except OSError as exc:
+                if exc.errno == errno.EEXIST:
+                    return False
+                raise exc
         loggerinst.debug("%s." % self)
         return True
 
+    @property
     def is_locked(self):
         """Test whether this object is locked."""
         return self._locked
@@ -98,57 +112,53 @@ class ApplicationLock(object):
         """Test whether a particular process exists."""
         try:
             os.kill(pid, 0)
-        except ProcessLookupError:
+        except OSError:
             return False
-        except PermissionError:
-            pass
         return True
 
     def trylock(self, loop_count=0):
         """Try to get a lock on this application. If successful,
-        the application will be locked; the lock may be released
-        with trylock() or it will be cleaned up automatically at
-        process exit.
+        the application will be locked; the lock should be released
+        with unlock().
+
+        If the file has unexpected contents, for safety we treat the
+        application as locked, since it is probably the result of
+        manual meddling, intentional or otherwise.
 
         Note that nothing prevents you from calling trylock()
         multiple times; all calls after the first will fail as if
         another process holds the lock.
 
+        :param loop_count: used internally to limit the number of
+                           recursive calls to this method
         :raises ApplicationLockedError: the application is locked
         """
         if loop_count > self._max_loop_count:
             raise ApplicationLockedError("Cannot lock %s" % self._pidfile)
-        if self._try_creat():
+        if self._try_create():
             self._locked = True
-            atexit.register(self.unlock)
             return
 
         with io.open(self._pidfile, "rt") as fileh:
+            file_contents = fileh.read()
             try:
-                file_contents = fileh.read()
                 pid = int(file_contents.rstrip())
-                if file_contents[-1] != "\n" or pid == 0:
-                    raise ValueError("Bogus file contents")
-            except (OSError, ValueError):
-                #
-                # Two possibilities here: either the file is corrupt
-                # or another process hasn't finished writing it out.
-                # The sleep(0) is just a cheap way to let another
-                # process run without making us wait too long if the
-                # file really is corrupt.
-                #
-                time.sleep(0)
-                self.trylock(loop_count + 1)
+            except ValueError:
+                raise ApplicationLockedError("Lock file %s is corrupt" % self._name)
 
         if self._pid_exists(pid):
             raise ApplicationLockedError("%s locked by process %d" % (self._name, pid))
         else:
+            #
+            # The lock file was created by a process that has exited;
+            # remove it and try again.
+            #
             loggerinst.info("Reaping lock held by process %d." % pid)
-        try:
-            os.unlink(self._pidfile)
-        except OSError:
-            loggerinst.warning("Couldn't unlink %s." % self.pidfile)
-        self.trylock(loop_count + 1)
+            try:
+                os.unlink(self._pidfile)
+            except OSError:
+                loggerinst.warning("Couldn't unlink %s." % self.pidfile)
+            self.trylock(loop_count + 1)
 
     def unlock(self):
         """Release the lock on this application."""
@@ -158,8 +168,6 @@ class ApplicationLock(object):
             os.unlink(self._pidfile)
         except OSError:
             loggerinst.warning("Couldn't unlink %s." % self._pidfile)
-        # Call this in Python 3?
-        # atexit.unregister(self.unlock)
         loggerinst.debug("%s." % self)
         self._locked = False
 

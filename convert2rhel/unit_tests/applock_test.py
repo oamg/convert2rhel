@@ -16,34 +16,80 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 
 import pytest
 
 from convert2rhel import applock
 
 
-def test_applock_basic():
-    alock = applock.ApplicationLock("convert2rhelTEST")
-    alock.set_lock_dir("/tmp")
-    alock.trylock()
-    assert alock.is_locked() is True
-    assert os.path.isfile(alock._pidfile) is True
-    alock.unlock()
-    assert alock.is_locked() is False
-    assert os.path.isfile(alock._pidfile) is False
+@pytest.fixture
+def tmp_lock():
+    alock = applock.ApplicationLock("convert2rhelTEST", lock_dir="/tmp")
+    return alock
 
 
-def test_applock_basic_islocked():
-    alock = applock.ApplicationLock("convert2rhelTEST")
-    alock.set_lock_dir("/tmp")
-    with open(alock._pidfile, "w") as fileh:
+def test_applock_context_manager():
+    pidfile = "/non/existent/file"
+    with applock.ApplicationLock("convert2rhelTEST", lock_dir="/tmp") as tmp_lock:
+        pidfile = tmp_lock._pidfile
+        assert tmp_lock.is_locked is True
+        assert os.path.isfile(pidfile) is True
+    assert os.path.isfile(pidfile) is False
+
+
+def test_applock_basic(tmp_lock):
+    tmp_lock.trylock()
+    assert tmp_lock.is_locked is True
+    assert os.path.isfile(tmp_lock._pidfile) is True
+    tmp_lock.unlock()
+    assert tmp_lock.is_locked is False
+    assert os.path.isfile(tmp_lock._pidfile) is False
+
+
+def test_applock_basic_islocked(tmp_lock):
+    with open(tmp_lock._pidfile, "w") as fileh:
         pid = os.getpid()
         fileh.write(str(pid) + "\n")
-    saw_exception = False
-    try:
-        alock.trylock()
-    except applock.ApplicationLockedError:
-        saw_exception = True
-    finally:
-        os.unlink(alock._pidfile)
-    assert saw_exception == True
+    with pytest.raises(applock.ApplicationLockedError):
+        tmp_lock.trylock()
+    os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_basic_reap(tmp_lock):
+    """Test the case where the lockfile was held by a process
+    that has exited."""
+    old_pid = subprocess.check_output("/bin/echo $$", shell=True, universal_newlines=True)
+    with open(tmp_lock._pidfile, "w") as fileh:
+        fileh.write(old_pid)
+    tmp_lock.trylock()
+    os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_basic_byzantine1(tmp_lock):
+    """Test the case where the lock file exists, but has bogus data."""
+    with open(tmp_lock._pidfile, "w") as fileh:
+        fileh.write("This is bogus data.")
+    with pytest.raises(applock.ApplicationLockedError):
+        tmp_lock.trylock()
+    os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_basic_byzantine2(tmp_lock):
+    """Test the case where the lock file exists, but is empty."""
+    with open(tmp_lock._pidfile, "w") as fileh:
+        pass
+    with pytest.raises(applock.ApplicationLockedError):
+        tmp_lock.trylock()
+    os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_basic_byzantine3(tmp_lock):
+    """Test the case where the lock file exists, but we can't read it."""
+    with open(tmp_lock._pidfile, "w") as fileh:
+        pid = os.getpid()
+        fileh.write(str(pid) + "\n")
+    os.chmod(tmp_lock._pidfile, 0)
+    with pytest.raises(IOError):
+        tmp_lock.trylock()
+    os.unlink(tmp_lock._pidfile)
