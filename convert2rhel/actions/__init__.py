@@ -83,6 +83,7 @@ _STATUS_NAME_FROM_CODE = dict((value, key) for key, value in STATUS_CODE.items()
 #: what the results mean
 _STATUS_HEADER = {
     0: "Success (No changes needed)",
+    25: "Info (No changes needed)",
     51: "Warning (Review and fix if needed)",
     101: "Skip (Could not be checked due to other failures)",
     152: "Overridable (Review and either fix or ignore the failure)",
