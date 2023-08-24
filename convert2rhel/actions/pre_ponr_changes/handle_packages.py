@@ -54,7 +54,7 @@ class ListThirdPartyPackages(actions.Action):
 
     def extract_packages(self, pkg):
         """Key function to extract the package name from third_party_pkgs"""
-        return pkg.pkg_obj.name
+        return pkg.nevra.name
 
 
 class RemoveExcludedPackages(actions.Action):
@@ -84,6 +84,9 @@ class RemoveExcludedPackages(actions.Action):
 
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+        pkgs_not_removed = [str(pkg) for pkg in pkgs_not_removed]
+        pkgs_removed = [str(pkg) for pkg in pkgs_removed]
+
         if pkgs_not_removed:
             message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
             logger.warning(message)
@@ -140,6 +143,10 @@ class RemoveRepositoryFilesPackages(actions.Action):
 
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+
+        pkgs_not_removed = [str(pkg) for pkg in pkgs_not_removed]
+        pkgs_removed = [str(pkg) for pkg in pkgs_removed]
+
         if pkgs_not_removed:
             message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
             logger.warning(message)

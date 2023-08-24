@@ -420,19 +420,30 @@ def mock_decorator(func):
 
 class GetInstalledPkgsWFingerprintsMocked(MockFunction):
     def prepare_test_pkg_tuples_w_fingerprints(self):
-        class PkgData:
-            def __init__(self, pkg_obj, fingerprint):
-                self.pkg_obj = pkg_obj
-                self.fingerprint = fingerprint
 
-        obj1 = create_pkg_obj("pkg1")
-        obj2 = create_pkg_obj("pkg2")
-        obj3 = create_pkg_obj("gpg-pubkey")
         pkgs = [
-            PkgData(obj1, "199e2f91fd431d51"),  # RHEL
-            PkgData(obj2, "72f97b74ec551f03"),  # OL
-            PkgData(obj3, "199e2f91fd431d51"),
-        ]  # RHEL
+            PackageInformation(
+                nevra=PackageNevra(name="pkg1", epoch="0", version="1.0", release="1", arch="x86_64"),
+                fingerprint="199e2f91fd431d51",
+                signature="1",
+                packager="",
+                vendor="",
+            ),
+            PackageInformation(
+                nevra=PackageNevra(name="pkg2", epoch="0", version="1.0", release="1", arch="x86_64"),
+                fingerprint="72f97b74ec551f03",
+                signature="2",
+                packager="",
+                vendor="",
+            ),
+            PackageInformation(
+                nevra=PackageNevra(name="gpg-pubkey", epoch="0", version="d38b4796", release="570c8cd3", arch=None),
+                fingerprint="199e2f91fd431d51",
+                signature="",
+                packager="",
+                vendor="",
+            ),
+        ]
         return pkgs
 
     def __call__(self, *args, **kwargs):
