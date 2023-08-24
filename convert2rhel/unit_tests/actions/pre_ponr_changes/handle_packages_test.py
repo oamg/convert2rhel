@@ -56,6 +56,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
 def test_list_third_party_packages(list_third_party_packages_instance, pretend_os, monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked(["pytest", "ruby", "shim"]))
+    # actual message display will be a table of the packages with specific details
     expected = set(
         (
             actions.ActionMessage(
@@ -63,7 +64,7 @@ def test_list_third_party_packages(list_third_party_packages_instance, pretend_o
                 id="THIRD_PARTY_PACKAGE_DETECTED",
                 message=(
                     "Only packages signed by CentOS Linux are to be replaced. Red Hat support won't be provided"
-                    " for the following third party packages:\npytest, ruby, shim"
+                    " for the following third party packages:\n['pytest', 'ruby', 'shim']"
                 ),
             ),
         )
