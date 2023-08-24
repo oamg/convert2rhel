@@ -75,7 +75,7 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rh
         unregister=True,
     ) as c2r:
         c2r.expect(
-            "ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES: The following loaded kernel modules are not available in RHEL"
+            "ENSURE_KERNEL_MODULES_COMPATIBILITY::UNSUPPORTED_KERNEL_MODULES - The following loaded kernel modules are not available in RHEL"
         )
 
     assert c2r.exitstatus != 0
@@ -140,7 +140,7 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("TAINTED_KMODS.TAINTED_KMODS_DETECTED: Tainted kernel modules detected") == 0
+        assert c2r.expect("TAINTED_KMODS::TAINTED_KMODS_DETECTED - Tainted kernel modules detected") == 0
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0

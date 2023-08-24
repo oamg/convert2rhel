@@ -11,14 +11,14 @@ PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
 
 SERVER_SUB = "CentOS Linux"
 PKGMANAGER = "yum"
-FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: There are no suitable mirrors available for the loaded repositories."
+FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNKNOWN_ERROR - There are no suitable mirrors available for the loaded repositories."
 
 if "oracle" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "Oracle Linux Server"
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
-    FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: Failed to download the transaction packages."
+    FINAL_MESSAGE = "VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNKNOWN_ERROR - Failed to download the transaction packages."
 
 
 @pytest.fixture()
@@ -121,7 +121,7 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
         remove_entitlement_certs()
         assert (
             c2r.expect_exact(
-                "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNKNOWN_ERROR: Failed to validate the yum transaction.",
+                "VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNKNOWN_ERROR - Failed to validate the yum transaction.",
                 timeout=600,
             )
             == 0
@@ -178,7 +178,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
         c2r_expect_index = c2r.expect(
             [
                 "No problems detected during the analysis!",
-                "VALIDATE_PACKAGE_MANAGER_TRANSACTION.UNEXPECTED_ERROR: Unhandled exception was caught: too many values to unpack (expected 2)",
+                "VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNEXPECTED_ERROR - Unhandled exception was caught: too many values to unpack (expected 2)",
             ]
         )
 
