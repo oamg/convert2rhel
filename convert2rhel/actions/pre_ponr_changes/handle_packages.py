@@ -95,7 +95,8 @@ class RemoveExcludedPackages(actions.Action):
                 id="EXCLUDED_PACKAGES_NOT_REMOVED",
                 message=message,
             )
-        else:
+            return
+        if pkgs_removed:
             message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
@@ -103,6 +104,7 @@ class RemoveExcludedPackages(actions.Action):
                 id="EXCLUDED_PACKAGES_REMOVED",
                 message=message,
             )
+            return
 
 
 class RemoveRepositoryFilesPackages(actions.Action):
@@ -155,7 +157,8 @@ class RemoveRepositoryFilesPackages(actions.Action):
                 id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
                 message=message,
             )
-        else:
+            return
+        if pkgs_removed:
             message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
@@ -163,3 +166,4 @@ class RemoveRepositoryFilesPackages(actions.Action):
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
                 message=message,
             )
+            return
