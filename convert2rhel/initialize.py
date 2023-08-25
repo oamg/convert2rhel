@@ -77,11 +77,12 @@ def run():
 
     from convert2rhel import main
 
+    retval = 0
     try:
-        retval = 1
-        with applock.ApplicationLock("convert2rhel") as _lock:
+        with applock.ApplicationLock("convert2rhel"):
             retval = main.main()
     except applock.ApplicationLockedError:
+        retval = 1
         sys.stderr.write("Another copy of convert2rhel is running.\n")
         sys.stderr.write("\nNo changes were made to the system.\n")
     sys.exit(retval)

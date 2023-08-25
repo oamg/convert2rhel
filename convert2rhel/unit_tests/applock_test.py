@@ -41,7 +41,7 @@ def test_applock_context_manager(monkeypatch, tmp_path):
 
 
 def test_applock_basic(tmp_lock):
-    tmp_lock.trylock()
+    tmp_lock.try_to_lock()
     assert tmp_lock.is_locked is True
     assert os.path.isfile(tmp_lock._pidfile) is True
     tmp_lock.unlock()
@@ -50,11 +50,11 @@ def test_applock_basic(tmp_lock):
 
 
 def test_applock_basic_islocked(tmp_lock):
-    with open(tmp_lock._pidfile, "w") as fileh:
+    with open(tmp_lock._pidfile, "w") as f:
         pid = os.getpid()
-        fileh.write(str(pid) + "\n")
+        f.write(str(pid) + "\n")
     with pytest.raises(applock.ApplicationLockedError):
-        tmp_lock.trylock()
+        tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
 
 
@@ -62,36 +62,36 @@ def test_applock_basic_reap(tmp_lock):
     """Test the case where the lockfile was held by a process
     that has exited."""
     old_pid = subprocess.check_output("/bin/echo $$", shell=True, universal_newlines=True)
-    with open(tmp_lock._pidfile, "w") as fileh:
-        fileh.write(old_pid)
-    tmp_lock.trylock()
+    with open(tmp_lock._pidfile, "w") as f:
+        f.write(old_pid)
+    tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
 
 
 def test_applock_basic_byzantine1(tmp_lock):
     """Test the case where the lock file exists, but has bogus data."""
-    with open(tmp_lock._pidfile, "w") as fileh:
-        fileh.write("This is bogus data.")
+    with open(tmp_lock._pidfile, "w") as f:
+        f.write("This is bogus data.")
     with pytest.raises(applock.ApplicationLockedError):
-        tmp_lock.trylock()
+        tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
 
 
 def test_applock_basic_byzantine2(tmp_lock):
     """Test the case where the lock file exists, but is empty."""
-    with open(tmp_lock._pidfile, "w") as fileh:
+    with open(tmp_lock._pidfile, "w"):
         pass
     with pytest.raises(applock.ApplicationLockedError):
-        tmp_lock.trylock()
+        tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
 
 
 def test_applock_basic_byzantine3(tmp_lock):
     """Test the case where the lock file exists, but we can't read it."""
-    with open(tmp_lock._pidfile, "w") as fileh:
+    with open(tmp_lock._pidfile, "w") as f:
         pid = os.getpid()
-        fileh.write(str(pid) + "\n")
+        f.write(str(pid) + "\n")
     os.chmod(tmp_lock._pidfile, 0)
     with pytest.raises(IOError):
-        tmp_lock.trylock()
+        tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
