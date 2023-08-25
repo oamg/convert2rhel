@@ -70,14 +70,10 @@ class PackageUpdates(actions.Action):
             warning_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
-                " before proceeding with the conversion."
+                " before proceeding with the conversion. %s" % str(e)
             )
-            logger.warning(warning_message + " %s" % str(e))
-            self.add_message(
-                level="WARNING",
-                id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-                message=warning_message + " %s" % str(e),
-            )
+            logger.warning(warning_message)
+            self.add_message(level="WARNING", id="PACKAGE_UP_TO_DATE_CHECK_FAIL", message=warning_message)
             return
 
         if len(packages_to_update) > 0:

@@ -42,6 +42,8 @@ CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.j
 _STATUS_TO_COLOR = {
     # SUCCESS
     0: "OKGREEN",
+    # INFO
+    25: "INFO",
     # WARNING
     51: "WARNING",
     # SKIP
