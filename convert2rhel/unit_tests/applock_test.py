@@ -68,7 +68,7 @@ def test_applock_basic_reap(tmp_lock):
     os.unlink(tmp_lock._pidfile)
 
 
-def test_applock_basic_byzantine1(tmp_lock):
+def test_applock_bogus_lock(tmp_lock):
     """Test the case where the lock file exists, but has bogus data."""
     with open(tmp_lock._pidfile, "w") as f:
         f.write("This is bogus data.")
@@ -77,7 +77,7 @@ def test_applock_basic_byzantine1(tmp_lock):
     os.unlink(tmp_lock._pidfile)
 
 
-def test_applock_basic_byzantine2(tmp_lock):
+def test_applock_empty_lock(tmp_lock):
     """Test the case where the lock file exists, but is empty."""
     with open(tmp_lock._pidfile, "w"):
         pass
@@ -86,7 +86,7 @@ def test_applock_basic_byzantine2(tmp_lock):
     os.unlink(tmp_lock._pidfile)
 
 
-def test_applock_basic_byzantine3(tmp_lock):
+def test_applock_cant_read_lock(tmp_lock):
     """Test the case where the lock file exists, but we can't read it."""
     with open(tmp_lock._pidfile, "w") as f:
         pid = os.getpid()
@@ -95,3 +95,35 @@ def test_applock_basic_byzantine3(tmp_lock):
     with pytest.raises(IOError):
         tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_link_fails(tmp_lock):
+    """Test the case where the os.link call to create the lockfile
+    fails, but not because the file exists."""
+    dir = os.path.dirname(tmp_lock._pidfile)
+    os.chmod(dir, 0o555)
+    with pytest.raises(OSError):
+        tmp_lock.try_to_lock()
+    assert tmp_lock.is_locked is False
+    os.chmod(dir, 0o755)
+
+
+def test_applock_lock_unlink_fails(tmp_lock):
+    """Test the case where we can't unlink a bad pid file."""
+    old_pid = subprocess.check_output("/bin/echo $$", shell=True, universal_newlines=True)
+    with open(tmp_lock._pidfile, "w") as f:
+        f.write(old_pid)
+    dir = os.path.dirname(tmp_lock._pidfile)
+    os.chmod(dir, 0o555)
+    with pytest.raises(OSError):
+        tmp_lock.try_to_lock()
+    os.chmod(dir, 0o755)
+    os.unlink(tmp_lock._pidfile)
+
+
+def test_applock_unlock_without_lock(tmp_lock):
+    """Test unlocking without locking first."""
+    assert tmp_lock.is_locked is False
+    tmp_lock.unlock()
+    assert tmp_lock.is_locked is False
+    assert os.path.isfile(tmp_lock._pidfile) is False
