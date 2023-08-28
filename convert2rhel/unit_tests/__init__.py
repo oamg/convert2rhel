@@ -419,35 +419,17 @@ def mock_decorator(func):
 
 
 class GetInstalledPkgsWFingerprintsMocked(MockFunction):
-    def prepare_test_pkg_tuples_w_fingerprints(self):
-
-        pkgs = [
-            PackageInformation(
-                nevra=PackageNevra(name="pkg1", epoch="0", version="1.0", release="1", arch="x86_64"),
-                fingerprint="199e2f91fd431d51",
-                signature="1",
-                packager="",
-                vendor="",
-            ),
-            PackageInformation(
-                nevra=PackageNevra(name="pkg2", epoch="0", version="1.0", release="1", arch="x86_64"),
-                fingerprint="72f97b74ec551f03",
-                signature="2",
-                packager="",
-                vendor="",
-            ),
-            PackageInformation(
-                nevra=PackageNevra(name="gpg-pubkey", epoch="0", version="d38b4796", release="570c8cd3", arch=None),
-                fingerprint="199e2f91fd431d51",
-                signature="",
-                packager="",
-                vendor="",
-            ),
-        ]
-        return pkgs
+    obj1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
+    obj2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
+    obj3 = create_pkg_information(
+        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
+    )
 
     def __call__(self, *args, **kwargs):
-        return self.prepare_test_pkg_tuples_w_fingerprints()
+        return self.get_packages()
+
+    def get_packages(self):
+        return [self.obj1, self.obj2, self.obj3]
 
 
 #: Used as a sentinel value for assert_action_result() so we only check
