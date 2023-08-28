@@ -21,7 +21,7 @@ import six
 from convert2rhel import actions, pkghandler, pkgmanager, unit_tests
 from convert2rhel.actions.pre_ponr_changes import handle_packages
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests.conftest import centos7
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -52,7 +52,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
     assert list_third_party_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
-@centos7
+@centos8
 def test_list_third_party_packages(list_third_party_packages_instance, pretend_os, monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked(["pytest", "ruby", "shim"]))
@@ -121,7 +121,8 @@ def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance,
     assert remove_excluded_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
-def test_remove_excluded_packages_not_removed(remove_excluded_packages_instance, monkeypatch):
+@centos8
+def test_remove_excluded_packages_not_removed(remove_excluded_packages_instance, pretend_os, monkeypatch):
     pkgs_to_remove = unit_tests.GetInstalledPkgsWFingerprintsMocked().get_packages()
     pkgs_removed = ["kernel-core"]
     expected = set(
@@ -196,7 +197,10 @@ def test_remove_repository_files_packages_all_removed(remove_repository_files_pa
     assert remove_repository_files_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
-def test_remove_repository_files_packages_not_removed(remove_repository_files_packages_instance, monkeypatch):
+@centos8
+def test_remove_repository_files_packages_not_removed(
+    remove_repository_files_packages_instance, pretend_os, monkeypatch
+):
     pkgs_to_remove = unit_tests.GetInstalledPkgsWFingerprintsMocked().get_packages()
     pkgs_removed = ["kernel-core"]
     expected = set(
