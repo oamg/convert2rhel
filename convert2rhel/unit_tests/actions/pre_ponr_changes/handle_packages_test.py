@@ -56,6 +56,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
 def test_list_third_party_packages(list_third_party_packages_instance, pretend_os, monkeypatch, caplog):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", unit_tests.GetInstalledPkgsWFingerprintsMocked())
     monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked(["pytest", "ruby", "shim"]))
+    monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
     # actual message display will be a table of the packages with specific details
     expected = set(
         (
