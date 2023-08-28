@@ -605,7 +605,7 @@ def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
     """
     if not pkgs_to_remove:
         loggerinst.info("\nNothing to do.")
-        return pkgs_to_remove
+        return []
 
     print_pkg_info(pkgs_to_remove)
     loggerinst.info("\n")
