@@ -16,6 +16,7 @@ def test_simultaenous_runs(convert2rhel):
         c2r_one.sendline("n")
         assert c2r_one.exitstatus == 1
 
+
 @pytest.mark.test_sequential_runs
 def test_sequential_runs(convert2rhel):
     """Test that two convert2rhel instances can be run sequentially."""
