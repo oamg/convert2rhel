@@ -1,0 +1,33 @@
+summary: |
+    Application lock checks
+description: |
+    Verify that an attempt to run a second instance of convert2rhel
+    while an instance is already running fails.
+
+tier: 0
+
+tag+:
+    - application-lock
+
+/simultaneous_runs:
+    summary+: |
+        Simultaneous runs
+    description+: |
+        Verify that convert2rhel locks out other instances while it
+        is running and notifies the user of the second instance that
+        it cannot be run.
+    tag+:
+        - simultaneous-runs
+    test: |
+        pytest -svv -m test_simultaneous_runs
+
+/sequential_runs:
+    summary+: |
+        Sequential runs
+    description+: |
+        Verify that convert2rhel does not lock out other instances
+        after it has run and exited.
+    tag+:
+        - sequential-runs
+    test: |
+        pytest -svv -m test_sequential_runs
