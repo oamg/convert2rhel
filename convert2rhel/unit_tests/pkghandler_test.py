@@ -1851,6 +1851,16 @@ def test_get_packages_to_remove(monkeypatch):
     assert result[0].nevra.name == "installed_pkg"
 
 
+def test_remove_pkgs_unless_from_redhat_no_pkgs(monkeypatch):
+    monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", DumbCallable())
+    monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
+
+    result = pkghandler.remove_pkgs_unless_from_redhat([])
+
+    assert result == []
+
+
 def test_remove_pkgs_with_confirm(monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", DumbCallableObject())
     monkeypatch.setattr(pkghandler, "format_pkg_info", DumbCallable())
