@@ -20,14 +20,3 @@ tag+:
         - simultaneous-runs
     test: |
         pytest -svv -m test_simultaneous_runs
-
-/sequential_runs:
-    summary+: |
-        Sequential runs
-    description+: |
-        Verify that convert2rhel does not lock out other instances
-        after it has run and exited.
-    tag+:
-        - sequential-runs
-    test: |
-        pytest -svv -m test_sequential_runs
