@@ -80,7 +80,6 @@ class ApplicationLock:
 
         :returns: True if we created the lock, False if we didn't.
         """
-        #
         # Create a temporary file that contains our PID and attempt
         # to link it to the real pidfile location. The link will fail if
         # the file already exists; this avoids a race condition when
@@ -89,7 +88,6 @@ class ApplicationLock:
         #
         # Note that NamedTemporaryFile will clean up the file it created,
         # but the lockfile we created by doing the link will stay around.
-        #
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as f:
             f.write(str(self._pid) + "\n")
             f.flush()
@@ -116,15 +114,13 @@ class ApplicationLock:
             if pid > 1:
                 os.kill(pid, 0)
         except OSError as exc:
-            #
             # The only other (theoretical) possibility is EPERM, which
             # would mean the process exists.
-            #
             if exc.errno == errno.ESRCH:
                 return False
         return True
 
-    def try_to_lock(self, recursive=False):
+    def try_to_lock(self, _recursive=False):
         """Try to get a lock on this application. If successful,
         the application will be locked; the lock should be released
         with unlock().
@@ -133,15 +129,15 @@ class ApplicationLock:
         application as locked, since it is probably the result of
         manual meddling, intentional or otherwise.
 
-        :keyword recursive: True if we are being called recursively
-                            and should not try to clean up the lockfile
-                            again.
+        :keyword _recursive: True if we are being called recursively
+                             and should not try to clean up the lockfile
+                             again.
         :raises ApplicationLockedError: the application is locked
         """
         if self._try_create():
             self._locked = True
             return
-        if recursive:
+        if _recursive:
             raise ApplicationLockedError("Cannot lock %s" % self._name)
 
         with open(self._pidfile, "r") as f:
@@ -153,13 +149,11 @@ class ApplicationLock:
 
         if self._pid_exists(pid):
             raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
-        #
         # The lock file was created by a process that has exited;
         # remove it and try again.
-        #
         loggerinst.info("Cleaning up lock held by exited process %d." % pid)
         os.unlink(self._pidfile)
-        self.try_to_lock(recursive=True)
+        self.try_to_lock(_recursive=True)
 
     def unlock(self):
         """Release the lock on this application.
