@@ -28,7 +28,7 @@ loggerinst = logging.getLogger(__name__)
 
 
 class ApplicationLockedError(Exception):
-    """Raised when this application is locked."""
+    """Raised when this application is already locked."""
 
     def __init__(self, message):
         super(ApplicationLockedError, self).__init__(message)
