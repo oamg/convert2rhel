@@ -385,10 +385,13 @@ def os_release_hardening(shell):
     # Run only if the tests are tagged with the INT_TESTS_NONDESTRUCTIVE envar
     if os.environ.get("INT_TESTS_NONDESTRUCTIVE"):
         # Backup the files
+        backup_dir = "/tmp/int_tests_bak/"
         os_release = "/etc/os-release"
-        os_release_bak = "/tmp/int_tests_bak/os-release.bak"
+        os_release_bak = f"{backup_dir}os-release.bak"
         system_release = "/etc/system-release"
-        system_release_bak = "/tmp/int_tests_bak/system_release.bak"
+        system_release_bak = f"{backup_dir}system_release.bak"
+        if not os.path.exists(backup_dir):
+            shell(f"mkdir {backup_dir}")
         shell("mkdir /tmp/int_tests_bak")
         shutil.copy(os_release, os_release_bak)
         shutil.copy(system_release, system_release_bak)
@@ -397,8 +400,8 @@ def os_release_hardening(shell):
 
         # Restore the files if missing
         if not os.path.exists(os_release):
-            shutil.copy(os_release_bak, os_release)
+            shutil.move(os_release_bak, os_release)
         elif not os.path.exists(system_release):
-            shutil.copy(system_release_bak, system_release)
+            shutil.move(system_release_bak, system_release)
     else:
         yield

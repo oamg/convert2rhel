@@ -37,7 +37,7 @@ def test_bad_conversion(shell, convert2rhel):
     elif os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel("-y --no-rpm-va --debug", unregister=True) as c2r:
             c2r.expect(
-                "RHEL_COMPATIBLE_KERNEL::BOOTED_KERNEL_INCOMPATIBLE - The booted kernel version is incompatible with the standard RHEL kernel",
+                "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
                 timeout=600,
             )
             c2r.sendcontrol("c")
