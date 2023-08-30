@@ -100,11 +100,11 @@ def test_applock_link_fails(tmp_lock):
     """Test the case where the os.link call to create the lockfile
     fails, but not because the file exists."""
     dir = os.path.dirname(tmp_lock._pidfile)
-    os.chmod(dir, 0o550)
+    os.chmod(dir, 0o500)
     with pytest.raises(OSError):
         tmp_lock.try_to_lock()
     assert tmp_lock.is_locked is False
-    os.chmod(dir, 0o750)
+    os.chmod(dir, 0o700)
 
 
 def test_applock_lock_unlink_fails(tmp_lock):
@@ -113,10 +113,10 @@ def test_applock_lock_unlink_fails(tmp_lock):
     with open(tmp_lock._pidfile, "w") as f:
         f.write(old_pid)
     dir = os.path.dirname(tmp_lock._pidfile)
-    os.chmod(dir, 0o550)
+    os.chmod(dir, 0o500)
     with pytest.raises(OSError):
         tmp_lock.try_to_lock()
-    os.chmod(dir, 0o750)
+    os.chmod(dir, 0o700)
     os.unlink(tmp_lock._pidfile)
 
 
