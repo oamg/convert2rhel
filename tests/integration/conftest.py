@@ -122,13 +122,20 @@ def convert2rhel(shell):
         c2r_runtime.logfile_read = sys.stdout
         try:
             yield c2r_runtime
-        except Exception:
-            c2r_runtime.close()
-            raise
-        else:
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
+        # Check if child is still alive, if so, send SIGINT
+        # this handles the TIMEOUT exception - if the process is still alive,
+        # the EOF is not raised, the process gets terminated.
+        # If pexpect.EOF exception is not raised (timeouts after 15 minutes)
+        # force terminate the process.
         finally:
+            if c2r_runtime.isalive():
+                c2r_runtime.sendcontrol("c")
+                try:
+                    c2r_runtime.expect(pexpect.EOF, timeout=900)
+                except pexpect.TIMEOUT:
+                    c2r_runtime.terminate(force=True)
             if unregister:
                 shell("subscription-manager unregister")
 
@@ -373,32 +380,3 @@ def missing_centos_release_workaround(system_release, shell):
         rpm_output = shell("rpm -q centos-linux-release").output
         if "not installed" in rpm_output:
             shell("yum install -y --releasever=8 centos-linux-release")
-
-
-@pytest.fixture(autouse=True)
-def os_release_hardening(shell):
-    """
-    Fixture backing up and restoring /etc/os-release and /etc/system-release.
-    Runs for non-destructive tests only.
-    Hardens test reliability.
-    """
-    # Run only if the tests are tagged with the INT_TESTS_NONDESTRUCTIVE envar
-    if os.environ.get("INT_TESTS_NONDESTRUCTIVE"):
-        # Backup the files
-        os_release = "/etc/os-release"
-        os_release_bak = "/tmp/int_tests_bak/os-release.bak"
-        system_release = "/etc/system-release"
-        system_release_bak = "/tmp/int_tests_bak/system_release.bak"
-        shell("mkdir /tmp/int_tests_bak")
-        shutil.copy(os_release, os_release_bak)
-        shutil.copy(system_release, system_release_bak)
-
-        yield
-
-        # Restore the files if missing
-        if not os.path.exists(os_release):
-            shutil.copy(os_release_bak, os_release)
-        elif not os.path.exists(system_release):
-            shutil.copy(system_release_bak, system_release)
-    else:
-        yield
