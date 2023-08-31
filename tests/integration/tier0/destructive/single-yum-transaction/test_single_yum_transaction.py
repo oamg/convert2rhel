@@ -26,4 +26,3 @@ def test_single_yum_transaction(convert2rhel, shell):
         c2r.expect("This process may take some time to finish.", timeout=300)
         c2r.expect("System packages replaced successfully.", timeout=900)
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0

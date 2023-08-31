@@ -26,13 +26,13 @@ def test_skip_kernel_check(shell, convert2rhel):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
             c2r.expect("Could not find any kernel from repositories to compare against the loaded kernel.")
         else:
             c2r.expect("Could not find any kernel-core from repositories to compare against the loaded kernel.")
-    assert c2r.exitstatus != 0
 
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
@@ -42,7 +42,8 @@ def test_skip_kernel_check(shell, convert2rhel):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
@@ -50,7 +51,6 @@ def test_skip_kernel_check(shell, convert2rhel):
 
         c2r.expect("Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable")
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     # Clean up
     if "centos-8" in SYSTEM_RELEASE_ENV:
@@ -90,4 +90,3 @@ def test_system_not_updated(shell, convert2rhel):
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
-    assert c2r.exitstatus == 0

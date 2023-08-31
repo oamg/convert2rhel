@@ -13,4 +13,3 @@ def test_activation_key_conversion(convert2rhel):
         )
     ) as c2r:
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0

@@ -35,14 +35,12 @@ def test_bad_conversion(shell, convert2rhel):
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         prepare_unbreakable_kernel(shell)
     elif os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel("-y --no-rpm-va --debug", unregister=True) as c2r:
+        with convert2rhel("-y --no-rpm-va --debug", unregister=True, expected_exitcode=1) as c2r:
             c2r.expect(
                 "RHEL_COMPATIBLE_KERNEL::BOOTED_KERNEL_INCOMPATIBLE - The booted kernel version is incompatible with the standard RHEL kernel",
                 timeout=600,
             )
             c2r.sendcontrol("c")
-
-        assert c2r.exitstatus == 1
 
         # Clean up
         teardown_uek(shell)

@@ -41,8 +41,6 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
     with convert2rhel("-y --no-rpm-va --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
         c2r.expect("Conversion successful!")
 
-    assert c2r.exitstatus == 0
-
     # replace url in yum.repos.d rhel repo to the original one
     original_url = "baseurl = https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
     new_url = "baseurl=https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"

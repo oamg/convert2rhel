@@ -37,8 +37,6 @@ def test_failures_and_skips_in_report(convert2rhel):
         # Success header
         assert c2r.expect("No changes needed", timeout=600) == 0
 
-    assert c2r.exitstatus == 0
-
 
 @pytest.mark.test_successful_report
 def test_successful_report(convert2rhel):
@@ -77,8 +75,6 @@ def test_successful_report(convert2rhel):
         elif c2r_report_header_index == 2:
             assert AssertionError("Skip header in the analysis report.")
 
-    assert c2r.exitstatus == 0
-
 
 @pytest.mark.test_convert_successful_report
 def test_convert_successful_report(convert2rhel):
@@ -93,7 +89,8 @@ def test_convert_successful_report(convert2rhel):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
@@ -122,6 +119,3 @@ def test_convert_successful_report(convert2rhel):
             assert AssertionError("Error header in the analysis report.")
         elif c2r_report_header_index == 3:
             assert AssertionError("Skip header in the analysis report.")
-
-    # Exitstatus is 1 due to user cancelling the conversion
-    assert c2r.exitstatus != 0

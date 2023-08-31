@@ -75,5 +75,3 @@ def test_detect_correct_boot_partition(convert2rhel):
             )
             == 0
         )
-
-    assert c2r.exitstatus == 0

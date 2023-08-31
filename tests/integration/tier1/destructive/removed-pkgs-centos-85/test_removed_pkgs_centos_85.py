@@ -13,4 +13,3 @@ def test_removed_pkgs_centos_85(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0

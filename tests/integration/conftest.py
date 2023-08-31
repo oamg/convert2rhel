@@ -9,7 +9,7 @@ import sys
 from collections import namedtuple
 from contextlib import contextmanager
 from fileinput import FileInput
-from typing import ContextManager, Optional
+from typing import ContextManager, List, Optional, Union
 
 import click
 import pexpect
@@ -64,8 +64,12 @@ def convert2rhel(shell):
     c2r.expect("Sometext here") (see bellow example)
     You can also assert that some text is being reported by c2r by using:
     assert c2r.expect("some text here") == 0 (see bellow example)
-    Or check the utility exit code:
-    assert c2r.exitcode == 0 (see bellow example)
+    The expected exitcode is handled as the parameter in the with statement.
+    Default expected_exitcode is 0, there is no need to specify the parameter
+    for tests performing the full conversion or analysis. Both return 0.
+    expected_exitcode=1
+    expected_exitcode=[1, 2, 99]
+    See below:
 
     Example:
     >>> def test_good_conversion(convert2rhel):
@@ -81,11 +85,10 @@ def convert2rhel(shell):
     >>>         env.str("RHSM_USERNAME"),
     >>>         env.str("RHSM_PASSWORD"),
     >>>         env.str("RHSM_POOL"),
-    >>>     )
+    >>>     ), expected_exitcode=1
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
     >>>     assert c2r.expect("Continuing the conversion") == 0
-    >>> assert c2r.exitstatus == 0
 
     Use of custom timeout option for assertion of pexpect.expect() is recommended for some cases described below.
     Because of the default option for pexpect.expect() timeout being -1
@@ -113,7 +116,9 @@ def convert2rhel(shell):
         options: str,
         timeout: int = 60 * 60,
         unregister: bool = False,
+        expected_exitcode: Union[List[int], int] = 0,
     ) -> ContextManager[pexpect.spawn]:
+        expected_exitcode = [expected_exitcode] if isinstance(expected_exitcode, int) else expected_exitcode
         c2r_runtime = pexpect.spawn(
             f"convert2rhel {options}",
             encoding="utf-8",
@@ -128,6 +133,10 @@ def convert2rhel(shell):
         else:
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
+            assert c2r_runtime.isalive() is False
+            if expected_exitcode or expected_exitcode == 0:
+                assert c2r_runtime.exitstatus in expected_exitcode
+
         finally:
             if unregister:
                 shell("subscription-manager unregister")

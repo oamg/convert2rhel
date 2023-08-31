@@ -99,7 +99,7 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
     Verify that running latest or newer version does not interfere with running the conversion.
     """
     c2r_version(version)
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -107,8 +107,6 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
         assert c2r.expect("Latest available Convert2RHEL version is installed.", timeout=300) == 0
 
         c2r.sendcontrol("c")
-
-    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_version_older_no_envar
@@ -120,7 +118,7 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
 
     c2r_version(version)
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -129,8 +127,6 @@ def test_c2r_latest_older_inhibit(convert2rhel, c2r_version, version):
         assert c2r.expect("Only the latest version is supported for conversion.", timeout=300) == 0
 
         c2r.sendcontrol("c")
-
-    assert c2r.exitstatus != 0
 
 
 @pytest.fixture
@@ -156,7 +152,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
     """
     c2r_version(version)
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -172,15 +168,13 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
-
 
 @pytest.mark.test_clean_cache
 def test_clean_cache(convert2rhel):
     """
     Verify that the yum clean is done before any other check that c2r does
     """
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -190,8 +184,6 @@ def test_clean_cache(convert2rhel):
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
-
 
 @pytest.mark.test_log_rhsm_error
 def test_rhsm_error_logged(convert2rhel):
@@ -199,7 +191,7 @@ def test_rhsm_error_logged(convert2rhel):
     Verify that the OSError for RHSM certificate being removed
     is not being logged in cases the certificate is not installed yet.
     """
-    with convert2rhel("--debug --no-rpm-va") as c2r:
+    with convert2rhel("--debug --no-rpm-va", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -223,28 +215,24 @@ def test_check_variant_message(convert2rhel):
     Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
     """
     # Run c2r with --variant option
-    with convert2rhel("--no-rpm-va --debug --variant Server") as c2r:
+    with convert2rhel("--no-rpm-va --debug --variant Server", expected_exitcode=1) as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     # Run c2r with --variant option empty
-    with convert2rhel("--no-rpm-va --debug --variant") as c2r:
+    with convert2rhel("--no-rpm-va --debug --variant", expected_exitcode=1) as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     # Run c2r with -v option
-    with convert2rhel("--no-rpm-va --debug -v Client") as c2r:
+    with convert2rhel("--no-rpm-va --debug -v Client", expected_exitcode=1) as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     # Run c2r with -v option empty
-    with convert2rhel("--no-rpm-va --debug -v") as c2r:
+    with convert2rhel("--no-rpm-va --debug -v", expected_exitcode=1) as c2r:
         c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_data_collection_acknowledgement
@@ -260,7 +248,7 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     if os.getenv("CONVERT2RHEL_DISABLE_TELEMETRY"):
         del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
         assert (
             c2r.expect("The convert2rhel utility uploads the following data about the system conversion", timeout=300)
@@ -271,8 +259,6 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
 
         # Verify the file is not created if user refuses the collection.
         assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
-
-    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_disable_data_collection
@@ -285,7 +271,7 @@ def test_disable_data_collection(shell, convert2rhel):
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
         assert c2r.expect("Skipping, telemetry disabled.", timeout=300) == 0
 
@@ -293,8 +279,6 @@ def test_disable_data_collection(shell, convert2rhel):
 
         # Verify the file is not created if CONVERT2RHEL_DISABLE_TELEMETRY is set.
         assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
-
-    assert c2r.exitstatus != 0
 
     # Remove envar disabling telemetry.
     del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
@@ -328,7 +312,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
        accepted and conversion continues
     # TODO(danmyway) switch to `convert2rhel analyze` when available.
     """
-    with convert2rhel("analyze --debug --no-rpm-va") as c2r:
+    with convert2rhel("analyze --debug --no-rpm-va", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
         c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED", timeout=300)
@@ -340,12 +324,10 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
             )
             == 0
         )
-        # The conversion should fail
-        assert c2r.exitstatus != 0
 
     del os.environ["CONVERT2RHEL_EXPERIMENTAL_ANALYSIS"]
 
-    with convert2rhel("--debug --no-rpm-va") as c2r:
+    with convert2rhel("--debug --no-rpm-va", expected_exitcode=1) as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
         assert (
@@ -356,5 +338,3 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
             == 0
         )
         c2r.sendcontrol("c")
-
-        assert c2r.exitstatus != 0

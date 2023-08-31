@@ -19,7 +19,6 @@ def test_yum_patch(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("/etc/yum.conf patched.")
-    assert c2r.exitstatus == 0
 
     # The tsflags will prevent updating the RHEL-8.5 versions to RHEL-8.6
     assert shell("yum update -y -x convert2rhel --setopt tsflags=test").returncode == 0

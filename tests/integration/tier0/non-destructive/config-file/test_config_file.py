@@ -26,10 +26,9 @@ def test_user_path_custom_filename(convert2rhel):
     config = [Config("~/.convert2rhel_custom.ini", "[subscription_manager]\nactivation_key = config_activationkey")]
     create_files(config)
 
-    with convert2rhel('--no-rpm-va --debug -c "~/.convert2rhel_custom.ini"') as c2r:
+    with convert2rhel('--no-rpm-va --debug -c "~/.convert2rhel_custom.ini"', expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini") == 0:
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     remove_files(config)
 
@@ -39,10 +38,9 @@ def test_user_path_std_filename(convert2rhel):
     config = [Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]
     create_files(config)
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     remove_files(config)
 
@@ -57,7 +55,7 @@ def test_user_path_cli_priority(convert2rhel):
     ]
     create_files(config)
 
-    with convert2rhel("--no-rpm-va --password password --debug") as c2r:
+    with convert2rhel("--no-rpm-va --password password --debug", expected_exitcode=1) as c2r:
         # Found options in config file
         c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
@@ -77,8 +75,6 @@ def test_user_path_cli_priority(convert2rhel):
         ):
             c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
-
     remove_files(config)
 
 
@@ -90,7 +86,7 @@ def test_user_path_pswd_file_priority(convert2rhel):
     ]
     create_files(config)
 
-    with convert2rhel('--no-rpm-va -f "~/password_file" --debug') as c2r:
+    with convert2rhel('--no-rpm-va -f "~/password_file" --debug', expected_exitcode=1) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
         if (
@@ -101,7 +97,6 @@ def test_user_path_pswd_file_priority(convert2rhel):
             == 0
         ):
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     remove_files(config)
 
@@ -114,7 +109,7 @@ def test_std_paths_priority_diff_methods(convert2rhel):
     ]
     create_files(config)
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found activation_key in /etc/convert2rhel.ini")
         c2r.expect(
@@ -130,7 +125,6 @@ def test_std_paths_priority_diff_methods(convert2rhel):
             == 0
         ):
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     remove_files(config)
 
@@ -143,9 +137,8 @@ def test_std_paths_priority(convert2rhel):
     ]
     create_files(config)
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
 
     remove_files(config)

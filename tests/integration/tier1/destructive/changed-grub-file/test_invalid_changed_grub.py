@@ -31,4 +31,3 @@ def test_modify_grub_invalid(convert2rhel):
         )
     ) as c2r:
         assert c2r.expect("GRUB2 config file generation failed.") == 0
-    assert c2r.exitstatus == 0

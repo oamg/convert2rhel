@@ -45,7 +45,6 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0
 
     cmd = "yum check-update --quiet %s"
     # We need to point the releasever to 8.5 with CentOS latest

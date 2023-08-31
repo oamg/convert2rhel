@@ -75,7 +75,8 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
         c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
@@ -87,8 +88,6 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
         remove_entitlement_certs()
 
         assert c2r.expect_exact(FINAL_MESSAGE, timeout=600) == 0
-
-    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_transaction_validation_error
@@ -108,7 +107,8 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect(
             "Downloading and validating the yum transaction set, no modifications to the system will happen this time."
@@ -126,8 +126,6 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             )
             == 0
         )
-
-    assert c2r.exitstatus == 1
 
 
 @pytest.fixture
@@ -173,7 +171,8 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         c2r_expect_index = c2r.expect(
             [
@@ -187,5 +186,3 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
             c2r.sendline("n")
         elif c2r_expect_index == 1:
             assert AssertionError
-
-    assert c2r.exitstatus != 0
