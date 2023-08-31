@@ -437,7 +437,7 @@ class SystemInfo(object):
         as it have a parameter to to read from the contents of a system-release file (if called from somewhere else).
 
         :param system_release_content: The contents of the system_release file if needed.
-        :type refresh_system_release_content: str
+        :type system_release_content: str
         :returns: A dictionary containing the system release information
         :rtype: dict[str, str]
         """
