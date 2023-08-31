@@ -1842,7 +1842,7 @@ class TestActionClasses:
             "Test",
             "SUCCESS",
             {},
-            "(SUCCESS) Test.SUCCESS: [No further information given]",
+            "(SUCCESS) Test::SUCCESS - [No further information given]",
         ),
         (
             STATUS_CODE["WARNING"],
@@ -1854,7 +1854,7 @@ class TestActionClasses:
                 "diagnosis": "A normal diagnosis",
                 "remediation": "A normal remediation",
             },
-            "(WARNING) Test.TestID: A normal title\n Description: A normal description\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
+            "(WARNING) Test::TestID - A normal title\n Description: A normal description\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
         ),
         (
             STATUS_CODE["ERROR"],
@@ -1866,7 +1866,7 @@ class TestActionClasses:
                 "diagnosis": "A normal diagnosis",
                 "remediation": "A normal remediation",
             },
-            "(ERROR) Test.TestID: A normal title\n Description: [No further information given]\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
+            "(ERROR) Test::TestID - A normal title\n Description: [No further information given]\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
         ),
         (
             STATUS_CODE["ERROR"],
@@ -1878,7 +1878,7 @@ class TestActionClasses:
                 "diagnosis": "",
                 "remediation": "",
             },
-            "(ERROR) Test.TestID: A normal title\n Description: [No further information given]\n Diagnosis: [No further information given]\n Remediation: [No further information given]\n",
+            "(ERROR) Test::TestID - A normal title\n Description: [No further information given]\n Diagnosis: [No further information given]\n Remediation: [No further information given]\n",
         ),
     ),
 )
