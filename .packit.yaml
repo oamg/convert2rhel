@@ -69,12 +69,30 @@ jobs:
   labels:
     - tier0
 
+- &tests-tier0-non-destructive-manual
+  <<: *tests-tier0
+  identifier: "tier0-non-destructive"
+  tmt_plan: "tier0/non-destructive"
+  labels:
+    - tier0-non-destructive
+    - non-destructive
+
+
 - &tests-tier1-manual
   <<: *tests-tier0
   identifier: "tier1"
   tmt_plan: "tier1"
   labels:
     - tier1
+
+- &tests-tier1-non-destructive-manual
+  <<: *tests-tier0
+  identifier: "tier1-non-destructive"
+  tmt_plan: "tier1/non-destructive"
+  labels:
+    - tier1-non-destructive
+    - non-destructive
+
 
 # Tests on merge to main stage
 - &tests-tier1
