@@ -151,9 +151,7 @@ class SystemInfo(object):
         content = self.system_release_file_content if not system_release_content else system_release_content
         match = re.search(r".+?(\d+)\.(\d+)\D?", content)
         if not match:
-            from convert2rhel import redhatrelease
-
-            self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
+            self.logger.critical("Couldn't get system version from the content string: %s" % content)
         version = Version(int(match.group(1)), int(match.group(2)))
 
         return version
