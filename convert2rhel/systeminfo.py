@@ -60,6 +60,8 @@ class SystemInfo(object):
         self.name = None
         # Single-word lowercase identificator of the system (e.g. oracle)
         self.id = None  # pylint: disable=C0103
+        # The optional last part of the distribution name in brackets: "... (Core)" or "... (Oopta)"
+        self.distribution_id = None
         # Major and minor version of the operating system (e.g. version.major == 8, version.minor == 7)
         self.version = None
         # Platform architecture
@@ -102,6 +104,7 @@ class SystemInfo(object):
         self.system_release_file_content = self.get_system_release_file_content()
         self.name = self._get_system_name()
         self.id = self.name.split()[0].lower()
+        self.distribution_id = self._get_system_distribution_id()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
 
