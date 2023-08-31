@@ -191,4 +191,5 @@ def test_backup_os_release_with_envar(
         )
         c2r.sendcontrol("c")
 
+    assert c2r.exitstatus != 0
     assert shell("find /etc/os-release").returncode == 0
