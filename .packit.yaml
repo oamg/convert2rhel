@@ -77,7 +77,6 @@ jobs:
     - tier0-non-destructive
     - non-destructive
 
-
 - &tests-tier1-manual
   <<: *tests-tier0
   identifier: "tier1"
@@ -92,7 +91,6 @@ jobs:
   labels:
     - tier1-non-destructive
     - non-destructive
-
 
 # Tests on merge to main stage
 - &tests-tier1

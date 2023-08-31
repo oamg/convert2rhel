@@ -124,12 +124,12 @@ def convert2rhel(shell):
             yield c2r_runtime
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
-        # Check if child is still alive, if so, send SIGINT
-        # this handles the TIMEOUT exception - if the process is still alive,
-        # the EOF is not raised, the process gets terminated.
-        # If pexpect.EOF exception is not raised (timeouts after 15 minutes)
-        # force terminate the process.
         finally:
+            # Check if child is still alive, if so, send SIGINT
+            # this handles the TIMEOUT exception - if the process is still alive,
+            # the EOF is not raised, the process gets terminated.
+            # If pexpect.EOF exception is not raised (timeouts after 15 minutes)
+            # force terminate the process.
             if c2r_runtime.isalive():
                 c2r_runtime.sendcontrol("c")
                 try:
