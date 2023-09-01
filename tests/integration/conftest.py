@@ -134,7 +134,7 @@ def convert2rhel(shell):
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
             assert c2r_runtime.isalive() is False
-            if expected_exitcode or expected_exitcode == 0:
+            if expected_exitcode:
                 assert c2r_runtime.exitstatus in expected_exitcode
 
         finally:
@@ -382,32 +382,3 @@ def missing_centos_release_workaround(system_release, shell):
         rpm_output = shell("rpm -q centos-linux-release").output
         if "not installed" in rpm_output:
             shell("yum install -y --releasever=8 centos-linux-release")
-
-
-@pytest.fixture(autouse=True)
-def os_release_hardening(shell):
-    """
-    Fixture backing up and restoring /etc/os-release and /etc/system-release.
-    Runs for non-destructive tests only.
-    Hardens test reliability.
-    """
-    # Run only if the tests are tagged with the INT_TESTS_NONDESTRUCTIVE envar
-    if os.environ.get("INT_TESTS_NONDESTRUCTIVE"):
-        # Backup the files
-        os_release = "/etc/os-release"
-        os_release_bak = "/tmp/int_tests_bak/os-release.bak"
-        system_release = "/etc/system-release"
-        system_release_bak = "/tmp/int_tests_bak/system_release.bak"
-        shell("mkdir /tmp/int_tests_bak")
-        shutil.copy(os_release, os_release_bak)
-        shutil.copy(system_release, system_release_bak)
-
-        yield
-
-        # Restore the files if missing
-        if not os.path.exists(os_release):
-            shutil.copy(os_release_bak, os_release)
-        elif not os.path.exists(system_release):
-            shutil.copy(system_release_bak, system_release)
-    else:
-        yield

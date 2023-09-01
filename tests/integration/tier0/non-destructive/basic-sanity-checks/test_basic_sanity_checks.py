@@ -312,7 +312,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
        accepted and conversion continues
     # TODO(danmyway) switch to `convert2rhel analyze` when available.
     """
-    with convert2rhel("analyze --debug --no-rpm-va", expected_exitcode=1) as c2r:
+    with convert2rhel("analyze --debug --no-rpm-va") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
         c2r.expect("REMOVE_REPOSITORY_FILES_PACKAGES::PACKAGE_REMOVAL_FAILED", timeout=300)

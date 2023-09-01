@@ -8,53 +8,53 @@ import pytest
 Config = namedtuple("Config", "path content")
 
 
-def create_files(config):
+@pytest.fixture
+def config_file_setup(config):
     for cfg in config:
         with open(os.path.expanduser(cfg.path), "w") as f:
             f.write(cfg.content)
 
         os.chmod(os.path.expanduser(cfg.path), 0o600)
 
+    yield
 
-def remove_files(config):
     for cfg in config:
         os.remove(os.path.expanduser(cfg.path))
 
 
+@pytest.mark.parametrize(
+    "config", [[Config("~/.convert2rhel_custom.ini", "[subscription_manager]\nactivation_key = config_activationkey")]]
+)
 @pytest.mark.test_config_custom_path_custom_filename
-def test_user_path_custom_filename(convert2rhel):
-    config = [Config("~/.convert2rhel_custom.ini", "[subscription_manager]\nactivation_key = config_activationkey")]
-    create_files(config)
-
+def test_user_path_custom_filename(convert2rhel, config_file_setup):
     with convert2rhel('--no-rpm-va --debug -c "~/.convert2rhel_custom.ini"', expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini") == 0:
             c2r.sendcontrol("c")
 
-    remove_files(config)
 
-
+@pytest.mark.parametrize(
+    "config", [[Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]]
+)
 @pytest.mark.test_config_custom_path_standard_filename
-def test_user_path_std_filename(convert2rhel):
-    config = [Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]
-    create_files(config)
-
+def test_user_path_std_filename(convert2rhel, config_file_setup):
     with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
             c2r.sendcontrol("c")
 
-    remove_files(config)
 
-
+@pytest.mark.parametrize(
+    "config",
+    [
+        [
+            Config(
+                "~/.convert2rhel.ini",
+                "[subscription_manager]\nusername = config_username\npassword = config_password\nactivation_key = config_key\norg = config_org",
+            )
+        ]
+    ],
+)
 @pytest.mark.test_config_cli_priority
-def test_user_path_cli_priority(convert2rhel):
-    config = [
-        Config(
-            "~/.convert2rhel.ini",
-            "[subscription_manager]\nusername = config_username\npassword = config_password\nactivation_key = config_key\norg = config_org",
-        )
-    ]
-    create_files(config)
-
+def test_user_path_cli_priority(convert2rhel, config_file_setup):
     with convert2rhel("--no-rpm-va --password password --debug", expected_exitcode=1) as c2r:
         # Found options in config file
         c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
@@ -75,17 +75,18 @@ def test_user_path_cli_priority(convert2rhel):
         ):
             c2r.sendcontrol("c")
 
-    remove_files(config)
 
-
+@pytest.mark.parametrize(
+    "config",
+    [
+        [
+            Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
+            Config("~/password_file", "file_password"),
+        ]
+    ],
+)
 @pytest.mark.test_config_password_file_priority
-def test_user_path_pswd_file_priority(convert2rhel):
-    config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("~/password_file", "file_password"),
-    ]
-    create_files(config)
-
+def test_user_path_pswd_file_priority(convert2rhel, config_file_setup):
     with convert2rhel('--no-rpm-va -f "~/password_file" --debug', expected_exitcode=1) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
@@ -98,17 +99,18 @@ def test_user_path_pswd_file_priority(convert2rhel):
         ):
             c2r.sendcontrol("c")
 
-    remove_files(config)
 
-
+@pytest.mark.parametrize(
+    "config",
+    [
+        [
+            Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
+            Config("/etc/convert2rhel.ini", "[subscription_manager]\nactivation_key = config2_activationkey"),
+        ]
+    ],
+)
 @pytest.mark.test_config_standard_paths_priority_diff_methods
-def test_std_paths_priority_diff_methods(convert2rhel):
-    config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("/etc/convert2rhel.ini", "[subscription_manager]\nactivation_key = config2_activationkey"),
-    ]
-    create_files(config)
-
+def test_std_paths_priority_diff_methods(convert2rhel, config_file_setup):
     with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found activation_key in /etc/convert2rhel.ini")
@@ -126,19 +128,18 @@ def test_std_paths_priority_diff_methods(convert2rhel):
         ):
             c2r.sendcontrol("c")
 
-    remove_files(config)
 
-
+@pytest.mark.parametrize(
+    "config",
+    [
+        [
+            Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
+            Config("/etc/convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
+        ]
+    ],
+)
 @pytest.mark.test_config_standard_paths_priority
-def test_std_paths_priority(convert2rhel):
-    config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("/etc/convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-    ]
-    create_files(config)
-
+def test_std_paths_priority(convert2rhel, config_file_setup):
     with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
         if c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini") == 0:
             c2r.sendcontrol("c")
-
-    remove_files(config)
