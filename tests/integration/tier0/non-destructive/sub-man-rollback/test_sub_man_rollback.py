@@ -53,3 +53,7 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_r
             assert c2r.expect("Validate the dnf transaction") == 0
             # At this point the centos-linux-release package is already installed
             c2r.sendcontrol("c")
+            # Expect rollback, otherwise TIMEOUT
+            c2r.expect("WARNING - Abnormal exit! Performing rollback", timeout=10)
+
+        assert c2r.exitstatus != 0
