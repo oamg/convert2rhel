@@ -4,6 +4,7 @@
     "title": "Convert2rhel Assessment Schema",
     "description": "Convert2rhel analyzes the system to determine suitability for conversions before it actually starts to convert the system.  This schema defines the format that would be used.",
     "type": "object",
+    "additionalProperties": false,
     "properties": {
         "actions": {
             "type": "object",

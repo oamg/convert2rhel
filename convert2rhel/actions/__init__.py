@@ -225,7 +225,7 @@ class Action:
 
         self._result = action_message
 
-    def set_result(self, level, id, title=None, description=None, diagnosis=None, remediation=None):
+    def set_result(self, level, id, title="", description="", diagnosis="", remediation=""):
         """
         Helper method that sets the resulting values for level, id, title, description, diagnosis and remediation.
 
@@ -238,16 +238,16 @@ class Action:
         :param description: The description of the result.
         :type description: str
         :param diagnosis: The outline of the issue found.
-        :type diagnosis: str | None
+        :type diagnosis: str
         :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str | None
+        :type remediation: str
         """
         if level not in ("ERROR", "OVERRIDABLE", "SKIP", "SUCCESS"):
             raise KeyError("The level of result must be FAILURE, OVERRIDABLE, SKIP, or SUCCESS.")
 
         self.result = ActionResult(level, id, title, description, diagnosis, remediation)
 
-    def add_message(self, level, id, title=None, description=None, diagnosis=None, remediation=None):
+    def add_message(self, level, id, title="", description="", diagnosis="", remediation=""):
         """
         Helper method that adds a new informational message to display to the user.
         The passed in values for level, id and message of a warning or info log message are
@@ -262,9 +262,9 @@ class Action:
         :param description: The description of the message.
         :type description: str
         :param diagnosis: The outline of the issue found.
-        :type diagnosis: str | None
+        :type diagnosis: str
         :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str | None
+        :type remediation: str
         """
         msg = ActionMessage(level, id, title, description, diagnosis, remediation)
         self.messages.append(msg)
@@ -284,20 +284,26 @@ class ActionMessageBase:
     :keyword description: The description to be set.
     :type description: str
     :keyword diagnosis: The diagnosis to be set.
-    :type diagnosis: str | None
+    :type diagnosis: str
     :keyword remediation: The remediation to be set.
-    :type remediation: str | None
+    :type remediation: str
     """
 
     def __init__(
         self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
     ):
-        self.id = id
+        # Note, a common programming mistake to affect this base class is for
+        # subclasses to pass None as a default value instead of empty string.
+        # Not sure if we should be normalizng or if we should validate and
+        # error but I'm going to obey "be liberal in what you accept and
+        # conservative in what you emit" and normalize those cases for now.
+
+        self.id = id or ""
         self.level = STATUS_CODE[level]
-        self.title = title
-        self.description = description
-        self.diagnosis = diagnosis
-        self.remediation = remediation
+        self.title = title or ""
+        self.description = description or ""
+        self.diagnosis = diagnosis or ""
+        self.remediation = remediation or ""
 
         if variables is None:
             variables = {}
@@ -370,7 +376,7 @@ class ActionMessage(ActionMessageBase):
     A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
     """
 
-    def __init__(self, level=None, id=None, title=None, description=None, diagnosis=None, remediation=None):
+    def __init__(self, level="", id="", title="", description="", diagnosis="", remediation=""):
         if not (id and level and title and description):
             raise InvalidMessageError("Messages require id, level, title and description fields")
 

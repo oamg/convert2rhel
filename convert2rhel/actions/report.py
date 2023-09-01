@@ -131,10 +131,10 @@ def summary(results, include_all_reports=False, with_colors=True):
                     {
                         "level": int,
                         "id": "$id",
-                        "title": None or "$title",
-                        "description": None or "$description",
-                        "diagnosis": None or "$diagnosis",
-                        "remediation": None or "$remediation"
+                        "title": "" or "$title",
+                        "description": "" or "$description",
+                        "diagnosis": "" or "$diagnosis",
+                        "remediation": "" or "$remediation"
                     }
                 ],
                 "result" : {

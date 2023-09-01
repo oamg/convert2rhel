@@ -59,7 +59,7 @@ class TestAction:
             # Set one result field
             (
                 dict(level="SUCCESS", id="SUCCESS"),
-                dict(level="SUCCESS", id="SUCCESS", title=None, description=None, diagnosis=None, remediation=None),
+                dict(level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""),
             ),
             # Set all result fields
             (
@@ -1482,10 +1482,10 @@ class TestActionClasses:
                 dict(
                     id="SUCCESS",
                     level=STATUS_CODE["SUCCESS"],
-                    title=None,
-                    description=None,
-                    diagnosis=None,
-                    remediation=None,
+                    title="",
+                    description="",
+                    diagnosis="",
+                    remediation="",
                     variables={},
                 ),
             ),
@@ -1758,10 +1758,10 @@ class TestActionClasses:
                 dict(
                     id="SUCCESS_ID",
                     level=STATUS_CODE["SUCCESS"],
-                    title=None,
-                    description=None,
-                    diagnosis=None,
-                    remediation=None,
+                    title="",
+                    description="",
+                    diagnosis="",
+                    remediation="",
                     variables={},
                 ),
             ),
