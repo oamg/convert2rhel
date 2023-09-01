@@ -9,9 +9,6 @@ tier: 0
 tag+:
     - pre-assessment-report
 
-environment+:
-    CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
-
 /failures_and_skips_in_report:
     summary+: |
         Verify that some actions failures and skips appeared in the report.
@@ -33,3 +30,17 @@ environment+:
         - success-report
     test: |
         pytest -svv -m test_successful_report
+
+/convert_successful_report:
+    summary+: |
+        Verify that the `convert` subcommand works.
+    description+: |
+        Validate that calling the `convert` subcommand works.
+        Verify the assessment report does not contain any header:
+        Success header, Error header, Skip header.
+        NOTE: Without the analyze subcommand the convert2rhel does not
+        pollute the output with Success header and checks.
+    tag+:
+        - convert-success-report
+    test: |
+        pytest -svv -m test_convert_successful_report

@@ -8,3 +8,6 @@ description+: |
 
 tag+:
     - non-destructive
+
+environment+:
+    INT_TESTS_NONDESTRUCTIVE: 1

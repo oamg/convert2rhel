@@ -25,7 +25,7 @@ from collections import namedtuple
 from six.moves import configparser, urllib
 
 from convert2rhel import logger, utils
-from convert2rhel.toolopts import tool_opts
+from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME, tool_opts
 from convert2rhel.utils import run_subprocess
 
 
@@ -47,12 +47,6 @@ RELEASE_VER_MAPPING = {
     "8.4": "8.4",
     "7.9": "7Server",
 }
-
-# For a list of modified rpm files before the conversion starts
-PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
-
-# For a list of modified rpm files after the conversion finishes for comparison purposes
-POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
 # List of EUS minor versions supported
 EUS_MINOR_VERSIONS = ["8.6"]

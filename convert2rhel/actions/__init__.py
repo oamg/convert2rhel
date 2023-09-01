@@ -721,14 +721,14 @@ def format_action_status_message(status_code, action_id, id, message):
     # apply these fields if they are present, with a special mention to
     # `message`.
     if id:
-        template += ".{ID}"
+        template += "::{ID}"
 
     # Special case for `message` to not output empty message to the
     # user without message.
     if message:
-        template += ": {MESSAGE}"
+        template += " - {MESSAGE}"
     else:
-        template += ": [No further information given]"
+        template += " - [No further information given]"
 
     return template.format(
         LEVEL=level_name,
