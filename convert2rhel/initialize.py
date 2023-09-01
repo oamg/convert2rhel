@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 
-from convert2rhel import applock, i18n
+from convert2rhel import applock, i18n, utils
 
 
 def disable_root_logger():
@@ -74,6 +74,9 @@ def run():
 
     # Initialize logging to stop duplicate messages.
     disable_root_logger()
+
+    # Make sure we're being run by root
+    utils.require_root()
 
     from convert2rhel import main
 

@@ -18,8 +18,13 @@
 import os
 
 import pytest
+import six
 
-from convert2rhel import applock, initialize, main
+from convert2rhel import applock, initialize, main, utils
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 @pytest.mark.parametrize(
@@ -30,13 +35,18 @@ from convert2rhel import applock, initialize, main
     ),
 )
 def test_run(monkeypatch, exit_code, tmp_path):
+    require_root_mock = mock.Mock()
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "main", value=lambda: exit_code)
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     with pytest.raises(SystemExit):
         initialize.run()
+    assert require_root_mock.call_count == 1
 
 
 def test_locked(monkeypatch, tmp_path, capsys):
+    require_root_mock = mock.Mock()
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     pidfile = os.path.join(str(tmp_path), "convert2rhel.pid")
     with open(pidfile, "w") as f:
@@ -46,3 +56,4 @@ def test_locked(monkeypatch, tmp_path, capsys):
     captured = capsys.readouterr()
     assert "Another copy of convert2rhel" in captured.err
     os.unlink(pidfile)
+    assert require_root_mock.call_count == 1

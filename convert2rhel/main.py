@@ -65,9 +65,6 @@ def initialize_logger(log_name, log_dir):
 def main():
     """Perform all steps for the entire conversion process."""
 
-    # the tool will not run if not executed under the root user
-    utils.require_root()
-
     process_phase = ConversionPhase.INIT
 
     # initialize logging
