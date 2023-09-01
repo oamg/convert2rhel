@@ -127,17 +127,25 @@ def convert2rhel(shell):
         c2r_runtime.logfile_read = sys.stdout
         try:
             yield c2r_runtime
-        except Exception:
-            c2r_runtime.close()
-            raise
-        else:
             c2r_runtime.expect(pexpect.EOF)
             c2r_runtime.close()
+        finally:
+            # Check if child is still alive, if so, send SIGINT
+            # this handles the TIMEOUT exception - if the process is still alive,
+            # the EOF is not raised, the process gets terminated.
+            # If pexpect.EOF exception is not raised (timeouts after 15 minutes)
+            # force terminate the process.
+            if c2r_runtime.isalive():
+                c2r_runtime.sendcontrol("c")
+                try:
+                    c2r_runtime.expect(pexpect.EOF, timeout=900)
+                except pexpect.TIMEOUT:
+                    c2r_runtime.terminate(force=True)
+
             assert c2r_runtime.isalive() is False
             if expected_exitcode:
                 assert c2r_runtime.exitstatus in expected_exitcode
 
-        finally:
             if unregister:
                 shell("subscription-manager unregister")
 
