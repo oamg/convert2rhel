@@ -26,4 +26,3 @@ def test_rhsm_non_eus_account(convert2rhel):
         c2r.expect("WARNING - Some repositories are not available: rhel-8-for-x86_64-baseos-eus-rpms")
         c2r.expect("WARNING - Some repositories are not available: rhel-8-for-x86_64-appstream-eus-rpms")
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0

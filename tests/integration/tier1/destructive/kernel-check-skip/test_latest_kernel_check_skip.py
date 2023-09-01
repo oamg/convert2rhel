@@ -58,4 +58,3 @@ def test_skip_kernel_check(shell, convert2rhel):
         elif c2r_expect_index == 1:
             assert AssertionError
         assert c2r.expect("Conversion successful") == 0
-    assert c2r.exitstatus == 0

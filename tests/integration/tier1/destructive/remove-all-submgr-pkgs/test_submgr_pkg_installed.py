@@ -24,8 +24,6 @@ def test_remove_all_submgr_pkgs(shell, convert2rhel):
         # subscription-manager pkgs
         c2r.expect("Installing subscription-manager RPMs.")
 
-    assert c2r.exitstatus == 0
-
     # Check that the subscription-manager installed by c2r has the Red Hat signature
     assert (
         "199e2f91fd431d51"

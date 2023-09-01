@@ -27,8 +27,7 @@ def test_remove_excluded_pkgs(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        pass
-    assert c2r.exitstatus == 0
+        c2r.expect("Conversion successful!")
 
     # check excluded packages were really removed
     assert shell(f"rpm -qi {packages}").returncode != 0

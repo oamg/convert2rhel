@@ -45,7 +45,6 @@ def test_run_conversion_using_custom_repos(shell, convert2rhel):
 
     with convert2rhel("-y --no-rpm-va --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0
 
     # after the conversion using custom repositories it is expected to enable repos by yourself
     if system_version.major == 7:

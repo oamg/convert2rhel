@@ -110,5 +110,3 @@ def test_corrupted_initramfs_file(convert2rhel, shell):
         # checks-after-conversion tests to assert that most of the conversion
         # is done properly.
         restore_original_initramfs(shell, kernel_version)
-
-    assert c2r.exitstatus == 0

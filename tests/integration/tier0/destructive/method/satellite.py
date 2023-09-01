@@ -24,5 +24,4 @@ def test_satellite_conversion(shell, convert2rhel):
             env.str("SATELLITE_ORG"),
         )
     ) as c2r:
-        pass
-    assert c2r.exitstatus == 0
+        c2r.expect("Conversion successful!")

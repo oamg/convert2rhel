@@ -124,11 +124,10 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
         "-y --no-rpm-va -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect("Unable to find the /etc/system-release file containing the OS name and version")
-
-    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_backup_os_release_no_envar
@@ -149,9 +148,9 @@ def test_backup_os_release_no_envar(
             env.str("SATELLITE_ORG"),
         ),
         unregister=True,
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect("set the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK.")
-        assert c2r.exitstatus != 0
 
     assert shell("find /etc/os-release").returncode == 0
 
@@ -185,6 +184,7 @@ def test_backup_os_release_with_envar(
             env.str("SATELLITE_ORG"),
         ),
         unregister=True,
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect(
             "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."

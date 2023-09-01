@@ -10,5 +10,4 @@ def test_convert_offline_systems(convert2rhel):
             env.str("SATELLITE_ORG"),
         )
     ) as c2r:
-        pass
-    assert c2r.exitstatus == 0
+        c2r.expect("Conversion successful!")

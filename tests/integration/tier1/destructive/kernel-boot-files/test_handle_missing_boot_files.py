@@ -84,5 +84,3 @@ def test_missing_kernel_boot_files(convert2rhel, shell):
         # That is by reinstalling the RHEL kernel and re-running grub2-mkconfig.
         assert shell("yum reinstall {}-{} -y".format(kernel_name, kernel_version)).returncode == 0
         assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0
-
-    assert c2r.exitstatus == 0

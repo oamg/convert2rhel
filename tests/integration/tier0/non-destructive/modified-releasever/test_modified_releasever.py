@@ -24,10 +24,10 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
                 env.str("RHSM_POOL"),
             ),
             unregister=True,
+            expected_exitcode=1,
         ) as c2r:
             c2r.expect("--releasever=333")
             c2r.sendcontrol("c")
-    assert c2r.exitstatus == 1
 
     # Restore configs
     assert shell(f"mv -f {backup_dir}* {path_to_configs}")
@@ -54,11 +54,11 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
                 env.str("RHSM_POOL"),
             ),
             unregister=True,
+            expected_exitcode=1,
         ) as c2r:
             c2r.expect(
                 f"CRITICAL - {os_release.name} of version {os_release.version[0]}.1 is not allowed for conversion."
             )
-        assert c2r.exitstatus == 1
 
     # Restore system-release
     assert shell(f"mv -f {backup_file} /etc/system-release").returncode == 0

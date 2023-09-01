@@ -32,5 +32,3 @@ def test_conversion(convert2rhel):
         c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
         c2r.expect("Conversion successful!")
-
-    assert c2r.exitstatus == 0

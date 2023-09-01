@@ -107,14 +107,14 @@ def test_bad_conversion_without_rhsm(shell, convert2rhel):
     prepare_custom_repository(shell)
 
     with convert2rhel(
-        "-y --no-rpm-va --no-rhsm --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True
+        "-y --no-rpm-va --no-rhsm --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug",
+        unregister=True,
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect(
             "CUSTOM_REPOSITORIES_ARE_VALID::UNABLE_TO_ACCESS_REPOSITORIES - Unable to access the repositories passed through the --enablerepo option. "
             "For more details, see YUM/DNF output"
         )
-
-    assert c2r.exitstatus == 1
 
     assert shell("rpm -qi kernel").returncode == 0
 

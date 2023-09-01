@@ -35,7 +35,8 @@ def test_non_latest_kernel(shell, convert2rhel):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         if "centos-8" in SYSTEM_RELEASE_ENV:
             c2r.expect(
@@ -45,7 +46,6 @@ def test_non_latest_kernel(shell, convert2rhel):
             c2r.expect(
                 "The version of the loaded kernel is different from the latest version in the enabled system repositories."
             )
-    assert c2r.exitstatus != 0
 
     # Clean up, reboot is required after setting the newest kernel
     set_latest_kernel(shell)

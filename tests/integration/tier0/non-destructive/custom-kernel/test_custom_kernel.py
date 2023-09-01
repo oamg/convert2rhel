@@ -82,7 +82,7 @@ def test_custom_kernel(convert2rhel, shell):
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         install_custom_kernel(shell)
     elif os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel("--no-rpm-va --debug") as c2r:
+        with convert2rhel("--no-rpm-va --debug", expected_exitcode=1) as c2r:
             # We need to get past the data collection acknowledgement.
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
@@ -93,8 +93,6 @@ def test_custom_kernel(convert2rhel, shell):
             )
 
             c2r.sendcontrol("c")
-
-        assert c2r.exitstatus != 0
 
         # Restore the system.
         clean_up_custom_kernel(shell)

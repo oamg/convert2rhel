@@ -79,7 +79,6 @@ def terminate_and_assert_good_rollback(c2r):
 
     # Assert the rollback finished all tasks by going through its last task
     assert c2r.expect("Rollback: Remove installed RHSM certificate", timeout=120) == 0
-    assert c2r.exitstatus != 1
 
 
 @pytest.mark.test_rhsm_cleanup
@@ -96,7 +95,8 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
-        )
+        ),
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -106,8 +106,6 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
         c2r.expect("Calling command 'subscription-manager unregister'")
         c2r.expect("System unregistered successfully.")
-
-    assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -122,8 +120,8 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     username = "foo"
     password = "bar"
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    with convert2rhel(f"--debug -y --no-rpm-va --username {username} --password {password}") as c2r:
-        assert c2r.exitstatus != 0
+    with convert2rhel(f"--debug -y --no-rpm-va --username {username} --password {password}", expected_exitcode=1):
+        pass
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -136,11 +134,9 @@ def test_check_untrack_pkgs_force(convert2rhel, shell):
     Primary issue - verify that python-syspurpose is not removed.
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    with convert2rhel("--debug -y --no-rpm-va") as c2r:
+    with convert2rhel("--debug -y --no-rpm-va", expected_exitcode=1) as c2r:
         c2r.expect("Username")
         c2r.sendcontrol("c")
-
-    assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -159,6 +155,7 @@ def test_terminate_registration_start(convert2rhel):
             env.str("RHSM_PASSWORD"),
         ),
         unregister=True,
+        expected_exitcode=1,
     ) as c2r:
         if c2r.expect("Registering the system using subscription-manager") == 0:
             terminate_and_assert_good_rollback(c2r)
@@ -178,6 +175,7 @@ def test_terminate_registration_success(convert2rhel):
             env.str("RHSM_PASSWORD"),
         ),
         unregister=True,
+        expected_exitcode=1,
     ) as c2r:
         c2r.expect("Registering the system using subscription-manager")
         assert c2r.expect("System registration succeeded.", timeout=180) == 0
@@ -194,7 +192,7 @@ def test_terminate_on_username_prompt(convert2rhel):
     Send termination signal on the user prompt for username.
     Verify that c2r goes successfully through the rollback.
     """
-    with convert2rhel("--debug -y --no-rpm-va") as c2r:
+    with convert2rhel("--debug -y --no-rpm-va", expected_exitcode=1) as c2r:
         if c2r.expect("Username:") == 0:
             terminate_and_assert_good_rollback(c2r)
 
@@ -205,6 +203,8 @@ def test_terminate_on_password_prompt(convert2rhel):
     Send termination signal on the user prompt for password.
     Verify that c2r goes successfully through the rollback.
     """
-    with convert2rhel("--debug -y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME"))) as c2r:
+    with convert2rhel(
+        "--debug -y --no-rpm-va --username {}".format(env.str("RHSM_USERNAME")), expected_exitcode=1
+    ) as c2r:
         if c2r.expect("Password:") == 0:
             terminate_and_assert_good_rollback(c2r)

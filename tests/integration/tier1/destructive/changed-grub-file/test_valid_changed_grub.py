@@ -42,4 +42,3 @@ def test_modify_grub_valid(convert2rhel):
         )
     ) as c2r:
         assert c2r.expect("Successfully updated GRUB2 on the system.") == 0
-    assert c2r.exitstatus == 0

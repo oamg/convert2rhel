@@ -30,7 +30,6 @@ def test_yum_distro_sync(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("Conversion successful!")
-    assert c2r.exitstatus == 0
 
     # any error on Centos 7 and Centos 8
     out = shell("yum distro-sync cpaste zip")

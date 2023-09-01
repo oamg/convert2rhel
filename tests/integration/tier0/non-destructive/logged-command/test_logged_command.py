@@ -38,7 +38,7 @@ def test_verify_logfile_starts_with_command(convert2rhel):
     # Run command twice with both long and short options to verify, the secrets
     # are obfuscated.
     for command in commands:
-        with convert2rhel(command) as c2r:
+        with convert2rhel(command, expected_exitcode=1) as c2r:
             # We need to get past the data collection acknowledgement.
             c2r.expect("Continue with the system conversion?")
             c2r.sendline("y")
@@ -69,5 +69,3 @@ def test_verify_logfile_starts_with_command(convert2rhel):
             assert activation_key not in command
             assert username not in command
             assert organization not in command
-
-        assert c2r.exitstatus != 0
