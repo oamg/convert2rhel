@@ -134,7 +134,8 @@ def summary(results, include_all_reports=False, with_colors=True):
                         "title": "" or "$title",
                         "description": "" or "$description",
                         "diagnosis": "" or "$diagnosis",
-                        "remediation": "" or "$remediation"
+                        "remediation": "" or "$remediation",
+                        "variables": None or "$variables",
                     }
                 ],
                 "result" : {
@@ -143,7 +144,8 @@ def summary(results, include_all_reports=False, with_colors=True):
                     "title": "" or "$title",
                     "description": "" or "$description",
                     "diagnosis": "" or "$diagnosis",
-                    "remediation": "" or "$remediation"
+                    "remediation": "" or "$remediation",
+                    "variables": None or "$variables",
                 }
             },
         }
@@ -191,6 +193,7 @@ def summary(results, include_all_reports=False, with_colors=True):
             "description": action_value["result"]["description"],
             "remediation": action_value["result"]["remediation"],
             "diagnosis": action_value["result"]["diagnosis"],
+            "variables": action_value["result"]["variables"],
         }
         for message in action_value["messages"]:
             combined_results_and_message[(action_id, message["id"])] = {
@@ -199,6 +202,7 @@ def summary(results, include_all_reports=False, with_colors=True):
                 "description": message["description"],
                 "remediation": message["remediation"],
                 "diagnosis": message["diagnosis"],
+                "variables": message["variables"],
             }
 
     if include_all_reports:
@@ -210,7 +214,6 @@ def summary(results, include_all_reports=False, with_colors=True):
         )
 
     terminal_size = utils.get_terminal_size()
-    word_wrapper = textwrap.TextWrapper(subsequent_indent="    ", width=terminal_size[0], replace_whitespace=False)
 
     # Sort the results in reverse order, this way, the most important messages
     # will be on top.

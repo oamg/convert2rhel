@@ -225,7 +225,7 @@ class Action:
 
         self._result = action_message
 
-    def set_result(self, level, id, title="", description="", diagnosis="", remediation=""):
+    def set_result(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
         """
         Helper method that sets the resulting values for level, id, title, description, diagnosis and remediation.
 
@@ -238,16 +238,18 @@ class Action:
         :param description: The description of the result.
         :type description: str
         :param diagnosis: The outline of the issue found.
-        :type diagnosis: str
+        :type diagnosis: str | None
         :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str
+        :type remediation: str | None
+        :param variables: Variables to interpolate in other fields.
+        :type variables: dict[str, str] | None
         """
         if level not in ("ERROR", "OVERRIDABLE", "SKIP", "SUCCESS"):
             raise KeyError("The level of result must be FAILURE, OVERRIDABLE, SKIP, or SUCCESS.")
 
-        self.result = ActionResult(level, id, title, description, diagnosis, remediation)
+        self.result = ActionResult(level, id, title, description, diagnosis, remediation, variables)
 
-    def add_message(self, level, id, title="", description="", diagnosis="", remediation=""):
+    def add_message(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
         """
         Helper method that adds a new informational message to display to the user.
         The passed in values for level, id and message of a warning or info log message are
@@ -262,11 +264,13 @@ class Action:
         :param description: The description of the message.
         :type description: str
         :param diagnosis: The outline of the issue found.
-        :type diagnosis: str
+        :type diagnosis: str | None
         :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str
+        :type remediation: str | None
+        :param variables: Variables to interpolate in other fields.
+        :type variables: dict[str, str] | None
         """
-        msg = ActionMessage(level, id, title, description, diagnosis, remediation)
+        msg = ActionMessage(level, id, title, description, diagnosis, remediation, variables)
         self.messages.append(msg)
 
 
@@ -284,9 +288,11 @@ class ActionMessageBase:
     :keyword description: The description to be set.
     :type description: str
     :keyword diagnosis: The diagnosis to be set.
-    :type diagnosis: str
+    :type diagnosis: str | None
     :keyword remediation: The remediation to be set.
-    :type remediation: str
+    :type remediation: str | None
+    :keyword variables: The variables to be set.
+    :type variables: dict[str,str] | None
     """
 
     def __init__(
@@ -318,7 +324,7 @@ class ActionMessageBase:
         return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediation))
 
     def __repr__(self):
-        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s)" % (
+        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s, variables=%s)" % (
             self.__class__.__name__,
             _STATUS_NAME_FROM_CODE[self.level],
             self.id,
@@ -326,32 +332,7 @@ class ActionMessageBase:
             self.description,
             self.diagnosis,
             self.remediation,
-        )
-
-    def __eq__(self, other):
-        if (
-            self.level == other.level  # pylint: disable=too-many-boolean-expressions
-            and self.id == other.id
-            and self.title == other.title
-            or self.description == other.description
-            or self.diagnosis == other.diagnosis
-            or self.remediation == other.remediation
-        ):
-            return True
-        return False
-
-    def __hash__(self):
-        return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediation))
-
-    def __repr__(self):
-        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s)" % (
-            self.__class__.__name__,
-            _STATUS_NAME_FROM_CODE[self.level],
-            self.id,
-            self.title,
-            self.description,
-            self.diagnosis,
-            self.remediation,
+            self.variables,
         )
 
     def to_dict(self):
@@ -376,7 +357,7 @@ class ActionMessage(ActionMessageBase):
     A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
     """
 
-    def __init__(self, level="", id="", title="", description="", diagnosis="", remediation=""):
+    def __init__(self, level="", id="", title="", description="", diagnosis="", remediation="", variables=None):
         if not (id and level and title and description):
             raise InvalidMessageError("Messages require id, level, title and description fields")
 
@@ -385,7 +366,7 @@ class ActionMessage(ActionMessageBase):
         if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
             raise InvalidMessageError("Invalid level '%s', set for a non-result message" % level)
 
-        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediation)
+        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediation, variables)
 
 
 class ActionResult(ActionMessageBase):
