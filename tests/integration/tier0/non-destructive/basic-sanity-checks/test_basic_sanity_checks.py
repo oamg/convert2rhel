@@ -1,4 +1,6 @@
+import errno
 import os
+import os.path
 import re
 import subprocess
 
@@ -204,18 +206,31 @@ def test_clean_cache(convert2rhel):
 def test_rhsm_error_logged(convert2rhel):
     """
     Verify that the OSError for RHSM certificate being removed
-    is not being logged in cases the certificate is not installed yet.
+    in rollback is not being logged in cases the certificate is
+    not installed by then (for instance, a package removes it
+    before we get the chance to).
     """
     with convert2rhel("--debug --no-rpm-va -k key -o org") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        # The conversion should not reach a point where the certificates are installed
-        assert c2r.expect("Prepare: Check that DBus Daemon is running") == 0
-        c2r.sendcontrol("c")
+        # Wait until we reach the point where the RHEL certificate has been
+        # installed otherwise we won't attempt to remove it.
+        assert c2r.expect("PRE_SUBSCRIPTION has succeeded") == 0
 
-        assert c2r.expect("No certificates found to be removed.", timeout=300) == 0
+        # Remove the certificate ourselves
+        for potential_cert in ("74.pem", "69.pem", "479.pem"):
+            try:
+                os.remove(os.path.join("/etc/pki/product-default", potential_cert))
+            except OSError as e:
+                if e.errno == errno.ENOENT:
+                    # We just need to make sure the file does not exist.
+                    pass
+
+        # Now trigger a rollback so we can see if it handles the missing
+        # certificate
+        c2r.sendcontrol("c")
 
     # Verify the error message is not present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:

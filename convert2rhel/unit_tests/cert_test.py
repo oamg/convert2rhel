@@ -245,7 +245,12 @@ class TestPEMCert:
             (
                 1,
                 "Error printed to stdout",
-                "Unable to determine if a package owns certificate" " %s. Skipping removal.",
+                "Unable to determine if a package owns certificate %s. Skipping removal.",
+            ),
+            (
+                1,
+                "error: file /etc/pki/product-default/69.pem: No such file or directory",
+                "Certificate already removed from %s",
             ),
         ),
     )

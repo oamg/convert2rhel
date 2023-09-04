@@ -84,7 +84,7 @@ class PEMCert(backup.RestorableChange):
         # possible that a new rpm package was installed after we copied the
         # certificate into place which owns the certificate.  If that is
         # the case, then we don't want to remove it now.
-        output, code = utils.run_subprocess(["rpm", "-qf", self._target_cert_path])
+        output, code = utils.run_subprocess(["rpm", "-qf", self._target_cert_path], print_output=False)
 
         # * If a file is owned by a package, rpm returns exit code 0 and prints
         #   the package name to stdout.
@@ -97,6 +97,8 @@ class PEMCert(backup.RestorableChange):
         if code != 0:
             if "not owned by any package" in output:
                 file_unowned = True
+            elif "No such file or directory" in output:
+                loggerinst.info("Certificate already removed from %s" % self._target_cert_path)
             else:
                 loggerinst.warning(
                     "Unable to determine if a package owns certificate %s. Skipping removal." % self._target_cert_path
