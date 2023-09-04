@@ -12,8 +12,8 @@
             "patternProperties": {
                 "^[A-Z0-9_]+$": {
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
-                        "additionalProperties": false,
                         "messages": {
                             "type": "array",
                             "items": {
