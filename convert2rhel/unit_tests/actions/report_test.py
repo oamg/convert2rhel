@@ -31,6 +31,7 @@ _LONG_MESSAGE = {
     "description": " Danger Will Robinson...!",
     "diagnosis": " Danger! Danger! Danger!",
     "remediation": " Please report directly to your parents in the spaceship immediately.",
+    "variables": {},
 }
 
 
@@ -137,6 +138,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -146,6 +148,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 )
             },
@@ -166,6 +169,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 ),
                 "PreSubscription2": dict(
@@ -177,6 +181,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -186,6 +191,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -209,6 +215,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 )
             },
@@ -226,6 +233,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -235,6 +243,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 )
             },
@@ -254,6 +263,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -263,6 +273,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 ),
                 "PreSubscription2": dict(
@@ -274,6 +285,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -283,6 +295,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -305,6 +318,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -314,6 +328,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "PreSubscription2": dict(
@@ -325,6 +340,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -334,6 +350,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action overridable",
                         "diagnosis": "User overridable",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -356,6 +373,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -365,6 +383,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "OverridableAction": dict(
@@ -376,6 +395,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -385,6 +405,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action overridable",
                         "diagnosis": "User overridable",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "ErrorAction": dict(
@@ -396,6 +417,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -405,6 +427,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "TestAction": dict(
@@ -416,6 +439,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -425,6 +449,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -459,6 +484,7 @@ def test_summary(results, expected_results, include_all_reports, caplog):
                 "description": " Danger Will Robinson...!" * 8,
                 "diagnosis": " Danger!" * 15,
                 "remediation": " Please report directly to your parents in the spaceship immediately." * 2,
+                "variables": {},
             }
         ),
     ),
@@ -502,6 +528,7 @@ def test_results_summary_with_long_message(long_message, caplog):
                 "description": " Danger Will Robinson...!" * 8,
                 "diagnosis": " Danger!" * 15,
                 "remediation": " Please report directly to your parents in the spaceship immediately." * 2,
+                "variables": {},
             }
         ),
     ),
@@ -521,6 +548,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                     "description": "",
                     "diagnosis": "",
                     "remediation": "",
+                    "variables": {},
                 },
             )
         },
@@ -557,6 +585,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "PreSubscription1": dict(
@@ -568,6 +597,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action override",
                         "diagnosis": "User override",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -588,6 +618,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "OverridableAction": dict(
@@ -599,6 +630,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action override",
                         "diagnosis": "User override",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "ErrorAction": dict(
@@ -610,6 +642,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -632,6 +665,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 ),
                 "SkipAction": dict(
@@ -643,6 +677,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "OverridableAction": dict(
@@ -654,6 +689,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action override",
                         "diagnosis": "User override",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "ErrorAction": dict(
@@ -665,6 +701,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -708,6 +745,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -717,6 +755,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "PreSubscription1": dict(
@@ -728,6 +767,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action override",
                         "diagnosis": "User override",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -749,6 +789,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -758,6 +799,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "OverridableAction": dict(
@@ -769,6 +811,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -778,6 +821,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action overridable",
                         "diagnosis": "User overridable",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "ErrorAction": dict(
@@ -789,6 +833,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -813,6 +858,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -822,6 +868,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 ),
                 "SkipAction": dict(
@@ -833,6 +880,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -842,6 +890,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "OverridableAction": dict(
@@ -853,6 +902,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -862,6 +912,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action overridable",
                         "diagnosis": "User overridable",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
                 "ErrorAction": dict(
@@ -873,6 +924,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -882,6 +934,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 ),
             },
@@ -929,6 +982,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -938,6 +992,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "description": "Action error",
                         "diagnosis": "User error",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 )
             },
@@ -959,6 +1014,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -968,6 +1024,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "description": "Action overridable",
                         "diagnosis": "User overridable",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 )
             },
@@ -989,6 +1046,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -998,6 +1056,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "description": "Action skip",
                         "diagnosis": "User skip",
                         "remediation": "move on",
+                        "variables": {},
                     },
                 )
             },
@@ -1019,6 +1078,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "description": "Action warning",
                             "diagnosis": "User warning",
                             "remediation": "move on",
+                            "variables": {},
                         }
                     ],
                     result={
@@ -1028,6 +1088,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "description": "",
                         "diagnosis": "",
                         "remediation": "",
+                        "variables": {},
                     },
                 )
             },

@@ -1667,6 +1667,7 @@ class TestActionClasses:
                     description="info description",
                     diagnosis="info diagnosis",
                     remediation="info remediation",
+                    variables={},
                 ),
             ),
         ),

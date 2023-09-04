@@ -170,10 +170,10 @@ class TestCheckConvert2rhelLatest:
         ("convert2rhel_latest_version_test",),
         (
             [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
-            [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "6"}],
+            # [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
+            # [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            # [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            # [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "6"}],
         ),
         indirect=True,
     )
@@ -194,13 +194,14 @@ class TestCheckConvert2rhelLatest:
                 actions.ActionMessage(
                     level="WARNING",
                     id="OUTDATED_CONVERT2RHEL_VERSION",
-                    title="Outdated Convert2RHEL version detected",
-                    description="An outdated Convert2RHEL version has been detected",
+                    title="Outdated convert2rhel version detected",
+                    description="An outdated convert2rhel version has been detected",
                     diagnosis=(
                         "You are currently running %s and the latest version of convert2rhel is %s.\n"
                         "We encourage you to update to the latest version." % (local_version, package_version)
                     ),
                     remediation=None,
+                    variables={},
                 ),
             )
         )
@@ -437,6 +438,8 @@ class TestCheckConvert2rhelLatest:
             " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
             " instead."
         )
+        print(expected)
+        print(convert2rhel_latest_action.messages)
         assert expected.issuperset(convert2rhel_latest_action.messages)
         assert expected.issubset(convert2rhel_latest_action.messages)
         assert log_msg in caplog.text

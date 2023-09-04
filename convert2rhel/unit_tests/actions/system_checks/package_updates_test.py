@@ -51,14 +51,14 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
                 remediation=None,
+                variables={},
             ),
         )
     )
-    assert expected.issuperset(package_updates_action.messages)
-    assert expected.issubset(package_updates_action.messages)
-
     package_updates_action.run()
 
+    assert expected.issuperset(package_updates_action.messages)
+    assert expected.issubset(package_updates_action.messages)
     assert diagnosis in caplog.records[-1].message
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)

@@ -197,7 +197,7 @@ class Convert2rhelLatest(actions.Action):
                 self.add_message(
                     level="WARNING",
                     id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
-                    title="Outdated Convert2RHEL version detected",
+                    title="Outdated convert2rhel version detected",
                     description="An outdated convert2rhel version has been detected",
                     diagnosis=diagnosis,
                 )
