@@ -170,10 +170,10 @@ class TestCheckConvert2rhelLatest:
         ("convert2rhel_latest_version_test",),
         (
             [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:0.22-1.el7.noarch", "pmajor": "6"}],
-            # [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
-            # [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
-            # [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
-            # [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "0.21", "package_version": "C2R convert2rhel-0:1.10-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21.0", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21", "package_version": "C2R convert2rhel-0:1.21.1-1.el7.noarch", "pmajor": "6"}],
+            [{"local_version": "1.21.1", "package_version": "C2R convert2rhel-0:1.22-1.el7.noarch", "pmajor": "6"}],
         ),
         indirect=True,
     )

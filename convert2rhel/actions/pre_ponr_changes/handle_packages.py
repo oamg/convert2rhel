@@ -69,10 +69,6 @@ class ListThirdPartyPackages(actions.Action):
         """Key function to extract the package name from third_party_pkgs"""
         return pkg.nevra.name
 
-    def extract_packages(self, pkg):
-        """Key function to extract the package name from third_party_pkgs"""
-        return pkg.nevra.name
-
 
 class RemoveExcludedPackages(actions.Action):
     id = "REMOVE_EXCLUDED_PACKAGES"
