@@ -81,7 +81,11 @@ class TestBackupSystem:
 
         backup_redhat_release_action.run()
         unit_tests.assert_actions_result(
-            backup_redhat_release_action, level="ERROR", id="UNKNOWN_ERROR", message="File not found"
+            backup_redhat_release_action,
+            level="ERROR",
+            id="UNKNOWN_ERROR",
+            title="An unknown error has occurred",
+            description="File not found",
         )
 
     def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
@@ -90,5 +94,9 @@ class TestBackupSystem:
 
         backup_redhat_release_action.run()
         unit_tests.assert_actions_result(
-            backup_redhat_release_action, level="ERROR", id="UNKNOWN_ERROR", message="File not found"
+            backup_redhat_release_action,
+            level="ERROR",
+            id="UNKNOWN_ERROR",
+            title="An unknown error has occurred",
+            description="File not found",
         )

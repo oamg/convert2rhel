@@ -63,6 +63,13 @@ class RemoveIwlax2xxFirmware(actions.Action):
                 _, exit_code = run_subprocess(["rpm", "-e", "--nodeps", "iwlax2xx-firmware"])
                 if exit_code != 0:
                     logger.error("Unable to remove the package iwlax2xx-firmware.")
+                    self.add_message(
+                        level="WARNING",
+                        id="IWLAX2XX_FIRMWARE_REMOVAL_FAILED",
+                        title="Package removal failed",
+                        description="Unable to remove the package iwlax2xx-firmware.",
+                    )
+
             else:
                 logger.info(
                     "The iwl7260-firmware and iwlax2xx-firmware packages are not both installed. Nothing to do."

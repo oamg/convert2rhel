@@ -65,16 +65,36 @@ class TestCustomReposAreValid(unittest.TestCase):
     @unit_tests.mock(
         custom_repos_are_valid,
         "call_yum_cmd",
-        CallYumCmdMocked(ret_code=1, ret_string="Abcdef"),
+        CallYumCmdMocked(ret_code=1, ret_string="YUM/DNF failed"),
     )
     @unit_tests.mock(custom_repos_are_valid, "logger", GetLoggerMocked())
     @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", True)
     def test_custom_repos_are_invalid(self):
         self.custom_repos_are_valid_action.run()
-        self.assertEqual(len(custom_repos_are_valid.logger.info_msgs), 0)
-        self.assertEqual(self.custom_repos_are_valid_action.result.level, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.custom_repos_are_valid_action.result.id, "UNABLE_TO_ACCESS_REPOSITORIES")
-        self.assertIn(
-            "Unable to access the repositories passed through the --enablerepo option. ",
-            self.custom_repos_are_valid_action.result.message,
+        unit_tests.assert_actions_result(
+            self.custom_repos_are_valid_action,
+            level="ERROR",
+            id="UNABLE_TO_ACCESS_REPOSITORIES",
+            title="Unable to access repositories",
+            description="Access could not be made to the custom repositories.",
+            diagnosis="Unable to access the repositories passed through the --enablerepo option.",
+            remediation="For more details, see YUM/DNF output:\nYUM/DNF failed",
         )
+
+    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", False)
+    def test_custom_repos_are_valid_skip(self):
+        self.custom_repos_are_valid_action.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="INFO",
+                    id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                    title="Skipping the custom repos are valid check",
+                    description="Skipping the check of repositories due to the use of RHSM for the conversion.",
+                    diagnosis=None,
+                    remediation=None,
+                ),
+            )
+        )
+        assert expected.issuperset(self.custom_repos_are_valid_action.messages)
+        assert expected.issubset(self.custom_repos_are_valid_action.messages)

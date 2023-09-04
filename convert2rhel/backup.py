@@ -426,6 +426,9 @@ def remove_pkgs(
                 custom_releasever=custom_releasever,
                 varsdir=varsdir,
             )
+
+    pkgs_failed_to_remove = []
+    pkgs_removed = []
     for nevra in pkgs_to_remove:
         # It's necessary to remove an epoch from the NEVRA string returned by yum because the rpm command does not
         # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
@@ -434,10 +437,17 @@ def remove_pkgs(
         loggerinst.info("Removing package: %s" % nvra)
         _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
-            if critical:
-                loggerinst.critical("Error: Couldn't remove %s." % nvra)
-            else:
-                loggerinst.warning("Couldn't remove %s." % nvra)
+            pkgs_failed_to_remove.append(nevra)
+        else:
+            pkgs_removed.append(nevra)
+
+    if pkgs_failed_to_remove:
+        if critical:
+            loggerinst.critical("Error: Couldn't remove %s." % ", ".join(pkgs_failed_to_remove))
+        else:
+            loggerinst.warning("Couldn't remove %s." % ", ".join(pkgs_failed_to_remove))
+
+    return pkgs_removed
 
 
 def remove_epoch_from_yum_nevra_notation(package_nevra):

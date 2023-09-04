@@ -65,4 +65,10 @@ class ValidatePackageManagerTransaction(actions.Action):
             #       - If we fail to resolve dependencies in the transaction
             #       - If we fail to download the transaction packages
             #       - If we fail to validate the transaction
-            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(
+                level="ERROR",
+                id="UNKNOWN_ERROR",
+                title="Unknown",
+                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                diagnosis=str(e),
+            )

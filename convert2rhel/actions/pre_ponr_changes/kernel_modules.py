@@ -215,33 +215,50 @@ class EnsureKernelModulesCompatibility(actions.Action):
                     " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
                 )
+                self.add_message(
+                    level="WARNING",
+                    id="ALLOW_UNAVAILABLE_KERNEL_MODULES",
+                    title="Skipping the ensure kernel modules compatibility check",
+                    description="Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable.",
+                    diagnosis="We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
+                    "{kmods}\n".format(kmods="\n".join(unsupported_kmods)),
+                )
                 return
 
-            # If there is any unsupported kmods found, set the result to error
+            # If there is any unsupported kmods found, set the result to overridable
             if unsupported_kmods:
                 self.set_result(
-                    level="ERROR",
+                    level="OVERRIDABLE",
                     id="UNSUPPORTED_KERNEL_MODULES",
-                    message=(
-                        "The following loaded kernel modules are not available in RHEL:\n{0}\n"
-                        "Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
-                        "message persists, you can prevent the modules from loading by following {1} and rerun convert2rhel.\n"
-                        "Keeping them loaded could cause the system to malfunction after the conversion as they might not work "
-                        "properly with the RHEL kernel.\n"
-                        "To circumvent this check and accept the risk you can set environment variable "
-                        "'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS=1'.".format(
-                            "\n".join(unsupported_kmods), LINK_PREVENT_KMODS_FROM_LOADING
-                        )
+                    title="Unsupported kernel modules",
+                    description="Unsupported kernel modules were found",
+                    diagnosis="The following loaded kernel modules are not available in RHEL:\n{0}\n".format(
+                        "\n".join(unsupported_kmods)
                     ),
+                    remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
+                    "message persists, you can prevent the modules from loading by following {0} and rerun convert2rhel.\n"
+                    "Keeping them loaded could cause the system to malfunction after the conversion as they might not work "
+                    "properly with the RHEL kernel.\n"
+                    "To circumvent this check and accept the risk you can set environment variable "
+                    "'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS=1'.".format(LINK_PREVENT_KMODS_FROM_LOADING),
                 )
                 return
 
             logger.debug("All loaded kernel modules are available in RHEL.")
         except RHELKernelModuleNotFound as e:
-            self.set_result(level="ERROR", id="NO_RHEL_KERNEL_MODULES_FOUND", message=str(e))
+            self.set_result(
+                level="ERROR",
+                id="NO_RHEL_KERNEL_MODULES_FOUND",
+                title="No RHEL kernel modules were found",
+                description="This check was unable to find any kernel modules in the packages in the enabled yum repositories.",
+                diagnosis=str(e),
+                remediation="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
+            )
         except ValueError as e:
             self.set_result(
                 level="ERROR",
                 id="CANNOT_COMPARE_PACKAGE_VERSIONS",
-                message="Package comparison failed: %s" % e,
+                title="Error while comparing packages",
+                description="There was an error while detecting the kernel package which corresponds to the kernel modules present on the system.",
+                diagnosis="Package comparison failed: %s" % e,
             )

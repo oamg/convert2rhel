@@ -21,7 +21,12 @@ import re
 import pytest
 import six
 
+from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import kernel_modules
+from convert2rhel.actions.pre_ponr_changes.kernel_modules import (
+    EnsureKernelModulesCompatibility,
+    RHELKernelModuleNotFound,
+)
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import assert_actions_result, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
@@ -138,7 +143,13 @@ def test_ensure_compatibility_of_kmods(
     if exception:
         ensure_kernel_modules_compatibility_instance.run()
         assert_actions_result(
-            ensure_kernel_modules_compatibility_instance, level="ERROR", id="UNSUPPORTED_KERNEL_MODULES"
+            ensure_kernel_modules_compatibility_instance,
+            level="OVERRIDABLE",
+            id="UNSUPPORTED_KERNEL_MODULES",
+            title="Unsupported kernel modules",
+            description="Unsupported kernel modules were found",
+            diagnosis="The following loaded kernel modules are not available in RHEL:",
+            remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.",
         )
     else:
         ensure_kernel_modules_compatibility_instance.run()
@@ -147,11 +158,11 @@ def test_ensure_compatibility_of_kmods(
     if should_be_in_logs:
         assert should_be_in_logs in caplog.records[-1].message
     if shouldnt_be_in_logs:
-        assert shouldnt_be_in_logs not in ensure_kernel_modules_compatibility_instance.result.message
+        assert shouldnt_be_in_logs not in ensure_kernel_modules_compatibility_instance.result.diagnosis
 
 
 @centos8
-def test_ensure_compatibility_of_kmods_check_env(
+def test_ensure_compatibility_of_kmods_check_env_and_message(
     ensure_kernel_modules_compatibility_instance,
     monkeypatch,
     pretend_os,
@@ -181,6 +192,13 @@ def test_ensure_compatibility_of_kmods_check_env(
         " We will continue the conversion with the following kernel modules unavailable in RHEL:.*"
     )
     assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
+    # cannot assert exact action message contents as the kmods arrangement in the message is not static
+    message = ensure_kernel_modules_compatibility_instance.messages[0]
+    assert STATUS_CODE["WARNING"] == message.level
+    assert "ALLOW_UNAVAILABLE_KERNEL_MODULES" == message.id
+    assert "Skipping the ensure kernel modules compatibility check" == message.title
+    assert "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable." in message.description
+    assert "We will continue the conversion with the following kernel modules unavailable in RHEL:" in message.diagnosis
 
 
 @pytest.mark.parametrize(
@@ -247,9 +265,12 @@ def test_ensure_compatibility_of_kmods_excluded(
         ensure_kernel_modules_compatibility_instance.run()
         assert_actions_result(
             ensure_kernel_modules_compatibility_instance,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="UNSUPPORTED_KERNEL_MODULES",
-            message="The following loaded kernel modules are not available in RHEL",
+            title="Unsupported kernel modules",
+            description="Unsupported kernel modules were found",
+            diagnosis="The following loaded kernel modules are not available in RHEL:",
+            remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.",
         )
     else:
         ensure_kernel_modules_compatibility_instance.run()
@@ -531,3 +552,44 @@ def test_get_unsupported_kmods(
     result = ensure_kernel_modules_compatibility_instance._get_unsupported_kmods(host_kmods, rhel_supported_kmods)
     for mod in expected:
         assert mod in result
+
+
+def test_kernel_modules_rhel_kernel_module_not_found_error(ensure_kernel_modules_compatibility_instance, monkeypatch):
+    # need to trigger the raise event
+    monkeypatch.setattr(
+        EnsureKernelModulesCompatibility,
+        "_get_rhel_supported_kmods",
+        mock.Mock(
+            side_effect=RHELKernelModuleNotFound(
+                "No packages containing kernel modules available in the enabled repositories"
+            )
+        ),
+    )
+    ensure_kernel_modules_compatibility_instance.run()
+    print(ensure_kernel_modules_compatibility_instance.result)
+    assert_actions_result(
+        ensure_kernel_modules_compatibility_instance,
+        level="ERROR",
+        id="NO_RHEL_KERNEL_MODULES_FOUND",
+        title="No RHEL kernel modules were found",
+        description="This check was unable to find any kernel modules in the packages in the enabled yum repositories.",
+        diagnosis="No packages containing kernel modules available in the enabled repositories",
+        remediation="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
+    )
+
+
+def test_kernel_modules_value_error(ensure_kernel_modules_compatibility_instance, monkeypatch):
+    # need to trigger the raise event
+    monkeypatch.setattr(
+        EnsureKernelModulesCompatibility, "_get_loaded_kmods", mock.Mock(side_effect=ValueError("Value error"))
+    )
+    ensure_kernel_modules_compatibility_instance.run()
+    print(ensure_kernel_modules_compatibility_instance.result)
+    assert_actions_result(
+        ensure_kernel_modules_compatibility_instance,
+        level="ERROR",
+        id="CANNOT_COMPARE_PACKAGE_VERSIONS",
+        title="Error while comparing packages",
+        description="There was an error while detecting the kernel package which corresponds to the kernel modules present on the system.",
+        diagnosis="Package comparison failed: Value error",
+    )

@@ -45,7 +45,9 @@ class BackupRedhatRelease(actions.Action):
             # Raised in module redhatrelease on lines 49 and 60
             #   - If unable to find the /etc/system-release file,
             #     SystemExit is raised
-            self.set_result(level="ERROR", id="UNKNOWN_ERROR", message=str(e))
+            self.set_result(
+                level="ERROR", id="UNKNOWN_ERROR", title="An unknown error has occurred", description=str(e)
+            )
 
 
 class BackupRepository(actions.Action):

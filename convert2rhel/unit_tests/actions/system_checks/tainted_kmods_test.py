@@ -55,14 +55,20 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
         "run_subprocess",
         value=run_subprocess_mock,
     )
+    tainted_kmods_action.run()
+
     if is_error:
-        tainted_kmods_action.run()
         unit_tests.assert_actions_result(
             tainted_kmods_action,
             level="ERROR",
             id="TAINTED_KMODS_DETECTED",
-            message="Tainted kernel modules detected:\n  system76_io\n",
+            title="Tainted kernel modules detected",
+            description="Please refer to the diagnosis for further information",
+            diagnosis="Tainted kernel modules detected:\n  system76_io\n",
+            remediation=(
+                "Prevent the modules from loading by following {0}"
+                " and run convert2rhel again to continue with the conversion.".format(
+                    tainted_kmods.LINK_PREVENT_KMODS_FROM_LOADING
+                )
+            ),
         )
-
-    else:
-        tainted_kmods_action.run()

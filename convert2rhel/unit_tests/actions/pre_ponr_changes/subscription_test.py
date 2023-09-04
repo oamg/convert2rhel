@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import cert, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, cert, pkghandler, repo, subscription, toolopts, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
 
@@ -51,11 +51,24 @@ def test_pre_subscription_dependency_order(pre_subscription_instance):
 
 def test_pre_subscription_no_rhsm_option_detected(pre_subscription_instance, monkeypatch, caplog):
     monkeypatch.setattr(toolopts.tool_opts, "no_rhsm", True)
-
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="WARNING",
+                id="PRE_SUBSCRIPTION_CHECK_SKIP",
+                title="Pre-subscription check skip",
+                description="Detected --no-rhsm option. Skipping.",
+                diagnosis=None,
+                remediation=None,
+            ),
+        )
+    )
     pre_subscription_instance.run()
 
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
     assert pre_subscription_instance.result.level == STATUS_CODE["SUCCESS"]
+    assert expected.issuperset(pre_subscription_instance.messages)
+    assert expected.issubset(pre_subscription_instance.messages)
 
 
 def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
@@ -77,8 +90,10 @@ def test_pre_subscription_run(pre_subscription_instance, monkeypatch):
 @pytest.mark.parametrize(
     ("exception", "expected_level"),
     (
-        (SystemExit("Exiting..."), ("ERROR", "UNKNOWN_ERROR", "Exiting...")),
-        (subscription.UnregisterError, ("ERROR", "UNABLE_TO_REGISTER", "Failed to unregister the system:")),
+        (
+            SystemExit("Exiting..."),
+            ("ERROR", "UNKNOWN_ERROR", "Unknown error", "The cause of this error is unknown", "Exiting..."),
+        ),
     ),
 )
 def test_pre_subscription_exceptions(exception, expected_level, pre_subscription_instance, monkeypatch):
@@ -88,9 +103,43 @@ def test_pre_subscription_exceptions(exception, expected_level, pre_subscription
     monkeypatch.setattr(pkghandler, "install_gpg_keys", mock.Mock(side_effect=exception))
 
     pre_subscription_instance.run()
+    level, id, title, description, diagnosis = expected_level
+    unit_tests.assert_actions_result(pre_subscription_instance, level=level, id=id, description=description)
 
-    level, id, message = expected_level
-    unit_tests.assert_actions_result(pre_subscription_instance, level=level, id=id, message=message)
+
+@pytest.mark.parametrize(
+    ("exception", "expected_level"),
+    (
+        (
+            subscription.UnregisterError,
+            (
+                "ERROR",
+                "UNABLE_TO_REGISTER",
+                "System unregistration failure",
+                "The system is already registered with subscription-manager",
+                "Failed to unregister the system:",
+                "You may want to unregister the system manually",
+            ),
+        ),
+    ),
+)
+def test_pre_subscription_exceptions_with_remediation(
+    exception, expected_level, pre_subscription_instance, monkeypatch
+):
+    # In the actual code, the exceptions can happen at different stages, but
+    # since it is a unit test, it doesn't matter what function will raise the
+    # exception we want.
+    monkeypatch.setattr(pkghandler, "install_gpg_keys", mock.Mock(side_effect=exception))
+
+    pre_subscription_instance.run()
+    level, id, title, description, diagnosis, remediation = expected_level
+    unit_tests.assert_actions_result(
+        pre_subscription_instance,
+        level=level,
+        id=id,
+        description=description,
+        diagnosis=diagnosis,
+    )
 
 
 @pytest.fixture
@@ -109,17 +158,28 @@ def test_subscribe_system_dependency_order(subscribe_system_instance):
 
 def test_subscribe_system_no_rhsm_option_detected(subscribe_system_instance, monkeypatch, caplog):
     monkeypatch.setattr(toolopts.tool_opts, "no_rhsm", True)
-
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="WARNING",
+                id="SUBSCRIPTION_CHECK_SKIP",
+                title="Subscription check skip",
+                description="Detected --no-rhsm option. Skipping.",
+                diagnosis=None,
+                remediation=None,
+            ),
+        )
+    )
     subscribe_system_instance.run()
-
     assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
     assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
+    assert expected.issuperset(subscribe_system_instance.messages)
+    assert expected.issubset(subscribe_system_instance.messages)
 
 
 def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
     monkeypatch.setattr(subscription, "subscribe_system", mock.Mock())
     monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
-    monkeypatch.setattr(subscription, "check_needed_repos_availability", mock.Mock())
     monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
     monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
 
@@ -128,7 +188,6 @@ def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
     assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
     assert subscription.subscribe_system.call_count == 1
     assert repo.get_rhel_repoids.call_count == 1
-    assert subscription.check_needed_repos_availability.call_count == 1
     assert subscription.disable_repos.call_count == 1
     assert subscription.enable_repos.call_count == 1
 
@@ -136,14 +195,28 @@ def test_subscribe_system_run(subscribe_system_instance, monkeypatch):
 @pytest.mark.parametrize(
     ("exception", "expected_level"),
     (
-        (IOError("/usr/bin/t"), ("ERROR", "MISSING_SUBSCRIPTION_MANAGER_BINARY", "Failed to execute command:")),
-        (SystemExit("Exiting..."), ("ERROR", "UNKNOWN_ERROR", "Exiting...")),
+        (
+            SystemExit("Exiting..."),
+            ("ERROR", "UNKNOWN_ERROR", "Unknown error", "The cause of this error is unknown", "Exiting..."),
+        ),
         (
             ValueError,
             (
                 "ERROR",
                 "MISSING_REGISTRATION_COMBINATION",
+                "Missing registration combination",
+                "There are missing registration combinations",
                 "One or more combinations were missing for subscription-manager parameters:",
+            ),
+        ),
+        (
+            IOError("/usr/bin/t"),
+            (
+                "ERROR",
+                "MISSING_SUBSCRIPTION_MANAGER_BINARY",
+                "Missing subscription-manager binary",
+                "There is a missing subscription-manager binary",
+                "Failed to execute command:",
             ),
         ),
     ),
@@ -156,5 +229,7 @@ def test_subscribe_system_exceptions(exception, expected_level, subscribe_system
 
     subscribe_system_instance.run()
 
-    level, id, message = expected_level
-    unit_tests.assert_actions_result(subscribe_system_instance, level=level, id=id, message=message)
+    level, id, title, description, diagnosis = expected_level
+    unit_tests.assert_actions_result(
+        subscribe_system_instance, level=level, id=id, title=title, description=description, diagnosis=diagnosis
+    )

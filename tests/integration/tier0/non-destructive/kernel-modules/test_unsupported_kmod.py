@@ -74,9 +74,7 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rh
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect(
-            "ENSURE_KERNEL_MODULES_COMPATIBILITY::UNSUPPORTED_KERNEL_MODULES - The following loaded kernel modules are not available in RHEL"
-        )
+        c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY::UNSUPPORTED_KERNEL_MODULES")
 
     assert c2r.exitstatus != 0
 

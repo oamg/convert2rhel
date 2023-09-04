@@ -55,6 +55,12 @@ class IsLoadedKernelLatest(actions.Action):
         reposdir = get_hardcoded_repofiles_dir()
         if reposdir and not system_info.has_internet_access:
             logger.warning("Skipping the check as no internet connection has been detected.")
+            self.add_message(
+                level="WARNING",
+                id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
+                title="Skipping the is loaded kernel latest check",
+                description="Skipping the check as no internet connection has been detected.",
+            )
             return
 
         # If the reposdir variable is not empty, meaning that it detected the
@@ -80,6 +86,16 @@ class IsLoadedKernelLatest(actions.Action):
                 "the %s comparison.\n"
                 "Beware, this could leave your system in a broken state." % package_to_check
             )
+            self.add_message(
+                level="WARNING",
+                id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                title="Skipping the kernel currency check",
+                description=(
+                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                    "the %s comparison.\n"
+                    "Beware, this could leave your system in a broken state." % package_to_check
+                ),
+            )
             return
 
         # Look up for available kernel (or kernel-core) packages versions available
@@ -95,6 +111,15 @@ class IsLoadedKernelLatest(actions.Action):
             logger.warning(
                 "Couldn't fetch the list of the most recent kernels available in "
                 "the repositories. Skipping the loaded kernel check."
+            )
+            self.add_message(
+                level="WARNING",
+                id="UNABLE_TO_FETCH_RECENT_KERNELS",
+                title="Unable to fetch recent kernels",
+                description=(
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                ),
             )
             return
 
@@ -120,11 +145,15 @@ class IsLoadedKernelLatest(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="KERNEL_CURRENCY_CHECK_FAIL",
-                message=(
-                    "Could not find any %s from repositories to compare against the loaded kernel.\n"
+                title="Kernel currency check failed",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=(
+                    "Could not find any %s from repositories to compare against the loaded kernel." % package_to_check
+                ),
+                remediation=(
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
                     "If you wish to ignore this message, set the environment variable "
-                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % package_to_check
+                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1."
                 ),
             )
             return
@@ -144,7 +173,9 @@ class IsLoadedKernelLatest(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="INVALID_KERNEL_PACKAGE",
-                message=str(exc),
+                title="Invalid kernel package found",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=str(exc),
             )
             return
 
@@ -157,13 +188,17 @@ class IsLoadedKernelLatest(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="INVALID_KERNEL_VERSION",
-                message=(
+                title="Invalid kernel version detected",
+                description="The loaded kernel version mismatch the latest one available %s" % repos_message,
+                diagnosis=(
                     "The version of the loaded kernel is different from the latest version %s.\n"
                     " Latest kernel version available in %s: %s\n"
-                    " Loaded kernel version: %s\n\n"
+                    " Loaded kernel version: %s" % (repos_message, repoid, latest_kernel, loaded_kernel)
+                ),
+                remediation=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                     "1. yum install %s-%s -y\n"
-                    "2. reboot" % (repos_message, repoid, latest_kernel, loaded_kernel, package_to_check, latest_kernel)
+                    "2. reboot" % (package_to_check, latest_kernel)
                 ),
             )
             return

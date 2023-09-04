@@ -77,5 +77,10 @@ def test_validate_package_manager_transaction_unknown_error(
     validate_package_manager_transaction.run()
 
     unit_tests.assert_actions_result(
-        validate_package_manager_transaction, level="ERROR", id="UNKNOWN_ERROR", message="Exiting..."
+        validate_package_manager_transaction,
+        level="ERROR",
+        id="UNKNOWN_ERROR",
+        title="Unknown",
+        description="The cause of this error is unknown, please look at the diagnosis for more information.",
+        diagnosis="Exiting...",
     )

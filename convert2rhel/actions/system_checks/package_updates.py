@@ -39,27 +39,59 @@ class PackageUpdates(actions.Action):
                 "Skipping the check because there are no publicly available %s %d.%d repositories available."
                 % (system_info.name, system_info.version.major, system_info.version.minor)
             )
+            self.add_message(
+                level="INFO",
+                id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
+                title="Skipping the package updates check",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=(
+                    "Skipping the check because there are no publicly available %s %d.%d repositories available."
+                    % (system_info.name, system_info.version.major, system_info.version.minor)
+                ),
+            )
             return
 
         reposdir = get_hardcoded_repofiles_dir()
 
         if reposdir and not system_info.has_internet_access:
             logger.warning("Skipping the check as no internet connection has been detected.")
+            self.add_message(
+                level="WARNING",
+                id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
+                title="Skipping the package updates check",
+                description="Skipping the check as no internet connection has been detected.",
+            )
             return
 
         try:
             packages_to_update = get_total_packages_to_update(reposdir=reposdir)
         except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
-            # As both yum and dnf have the same error class (RepoError), to identify any problems when interacting with the
-            # repositories, we use this to catch exceptions when verifying if there is any packages to update on the system.
-            # Beware that the `RepoError` exception is based on the `pkgmanager` module and the message sent to the output
-            # can differ depending if the code is running in RHEL7 (yum) or RHEL8 (dnf).
-            logger.warning(
+            # As both yum and dnf have the same error class (RepoError), to
+            # identify any problems when interacting with the repositories, we
+            # use this to catch exceptions when verifying if there is any
+            # packages to update on the system. Beware that the `RepoError`
+            # exception is based on the `pkgmanager` module and the message
+            # sent to the output can differ depending if the code is running in
+            # RHEL7 (yum) or RHEL8 (dnf).
+            package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
-                " before proceeding with the conversion."
+                " before proceeding with the conversion. %s" % str(e)
             )
-            logger.warning(str(e))
+
+            logger.warning(package_up_to_date_error_message)
+            self.set_result(
+                level="SUCCESS",
+                id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
+                title="Package up to date check fail",
+            )
+            self.add_message(
+                level="WARNING",
+                id="PACKAGE_UP_TO_DATE_CHECK_MESSAGE",
+                title="Package up to date check fail",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=package_up_to_date_error_message,
+            )
             return
 
         if len(packages_to_update) > 0:
@@ -68,12 +100,25 @@ class PackageUpdates(actions.Action):
                 if not reposdir
                 else "on repositories defined in the %s folder" % reposdir
             )
-            logger.warning(
+            package_not_up_to_date_error_message = (
                 "The system has %s package(s) not updated based %s.\n"
                 "List of packages to update: %s.\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
                 "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
+            )
+            logger.warning(package_not_up_to_date_error_message)
+            self.set_result(
+                level="SUCCESS",
+                id="OUT_OF_DATE_PACKAGES",
+                title="Outdated packages detected",
+            )
+            self.add_message(
+                level="WARNING",
+                id="PACKAGE_NOT_UP_TO_DATE_MESSAGE",
+                title="Outdated packages detected",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=package_not_up_to_date_error_message,
             )
         else:
             logger.info("System is up-to-date.")
