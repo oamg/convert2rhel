@@ -377,6 +377,11 @@ class ActionResult(ActionMessageBase):
     def __init__(
         self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
     ):
+        if level == "SUCCESS":
+            if description or diagnosis or remediation:
+                raise InvalidMessageError(
+                    "Success results cannot have description, diagnosis or remediation fields set"
+                )
         if not id:
             raise InvalidMessageError("Results require the id field")
 

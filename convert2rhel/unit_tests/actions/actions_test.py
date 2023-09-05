@@ -1682,6 +1682,26 @@ class TestActionClasses:
         ("id", "level", "title", "description", "diagnosis", "remediation", "variables", "expected"),
         (
             (
+                "SUCCESS",
+                "SUCCESS",
+                "Sucess title",
+                "Successful description",
+                "Successful diagnosis",
+                "Successful remediation",
+                {},
+                "Success results cannot have description, diagnosis or remediation fields set",
+            ),
+            (
+                "SUCCESS",
+                "SUCCESS",
+                "Sucess title",
+                "Successful description",
+                None,
+                None,
+                {},
+                "Success results cannot have description, diagnosis or remediation fields set",
+            ),
+            (
                 None,
                 "ERROR",
                 None,
