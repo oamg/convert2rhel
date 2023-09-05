@@ -89,8 +89,8 @@ class TestEFIChecks(unittest.TestCase):
             "NON_x86_64",
             "None x86_64 system detected",
             "Only x86_64 systems are supported for UEFI conversions.",
-            None,
-            None,
+            "",
+            "",
         )
 
     @unit_tests.mock(grub, "is_efi", lambda: True)
@@ -131,7 +131,7 @@ class TestEFIChecks(unittest.TestCase):
             "Bootloader error detected",
             "An unknown bootloader error occurred, please look at the diagnosis for more information.",
             "errmsg",
-            None,
+            "",
         )
 
     @unit_tests.mock(grub, "is_efi", lambda: True)

@@ -445,6 +445,7 @@ def assert_actions_result(
     description=_NO_USER_VALUE,
     diagnosis=_NO_USER_VALUE,
     remediation=_NO_USER_VALUE,
+    variables=_NO_USER_VALUE,
 ):
     """Helper function to assert result set by Actions Framework."""
 
@@ -465,6 +466,9 @@ def assert_actions_result(
 
     if remediation and remediation != _NO_USER_VALUE:
         assert remediation in instance.result.remediation
+
+    if variables and variables != _NO_USER_VALUE:
+        assert variables in instance.result.variables
 
 
 class EFIBootInfoMocked:

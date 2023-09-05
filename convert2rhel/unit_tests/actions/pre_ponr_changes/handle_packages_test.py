@@ -72,6 +72,7 @@ def test_list_third_party_packages(pretend_os, list_third_party_packages_instanc
                 description="Third party packages will not be replaced during the conversion.",
                 diagnosis=diagnosis,
                 remediation=None,
+                variables={},
             ),
         )
     )

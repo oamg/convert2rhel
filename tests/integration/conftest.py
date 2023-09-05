@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import logging
 import os
 import re
@@ -380,3 +381,11 @@ def missing_centos_release_workaround(system_release, shell):
         rpm_output = shell("rpm -q centos-linux-release").output
         if "not installed" in rpm_output:
             shell("yum install -y --releasever=8 centos-linux-release")
+
+
+def _load_json_schema(path):
+    """Load the JSON schema from the system."""
+    assert os.path.exists(path)
+
+    with open(path, mode="r") as handler:
+        return json.load(handler)

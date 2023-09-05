@@ -1,15 +1,39 @@
+import jsonschema
 import pytest
 
+from conftest import _load_json_schema
 from envparse import env
 from pexpect import EOF
+
+
+PRE_CONVERSION_REPORT = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.0.json")
+
+
+def _validate_report():
+    """
+    Helper function.
+    Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
+    and it corresponds to its respective schema.
+    """
+    report_data_json = _load_json_schema(PRE_CONVERSION_REPORT)
+
+    # If some difference between generated json and its schema invoke exception
+    try:
+        jsonschema.validate(instance=report_data_json, schema=PRE_CONVERSION_REPORT_JSON_SCHEMA)
+    except Exception:
+        print(report_data_json)
+        raise
 
 
 @pytest.mark.test_failures_and_skips_in_report
 def test_failures_and_skips_in_report(convert2rhel):
     """
-    Test if the assessment report contains the following headers and messages:
-
+    Verify that the assessment report contains the following headers and messages:
     Error header, skip header, success header.
+
+    Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
+    and it corresponds to its respective schema.
     """
     with convert2rhel(
         "analyze --no-rpm-va --serverurl {} --username test --password test --pool a_pool --debug".format(
@@ -37,6 +61,8 @@ def test_failures_and_skips_in_report(convert2rhel):
         c2r.expect("Skipped because SUBSCRIBE_SYSTEM was not successful")
 
     assert c2r.exitstatus == 0
+
+    _validate_report()
 
 
 @pytest.mark.test_successful_report
@@ -77,6 +103,8 @@ def test_successful_report(convert2rhel):
             assert AssertionError("Skip header in the analysis report.")
 
     assert c2r.exitstatus == 0
+
+    _validate_report()
 
 
 @pytest.mark.test_convert_successful_report
@@ -124,3 +152,5 @@ def test_convert_successful_report(convert2rhel):
 
     # Exitstatus is 1 due to user cancelling the conversion
     assert c2r.exitstatus != 0
+
+    _validate_report()

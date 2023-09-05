@@ -225,7 +225,7 @@ class Action:
 
         self._result = action_message
 
-    def set_result(self, level, id, title=None, description=None, diagnosis=None, remediation=None):
+    def set_result(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
         """
         Helper method that sets the resulting values for level, id, title, description, diagnosis and remediation.
 
@@ -241,13 +241,15 @@ class Action:
         :type diagnosis: str | None
         :param remediation: The steps that can be taken to resolve the issue.
         :type remediation: str | None
+        :param variables: Variables to interpolate in other fields.
+        :type variables: dict[str, str] | None
         """
         if level not in ("ERROR", "OVERRIDABLE", "SKIP", "SUCCESS"):
             raise KeyError("The level of result must be FAILURE, OVERRIDABLE, SKIP, or SUCCESS.")
 
-        self.result = ActionResult(level, id, title, description, diagnosis, remediation)
+        self.result = ActionResult(level, id, title, description, diagnosis, remediation, variables)
 
-    def add_message(self, level, id, title=None, description=None, diagnosis=None, remediation=None):
+    def add_message(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
         """
         Helper method that adds a new informational message to display to the user.
         The passed in values for level, id and message of a warning or info log message are
@@ -265,8 +267,10 @@ class Action:
         :type diagnosis: str | None
         :param remediation: The steps that can be taken to resolve the issue.
         :type remediation: str | None
+        :param variables: Variables to interpolate in other fields.
+        :type variables: dict[str, str] | None
         """
-        msg = ActionMessage(level, id, title, description, diagnosis, remediation)
+        msg = ActionMessage(level, id, title, description, diagnosis, remediation, variables)
         self.messages.append(msg)
 
 
@@ -287,15 +291,29 @@ class ActionMessageBase:
     :type diagnosis: str | None
     :keyword remediation: The remediation to be set.
     :type remediation: str | None
+    :keyword variables: The variables to be set.
+    :type variables: dict[str,str] | None
     """
 
-    def __init__(self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""):
-        self.id = id
+    def __init__(
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+    ):
+        # Note, a common programming mistake to affect this base class is for
+        # subclasses to pass None as a default value instead of empty string.
+        # Not sure if we should be normalizng or if we should validate and
+        # error but I'm going to obey "be liberal in what you accept and
+        # conservative in what you emit" and normalize those cases for now.
+
+        self.id = id or ""
         self.level = STATUS_CODE[level]
-        self.title = title
-        self.description = description
-        self.diagnosis = diagnosis
-        self.remediation = remediation
+        self.title = title or ""
+        self.description = description or ""
+        self.diagnosis = diagnosis or ""
+        self.remediation = remediation or ""
+
+        if variables is None:
+            variables = {}
+        self.variables = variables
 
     def __eq__(self, other):
         if hash(self) == hash(other):
@@ -306,7 +324,7 @@ class ActionMessageBase:
         return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediation))
 
     def __repr__(self):
-        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s)" % (
+        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s, variables=%s)" % (
             self.__class__.__name__,
             _STATUS_NAME_FROM_CODE[self.level],
             self.id,
@@ -314,6 +332,7 @@ class ActionMessageBase:
             self.description,
             self.diagnosis,
             self.remediation,
+            self.variables,
         )
 
     def to_dict(self):
@@ -329,6 +348,7 @@ class ActionMessageBase:
             "description": self.description,
             "diagnosis": self.diagnosis,
             "remediation": self.remediation,
+            "variables": self.variables,
         }
 
 
@@ -337,7 +357,7 @@ class ActionMessage(ActionMessageBase):
     A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
     """
 
-    def __init__(self, level=None, id=None, title=None, description=None, diagnosis="", remediation=""):
+    def __init__(self, level="", id="", title="", description="", diagnosis="", remediation="", variables=None):
         if not (id and level and title and description):
             raise InvalidMessageError("Messages require id, level, title and description fields")
 
@@ -346,7 +366,7 @@ class ActionMessage(ActionMessageBase):
         if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
             raise InvalidMessageError("Invalid level '%s', set for a non-result message" % level)
 
-        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediation)
+        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediation, variables)
 
 
 class ActionResult(ActionMessageBase):
@@ -354,7 +374,9 @@ class ActionResult(ActionMessageBase):
     A class that defines content and rules for messages set through :meth:`Action.set_result`.
     """
 
-    def __init__(self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""):
+    def __init__(
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+    ):
         if not id:
             raise InvalidMessageError("Results require the id field")
 
@@ -368,7 +390,7 @@ class ActionResult(ActionMessageBase):
                 "Invalid level '%s', the level for result must be SKIP or more fatal or SUCCESS." % level
             )
 
-        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediation)
+        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediation, variables)
 
 
 def get_actions(actions_path, prefix):
