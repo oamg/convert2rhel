@@ -40,7 +40,7 @@ jobs:
 
 # TEST JOBS
 ## Tests on pull request stage
-- &tests-tier0-destructive-manual
+- &tests-tier0-non-destructive-centos
   job: tests
   # Run tests on-demand
   manual_trigger: true
@@ -49,17 +49,17 @@ jobs:
   merge_pr_in_ci: false
   targets:
     epel-7-x86_64:
-      distros: [centos-7, oraclelinux-7]
+      distros: [centos-7]
     epel-8-x86_64:
-        #TODO bump distro context to 8.7 when the image is available on the testing farm
-        # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE_ENV to 8.7
-        # to tag the updated system correctly
-      distros: [centos-8-latest, oraclelinux-8.6]
+      distros: [centos-8-latest]
   trigger: pull_request
-  identifier: "tier0-destructive"
-  tmt_plan: "tier0/destructive"
+  identifier: "tier0-non-destructive-centos"
+  tmt_plan: "tier0/non-destructive"
   # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
   use_internal_tf: True
+  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+  # therefore we need to pass post-install-script to enable root login on the host
+  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
   tf_extra_params:
     environments:
       - settings:
@@ -68,42 +68,152 @@ jobs:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - tier0-destructive
-    - destructive
-
-- &tests-tier0-non-destructive-manual
-  <<: *tests-tier0-destructive-manual
-  identifier: "tier0-non-destructive"
-  tmt_plan: "tier0/non-destructive"
-  labels:
-    - tier0
-    - tier0-non-destructive
+    - centos
     - non-destructive
 
-- &tests-tier1-destructive-manual
-  <<: *tests-tier0-destructive-manual
-  identifier: "tier1-destructive"
-  tmt_plan: "tier1/destructive"
+- &tests-tier0-destructive-centos
+  <<: *tests-tier0-non-destructive-centos
+  identifier: "tier0-destructive-centos"
+  tmt_plan: "tier0/destructive"
   labels:
-    - tier1
-    - tier1-destructive
+    - tier0
+    - centos
     - destructive
 
-# Disabled for now
-#- &tests-tier1-non-destructive-manual
-#  <<: *tests-tier0-destructive-manual
-#  identifier: "tier1-non-destructive"
-#  tmt_plan: "tier1/non-destructive"
-#  labels:
-#    - tier1-non-destructive
-#    - non-destructive
+- &tests-tier0-non-destructive-oraclelinux-7
+  job: tests
+  # Run tests on-demand
+  manual_trigger: true
+  # Do not merge the PR into the target branch, in case the merge is broken
+  # Given we are rebasing the source branches regularly, we do not need this feature enabled
+  merge_pr_in_ci: false
+  trigger: pull_request
+  identifier: "tier0-non-destructive-ol7"
+  tmt_plan: "tier0/non-destructive"
+  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+  use_internal_tf: True
+  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+  # therefore we need to pass post-install-script to enable root login on the host
+  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+  targets:
+    epel-7-x86_64:
+      distros: [oraclelinux-7]
+  tf_extra_params:
+    environments:
+      - os:
+          compose: "OL7.9-x86_64-HVM-2023-01-05"
+        tmt:
+          context:
+            distro: "oraclelinux-7"
+        settings:
+          provisioning:
+            tags:
+              BusinessUnit: sst_conversions
+  labels:
+    - tier0
+    - oraclelinux-7
+    - non-destructive
 
-# Tests on merge to main stage
-- &tests-tier1
-  <<: *tests-tier0-destructive-manual
+- &tests-tier0-destructive-oraclelinux-7
+  <<: *tests-tier0-non-destructive-oraclelinux-7
+  identifier: "tier0-destructive-ol7"
+  tmt_plan: "tier0/destructive"
+  labels:
+    - tier0
+    - oraclelinux-7
+    - destructive
+
+- &tests-tier0-non-destructive-oraclelinux-8
+  job: tests
+  # Run tests on-demand
+  manual_trigger: true
+  # Do not merge the PR into the target branch, in case the merge is broken
+  # Given we are rebasing the source branches regularly, we do not need this feature enabled
+  merge_pr_in_ci: false
+  trigger: pull_request
+  identifier: "tier0-non-destructive-ol8"
+  tmt_plan: "tier0/non-destructive"
+  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+  use_internal_tf: True
+  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+  # therefore we need to pass post-install-script to enable root login on the host
+  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+  targets:
+    epel-8-x86_64:
+      distros: [oraclelinux-8]
+  tf_extra_params:
+    environments:
+      - os:
+          compose: "OL8.8-x86_64-HVM-2023-06-21"
+        tmt:
+          context:
+            distro: "oraclelinux-8-latest"
+        settings:
+          provisioning:
+            tags:
+              BusinessUnit: sst_conversions
+  labels:
+    - tier0
+    - oraclelinux-8
+    - non-destructive
+
+- &tests-tier0-destructive-oraclelinux-8
+  <<: *tests-tier0-non-destructive-oraclelinux-8
+  identifier: "tier0-destructive-ol8"
+  tmt_plan: "tier0/destructive"
+  labels:
+    - tier0
+    - oraclelinux-8
+    - destructive
+
+- &tests-tier1-manual-centos
+  <<: *tests-tier0-non-destructive-centos
+  identifier: "tier1-centos"
+  tmt_plan: "tier1"
+  labels:
+    - tier1
+    - centos
+
+- &tests-tier1-manual-oraclelinux-7
+  <<: *tests-tier0-non-destructive-oraclelinux-7
+  identifier: "tier1-ol7"
+  tmt_plan: "tier1"
+  labels:
+    - tier1
+    - oraclelinux-7
+
+- &tests-tier1-manual-oraclelinux-8
+  <<: *tests-tier0-non-destructive-oraclelinux-8
+  identifier: "tier1-ol8"
+  tmt_plan: "tier1"
+  labels:
+    - tier1
+    - oraclelinux-8
+
+## Tests on merge to main stage
+- &tests-main-tier1-centos
+  <<: *tests-tier0-non-destructive-centos
   # Run test automatically with merge commit to main branch
   manual_trigger: false
-  identifier: "tier1"
+  identifier: "tier1-centos"
+  tmt_plan: "tier1"
+  trigger: commit
+  branch: main
+
+- &tests-main-tier1-oraclelinux-7
+  <<: *tests-tier0-non-destructive-oraclelinux-7
+  # Run test automatically with merge commit to main branch
+  manual_trigger: false
+  identifier: "tier1-ol7"
+  tmt_plan: "tier1"
+  trigger: commit
+  branch: main
+
+- &tests-main-tier1-oraclelinux-8
+  <<: *tests-tier0-non-destructive-oraclelinux-8
+  # Run test automatically with merge commit to main branch
+  manual_trigger: false
+  identifier: "tier1-ol8"
   tmt_plan: "tier1"
   trigger: commit
   branch: main
