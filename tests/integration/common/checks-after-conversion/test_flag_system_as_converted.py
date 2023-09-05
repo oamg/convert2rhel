@@ -1,6 +1,3 @@
-import json
-import os
-
 import jsonschema
 import pytest
 
@@ -23,25 +20,21 @@ def test_flag_system_as_converted(shell):
     submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
     query = shell(f"set | grep {submgr_disabled_var}").output
 
-    assert os.path.exists(C2R_MIGRATION_RESULTS)
+    data_json = _load_json_schema(C2R_MIGRATION_RESULTS)
 
-    with open(C2R_MIGRATION_RESULTS, "r") as data:
-        data_json = json.load(data)
+    # If some difference between generated json and its schema invoke exception
+    try:
+        jsonschema.validate(instance=data_json, schema=C2R_MIGRATION_RESULTS_SCHEMA)
+    except Exception:
+        print(data_json)
+        raise
+
+    if submgr_disabled_var not in query:
+        data_json = _load_json_schema(C2R_RHSM_CUSTOM_FACTS)
+
         # If some difference between generated json and its schema invoke exception
         try:
-            jsonschema.validate(instance=data_json, schema=C2R_MIGRATION_RESULTS_SCHEMA)
+            jsonschema.validate(instance=data_json, schema=C2R_RHSM_CUSTOM_FACTS_SCHEMA)
         except Exception:
             print(data_json)
             raise
-
-    if submgr_disabled_var not in query:
-        assert os.path.exists(C2R_RHSM_CUSTOM_FACTS)
-
-        with open(C2R_RHSM_CUSTOM_FACTS, "r") as data:
-            data_json = json.load(data)
-            # If some difference between generated json and its schema invoke exception
-            try:
-                jsonschema.validate(instance=data_json, schema=C2R_RHSM_CUSTOM_FACTS_SCHEMA)
-            except Exception:
-                print(data_json)
-                raise

@@ -1,6 +1,3 @@
-import json
-import os.path
-
 import jsonschema
 import pytest
 
@@ -19,16 +16,14 @@ def _validate_report():
     Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
     and it corresponds to its respective schema.
     """
-    assert os.path.exists(PRE_CONVERSION_REPORT)
+    report_data_json = _load_json_schema(PRE_CONVERSION_REPORT)
 
-    with open(PRE_CONVERSION_REPORT, "r") as data:
-        data_json = json.load(data)
-        # If some difference between generated json and its schema invoke exception
-        try:
-            jsonschema.validate(instance=data_json, schema=PRE_CONVERSION_REPORT_JSON_SCHEMA)
-        except Exception:
-            print(data_json)
-            raise
+    # If some difference between generated json and its schema invoke exception
+    try:
+        jsonschema.validate(instance=report_data_json, schema=PRE_CONVERSION_REPORT_JSON_SCHEMA)
+    except Exception:
+        print(report_data_json)
+        raise
 
 
 @pytest.mark.test_failures_and_skips_in_report
@@ -109,6 +104,8 @@ def test_successful_report(convert2rhel):
 
     assert c2r.exitstatus == 0
 
+    _validate_report()
+
 
 @pytest.mark.test_convert_successful_report
 def test_convert_successful_report(convert2rhel):
@@ -155,3 +152,5 @@ def test_convert_successful_report(convert2rhel):
 
     # Exitstatus is 1 due to user cancelling the conversion
     assert c2r.exitstatus != 0
+
+    _validate_report()
