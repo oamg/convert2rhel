@@ -172,11 +172,13 @@ class RemovePkgsMocked(unit_tests.MockFunction):
         self.pkgs = None
         self.should_bkp = False
         self.critical = False
+        self.reposdir = None
 
-    def __call__(self, pkgs_to_remove, backup=False, critical=False):
+    def __call__(self, pkgs_to_remove, backup=False, critical=False, reposdir=None):
         self.pkgs = pkgs_to_remove
         self.should_bkp = backup
         self.critical = critical
+        self.reposdir = reposdir
 
 
 class DumbCallableObject(unit_tests.MockFunction):

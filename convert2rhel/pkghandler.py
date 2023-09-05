@@ -800,13 +800,26 @@ def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
         loggerinst.info("\nNothing to do.")
         return
 
-    loggerinst.warning("\nRemoving the following %s packages:\n" % str(len(pkgs_to_remove)))
+    loggerinst.warning("Removing the following %s packages:\n" % str(len(pkgs_to_remove)))
     print_pkg_info(pkgs_to_remove)
     loggerinst.info("\n")
-    pkgs_removed = remove_pkgs([get_pkg_nvra(pkg) for pkg in pkgs_to_remove], backup=backup)
+    # We're using the backed up yum repositories to prevent the following:
+    # - the system was registered to RHSM prior to the conversion and the system didn't have the redhat.repo generated
+    #   for the lack of the RHSM product certificate
+    # - at this point convert2rhel has installed the RHSM product cert (e.g. /etc/pki/product-default/69.pem)
+    # - this function might be performing the first yum call convert2rhel does after cleaning yum metadata
+    # - the "subscription-manager" yum plugin spots that there's a new RHSM product cert and generates
+    #   /etc/yum.repos.d/redhat.repo
+    # - the suddenly enabled RHEL repos cause a package backup failure
+    pkgs_removed = remove_pkgs(get_pkg_nevras(pkgs_to_remove), backup=backup, reposdir=utils.BACKUP_DIR)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
     return pkgs_removed
+
+
+def get_pkg_nevras(pkg_objects):
+    """Get a list of package NEVRA strings from a list of PackageInformation objects."""
+    return [get_pkg_nevra(pkg_obj) for pkg_obj in pkg_objects]
 
 
 @utils.run_as_child_process

@@ -174,6 +174,7 @@ class SubscribeSystem(actions.Action):
                 )
                 return
 
+            logger.task("Convert: Subscription Manager - Reload configuration")
             # We will use subscription-manager later to enable the RHEL repos so we need to make
             # sure subscription-manager knows about the product certificate. Refreshing
             # subscription info will do that.
@@ -186,7 +187,7 @@ class SubscribeSystem(actions.Action):
                         id="SYSTEM_NOT_REGISTERED",
                         title="Not registered with RHSM",
                         description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
-                        remediation="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rh with the --config-file option.",
+                        remediation="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
                     )
                     return
                 raise
