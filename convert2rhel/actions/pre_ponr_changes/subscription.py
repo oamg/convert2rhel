@@ -105,6 +105,15 @@ class PreSubscription(actions.Action):
                 # deadline.
                 update_pkgs = subscription._dependencies_to_update(subscription_manager_pkgs)
 
+                # Part of another hack for 1.4 that allows us to rollback part
+                # of the backup control, then do old rollback items that
+                # haven't been ported into the backup framework yet, and then
+                # do the rest.
+                # We need to do this here so that subscription-manager packages
+                # that we install are uninstalled before other packages which
+                # we may install during rollback.
+                backup.backup_control.push(backup.backup_control.partition)
+
                 subscription.install_rhel_subscription_manager(subscription_manager_pkgs, update_pkgs)
 
             logger.task("Convert: Subscription Manager - Verify installation")

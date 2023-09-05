@@ -103,14 +103,14 @@ class TestPreSubscription:
         assert expected.issubset(pre_subscription_instance.messages)
 
     @pytest.mark.parametrize(
-        ("needed_subscription_manager_pkgs",),
+        ("needed_subscription_manager_pkgs", "backup_will_partition"),
         (
-            (["subscription-manager", "python3-syspurpose"],),
-            ([],),
+            (["subscription-manager", "python3-syspurpose"], True),
+            ([], False),
         ),
     )
     def test_pre_subscription_run(
-        self, needed_subscription_manager_pkgs, pre_subscription_instance, monkeypatch, tmpdir
+        self, needed_subscription_manager_pkgs, backup_will_partition, pre_subscription_instance, monkeypatch, tmpdir
     ):
         monkeypatch.setattr(
             subscription, "needed_subscription_manager_pkgs", mock.Mock(return_value=needed_subscription_manager_pkgs)
@@ -138,7 +138,7 @@ class TestPreSubscription:
             1 if needed_subscription_manager_pkgs else 0
         )
         assert subscription.verify_rhsm_installed.call_count == 1
-        assert backup.backup_control.push.call_count == 1
+        assert backup.backup_control.push.call_count == 2 if backup_will_partition else 1
 
     @pytest.mark.parametrize(
         ("exception", "expected_level"),

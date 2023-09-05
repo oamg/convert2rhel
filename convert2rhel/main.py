@@ -297,16 +297,34 @@ def rollback_changes():
     """Perform a rollback of changes made during conversion."""
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
+
+    # The next section is part of a hack for 1.4 that lets us rollback some of
+    # the changes registered with backup_control, do the manual, unported
+    # portions of rollback, and then finish whatever is left in backup_control
+    # afterwards.
+    if backup.backup_control.partition not in backup.backup_control._restorables:
+        backup.backup_control.push(backup.backup_control.partition)
+
+    backup_control_was_empty = False
+    try:
+        backup.backup_control.pop_to_partition()
+    except IndexError:
+        backup_control_was_empty = True
+
     backup.changed_pkgs_control.restore_pkgs()
     repo.restore_varsdir()
     repo.restore_yum_repos()
     redhatrelease.system_release_file.restore()
     redhatrelease.os_release_file.restore()
     pkghandler.versionlock_file.restore()
+
     try:
         backup.backup_control.pop_all()
     except IndexError as e:
         if e.args[0] == "No backups to restore":
-            loggerinst.info("During rollback there were no backups to restore")
+            # We have to check if we were able to pop some backups at the top
+            # of this function
+            if backup_control_was_empty:
+                loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
