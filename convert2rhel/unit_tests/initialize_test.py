@@ -15,9 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
+import os
 
-from convert2rhel import initialize, main
+import pytest
+import six
+
+from convert2rhel import applock, initialize, main, utils
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 @pytest.mark.parametrize(
@@ -27,7 +34,26 @@ from convert2rhel import initialize, main
         (1),
     ),
 )
-def test_run(monkeypatch, exit_code):
+def test_run(monkeypatch, exit_code, tmp_path):
+    require_root_mock = mock.Mock()
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "main", value=lambda: exit_code)
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     with pytest.raises(SystemExit):
         initialize.run()
+    assert require_root_mock.call_count == 1
+
+
+def test_locked(monkeypatch, tmp_path, capsys):
+    require_root_mock = mock.Mock()
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    pidfile = os.path.join(str(tmp_path), "convert2rhel.pid")
+    with open(pidfile, "w") as f:
+        f.write(str(os.getpid()) + "\n")
+    with pytest.raises(SystemExit):
+        initialize.run()
+    captured = capsys.readouterr()
+    assert "Another copy of convert2rhel" in captured.err
+    os.unlink(pidfile)
+    assert require_root_mock.call_count == 1

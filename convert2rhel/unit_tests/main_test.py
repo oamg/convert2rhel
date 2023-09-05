@@ -206,7 +206,6 @@ def test_post_ponr_conversion(monkeypatch):
 
 
 def test_main(monkeypatch):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -230,7 +229,6 @@ def test_main(monkeypatch):
     update_rhsm_custom_facts_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -255,7 +253,6 @@ def test_main(monkeypatch):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 0
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -279,7 +276,6 @@ def test_main(monkeypatch):
 
 
 def test_main_rollback_post_cli_phase(monkeypatch, caplog):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock(side_effect=Exception)
@@ -287,14 +283,12 @@ def test_main_rollback_post_cli_phase(monkeypatch, caplog):
     # Mock the rollback calls
     finish_collection_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
 
     assert main.main() == 1
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -303,7 +297,6 @@ def test_main_rollback_post_cli_phase(monkeypatch, caplog):
 
 
 def test_main_traceback_before_action_completion(monkeypatch, caplog):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -320,7 +313,6 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
     rollback_changes_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -336,7 +328,6 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -358,7 +349,6 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
 
 
 def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -377,7 +367,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     rollback_changes_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -395,7 +384,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -415,7 +403,6 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
 
 
 def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -433,7 +420,6 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     finish_collection_mock = mock.Mock()
     rollback_changes_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -452,7 +438,6 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     global_tool_opts.activity = "analysis"
 
     assert main.main() == 0
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -469,7 +454,6 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
 
 
 def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
-    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -490,7 +474,6 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     finish_collection_mock = mock.Mock()
     update_rhsm_custom_facts_mock = mock.Mock()
 
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -510,7 +493,6 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
-    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
