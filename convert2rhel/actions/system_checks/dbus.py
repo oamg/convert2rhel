@@ -36,7 +36,7 @@ class DbusIsRunning(actions.Action):
         if tool_opts.no_rhsm:
             logger.info("Skipping the check because we have been asked not to subscribe this system to RHSM.")
             self.add_message(
-                level="WARNING",
+                level="INFO",
                 id="DBUS_IS_RUNNING_CHECK_SKIP",
                 title="Skipping the dbus is running check",
                 description="Skipping the check because we have been asked not to subscribe this system to RHSM.",
