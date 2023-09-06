@@ -1684,7 +1684,7 @@ class TestActionClasses:
             (
                 "SUCCESS",
                 "SUCCESS",
-                "Sucess title",
+                "Success title",
                 "Successful description",
                 "Successful diagnosis",
                 "Successful remediation",
@@ -1694,7 +1694,7 @@ class TestActionClasses:
             (
                 "SUCCESS",
                 "SUCCESS",
-                "Sucess title",
+                "Success title",
                 "Successful description",
                 None,
                 None,
