@@ -468,7 +468,7 @@ def test_summary_as_json(results, expected, tmpdir):
     ),
 )
 def test_summary(results, expected_results, include_all_reports, caplog):
-    report.summary(results, include_all_reports, with_colors=False)
+    report.summary(results, include_all_reports, disable_colors=True)
 
     for expected in expected_results:
         assert expected in caplog.records[-1].message
@@ -500,7 +500,7 @@ def test_results_summary_with_long_message(long_message, caplog):
                 result=result,
             )
         },
-        with_colors=False,
+        disable_colors=True,
     )
 
     # Word wrapping might break on any spaces so we need to substitute
@@ -552,7 +552,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                 },
             )
         },
-        with_colors=False,
+        disable_colors=True,
     )
 
     # Word wrapping might break on any spaces so we need to substitute
@@ -717,7 +717,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
 )
 def test_results_summary_ordering(results, include_all_reports, expected_results, caplog):
 
-    report.summary(results, include_all_reports, with_colors=False)
+    report.summary(results, include_all_reports, disable_colors=True)
 
     # Prove that all the messages occurred and in the right order.
     message = caplog.records[-1].message
@@ -954,7 +954,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
 )
 def test_messages_summary_ordering(results, include_all_reports, expected_results, caplog):
 
-    report.summary(results, include_all_reports, with_colors=False)
+    report.summary(results, include_all_reports, disable_colors=True)
 
     # Filter informational messages and empty strings out of message.splitlines
     caplog_messages = []
@@ -1102,6 +1102,6 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
     ),
 )
 def test_summary_colors(results, expected_result, expected_message, caplog):
-    report.summary(results, include_all_reports=True, with_colors=True)
+    report.summary(results, include_all_reports=True, disable_colors=False)
     assert expected_result in caplog.records[-1].message
     assert expected_message in caplog.records[-1].message
