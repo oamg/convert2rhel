@@ -25,16 +25,16 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /remove_excld_pkgs_epel8:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                distro == oraclelinux, centos-7
+            - enabled: true
+              when: distro == centos-8, alma-8, rocky-8
             - environment+:
                 PACKAGES: centos-backgrounds centos-gpg-keys
-              when: distro == centos-8
+              when: distro == centos
             - environment+:
                 PACKAGES: almalinux-backgrounds
-              when: distro == AlmaLinux
+              when: distro == alma
               because: No almalinux-gpg-keys package for release 8 available
             - environment+:
                 PACKAGES: rocky-backgrounds rocky-gpg-keys
@@ -50,9 +50,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /remove_excld_pkgs_epel7:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: distro != oraclelinux-7 and distro != centos-7
+            - enabled: true
+              when: distro == oracle-7, centos-7
         environment+:
             PACKAGES: gnome-documents-libs shim-x64
         discover+:
@@ -67,11 +68,10 @@ description+: |
 
 
     /one_kernel_scenario:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-7 and
-                  distro != oraclelinux-7
+            - enabled: true
+              when: distro == centos-7, oracle-7
         discover+:
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             filter: tag:checks-after-conversion & tag:-rhel-subman
@@ -150,10 +150,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /removed_pkgs_centos_85:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8-latest
+            - enabled: true
+              when: distro == centos-8-latest
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -171,7 +171,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify the grub config with valid changes
+            - name: modify grub config with valid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_valid_changed_grub.py
             - name: reboot after conversion
@@ -182,7 +182,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify the grub config with invalid changes
+            - name: modify grub config with invalid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_invalid_changed_grub.py
             - name: reboot after conversion
@@ -190,11 +190,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /kernel-core-only:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8 and
-                  distro != oraclelinux-8.
+            - enabled: true
+              when: disto == 8
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -212,10 +211,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /config_file:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8-latest
+            - enabled: true
+              when: distro == centos-8-latest
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -269,7 +268,7 @@ description+: |
         enabled: false
         adjust+:
             - enabled: true
-              when: distro == centos-7, oraclelinux-7
+              when: distro == centos-7, oracle-7
         environment+:
             CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK: 1
             # Since we are removing all the repositories other than rhel-7-server-rpms

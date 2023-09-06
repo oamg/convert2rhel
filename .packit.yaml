@@ -105,14 +105,14 @@ jobs:
           compose: "OL7.9-x86_64-HVM-2023-01-05"
         tmt:
           context:
-            distro: "oraclelinux-7"
+            distro: "oracle-7"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - oraclelinux-7
+    - oracle-7
     - non-destructive
 
 - &tests-tier0-destructive-oraclelinux-7
@@ -121,7 +121,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - oraclelinux-7
+    - oracle-7
     - destructive
 
 - &tests-tier0-non-destructive-oraclelinux-8
@@ -148,14 +148,14 @@ jobs:
           compose: "OL8.8-x86_64-HVM-2023-06-21"
         tmt:
           context:
-            distro: "oraclelinux-8-latest"
+            distro: "oracle-8-latest"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - oraclelinux-8
+    - oracle-8
     - non-destructive
 
 - &tests-tier0-destructive-oraclelinux-8
@@ -164,7 +164,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - oraclelinux-8
+    - oracle-8
     - destructive
 
 - &tests-tier0-non-destructive-almalinux-86
@@ -191,14 +191,14 @@ jobs:
           compose: "AlmaLinux OS 8.6.20220901 x86_64"
         tmt:
           context:
-            distro: "AlmaLinux-OS-8.6"
+            distro: "alma-8.6"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - almalinux86
+    - alma-86
     - non-destructive
 
 - &tests-tier0-destructive-almalinux-86
@@ -207,7 +207,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - almalinux86
+    - alma-86
     - destructive
 
 - &tests-tier0-non-destructive-almalinux-8
@@ -234,14 +234,14 @@ jobs:
           compose: "AlmaLinux OS 8.8.20230524 x86_64"
         tmt:
           context:
-            distro: "AlmaLinux-OS-8.7"
+            distro: "alma-8-latest"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - almalinux8
+    - alma-8
     - non-destructive
 
 - &tests-tier0-destructive-almalinux-8
@@ -250,7 +250,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - almalinux8
+    - alma-8
     - destructive
 
 - &tests-tier0-non-destructive-rockylinux-86
@@ -277,14 +277,14 @@ jobs:
           compose: "Rocky-8-ec2-8.6-20220515.0.x86_64"
         tmt:
           context:
-            distro: "rocky-linux-8.6"
+            distro: "rocky-8.6"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - rockylinux86
+    - rocky-86
     - non-destructive
 
 - &tests-tier0-destructive-rockylinux-86
@@ -293,7 +293,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - rockylinux86
+    - rocky-86
     - destructive
 
 - &tests-tier0-non-destructive-rockylinux-8
@@ -320,14 +320,14 @@ jobs:
           compose: "Rocky-8-EC2-Base-8.8-20230518.0.x86_64"
         tmt:
           context:
-            distro: "rocky-linux-8.7"
+            distro: "rocky-8-latest"
         settings:
           provisioning:
             tags:
               BusinessUnit: sst_conversions
   labels:
     - tier0
-    - rockylinux86
+    - rocky-8
     - non-destructive
 
 - &tests-tier0-destructive-rockylinux-8
@@ -336,7 +336,7 @@ jobs:
   tmt_plan: "tier0/destructive"
   labels:
     - tier0
-    - rockylinux8
+    - rocky-8
     - destructive
 
 ### Definitions of the tier1 tests
@@ -354,7 +354,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - oraclelinux-7
+    - oracle-7
 
 - &tests-tier1-manual-oraclelinux-8
   <<: *tests-tier0-non-destructive-oraclelinux-8
@@ -362,7 +362,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - oraclelinux-8
+    - oracle-8
 
 
 - &tests-tier1-manual-almalinux-86
@@ -371,7 +371,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - almalinux86
+    - alma-86
 
 - &tests-tier1-manual-almalinux-8
   <<: *tests-tier0-non-destructive-almalinux-8
@@ -379,7 +379,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - almalinux8
+    - alma-8
 
 - &tests-tier1-manual-rockylinux-86
   <<: *tests-tier0-non-destructive-rockylinux-86
@@ -387,7 +387,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - rockylinux86
+    - rocky-86
 
 - &tests-tier1-manual-rockylinux-8
   <<: *tests-tier0-non-destructive-rockylinux-8
@@ -395,7 +395,7 @@ jobs:
   tmt_plan: "tier1"
   labels:
     - tier1
-    - rockylinux8
+    - rocky-8
 
 ## Tests on merge to main stage. Tests are run automatically
 - &tests-main-tier1-centos

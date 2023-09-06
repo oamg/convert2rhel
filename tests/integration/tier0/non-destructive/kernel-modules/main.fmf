@@ -70,7 +70,7 @@ tag+:
         The utility handles force loaded kmod as tainted.
     adjust+:
         - enabled: false
-          when: distro == centos-7 or distro == oraclelinux-7
+          when: distro == centos-7, oracle-7
           because: |
             Force loading the kernel module on RHEL7 like distros is flaky.
     tag+:

@@ -8,11 +8,11 @@ description: |
 
 link: https://issues.redhat.com/browse/RHELC-37
 
+enabled: false
 adjust+:
-    - enabled: false
+    - enabled: true
       when: >
-        distro != centos-7 and
-        distro != oraclelinux-7
+        distro == centos-7, oracle-7
 
 test: |
   pytest -svv
