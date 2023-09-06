@@ -57,26 +57,6 @@ description+: |
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
-    /remove_all_submgr_pkgs:
-        discover+:
-            filter: tag:checks-after-conversion
-        adjust+:
-            - environment+:
-                PROMPT_AMOUNT: 3
-              when: distro != oraclelinux-8
-            - environment+:
-                PROMPT_AMOUNT: 2
-              when: distro == oraclelinux-8
-        prepare+:
-            - name: install subscription manager
-              how: ansible
-              playbook: tests/ansible_collections/roles/install-submgr/main.yml
-            - name: main conversion preparation
-              how: shell
-              script: pytest -svv tests/integration/*/destructive/remove-all-submgr-pkgs/test_submgr_pkg_installed.py
-            - name: reboot after conversion
-              how: ansible
-              playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /one_kernel_scenario:
         adjust+:
@@ -85,7 +65,8 @@ description+: |
                   distro != centos-7 and
                   distro != oraclelinux-7
         discover+:
-            filter: tag:checks-after-conversion
+            # Exclude the rhel_subman check, we don't use RHSM for the conversion
+            filter: tag:checks-after-conversion & tag:-rhel-subman
         prepare+:
             - name: add custom repos
               how: ansible
