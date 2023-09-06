@@ -12,24 +12,25 @@ adjust+:
       when: distro == centos-7
     - environment+:
         SYSTEM_RELEASE_ENV: oracle-7
-      when: distro == oraclelinux-7
+      when: distro == oracle-7
     - environment+:
         SYSTEM_RELEASE_ENV: centos-8.5
       when: distro == centos-8-latest
     - environment+:
-      when: distro == oraclelinux-8
+        SYSTEM_RELEASE_ENV: oracle-8-latest
+      when: distro == oracle-8-latest
     - environment+:
         SYSTEM_RELEASE_ENV: alma-8.6
-      when: distro == AlmaLinux-OS-8.6
+      when: distro == alma-8.6
     - environment+:
         SYSTEM_RELEASE_ENV: alma-8.8
-      when: distro == AlmaLinux-OS-8.7
+      when: distro == alma-8-latest
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8.6
-      when: distro == rocky-linux-8.6
+      when: distro == rocky-8.6
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8.8
-      when: distro == rocky-linux-8.7
+      when: distro == rocky-8-latest
 
 prepare:
     - name: main preparation step

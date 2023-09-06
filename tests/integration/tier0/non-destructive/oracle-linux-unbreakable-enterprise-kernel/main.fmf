@@ -9,10 +9,10 @@ tier: 0
 tag+:
     - oraclelinux-unbreakable-enterprise-kernel
 
+enabled: false
 adjust+:
-    - enabled: false
-      when: >
-          distro != oraclelinux
+    - enabled: true
+      when: distro == oracle
       because: The test case applies to Oracle Linux (Unbreakable Enterprise Kernel) only.
 
 /unsupported_kernel:

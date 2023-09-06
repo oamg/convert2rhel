@@ -37,11 +37,11 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /rhsm_non_eus:
+            enabled: false
             adjust+:
-                - enabled: false
-                  # TODO EUS Bump disabled version
+                - enabled: true
                   when: >
-                    distro != centos-8.4
+                    distro == alma-8.6, rocky-8.6
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -80,10 +80,11 @@ description+: |
 
     /single_yum_transaction:
         /single_yum_transaction_all_errors:
+            enabled: false
             adjust+:
-                - enabled: false
+                - enabled: true
                   when: >
-                      distro != oraclelinux-7
+                      distro == oracle-7
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -98,11 +99,11 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /single_yum_transaction_mismatch_errors:
+            enabled: false
             adjust+:
-                - enabled: false
+                - enabled: true
                   when: >
-                      distro != centos-8-latest and
-                      distro != oraclelinux-8
+                      distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -117,10 +118,10 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /single_yum_transaction_excld_pkgs:
+            enabled: false
             adjust+:
-                - enabled: false
-                  when: >
-                    distro != centos-7
+                - enabled: true
+                  when: distro == centos-7
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -165,7 +166,7 @@ description+: |
         /resolve_dependency:
             adjust+:
                 - enabled: false
-                  when: distro == AlmaLinux, rocky
+                  when: distro == alma, rocky
                   because: We do not have any tracked packages with Rocky and Alma for this test case
             discover+:
                 filter: tag:checks-after-conversion
@@ -186,7 +187,7 @@ description+: |
           # Disabled due to known issue: https://issues.redhat.com/browse/RHELC-1040
           # Enable once this gets fixed
           - enabled: false
-            when: distro == oraclelinux-7
+            when: distro == oracle-7
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
