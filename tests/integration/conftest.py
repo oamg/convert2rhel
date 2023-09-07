@@ -368,19 +368,33 @@ def repositories(shell):
 
 
 @pytest.fixture(autouse=True)
-def missing_centos_release_workaround(system_release, shell):
+def missing_os_release_package_workaround(system_release, shell):
     # TODO(danmyway) remove when/if the issue gets fixed
     """
-    Fixture to workaround issues with missing `centos-linux-release`
-    after incomplete rollback.
+    Fixture to workaround issues with missing `*-linux-release`
+    package, after incomplete rollback.
     """
     # run only after the test finishes
     yield
 
-    if "centos-8.5" in system_release:
-        rpm_output = shell("rpm -q centos-linux-release").output
-        if "not installed" in rpm_output:
-            shell("yum install -y --releasever=8 centos-linux-release")
+    os_to_pkg_mapping = {
+        "oracle-7": "oracle-release-el7",
+        "oracle-8": "oraclelinux-release-el8",
+        "centos-7": "centos-release",
+        "centos-8": "centos-linux-release",
+        "alma-8": "almalinux-release",
+        "rocky-8": "rocky-release",
+    }
+
+    os_name = system_release.split("-")[0]
+    os_ver = system_release.split("-")[1]
+    os_key = f"{os_name}-{os_ver[0]}"
+
+    system_release_pkg = os_to_pkg_mapping.get(os_key)
+
+    rpm_output = shell(f"rpm -q {system_release_pkg}").output
+    if "not installed" in rpm_output:
+        shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
 
 
 def _load_json_schema(path):

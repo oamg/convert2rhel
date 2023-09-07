@@ -2,7 +2,7 @@
 - hosts: all
   roles:
 
-    - role: hardcode-minor-version-repos
+    - role: hardcode-eus-version-repos
       when: >
         ansible_facts['distribution_version'] ==  "8.6"
         and (ansible_facts['distribution'] == "AlmaLinux"

@@ -44,7 +44,7 @@ def custom_subman(shell, repository=None):
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
         shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8* redhat-release-8*")
     elif "alma-8" in SYSTEM_RELEASE_ENV:
-        shell("yum install -y --enablerepo=baseos --releasever=8.7 almalinux-release-8*")
+        shell("yum install -y --enablerepo=baseos --releasever=8 almalinux-release-8*")
 
     # Some packages might get downgraded during the setup; update just to be sure the system is fine
     shell("yum update -y")

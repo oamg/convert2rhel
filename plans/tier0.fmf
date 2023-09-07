@@ -81,7 +81,7 @@ description+: |
         /pre_registered_system:
             adjust+:
               - enabled: false
-                when: distro == oraclelinux
+                when: distro == oracle
                 because: There is no subscription-manager package in Oracle Linux repositories
               - environment+:
                   C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
@@ -169,7 +169,7 @@ description+: |
             discover+:
                   filter: tag:checks-after-conversion
             prepare+:
-                  - name: enable extras repo for Oracle Linux
+                  - name: enable CentOS' extras repo
                     how: ansible
                     playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                   - name: install problematic package

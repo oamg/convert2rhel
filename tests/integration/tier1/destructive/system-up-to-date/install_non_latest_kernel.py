@@ -1,7 +1,7 @@
 from conftest import SYSTEM_RELEASE_ENV
 
 
-def test_install_one_kernel(shell, hybrid_rocky_image):
+def test_install_non_latest_kernel(shell, hybrid_rocky_image):
     """
     Install specific kernel version and configure
     the system to boot to it. The kernel version is not the
