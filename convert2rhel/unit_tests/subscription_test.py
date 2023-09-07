@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__metaclass__ = type
+
+import errno
 import logging
 import os
 import unittest
@@ -28,8 +31,13 @@ import pytest
 import six
 
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
-from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, system_info
-from convert2rhel.unit_tests import GetLoggerMocked, get_pytest_marker, run_subprocess_side_effect
+from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, Version, system_info
+from convert2rhel.unit_tests import (
+    GetLoggerMocked,
+    create_pkg_information,
+    get_pytest_marker,
+    run_subprocess_side_effect,
+)
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
@@ -173,37 +181,6 @@ class TestSubscription(unittest.TestCase):
         def __call__(self, msg):
             self.msg += "%s\n" % msg
 
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [namedtuple("Pkg", ["name"])("submgr")])
-    @unit_tests.mock(pkghandler, "format_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
-    def test_remove_original_subscription_manager(self):
-        subscription.remove_original_subscription_manager()
-
-        self.assertEqual(backup.remove_pkgs.called, 1)
-
-    @unit_tests.mock(
-        pkghandler,
-        "get_installed_pkg_objects",
-        lambda _: [namedtuple("Pkg", ["name"])("subscription-manager-initial-setup-addon")],
-    )
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 5))
-    @unit_tests.mock(system_info, "id", "centos")
-    @unit_tests.mock(pkghandler, "format_pkg_info", lambda x: None)
-    @unit_tests.mock(utils, "ask_to_continue", PromptUserMocked())
-    @unit_tests.mock(backup, "remove_pkgs", DumbCallable())
-    def test_remove_original_subscription_manager_missing_package_ol_85(self):
-        subscription.remove_original_subscription_manager()
-        self.assertEqual(backup.remove_pkgs.called, 2)
-
-    @unit_tests.mock(pkghandler, "get_installed_pkg_objects", lambda _: [])
-    @unit_tests.mock(subscription, "loggerinst", GetLoggerMocked())
-    def test_remove_original_subscription_manager_no_pkgs(self):
-        subscription.remove_original_subscription_manager()
-
-        self.assertEqual(len(subscription.loggerinst.info_msgs), 2)
-        self.assertIn("No packages related to subscription-manager installed.", subscription.loggerinst.info_msgs[-1])
-
 
 @pytest.fixture
 def tool_opts(global_tool_opts, monkeypatch):
@@ -211,86 +188,229 @@ def tool_opts(global_tool_opts, monkeypatch):
     return global_tool_opts
 
 
-class TestInstallSubscriptionManager(object):
+class TestRefreshSubscriptionInfo:
+    def test_refresh_subscription_info(self, caplog, monkeypatch):
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("", 0)))
+
+        subscription.refresh_subscription_info()
+
+        assert "subscription-manager has reloaded its configuration." == caplog.messages[-1]
+
+    def test_refresh_subscription_info_fail(self, caplog, monkeypatch):
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("Failed", 1)))
+
+        with pytest.raises(subscription.RefreshSubscriptionManagerError):
+            subscription.refresh_subscription_info()
+
+
+class TestNeededSubscriptionManagerPkgs:
     @pytest.mark.parametrize(
-        ("cafile_installed",),
+        ("rhel_version",),
         (
-            (True,),
-            (False,),
+            (Version(7, 10),),
+            (Version(8, 4),),
         ),
     )
-    def test_install_rhel_subscription_manager(self, cafile_installed, caplog, monkeypatch, tmpdir):
-        monkeypatch.setattr(os.path, "exists", lambda x: cafile_installed)
-        monkeypatch.setattr(os.path, "isdir", lambda x: True)
-        monkeypatch.setattr(os, "listdir", lambda x: ["filename"])
-        monkeypatch.setattr(pkghandler, "filter_installed_pkgs", DumbCallable())
-        monkeypatch.setattr(pkghandler, "get_pkg_names_from_rpm_paths", DumbCallable())
+    def test_needed_subscription_manager_already_installed(self, monkeypatch, global_system_info, rhel_version):
+        global_system_info.version = rhel_version
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
         monkeypatch.setattr(
             pkghandler,
-            "call_yum_cmd",
-            lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 0),
+            "get_installed_pkg_information",
+            mock.Mock(
+                return_value=[
+                    create_pkg_information(name="subscription-manager"),
+                    create_pkg_information(name="subscription-manager-rhsm-certificates"),
+                    create_pkg_information(name="subscription-manager-rhsm"),
+                    create_pkg_information(name="python3-subscription-manager-rhsm"),
+                    create_pkg_information(name="python3-cloud-what"),
+                    create_pkg_information(name="json-c.x86_64"),
+                    create_pkg_information(name="python-syspurpose"),
+                    create_pkg_information(name="python3-syspurpose"),
+                    create_pkg_information(name="dnf-plugin-subscription-manager"),
+                    create_pkg_information(name="other-package"),
+                    create_pkg_information(name="centos-release"),
+                ]
+            ),
         )
-        monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkgs", DumbCallable())
-        monkeypatch.setattr(subscription, "track_installed_submgr_pkgs", DumbCallable())
+        assert not subscription.needed_subscription_manager_pkgs()
 
-        rhsm_ca_dir = tmpdir.join("rhsm-ca")
-        monkeypatch.setattr(subscription, "_RHSM_REPO_CAFILE_DIR", str(rhsm_ca_dir))
+    def test_needed_subscription_manager_pkgs_need_pkgs(self, monkeypatch, global_system_info):
+        def fake_get_installed_pkg_information(pkg_name):
+            # We want to return information for some but not all of the
+            # packages that subscription-manager requires (and a few extraneous
+            # ones as well)
+            installed_pkgs = (
+                "python3-subscription-manager-rhsm",
+                "dnf-plugin-subscription-manager",
+                "other-package",
+                "centos-release",
+            )
+            return_values = {n: create_pkg_information(name=n) for n in installed_pkgs}
 
-        cert_in_source = os.path.join(
-            os.path.dirname(subscription.__file__), "data", "version-independent", "redhat-uep.pem"
+            try:
+                return [return_values[pkg_name]]
+            except KeyError:
+                return []
+
+        monkeypatch.setattr(
+            pkghandler, "get_installed_pkg_information", mock.Mock(side_effect=fake_get_installed_pkg_information)
         )
-        monkeypatch.setattr(subscription, "_CONVERT2RHEL_REPO_CAFILE_PATH", cert_in_source)
 
-        subscription.install_rhel_subscription_manager()
+        global_system_info.version = Version(8, 5)
+        global_system_info.id = "centos"
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
 
-        assert pkghandler.get_pkg_names_from_rpm_paths.called == 1
-        assert "\nPackages installed:\n" in caplog.text
-        assert subscription.track_installed_submgr_pkgs.called == 1
+        assert subscription.needed_subscription_manager_pkgs()
 
-    def test_install_rhel_subscription_manager_without_packages(self, caplog, monkeypatch):
-        monkeypatch.setattr(os.path, "isdir", lambda x: True)
-        monkeypatch.setattr(os, "listdir", lambda x: "")
-        monkeypatch.setattr(subscription, "SUBMGR_RPMS_DIR", "")
-
-        subscription.install_rhel_subscription_manager()
-
-        assert "No RPMs found" in caplog.text
-
-    def test_install_rhel_subscription_manager_unable_to_install(self, monkeypatch, tmpdir):
-        monkeypatch.setattr(os, "listdir", lambda x: [":w"])
+    @pytest.mark.parametrize(
+        ("rhel_version", "json_c_i686", "pkg_list", "upgrade_deps"),
+        (
+            (
+                Version(7, 10),
+                True,
+                ["subscription-manager"],
+                set(),
+            ),
+            (
+                Version(8, 5),
+                True,
+                ["subscription-manager"],
+                {"python3-syspurpose", "json-c.x86_64", "json-c.i686"},
+            ),
+            (Version(8, 5), False, ["subscription-manager"], {"python3-syspurpose", "json-c.x86_64"}),
+        ),
+    )
+    def test__dependencies_to_update(
+        self, rhel_version, json_c_i686, pkg_list, upgrade_deps, monkeypatch, global_system_info
+    ):
+        global_system_info.version = rhel_version
+        global_system_info.id = "centos"
+        global_system_info.is_rpm_installed = lambda _: json_c_i686
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
         monkeypatch.setattr(
             pkghandler,
-            "call_yum_cmd",
-            lambda command, args, print_output, enable_repos, disable_repos, set_releasever: (None, 1),
+            "get_installed_pkg_information",
+            mock.Mock(
+                return_value=[
+                    create_pkg_information(name="subscription-manager-rhsm-certificates"),
+                    create_pkg_information(name="python3-subscription-manager-rhsm"),
+                    create_pkg_information(name="dnf-plugin-subscription-manager"),
+                    create_pkg_information(name="other-package"),
+                    create_pkg_information(name="centos-release"),
+                ]
+            ),
         )
-        monkeypatch.setattr(pkghandler, "filter_installed_pkgs", lambda x: ["test"])
-        monkeypatch.setattr(pkghandler, "get_pkg_names_from_rpm_paths", lambda x: ["test"])
+        assert upgrade_deps == set(subscription._dependencies_to_update(pkg_list))
 
-        rhsm_ca_dir = tmpdir.join("rhsm-ca")
-        monkeypatch.setattr(subscription, "_RHSM_REPO_CAFILE_DIR", str(rhsm_ca_dir))
-
-        cert_in_source = os.path.join(
-            os.path.dirname(subscription.__file__), "data", "version-independent", "redhat-uep.pem"
+    def test__dependencies_to_update_no_pkgs(self, monkeypatch, global_system_info):
+        global_system_info.version = Version(8, 5)
+        global_system_info.id = "centos"
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkg_information",
+            mock.Mock(
+                return_value=[
+                    create_pkg_information(name="subscription-manager-rhsm-certificates"),
+                    create_pkg_information(name="python3-subscription-manager-rhsm"),
+                    create_pkg_information(name="dnf-plugin-subscription-manager"),
+                    create_pkg_information(name="other-package"),
+                    create_pkg_information(name="centos-release"),
+                ]
+            ),
         )
-        monkeypatch.setattr(subscription, "_CONVERT2RHEL_REPO_CAFILE_PATH", cert_in_source)
+        assert [] == subscription._dependencies_to_update([])
 
-        with pytest.raises(SystemExit):
-            subscription.install_rhel_subscription_manager()
+    @pytest.mark.parametrize(
+        (
+            "version",
+            "json_c_i686_installed",
+            "pkgs_to_download",
+        ),
+        (
+            (
+                (7, 0),
+                False,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "subscription-manager-rhsm",
+                        "python-syspurpose",
+                    )
+                ),
+            ),
+            (
+                (8, 0),
+                False,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "python3-subscription-manager-rhsm",
+                        "dnf-plugin-subscription-manager",
+                        "python3-syspurpose",
+                        "python3-cloud-what",
+                        "json-c.x86_64",
+                    )
+                ),
+            ),
+            (
+                (8, 0),
+                True,
+                frozenset(
+                    (
+                        "subscription-manager",
+                        "subscription-manager-rhsm-certificates",
+                        "python3-subscription-manager-rhsm",
+                        "dnf-plugin-subscription-manager",
+                        "python3-syspurpose",
+                        "python3-cloud-what",
+                        "json-c.x86_64",
+                        "json-c.i686",
+                    )
+                ),
+            ),
+        ),
+    )
+    def test__relevant_subscription_manager_pkgs(
+        self, version, json_c_i686_installed, pkgs_to_download, global_system_info, monkeypatch
+    ):
+        global_system_info.version = Version(*version)
+        global_system_info.is_rpm_installed = lambda _: json_c_i686_installed
+        monkeypatch.setattr(subscription, "system_info", global_system_info)
+
+        pkgs = subscription._relevant_subscription_manager_pkgs()
+
+        assert pkgs_to_download == frozenset(pkgs)
 
 
-class TestSubscribeSystem(object):
-    def test_subscribe_system(self, tool_opts, monkeypatch):
+class TestRestorableSystemSubscription:
+    @pytest.fixture
+    def system_subscription(self):
+        return subscription.RestorableSystemSubscription()
+
+    def test_subscribe_system(self, system_subscription, tool_opts, monkeypatch):
         monkeypatch.setattr(subscription, "register_system", DumbCallable())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
 
-        subscription.subscribe_system()
+        system_subscription.enable()
 
         assert subscription.register_system.called == 1
 
-    def test_subscribe_system_fail_once(self, tool_opts, monkeypatch, caplog):
+    def test_subscribe_system_already_enabled(self, monkeypatch, system_subscription):
+        monkeypatch.setattr(subscription, "register_system", DumbCallable())
+        system_subscription.enabled = True
+
+        system_subscription.enable()
+
+        assert subscription.register_system.called == 0
+
+    def test_enable_fail_once(self, system_subscription, tool_opts, caplog, monkeypatch):
         monkeypatch.setattr(subscription, "register_system", DumbCallable())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(tuples=("output", 1)))
 
@@ -298,8 +418,62 @@ class TestSubscribeSystem(object):
         tool_opts.password = "pass"
 
         with pytest.raises(SystemExit):
-            subscription.subscribe_system()
+            system_subscription.enable()
+
         assert caplog.records[-1].levelname == "CRITICAL"
+
+    def test_restore(self, monkeypatch, system_subscription):
+        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
+
+        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+        system_subscription.enable()
+
+        system_subscription.restore()
+
+        assert subscription.unregister_system.called == 1
+
+    def test_restore_not_enabled(self, monkeypatch, caplog, system_subscription):
+        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+
+        system_subscription.restore()
+
+        assert subscription.unregister_system.called == 0
+
+    def test_restore_unregister_call_fails(self, monkeypatch, caplog, system_subscription):
+        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
+
+        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
+        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
+
+        system_subscription.enable()
+
+        system_subscription.restore()
+
+        assert mocked_unregister_system.called == 1
+        assert "Unregister failed" == caplog.records[-1].message
+
+    def test_restore_subman_uninstalled(self, caplog, monkeypatch, system_subscription):
+        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
+        monkeypatch.setattr(
+            subscription, "unregister_system", mock.Mock(side_effect=OSError(errno.ENOENT, "command not found"))
+        )
+        system_subscription.enable()
+
+        system_subscription.restore()
+
+        assert "subscription-manager not installed, skipping" == caplog.messages[-1]
+
+
+def test_install_rhel_subsription_manager(monkeypatch):
+    mock_backup_control = mock.Mock()
+    monkeypatch.setattr(backup.backup_control, "push", mock_backup_control)
+
+    subscription.install_rhel_subscription_manager(["subscription-manager", "json-c.x86_64"])
+
+    assert mock_backup_control.push.called_once
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")
@@ -364,7 +538,6 @@ class TestRegisterSystem(object):
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
-        tool_opts.credentials_thru_cli = True
 
         subscription.register_system()
 
@@ -385,7 +558,6 @@ class TestRegisterSystem(object):
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
-        tool_opts.credentials_thru_cli = True
 
         with pytest.raises(SystemExit):
             subscription.register_system()
@@ -395,7 +567,6 @@ class TestRegisterSystem(object):
     @pytest.mark.rhsm_returns((dbus.exceptions.DBusException("nope"), dbus.exceptions.DBusException("nope"), None))
     def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Test that the three attempts work: fail to register two times and succeed the third time."""
-        tool_opts.credentials_thru_cli = False
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
         monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
@@ -414,7 +585,6 @@ class TestRegisterSystem(object):
     def test_register_system_keyboard_interrupt(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Test that we stop retrying if the user hits Control-C.."""
 
-        tool_opts.credentials_thru_cli = False
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
         monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
@@ -843,184 +1013,6 @@ class TestRegistrationCommand(object):
             reg_cmd()
 
 
-class TestReplaceSubscriptionManager(object):
-    def test_replace_subscription_manager_skipped(self, monkeypatch, caplog, tool_opts):
-        tool_opts.keep_rhsm = True
-        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
-
-        subscription.replace_subscription_manager()
-
-        assert "Skipping due to the use of --keep-rhsm." in caplog.text
-        subscription.unregister_system.assert_not_called()
-
-    @pytest.mark.parametrize(
-        ("isdir_return", "listdir_return"),
-        (
-            (True, []),
-            (False, ["filename"]),
-        ),
-    )
-    def test_replace_subscription_manager_rpms_not_available(self, monkeypatch, isdir_return, listdir_return):
-        monkeypatch.setattr(os.path, "isdir", lambda x: isdir_return)
-        monkeypatch.setattr(os, "listdir", lambda x: listdir_return)
-
-        with pytest.raises(SystemExit):
-            subscription.replace_subscription_manager()
-
-    def test_replace_subscription_manager_unregister_failed(self, caplog, monkeypatch):
-        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
-        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
-        monkeypatch.setattr(subscription, "remove_original_subscription_manager", mock.Mock())
-        monkeypatch.setattr(subscription, "install_rhel_subscription_manager", mock.Mock())
-        monkeypatch.setattr(os.path, "isdir", lambda x: True)
-        monkeypatch.setattr(os, "listdir", lambda x: ["filename"])
-
-        subscription.replace_subscription_manager()
-
-        assert caplog.records[-1].message == "Unregister failed"
-
-
-class DownloadPkgsMocked(unit_tests.MockFunction):
-    def __init__(self, destdir=None):
-        self.called = 0
-        self.to_return = ["/path/to.rpm"]
-        self.destdir = destdir
-
-    def __call__(self, pkgs, dest, reposdir=None):
-        self.called += 1
-        self.pkgs = pkgs
-        self.dest = dest
-        self.reposdir = reposdir
-        if self.destdir and not os.path.exists(self.destdir):
-            os.mkdir(self.destdir, 0o700)
-        return self.to_return
-
-
-class DownloadRHSMPkgsMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self, pkgs_to_download, repo_path, repo_content):
-        self.called += 1
-        self.pkgs_to_download = pkgs_to_download
-        self.repo_path = repo_path
-        self.repo_content = repo_content
-
-
-class StoreContentMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-        self.filename = None
-        self.content = None
-
-    def __call__(self, filename, content):
-        self.called += 1
-        self.filename = filename
-        self.content = content
-        return True
-
-
-Version = namedtuple("Version", ["major", "minor"])
-
-
-class TestDownloadRHSMPkgs(object):
-    @pytest.mark.parametrize(
-        (
-            "version",
-            "json_c_i686_installed",
-            "pkgs_to_download",
-        ),
-        (
-            (
-                (7, 0),
-                False,
-                frozenset(
-                    (
-                        "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
-                        "subscription-manager-rhsm",
-                        "python-syspurpose",
-                    )
-                ),
-            ),
-            (
-                (8, 0),
-                False,
-                frozenset(
-                    (
-                        "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
-                        "python3-subscription-manager-rhsm",
-                        "dnf-plugin-subscription-manager",
-                        "python3-syspurpose",
-                        "python3-cloud-what",
-                        "json-c.x86_64",
-                    )
-                ),
-            ),
-            (
-                (8, 0),
-                True,
-                frozenset(
-                    (
-                        "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
-                        "python3-subscription-manager-rhsm",
-                        "dnf-plugin-subscription-manager",
-                        "python3-syspurpose",
-                        "python3-cloud-what",
-                        "json-c.x86_64",
-                        "json-c.i686",
-                    )
-                ),
-            ),
-        ),
-    )
-    def test_download_rhsm_pkgs(self, version, json_c_i686_installed, pkgs_to_download, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(*version))
-        monkeypatch.setattr(system_info, "is_rpm_installed", lambda _: json_c_i686_installed)
-        monkeypatch.setattr(subscription, "_download_rhsm_pkgs", DownloadRHSMPkgsMocked())
-        monkeypatch.setattr(utils, "mkdir_p", DumbCallable())
-        subscription.download_rhsm_pkgs()
-
-        assert subscription._download_rhsm_pkgs.called == 1
-        assert frozenset(subscription._download_rhsm_pkgs.pkgs_to_download) == pkgs_to_download
-
-    def test_download_rhsm_pkgs_skipped(self, monkeypatch, tool_opts, caplog):
-        monkeypatch.setattr(subscription, "_download_rhsm_pkgs", mock.Mock())
-        tool_opts.keep_rhsm = True
-
-        subscription.download_rhsm_pkgs()
-
-        assert "Skipping due to the use of --keep-rhsm." in caplog.text
-        subscription._download_rhsm_pkgs.assert_not_called()
-
-    def test__download_rhsm_pkgs(self, monkeypatch, tmpdir):
-        """Smoketest that _download_rhsm_pkgs works in the happy path"""
-        download_rpms_directory = tmpdir.join("submgr-downloads")
-        monkeypatch.setattr(subscription, "SUBMGR_RPMS_DIR", str(download_rpms_directory))
-
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(str(download_rpms_directory)))
-
-        subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
-
-        assert "/path/to.repo" in utils.store_content_to_file.filename
-        assert utils.download_pkgs.called == 1
-
-    def test__download_rhsm_pkgs_one_package_failed_to_download(self, monkeypatch):
-        """
-        Test that _download_rhsm_pkgs() aborts when one of the subscription-manager packages fails to download.
-        """
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked())
-
-        utils.download_pkgs.to_return.append(None)
-
-        with pytest.raises(SystemExit):
-            subscription._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
-
-
 class TestUnregisteringSystem(object):
     @pytest.mark.parametrize(
         ("output", "ret_code", "expected"),
@@ -1091,60 +1083,25 @@ class TestUnregisteringSystem(object):
         assert "The subscription-manager package is not installed." in caplog.records[-1].message
 
 
-@pytest.mark.parametrize(
-    ("submgr_installed", "keep_rhsm", "critical_string"),
-    (
-        (True, None, None),
-        (False, True, "the subscription-manager needs to be installed"),
-        (False, False, "The subscription-manager package is not installed correctly."),
-    ),
-)
-def test_verify_rhsm_installed(submgr_installed, keep_rhsm, critical_string, monkeypatch, caplog):
-    if keep_rhsm:
-        monkeypatch.setattr(toolopts.tool_opts, "keep_rhsm", keep_rhsm)
-
-    if submgr_installed:
+class TestVerifyRhsmInstalled:
+    def test_verify_rhsm_installed_success(self, monkeypatch, caplog):
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkg_objects",
-            lambda _: [namedtuple("Pkg", ["name"])("subscription-manager")],
+            "get_installed_pkg_information",
+            lambda _: [create_pkg_information(name="subscription-manager")],
         )
 
         subscription.verify_rhsm_installed()
 
         assert "subscription-manager installed correctly." in caplog.text
 
-    else:
-        monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda _: None)
+    def test_verify_rhsm_installed_failure(self, monkeypatch, caplog):
+        monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda _: None)
 
         with pytest.raises(SystemExit):
             subscription.verify_rhsm_installed()
 
-        assert critical_string in caplog.text
-
-
-@pytest.mark.parametrize(
-    ("installed_pkgs", "not_tracked_pkgs", "skip_pkg_msg", "expected"),
-    (
-        (
-            ["pkg1", "pkg2", "pkg3"],
-            ["pkg3"],
-            "Skipping tracking previously installed package: pkg3",
-            "Tracking installed packages: ['pkg1', 'pkg2']",
-        ),
-        (["pkg1", "pkg2", "pkg3"], [], None, "Tracking installed packages: ['pkg1', 'pkg2', 'pkg3']"),
-    ),
-)
-def test_track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs, skip_pkg_msg, expected, monkeypatch, caplog):
-    track_installed_pkgs_mock = mock.Mock()
-    monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkgs", track_installed_pkgs_mock)
-
-    subscription.track_installed_submgr_pkgs(installed_pkgs, not_tracked_pkgs)
-
-    if skip_pkg_msg:
-        assert skip_pkg_msg in caplog.records[-2].message
-    assert expected in caplog.records[-1].message
-    assert track_installed_pkgs_mock.called == 1
+        assert "The subscription-manager package is not installed correctly." in caplog.text
 
 
 # ----
@@ -1326,34 +1283,6 @@ def test_enable_repos_toolopts_enablerepo(
     assert run_subprocess_mock.call_count == 1
 
 
-class TestRollback(object):
-    def test_rollback(self, monkeypatch):
-        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
-
-        subscription.rollback()
-
-        assert subscription.unregister_system.called == 1
-
-    def test_rollback_unregister_skipped(self, monkeypatch, tool_opts, caplog):
-        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
-
-        tool_opts.keep_rhsm = True
-
-        subscription.rollback()
-
-        assert subscription.unregister_system.called == 0
-        assert "Skipping due to the use of --keep-rhsm." == caplog.records[-1].message
-
-    def test_rollback_unregister_call_fails(self, monkeypatch, caplog):
-        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
-        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
-
-        subscription.rollback()
-
-        assert mocked_unregister_system.called == 1
-        assert "Unregister failed" == caplog.records[-1].message
-
-
 @pytest.mark.parametrize(
     ("subprocess", "expected"),
     (
@@ -1376,7 +1305,7 @@ def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch,
     eus_version = EUS_MINOR_VERSIONS[0].split(".")
     major_version = eus_version[0]
     minor_version = eus_version[1]
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(major_version, minor_version))
+    monkeypatch.setattr(system_info, "version", Version(major_version, minor_version))
     subscription.lock_releasever_in_rhel_repositories()
 
     assert expected in caplog.records[-1].message

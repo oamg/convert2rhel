@@ -31,7 +31,7 @@ from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, 
 
 loggerinst = logging.getLogger(__name__)
 
-
+# Note: Currently the only use case for this is package removals
 class ChangedRPMPackagesController(object):
     """Keep control of installed/removed RPM pkgs for backup/restore."""
 
@@ -135,6 +135,13 @@ class BackupController(object):
     added.  Changes cannot be retrieved and restored out of order.
     """
 
+    # Sentinel value.  If this is pushed onto the BackupController, then when
+    # pop_to_partition() is called, it will only pop until it reaches
+    # a partition in the list.
+    # Only one pop_to_partition() will make use of the partitions. All other
+    # methods will discard them.
+    partition = object()
+
     def __init__(self):
         self._restorables = []
 
@@ -144,6 +151,13 @@ class BackupController(object):
 
         :arg restorable: RestorableChange object that can be restored later.
         """
+        # This is part of a hack for 1.4 that allows us to only pop some of
+        # the registered changes.  Remove it when all of the rollback items have
+        # been ported into the backup controller.
+        if restorable is self.partition:
+            self._restorables.append(restorable)
+            return
+
         if not isinstance(restorable, RestorableChange):
             raise TypeError("`%s` is not a RestorableChange object" % restorable)
 
@@ -167,6 +181,10 @@ class BackupController(object):
             e.args = tuple(args)
             raise e
 
+        # Ignore the 1.4 partition hack
+        if restorable is self.partition:
+            return self.pop()
+
         restorable.restore()
 
         return restorable
@@ -180,7 +198,9 @@ class BackupController(object):
 
         After running, the Controller object will not know about any RestorableChanges.
         """
-        restorables = self._restorables
+        # This code ignores partitions.  Only restore_to_partition() honors
+        # them.
+        restorables = [r for r in self._restorables if r is not self.partition]
 
         if not restorables:
             raise IndexError("No backups to restore")
@@ -196,6 +216,45 @@ class BackupController(object):
         restorables.reverse()
 
         return restorables
+
+    def pop_to_partition(self):
+        """
+        This is part of a hack to get 1.4 out the door.  It should be removed once all rollback
+        items are ported into the backup controller framework.
+
+        Calling this method will pop and restore changes until a partition is reached.  When that
+        happens, it will return.  To restore everything, first call this method and then call pop_all().
+
+        .. warning::
+            * For the hack to 1.4, you need to make sure that at least one partition has been pushed
+              onto the stack.
+            * Unlike pop() and pop_all(), this method doesn't return anything.
+        """
+        # This code is based on pop() instead of pop_all() because we need to
+        # stop when we reach the first parition.
+        try:
+            restorable = self._restorables.pop()
+        except IndexError as e:
+            # Use a more specific error message
+            args = list(e.args)
+            args[0] = "No backups to restore"
+            e.args = tuple(args)
+            raise e
+
+        if restorable is self.partition:
+            return
+
+        restorable.restore()
+
+        try:
+            self.pop_to_partition()
+        except IndexError:
+            # We only want to raise IndexError if there were no restorables in
+            # the stack to begin with.  So as long as we've called ourselves
+            # recursively, we will ignore it
+            pass
+
+        return
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -331,6 +390,8 @@ class RestorableFile(object):
             loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
 
 
+# Over time we want to replace this with pkghandler.RestorablePackageSet
+# Right now, this is still used for removed packages.  Installed packages are handled by pkghandler.RestorablePackageSet
 class RestorablePackage(object):
     def __init__(self, pkgname):
         self.name = pkgname

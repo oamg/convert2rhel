@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 
-from convert2rhel import actions, unit_tests
+from convert2rhel import actions, subscription, unit_tests
 from convert2rhel.actions.system_checks import dbus
 
 
@@ -27,29 +27,28 @@ def dbus_is_running_action():
 
 
 @pytest.mark.parametrize(
-    ("no_rhsm", "dbus_running", "log_msg"),
+    ("should_subscribe", "dbus_running", "log_msg"),
     (
-        (True, True, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
-        (True, False, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
-        (False, True, "DBus Daemon is running"),
+        (False, True, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (False, False, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (True, True, "DBus Daemon is running"),
     ),
 )
 def test_check_dbus_is_running(
-    caplog, monkeypatch, global_tool_opts, global_system_info, no_rhsm, dbus_running, log_msg, dbus_is_running_action
+    caplog, monkeypatch, global_system_info, should_subscribe, dbus_running, log_msg, dbus_is_running_action
 ):
-    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
-    global_tool_opts.no_rhsm = no_rhsm
+    monkeypatch.setattr(subscription, "should_subscribe", lambda: should_subscribe)
     monkeypatch.setattr(dbus, "system_info", global_system_info)
     global_system_info.dbus_running = dbus_running
 
     dbus_is_running_action.run()
+
     unit_tests.assert_actions_result(dbus_is_running_action, level="SUCCESS")
     assert caplog.records[-1].message == log_msg
 
 
-def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action):
-    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
-    global_tool_opts.no_rhsm = False
+def test_check_dbus_is_running_not_running(monkeypatch, global_system_info, dbus_is_running_action):
+    monkeypatch.setattr(subscription, "should_subscribe", lambda: True)
     monkeypatch.setattr(dbus, "system_info", global_system_info)
     global_system_info.dbus_running = False
 
@@ -65,10 +64,11 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_tool_opts, global
     )
 
 
-def test_check_dbus_is_running_info_message(monkeypatch, global_tool_opts, global_system_info, dbus_is_running_action):
-    monkeypatch.setattr(dbus, "tool_opts", global_tool_opts)
-    global_tool_opts.no_rhsm = True
+def test_check_dbus_is_running_info_message(monkeypatch, global_system_info, dbus_is_running_action):
+    monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
+
     dbus_is_running_action.run()
+
     expected = set(
         (
             actions.ActionMessage(

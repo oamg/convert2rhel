@@ -22,3 +22,6 @@ description: |
 
 /satellite_conversion:
     test: pytest -svv -m satellite_conversion
+
+/pre_registered_system:
+    test: pytest -svv -m test_pre_registered_conversion

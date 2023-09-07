@@ -36,16 +36,17 @@ tag+:
     test: |
         pytest -svv -m test_packages_untracked_graceful_rollback
 
-/packages_untracked_forced_rollback:
+/test_missing_credentials_rollback:
     summary+: |
         Forced rollback
     description+: |
-        Terminate the c2r process forcefully, so the rollback is performed.
-        Primary issue - verify that python[3]?-syspurpose is not removed.
+        The credentials are omitted during the call of convert2rhel. This results in
+        a failure - system is expected to be subscribed.
+        Verify that the resulted rollback behaves correctly.
     tag+:
-        - packages-untracked-forced-rollback
+        - missing-credentials-rollback
     test: |
-        pytest -svv -m test_packages_untracked_forced_rollback
+        pytest -svv -m test_missing_credentials_rollback
 
 /terminate_on_registration:
     summary+: |
@@ -73,25 +74,3 @@ tag+:
             - terminate-on-registration-success
         test: |
             pytest -svv -m test_terminate_on_registration_success
-
-/terminate_on_username:
-    summary+: |
-        Rollback from username prompt
-    description+: |
-        Send termination signal on the user prompt for username.
-        Verify that c2r goes successfully through the rollback.
-    tag+:
-        - terminate-on-username
-    test: |
-        pytest -svv -m test_terminate_on_username
-
-/terminate_on_password:
-    summary+: |
-        Rollback from password prompt
-    description+: |
-        Send termination signal on the user prompt for password.
-        Verify that c2r goes successfully through the rollback.
-    tag+:
-        - terminate-on-password
-    test: |
-        pytest -svv -m test_terminate_on_password

@@ -14,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__metaclass__ = type
+
+
 import glob
 import logging
 import os
@@ -26,7 +29,7 @@ import pytest
 import rpm
 import six
 
-from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkghandler import (
     PackageInformation,
     PackageNevra,
@@ -34,7 +37,7 @@ from convert2rhel.pkghandler import (
     _get_packages_to_update_yum,
     get_total_packages_to_update,
 )
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import (
     GetLoggerMocked,
@@ -169,11 +172,13 @@ class RemovePkgsMocked(unit_tests.MockFunction):
         self.pkgs = None
         self.should_bkp = False
         self.critical = False
+        self.reposdir = None
 
-    def __call__(self, pkgs_to_remove, backup=False, critical=False):
+    def __call__(self, pkgs_to_remove, backup=False, critical=False, reposdir=None):
         self.pkgs = pkgs_to_remove
         self.should_bkp = backup
         self.critical = critical
+        self.reposdir = reposdir
 
 
 class DumbCallableObject(unit_tests.MockFunction):
@@ -236,6 +241,35 @@ class ReturnPackagesMocked(unit_tests.MockFunction):
         pkg_obj = TestPkgObj()
         pkg_obj.name = "installed_pkg"
         return [pkg_obj]
+
+
+class DownloadPkgsMocked(unit_tests.MockFunction):
+    def __init__(self, destdir=None):
+        self.called = 0
+        self.to_return = ["/path/to.rpm"]
+        self.destdir = destdir
+
+    def __call__(self, pkgs, dest, reposdir=None):
+        self.called += 1
+        self.pkgs = pkgs
+        self.dest = dest
+        self.reposdir = reposdir
+        if self.destdir and not os.path.exists(self.destdir):
+            os.mkdir(self.destdir, 0o700)
+        return self.to_return
+
+
+class StoreContentMocked(unit_tests.MockFunction):
+    def __init__(self):
+        self.called = 0
+        self.filename = None
+        self.content = None
+
+    def __call__(self, filename, content):
+        self.called += 1
+        self.filename = filename
+        self.content = content
+        return True
 
 
 class TestPkgHandler(unit_tests.ExtendedTestCase):
@@ -312,7 +346,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertRaises(SystemExit, pkghandler.clear_versionlock)
         self.assertEqual(pkghandler.call_yum_cmd.called, 0)
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
+    @unit_tests.mock(system_info, "version", Version(8, 0))
     @unit_tests.mock(system_info, "releasever", "8")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd(self):
@@ -329,7 +363,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ],
         )
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", "7Server")
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_call_yum_cmd_not_setting_releasever(self):
@@ -337,7 +371,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(utils.run_subprocess.cmd, ["yum", "install", "-y"])
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(tool_opts, "no_rhsm", True)
@@ -357,7 +391,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ],
         )
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ["rhel-7-extras-rpm"])
@@ -370,7 +404,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             ["yum", "install", "-y", "--enablerepo=rhel-7-extras-rpm"],
         )
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(system_info, "submgr_enabled_repos", ["not-to-be-used-in-the-yum-call"])
@@ -564,7 +598,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.cmd += "%s\n" % cmd
             self.pkgs += [pkgs]
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(pkghandler, "install_rhel_kernel", lambda: True)
     @unit_tests.mock(pkghandler, "fix_invalid_grub2_entries", lambda: None)
@@ -585,7 +619,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(utils.run_subprocess.cmd, ["yum", "update", "-y", "kernel"])
         self.assertEqual(pkghandler.get_installed_pkgs_by_fingerprint.called, 1)
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_get_kernel_availability(self):
         utils.run_subprocess.output = YUM_KERNEL_LIST_OLDER_AVAILABLE
@@ -603,7 +637,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertEqual(installed, ["4.7.2-201.fc24", "4.7.4-200.fc24"])
         self.assertEqual(available, ["4.7.4-200.fc24"])
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     def test_handle_older_rhel_kernel_available(self):
@@ -625,7 +659,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
             self.called += 1
             self.version = version
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(
         pkghandler,
@@ -639,7 +673,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
         self.assertEqual(pkghandler.replace_non_rhel_installed_kernel.called, 1)
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "releasever", None)
     @unit_tests.mock(backup, "run_subprocess", RunSubprocessMocked())
     @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
@@ -748,19 +782,19 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
     def test_is_rhel_kernel_installed_yes(self):
         self.assertTrue(pkghandler.is_rhel_kernel_installed())
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 0))
+    @unit_tests.mock(system_info, "version", Version(7, 0))
     @unit_tests.mock(system_info, "arch", "x86_64")
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     def test_fix_invalid_grub2_entries_not_applicable(self):
         pkghandler.fix_invalid_grub2_entries()
         self.assertFalse(len(pkghandler.logging.getLogger.info_msgs), 1)
 
-        system_info.version = namedtuple("Version", ["major", "minor"])(8, 0)
+        system_info.version = Version(8, 0)
         system_info.arch = "s390x"
         pkghandler.fix_invalid_grub2_entries()
         self.assertFalse(len(pkghandler.logging.getLogger.info_msgs), 1)
 
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(8, 0))
+    @unit_tests.mock(system_info, "version", Version(8, 0))
     @unit_tests.mock(system_info, "arch", "x86_64")
     @unit_tests.mock(
         utils,
@@ -804,7 +838,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "name", "Oracle Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(system_info, "version", Version(7, 9))
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(
         utils,
@@ -825,7 +859,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertNotIn("DEFAULTKERNEL=kernel-core", utils.store_content_to_file.content)
 
         system_info.name = "Oracle Linux Server release 8.1"
-        system_info.version = namedtuple("Version", ["major", "minor"])(8, 1)
+        system_info.version = Version(8, 1)
         pkghandler.fix_default_kernel()
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 1)
         self.assertTrue(len(pkghandler.logging.getLogger.warning_msgs), 1)
@@ -837,7 +871,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(system_info, "version", Version(7, 9))
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(
         utils,
@@ -855,7 +889,7 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
 
     @unit_tests.mock(system_info, "name", "CentOS Plus Linux Server release 7.9")
     @unit_tests.mock(system_info, "arch", "x86_64")
-    @unit_tests.mock(system_info, "version", namedtuple("Version", ["major", "minor"])(7, 9))
+    @unit_tests.mock(system_info, "version", Version(7, 9))
     @unit_tests.mock(pkghandler.logging, "getLogger", GetLoggerMocked())
     @unit_tests.mock(
         utils,
@@ -868,6 +902,195 @@ class TestPkgHandler(unit_tests.ExtendedTestCase):
         self.assertTrue(len(pkghandler.logging.getLogger.info_msgs), 2)
         self.assertTrue(any("Boot kernel validated." in message for message in pkghandler.logging.getLogger.debug_msgs))
         self.assertEqual(len(pkghandler.logging.getLogger.warning_msgs), 0)
+
+
+class TestRestorablePackageSet:
+    @staticmethod
+    def fake_download_pkg(pkg, *args, **kwargs):
+        pkg_to_filename = {
+            "subscription-manager": "subscription-manager-1.0-1.el7.noarch.rpm",
+            "python-syspurpose": "python-syspurpose-1.2-2.el7.noarch.rpm",
+            "json-c.x86_64": "json-c-0.14-1.el7.x86_64.rpm",
+            "json-c.i686": "json-c-0.14-1.el7.i686.rpm",
+            "json-c": "json-c-0.14-1.el7.x86_64.rpm",
+        }
+
+        rpm_path = os.path.join(pkghandler.SUBMGR_RPMS_DIR, pkg_to_filename[pkg])
+        with open(rpm_path, "w"):
+            # We just need to create this file
+            pass
+
+        return rpm_path
+
+    @staticmethod
+    def fake_get_pkg_name_from_rpm(path):
+        path = path.rsplit("/", 1)[-1]
+        return path.rsplit("-", 2)[0]
+
+    @pytest.fixture
+    def package_set(self, monkeypatch, tmpdir):
+        pkg_download_dir = tmpdir / "pkg-download-dir"
+        yum_repo_dir = tmpdir / "yum-repo.d"
+        ubi7_repo_path = yum_repo_dir / "ubi_7.repo"
+        ubi8_repo_path = yum_repo_dir / "ubi_8.repo"
+
+        monkeypatch.setattr(pkghandler, "SUBMGR_RPMS_DIR", str(pkg_download_dir))
+        monkeypatch.setattr(pkghandler, "_RHSM_TMP_DIR", str(yum_repo_dir))
+        monkeypatch.setattr(pkghandler, "_UBI_7_REPO_PATH", str(ubi7_repo_path))
+        monkeypatch.setattr(pkghandler, "_UBI_8_REPO_PATH", str(ubi8_repo_path))
+
+        return pkghandler.RestorablePackageSet(["subscription-manager", "python-syspurpose"])
+
+    def smoketest_init(self):
+        package_set = pkghandler.RestorablePackageSet(["pkg1"])
+
+        assert package_set.pkg_set == ["pkg1"]
+        assert package_set.enabled is False
+        # We actually care that this is an empty list and not just False-y
+        assert package_set.installed_pkgs == []  # pylint: disable=use-implicit-booleaness-not-comparison
+
+    @pytest.mark.parametrize(
+        ("rhel_major_version"),
+        (
+            (7, 10),
+            (8, 5),
+        ),
+    )
+    def test_enable_need_to_install(self, rhel_major_version, package_set, global_system_info, caplog, monkeypatch):
+        global_system_info.version = Version(*rhel_major_version)
+        monkeypatch.setattr(pkghandler, "system_info", global_system_info)
+
+        monkeypatch.setattr(utils, "download_pkg", self.fake_download_pkg)
+        monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
+        monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
+
+        package_set.pkgs_to_update = ["json-c.x86_64"]
+
+        package_set.enable()
+
+        assert package_set.enabled is True
+        assert frozenset(("python-syspurpose", "subscription-manager")) == frozenset(package_set.installed_pkgs)
+
+        assert "\nPackages we installed or updated:\n" in caplog.records[-1].message
+        assert "python-syspurpose" in caplog.records[-1].message
+        assert "subscription-manager" in caplog.records[-1].message
+        assert "json-c" in caplog.records[-1].message
+        assert "json-c" not in package_set.installed_pkgs
+        assert "json-c.x86_64" not in package_set.installed_pkgs
+
+    def test_enable_call_yum_cmd_fail(self, package_set, global_system_info, caplog, monkeypatch):
+        global_system_info.version = Version(7, 0)
+        monkeypatch.setattr(pkghandler, "system_info", global_system_info)
+
+        monkeypatch.setattr(
+            pkghandler, "get_installed_pkg_information", mock.Mock(side_effect=(["sbscription-manager"], [], []))
+        )
+        monkeypatch.setattr(utils, "download_pkg", self.fake_download_pkg)
+
+        yum_cmd = CallYumCmdMocked()
+        yum_cmd.return_code = 1
+        monkeypatch.setattr(pkghandler, "call_yum_cmd", yum_cmd)
+        monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
+
+        with pytest.raises(SystemExit):
+            package_set.enable()
+
+        assert (
+            "Failed to install subscription-manager packages. See the above yum output for details."
+            in caplog.records[-1].message
+        )
+
+    def test_enable_already_enabled(self, package_set, monkeypatch):
+        enable_worker_mock = mock.Mock()
+        monkeypatch.setattr(pkghandler.RestorablePackageSet, "_enable", enable_worker_mock)
+        package_set.enable()
+        previous_number_of_calls = enable_worker_mock.call_count
+        package_set.enable()
+
+        assert enable_worker_mock.call_count == previous_number_of_calls
+
+    def test_enable_no_packages(self, package_set, caplog, monkeypatch, global_system_info):
+        global_system_info.version = Version(8, 0)
+        monkeypatch.setattr(pkghandler, "system_info", global_system_info)
+
+        package_set.pkgs_to_install = []
+        package_set.pkgs_to_update = ["python-syspurpose", "json-c.x86_64"]
+
+        package_set.enable()
+
+        assert caplog.records[-1].levelname == "INFO"
+        assert "All packages were already installed" in caplog.records[-1].message
+
+    def test_restore(self, package_set, monkeypatch):
+        mock_remove_pkgs = mock.Mock()
+        monkeypatch.setattr(backup, "remove_pkgs", mock_remove_pkgs)
+        package_set.enabled = 1
+        package_set.installed_pkgs = ["one", "two"]
+
+        package_set.restore()
+
+        assert mock_remove_pkgs.call_count == 1
+        assert mock_remove_pkgs.called_with(["one", "two"], backup=False, critical=False)
+
+    def test_restore_jsonc_in_upgrade_pkgs(self, package_set):
+        package_set.enabled = 1
+        package_set.installed_pkgs = ["subscription-manager", "python-syspurpose", "json-c"]
+        package_set.pkgs_to_update = ["json-c.x86_64"]
+        remove_pkgs_mock = mock.Mock()
+
+        package_set.restore()
+
+        assert remove_pkgs_mock.called_with(installed_pkgs=["subscription-manager", "python-syspurpose"])
+
+    def test_restore_syspurpose_in_upgrade_pkgs(self, package_set):
+        package_set.enabled = 1
+        package_set.installed_pkgs = ["subscription-manager", "python-syspurpose", "json-c"]
+        package_set.pkgs_to_update = ["python-syspurpose"]
+        remove_pkgs_mock = mock.Mock()
+
+        package_set.restore()
+
+        assert remove_pkgs_mock.called_with(installed_pkgs=["subscription-manager"])
+
+    def test_restore_not_enabled(self, package_set, monkeypatch):
+        mock_remove_pkgs = mock.Mock()
+        monkeypatch.setattr(backup, "remove_pkgs", mock_remove_pkgs)
+
+        package_set.enabled = 1
+        package_set.restore()
+        previously_called = mock_remove_pkgs.call_count
+
+        package_set.restore()
+
+        assert previously_called >= 1
+        assert mock_remove_pkgs.call_count == previously_called
+
+
+class TestDownloadRHSMPkgs:
+    def test_download_rhsm_pkgs(self, monkeypatch, tmpdir):
+        """Smoketest that download_rhsm_pkgs works in the happy path"""
+        download_rpms_directory = tmpdir.join("submgr-downloads")
+        monkeypatch.setattr(pkghandler, "SUBMGR_RPMS_DIR", str(download_rpms_directory))
+
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(str(download_rpms_directory)))
+
+        pkghandler.download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
+
+        assert "/path/to.repo" in utils.store_content_to_file.filename
+        assert utils.download_pkgs.called == 1
+
+    def test_download_rhsm_pkgs_one_package_failed_to_download(self, monkeypatch):
+        """
+        Test that download_rhsm_pkgs() aborts when one of the subscription-manager packages fails to download.
+        """
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked())
+
+        utils.download_pkgs.to_return.append(None)
+
+        with pytest.raises(SystemExit):
+            pkghandler.download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
 
 
 @pytest.mark.parametrize(
@@ -1330,7 +1553,7 @@ Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
 
-class TestInstallGpgKeys(object):
+class TestInstallGpgKeys:
     data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/version-independent"))
     gpg_keys_dir = os.path.join(data_dir, "gpg-keys")
 
@@ -1371,26 +1594,6 @@ class TestInstallGpgKeys(object):
 
         with pytest.raises(SystemExit, match="Importing the GPG key into rpm failed:\n .*"):
             pkghandler.install_gpg_keys()
-
-
-@pytest.mark.parametrize(
-    (
-        "packages",
-        "expected",
-        "is_rpm_installed",
-    ),
-    (
-        (["package1", "package2"], [], False),
-        (["package1", "package2"], ["package1", "package2"], True),
-    ),
-)
-def test_filter_installed_pkgs(packages, expected, is_rpm_installed, monkeypatch):
-    monkeypatch.setattr(
-        system_info,
-        "is_rpm_installed",
-        mock.Mock(return_value=is_rpm_installed),
-    )
-    assert pkghandler.filter_installed_pkgs(packages) == expected
 
 
 @pytest.mark.parametrize(

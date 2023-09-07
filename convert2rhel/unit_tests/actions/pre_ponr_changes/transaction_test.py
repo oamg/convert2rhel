@@ -34,6 +34,7 @@ def validate_package_manager_transaction():
 
 def test_validate_package_manager_transaction_dependency_order(validate_package_manager_transaction):
     expected_dependencies = (
+        "INSTALL_RED_HAT_GPG_KEY",
         "REMOVE_EXCLUDED_PACKAGES",
         "REMOVE_IWLAX2XX_FIRMWARE",
         "ENSURE_KERNEL_MODULES_COMPATIBILITY",

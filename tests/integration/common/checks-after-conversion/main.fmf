@@ -39,6 +39,11 @@ link:
 /rhel_kernel:
     test: pytest -svv -m rhel_kernel
 
+/rhel_subman:
+    test: pytest -svv -m test_rhel_subscription_manager
+    tag+:
+        - rhel-subman
+
 /yum_check:
     test: pytest -svv -m yum_check
 

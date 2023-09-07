@@ -1,0 +1,89 @@
+summary+: |
+    subscription-manager related tests
+description+: |
+    Verify that convert2rhel handles subscription-manager correctly.
+
+tier: 0
+
+enabled: false
+
+
+/rollback:
+    summary+: |
+        Back up and restore subscription-manager
+    description+: |
+        When the subscription-manager package is installed from the BaseOS repository prior to running convert2rhel, it is
+        removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
+        backed up and re-installed during the rollback together with the certificate.
+
+    adjust+:
+        - enabled: true
+          when: >
+              distro == centos-8
+        - environment+:
+            TEST_REQUIRES: subscription-manager
+
+    test: |
+        pytest -svv -m test_sub_man_rollback
+
+    tag+:
+        - sub-man-rollback
+
+/registration:
+    adjust+:
+        - enabled: true
+          when: distro == centos, alma, rocky
+          because: The subscription-manager is not present in Oracle Linux repositories.
+    tag+:
+        - sub-man-registration
+    /pre_registered_system_wont_unregister:
+        summary+: |
+            The convert2rhel won't unregister the system
+        description+: |
+            This test verifies that running conversion on pre-registered system won't unregister the system.
+            1. Install subscription-manager, download the SSL certificate
+            2. Register with subscription-manager and attach a subscription using the pool
+            (both handled by the pre_registered fixture)
+            3. Run convert2rhel without provided credentials
+            4. Exit at the point of no return.
+            5. Verify that convert2rhel won't unregister the system at any point and the UUID is same before and after the run.
+        adjust+:
+            - environment+:
+                C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+            - environment+:
+                C2R_TESTS_SUBMAN_CLEANUP: 1
+        test: |
+            pytest -svv -m test_pre_registered_wont_unregister
+        tag+:
+            - pre-registered-wont-unregister
+
+    /pre_registered_system_will_re_register:
+        summary+: |
+            The convert2rhel will re-register the system
+        description+: |
+            This test verifies that running conversion on pre-registered system and providing convert2rhel
+            with credentials, will re-register the system.
+            1. Install subscription-manager, download the SSL certificate
+            2. Register with subscription-manager and attach a subscription using the pool
+            (both handled by the pre_registered fixture)
+            3. Run convert2rhel with provided credentials
+            4. Verify that convert2rhel re-registered the system
+            4. Exit at the point of no return.
+        adjust+:
+            - environment+:
+                C2R_TESTS_SUBMAN_CLEANUP: 1
+        test: |
+            pytest -svv -m test_pre_registered_re_register
+        tag+:
+            - pre-registered-re-register
+    /unregistered_system_no_credentials:
+        summary+: |
+            The convert2rhel fails without pre-registration and credentials
+        description+: |
+            This test verifies that conversion fails when the system is not pre-registered
+            and credentials are not provided to the convert2rhel command.
+            Expected ERROR: SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM
+        test: |
+            pytest -svv -m test_unregistered_no_credentials
+        tag+:
+            - unregistered-no-credentials

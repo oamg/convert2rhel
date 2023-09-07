@@ -65,7 +65,8 @@ description+: |
 
         /custom_repos:
             discover+:
-                filter: tag:checks-after-conversion
+                # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                filter: tag:checks-after-conversion & tag:-rhel-subman
             prepare+:
                 - name: add custom repos
                   how: ansible
@@ -76,6 +77,24 @@ description+: |
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
+
+        /pre_registered_system:
+            adjust+:
+              - enabled: false
+                when: distro == oraclelinux
+                because: There is no subscription-manager package in Oracle Linux repositories
+              - environment+:
+                  C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+            discover+:
+                filter: tag:checks-after-conversion
+            prepare+:
+                - name: Convert pre-registered system
+                  how: shell
+                  script: pytest -svv tests/integration/*/destructive/method/pre_registered.py
+                - name: reboot after conversion
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
+
 
 
     /single_yum_transaction:
@@ -184,7 +203,8 @@ description+: |
           - enabled: false
             when: distro == oraclelinux-7
         discover+:
-            filter: tag:checks-after-conversion
+            # Exclude the rhel_subman check, we don't use RHSM for the conversion
+            filter: tag:checks-after-conversion & tag:-rhel-subman
         prepare+:
             - name: install subscription manager
               how: ansible

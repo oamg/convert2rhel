@@ -45,7 +45,7 @@ def test_failures_and_skips_in_report(convert2rhel):
         c2r.sendline("y")
 
         # Assert that we start rollback first
-        assert c2r.expect("Rollback: RHSM-related actions") == 0
+        assert c2r.expect_exact("TASK - [Rollback:") == 0
 
         # Then, verify that the analysis report is printed
         assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0

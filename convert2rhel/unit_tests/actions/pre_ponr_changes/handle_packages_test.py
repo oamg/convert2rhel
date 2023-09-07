@@ -61,7 +61,7 @@ def test_list_third_party_packages(pretend_os, list_third_party_packages_instanc
     diagnosis = (
         "Only packages signed by Centos7 are to be"
         " replaced. Red Hat support won't be provided"
-        " for the following third party packages:\npkg1-0:None-None.None, pkg2-0:None-None.None, gpg-pubkey-0:1.0.0-1.x86_64"
+        " for the following third party packages:\npkg1-None-None.None, pkg2-None-None.None, gpg-pubkey-1.0.0-1.x86_64"
     )
     expected = set(
         (
@@ -109,9 +109,25 @@ def remove_excluded_packages_instance():
     return handle_packages.RemoveExcludedPackages()
 
 
+def get_centos_logos_pkg_object():
+    return pkghandler.PackageInformation(
+        packager="CentOS BuildSystem <http://bugs.centos.org>",
+        vendor="CentOS",
+        nevra=pkghandler.PackageNevra(
+            name="centos-logos",
+            epoch="0",
+            version="70.0.6",
+            release="3.el7.centos",
+            arch="noarch",
+        ),
+        fingerprint="24c6a8a7f4a80eb5",
+        signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
+    )
+
+
 def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance, monkeypatch):
-    pkgs_to_remove = ["shim", "ruby", "kernel-core"]
-    pkgs_removed = ["shim", "ruby", "kernel-core"]
+    pkgs_to_remove = [get_centos_logos_pkg_object()]
+    pkgs_removed = ["centos-logos-70.0.6-3.el7.centos.noarch"]
     expected = set(
         (
             actions.ActionMessage(
@@ -119,14 +135,14 @@ def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance,
                 id="EXCLUDED_PACKAGES_REMOVED",
                 title="Excluded packages removed",
                 description="Excluded packages that have been removed",
-                diagnosis="The following packages were removed: kernel-core, ruby, shim",
+                diagnosis="The following packages were removed: centos-logos-70.0.6-3.el7.centos.noarch",
                 remediation=None,
             ),
         )
     )
     monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", CommandCallableObject(pkgs_removed))
-    monkeypatch.setattr(pkghandler, "remove_pkgs_unless_from_redhat", CommandCallableObject(pkgs_to_remove))
+    monkeypatch.setattr(pkghandler, "get_packages_to_remove", CommandCallableObject(pkgs_to_remove))
+    monkeypatch.setattr(pkghandler, "remove_pkgs_unless_from_redhat", CommandCallableObject(pkgs_removed))
 
     remove_excluded_packages_instance.run()
     assert expected.issuperset(remove_excluded_packages_instance.messages)
@@ -148,7 +164,7 @@ def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packag
                 id="EXCLUDED_PACKAGES_NOT_REMOVED",
                 title="Excluded packages not removed",
                 description="Excluded packages which could not be removed",
-                diagnosis="The following packages were not removed: gpg-pubkey-0:1.0.0-1.x86_64, pkg1-0:None-None.None, pkg2-0:None-None.None",
+                diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
                 remediation=None,
             ),
         )
@@ -193,8 +209,8 @@ def remove_repository_files_packages_instance():
 
 
 def test_remove_repository_files_packages_all_removed(remove_repository_files_packages_instance, monkeypatch):
-    pkgs_to_remove = ["shim", "ruby", "kernel-core"]
-    pkgs_removed = ["shim", "ruby", "kernel-core"]
+    pkgs_to_remove = [get_centos_logos_pkg_object()]
+    pkgs_removed = [u"centos-logos-70.0.6-3.el7.centos.noarch"]
     expected = set(
         (
             actions.ActionMessage(
@@ -202,7 +218,7 @@ def test_remove_repository_files_packages_all_removed(remove_repository_files_pa
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
                 title="Repository file packages removed",
                 description="Repository file packages that were removed",
-                diagnosis="The following packages were removed: kernel-core, ruby, shim",
+                diagnosis="The following packages were removed: centos-logos-70.0.6-3.el7.centos.noarch",
                 remediation=None,
             ),
         )
@@ -234,7 +250,7 @@ def test_remove_repository_files_packages_not_removed(
                 id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
                 title="Repository file packages not removed",
                 description="Repository file packages which could not be removed",
-                diagnosis="The following packages were not removed: gpg-pubkey-0:1.0.0-1.x86_64, pkg1-0:None-None.None, pkg2-0:None-None.None",
+                diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
                 remediation=None,
             ),
         )
@@ -255,7 +271,7 @@ def test_remove_repository_files_packages_not_removed(
 
 
 def test_remove_repository_files_packages_dependency_order(remove_repository_files_packages_instance):
-    expected_dependencies = ("BACKUP_REDHAT_RELEASE",)
+    expected_dependencies = ("BACKUP_REDHAT_RELEASE", "BACKUP_REPOSITORY", "PRE_SUBSCRIPTION")
 
     assert expected_dependencies == remove_repository_files_packages_instance.dependencies
 

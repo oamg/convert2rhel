@@ -389,3 +389,73 @@ def _load_json_schema(path):
 
     with open(path, mode="r") as handler:
         return json.load(handler)
+
+
+@pytest.fixture
+def pre_registered(shell):
+    """
+    A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
+    """
+    assert shell("yum install -y subscription-manager").returncode == 0
+    # Download the SSL certificate
+    shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
+    # Register the system
+    assert (
+        shell(
+            "subscription-manager register --serverurl {} --username {} --password {}".format(
+                env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+            )
+        ).returncode
+        == 0
+    )
+
+    assert shell("subscription-manager attach --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+
+    rhsm_uuid_command = "subscription-manager identity | grep identity"
+
+    uuid_raw_output = shell(rhsm_uuid_command).output
+
+    # The `subscription-manager identity | grep identity` command returns
+    # system identity: <UUID>, we need to store just the system UUID
+    original_registration_uuid = uuid_raw_output.split(":")[1].strip()
+
+    yield
+
+    # For some scenarios we do not pre-register the system, therefore we do not have the original UUID
+    # and do not need to verify it stays the same
+    if "C2R_TESTS_CHECK_RHSM_UUID_MATCH" in os.environ:
+        # Get the registered system UUID
+        uuid_raw_output = shell(rhsm_uuid_command).output
+        post_c2r_registration_uuid = uuid_raw_output.split(":")[1].strip()
+
+        # Validate it matches with UUID prior to the conversion
+        assert original_registration_uuid == post_c2r_registration_uuid
+        del os.environ["C2R_TESTS_CHECK_RHSM_UUID_MATCH"]
+
+        assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+        assert shell("subscription-manager unregister").returncode == 0
+
+    # We do not need to spend time on performing the cleanup for some test cases (destructive)
+    if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
+        assert shell("yum remove -y subscription-manager").returncode == 0
+        # Remove the redhat-uep.pem certificate, as it won't get removed with the sub-man package on CentOS 7
+        if "centos-7" in SYSTEM_RELEASE_ENV:
+            shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
+
+        del os.environ["C2R_TESTS_SUBMAN_CLEANUP"]
+
+
+@pytest.fixture
+def disabled_telemetry(shell):
+    """
+    Fixture exporting CONVERT2RHEL_DISABLE_TELEMETRY envar to disable data collection.
+    Removes after the test.
+    Used in scenarios where we do not care about the data collection and want to bypass
+    the data collection acknowledgement prompt.
+    """
+    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
+
+    yield
+
+    if os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]:
+        del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]

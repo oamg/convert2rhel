@@ -24,10 +24,6 @@ from convert2rhel.systeminfo import system_info
 logger = logging.getLogger(__name__)
 
 
-def _get_pkg_names(packages):
-    return [pkghandler.get_pkg_nevra(pkg_obj, include_zero_epoch=True) for pkg_obj in packages]
-
-
 class ListThirdPartyPackages(actions.Action):
     id = "LIST_THIRD_PARTY_PACKAGES"
 
@@ -60,7 +56,7 @@ class ListThirdPartyPackages(actions.Action):
                 id="THIRD_PARTY_PACKAGE_DETECTED_MESSAGE",
                 title="Third party packages detected",
                 description="Third party packages will not be replaced during the conversion.",
-                diagnosis=warning_message + ", ".join(_get_pkg_names(third_party_pkgs)),
+                diagnosis=warning_message + ", ".join(pkghandler.get_pkg_nevras(third_party_pkgs)),
             )
         else:
             logger.info("No third party packages installed.")
@@ -72,6 +68,7 @@ class ListThirdPartyPackages(actions.Action):
 
 class RemoveExcludedPackages(actions.Action):
     id = "REMOVE_EXCLUDED_PACKAGES"
+    dependencies = ("BACKUP_REPOSITORY",)  # We use the backed up repos in remove_pkgs_unless_from_redhat()
 
     def run(self):
         """
@@ -103,10 +100,9 @@ class RemoveExcludedPackages(actions.Action):
             return
 
         # shows which packages were not removed, if false, all packages were removed
-        pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+        pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(pkgs_to_remove)).difference(pkgs_removed))
         if pkgs_not_removed:
-            pkg_names = _get_pkg_names(pkgs_not_removed)
-            message = "The following packages were not removed: %s" % ", ".join(pkg_names)
+            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
             logger.warning(message)
             self.add_message(
                 level="WARNING",
@@ -129,7 +125,13 @@ class RemoveExcludedPackages(actions.Action):
 
 class RemoveRepositoryFilesPackages(actions.Action):
     id = "REMOVE_REPOSITORY_FILES_PACKAGES"
-    dependencies = ("BACKUP_REDHAT_RELEASE",)
+    dependencies = (
+        "BACKUP_REDHAT_RELEASE",
+        # We use the backed up repos in remove_pkgs_unless_from_redhat()
+        "BACKUP_REPOSITORY",
+        # The installation of sub-man pkgs needs access to the original repofiles to get the sub-man deps from there
+        "PRE_SUBSCRIPTION",
+    )
 
     def run(self):
         """
@@ -171,10 +173,9 @@ class RemoveRepositoryFilesPackages(actions.Action):
             return
 
         # shows which packages were not removed, if false, all packages were removed
-        pkgs_not_removed = sorted(frozenset(pkgs_to_remove).difference(pkgs_removed))
+        pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(pkgs_to_remove)).difference(pkgs_removed))
         if pkgs_not_removed:
-            pkg_names = _get_pkg_names(pkgs_not_removed)
-            message = "The following packages were not removed: %s" % ", ".join(pkg_names)
+            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
             logger.warning(message)
             self.add_message(
                 level="WARNING",

@@ -1,7 +1,0 @@
-summary: Remove all subscription-manager pkgs first
-description: |
-    Verify that we can get to the last point before rollback if subscription-manager is installed.
-    Verify that the system is unregistered and the system is unregistered prior to installing the rpms from RHEL.
-
-
-test: pytest -svv

@@ -131,23 +131,19 @@ class TestMain(unittest.TestCase):
         unit_tests.CountableMockObject(),
     )
     @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
-    @unit_tests.mock(subscription, "rollback", unit_tests.CountableMockObject())
     @unit_tests.mock(
         pkghandler.versionlock_file,
         "restore",
         unit_tests.CountableMockObject(),
     )
-    @unit_tests.mock(cert.SystemCert, "_get_cert", lambda _get_cert: ("anything", "anything"))
-    @unit_tests.mock(cert.SystemCert, "remove", unit_tests.CountableMockObject())
+    @unit_tests.mock(cert, "_get_cert", lambda _get_cert: ("anything", "anything"))
     @unit_tests.mock(backup.backup_control, "pop_all", unit_tests.CountableMockObject())
     @unit_tests.mock(repo, "restore_varsdir", unit_tests.CountableMockObject())
     def test_rollback_changes(self):
         main.rollback_changes()
         self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
         self.assertEqual(repo.restore_yum_repos.called, 1)
-        self.assertEqual(subscription.rollback.called, 1)
         self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
-        self.assertEqual(cert.SystemCert.remove.called, 1)
         self.assertEqual(backup.backup_control.pop_all.called, 1)
         self.assertEqual(repo.restore_varsdir.called, 1)
 

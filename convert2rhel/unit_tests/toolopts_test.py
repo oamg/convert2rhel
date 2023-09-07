@@ -23,9 +23,8 @@ from collections import namedtuple
 import pytest
 import six
 
+import convert2rhel.toolopts
 import convert2rhel.utils
-
-from convert2rhel.toolopts import tool_opts
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -45,20 +44,17 @@ class TestTooloptsParseFromCLI(object):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--username", "uname"]))
         convert2rhel.toolopts.CLI()
         assert global_tool_opts.username == "uname"
-        assert not global_tool_opts.credentials_thru_cli
 
     def test_cmdline_interactive_passwd_without_uname(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--password", "passwd"]))
         convert2rhel.toolopts.CLI()
         assert global_tool_opts.password == "passwd"
-        assert not global_tool_opts.credentials_thru_cli
 
     def test_cmdline_non_interactive_with_credentials(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--username", "uname", "--password", "passwd"]))
         convert2rhel.toolopts.CLI()
         assert global_tool_opts.username == "uname"
         assert global_tool_opts.password == "passwd"
-        assert global_tool_opts.credentials_thru_cli
 
     def test_cmdline_disablerepo_defaults_to_asterisk(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--enablerepo", "foo"]))
@@ -82,7 +78,11 @@ class TestTooloptsParseFromCLI(object):
         ),
     )
     def test_custom_serverurl(self, monkeypatch, global_tool_opts, serverurl, hostname, port, prefix):
-        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", serverurl]))
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            mock_cli_arguments(["--serverurl", serverurl, "--username", "User1", "--password", "Password1"]),
+        )
         convert2rhel.toolopts.CLI()
         assert global_tool_opts.rhsm_hostname == hostname
         assert global_tool_opts.rhsm_port == port
@@ -105,7 +105,8 @@ class TestTooloptsParseFromCLI(object):
         ),
     )
     def test_bad_serverurl(self, caplog, monkeypatch, global_tool_opts, serverurl):
-        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", serverurl]))
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", serverurl, "-o", "MyOrg", "-k", "012335"]))
+
         with pytest.raises(SystemExit):
             convert2rhel.toolopts.CLI()
 
@@ -127,23 +128,29 @@ class TestTooloptsParseFromCLI(object):
         message = "Ignoring the --serverurl option. It has no effect when" " --disable-submgr or --no-rhsm is used."
         assert message in caplog.text
 
+    def test_serverurl_with_no_rhsm_credentials(self, caplog, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--serverurl", "localhost"]))
 
-@pytest.mark.parametrize(
-    ("argv", "warn", "keep_rhsm_value"),
-    (
-        (mock_cli_arguments(["--keep-rhsm"]), False, True),
-        (mock_cli_arguments(["--keep-rhsm", "--disable-submgr", "--enablerepo", "test_repo"]), True, False),
-    ),
-)
-@mock.patch("convert2rhel.toolopts.tool_opts.keep_rhsm", False)
-def test_keep_rhsm(argv, warn, keep_rhsm_value, monkeypatch, caplog):
-    monkeypatch.setattr(sys, "argv", argv)
+        convert2rhel.toolopts.CLI()
+
+        message = (
+            "Ignoring the --serverurl option. It has no effect when no credentials to"
+            " subscribe the system were given."
+        )
+        assert message in caplog.text
+
+
+def test_keep_rhsm(monkeypatch, caplog):
+    monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--keep-rhsm"]))
+
     convert2rhel.toolopts.CLI()
-    if warn:
-        assert "Ignoring the --keep-rhsm option" in caplog.text
-    else:
-        assert "Ignoring the --keep-rhsm option" not in caplog.text
-    assert convert2rhel.toolopts.tool_opts.keep_rhsm == keep_rhsm_value
+
+    assert (
+        "The --keep-rhsm option is deprecated and will be removed in"
+        " the future. Convert2rhel will now always use the"
+        " subscription-manager packages which are already installed on"
+        " the system so this option has no effect." in caplog.text
+    )
 
 
 @pytest.mark.parametrize(
@@ -255,17 +262,16 @@ def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_
         ),
         (
             mock_cli_arguments(["-o", "some-org"]),
-            "[subscription_manager]\org=a-different-org\nactivation_key=conf_key",
+            "[subscription_manager]\norg=a-different-org\nactivation_key=conf_key",
             {"org": "some-org"},
             "You have passed the RHSM org through both the command line and"
             " the configuration file. We're going to use the command line values.",
         ),
     ),
 )
-def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog):
+def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog, global_tool_opts):
     # After each test there were left data from previous
     # Re-init needed delete the set data
-    convert2rhel.toolopts.tool_opts.__init__()
     path = os.path.join(str(tmpdir), "convert2rhel.ini")
     with open(path, "w") as file:
         file.write(content)
@@ -288,6 +294,7 @@ def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog
         assert convert2rhel.toolopts.tool_opts.org == output["org"]
 
     if message:
+        print(caplog.text)
         assert message in caplog.text
 
 
@@ -310,9 +317,8 @@ def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog
         ),
     ),
 )
-def test_multiple_auth_src_combined(argv, content, message, output, caplog, monkeypatch, tmpdir):
+def test_multiple_auth_src_combined(argv, content, message, output, caplog, monkeypatch, tmpdir, global_tool_opts):
     """Test combination of password file or configuration file and CLI arguments."""
-    convert2rhel.toolopts.tool_opts.__init__()
     path = os.path.join(str(tmpdir), "convert2rhel.file")
     with open(path, "w") as file:
         file.write(content)
@@ -530,15 +536,14 @@ def test_options_from_config_files_specified(content, output, content_lower_prio
         },
     ),
 )
-def test_set_opts(supported_opts):
-    tool_opts.__init__()
-    convert2rhel.toolopts.ToolOpts.set_opts(tool_opts, supported_opts)
+def test_set_opts(supported_opts, global_tool_opts):
+    convert2rhel.toolopts.ToolOpts.set_opts(global_tool_opts, supported_opts)
 
-    assert tool_opts.username == supported_opts["username"]
-    assert tool_opts.password == supported_opts["password"]
-    assert tool_opts.activation_key == supported_opts["activation_key"]
-    assert tool_opts.org == supported_opts["org"]
-    assert not hasattr(tool_opts, "invalid_key")
+    assert global_tool_opts.username == supported_opts["username"]
+    assert global_tool_opts.password == supported_opts["password"]
+    assert global_tool_opts.activation_key == supported_opts["activation_key"]
+    assert global_tool_opts.org == supported_opts["org"]
+    assert not hasattr(global_tool_opts, "invalid_key")
 
 
 UrlParts = namedtuple("UrlParts", ("scheme", "hostname", "port"))
@@ -598,8 +603,7 @@ def test_log_command_used(caplog, monkeypatch):
         ),
     ),
 )
-def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
-    tool_opts.__init__()
+def test_org_activation_key_specified(argv, message, monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
 
     try:
@@ -618,13 +622,12 @@ def test_org_activation_key_specified(argv, message, monkeypatch, caplog):
         (mock_cli_arguments([]), "conversion"),
     ),
 )
-def test_pre_assessment_set(argv, expected, monkeypatch):
-    tool_opts.__init__()
+def test_pre_assessment_set(argv, expected, monkeypatch, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
 
     convert2rhel.toolopts.CLI()
 
-    assert tool_opts.activity == expected
+    assert global_tool_opts.activity == expected
 
 
 @pytest.mark.parametrize(
@@ -646,8 +649,7 @@ def test_pre_assessment_set(argv, expected, monkeypatch):
         ),
     ),
 )
-def test_disable_and_enable_repos_has_same_repo(argv, expected, monkeypatch, caplog):
-    tool_opts.__init__()
+def test_disable_and_enable_repos_has_same_repo(argv, expected, monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
     convert2rhel.toolopts.CLI()
 
@@ -667,8 +669,7 @@ def test_disable_and_enable_repos_has_same_repo(argv, expected, monkeypatch, cap
         ),
     ),
 )
-def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypatch, caplog):
-    tool_opts.__init__()
+def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
     convert2rhel.toolopts.CLI()
 
@@ -687,3 +688,26 @@ def test_disable_and_enable_repos_with_different_repos(argv, expected, monkeypat
 def test_add_default_command(argv, expected, monkeypatch):
     monkeypatch.setattr(sys, "argv", argv)
     assert convert2rhel.toolopts._add_default_command(argv) == expected
+
+
+@pytest.mark.parametrize(
+    ("username", "password", "organization", "activation_key", "no_rhsm", "expected"),
+    (
+        ("User1", "Password1", None, None, False, True),
+        (None, None, "My Org", "12345ABC", False, True),
+        ("User1", "Password1", "My Org", "12345ABC", False, True),
+        (None, None, None, None, True, False),
+        ("User1", None, None, "12345ABC", False, False),
+        (None, None, None, None, False, False),
+        ("User1", "Password1", None, None, True, False),
+    ),
+)
+def test_should_subscribe(username, password, organization, activation_key, no_rhsm, expected):
+    t_opts = convert2rhel.toolopts.ToolOpts()
+    t_opts.username = username
+    t_opts.password = password
+    t_opts.org = organization
+    t_opts.activation_key = activation_key
+    t_opts.no_rhsm = no_rhsm
+
+    assert convert2rhel.toolopts._should_subscribe(t_opts) is expected
