@@ -74,14 +74,14 @@ def main():
 
     process_phase = ConversionPhase.INIT
 
-    # handle command line arguments
-    toolopts.CLI()
+    # Make sure we're being run by root
+    utils.require_root()
 
     # initialize logging
     initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
 
-    # Make sure we're being run by root
-    utils.require_root()
+    # handle command line arguments
+    toolopts.CLI()
 
     try:
         with applock.ApplicationLock("convert2rhel"):

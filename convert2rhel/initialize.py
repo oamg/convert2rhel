@@ -18,7 +18,7 @@
 import logging
 import os
 
-from convert2rhel import applock, i18n, utils
+from convert2rhel import i18n
 
 
 def disable_root_logger():
