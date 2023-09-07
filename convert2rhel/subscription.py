@@ -769,9 +769,8 @@ def _dependencies_to_update(pkg_list):
     if not pkg_list:
         return []
 
-    # Only apply this kludge on centos-8.  We assume that all other vendors
-    # will have dependencies of the needed version in their repositories.
-    if not (system_info.id == "centos" and system_info.version.major == 8):
+    # Only apply this kludge on RHEL 8-based systems. We have detected the problem on CentOS/Alma/Rocky 8.
+    if not system_info.version.major == 8:
         return []
 
     # Package names that we require differ on various platforms so we need to
