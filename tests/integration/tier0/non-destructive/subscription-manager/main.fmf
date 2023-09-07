@@ -69,7 +69,6 @@ enabled: false
             3. Run convert2rhel with provided credentials
             4. Verify that convert2rhel re-registered the system
             4. Exit at the point of no return.
-            5. Verify that the system is still registered with the pre-registered system UUID.
         adjust+:
             - environment+:
                 C2R_TESTS_SUBMAN_CLEANUP: 1
