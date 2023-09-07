@@ -19,8 +19,7 @@ import os
 
 import pytest
 
-from convert2rhel import applock, initialize
-from convert2rhel import main
+from convert2rhel import applock, initialize, main
 
 
 @pytest.mark.parametrize(
