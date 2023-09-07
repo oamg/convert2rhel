@@ -72,11 +72,11 @@ def main():
 
     process_phase = ConversionPhase.INIT
 
-    # initialize logging
-    initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
-
     # handle command line arguments
     toolopts.CLI()
+
+    # initialize logging
+    initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
 
     # Make sure we're being run by root
     utils.require_root()
