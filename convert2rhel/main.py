@@ -66,7 +66,7 @@ def initialize_logger(log_name, log_dir):
 def main():
     """
     Wrapper around the main entrypoint.
-    
+
     Performs everything necessary to set up before starting the actual
     conversion process itself, then calls main_locked(), protected by
     the application lock, to do the conversion process.
