@@ -20,7 +20,6 @@ import os
 import pytest
 
 from convert2rhel import applock, initialize
-from convert2rhel import logger as logger_module
 from convert2rhel import main
 
 
