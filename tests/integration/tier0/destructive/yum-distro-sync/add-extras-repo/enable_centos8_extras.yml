@@ -7,4 +7,4 @@
         baseurl: https://vault.centos.org/centos/8/extras/$basearch/os/
         gpgcheck: no
         enabled: yes
-        file: centos8-extra
+        file: centos8-extras
