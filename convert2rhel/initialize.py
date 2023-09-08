@@ -17,9 +17,8 @@
 
 import logging
 import os
-import sys
 
-from convert2rhel import applock, i18n, utils
+from convert2rhel import i18n
 
 
 def disable_root_logger():
@@ -66,8 +65,9 @@ def set_locale():
 def run():
     """Wrapper around the main function.
 
-    This function is intended to initialize all early code and function calls
-    before any other main imports.
+    This function is needed to initialize early code and function calls
+    that have to be done before certain modules (which are imported by
+    main) are imported.
     """
     # prepare environment
     set_locale()
@@ -75,17 +75,6 @@ def run():
     # Initialize logging to stop duplicate messages.
     disable_root_logger()
 
-    # Make sure we're being run by root
-    utils.require_root()
-
     from convert2rhel import main
 
-    retval = 0
-    try:
-        with applock.ApplicationLock("convert2rhel"):
-            retval = main.main()
-    except applock.ApplicationLockedError:
-        retval = 1
-        sys.stderr.write("Another copy of convert2rhel is running.\n")
-        sys.stderr.write("\nNo changes were made to the system.\n")
-    sys.exit(retval)
+    return main.main()

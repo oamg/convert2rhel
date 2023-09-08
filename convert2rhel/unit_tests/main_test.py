@@ -27,7 +27,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, backup, cert, checks, grub
+from convert2rhel import actions, applock, backup, cert, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report
@@ -201,7 +201,8 @@ def test_post_ponr_conversion(monkeypatch):
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
 
 
-def test_main(monkeypatch):
+def test_main(monkeypatch, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -225,6 +226,8 @@ def test_main(monkeypatch):
     update_rhsm_custom_facts_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -249,6 +252,7 @@ def test_main(monkeypatch):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 0
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -271,7 +275,8 @@ def test_main(monkeypatch):
     assert summary_as_json_mock.call_count == 1
 
 
-def test_main_rollback_post_cli_phase(monkeypatch, caplog):
+def test_main_rollback_post_cli_phase(monkeypatch, caplog, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock(side_effect=Exception)
@@ -279,20 +284,24 @@ def test_main_rollback_post_cli_phase(monkeypatch, caplog):
     # Mock the rollback calls
     finish_collection_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
 
     assert main.main() == 1
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
-    assert "No changes were made to the system." in caplog.records[-1].message
+    assert "No changes were made to the system." in caplog.records[-2].message
 
 
-def test_main_traceback_before_action_completion(monkeypatch, caplog):
+def test_main_traceback_before_action_completion(monkeypatch, caplog, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -309,6 +318,8 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
     rollback_changes_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -324,6 +335,7 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -338,13 +350,14 @@ def test_main_traceback_before_action_completion(monkeypatch, caplog):
     assert summary_as_json_mock.call_count == 0
     print(caplog.records)
     assert (
-        caplog.records[-1].message.strip()
+        caplog.records[-2].message.strip()
         == "Conversion interrupted before analysis of system completed. Report not generated."
     )
-    assert "Action Framework Crashed" in caplog.records[-2].message
+    assert "Action Framework Crashed" in caplog.records[-3].message
 
 
-def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
+def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -363,6 +376,8 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     rollback_changes_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -380,6 +395,7 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -394,11 +410,12 @@ def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog):
     assert finish_collection_mock.call_count == 1
     assert rollback_changes_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
-    assert caplog.records[-2].message == "Conversion failed."
-    assert caplog.records[-2].levelname == "CRITICAL"
+    assert caplog.records[-3].message == "Conversion failed."
+    assert caplog.records[-3].levelname == "CRITICAL"
 
 
-def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
+def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -416,6 +433,8 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     finish_collection_mock = mock.Mock()
     rollback_changes_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -434,6 +453,7 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     global_tool_opts.activity = "analysis"
 
     assert main.main() == 0
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -449,7 +469,8 @@ def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch):
     assert summary_as_json_mock.call_count == 1
 
 
-def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
+def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog, tmp_path):
+    require_root_mock = mock.Mock()
     initialize_logger_mock = mock.Mock()
     toolopts_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
@@ -470,6 +491,8 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     finish_collection_mock = mock.Mock()
     update_rhsm_custom_facts_mock = mock.Mock()
 
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
     monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
@@ -489,6 +512,7 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
     assert main.main() == 1
+    assert require_root_mock.call_count == 1
     assert initialize_logger_mock.call_count == 1
     assert toolopts_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
@@ -504,5 +528,5 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog):
     assert post_ponr_conversion_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
-    assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-1].message
+    assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
     assert update_rhsm_custom_facts_mock.call_count == 1

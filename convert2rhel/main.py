@@ -17,8 +17,9 @@
 
 import logging
 import os
+import sys
 
-from convert2rhel import actions, backup, breadcrumbs, checks, grub
+from convert2rhel import actions, applock, backup, breadcrumbs, checks, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
@@ -63,15 +64,38 @@ def initialize_logger(log_name, log_dir):
 
 
 def main():
-    """Perform all steps for the entire conversion process."""
+    """
+    Wrapper around the main entrypoint.
+
+    Performs everything necessary to set up before starting the actual
+    conversion process itself, then calls main_locked(), protected by
+    the application lock, to do the conversion process.
+    """
 
     process_phase = ConversionPhase.INIT
+
+    # Make sure we're being run by root
+    utils.require_root()
 
     # initialize logging
     initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
 
     # handle command line arguments
     toolopts.CLI()
+
+    try:
+        with applock.ApplicationLock("convert2rhel"):
+            return main_locked(process_phase)
+    except applock.ApplicationLockedError:
+        # We have not rotated the log files at this point because main.initialize_logger()
+        # has not yet been called.  So we use sys.stderr.write() instead of loggerinst.error()
+        sys.stderr.write("Another copy of convert2rhel is running.\n")
+        sys.stderr.write("\nNo changes were made to the system.\n")
+        return 1
+
+
+def main_locked(process_phase):
+    """Perform all steps for the entire conversion process."""
 
     pre_conversion_results = None
     try:
