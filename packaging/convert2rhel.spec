@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.4.0
+Version:        1.4.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,10 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Sep 08 2023 Eric Gustavsson <egustavs@redhat.com> 1.4.1
+- Alma and Rocky Linux 8: Fix subscription-manager not being installed
+- Fix packages not being imported by move application lock into main
+
 * Thu Sep 07 2023 Michal Bocek <mbocek@redhat.com> 1.4.0
 - Add `convert2rhel analysis` as a new CLI subcommand
 - Stop uninstalling subscription-mananager and unregistering the system by default
