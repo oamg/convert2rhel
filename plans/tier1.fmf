@@ -189,11 +189,11 @@ description+: |
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
-    /kernel-core-only:
+    /kernel_core_only:
         enabled: false
         adjust+:
             - enabled: true
-              when: disto == 8
+              when: distro == alma-8, centos-8, oracle-8, rocky-8
         discover+:
             filter: tag:checks-after-conversion
         prepare+:

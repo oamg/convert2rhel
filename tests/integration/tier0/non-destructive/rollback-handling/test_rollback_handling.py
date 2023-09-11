@@ -22,7 +22,7 @@ def assign_packages(packages=None):
         "centos-7": cos_7_pkgs,
         "centos-8": cos_8_pkgs,
         "oracle-7": ol_7_pkgs,
-        "oracle-8-latest": ol_8_pkgs,
+        "oracle-8": ol_8_pkgs,
         "alma-8": alm_8_pkgs,
         "rocky-8": roc_8_pkgs,
     }
@@ -31,6 +31,8 @@ def assign_packages(packages=None):
 
     if "." in SYSTEM_RELEASE_ENV:
         release_key = SYSTEM_RELEASE_ENV.split(".")[0]
+    elif "-latest" in SYSTEM_RELEASE_ENV:
+        release_key = SYSTEM_RELEASE_ENV.split("-latest")[0]
 
     packages = release_mapping.get(release_key)
 

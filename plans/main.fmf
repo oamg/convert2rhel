@@ -14,7 +14,7 @@ adjust+:
         SYSTEM_RELEASE_ENV: oracle-7
       when: distro == oracle-7
     - environment+:
-        SYSTEM_RELEASE_ENV: centos-8.5
+        SYSTEM_RELEASE_ENV: centos-8-latest
       when: distro == centos-8-latest
     - environment+:
         SYSTEM_RELEASE_ENV: oracle-8-latest

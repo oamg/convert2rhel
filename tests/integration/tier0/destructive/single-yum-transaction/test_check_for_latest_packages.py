@@ -53,7 +53,7 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
     # discovering package versions not available for 8.5
     # Doing that, we also need to disable the epel-modular repo
     # as it raises an 404 error
-    if "centos-8.5" in SYSTEM_RELEASE_ENV:
+    if "centos-8-latest" in SYSTEM_RELEASE_ENV:
         cmd = "yum check-update --quiet --releasever=8.5 --disablerepo epel-modular %s"
     for package in packages_to_verify:
         # If tha package lands on latest version after conversion
