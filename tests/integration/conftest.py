@@ -368,7 +368,7 @@ def repositories(shell):
 
 
 @pytest.fixture(autouse=True)
-def missing_os_release_package_workaround(system_release, shell):
+def missing_os_release_package_workaround(shell):
     # TODO(danmyway) remove when/if the issue gets fixed
     """
     Fixture to workaround issues with missing `*-linux-release`
@@ -386,15 +386,18 @@ def missing_os_release_package_workaround(system_release, shell):
         "rocky-8": "rocky-release",
     }
 
-    os_name = system_release.split("-")[0]
-    os_ver = system_release.split("-")[1]
-    os_key = f"{os_name}-{os_ver[0]}"
+    # Run only for non-destructive tests.
+    # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
+    if "INT_TESTS_NONDESTRUCTIVE" in os.environ:
+        os_name = SYSTEM_RELEASE_ENV.split("-")[0]
+        os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
+        os_key = f"{os_name}-{os_ver[0]}"
 
-    system_release_pkg = os_to_pkg_mapping.get(os_key)
+        system_release_pkg = os_to_pkg_mapping.get(os_key)
 
-    rpm_output = shell(f"rpm -q {system_release_pkg}").output
-    if "not installed" in rpm_output:
-        shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
+        rpm_output = shell(f"rpm -q {system_release_pkg}").output
+        if "not installed" in rpm_output:
+            shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
 
 
 def _load_json_schema(path):

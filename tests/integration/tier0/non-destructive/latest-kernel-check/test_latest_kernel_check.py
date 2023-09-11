@@ -12,7 +12,7 @@ def tainted_repository(shell):
     Add a tainted repository with intentionally bad baseurl so the repoquery fails successfully.
     """
     repofile = "broken_repo"
-    centos_custom_reposdir = "/usr/share/convert2rhel/repos/"
+    centos_custom_reposdir = "/usr/share/convert2rhel/repos"
 
     # For CentOS, we are working with hardcoded repos in /usr/share/convert2rhel/repos/centos-8.5
     if "centos-8" in SYSTEM_RELEASE_ENV:

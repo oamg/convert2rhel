@@ -14,7 +14,7 @@ DISTRO_KERNEL_MAPPING = {
         "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)",
     },
     # We hardcode original kernel for CentOS 8.5 as it won't receive any updates anymore
-    "centos-8.5": {
+    "centos-8-latest": {
         "original_kernel": "kernel-core-4.18.0-348.7.1.el8_5.x86_64",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
@@ -35,7 +35,7 @@ DISTRO_KERNEL_MAPPING = {
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
     },
-    "alma-8.8": {
+    "alma-8-latest": {
         "original_kernel": f"{ORIGINAL_KERNEL}",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
@@ -45,7 +45,7 @@ DISTRO_KERNEL_MAPPING = {
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
     },
-    "rocky-8.8": {
+    "rocky-8-latest": {
         "original_kernel": f"{ORIGINAL_KERNEL}",
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
@@ -79,7 +79,7 @@ def clean_up_custom_kernel(shell):
     original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-")[-1]
 
     # Install back the CentOS 8.5 original kernel
-    if "centos-8.5" in SYSTEM_RELEASE_ENV:
+    if "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell("yum install -y %s" % original_kernel).returncode == 0
 
     assert (
