@@ -29,9 +29,9 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, cert, checks, exceptions, grub
+from convert2rhel import actions, applock, backup, checks, exceptions, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
@@ -50,6 +50,76 @@ from convert2rhel.unit_tests import (
     ShowEulaMocked,
     SummaryAsJsonMocked,
 )
+
+
+class TestRollbackChanges:
+    @pytest.fixture(autouse=True)
+    def mock_rollback_functions(self, monkeypatch):
+        monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock.Mock())
+        monkeypatch.setattr(repo, "restore_yum_repos", mock.Mock())
+        monkeypatch.setattr(repo, "restore_varsdir", mock.Mock())
+        monkeypatch.setattr(pkghandler.versionlock_file, "restore", mock.Mock())
+
+    def test_rollback_changes(self, monkeypatch):
+        monkeypatch.setattr(backup.backup_control, "pop_all", mock.Mock())
+
+        main.rollback_changes()
+
+        assert backup.changed_pkgs_control.restore_pkgs.call_count == 1
+        assert repo.restore_yum_repos.call_count == 1
+        assert pkghandler.versionlock_file.restore.call_count == 1
+        # Note: when we remove the BackupController partition hack, the first
+        # of these calls will go away
+        assert backup.backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
+        assert repo.restore_varsdir.call_count == 1
+
+    # The tests below are for the 1.4 hack that splits restore of Changes
+    # managed by the BackupController into two parts: one that executes before
+    # the unported restore items and a second that executes after.  They can be
+    # removed once all the Changes are managed by BackupControl and the
+    # partition code is removed.
+    def test_backup_control_partitioning_no_partition(self, caplog, monkeypatch):
+        backup_control_test = backup.BackupController()
+        monkeypatch.setattr(backup, "backup_control", backup_control_test)
+
+        main.rollback_changes()
+
+        assert caplog.records[-1].levelname == "INFO"
+        assert caplog.records[-1].message == "During rollback there were no backups to restore"
+
+    def test_backup_control_partitioning_with_partition(self, caplog, monkeypatch):
+        backup_control_test = backup.BackupController()
+        restorable1 = unit_tests.MinimalRestorable()
+        restorable2 = unit_tests.MinimalRestorable()
+        backup_control_test.push(restorable1)
+        backup_control_test.push(backup_control_test.partition)
+        backup_control_test.push(restorable2)
+        monkeypatch.setattr(backup, "backup_control", backup_control_test)
+
+        main.rollback_changes()
+
+        assert "During rollback there were no backups to restore" not in caplog.text
+
+    def test_backup_control_with_changes_only_before_the_partition(self, caplog, monkeypatch):
+        backup_control_test = backup.BackupController()
+        restorable1 = unit_tests.MinimalRestorable()
+        backup_control_test.push(backup_control_test.partition)
+        backup_control_test.push(restorable1)
+        monkeypatch.setattr(backup, "backup_control", backup_control_test)
+
+        main.rollback_changes()
+
+        assert "During rollback there were no backups to restore" not in caplog.text
+
+    def test_backup_control_unknown_exception(self, monkeypatch):
+        monkeypatch.setattr(
+            backup.backup_control,
+            "pop_all",
+            mock.Mock(side_effect=([], IndexError("Raised because of a bug in the code"))),
+        )
+
+        with pytest.raises(IndexError, match="Raised because of a bug in the code"):
+            main.rollback_changes()
 
 
 @pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
@@ -525,26 +595,3 @@ class TestRollbackFromMain:
         assert summary_as_txt_mock.call_count == 1
         assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
         assert update_rhsm_custom_facts_mock.call_count == 1
-
-    def test_rollback_changes(self, monkeypatch):
-        mock_restore_pkgs = mock.Mock()
-        mock_restore_yum_repos = mock.Mock()
-        mock_versionlock_file_restore = mock.Mock()
-        mock_cert_get_cert = mock.Mock(return_value="anything")
-        mock_backup_control_pop_all = mock.Mock()
-        mock_restore_varsdir = mock.Mock()
-
-        monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock_restore_pkgs)
-        monkeypatch.setattr(repo, "restore_yum_repos", mock_restore_yum_repos)
-        monkeypatch.setattr(pkghandler.versionlock_file, "restore", mock_versionlock_file_restore)
-        monkeypatch.setattr(cert, "_get_cert", mock_cert_get_cert)
-        monkeypatch.setattr(backup.backup_control, "pop_all", mock_backup_control_pop_all)
-        monkeypatch.setattr(repo, "restore_varsdir", mock_restore_varsdir)
-
-        main.rollback_changes()
-
-        assert mock_restore_pkgs.call_count == 1
-        assert mock_restore_yum_repos.call_count == 1
-        assert mock_versionlock_file_restore.call_count == 1
-        assert mock_backup_control_pop_all.call_count == 1
-        assert mock_restore_varsdir.call_count == 1
