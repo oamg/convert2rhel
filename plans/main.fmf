@@ -23,13 +23,13 @@ adjust+:
         SYSTEM_RELEASE_ENV: alma-8.6
       when: distro == alma-8.6
     - environment+:
-        SYSTEM_RELEASE_ENV: alma-8.8
+        SYSTEM_RELEASE_ENV: alma-8-latest
       when: distro == alma-8-latest
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8.6
       when: distro == rocky-8.6
     - environment+:
-        SYSTEM_RELEASE_ENV: rocky-8.8
+        SYSTEM_RELEASE_ENV: rocky-8-latest
       when: distro == rocky-8-latest
 
 prepare:
