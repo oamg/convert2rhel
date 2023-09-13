@@ -1,7 +1,7 @@
 summary: Handle kernel boot files
 
 description: |
-    Verify that Convert2RHEL can detect and handle the kernel boot files in
+    Verify that convert2rhel can detect and handle the kernel boot files in
     case of failure.
     Verify that, if present, the kernel boot files are not corrupted.
 

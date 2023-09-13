@@ -65,7 +65,7 @@ def c2r_version(request):
     """
     A fixture that updates the version value in a file.
     """
-    # Find where the site packages for Convert2RHEL are and backup the original version.
+    # Find where the site packages for convert2rhel are and backup the original version.
     path_to_version = subprocess.check_output(
         ["find", "/usr/lib/", "-path", "*/convert2rhel/__init__.py", "-printf", "%p"]
     ).decode("utf-8")
@@ -75,7 +75,7 @@ def c2r_version(request):
 
     def _update_c2r_version(version):
         """
-        Modify the Convert2RHEL version value in the __init__.py file.
+        Modify the convert2rhel version value in the __init__.py file.
         We want to simulate the running version is older/newer than in the repositories.
         """
         with open(path_to_version, "w") as version_file:
@@ -159,7 +159,7 @@ def older_version_envar():
 @pytest.mark.parametrize("version", ["0.01.0"])
 def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version, older_version_envar):
     """
-    Verify that running older version of Convert2RHEL with the environment
+    Verify that running older version of convert2rhel with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
     Running older version of convert2rhel on OS major version 6 or older should inhibit either way.
     """
@@ -241,7 +241,7 @@ def test_rhsm_error_logged(convert2rhel):
 @pytest.mark.test_variant_message
 def test_check_variant_message(convert2rhel):
     """
-    Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
+    Run convert2rhel with deprecated -v/--variant option and verify that the warning message is shown.
     """
     # Run c2r with --variant option
     with convert2rhel("--no-rpm-va --debug --variant Server") as c2r:

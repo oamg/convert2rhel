@@ -1,6 +1,6 @@
-# Contributing to Convert2RHEL
+# Contributing to convert2rhel
 
-The following is a set of guidelines for contributing to Convert2RHEL codebase,
+The following is a set of guidelines for contributing to convert2rhel codebase,
 which are hosted in the [OAMG Organization](https://github.com/oamg) on GitHub.
 These are mostly guidelines, not rules.
 
@@ -30,7 +30,7 @@ Git](https://docs.github.com/en/get-started/quickstart/set-up-git)
 
 ### Forking a repository
 
-Forking is necessary if you want to contribute with Convert2RHEL, but if you
+Forking is necessary if you want to contribute with convert2rhel, but if you
 are unsure on how this work (Or what a fork is), head out to this quickstart
 guide from GitHub. [GitHub Quickstart - Fork a
 repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
@@ -184,7 +184,7 @@ pre-commit](https://pre-commit.com/#usage).
 ### Writing tests
 
 Tests are an important part of the development process, they guarantee to us
-that our code is working in the correct way as expected, and for Convert2RHEL,
+that our code is working in the correct way as expected, and for convert2rhel,
 we separate these tests in two categories.
 
 - Unit testing
@@ -217,7 +217,7 @@ to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/).
 
 ### Python code styleguide
 
-For Convert2RHEL we use the [PEP 8 -- Style Guide for Python
+For convert2rhel we use the [PEP 8 -- Style Guide for Python
 Code](https://www.python.org/dev/peps/pep-0008/) as well some
 linters/formatters that are run directly from
 [pre-commit](https://pre-commit.com).

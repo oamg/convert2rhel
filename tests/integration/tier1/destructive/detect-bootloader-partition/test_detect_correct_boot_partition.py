@@ -8,7 +8,7 @@ EFI_BOOT_MOUNTPOINT = "/boot/efi"
 SYSTEM_RELEASE = platform.platform()
 
 # TODO(danmyway): We need to include another test case in this to verify that
-# Convert2RHEL can detect the correct partition even though it will not be in
+# convert2rhel can detect the correct partition even though it will not be in
 # the usual /dev/xxx1. We are holding https://github.com/teemtee/tmt/pull/1835
 # to get merged, as well, UEFI support in testing farm to create such case.
 
@@ -37,7 +37,7 @@ def test_detect_correct_boot_partition(convert2rhel):
     Verify that the correct arguments for disk and partition will be used
     during the creation of a new EFI partition.
 
-    This test does a series of assertions to verify that Convert2RHEl was able
+    This test does a series of assertions to verify that convert2rhel was able
     to correctly detect the EFI boot partition during the execution, no matter
     what disk/partition the EFI mount will be.
     """

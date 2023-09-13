@@ -37,7 +37,7 @@ RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-
 
 CONVERT2RHEL_REPO_CONTENT = """\
 [convert2rhel]
-name=Convert2RHEL Repository
+name=convert2rhel Repository
 baseurl=%s
 gpgcheck=1
 enabled=1

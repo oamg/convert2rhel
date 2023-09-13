@@ -1,6 +1,6 @@
 minimum_pre_commit_version: "2.9.0"
 ci:
-    skip: [regenerate-rerun-plan]
+  skip: [regenerate-rerun-plan]
 repos:
   - repo: local
     hooks:
@@ -21,7 +21,7 @@ repos:
             sed -i '/^[[:space:]]*tier: 0/d' plans/rerun.fmf
             sed -i 's/\s\+$//' plans/rerun.fmf
         language: system
-        stages: [ manual ]
+        stages: [manual]
   - repo: local
     hooks:
       - id: black
@@ -78,3 +78,15 @@ repos:
     hooks:
       - id: gitleaks
         stages: [manual, push]
+  - repo: local
+    hooks:
+      - id: enforce-convert2rhel-name
+        name: regenerate plans/rerun.fmf
+        entry: sh
+        # Enforce convert2rhel to be used everywhere
+        args:
+          - -c
+          - |
+            git ls-files -z | xargs -0 sed -i -e 's/convert2rhel /convert2rhel /gi'
+        language: system
+        stages: [manual, commit]

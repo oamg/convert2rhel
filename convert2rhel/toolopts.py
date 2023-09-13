@@ -138,7 +138,7 @@ class CLI(object):
         subparsers = self._parser.add_subparsers(title="Subcommands", dest="command")
         self._analyze_parser = subparsers.add_parser(
             "analyze",
-            help="Run all Convert2RHEL initial checks up until the "
+            help="Run all convert2rhel initial checks up until the "
             " Point of no Return (PONR) and generate a report with the findings."
             " A rollback is initiated after the checks to put the system back"
             " in the original state.",
@@ -340,7 +340,7 @@ class CLI(object):
         group.add_argument(
             "--keep-rhsm",
             action="store_true",
-            help="Deprecated. This option has no effect. Convert2rhel will now use whatever"
+            help="Deprecated. This option has no effect. convert2rhel will now use whatever"
             " subscription-manager packages are present on the system.",
         )
 
@@ -473,7 +473,7 @@ class CLI(object):
         if parsed_opts.keep_rhsm:
             loggerinst.warning(
                 "The --keep-rhsm option is deprecated and will be removed in"
-                " the future. Convert2rhel will now always use the"
+                " the future. convert2rhel will now always use the"
                 " subscription-manager packages which are already installed on"
                 " the system so this option has no effect."
             )

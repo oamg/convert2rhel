@@ -112,7 +112,7 @@ class Breadcrumbs(object):
         self._pkg_object = pkghandler.get_installed_pkg_objects(name="convert2rhel")[0]
 
     def _set_executed(self):
-        """Set how was Convert2RHEL executed"""
+        """Set how was convert2rhel executed"""
         self.executed = " ".join(utils.hide_secrets(args=sys.argv))
 
     def _set_nevra(self):
@@ -215,13 +215,13 @@ class Breadcrumbs(object):
             loggerinst.info(
                 "The convert2rhel utility uploads the following data about the system conversion"
                 " to Red Hat servers for the purpose of the utility usage analysis:\n"
-                "- The Convert2RHEL command as executed\n"
-                "- The Convert2RHEL RPM version and GPG signature\n"
+                "- The convert2rhel command as executed\n"
+                "- The convert2rhel RPM version and GPG signature\n"
                 "- Success or failure status of the conversion\n"
                 "- Conversion start and end timestamps\n"
                 "- Source OS vendor and version\n"
                 "- Target RHEL version\n"
-                "- Convert2RHEL related environment variables\n\n"
+                "- convert2rhel related environment variables\n\n"
                 "To disable the data collection, use the 'CONVERT2RHEL_DISABLE_TELEMETRY=1' environment variable."
             )
 

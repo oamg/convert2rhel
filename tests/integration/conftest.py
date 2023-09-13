@@ -56,9 +56,9 @@ def shell(tmp_path):
 
 @pytest.fixture()
 def convert2rhel(shell):
-    """Context manager to run Convert2RHEL utility.
+    """Context manager to run convert2rhel utility.
 
-    This fixture runs the Convert2RHEL with the specified options and
+    This fixture runs the convert2rhel with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
     You can verify that some text is in stdout, by using:
@@ -224,13 +224,13 @@ class ConfigUtils:
 
 @pytest.fixture()
 def c2r_config(os_release):
-    """ConfigUtils object with already loaded Convert2RHEL config."""
+    """ConfigUtils object with already loaded convert2rhel config."""
     release_id2conf = {"centos": "centos", "ol": "oracle"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")
         / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
     )
-    assert config_path.exists(), f"Can't find Convert2RHEL config file.\n{str(config_path)} - does not exist."
+    assert config_path.exists(), f"Can't find convert2rhel config file.\n{str(config_path)} - does not exist."
     return ConfigUtils(config_path)
 
 

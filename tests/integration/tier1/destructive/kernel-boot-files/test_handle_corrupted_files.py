@@ -66,7 +66,7 @@ def test_corrupted_initramfs_file(convert2rhel, shell):
     file in an partial state and corrupted.
 
     Since this could be a real scenario, we prepared this test to assert that,
-    if it happens, Convert2RHEL can detect that partial file there and instruct
+    if it happens, convert2rhel can detect that partial file there and instruct
     the user on how to fix the problem.
 
     .. note::

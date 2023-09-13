@@ -83,7 +83,7 @@ def create_transaction_handler():
 def clean_yum_metadata():
     """Remove cached metadata from yum.
 
-    This is to make sure that Convert2RHEL works with up-to-date data from repositories before, for instance, querying
+    This is to make sure that convert2rhel works with up-to-date data from repositories before, for instance, querying
     whether the system has the latest package versions installed, or before checking whether enabled repositories have
     accessible URLs.
     """

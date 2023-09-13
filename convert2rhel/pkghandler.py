@@ -1114,7 +1114,7 @@ def fix_invalid_grub2_entries():
 
 
 def install_additional_rhel_kernel_pkgs(additional_pkgs):
-    """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
+    """convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
     tries to install back all of these from RHEL repositories.
     """
     # OL renames some of the kernel packages by adding "-uek" (Unbreakable
@@ -1141,7 +1141,7 @@ def update_rhel_kernel():
 def clear_versionlock():
     """A package can be locked to a specific version using a YUM/DNF versionlock plugin. Then, even if a newer version
     of a package is available, yum or dnf won't update it. That may cause a problem during the conversion as other
-    RHEL packages may depend on a different version than is locked. Therefore, the Convert2RHEL utility clears all the
+    RHEL packages may depend on a different version than is locked. Therefore, the convert2rhel utility clears all the
     locks to prevent a system conversion failure.
     DNF has been designed to be backwards compatible with YUM. So the file in which the version locks are defined for
     YUM works correctly even with DNF thanks to symlinks created by DNF.

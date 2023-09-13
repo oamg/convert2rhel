@@ -126,7 +126,7 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     """
     In this test case we force load kmod and verify that the convert2rhel run is inhibited.
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
-    Convert2RHEL sees force loaded kmod as tainted.
+    convert2rhel sees force loaded kmod as tainted.
     """
     # Force load the kernel module
     assert shell("modprobe -f -v bonding").returncode == 0

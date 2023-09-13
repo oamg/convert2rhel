@@ -147,7 +147,7 @@ def test_keep_rhsm(monkeypatch, caplog):
 
     assert (
         "The --keep-rhsm option is deprecated and will be removed in"
-        " the future. Convert2rhel will now always use the"
+        " the future. convert2rhel will now always use the"
         " subscription-manager packages which are already installed on"
         " the system so this option has no effect." in caplog.text
     )

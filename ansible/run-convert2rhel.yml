@@ -43,7 +43,7 @@
         # network and storage.  This will need to be run in parallel from the
         # control node or Tower to effectively run against many systems.
 
-        - name: Run Convert2RHEL
+        - name: Run convert2rhel
           command: >
             convert2rhel
             -u "{{ rhsm_username }}"

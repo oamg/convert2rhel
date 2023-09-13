@@ -24,7 +24,7 @@ def get_parser():
 
     # Description taken out of our Confluence page.
     parser.description = (
-        "The Convert2RHEL utility automates converting Red Hat Enterprise Linux "
+        "The convert2rhel utility automates converting Red Hat Enterprise Linux "
         "derivative distributions to Red Hat Enterprise Linux. "
         "The whole conversion procedure is performed on the running RHEL derivative OS "
         "installation and a restart is needed at the end of the conversion to "

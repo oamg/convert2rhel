@@ -64,10 +64,10 @@
         url: "{{ SSLCACERT }}"
         dest: "/etc/rhsm/ca/redhat-uep.pem"
 
-    - name: Add Convert2RHEL yum repository from Red Hat
+    - name: Add convert2rhel yum repository from Red Hat
       yum_repository:
         name: convert2rhel
-        description: Convert2RHEL for OS {{ ansible_distribution_major_version }}
+        description: convert2rhel for OS {{ ansible_distribution_major_version }}
         baseurl: "https://cdn.redhat.com/content/public/convert2rhel/{{ ansible_distribution_major_version }}/x86_64/os/"
         enabled: yes
         gpgcheck: yes

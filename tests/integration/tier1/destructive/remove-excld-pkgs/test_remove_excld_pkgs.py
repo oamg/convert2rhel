@@ -5,7 +5,7 @@ from envparse import env
 
 def test_remove_excluded_pkgs(shell, convert2rhel):
     """
-    Ensure Convert2RHEL removes packages, which are specified as excluded_pkgs in config.
+    Ensure convert2rhel removes packages, which are specified as excluded_pkgs in config.
     Verification scenarios cover just some packages causing major issues.
     Those are specified in their respective test plan (remove_excluded_pkgs_epel7 and remove_excluded_pkgs_epel8).
     Packages are set as an environment variable.

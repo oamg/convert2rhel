@@ -3,7 +3,7 @@ summary: |
 description: |
     Verify basic sanity behavior.
         - Display help
-        - Only last version of Convert2RHEL supported
+        - Only last version of convert2rhel supported
         - Yum cache cleaned before any other check
         - Missing RHSM certificates logged properly
         - Deprecated --variant message displayed

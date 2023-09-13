@@ -48,7 +48,7 @@ def set_locale():
         Since we introduced a new way to interact with packages that is not
         through the `yum` cli calls, but with the Python API, we had to move
         this function to a new module to initialize all the settings in
-        Convert2RHEL before-hand as this was causing problems related to the
+        convert2rhel before-hand as this was causing problems related to the
         locales. The main problem that this function solves by being here is by
         overriding any user set locale in their machine, to actually being the
         ones we require during the process execution.

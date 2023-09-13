@@ -1,7 +1,7 @@
 summary: Detect correct bootloader partition
 
 description: |
-    Verify that Convert2RHEL detected the correct boot partition.
+    Verify that convert2rhel detected the correct boot partition.
 
     This test is supposed to be ran only on UEFI machines.
 

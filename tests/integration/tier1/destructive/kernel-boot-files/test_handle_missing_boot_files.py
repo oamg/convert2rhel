@@ -43,7 +43,7 @@ def test_missing_kernel_boot_files(convert2rhel, shell):
     the tool can't detect the initramfs and vmlinuz files in /boot.
 
     This case can happen if the kernel scriptlet fails during the yum/dnf
-    transaction where Convert2RHEL tries to replace the packages. Even though
+    transaction where convert2rhel tries to replace the packages. Even though
     the scriptlet can fail, the transaction will still continue and the
     workflow will continue to be executed. The problem is that, with a
     scriptlet failure when replacing/installing a kernel, the initramfs and
@@ -73,7 +73,7 @@ def test_missing_kernel_boot_files(convert2rhel, shell):
         # initramfs and vmlinuz files, we will produce a warning and tell the
         # user what to do in order to fix the problem. To not cause any more
         # mess other than what we want, let's just remove the two file from the
-        # system, and see if Convert2RHEL will detect that the right way.
+        # system, and see if convert2rhel will detect that the right way.
         remove_kernel_boot_files(shell, kernel_version)
 
         assert c2r.expect("Couldn't verify the kernel boot files in the boot partition.") == 0

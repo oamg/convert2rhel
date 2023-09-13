@@ -191,9 +191,9 @@ def main_locked(process_phase):
             # or with the use of other backup tools.
             loggerinst.warning(
                 "The conversion process failed.\n\n"
-                "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
+                "The system is left in an undetermined state that convert2rhel cannot fix. The system might not be"
                 " fully converted, and might incorrectly be reporting as a Red Hat Enterprise Linux machine.\n\n"
-                "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+                "It is strongly recommended to store the convert2rhel logs for later investigation, and restore"
                 " the system from a backup."
             )
             subscription.update_rhsm_custom_facts()

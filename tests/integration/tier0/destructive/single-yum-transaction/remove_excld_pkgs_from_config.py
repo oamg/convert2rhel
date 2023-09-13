@@ -4,7 +4,7 @@ from conftest import SYSTEM_RELEASE_ENV
 def test_remove_excluded_pkgs_from_config(shell):
     """Remove some excluded packages from the CentOS Linux 7 config file.
 
-    That means Convert2RHEL won't remove them before the main conversion transaction.
+    That means convert2rhel won't remove them before the main conversion transaction.
     """
 
     if "centos-7" in SYSTEM_RELEASE_ENV:

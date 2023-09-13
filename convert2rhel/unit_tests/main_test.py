@@ -528,5 +528,5 @@ def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog, tmp_path):
     assert post_ponr_conversion_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
-    assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
+    assert "The system is left in an undetermined state that convert2rhel cannot fix." in caplog.records[-2].message
     assert update_rhsm_custom_facts_mock.call_count == 1

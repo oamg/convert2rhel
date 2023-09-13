@@ -1,7 +1,7 @@
 summary: Definitions of different registration methods
 
 description: |
-    Convert2RHEL provides various methods of registration.
+    convert2rhel provides various methods of registration.
     In this directory there is a set of the registration methods implemented with full conversion.
     Tested methods: satellite, RHSM, non-EUS RHSM, activation key and custom repos.
 
