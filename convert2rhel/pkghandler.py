@@ -226,7 +226,7 @@ class RestorablePackageSet(backup.RestorableChange):
             # and we need these packages to be replaced with the provided RPMs from RHEL.
             command="install",
             args=rpms_to_install,
-            print_output=True,
+            print_output=False,
             # When installing subscription-manager packages, the RHEL repos are
             # not available yet for getting dependencies so we need to use the repos that are
             # available on the system
@@ -237,7 +237,8 @@ class RestorablePackageSet(backup.RestorableChange):
         )
         if ret_code:
             loggerinst.critical_no_exit(
-                "Failed to install subscription-manager packages. See the above yum output for details."
+                "Failed to install subscription-manager packages. Check the yum output below for details:\n\n %s"
+                % output
             )
             raise exceptions.CriticalError(
                 id_="FAILED_TO_INSTALL_SUBSCRIPTION_MANAGER_PACKAGES",
@@ -246,6 +247,10 @@ class RestorablePackageSet(backup.RestorableChange):
                 diagnosis="Failed to install packages %s. Output: %s, Status: %s"
                 % (utils.format_sequence_as_message(rpms_to_install), output, ret_code),
             )
+
+        # Need to do this here instead of in pkghandler.call_yum_cmd() to avoid
+        # double printing the output if an error occurred.
+        loggerinst.info(output.rstrip("\n"))
 
         installed_pkg_names = get_pkg_names_from_rpm_paths(rpms_to_install)
         loggerinst.info(

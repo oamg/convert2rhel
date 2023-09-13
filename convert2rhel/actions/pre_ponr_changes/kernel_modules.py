@@ -36,6 +36,10 @@ class RHELKernelModuleNotFound(Exception):
     pass
 
 
+class PackageRepositoryError(Exception):
+    pass
+
+
 class EnsureKernelModulesCompatibility(actions.Action):
     id = "ENSURE_KERNEL_MODULES_COMPATIBILITY"
     dependencies = ("SUBSCRIBE_SYSTEM",)
@@ -59,6 +63,12 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
     def _get_rhel_supported_kmods(self):
         """Return set of target RHEL supported kernel modules."""
+        precache = [
+            "yum",
+            "makecache",
+            "--releasever=%s" % system_info.releasever,
+            "--setopt=*.skip_if_unavailable=False",
+        ]
         basecmd = [
             "repoquery",
             "--releasever=%s" % system_info.releasever,
@@ -66,9 +76,28 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
         if system_info.version.major >= 8:
             basecmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
+            precache.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
 
+        active_repos = ["--disablerepo=*"]
         for repoid in system_info.get_enabled_rhel_repos():
-            basecmd.extend(("--repoid", repoid))
+            active_repos.extend(("--enablerepo", repoid))
+        precache.extend(active_repos)
+        basecmd.extend(active_repos)
+
+        # Retrieve the yum metadata for the repos we use.  yum makecache will
+        # error out if there is a problem downloading the metadata (for instance,
+        # no disk space left to save it) whereas repoquery will return no results
+        # if there is already some metadata available.
+
+        precache_out, precache_exit_code = run_subprocess(precache, print_output=False)
+        if precache_exit_code != 0:
+            raise PackageRepositoryError(
+                "We were unable to download the repository metadata for (%s) to"
+                " determine packages containing kernel modules.  Can be caused by"
+                " not enough disk space in /var/cache or too little memory.  The"
+                " yum output below may have a clue for what went wrong in this"
+                " case:\n\n%s" % (", ".join(system_info.get_enabled_rhel_repos()), precache_out)
+            )
 
         cmd = basecmd[:]
         cmd.append("-f")
@@ -77,8 +106,15 @@ class EnsureKernelModulesCompatibility(actions.Action):
         # Without the release package installed, dnf can't determine the
         # modularity platform ID. get output of a command to get all
         # packages which are the source of kmods
-        kmod_pkgs_str, _ = run_subprocess(cmd, print_output=False)
+        kmod_pkgs_str, repoquery_exit_code = run_subprocess(cmd, print_output=False)
 
+        if repoquery_exit_code != 0:
+            raise PackageRepositoryError(
+                "We were unable to query the repositories (%s) to"
+                " determine packages containing kernel modules."
+                " Output from the failed repoquery command:\n\n%s"
+                % (", ".join(system_info.get_enabled_rhel_repos()), kmod_pkgs_str)
+            )
         # from these packages we select only the latest one
         kmod_pkgs = self._get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
         if not kmod_pkgs:
@@ -245,6 +281,14 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 return
 
             logger.debug("All loaded kernel modules are available in RHEL.")
+        except PackageRepositoryError as e:
+            self.set_result(
+                level="ERROR",
+                id="PROBLEM_WITH_PACKAGE_REPO",
+                title="Could not download package metadata",
+                description="There was an error retrieving the package metadata to verify kernel modules are available in RHEL.",
+                diagnosis=str(e),
+            )
         except RHELKernelModuleNotFound as e:
             self.set_result(
                 level="ERROR",
@@ -260,5 +304,5 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 id="CANNOT_COMPARE_PACKAGE_VERSIONS",
                 title="Error while comparing packages",
                 description="There was an error while detecting the kernel package which corresponds to the kernel modules present on the system.",
-                diagnosis="Package comparison failed: %s" % e,
+                diagnosis="Package comparison failed: %s" % str(e),
             )
