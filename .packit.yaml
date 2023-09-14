@@ -97,12 +97,10 @@ jobs:
   tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
   targets:
     epel-7-x86_64:
-      distros: [oraclelinux-7]
+      distros: ["OL7.9-x86_64-HVM-2023-01-05"]
   tf_extra_params:
     environments:
-      - os:
-          compose: "OL7.9-x86_64-HVM-2023-01-05"
-        tmt:
+      - tmt:
           context:
             distro: "oraclelinux-7"
         settings:
@@ -140,12 +138,10 @@ jobs:
   tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
   targets:
     epel-8-x86_64:
-      distros: [oraclelinux-8]
+      distros: ["OL8.8-x86_64-HVM-2023-06-21"]
   tf_extra_params:
     environments:
-      - os:
-          compose: "OL8.8-x86_64-HVM-2023-06-21"
-        tmt:
+      - tmt:
           context:
             distro: "oraclelinux-8-latest"
         settings:
