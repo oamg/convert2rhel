@@ -17,11 +17,7 @@
 
 import logging
 import os
-import shutil
 import time
-import unittest
-
-from collections import namedtuple
 
 import pytest
 import six
@@ -37,161 +33,109 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock, urllib
 
 
-class TestSysteminfo(unittest.TestCase):
-    class RunSubprocessMocked(unit_tests.MockFunction):
-        def __init__(self, output_tuple=("output", 0)):
-            self.output_tuple = output_tuple
-            self.called = 0
-            self.used_args = []
+@pytest.fixture(autouse=True)
+def register_system_info_logger(monkeypatch):
+    # Have to initialize the logger since we are not constructing the
+    # system_info object properly i.e: we are not calling `resolve_system_info()`
+    monkeypatch.setattr(system_info, "logger", logging.getLogger(__name__))
 
-        def __call__(self, *args, **kwargs):
-            self.called += 1
-            self.used_args.append(args)
-            return self.output_tuple
 
-    class PathExistsMocked(unit_tests.MockFunction):
-        def __init__(self, return_value=True):
-            self.return_value = return_value
+class TestRPMFilesDiff:
+    def test_modified_rpm_files_diff_with_no_rpm_va(self, monkeypatch):
+        monkeypatch.setattr(tool_opts, "no_rpm_va", mock.Mock(return_value=True))
+        assert system_info.modified_rpm_files_diff() is None
 
-        def __call__(self, filepath):
-            return self.return_value
-
-    class GenerateRpmVaMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-
-        def __call__(self):
-            self.called += 1
-
-    class GetLoggerMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.task_msgs = []
-            self.info_msgs = []
-            self.warning_msgs = []
-            self.critical_msgs = []
-
-        def __call__(self, msg):
-            return self
-
-        def critical(self, msg):
-            self.critical_msgs.append(msg)
-            raise SystemExit(1)
-
-        def task(self, msg):
-            self.task_msgs.append(msg)
-
-        def info(self, msg):
-            self.info_msgs.append(msg)
-
-        def warn(self, msg, *args):
-            self.warning_msgs.append(msg)
-
-        def warning(self, msg, *args):
-            self.warn(msg, *args)
-
-        def debug(self, msg):
-            pass
-
-    class GetFileContentMocked(unit_tests.MockFunction):
-        def __init__(self, data):
-            self.data = data
-            self.as_list = True
-            self.called = 0
-
-        def __call__(self, filename, as_list):
-            self.called += 1
-            return self.data[self.called - 1]
-
-    ##########################################################################
-
-    def setUp(self):
-        if os.path.exists(unit_tests.TMP_DIR):
-            shutil.rmtree(unit_tests.TMP_DIR)
-        os.makedirs(unit_tests.TMP_DIR)
-        system_info.logger = logging.getLogger(__name__)
-
-        self.rpmva_output_file = os.path.join(unit_tests.TMP_DIR, "rpm_va.log")
-
-    def tearDown(self):
-        if os.path.exists(unit_tests.TMP_DIR):
-            shutil.rmtree(unit_tests.TMP_DIR)
-
-    @unit_tests.mock(tool_opts, "no_rpm_va", True)
-    def test_modified_rpm_files_diff_with_no_rpm_va(self):
-        self.assertEqual(system_info.modified_rpm_files_diff(), None)
-
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(
-        utils,
-        "get_file_content",
-        GetFileContentMocked(data=[["rpm1", "rpm2"], ["rpm1", "rpm2"]]),
-    )
     def test_modified_rpm_files_diff_without_differences_after_conversion(
-        self,
+        self, register_system_info_logger, monkeypatch
     ):
-        self.assertEqual(system_info.modified_rpm_files_diff(), None)
+        monkeypatch.setattr(system_info, "generate_rpm_va", mock.Mock())
+        monkeypatch.setattr(utils, "get_file_content", mock.Mock(side_effect=(["rpm1", "rpm2"], ["rpm1", "rpm2"])))
 
-    @unit_tests.mock(os.path, "exists", PathExistsMocked(True))
-    @unit_tests.mock(tool_opts, "no_rpm_va", False)
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(system_info, "logger", GetLoggerMocked())
-    @unit_tests.mock(
-        utils,
-        "get_file_content",
-        GetFileContentMocked(
-            data=[
-                [".M.......  g /etc/pki/ca-trust/extracted/java/cacerts"],
-                [
-                    ".M.......  g /etc/pki/ca-trust/extracted/java/cacerts",
-                    "S.5....T.  c /etc/yum.conf",
-                ],
-            ]
-        ),
-    )
-    @pytest.mark.skipif(
-        not is_rpm_based_os(),
-        reason="Current test runs only on rpm based systems.",
-    )
-    def test_modified_rpm_files_diff_with_differences_after_conversion(self):
+        assert system_info.modified_rpm_files_diff() is None
+
+    def test_modified_rpm_files_diff_with_differences_after_conversion(self, monkeypatch, caplog):
+        monkeypatch.setattr(system_info, "generate_rpm_va", mock.Mock())
+        monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+        monkeypatch.setattr(tool_opts, "no_rpm_va", False)
+        monkeypatch.setattr(
+            utils,
+            "get_file_content",
+            mock.Mock(
+                side_effect=(
+                    [".M.......  g /etc/pki/ca-trust/extracted/java/cacerts"],
+                    [
+                        ".M.......  g /etc/pki/ca-trust/extracted/java/cacerts",
+                        "S.5....T.  c /etc/yum.conf",
+                    ],
+                )
+            ),
+        )
+
         system_info.modified_rpm_files_diff()
-        self.assertTrue(any("S.5....T.  c /etc/yum.conf" in elem for elem in system_info.logger.info_msgs))
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked(("rpmva\n", 0)))
-    def test_generate_rpm_va(self):
-        # TODO: move class from unittest to pytest and use global tool_opts fixture
-        # Check that rpm -Va is executed (default) and stored into the specific file.
-        tool_opts.no_rpm_va = False
+        assert any("S.5....T.  c /etc/yum.conf" in elem.message for elem in caplog.records if elem.levelname == "INFO")
+
+
+class TestGenerateRPMVA:
+    def test_generate_rpm_va(self, global_tool_opts, monkeypatch, tmpdir):
+        global_tool_opts.no_rpm_va = False
+        monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("rpmva\n", 0)))
+        monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
+        rpmva_output_file = str(tmpdir / "rpm_va.log")
         system_info.generate_rpm_va()
-        self.assertGreater(utils.run_subprocess.called, 0)
-        self.assertEqual(utils.run_subprocess.used_args[0][0], ["rpm", "-Va"])
-        self.assertTrue(os.path.isfile(self.rpmva_output_file))
-        self.assertEqual(utils.get_file_content(self.rpmva_output_file), "rpmva\n")
 
-    @unit_tests.mock(logger, "LOG_DIR", unit_tests.TMP_DIR)
-    @unit_tests.mock(utils, "run_subprocess", RunSubprocessMocked())
-    def test_generate_rpm_va_skip(self):
+        # Check that rpm -Va is executed (default)
+        assert utils.run_subprocess.called
+        assert utils.run_subprocess.call_args_list[0][0][0] == ["rpm", "-Va"]
+
+        # Check that the output was stored into the specific file.
+        assert os.path.isfile(rpmva_output_file)
+        assert utils.get_file_content(rpmva_output_file) == "rpmva\n"
+
+    def test_generate_rpm_va_skip(self, global_tool_opts, monkeypatch, tmpdir):
+        global_tool_opts.no_rpm_va = True
+        monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(utils, "run_subprocess", mock.Mock())
+        monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
+        rpmva_output_file = str(tmpdir / "rpm_va.log")
+
+        system_info.generate_rpm_va()
+
         # Check that rpm -Va is not called when the --no-rpm-va option is used.
-        tool_opts.no_rpm_va = True
-        system_info.generate_rpm_va()
+        assert not utils.run_subprocess.called
+        assert not os.path.exists(rpmva_output_file)
 
-        self.assertEqual(utils.run_subprocess.called, 0)
-        self.assertFalse(os.path.exists(self.rpmva_output_file))
 
-    def test_get_system_version(self):
-        Version = namedtuple("Version", ["major", "minor"])
-        versions = {
-            "Oracle Linux Server release 7.8": Version(7, 8),
-            "CentOS Linux release 7.6.1810 (Core)": Version(7, 6),
-            "CentOS Linux release 8.1.1911 (Core)": Version(8, 1),
-        }
-        for system_release in versions:
-            system_info.system_release_file_content = system_release
-            version = system_info._get_system_version()
-            self.assertEqual(version, versions[system_release])
+@pytest.mark.parametrize(
+    ("version_string", "expected_version"),
+    (
+        (
+            "Oracle Linux Server release 7.8",
+            Version(7, 8),
+        ),
+        (
+            "CentOS Linux release 7.6.1810 (Core)",
+            Version(7, 6),
+        ),
+        (
+            "CentOS Linux release 8.1.1911 (Core)",
+            Version(8, 1),
+        ),
+    ),
+)
+def test_get_system_version(version_string, expected_version, monkeypatch):
+    monkeypatch.setattr(system_info, "system_release_file_content", version_string)
 
-        system_info.system_release_file_content = "not containing the release"
-        self.assertRaises(SystemExit, system_info._get_system_version)
+    version = system_info._get_system_version()
+
+    assert version == expected_version
+
+
+def test_get_system_version_failed(monkeypatch):
+    monkeypatch.setattr(system_info, "system_release_file_content", "not containing the release")
+    with pytest.raises(SystemExit):
+        system_info._get_system_version()
 
 
 @pytest.mark.parametrize(
@@ -284,9 +228,6 @@ def test_check_internet_access(side_effect, expected, message, monkeypatch, capl
         "urlopen",
         mock.Mock(side_effect=side_effect),
     )
-    # Have to initialize the logger since we are not constructing the
-    # system_info object properly i.e: we are not calling `resolve_system_info()`
-    system_info.logger = logging.getLogger(__name__)
 
     assert system_info._check_internet_access() == expected
     assert message in caplog.records[-1].message
@@ -308,7 +249,7 @@ def test_check_internet_access(side_effect, expected, message, monkeypatch, capl
     ),
 )
 def test_get_dbus_status(monkeypatch, version_major, command_output, expected_command, expected_output):
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ("major", "minor"))(version_major, 0))
+    monkeypatch.setattr(system_info, "version", Version(version_major, 0))
     monkeypatch.setattr(time, "sleep", mock.Mock)
     run_subprocess_mocked = mock.Mock(return_value=(command_output, 0))
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
@@ -353,7 +294,7 @@ def test_get_dbus_status(monkeypatch, version_major, command_output, expected_co
 )
 def test_get_dbus_status_in_progress(monkeypatch, states, expected):
     """Test that dbus switching from reloading or activating to active is detected."""
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ("major", "minor"))(8, 0))
+    monkeypatch.setattr(system_info, "version", Version(8, 0))
     monkeypatch.setattr(time, "sleep", mock.Mock)
 
     side_effects = []
@@ -377,9 +318,9 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
         (8, 9, False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(major, minor, expected):
+def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
     version = Version(major, minor)
-    system_info.version = version
+    monkeypatch.setattr(system_info, "version", version)
     assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
@@ -430,7 +371,7 @@ def test_get_enabled_rhel_repos(
     monkeypatch,
 ):
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
-    system_info.submgr_enabled_repos = submgr_enabled_repos
+    monkeypatch.setattr(system_info, "submgr_enabled_repos", submgr_enabled_repos)
     global_tool_opts.enablerepo = tool_opts_enablerepo
     global_tool_opts.no_rhsm = tool_opts_no_rhsm
 
