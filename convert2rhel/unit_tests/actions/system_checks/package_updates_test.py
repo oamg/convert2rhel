@@ -74,7 +74,7 @@ def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_
 
 @centos8
 def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog):
-    packages = ["package-1", "package-2"]
+    packages = ["package-2", "package-1"]
     diagnosis = (
         "The system has 2 package(s) not updated based on the enabled system repositories.\n"
         "List of packages to update: package-1 package-2.\n\n"
@@ -100,7 +100,7 @@ def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_u
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
-                remediation=None,
+                remediation="Run yum update to update all the packages on the system.",
             ),
         )
     )

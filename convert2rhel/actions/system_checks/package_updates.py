@@ -64,7 +64,7 @@ class PackageUpdates(actions.Action):
             return
 
         try:
-            packages_to_update = get_total_packages_to_update(reposdir=reposdir)
+            packages_to_update = sorted(get_total_packages_to_update(reposdir=reposdir))
         except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
             # As both yum and dnf have the same error class (RepoError), to
             # identify any problems when interacting with the repositories, we
@@ -119,6 +119,7 @@ class PackageUpdates(actions.Action):
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=package_not_up_to_date_error_message,
+                remediation="Run yum update to update all the packages on the system.",
             )
         else:
             logger.info("System is up-to-date.")
