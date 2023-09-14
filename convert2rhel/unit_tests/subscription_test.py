@@ -18,9 +18,6 @@
 __metaclass__ = type
 
 import errno
-import logging
-import os
-import unittest
 
 from collections import namedtuple
 
@@ -32,12 +29,7 @@ import six
 
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, Version, system_info
-from convert2rhel.unit_tests import (
-    GetLoggerMocked,
-    create_pkg_information,
-    get_pytest_marker,
-    run_subprocess_side_effect,
-)
+from convert2rhel.unit_tests import create_pkg_information, get_pytest_marker, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
@@ -106,80 +98,6 @@ class PromptUserLoopMocked(unit_tests.MockFunction):
 
         self.called[args[0]] += 1
         return return_value
-
-
-class TestSubscription(unittest.TestCase):
-    class IsFileMocked(unit_tests.MockFunction):
-        def __init__(self, is_file):
-            self.is_file = is_file
-
-        def __call__(self, *args, **kwargs):
-            return self.is_file
-
-    class PromptUserMocked(unit_tests.MockFunction):
-        def __call__(self, *args, **kwargs):
-            return True
-
-    class RemoveFileMocked(unit_tests.MockFunction):
-        def __init__(self, removed=True):
-            self.removed = removed
-
-        def __call__(self, *args, **kwargs):
-            return self.removed
-
-    class CallYumCmdMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.return_code = 0
-            self.return_string = "Test output"
-            self.fail_once = False
-            self.command = None
-            self.args = None
-
-        def __call__(self, command, args):
-            if self.fail_once and self.called == 0:
-                self.return_code = 1
-            if self.fail_once and self.called > 0:
-                self.return_code = 0
-            self.called += 1
-            self.command = command
-            self.args = args
-            return self.return_string, self.return_code
-
-    ##########################################################################
-
-    def setUp(self):
-        tool_opts.__init__()
-
-    @unit_tests.mock(subscription.logging, "getLogger", GetLoggerMocked())
-    def test_get_pool_id(self):
-        # Check that we can distill the pool id from the subscription description
-        pool_id = subscription.get_pool_id(self.SUBSCRIPTION_DETAILS)
-
-        self.assertEqual(pool_id, "8aaaa123045897fb564240aa00aa0000")
-
-    # Details of one subscription as output by `subscription-manager list --available`
-    SUBSCRIPTION_DETAILS = (
-        "Subscription Name: Good subscription\n"
-        "Provides:          Something good\n"
-        "SKU:               00EEE00EE\n"
-        "Contract:          01234567\n"
-        "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
-        "Available:         1\n"
-        "Suggested:         1\n"
-        "Service Level:     Self-icko\n"
-        "Service Type:      L1-L3\n"
-        "Subscription Type: Standard\n"
-        "Ends:              2018/26/07\n"
-        "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
-    )
-
-    class LogMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.msg = ""
-
-        def __call__(self, msg):
-            self.msg += "%s\n" % msg
 
 
 @pytest.fixture
@@ -1105,6 +1023,28 @@ class TestVerifyRhsmInstalled:
 
 
 # ----
+
+
+def test_get_pool_id():
+    SUBSCRIPTION_DETAILS = (
+        "Subscription Name: Good subscription\n"
+        "Provides:          Something good\n"
+        "SKU:               00EEE00EE\n"
+        "Contract:          01234567\n"
+        "Pool ID:           8aaaa123045897fb564240aa00aa0000\n"
+        "Available:         1\n"
+        "Suggested:         1\n"
+        "Service Level:     Self-icko\n"
+        "Service Type:      L1-L3\n"
+        "Subscription Type: Standard\n"
+        "Ends:              2018/26/07\n"
+        "System Type:       Virtual\n\n"  # this has changed to Entitlement Type since RHEL 7.8
+    )
+
+    # Check that we can distill the pool id from the subscription description
+    pool_id = subscription.get_pool_id(SUBSCRIPTION_DETAILS)
+
+    assert pool_id == "8aaaa123045897fb564240aa00aa0000"
 
 
 @pytest.mark.parametrize(
