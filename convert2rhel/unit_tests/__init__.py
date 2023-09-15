@@ -295,18 +295,6 @@ class GetLoggerMocked(MockFunction):
         self.debug_msgs.append(msg)
 
 
-class GetFileContentMocked(MockFunction):
-    def __init__(self, data, as_list=True):
-        self.data = data
-        self.as_list = as_list
-        self.called = 0
-
-    def __call__(self, filename, as_list):
-        self.called += 1
-        self.as_list = as_list
-        return [x.strip() for x in self.data] if self.as_list else self.data
-
-
 class DumbCallableObject(MockFunction):
     def __init__(self):
         self.called = 0
