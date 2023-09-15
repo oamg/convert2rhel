@@ -39,99 +39,101 @@ def readonly_mounts_sys():
     return readonly_mounts.ReadonlyMountSys()
 
 
-class TestReadOnlyMountsChecks:
-    def test_mounted_mnt_is_readwrite(self, readonly_mounts_mnt, caplog, monkeypatch):
-        monkeypatch.setattr(
-            readonly_mounts,
-            "get_file_content",
-            mock.Mock(
-                return_value=[
-                    "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-                ]
-            ),
-        )
-        readonly_mounts_mnt.run()
+def test_mounted_mnt_is_readwrite(readonly_mounts_mnt, caplog, monkeypatch):
+    monkeypatch.setattr(
+        readonly_mounts,
+        "get_file_content",
+        mock.Mock(
+            return_value=[
+                "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
+            ]
+        ),
+    )
+    readonly_mounts_mnt.run()
 
-        unit_tests.assert_actions_result(
-            readonly_mounts_mnt,
-            level="SUCCESS",
-        )
-        assert "Read-only /mnt mount point not detected." in caplog.text
+    unit_tests.assert_actions_result(
+        readonly_mounts_mnt,
+        level="SUCCESS",
+    )
+    assert "Read-only /mnt mount point not detected." in caplog.text
 
-    def test_mounted_sys_is_readwrite(self, readonly_mounts_sys, caplog, monkeypatch):
-        monkeypatch.setattr(
-            readonly_mounts,
-            "get_file_content",
-            mock.Mock(
-                return_value=[
-                    "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-                ]
-            ),
-        )
-        readonly_mounts_sys.run()
 
-        unit_tests.assert_actions_result(
-            readonly_mounts_sys,
-            level="SUCCESS",
-        )
-        assert "Read-only /sys mount point not detected." in caplog.text
+def test_mounted_sys_is_readwrite(readonly_mounts_sys, caplog, monkeypatch):
+    monkeypatch.setattr(
+        readonly_mounts,
+        "get_file_content",
+        mock.Mock(
+            return_value=[
+                "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
+            ]
+        ),
+    )
+    readonly_mounts_sys.run()
 
-    def test_mounted_are_readonly_mnt(self, readonly_mounts_mnt, monkeypatch):
-        monkeypatch.setattr(
-            readonly_mounts,
-            "get_file_content",
-            mock.Mock(
-                return_value=[
-                    "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-                ]
-            ),
-        )
+    unit_tests.assert_actions_result(
+        readonly_mounts_sys,
+        level="SUCCESS",
+    )
+    assert "Read-only /sys mount point not detected." in caplog.text
 
-        readonly_mounts_mnt.run()
 
-        unit_tests.assert_actions_result(
-            readonly_mounts_mnt,
-            level="ERROR",
-            id="MNT_DIR_READONLY_MOUNT",
-            title="Read-only mount in /mnt directory",
-            description=(
-                "Stopping conversion due to read-only mount to /mnt directory.\n"
-                "Mount at a subdirectory of /mnt to have /mnt writeable."
-            ),
-            diagnosis="",
-            remediation="",
-        )
+def test_mounted_are_readonly_mnt(readonly_mounts_mnt, monkeypatch):
+    monkeypatch.setattr(
+        readonly_mounts,
+        "get_file_content",
+        mock.Mock(
+            return_value=[
+                "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
+            ]
+        ),
+    )
 
-    def test_mounted_are_readonly_sys(self, readonly_mounts_sys, monkeypatch):
-        monkeypatch.setattr(
-            readonly_mounts,
-            "get_file_content",
-            mock.Mock(
-                return_value=[
-                    "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
-                    "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
-                ]
-            ),
-        )
+    readonly_mounts_mnt.run()
 
-        readonly_mounts_sys.run()
+    unit_tests.assert_actions_result(
+        readonly_mounts_mnt,
+        level="ERROR",
+        id="MNT_DIR_READONLY_MOUNT",
+        title="Read-only mount in /mnt directory",
+        description=(
+            "Stopping conversion due to read-only mount to /mnt directory.\n"
+            "Mount at a subdirectory of /mnt to have /mnt writeable."
+        ),
+        diagnosis="",
+        remediation="",
+    )
 
-        unit_tests.assert_actions_result(
-            readonly_mounts_sys,
-            level="ERROR",
-            id="SYS_DIR_READONLY_MOUNT",
-            title="Read-only mount in /sys directory",
-            description=(
-                "Stopping conversion due to read-only mount to /sys directory.\n"
-                "Ensure mount point is writable before executing convert2rhel."
-            ),
-            diagnosis=None,
-            remediation=None,
-        )
+
+def test_mounted_are_readonly_sys(readonly_mounts_sys, monkeypatch):
+    monkeypatch.setattr(
+        readonly_mounts,
+        "get_file_content",
+        mock.Mock(
+            return_value=[
+                "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
+                "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
+            ]
+        ),
+    )
+
+    readonly_mounts_sys.run()
+
+    unit_tests.assert_actions_result(
+        readonly_mounts_sys,
+        level="ERROR",
+        id="SYS_DIR_READONLY_MOUNT",
+        title="Read-only mount in /sys directory",
+        description=(
+            "Stopping conversion due to read-only mount to /sys directory.\n"
+            "Ensure mount point is writable before executing convert2rhel."
+        ),
+        diagnosis=None,
+        remediation=None,
+    )
