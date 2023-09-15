@@ -14,16 +14,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__metaclass__ = type
 
 import collections
 import functools
+import itertools
 import os
-import unittest
+import sys
 
 import pytest
 import six
 
-from convert2rhel import backup, grub
+from convert2rhel import backup, grub, pkghandler, utils
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
@@ -180,40 +182,6 @@ def get_pytest_marker(request, mark_name):
     return mark
 
 
-class ExtendedTestCase(unittest.TestCase):
-    """
-    Extends Nose test case with more helpers.
-    Most of these functions are taken from newer versions of Nose
-    test and can be removed when we upgrade Nose test.
-    """
-
-    def assertIn(self, member, container, msg=None):
-        """
-        Taken from newer nose test version.
-        Just like self.assertTrue(a in b), but with a nicer default message.
-        """
-        if member not in container:
-            standard_msg = "%s not found in %s" % (
-                safe_repr(member),
-                safe_repr(container),
-            )
-            self.fail(self._formatMessage(msg, standard_msg))
-
-    def _formatMessage(self, msg, standard_msg):
-        """
-        Taken from newer nose test version.
-        Formats the message in a safe manner for better readability.
-        """
-        if msg is None:
-            return standard_msg
-        try:
-            # don't switch to '{}' formatting in Python 2.X
-            # it changes the way unicode input is handled
-            return "%s : %s" % (standard_msg, msg)
-        except UnicodeDecodeError:
-            return "%s : %s" % (safe_repr(standard_msg), safe_repr(msg))
-
-
 class MockFunction(object):
     """
     This class should be used as a base class when creating a mocked
@@ -302,6 +270,163 @@ class DumbCallableObject(MockFunction):
     def __call__(self, *args, **kwargs):
         self.called += 1
         return
+
+
+class MockFunctionObject:
+    """
+    Base class for mocked functions.
+
+    * Mocked functions which use this will have all the capabilities of mock.Mock().
+    * Subclasses must provide a `spec`, the function that is being mocked, as either an attribute on
+      the class or passed in to `__init__()`. This allows the MockFunctionObject to throw an
+      exception if it is called with an incorrect number of positional arguments or an unknown
+      keyword arg. If a spec is given through both a class attribute and parameter to `__init__`,
+      the parameter takes precedence.
+    * The naming convention for Mock Functions is that base classes end in `*Object`
+      and classes which are ready to replace a function end in `*Mocked`.
+    """
+
+    spec = ""
+
+    def __init__(self, **kwargs):
+        if "spec" not in kwargs:
+            if self.spec:
+                # mock detects self.spec as a method and self.__class__.spec as a function
+                kwargs["spec"] = self.__class__.spec
+            else:
+                raise TypeError(
+                    "MockFunctionObjects require the spec parameter to be set as an attribute on the class or passed in when instantiating."
+                )
+
+        self._mock = six_mock.create_autospec(**kwargs)
+
+    def __getattr__(self, name):
+        # Need to use a base class's methods for looking up attributes which might not exist
+        # to avoid infinite recursion. (This could be called before self._mock has been created)
+        _mock = super(MockFunctionObject, self).__getattribute__("_mock")
+        return getattr(_mock, name)
+
+    def __call__(self, *args, **kwargs):
+        return self._mock(*args, **kwargs)
+
+
+class SysExitCallableObject(MockFunctionObject):
+    """
+    Base class for any mock function which needs to raise SystemExit() when called.
+    """
+
+    def __call__(self, *args, **kwargs):
+        super(SysExitCallableObject, self).__call__(*args, **kwargs)
+        return sys.exit(1)
+
+
+class CallYumCmdMocked(MockFunctionObject):
+    """
+    Mock for the call_yum_cmd function.
+
+    This differs from Mock in that it:
+    * Allows an easy way to just check command and args.
+    * Has special handling to make failing a single time and then succeeding easy.
+    """
+
+    spec = pkghandler.call_yum_cmd
+
+    def __init__(self, return_code=0, return_string="Test output", fail_once=False, **kwargs):
+        self.command = ""
+        self.args = []
+
+        if "side_effect" not in kwargs:
+            side_effect = itertools.repeat((return_string, return_code))
+            if fail_once:
+                side_effect = itertools.chain([(return_string, 1)], side_effect)
+
+        super(CallYumCmdMocked, self).__init__(side_effect=side_effect, **kwargs)
+
+    def __call__(self, command, *other_args, **kwargs):
+        self.command = command
+        self.args = kwargs.get("args", [])
+
+        return super(CallYumCmdMocked, self).__call__(command, *other_args, **kwargs)
+
+
+class RunSubprocessMocked(MockFunctionObject):
+    """
+    Mock for the run_subprocess function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check just the cmds passed to the function.
+    """
+
+    spec = utils.run_subprocess
+
+    def __init__(self, return_code=None, return_string=None, **kwargs):
+        self.cmd = ""
+        self.cmds = []
+
+        if "return_value" in kwargs:
+            if return_code is not None or return_string is not None:
+                if "return_value" in kwargs:
+                    raise TypeError("You can use return_value and also either return_code or return_string")
+        else:
+            return_code = 0 if return_code is None else return_code
+            return_string = "Test output" if return_string is None else return_string
+            kwargs["return_value"] = (return_string, return_code)
+
+        super(RunSubprocessMocked, self).__init__(**kwargs)
+
+    def __call__(self, cmd, *args, **kwargs):
+        self.cmd = cmd
+        self.cmds.append(cmd)
+
+        return super(RunSubprocessMocked, self).__call__(cmd, *args, **kwargs)
+
+
+class RemovePkgsMocked(MockFunctionObject):
+    """
+    Mock for the remove_pkgs function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check just the pkgs passed in to remove.
+    """
+
+    spec = backup.remove_pkgs
+
+    def __init__(self, **kwargs):
+        self.pkgs = None
+
+        super(RemovePkgsMocked, self).__init__(**kwargs)
+
+    def __call__(self, pkgs_to_remove, *args, **kwargs):
+        self.pkgs = pkgs_to_remove
+
+        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+
+
+class DownloadPkgMocked(MockFunctionObject):
+    """
+    Mock for the download_pkgs function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check each of the parameters to the function individually.
+    """
+
+    spec = utils.download_pkg
+
+    def __init__(self, **kwargs):
+        self.pkg = None
+        self.dest = None
+        self.enable_repos = []
+        self.disable_repos = []
+
+        super(DownloadPkgMocked, self).__init__(**kwargs)
+
+    def __call__(self, pkg, *args, **kwargs):
+        self.pkg = pkg
+        self.dest = kwargs.get("dest", None)
+        self.enable_repos = kwargs.get("enable_repos", [])
+        self.disable_repos = kwargs.get("disable_repos", [])
+
+        return super(DownloadPkgMocked, self).__call__(pkg, *args, **kwargs)
 
 
 def run_subprocess_side_effect(*stubs):
