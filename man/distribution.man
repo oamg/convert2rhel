@@ -1,0 +1,2 @@
+[DISTRIBUTION]
+https://cdn.redhat.com/content/public/convert2rhel/

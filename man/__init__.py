@@ -20,7 +20,11 @@ from convert2rhel import toolopts
 
 def get_parser():
     """Return OptionParser instance used by manpage generator."""
-    parser = toolopts.CLI()._parser
+    cli = toolopts.CLI()
+    # Show the subcommands in the SYNOPSIS section, but hide in the
+    # `convert2rhel convert` section.
+    cli._convert_parser.usage = cli.usage(include_subcommands=False)
+    parser = cli._parser
 
     # Description taken out of our Confluence page.
     parser.description = (

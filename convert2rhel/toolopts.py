@@ -110,28 +110,29 @@ class CLI(object):
         self._register_options()
         self._process_cli_options()
 
-    @property
-    def usage(self):
+    def usage(self, include_subcommands=True, subcommand_name=""):
+        subcommands = ["analyze"]
+        subcommands_usage = "convert2rhel {" + ", ".join(subcommands) + "}" if include_subcommands else ""
         usage = (
             "\n"
-            "  convert2rhel\n"
-            "  convert2rhel [-h]\n"
-            "  convert2rhel [--version]\n"
-            "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
+            "  convert2rhel {subcommand_name}\n"
+            "  convert2rhel {subcommand_name} [-h]\n"
+            "  convert2rhel {subcommand_name} [--version]\n"
+            "  convert2rhel {subcommand_name} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart]"
             " [-y]\n"
-            "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
+            "  convert2rhel {subcommand_name} [--no-rhsm] [--disablerepo repoid]"
             " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
+            "  convert2rhel {subcommand_name} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            r" convert2rhel {analyze}"
+            "  {subcommands_usage}"
             "\n\n"
             "*WARNING* The tool needs to be run under the root user\n"
-        )
+        ).format(subcommands_usage=subcommands_usage, subcommand_name=subcommand_name)
         return usage
 
     def _get_argparser(self):
-        return argparse.ArgumentParser(conflict_handler="resolve", usage=self.usage)
+        return argparse.ArgumentParser(conflict_handler="resolve", usage=self.usage())
 
     def _register_commands(self):
         """Configures parsers specific to the analyze and convert subcommands"""
@@ -143,13 +144,16 @@ class CLI(object):
             " A rollback is initiated after the checks to put the system back"
             " in the original state.",
             parents=[self._shared_options_parser],
-            usage=self.usage,
+            usage=self.usage(include_subcommands=False, subcommand_name="analyze"),
         )
+        # This needs to pass implicitly the `include_subcommands=True` to the
+        # self.usage() function as we are assigning it as the default command
+        # when nothing is provided in the CLI.
         self._convert_parser = subparsers.add_parser(
             "convert",
             help="Convert the system.",
             parents=[self._shared_options_parser],
-            usage=self.usage,
+            usage=self.usage(),
         )
 
     def _register_parent_options(self, parser):
