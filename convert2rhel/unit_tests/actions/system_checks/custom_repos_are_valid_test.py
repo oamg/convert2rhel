@@ -17,11 +17,15 @@
 
 __metaclass__ = type
 
-import unittest
+import pytest
 
 from convert2rhel import actions, unit_tests
 from convert2rhel.actions.system_checks import custom_repos_are_valid
-from convert2rhel.unit_tests import GetLoggerMocked
+
+
+@pytest.fixture
+def custom_repos_are_valid_action():
+    return custom_repos_are_valid.CustomReposAreValid()
 
 
 class CallYumCmdMocked(unit_tests.MockFunction):
@@ -42,59 +46,56 @@ class CallYumCmdMocked(unit_tests.MockFunction):
         return self.return_string, self.return_code
 
 
-class TestCustomReposAreValid(unittest.TestCase):
-    def setUp(self):
-        self.custom_repos_are_valid_action = custom_repos_are_valid.CustomReposAreValid()
-
-    @unit_tests.mock(
+def test_custom_repos_are_valid(custom_repos_are_valid_action, monkeypatch, caplog):
+    monkeypatch.setattr(
         custom_repos_are_valid,
         "call_yum_cmd",
         CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
     )
-    @unit_tests.mock(custom_repos_are_valid, "logger", GetLoggerMocked())
-    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_valid(self):
-        self.custom_repos_are_valid_action.run()
-        self.assertEqual(len(custom_repos_are_valid.logger.info_msgs), 1)
-        self.assertEqual(len(custom_repos_are_valid.logger.debug_msgs), 1)
-        self.assertIn(
-            "The repositories passed through the --enablerepo option are all accessible.",
-            custom_repos_are_valid.logger.info_msgs,
-        )
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
 
-    @unit_tests.mock(
+    custom_repos_are_valid_action.run()
+
+    assert "The repositories passed through the --enablerepo option are all accessible." in caplog.text
+
+
+def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
+    monkeypatch.setattr(
         custom_repos_are_valid,
         "call_yum_cmd",
         CallYumCmdMocked(ret_code=1, ret_string="YUM/DNF failed"),
     )
-    @unit_tests.mock(custom_repos_are_valid, "logger", GetLoggerMocked())
-    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", True)
-    def test_custom_repos_are_invalid(self):
-        self.custom_repos_are_valid_action.run()
-        unit_tests.assert_actions_result(
-            self.custom_repos_are_valid_action,
-            level="ERROR",
-            id="UNABLE_TO_ACCESS_REPOSITORIES",
-            title="Unable to access repositories",
-            description="Access could not be made to the custom repositories.",
-            diagnosis="Unable to access the repositories passed through the --enablerepo option.",
-            remediation="For more details, see YUM/DNF output:\nYUM/DNF failed",
-        )
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
 
-    @unit_tests.mock(custom_repos_are_valid.tool_opts, "no_rhsm", False)
-    def test_custom_repos_are_valid_skip(self):
-        self.custom_repos_are_valid_action.run()
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="INFO",
-                    id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
-                    title="Skipping the custom repos are valid check",
-                    description="Skipping the check of repositories due to the use of RHSM for the conversion.",
-                    diagnosis=None,
-                    remediation=None,
-                ),
-            )
+    custom_repos_are_valid_action.run()
+
+    unit_tests.assert_actions_result(
+        custom_repos_are_valid_action,
+        level="ERROR",
+        id="UNABLE_TO_ACCESS_REPOSITORIES",
+        title="Unable to access repositories",
+        description="Access could not be made to the custom repositories.",
+        diagnosis="Unable to access the repositories passed through the --enablerepo option.",
+        remediation="For more details, see YUM/DNF output:\nYUM/DNF failed",
+    )
+
+
+def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch):
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", False)
+
+    custom_repos_are_valid_action.run()
+
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="INFO",
+                id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
+                title="Skipping the custom repos are valid check",
+                description="Skipping the check of repositories due to the use of RHSM for the conversion.",
+                diagnosis="",
+                remediation="",
+            ),
         )
-        assert expected.issuperset(self.custom_repos_are_valid_action.messages)
-        assert expected.issubset(self.custom_repos_are_valid_action.messages)
+    )
+    assert expected.issuperset(custom_repos_are_valid_action.messages)
+    assert expected.issubset(custom_repos_are_valid_action.messages)
