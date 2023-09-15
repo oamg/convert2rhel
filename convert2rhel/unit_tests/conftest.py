@@ -12,10 +12,9 @@ from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import MinimalRestorable
 
 
-if sys.version_info[:2] <= (2, 7):
-    import mock  # pylint: disable=import-error
-else:
-    from unittest import mock  # pylint: disable=no-name-in-module
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
+
 
 # We are injecting a instance of `mock.Mock()` for `Depsolve` class and
 # `callback` module, as when we run the tests under CentOS 7, it fails by saying
