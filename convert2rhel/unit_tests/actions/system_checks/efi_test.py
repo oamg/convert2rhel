@@ -18,137 +18,150 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from collections import namedtuple
 
-from convert2rhel import actions, grub, unit_tests
+import pytest
+
+from convert2rhel import actions, grub, systeminfo, unit_tests
 from convert2rhel.actions.system_checks import efi
 from convert2rhel.unit_tests import EFIBootInfoMocked, GetLoggerMocked
 
 
-def _gen_version(major, minor):
-    return namedtuple("Version", ["major", "minor"])(major, minor)
+ExpectedMessage = namedtuple("ExpectedMessage", ("id", "title", "description", "diagnosis", "remediation", "log_msg"))
 
 
-class TestEFIChecks(unittest.TestCase):
-    def setUp(self):
-        self.efi_action = efi.Efi()
+@pytest.fixture
+def efi_action():
+    return efi.Efi()
 
+
+class TestEFIChecks:
     def _check_efi_detection_log(self, efi_detected=True):
         if efi_detected:
-            self.assertNotIn("BIOS detected.", efi.logger.info_msgs)
-            self.assertIn("UEFI detected.", efi.logger.info_msgs)
+            assert "BIOS detected." not in efi.logger.info_msgs
+            assert "UEFI detected." in efi.logger.info_msgs
         else:
-            self.assertIn("BIOS detected.", efi.logger.info_msgs)
-            self.assertNotIn("UEFI detected.", efi.logger.info_msgs)
+            assert "BIOS detected." in efi.logger.info_msgs
+            assert "UEFI detected." not in efi.logger.info_msgs
 
-    def _check_efi_critical(self, id, title, description, diagnosis, remediation):
-        self.efi_action.run()
-        self.assertEqual(self.efi_action.result.level, actions.STATUS_CODE["ERROR"])
-        self.assertEqual(self.efi_action.result.id, id)
-        self.assertEqual(self.efi_action.result.title, title)
-        self.assertEqual(self.efi_action.result.description, description)
-        self.assertEqual(self.efi_action.result.diagnosis, diagnosis)
-        self.assertEqual(self.efi_action.result.remediation, remediation)
-        self._check_efi_detection_log(True)
-
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: not x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+    @pytest.mark.parametrize(
+        ("is_efi", "is_secure_boot", "arch", "version", "os_path_exists", "boot_info", "expected"),
+        (
+            (
+                True,
+                False,
+                "x86_64",
+                systeminfo.Version(7, 9),
+                lambda x: not x == "/usr/sbin/efibootmgr",
+                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                ExpectedMessage(
+                    id="EFIBOOTMGR_NOT_FOUND",
+                    title="EFI boot manager not found",
+                    description="The EFI boot manager could not be found.",
+                    diagnosis="The EFI boot manager tool - efibootmgr could not be found on your system",
+                    remediation="Install efibootmgr to continue converting the UEFI-based system.",
+                    log_msg="UEFI detected",
+                ),
+            ),
+            (
+                True,
+                False,
+                "aarch64",
+                systeminfo.Version(7, 9),
+                lambda x: not x == "/usr/sbin/efibootmgr",
+                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                ExpectedMessage(
+                    id="NON_x86_64",
+                    title="None x86_64 system detected",
+                    description="Only x86_64 systems are supported for UEFI conversions.",
+                    diagnosis="",
+                    remediation="",
+                    log_msg="",
+                ),
+            ),
+            (
+                True,
+                True,
+                "x86_64",
+                systeminfo.Version(7, 9),
+                lambda x: x == "/usr/sbin/efibootmgr",
+                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                ExpectedMessage(
+                    id="SECURE_BOOT_DETECTED",
+                    title="Secure boot detected",
+                    description="Secure boot has been detected.",
+                    diagnosis="The conversion with secure boot is currently not possible.",
+                    remediation="To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
+                    log_msg="Secure boot detected.",
+                ),
+            ),
+            (
+                True,
+                False,
+                "x86_64",
+                systeminfo.Version(7, 9),
+                lambda x: x == "/usr/sbin/efibootmgr",
+                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                ExpectedMessage(
+                    id="BOOTLOADER_ERROR",
+                    title="Bootloader error detected",
+                    description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+                    diagnosis="errmsg",
+                    remediation="",
+                    log_msg="",
+                ),
+            ),
+        ),
+        ids=(
+            "EFI detected without efibootmgr",
+            "EFI detected non-Intel",
+            "EFI detected secure boot",
+            "EFI detected bootloader error",
+        ),
     )
-    def test_check_efi_efi_detected_without_efibootmgr(self):
-        self._check_efi_critical(
-            "EFIBOOTMGR_NOT_FOUND",
-            "EFI boot manager not found",
-            "The EFI boot manager could not be found.",
-            "The EFI boot manager tool - efibootmgr could not be found on your system",
-            "Install efibootmgr to continue converting the UEFI-based system.",
-        )
+    def test_check_efi_errors(
+        self,
+        is_efi,
+        is_secure_boot,
+        arch,
+        version,
+        os_path_exists,
+        boot_info,
+        expected,
+        efi_action,
+        caplog,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(grub, "is_efi", lambda: is_efi)
+        monkeypatch.setattr(grub, "is_secure_boot", lambda: is_secure_boot)
+        monkeypatch.setattr(efi.system_info, "arch", arch)
+        monkeypatch.setattr(efi.system_info, "version", version)
+        monkeypatch.setattr(os.path, "exists", os_path_exists)
+        monkeypatch.setattr(grub, "EFIBootInfo", boot_info)
 
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(efi.system_info, "arch", "aarch64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_non_intel(self):
-        self._check_efi_critical(
-            "NON_x86_64",
-            "None x86_64 system detected",
-            "Only x86_64 systems are supported for UEFI conversions.",
-            "",
-            "",
-        )
+        efi_action.run()
 
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: True)
-    @unit_tests.mock(efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_secure_boot(self):
-        self._check_efi_critical(
-            "SECURE_BOOT_DETECTED",
-            "Secure boot detected",
-            "Secure boot has been detected.",
-            "The conversion with secure boot is currently not possible.",
-            "To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
+        unit_tests.assert_actions_result(
+            efi_action,
+            level="ERROR",
+            id=expected.id,
+            title=expected.title,
+            description=expected.description,
+            diagnosis=expected.diagnosis,
+            remediation=expected.remediation,
         )
-        self.assertIn("Secure boot detected.", efi.logger.info_msgs)
+        assert expected.log_msg in caplog.text
 
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(
-        grub,
-        "EFIBootInfo",
-        EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
-    )
-    def test_check_efi_efi_detected_bootloader_error(self):
-        self._check_efi_critical(
-            "BOOTLOADER_ERROR",
-            "Bootloader error detected",
-            "An unknown bootloader error occurred, please look at the diagnosis for more information.",
-            "errmsg",
-            "",
-        )
+    def test_check_efi_efi_detected_nofile_entry(self, efi_action, caplog, monkeypatch):
+        monkeypatch.setattr(grub, "is_efi", lambda: True)
+        monkeypatch.setattr(grub, "is_secure_boot", lambda: False)
+        monkeypatch.setattr(efi.system_info, "arch", "x86_64")
+        monkeypatch.setattr(efi.system_info, "version", systeminfo.Version(7, 9))
+        monkeypatch.setattr(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+        monkeypatch.setattr(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
 
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
-    def test_check_efi_efi_detected_nofile_entry(self):
-        self.efi_action.run()
-        self._check_efi_detection_log()
-        warn_msg = (
-            "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
-            " EFI System Partition (ESP)."
-        )
-        self.assertIn(warn_msg, efi.logger.warning_msgs)
+        efi_action.run()
 
         expected = set(
             (
@@ -161,21 +174,31 @@ class TestEFIChecks(unittest.TestCase):
                         "The current UEFI bootloader '0002' is not referring to any binary UEFI"
                         " file located on local EFI System Partition (ESP)."
                     ),
-                    remediation=None,
+                    remediation="",
                 ),
             )
         )
-        assert expected.issuperset(self.efi_action.messages)
-        assert expected.issubset(self.efi_action.messages)
+        assert expected.issuperset(efi_action.messages)
+        assert expected.issubset(efi_action.messages)
 
-    @unit_tests.mock(grub, "is_efi", lambda: True)
-    @unit_tests.mock(grub, "is_secure_boot", lambda: False)
-    @unit_tests.mock(efi.system_info, "arch", "x86_64")
-    @unit_tests.mock(efi.system_info, "version", _gen_version(7, 9))
-    @unit_tests.mock(efi, "logger", GetLoggerMocked())
-    @unit_tests.mock(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-    @unit_tests.mock(grub, "EFIBootInfo", EFIBootInfoMocked())
-    def test_check_efi_efi_detected_ok(self):
-        self.efi_action.run()
-        self._check_efi_detection_log()
-        self.assertEqual(len(efi.logger.warning_msgs), 0)
+        log_msg = "UEFI detected."
+        warn_msg = (
+            "The current UEFI bootloader '0002' is not referring to any binary UEFI file located on local"
+            " EFI System Partition (ESP)."
+        )
+
+        assert log_msg in caplog.text
+        assert warn_msg in caplog.text
+
+    def test_check_efi_efi_detected_ok(self, efi_action, caplog, monkeypatch):
+        monkeypatch.setattr(grub, "is_efi", lambda: True)
+        monkeypatch.setattr(grub, "is_secure_boot", lambda: False)
+        monkeypatch.setattr(efi.system_info, "arch", "x86_64")
+        monkeypatch.setattr(efi.system_info, "version", systeminfo.Version(7, 9))
+        monkeypatch.setattr(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
+        monkeypatch.setattr(grub, "EFIBootInfo", EFIBootInfoMocked())
+
+        efi_action.run()
+
+        assert "UEFI detected." in caplog.text
+        assert not [log_msg for log_msg in caplog.records if log_msg.levelname in ("WARNING", "ERROR", "CRITICAL")]
