@@ -29,7 +29,7 @@ from convert2rhel.actions.system_checks.rhel_compatible_kernel import (
     COMPATIBLE_KERNELS_VERS,
     KernelIncompatibleError,
 )
-from convert2rhel.unit_tests import create_pkg_information
+from convert2rhel.unit_tests import RunSubprocessMocked, create_pkg_information
 from convert2rhel.unit_tests.conftest import centos8
 from convert2rhel.utils import run_subprocess
 
@@ -254,7 +254,7 @@ def test_bad_kernel_package_signature_success(
     monkeypatch,
     pretend_os,
 ):
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
+    run_subprocess_mocked = RunSubprocessMocked(return_string=kernel_pkg)
     monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
     get_installed_pkg_objects_mocked = mock.Mock(
         spec=rhel_compatible_kernel.get_installed_pkg_objects, return_value=[kernel_pkg]
@@ -314,7 +314,7 @@ def test_bad_kernel_package_signature_invalid_signature(
     monkeypatch,
     pretend_os,
 ):
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(kernel_pkg, 0))
+    run_subprocess_mocked = RunSubprocessMocked(return_string=kernel_pkg)
     monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
     get_installed_pkg_objects_mocked = mock.Mock(
         spec=rhel_compatible_kernel.get_installed_pkg_objects, return_value=[kernel_pkg]
@@ -351,7 +351,7 @@ def test_bad_kernel_package_signature_invalid_signature(
 )
 @centos8
 def test_kernel_not_installed(pretend_os, error_id, template, variables, monkeypatch):
-    run_subprocess_mocked = mock.Mock(spec=run_subprocess, return_value=(" ", 1))
+    run_subprocess_mocked = RunSubprocessMocked(return_value=(" ", 1))
     monkeypatch.setattr(rhel_compatible_kernel, "run_subprocess", run_subprocess_mocked)
 
     with pytest.raises(KernelIncompatibleError) as excinfo:

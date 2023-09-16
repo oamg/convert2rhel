@@ -6,7 +6,7 @@ import pytest
 import six
 
 from convert2rhel import backup, repo, unit_tests, utils  # Imports unit_tests/__init__.py
-from convert2rhel.unit_tests import MinimalRestorable
+from convert2rhel.unit_tests import DownloadPkgMocked, MinimalRestorable, RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
 
 
@@ -14,19 +14,28 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
-class RunSubprocessMocked(unit_tests.MockFunction):
-    def __init__(self, output="Test output", ret_code=0):
-        self.cmd = []
-        self.cmds = []
-        self.called = 0
-        self.output = output
-        self.ret_code = ret_code
+@pytest.fixture
+def run_subprocess_with_empty_rpmdb(monkeypatch, tmpdir):
+    """When we use rpm, inject our fake rpmdb instead of the system one."""
+    rpmdb = os.path.join(str(tmpdir), "rpmdb")
+    os.mkdir(rpmdb)
 
-    def __call__(self, cmd, print_cmd=True, print_output=True):
-        self.cmd = cmd
-        self.cmds.append(cmd)
-        self.called += 1
-        return self.output, self.ret_code
+    class RunSubprocessWithEmptyRpmdb(RunSubprocessMocked):
+        def __call__(self, *args, **kwargs):
+            # Call the super class for recordkeeping (update how we were
+            # called)
+            super(RunSubprocessWithEmptyRpmdb, self).__call__(*args, **kwargs)
+
+            if args[0][0] == "rpm":
+                args[0].extend(["--dbpath", rpmdb])
+
+            return real_run_subprocess(*args, **kwargs)
+
+    real_run_subprocess = utils.run_subprocess
+    instrumented_run_subprocess = RunSubprocessWithEmptyRpmdb()
+    monkeypatch.setattr(utils, "run_subprocess", instrumented_run_subprocess)
+
+    return instrumented_run_subprocess
 
 
 class TestRemovePkgs:
@@ -38,7 +47,7 @@ class TestRemovePkgs:
         backup.remove_pkgs(pkgs, False)
 
         assert backup.changed_pkgs_control.backup_and_track_removed_pkg.call_count == 0
-        assert backup.run_subprocess.called == len(pkgs)
+        assert backup.run_subprocess.call_count == len(pkgs)
 
         rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
         for cmd, pkg in zip(backup.run_subprocess.cmds, pkgs):
@@ -52,7 +61,7 @@ class TestRemovePkgs:
         backup.remove_pkgs(pkgs)
 
         assert backup.changed_pkgs_control.backup_and_track_removed_pkg.call_count == len(pkgs)
-        assert backup.run_subprocess.called == len(pkgs)
+        assert backup.run_subprocess.call_count == len(pkgs)
         rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
         for cmd, pkg in zip(backup.run_subprocess.cmds, pkgs):
             assert rpm_remove_cmd + [pkg] == cmd
@@ -74,7 +83,7 @@ class TestRemovePkgs:
         monkeypatch,
         caplog,
     ):
-        run_subprocess_mock = mock.Mock(
+        run_subprocess_mock = RunSubprocessMocked(
             side_effect=unit_tests.run_subprocess_side_effect(
                 (("rpm", "-e", "--nodeps", pkgs_to_remove[0]), ("test", ret_code)),
             )
@@ -108,7 +117,7 @@ class TestChangedPkgsControlInstallLocalRPMS:
 
         backup.changed_pkgs_control._install_local_rpms([])
 
-        assert backup.run_subprocess.called == 0
+        assert backup.run_subprocess.call_count == 0
 
     def test_install_local_rpms_without_replace(self, monkeypatch):
         monkeypatch.setattr(backup.changed_pkgs_control, "track_installed_pkg", mock.Mock())
@@ -118,7 +127,7 @@ class TestChangedPkgsControlInstallLocalRPMS:
         backup.changed_pkgs_control._install_local_rpms(pkgs)
 
         assert backup.changed_pkgs_control.track_installed_pkg.call_count == len(pkgs)
-        assert backup.run_subprocess.called == 1
+        assert backup.run_subprocess.call_count == 1
         assert ["rpm", "-i", "pkg1", "pkg2", "pkg3"] == backup.run_subprocess.cmd
 
     def test_install_local_rpms_with_replace(self, monkeypatch):
@@ -129,7 +138,7 @@ class TestChangedPkgsControlInstallLocalRPMS:
         backup.changed_pkgs_control._install_local_rpms(pkgs, replace=True)
 
         assert backup.changed_pkgs_control.track_installed_pkg.call_count == len(pkgs)
-        assert backup.run_subprocess.called == 1
+        assert backup.run_subprocess.call_count == 1
         assert ["rpm", "-i", "--replacepkgs", "pkg1", "pkg2", "pkg3"] == backup.run_subprocess.cmd
 
 
@@ -162,7 +171,7 @@ def test_track_installed_pkgs():
 
 def test_changed_pkgs_control_remove_installed_pkgs(monkeypatch, caplog):
     removed_pkgs = ["pkg_1"]
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (("rpm", "-e", "--nodeps", removed_pkgs[0]), ("test", 0)),
         )
@@ -295,7 +304,7 @@ def test_restorable_package_backup(pretend_os, monkeypatch, tmpdir):
     backup_dir = str(tmpdir)
     data_dir = str(tmpdir.join("data-dir"))
     dowloaded_pkg_dir = str(tmpdir.join("some-path"))
-    download_pkg_mock = mock.Mock(return_value=dowloaded_pkg_dir)
+    download_pkg_mock = DownloadPkgMocked(return_value=dowloaded_pkg_dir)
     monkeypatch.setattr(backup, "BACKUP_DIR", backup_dir)
     monkeypatch.setattr(repo, "DATA_DIR", data_dir)
     monkeypatch.setattr(backup, "download_pkg", download_pkg_mock)
@@ -317,7 +326,7 @@ def test_restorable_package_backup_without_dir(monkeypatch, tmpdir, caplog):
 
 def test_changedrpms_packages_controller_install_local_rpms(monkeypatch, caplog):
     pkgs = ["pkg-1"]
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (("rpm", "-i", pkgs[0]), ("test", 1)),
         )
@@ -338,7 +347,7 @@ def test_changedrpms_packages_controller_install_local_rpms(monkeypatch, caplog)
 
 def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypatch, caplog):
     pkgs = ["pkg-1"]
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (("rpm", "-i", pkgs[0]), ("test", 1)),
         )
@@ -367,7 +376,7 @@ def test_restorable_package_backup(pretend_os, is_eus_system, has_internet_acces
 
     # Python 2.7 needs a string or buffer and not a LocalPath
     tmpdir = str(tmpdir)
-    download_pkg_mock = mock.Mock()
+    download_pkg_mock = DownloadPkgMocked()
     monkeypatch.setattr(backup, "download_pkg", value=download_pkg_mock)
     monkeypatch.setattr(backup, "BACKUP_DIR", value=tmpdir)
     monkeypatch.setattr(backup.system_info, "corresponds_to_rhel_eus_release", value=lambda: is_eus_system)
@@ -465,31 +474,6 @@ class TestBackupController:
             backup_controller.pop_all()
 
 
-@pytest.fixture
-def run_subprocess_with_empty_rpmdb(monkeypatch, tmpdir):
-    """When we use rpm, inject our fake rpmdb instead of the system one."""
-    rpmdb = os.path.join(str(tmpdir), "rpmdb")
-    os.mkdir(rpmdb)
-
-    class RunSubprocessWithEmptyRpmdb(object):
-        def __init__(self):
-            self.called_with = []
-
-        def __call__(self, *args, **kwargs):
-            self.called_with.append((args, kwargs))
-
-            if args[0][0] == "rpm":
-                args[0].extend(["--dbpath", rpmdb])
-
-            return real_run_subprocess(*args, **kwargs)
-
-    real_run_subprocess = utils.run_subprocess
-    instrumented_run_subprocess = RunSubprocessWithEmptyRpmdb()
-    monkeypatch.setattr(utils, "run_subprocess", instrumented_run_subprocess)
-
-    return instrumented_run_subprocess
-
-
 class TestRestorableRpmKey:
     gpg_key = os.path.realpath(
         os.path.join(os.path.dirname(__file__), "../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
@@ -519,7 +503,7 @@ class TestRestorableRpmKey:
         def run_subprocess_fail(*args, **kwargs):
             return "Unknown error", 1
 
-        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_fail)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=("Unknown error", 1)))
 
         with pytest.raises(
             utils.ImportGPGKeyError, match="Searching the rpmdb for the gpg key fd431d51 failed: Code 1: Unknown error"
@@ -535,11 +519,11 @@ class TestRestorableRpmKey:
 
     def test_enable_already_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
         rpm_key.enable()
-        previous_number_of_calls = len(run_subprocess_with_empty_rpmdb.called_with)
+        previous_number_of_calls = run_subprocess_with_empty_rpmdb.call_count
         rpm_key.enable()
 
         # Check that we do not double enable
-        assert len(run_subprocess_with_empty_rpmdb.called_with) == previous_number_of_calls
+        assert run_subprocess_with_empty_rpmdb.call_count == previous_number_of_calls
 
         # Check that nothing has changed
         assert rpm_key.enabled is True
@@ -552,7 +536,7 @@ class TestRestorableRpmKey:
 
         # Check that we did not call rpm to import the key
         # Omit the first call because that is the call we performed to setup the test.
-        for call in run_subprocess_with_empty_rpmdb.called_with[1:]:
+        for call in run_subprocess_with_empty_rpmdb.call_args_list[1:]:
             assert not (call[0][0] == "rpm" and "--import" in call[0])
 
         # Check that the key is installed and we show that it was previously installed
@@ -579,28 +563,28 @@ class TestRestorableRpmKey:
 
         # Check that the beginning of the run_subprocess call starts with the command to remove
         # the key (The arguments our fixture has added to use the empty rpmdb come after that)
-        assert run_subprocess_with_empty_rpmdb.called_with[-1][0][0][0:3] == ["rpm", "-e", "gpg-pubkey-fd431d51"]
+        assert run_subprocess_with_empty_rpmdb.call_args_list[-1][0][0][0:3] == ["rpm", "-e", "gpg-pubkey-fd431d51"]
 
         # Check that we actually removed the key from the rpmdb
         output, status = run_subprocess_with_empty_rpmdb(["rpm", "-qa", "gpg-pubkey"])
         assert output == ""
 
     def test_restore_not_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        called_previously = len(run_subprocess_with_empty_rpmdb.called_with)
+        called_previously = run_subprocess_with_empty_rpmdb.call_count
         rpm_key.restore()
 
-        assert len(run_subprocess_with_empty_rpmdb.called_with) == called_previously
+        assert run_subprocess_with_empty_rpmdb.call_count == called_previously
         assert rpm_key.enabled is False
 
     def test_restore_previously_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
         utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
         rpm_key.enable()
-        called_previously = len(run_subprocess_with_empty_rpmdb.called_with)
+        called_previously = run_subprocess_with_empty_rpmdb.call_count
 
         rpm_key.restore()
 
         # run_subprocess has not been called again
-        assert len(run_subprocess_with_empty_rpmdb.called_with) == called_previously
+        assert run_subprocess_with_empty_rpmdb.call_count == called_previously
 
         # Check that the key is still in the rpmdb
         output, status = run_subprocess_with_empty_rpmdb(["rpm", "-q", "gpg-pubkey-fd431d51"])

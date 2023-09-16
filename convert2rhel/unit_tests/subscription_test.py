@@ -29,7 +29,15 @@ import six
 
 from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, Version, system_info
-from convert2rhel.unit_tests import create_pkg_information, get_pytest_marker, run_subprocess_side_effect
+from convert2rhel.unit_tests import (
+    PromptUserMocked,
+    RegisterSystemMocked,
+    RunSubprocessMocked,
+    UnregisterSystemMocked,
+    create_pkg_information,
+    get_pytest_marker,
+    run_subprocess_side_effect,
+)
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
@@ -54,52 +62,6 @@ def mocked_rhsm_call_blocking(monkeypatch, request):
     return fake_bus_obj.call_blocking
 
 
-class DumbCallable(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self, *args, **kwargs):
-        self.called += 1
-
-
-class RunSubprocessMocked(unit_tests.MockFunction):
-    def __init__(self, tuples=None):
-        # you can specify sequence of return (object, return code) as
-        # a list of tuple that will be consumed continuosly on the each
-        # call; when the list is consumed or it is empty, the default
-        # tuple is returned
-        self.tuples = tuples
-        self.default_tuple = ("output", 0)
-        self.called = 0
-        self.cmd = []
-
-    def __call__(self, cmd, *args, **kwargs):
-        self.cmd = cmd
-        self.called += 1
-
-        if self.tuples:
-            return self.tuples
-        return self.default_tuple
-
-
-class PromptUserLoopMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = {}
-
-    def __call__(self, *args, **kwargs):
-        return_value = ""
-
-        # args[0] is the current question being asked
-        if args[0] not in self.called:
-            self.called[args[0]] = 0
-
-        if self.called[args[0]] >= 1:
-            return_value = "test"
-
-        self.called[args[0]] += 1
-        return return_value
-
-
 @pytest.fixture
 def tool_opts(global_tool_opts, monkeypatch):
     monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
@@ -108,14 +70,14 @@ def tool_opts(global_tool_opts, monkeypatch):
 
 class TestRefreshSubscriptionInfo:
     def test_refresh_subscription_info(self, caplog, monkeypatch):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("", 0)))
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         subscription.refresh_subscription_info()
 
         assert "subscription-manager has reloaded its configuration." == caplog.messages[-1]
 
     def test_refresh_subscription_info_fail(self, caplog, monkeypatch):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("Failed", 1)))
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
 
         with pytest.raises(subscription.RefreshSubscriptionManagerError):
             subscription.refresh_subscription_info()
@@ -310,30 +272,28 @@ class TestRestorableSystemSubscription:
         return subscription.RestorableSystemSubscription()
 
     def test_subscribe_system(self, system_subscription, tool_opts, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", DumbCallable())
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-
-        tool_opts.username = "user"
-        tool_opts.password = "pass"
+        monkeypatch.setattr(tool_opts, "username", "user")
+        monkeypatch.setattr(tool_opts, "password", "pass")
 
         system_subscription.enable()
 
-        assert subscription.register_system.called == 1
+        assert subscription.register_system.call_count == 1
 
     def test_subscribe_system_already_enabled(self, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", DumbCallable())
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
         system_subscription.enabled = True
 
         system_subscription.enable()
 
-        assert subscription.register_system.called == 0
+        assert not subscription.register_system.called
 
     def test_enable_fail_once(self, system_subscription, tool_opts, caplog, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", DumbCallable())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(tuples=("output", 1)))
-
-        tool_opts.username = "user"
-        tool_opts.password = "pass"
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
+        monkeypatch.setattr(tool_opts, "username", "user")
+        monkeypatch.setattr(tool_opts, "password", "pass")
 
         with pytest.raises(SystemExit):
             system_subscription.enable()
@@ -341,42 +301,44 @@ class TestRestorableSystemSubscription:
         assert caplog.records[-1].levelname == "CRITICAL"
 
     def test_restore(self, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
         monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
 
-        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
         system_subscription.enable()
 
         system_subscription.restore()
 
-        assert subscription.unregister_system.called == 1
+        assert subscription.unregister_system.call_count == 1
 
     def test_restore_not_enabled(self, monkeypatch, caplog, system_subscription):
-        monkeypatch.setattr(subscription, "unregister_system", unit_tests.CountableMockObject())
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
 
         system_subscription.restore()
 
-        assert subscription.unregister_system.called == 0
+        assert not subscription.unregister_system.called
 
     def test_restore_unregister_call_fails(self, monkeypatch, caplog, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
         monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
 
-        mocked_unregister_system = mock.Mock(side_effect=subscription.UnregisterError("Unregister failed"))
+        mocked_unregister_system = UnregisterSystemMocked(side_effect=subscription.UnregisterError("Unregister failed"))
         monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
 
         system_subscription.enable()
 
         system_subscription.restore()
 
-        assert mocked_unregister_system.called == 1
+        assert mocked_unregister_system.call_count == 1
         assert "Unregister failed" == caplog.records[-1].message
 
     def test_restore_subman_uninstalled(self, caplog, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", mock.Mock())
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
         monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
         monkeypatch.setattr(
-            subscription, "unregister_system", mock.Mock(side_effect=OSError(errno.ENOENT, "command not found"))
+            subscription,
+            "unregister_system",
+            UnregisterSystemMocked(side_effect=OSError(errno.ENOENT, "command not found")),
         )
         system_subscription.enable()
 
@@ -400,7 +362,7 @@ class TestAttachSubscription(object):
         monkeypatch.setattr(
             utils,
             "run_subprocess",
-            RunSubprocessMocked(tuples=("Content Access Mode is set to Simple Content Access", 0)),
+            RunSubprocessMocked(return_string="Content Access Mode is set to Simple Content Access"),
         )
         assert subscription.attach_subscription() is True
 
@@ -416,7 +378,7 @@ class TestAttachSubscription(object):
         assert caplog.records[0].levelname == "INFO"
 
     def test_attach_subscription_fail(self, monkeypatch, caplog):
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(tuples=("output", 1)))
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
         with pytest.raises(SystemExit):
             subscription.attach_subscription()
         assert caplog.records[-1].levelname == "CRITICAL"
@@ -426,14 +388,14 @@ class TestRegisterSystem(object):
     @pytest.mark.parametrize(
         ("unregister_system_mock", "stop_rhsm_mock", "expected_log_messages"),
         (
-            (mock.Mock(), mock.Mock(), []),
+            (UnregisterSystemMocked(), mock.Mock(), []),
             (
-                mock.Mock(side_effect=subscription.UnregisterError("Unregister failed")),
+                UnregisterSystemMocked(side_effect=subscription.UnregisterError("Unregister failed")),
                 mock.Mock(),
                 ["Unregister failed"],
             ),
             (
-                mock.Mock(),
+                UnregisterSystemMocked(),
                 mock.Mock(side_effect=subscription.StopRhsmError("Stopping RHSM failed")),
                 ["Stopping RHSM failed"],
             ),
@@ -471,7 +433,7 @@ class TestRegisterSystem(object):
         """Check the critical severity is logged when the credentials are given on the cmdline but registration fails."""
         monkeypatch.setattr(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 1)
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
-        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
 
         tool_opts.username = "user"
@@ -486,7 +448,7 @@ class TestRegisterSystem(object):
     def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Test that the three attempts work: fail to register two times and succeed the third time."""
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
-        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
 
         fake_from_tool_opts = mock.Mock(
@@ -504,7 +466,7 @@ class TestRegisterSystem(object):
         """Test that we stop retrying if the user hits Control-C.."""
 
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
-        monkeypatch.setattr(subscription, "unregister_system", mock.Mock())
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
 
         pre_created_reg_command = subscription.RegistrationCommand(username="invalid", password="invalid")
@@ -522,7 +484,7 @@ class TestRegisterSystem(object):
         global_system_info.version = Version(7, 9)
         global_system_info.name = "CentOS Linux"
 
-        run_subprocess_mock = mock.Mock(return_value=("Success", 0))
+        run_subprocess_mock = RunSubprocessMocked()
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
 
         assert subscription._stop_rhsm() is None
@@ -532,7 +494,7 @@ class TestRegisterSystem(object):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
         global_system_info.version = Version(7, 9)
 
-        run_subprocess_mock = mock.Mock(return_value=("Failure", 1))
+        run_subprocess_mock = RunSubprocessMocked(return_value=("Failure", 1))
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
 
         with pytest.raises(subscription.StopRhsmError, match="Stopping RHSM failed with code: 1; output: Failure"):
@@ -704,9 +666,7 @@ class TestRegistrationCommand(object):
                 return prompt_input[prompt]
             raise Exception("Should not have been called with that prompt for the input")
 
-        fake_prompt_user = mock.Mock(side_effect=prompt_user)
-
-        monkeypatch.setattr(utils, "prompt_user", fake_prompt_user)
+        monkeypatch.setattr(utils, "prompt_user", PromptUserMocked(side_effect=prompt_user))
 
         for option_name, option_value in registration_kwargs.items():
             setattr(tool_opts, option_name, option_value)
@@ -720,16 +680,16 @@ class TestRegistrationCommand(object):
             assert registration_cmd.username == prompt_input["Username: "]
 
         # assert that we prompted the user the number of times that we expected
-        assert fake_prompt_user.call_count == len(prompt_input)
+        assert utils.prompt_user.call_count == len(prompt_input)
 
     def test_from_tool_opts_username_empty_string(self, tool_opts, monkeypatch):
-        monkeypatch.setattr(utils, "prompt_user", PromptUserLoopMocked())
+        monkeypatch.setattr(utils, "prompt_user", PromptUserMocked(retries=1))
 
         registration_cmd = subscription.RegistrationCommand.from_tool_opts(tool_opts)
 
         assert registration_cmd.username == "test"
         assert registration_cmd.password == "test"
-        assert utils.prompt_user.called == {"Username: ": 2, "Password: ": 2}
+        assert utils.prompt_user.prompts == {"Username: ": 2, "Password: ": 2}
 
     @pytest.mark.parametrize(
         ("rhsm_hostname", "rhsm_port", "rhsm_prefix", "expected"),
@@ -854,7 +814,7 @@ class TestRegistrationCommand(object):
             rhsm_prefix="/",
         )
 
-        run_subprocess_mocked = mock.Mock(return_value=("", 0))
+        run_subprocess_mocked = RunSubprocessMocked()
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
 
         reg_cmd()
@@ -874,7 +834,7 @@ class TestRegistrationCommand(object):
             username="me_myself_and_i", password="a password", rhsm_hostname="https://rhsm.redhat.com"
         )
 
-        run_subprocess_mocked = mock.Mock(return_value=("failed to set server.hostname", 1))
+        run_subprocess_mocked = RunSubprocessMocked(return_value=("failed to set server.hostname", 1))
         monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
 
         with pytest.raises(
@@ -883,8 +843,8 @@ class TestRegistrationCommand(object):
         ):
             reg_cmd()
 
-        assert run_subprocess_mocked.called_once_with(
-            ["subscription-manager", "config", "--server.hostname=rhsm.redhat.com"]
+        run_subprocess_mocked.assert_called_once_with(
+            ["subscription-manager", "config", "--server.hostname=https://rhsm.redhat.com"], print_cmd=mock.ANY
         )
 
     @pytest.mark.rhsm_returns((dbus.exceptions.DBusException(name="org.freedesktop.DBus.Error.NoReply"),))
@@ -892,10 +852,9 @@ class TestRegistrationCommand(object):
         monkeypatch.setattr(
             utils,
             "run_subprocess",
-            mock.Mock(
-                return_value=(
-                    "system identity: 1234-56-78-9abc\n" "name: abc-123\n" "org name: Test\n" "org ID: 12345678910\n",
-                    0,
+            RunSubprocessMocked(
+                return_string=(
+                    "system identity: 1234-56-78-9abc\n" "name: abc-123\n" "org name: Test\n" "org ID: 12345678910\n"
                 )
             ),
         )
@@ -912,7 +871,7 @@ class TestRegistrationCommand(object):
         monkeypatch.setattr(
             utils,
             "run_subprocess",
-            mock.Mock(
+            RunSubprocessMocked(
                 return_value=(
                     "This system is not yet registered."
                     " Try 'subscription-manager register"
@@ -941,7 +900,7 @@ class TestUnregisteringSystem(object):
         rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
 
         # Mock rpm command
-        run_subprocess_mock = mock.Mock(
+        run_subprocess_mock = RunSubprocessMocked(
             side_effect=run_subprocess_side_effect(
                 (
                     submgr_command,
@@ -968,7 +927,7 @@ class TestUnregisteringSystem(object):
         rpm_command = ("rpm", "--quiet", "-q", "subscription-manager")
 
         # Mock rpm command
-        run_subprocess_mock = mock.Mock(
+        run_subprocess_mock = RunSubprocessMocked(
             side_effect=run_subprocess_side_effect(
                 (
                     submgr_command,
@@ -991,7 +950,7 @@ class TestUnregisteringSystem(object):
     def test_unregister_system_submgr_not_found(self, monkeypatch, caplog):
         rpm_command = ["rpm", "--quiet", "-q", "subscription-manager"]
 
-        run_subprocess_mock = mock.Mock(
+        run_subprocess_mock = RunSubprocessMocked(
             side_effect=unit_tests.run_subprocess_side_effect(
                 (rpm_command, ("", 1)),
             )
@@ -1081,7 +1040,7 @@ def test_enable_repos_rhel_repoids(
     for repo in rhel_repoids:
         cmd_mock.append("--enable=%s" % repo)
 
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd_mock, subprocess),
         )
@@ -1140,7 +1099,7 @@ def test_enable_repos_rhel_repoids_fallback_default_rhsm(
     for repo in rhel_repoids:
         cmd_mock.append("--enable=%s" % repo)
 
-    run_subprocess_mock = mock.Mock(side_effect=[subprocess, subprocess2])
+    run_subprocess_mock = RunSubprocessMocked(side_effect=[subprocess, subprocess2])
     monkeypatch.setattr(
         utils,
         "run_subprocess",
@@ -1199,7 +1158,7 @@ def test_enable_repos_toolopts_enablerepo(
     for repo in toolopts_enablerepo:
         cmd_mock.append("--enable=%s" % repo)
 
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd_mock, subprocess),
         )
@@ -1232,7 +1191,7 @@ def test_enable_repos_toolopts_enablerepo(
 )
 def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch, caplog):
     cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd, subprocess),
         )
@@ -1268,7 +1227,7 @@ def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
 @centos7
 def test_update_rhsm_custom_facts(subprocess, expected, pretend_os, monkeypatch, caplog):
     cmd = ["subscription-manager", "facts", "--update"]
-    run_subprocess_mock = mock.Mock(
+    run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd, subprocess),
         ),

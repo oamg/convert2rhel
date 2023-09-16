@@ -37,7 +37,7 @@ from six.moves import mock
 
 from convert2rhel import systeminfo, toolopts, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests import is_rpm_based_os
+from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, is_rpm_based_os
 
 
 DOWNLOADED_RPM_NVRA = "kernel-4.18.0-193.28.1.el8_2.x86_64"
@@ -53,19 +53,62 @@ YUMDOWNLOADER_OUTPUTS = (
 )
 
 
-class RunSubprocessMocked(unit_tests.MockFunction):
-    def __init__(self, output="Test output", ret_code=0):
-        self.cmd = []
-        self.cmds = []
-        self.called = 0
-        self.output = output
-        self.ret_code = ret_code
+class GetEUIDMocked(unit_tests.MockFunctionObject):
+    spec = os.geteuid
 
-    def __call__(self, cmd, print_cmd=True, print_output=True):
-        self.cmd = cmd
-        self.cmds.append(cmd)
-        self.called += 1
-        return self.output, self.ret_code
+    def __init__(self, uid, **kwargs):
+        self.uid = uid
+        super(GetEUIDMocked, self).__init__(**kwargs)
+
+    def __call__(self, *args, **kwargs):
+        super(GetEUIDMocked, self).__call__(*args, **kwargs)
+        return self.uid
+
+
+class FakeSecondCallToRunSubprocessMocked(RunSubprocessMocked):
+    def __init__(self, second_call_return_code, *args, **kwargs):
+        super(FakeSecondCallToRunSubprocessMocked, self).__init__(*args, **kwargs)
+        self.real_run_subprocess = utils.run_subprocess
+        self.second_call_return_code = second_call_return_code
+
+    def __call__(self, *args, **kwargs):
+        fake_return_val = super(FakeSecondCallToRunSubprocessMocked, self).__call__(*args, **kwargs)
+
+        if self.call_count == 1:
+            # Set this so it looks like run_subprocess failed on the next call
+            self._mock.return_value = ("", self.second_call_return_code)
+            return self.real_run_subprocess(*args, **kwargs)
+
+        return fake_return_val
+
+
+class DummyPopen:
+    def __init__(self, *args, **kwargs):
+        return
+
+    @property
+    def stdout(self):
+        return self
+
+    def readline(self):
+        try:
+            return next(self._output)
+        except StopIteration:
+            return b""
+
+    def communicate(self):
+        pass
+
+    @property
+    def returncode(self):
+        return 0
+
+
+@pytest.fixture
+def dummy_popen(request):
+    output = unit_tests.get_pytest_marker(request, "popen_output")
+    DummyPopen._output = (line for line in output.args[0])
+    return DummyPopen
 
 
 def test_is_rpm_based_os():
@@ -219,10 +262,7 @@ def test_get_package_name_from_rpm(monkeypatch):
     assert utils.get_package_name_from_rpm("/path/to.rpm") == "pkg1"
 
 
-class TransactionSetMocked(unit_tests.MockFunction):
-    def __call__(self):
-        return self
-
+class FakeTransactionSet:
     def setVSFlags(self, flags):
         return
 
@@ -242,7 +282,7 @@ def get_rpm_mocked():
             "RPMTAG_VERSION": "RPMTAG_VERSION",
             "RPMTAG_RELEASE": "RPMTAG_RELEASE",
             "RPMTAG_EVR": "RPMTAG_EVR",
-            "TransactionSet": TransactionSetMocked,
+            "TransactionSet": FakeTransactionSet,
             "_RPMVSF_NOSIGNATURES": mock.Mock(),
         }
     )
@@ -303,20 +343,7 @@ class TestFindKeys:
             utils.find_keyid(gpg_key)
 
     def test_find_keyid_gpg_bad_keyring(self, monkeypatch):
-        class MockedRunSubProcess(object):
-            def __init__(self):
-                self.called = 0
-
-            def __call__(self, *args, **kwargs):
-                # Fail on the second call
-                self.called += 1
-                if self.called == 2:
-                    return ("", 1)
-
-                return real_run_subprocess(*args, **kwargs)
-
-        real_run_subprocess = utils.run_subprocess
-        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
 
         with pytest.raises(
             utils.ImportGPGKeyError, match="Failed to read the temporary keyring with the rpm gpg key:.*"
@@ -324,20 +351,7 @@ class TestFindKeys:
             utils.find_keyid(self.gpg_key)
 
     def test_find_keyid_gpg_bad_keyring_and_race_deleting_tmp_dir(self, monkeypatch):
-        class MockedRunSubProcess(object):
-            def __init__(self):
-                self.called = 0
-
-            def __call__(self, *args, **kwargs):
-                # Fail on the second call
-                self.called += 1
-                if self.called == 2:
-                    return ("", 1)
-
-                return real_run_subprocess(*args, **kwargs)
-
-        real_run_subprocess = utils.run_subprocess
-        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
 
         real_rmtree = shutil.rmtree
         monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(OSError(2, "File not found"), real_rmtree))
@@ -348,20 +362,7 @@ class TestFindKeys:
             utils.find_keyid(self.gpg_key)
 
     def test_find_keyid_no_gpg_output(self, monkeypatch):
-        class MockedRunSubProcess(object):
-            def __init__(self):
-                self.called = 0
-
-            def __call__(self, *args, **kwargs):
-                # Fail on the second call
-                self.called += 1
-                if self.called == 2:
-                    return ("", 0)
-
-                return real_run_subprocess(*args, **kwargs)
-
-        real_run_subprocess = utils.run_subprocess
-        monkeypatch.setattr(utils, "run_subprocess", MockedRunSubProcess())
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=0))
 
         with pytest.raises(
             utils.ImportGPGKeyError, match="Unable to determine the gpg keyid for the rpm key file: %s" % self.gpg_key
@@ -426,7 +427,7 @@ class TestDownload_pkg:
     def test_download_pkg_success_with_all_params(self, monkeypatch):
         monkeypatch.setattr(system_info, "version", systeminfo.Version(8, 0))
         monkeypatch.setattr(system_info, "releasever", "8")
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked())
         monkeypatch.setattr(
             utils,
             "get_rpm_path_from_yumdownloader_output",
@@ -477,7 +478,7 @@ class TestDownload_pkg:
     def test_download_pkg_failed_download_exit(self, monkeypatch):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {})
 
         with pytest.raises(SystemExit):
@@ -486,7 +487,7 @@ class TestDownload_pkg:
     def test_download_pkg_failed_during_analysis_download_exit(self, monkeypatch):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
         monkeypatch.setattr(toolopts.tool_opts, "activity", "analysis")
 
@@ -496,7 +497,7 @@ class TestDownload_pkg:
     def test_download_pkg_failed_download_overridden(self, monkeypatch):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
         monkeypatch.setattr(toolopts.tool_opts, "activity", "conversion")
 
@@ -514,8 +515,7 @@ class TestDownload_pkg:
     def test_download_pkg_incorrect_output(self, output, monkeypatch):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-        monkeypatch.setattr(utils, "run_cmd_in_pty", RunSubprocessMocked(ret_code=0))
-        utils.run_cmd_in_pty.output = output
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_string=output))
 
         path = utils.download_pkg("kernel")
 
@@ -819,35 +819,6 @@ def test_write_json_object_to_file(data, expected, tmpdir):
     assert oct(os.stat(json_file_path).st_mode)[-4:].endswith("00")
 
 
-class DummyPopenOutput(unit_tests.MockFunction):
-    def __init__(self, output):
-        self.call_count = 0
-        self.output = output
-
-    def __call__(self, args, stdout, stderr, bufsize):
-        return self
-
-    @property
-    def stdout(self):
-        return self
-
-    def readline(self):
-        try:
-            next_line = self.output[self.call_count]
-        except IndexError:
-            return b""
-
-        self.call_count += 1
-        return next_line
-
-    def communicate(self):
-        pass
-
-    @property
-    def returncode(self):
-        return 0
-
-
 class TestRunSubprocess:
     @pytest.mark.parametrize(
         ("command", "expected"),
@@ -868,25 +839,17 @@ class TestRunSubprocess:
 
         assert (output, code) == expected
 
-    def test_run_subprocess_env(self, monkeypatch):
-        test_output = DummyPopenOutput([u"test of nonascii output: café".encode("utf-8")])
-        monkeypatch.setattr(utils.subprocess, "Popen", test_output)
+    @pytest.mark.popen_output([u"test of nonascii output: café".encode("utf-8")])
+    def test_run_subprocess_env(self, dummy_popen, monkeypatch):
+        monkeypatch.setattr(utils.subprocess, "Popen", dummy_popen)
 
         output, rc = utils.run_subprocess(["echo", "foobar"])
         assert u"test of nonascii output: café" == output
         assert 0 == rc
 
 
-class DummyGetUID(unit_tests.MockFunction):
-    def __init__(self, uid):
-        self.uid = uid
-
-    def __call__(self, *args, **kargs):
-        return self.uid
-
-
 def test_require_root_is_not_root(monkeypatch, capsys):
-    monkeypatch.setattr(os, "geteuid", DummyGetUID(1000))
+    monkeypatch.setattr(os, "geteuid", GetEUIDMocked(1000))
     with pytest.raises(SystemExit):
         utils.require_root()
 
@@ -894,7 +857,7 @@ def test_require_root_is_not_root(monkeypatch, capsys):
 
 
 def test_require_root_is_root(monkeypatch):
-    monkeypatch.setattr(os, "geteuid", DummyGetUID(0))
+    monkeypatch.setattr(os, "geteuid", GetEUIDMocked(0))
     exit_mock = mock.Mock(return_value=1)
     monkeypatch.setattr(sys, "exit", exit_mock)
     utils.require_root()

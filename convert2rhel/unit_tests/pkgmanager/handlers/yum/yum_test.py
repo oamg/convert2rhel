@@ -14,10 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import six
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import os
 
 import pytest
@@ -30,18 +26,24 @@ from six.moves import mock
 from convert2rhel import pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests import create_pkg_information, mock_decorator
+from convert2rhel.unit_tests import RemovePkgsMocked, create_pkg_information, mock_decorator
 from convert2rhel.unit_tests.conftest import centos7
 
 
-class YumResolveDepsMocked(unit_tests.MockFunction):
-    def __init__(self, start_at=0, loop_until=2):
-        self.called = start_at
+class YumResolveDepsMocked(unit_tests.MockFunctionObject):
+    spec = pkgmanager.handlers.yum.YumTransactionHandler._resolve_dependencies
+
+    def __init__(self, start_at=0, loop_until=2, **kwargs):
+        super(YumResolveDepsMocked, self).__init__(**kwargs)
+
         self.loop_until = loop_until
+        # Note: This means call_count and len(call_args_list) won't match.
+        self._mock.call_count = start_at
 
     def __call__(self, *args, **kwargs):
-        self.called += 1
-        if self.called >= self.loop_until:
+        super(YumResolveDepsMocked, self).__call__(*args, **kwargs)
+
+        if self._mock.call_count >= self.loop_until:
             return True
         else:
             return False
@@ -292,7 +294,9 @@ class TestYumTransactionHandler(object):
 
         perform_operations_count, resolve_dependencies_count = expected_count
         assert pkgmanager.handlers.yum.YumTransactionHandler._perform_operations.call_count == perform_operations_count
-        assert pkgmanager.handlers.yum.YumTransactionHandler._resolve_dependencies.called == resolve_dependencies_count
+        assert (
+            pkgmanager.handlers.yum.YumTransactionHandler._resolve_dependencies.call_count == resolve_dependencies_count
+        )
 
     @centos7
     def test_package_marked_for_update(self, pretend_os, _mock_yum_api_calls, monkeypatch):
@@ -373,7 +377,7 @@ def test_resolve_yum_problematic_dependencies(
     monkeypatch,
     caplog,
 ):
-    monkeypatch.setattr(pkgmanager.handlers.yum, "remove_pkgs", mock.Mock())
+    monkeypatch.setattr(pkgmanager.handlers.yum, "remove_pkgs", RemovePkgsMocked())
     pkgmanager.handlers.yum._resolve_yum_problematic_dependencies(output)
 
     if expected_remove_pkgs:

@@ -25,7 +25,7 @@ import pytest
 
 from convert2rhel import actions, grub, systeminfo, unit_tests
 from convert2rhel.actions.system_checks import efi
-from convert2rhel.unit_tests import EFIBootInfoMocked, GetLoggerMocked
+from convert2rhel.unit_tests import EFIBootInfoMocked
 
 
 ExpectedMessage = namedtuple("ExpectedMessage", ("id", "title", "description", "diagnosis", "remediation", "log_msg"))

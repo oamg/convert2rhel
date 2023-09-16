@@ -22,12 +22,11 @@ import six
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from collections import namedtuple
 
 from six.moves import mock
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import pkgmanager, redhatrelease, utils
+from convert2rhel import pkgmanager, redhatrelease, systeminfo, utils
 from convert2rhel.redhatrelease import YumConf, get_system_release_filepath
 from convert2rhel.systeminfo import system_info
 
@@ -45,30 +44,6 @@ distroverpkg=centos-release
 
 
 SUPPORTED_RHEL_VERSIONS = [7, 8]
-
-
-class DumbMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        pass
-
-
-class GlobMocked(unit_tests.MockFunction):
-    def __call__(self, *args, **kwargs):
-        return [
-            unit_tests.TMP_DIR + "redhat-release/pkg1.rpm",
-            unit_tests.TMP_DIR + "redhat-release/pkg2.rpm",
-            "Server/redhat-release-7/pkg1.rpm",
-            "Server/redhat-release-7/pkg2.rpm",
-        ]
-
-
-class RunSubprocessMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.cmd = None
-
-    def __call__(self, cmd, print_cmd=True, print_output=True):
-        self.cmd = cmd
-        return "Test output", 0
 
 
 def test_get_yum_conf_content(monkeypatch):
@@ -96,7 +71,7 @@ def test_patch_yum_conf_missing_distroverpkg(version, monkeypatch):
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
 def test_patch_yum_conf_existing_distroverpkg(version, monkeypatch):
     monkeypatch.setattr(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
-    monkeypatch.setattr(system_info, "version", namedtuple("Version", ["major", "minor"])(version, 0))
+    monkeypatch.setattr(system_info, "version", systeminfo.Version(version, 0))
     yum_conf = redhatrelease.YumConf()
     yum_conf._yum_conf_content = YUM_CONF_WITH_DISTROVERPKG
 
@@ -122,7 +97,7 @@ def test_patch_yum_conf_existing_distroverpkg(version, monkeypatch):
 def test_yum_is_modified(monkeypatch, pkg_type, subprocess_ret, expected_result):
     monkeypatch.setattr(pkgmanager, "TYPE", value=pkg_type)
 
-    run_subprocess = mock.Mock(return_value=(subprocess_ret, "anything"))
+    run_subprocess = unit_tests.RunSubprocessMocked(return_string=subprocess_ret)
     monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess)
 
     assert YumConf.is_modified() == expected_result
