@@ -17,109 +17,123 @@
 
 __metaclass__ = type
 
-import unittest
-
 import six
 
-from convert2rhel import actions, unit_tests
+from convert2rhel import unit_tests
 from convert2rhel.actions.system_checks import readonly_mounts
-from convert2rhel.unit_tests import GetFileContentMocked, GetLoggerMocked
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+import pytest
+
 from six.moves import mock
 
 
-class TestReadOnlyMountsChecks(unittest.TestCase):
-    def setUp(self):
-        self.readonly_mounts_action_mnt = readonly_mounts.ReadonlyMountMnt()
-        self.readonly_mounts_action_sys = readonly_mounts.ReadonlyMountSys()
+@pytest.fixture
+def readonly_mounts_mnt():
+    return readonly_mounts.ReadonlyMountMnt()
 
-    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
-    @unit_tests.mock(
+
+@pytest.fixture
+def readonly_mounts_sys():
+    return readonly_mounts.ReadonlyMountSys()
+
+
+def test_mounted_mnt_is_readwrite(readonly_mounts_mnt, caplog, monkeypatch):
+    monkeypatch.setattr(
         readonly_mounts,
         "get_file_content",
-        GetFileContentMocked(
-            data=[
+        mock.Mock(
+            return_value=[
                 "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
             ]
         ),
     )
-    def test_mounted_mnt_is_readwrite(self):
-        self.readonly_mounts_action_mnt.run()
-        print(readonly_mounts.logger.debug_msgs)
-        self.assertEqual(len(readonly_mounts.logger.debug_msgs), 1)
-        self.assertIn("/mnt mount point is not read-only.", readonly_mounts.logger.debug_msgs)
+    readonly_mounts_mnt.run()
 
-    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
-    @unit_tests.mock(
+    unit_tests.assert_actions_result(
+        readonly_mounts_mnt,
+        level="SUCCESS",
+    )
+    assert "Read-only /mnt mount point not detected." in caplog.text
+
+
+def test_mounted_sys_is_readwrite(readonly_mounts_sys, caplog, monkeypatch):
+    monkeypatch.setattr(
         readonly_mounts,
         "get_file_content",
-        GetFileContentMocked(
-            data=[
+        mock.Mock(
+            return_value=[
                 "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
             ]
         ),
     )
-    def test_mounted_sys_is_readwrite(self):
-        self.readonly_mounts_action_sys.run()
-        self.assertEqual(len(readonly_mounts.logger.debug_msgs), 1)
-        self.assertIn("/sys mount point is not read-only.", readonly_mounts.logger.debug_msgs)
+    readonly_mounts_sys.run()
 
-    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
-    @unit_tests.mock(
+    unit_tests.assert_actions_result(
+        readonly_mounts_sys,
+        level="SUCCESS",
+    )
+    assert "Read-only /sys mount point not detected." in caplog.text
+
+
+def test_mounted_are_readonly_mnt(readonly_mounts_mnt, monkeypatch):
+    monkeypatch.setattr(
         readonly_mounts,
         "get_file_content",
-        GetFileContentMocked(
-            data=[
+        mock.Mock(
+            return_value=[
                 "sysfs /sys sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "mnt /mnt sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
             ]
         ),
     )
-    def test_mounted_are_readonly_mnt(self):
-        self.readonly_mounts_action_mnt.run()
-        unit_tests.assert_actions_result(
-            self.readonly_mounts_action_mnt,
-            level="ERROR",
-            id="MNT_DIR_READONLY_MOUNT",
-            title="Read-only mount in /mnt directory",
-            description=(
-                "Stopping conversion due to read-only mount to /mnt directory.\n"
-                "Mount at a subdirectory of /mnt to have /mnt writeable."
-            ),
-            diagnosis=None,
-            remediation=None,
-        )
 
-    @unit_tests.mock(readonly_mounts, "logger", GetLoggerMocked())
-    @unit_tests.mock(
+    readonly_mounts_mnt.run()
+
+    unit_tests.assert_actions_result(
+        readonly_mounts_mnt,
+        level="ERROR",
+        id="MNT_DIR_READONLY_MOUNT",
+        title="Read-only mount in /mnt directory",
+        description=(
+            "Stopping conversion due to read-only mount to /mnt directory.\n"
+            "Mount at a subdirectory of /mnt to have /mnt writeable."
+        ),
+        diagnosis="",
+        remediation="",
+    )
+
+
+def test_mounted_are_readonly_sys(readonly_mounts_sys, monkeypatch):
+    monkeypatch.setattr(
         readonly_mounts,
         "get_file_content",
-        GetFileContentMocked(
-            data=[
+        mock.Mock(
+            return_value=[
                 "mnt /mnt sysfs rw,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "sysfs /sys sysfs ro,seclabel,nosuid,nodev,noexec,relatime 0 0",
                 "cgroup /sys/fs/cgroup/cpuset cgroup rw,seclabel,nosuid,nodev,noexec,relatime,cpuset 0 0",
             ]
         ),
     )
-    def test_mounted_are_readonly_sys(self):
-        self.readonly_mounts_action_sys.run()
-        unit_tests.assert_actions_result(
-            self.readonly_mounts_action_sys,
-            level="ERROR",
-            id="SYS_DIR_READONLY_MOUNT",
-            title="Read-only mount in /sys directory",
-            description=(
-                "Stopping conversion due to read-only mount to /sys directory.\n"
-                "Ensure mount point is writable before executing convert2rhel."
-            ),
-            diagnosis=None,
-            remediation=None,
-        )
+
+    readonly_mounts_sys.run()
+
+    unit_tests.assert_actions_result(
+        readonly_mounts_sys,
+        level="ERROR",
+        id="SYS_DIR_READONLY_MOUNT",
+        title="Read-only mount in /sys directory",
+        description=(
+            "Stopping conversion due to read-only mount to /sys directory.\n"
+            "Ensure mount point is writable before executing convert2rhel."
+        ),
+        diagnosis=None,
+        remediation=None,
+    )

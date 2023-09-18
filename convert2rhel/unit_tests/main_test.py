@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import unittest
 
 from collections import OrderedDict
 
@@ -29,123 +28,10 @@ from six.moves import mock
 
 from convert2rhel import actions, applock, backup, cert, checks, grub
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
-
-
-def mock_calls(class_or_module, method_name, mock_obj):
-    return unit_tests.mock(class_or_module, method_name, mock_obj(method_name))
-
-
-class TestMain(unittest.TestCase):
-    class AskToContinueMocked(unit_tests.MockFunction):
-        def __call__(self, *args, **kwargs):
-            return
-
-    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
-
-    @unit_tests.mock(utils, "DATA_DIR", eula_dir)
-    def test_show_eula(self):
-        main.show_eula()
-
-    class GetFakeFunctionMocked(unit_tests.MockFunction):
-        def __call__(self, filename):
-            pass
-
-    class GetFileContentMocked(unit_tests.MockFunction):
-        def __call__(self, filename):
-            return utils.get_file_content_orig(unit_tests.NONEXISTING_FILE)
-
-    class GetLoggerMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.info_msgs = []
-            self.critical_msgs = []
-
-        def __call__(self, msg):
-            return self
-
-        def task(self, msg):
-            pass
-
-        def critical(self, msg):
-            self.critical_msgs.append(msg)
-            raise SystemExit(1)
-
-        def info(self, msg):
-            pass
-
-        def debug(self, msg):
-            pass
-
-    class CallOrderMocked(unit_tests.MockFunction):
-        calls = OrderedDict()
-
-        def __init__(self, method_name):
-            self.method_name = method_name
-
-        def __call__(self, *args):
-            self.add_call(self.method_name)
-            return args
-
-        @classmethod
-        def add_call(cls, method_name):
-            if method_name in cls.calls:
-                cls.calls[method_name] += 1
-            else:
-                cls.calls[method_name] = 1
-
-        @classmethod
-        def reset(cls):
-            cls.calls = OrderedDict()
-
-    class CallYumCmdMocked(unit_tests.MockFunction):
-        def __init__(self):
-            self.called = 0
-            self.return_code = 0
-            self.return_string = "Test output"
-            self.fail_once = False
-            self.command = None
-            self.args = None
-
-        def __call__(self, command, args):
-            if self.fail_once and self.called == 0:
-                self.return_code = 1
-            if self.fail_once and self.called > 0:
-                self.return_code = 0
-            self.called += 1
-            self.command = command
-            self.args = args
-            return self.return_string, self.return_code
-
-    @unit_tests.mock(main, "loggerinst", GetLoggerMocked())
-    @unit_tests.mock(utils, "get_file_content", GetFileContentMocked())
-    def test_show_eula_nonexisting_file(self):
-        self.assertRaises(SystemExit, main.show_eula)
-        self.assertEqual(len(main.loggerinst.critical_msgs), 1)
-
-    @unit_tests.mock(
-        backup.changed_pkgs_control,
-        "restore_pkgs",
-        unit_tests.CountableMockObject(),
-    )
-    @unit_tests.mock(repo, "restore_yum_repos", unit_tests.CountableMockObject())
-    @unit_tests.mock(
-        pkghandler.versionlock_file,
-        "restore",
-        unit_tests.CountableMockObject(),
-    )
-    @unit_tests.mock(cert, "_get_cert", lambda _get_cert: ("anything", "anything"))
-    @unit_tests.mock(backup.backup_control, "pop_all", unit_tests.CountableMockObject())
-    @unit_tests.mock(repo, "restore_varsdir", unit_tests.CountableMockObject())
-    def test_rollback_changes(self):
-        main.rollback_changes()
-        self.assertEqual(backup.changed_pkgs_control.restore_pkgs.called, 1)
-        self.assertEqual(repo.restore_yum_repos.called, 1)
-        self.assertEqual(pkghandler.versionlock_file.restore.called, 1)
-        self.assertEqual(backup.backup_control.pop_all.called, 1)
-        self.assertEqual(repo.restore_varsdir.called, 1)
 
 
 @pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
@@ -175,6 +61,22 @@ def test_initialize_logger(exception_type, exception, monkeypatch, capsys):
         main.initialize_logger("convert2rhel.log", "/tmp")
         setup_logger_handler_mock.assert_called_once()
         archive_old_logger_files_mock.assert_called_once()
+
+
+class TestShowEula:
+    eula_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "data", "version-independent"))
+
+    def test_show_eula(self, monkeypatch):
+        monkeypatch.setattr(utils, "DATA_DIR", self.eula_dir)
+
+        main.show_eula()
+
+    def test_show_eula_nonexisting_file(self, caplog, monkeypatch):
+        with pytest.raises(SystemExit, match="EULA file not found"):
+            main.show_eula()
+
+        assert caplog.records[-1].levelname == "CRITICAL"
+        assert len(caplog.records) == 1
 
 
 def test_post_ponr_conversion(monkeypatch):
@@ -275,258 +177,278 @@ def test_main(monkeypatch, tmp_path):
     assert summary_as_json_mock.call_count == 1
 
 
-def test_main_rollback_post_cli_phase(monkeypatch, caplog, tmp_path):
-    require_root_mock = mock.Mock()
-    initialize_logger_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
-    show_eula_mock = mock.Mock(side_effect=Exception)
+class TestRollbackFromMain:
+    def test_main_rollback_post_cli_phase(self, monkeypatch, caplog, tmp_path):
+        require_root_mock = mock.Mock()
+        initialize_logger_mock = mock.Mock()
+        toolopts_cli_mock = mock.Mock()
+        show_eula_mock = mock.Mock(side_effect=Exception)
 
-    # Mock the rollback calls
-    finish_collection_mock = mock.Mock()
+        # Mock the rollback calls
+        finish_collection_mock = mock.Mock()
 
-    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
-    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
-    monkeypatch.setattr(main, "show_eula", show_eula_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", require_root_mock)
+        monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(main, "show_eula", show_eula_mock)
+        monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
 
-    assert main.main() == 1
-    assert require_root_mock.call_count == 1
-    assert initialize_logger_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
-    assert show_eula_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
-    assert "No changes were made to the system." in caplog.records[-2].message
+        assert main.main() == 1
+        assert require_root_mock.call_count == 1
+        assert initialize_logger_mock.call_count == 1
+        assert toolopts_cli_mock.call_count == 1
+        assert show_eula_mock.call_count == 1
+        assert finish_collection_mock.call_count == 1
+        assert "No changes were made to the system." in caplog.records[-2].message
 
+    def test_main_traceback_before_action_completion(self, monkeypatch, caplog, tmp_path):
+        require_root_mock = mock.Mock()
+        initialize_logger_mock = mock.Mock()
+        toolopts_cli_mock = mock.Mock()
+        show_eula_mock = mock.Mock()
+        print_data_collection_mock = mock.Mock()
+        resolve_system_info_mock = mock.Mock()
+        print_system_information_mock = mock.Mock()
+        collect_early_data_mock = mock.Mock()
+        clean_yum_metadata_mock = mock.Mock()
+        run_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
+        clear_versionlock_mock = mock.Mock()
 
-def test_main_traceback_before_action_completion(monkeypatch, caplog, tmp_path):
-    require_root_mock = mock.Mock()
-    initialize_logger_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
-    show_eula_mock = mock.Mock()
-    print_data_collection_mock = mock.Mock()
-    resolve_system_info_mock = mock.Mock()
-    print_system_information_mock = mock.Mock()
-    collect_early_data_mock = mock.Mock()
-    clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
-    clear_versionlock_mock = mock.Mock()
+        # Mock the rollback calls
+        finish_collection_mock = mock.Mock()
+        rollback_changes_mock = mock.Mock()
+        summary_as_json_mock = mock.Mock()
 
-    # Mock the rollback calls
-    finish_collection_mock = mock.Mock()
-    rollback_changes_mock = mock.Mock()
-    summary_as_json_mock = mock.Mock()
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", require_root_mock)
+        monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(main, "show_eula", show_eula_mock)
+        monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
+        monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+        monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
+        monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+        monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
+        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
+        monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
-    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
-    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
-    monkeypatch.setattr(main, "show_eula", show_eula_mock)
-    monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
-    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
-    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
-    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
-    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
-    monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-    monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
-    monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        assert main.main() == 1
+        assert require_root_mock.call_count == 1
+        assert initialize_logger_mock.call_count == 1
+        assert toolopts_cli_mock.call_count == 1
+        assert show_eula_mock.call_count == 1
+        assert print_data_collection_mock.call_count == 1
+        assert resolve_system_info_mock.call_count == 1
+        assert collect_early_data_mock.call_count == 1
+        assert clean_yum_metadata_mock.call_count == 1
+        assert run_actions_mock.call_count == 1
+        assert clear_versionlock_mock.call_count == 1
+        assert finish_collection_mock.call_count == 1
+        assert rollback_changes_mock.call_count == 1
+        assert summary_as_json_mock.call_count == 0
+        print(caplog.records)
+        assert (
+            caplog.records[-2].message.strip()
+            == "Conversion interrupted before analysis of system completed. Report not generated."
+        )
+        assert "Action Framework Crashed" in caplog.records[-3].message
 
-    assert main.main() == 1
-    assert require_root_mock.call_count == 1
-    assert initialize_logger_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
-    assert show_eula_mock.call_count == 1
-    assert print_data_collection_mock.call_count == 1
-    assert resolve_system_info_mock.call_count == 1
-    assert collect_early_data_mock.call_count == 1
-    assert clean_yum_metadata_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
-    assert clear_versionlock_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
-    assert rollback_changes_mock.call_count == 1
-    assert summary_as_json_mock.call_count == 0
-    print(caplog.records)
-    assert (
-        caplog.records[-2].message.strip()
-        == "Conversion interrupted before analysis of system completed. Report not generated."
-    )
-    assert "Action Framework Crashed" in caplog.records[-3].message
+    def test_main_rollback_pre_ponr_changes_phase(self, monkeypatch, caplog, tmp_path):
+        require_root_mock = mock.Mock()
+        initialize_logger_mock = mock.Mock()
+        toolopts_cli_mock = mock.Mock()
+        show_eula_mock = mock.Mock()
+        print_data_collection_mock = mock.Mock()
+        resolve_system_info_mock = mock.Mock()
+        print_system_information_mock = mock.Mock()
+        collect_early_data_mock = mock.Mock()
+        clean_yum_metadata_mock = mock.Mock()
+        run_actions_mock = mock.Mock()
+        report_summary_mock = mock.Mock()
+        clear_versionlock_mock = mock.Mock()
+        find_actions_of_severity_mock = mock.Mock()
 
+        # Mock the rollback calls
+        finish_collection_mock = mock.Mock()
+        rollback_changes_mock = mock.Mock()
+        summary_as_json_mock = mock.Mock()
 
-def test_main_rollback_pre_ponr_changes_phase(monkeypatch, caplog, tmp_path):
-    require_root_mock = mock.Mock()
-    initialize_logger_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
-    show_eula_mock = mock.Mock()
-    print_data_collection_mock = mock.Mock()
-    resolve_system_info_mock = mock.Mock()
-    print_system_information_mock = mock.Mock()
-    collect_early_data_mock = mock.Mock()
-    clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock()
-    report_summary_mock = mock.Mock()
-    clear_versionlock_mock = mock.Mock()
-    find_actions_of_severity_mock = mock.Mock()
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", require_root_mock)
+        monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(main, "show_eula", show_eula_mock)
+        monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
+        monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+        monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
+        monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+        monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
+        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
+        monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
+        monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
-    # Mock the rollback calls
-    finish_collection_mock = mock.Mock()
-    rollback_changes_mock = mock.Mock()
-    summary_as_json_mock = mock.Mock()
+        assert main.main() == 1
+        assert require_root_mock.call_count == 1
+        assert initialize_logger_mock.call_count == 1
+        assert toolopts_cli_mock.call_count == 1
+        assert show_eula_mock.call_count == 1
+        assert print_data_collection_mock.call_count == 1
+        assert resolve_system_info_mock.call_count == 1
+        assert collect_early_data_mock.call_count == 1
+        assert clean_yum_metadata_mock.call_count == 1
+        assert run_actions_mock.call_count == 1
+        assert report_summary_mock.call_count == 1
+        assert find_actions_of_severity_mock.call_count == 1
+        assert clear_versionlock_mock.call_count == 1
+        assert finish_collection_mock.call_count == 1
+        assert rollback_changes_mock.call_count == 1
+        assert summary_as_json_mock.call_count == 1
+        assert caplog.records[-3].message == "Conversion failed."
+        assert caplog.records[-3].levelname == "CRITICAL"
 
-    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
-    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
-    monkeypatch.setattr(main, "show_eula", show_eula_mock)
-    monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
-    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
-    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
-    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
-    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
-    monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(report, "summary", report_summary_mock)
-    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-    monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
-    monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+    def test_main_rollback_analyze_exit_phase(self, global_tool_opts, monkeypatch, tmp_path):
+        require_root_mock = mock.Mock()
+        initialize_logger_mock = mock.Mock()
+        toolopts_cli_mock = mock.Mock()
+        show_eula_mock = mock.Mock()
+        print_data_collection_mock = mock.Mock()
+        resolve_system_info_mock = mock.Mock()
+        print_system_information_mock = mock.Mock()
+        collect_early_data_mock = mock.Mock()
+        clean_yum_metadata_mock = mock.Mock()
+        run_actions_mock = mock.Mock()
+        report_summary_mock = mock.Mock()
+        clear_versionlock_mock = mock.Mock()
+        summary_as_json_mock = mock.Mock()
 
-    assert main.main() == 1
-    assert require_root_mock.call_count == 1
-    assert initialize_logger_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
-    assert show_eula_mock.call_count == 1
-    assert print_data_collection_mock.call_count == 1
-    assert resolve_system_info_mock.call_count == 1
-    assert collect_early_data_mock.call_count == 1
-    assert clean_yum_metadata_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
-    assert report_summary_mock.call_count == 1
-    assert find_actions_of_severity_mock.call_count == 1
-    assert clear_versionlock_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
-    assert rollback_changes_mock.call_count == 1
-    assert summary_as_json_mock.call_count == 1
-    assert caplog.records[-3].message == "Conversion failed."
-    assert caplog.records[-3].levelname == "CRITICAL"
+        # Mock the rollback calls
+        finish_collection_mock = mock.Mock()
+        rollback_changes_mock = mock.Mock()
 
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", require_root_mock)
+        monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(main, "show_eula", show_eula_mock)
+        monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
+        monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+        monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
+        monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+        monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
+        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
+        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
+        monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        global_tool_opts.activity = "analysis"
 
-def test_main_rollback_analyze_exit_phase(global_tool_opts, monkeypatch, tmp_path):
-    require_root_mock = mock.Mock()
-    initialize_logger_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
-    show_eula_mock = mock.Mock()
-    print_data_collection_mock = mock.Mock()
-    resolve_system_info_mock = mock.Mock()
-    print_system_information_mock = mock.Mock()
-    collect_early_data_mock = mock.Mock()
-    clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock()
-    report_summary_mock = mock.Mock()
-    clear_versionlock_mock = mock.Mock()
-    summary_as_json_mock = mock.Mock()
+        assert main.main() == 0
+        assert require_root_mock.call_count == 1
+        assert initialize_logger_mock.call_count == 1
+        assert toolopts_cli_mock.call_count == 1
+        assert show_eula_mock.call_count == 1
+        assert print_data_collection_mock.call_count == 1
+        assert resolve_system_info_mock.call_count == 1
+        assert collect_early_data_mock.call_count == 1
+        assert clean_yum_metadata_mock.call_count == 1
+        assert run_actions_mock.call_count == 1
+        assert report_summary_mock.call_count == 1
+        assert clear_versionlock_mock.call_count == 1
+        assert finish_collection_mock.call_count == 1
+        assert rollback_changes_mock.call_count == 1
+        assert summary_as_json_mock.call_count == 1
 
-    # Mock the rollback calls
-    finish_collection_mock = mock.Mock()
-    rollback_changes_mock = mock.Mock()
+    def test_main_rollback_post_ponr_changes_phase(self, monkeypatch, caplog, tmp_path):
+        require_root_mock = mock.Mock()
+        initialize_logger_mock = mock.Mock()
+        toolopts_cli_mock = mock.Mock()
+        show_eula_mock = mock.Mock()
+        print_data_collection_mock = mock.Mock()
+        resolve_system_info_mock = mock.Mock()
+        print_system_information_mock = mock.Mock()
+        collect_early_data_mock = mock.Mock()
+        clean_yum_metadata_mock = mock.Mock()
+        run_actions_mock = mock.Mock()
+        find_actions_of_severity_mock = mock.Mock(return_value=[])
+        report_summary_mock = mock.Mock()
+        clear_versionlock_mock = mock.Mock()
+        ask_to_continue_mock = mock.Mock()
+        post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
+        summary_as_json_mock = mock.Mock()
 
-    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
-    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
-    monkeypatch.setattr(main, "show_eula", show_eula_mock)
-    monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
-    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
-    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
-    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
-    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
-    monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(report, "summary", report_summary_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-    monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
-    monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
-    monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
-    global_tool_opts.activity = "analysis"
+        # Mock the rollback calls
+        finish_collection_mock = mock.Mock()
+        update_rhsm_custom_facts_mock = mock.Mock()
 
-    assert main.main() == 0
-    assert require_root_mock.call_count == 1
-    assert initialize_logger_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
-    assert show_eula_mock.call_count == 1
-    assert print_data_collection_mock.call_count == 1
-    assert resolve_system_info_mock.call_count == 1
-    assert collect_early_data_mock.call_count == 1
-    assert clean_yum_metadata_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
-    assert report_summary_mock.call_count == 1
-    assert clear_versionlock_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
-    assert rollback_changes_mock.call_count == 1
-    assert summary_as_json_mock.call_count == 1
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", require_root_mock)
+        monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
+        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(main, "show_eula", show_eula_mock)
+        monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
+        monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
+        monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
+        monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
+        monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
+        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
+        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+        monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
+        monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
+        monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
 
+        assert main.main() == 1
+        assert require_root_mock.call_count == 1
+        assert initialize_logger_mock.call_count == 1
+        assert toolopts_cli_mock.call_count == 1
+        assert show_eula_mock.call_count == 1
+        assert print_data_collection_mock.call_count == 1
+        assert resolve_system_info_mock.call_count == 1
+        assert collect_early_data_mock.call_count == 1
+        assert clean_yum_metadata_mock.call_count == 1
+        assert run_actions_mock.call_count == 1
+        assert find_actions_of_severity_mock.call_count == 1
+        assert clear_versionlock_mock.call_count == 1
+        assert report_summary_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 1
+        assert post_ponr_conversion_mock.call_count == 1
+        assert finish_collection_mock.call_count == 1
+        assert summary_as_json_mock.call_count == 1
+        assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
+        assert update_rhsm_custom_facts_mock.call_count == 1
 
-def test_main_rollback_post_ponr_changes_phase(monkeypatch, caplog, tmp_path):
-    require_root_mock = mock.Mock()
-    initialize_logger_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
-    show_eula_mock = mock.Mock()
-    print_data_collection_mock = mock.Mock()
-    resolve_system_info_mock = mock.Mock()
-    print_system_information_mock = mock.Mock()
-    collect_early_data_mock = mock.Mock()
-    clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock()
-    find_actions_of_severity_mock = mock.Mock(return_value=[])
-    report_summary_mock = mock.Mock()
-    clear_versionlock_mock = mock.Mock()
-    ask_to_continue_mock = mock.Mock()
-    post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
-    summary_as_json_mock = mock.Mock()
+    def test_rollback_changes(self, monkeypatch):
+        mock_restore_pkgs = mock.Mock()
+        mock_restore_yum_repos = mock.Mock()
+        mock_versionlock_file_restore = mock.Mock()
+        mock_cert_get_cert = mock.Mock(return_value="anything")
+        mock_backup_control_pop_all = mock.Mock()
+        mock_restore_varsdir = mock.Mock()
 
-    # Mock the rollback calls
-    finish_collection_mock = mock.Mock()
-    update_rhsm_custom_facts_mock = mock.Mock()
+        monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock_restore_pkgs)
+        monkeypatch.setattr(repo, "restore_yum_repos", mock_restore_yum_repos)
+        monkeypatch.setattr(pkghandler.versionlock_file, "restore", mock_versionlock_file_restore)
+        monkeypatch.setattr(cert, "_get_cert", mock_cert_get_cert)
+        monkeypatch.setattr(backup.backup_control, "pop_all", mock_backup_control_pop_all)
+        monkeypatch.setattr(repo, "restore_varsdir", mock_restore_varsdir)
 
-    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
-    monkeypatch.setattr(utils, "require_root", require_root_mock)
-    monkeypatch.setattr(main, "initialize_logger", initialize_logger_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
-    monkeypatch.setattr(main, "show_eula", show_eula_mock)
-    monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
-    monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
-    monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
-    monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
-    monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
-    monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
-    monkeypatch.setattr(report, "summary", report_summary_mock)
-    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
-    monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
-    monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
-    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
-    monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        main.rollback_changes()
 
-    assert main.main() == 1
-    assert require_root_mock.call_count == 1
-    assert initialize_logger_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
-    assert show_eula_mock.call_count == 1
-    assert print_data_collection_mock.call_count == 1
-    assert resolve_system_info_mock.call_count == 1
-    assert collect_early_data_mock.call_count == 1
-    assert clean_yum_metadata_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
-    assert find_actions_of_severity_mock.call_count == 1
-    assert clear_versionlock_mock.call_count == 1
-    assert report_summary_mock.call_count == 1
-    assert ask_to_continue_mock.call_count == 1
-    assert post_ponr_conversion_mock.call_count == 1
-    assert finish_collection_mock.call_count == 1
-    assert summary_as_json_mock.call_count == 1
-    assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
-    assert update_rhsm_custom_facts_mock.call_count == 1
+        assert mock_restore_pkgs.call_count == 1
+        assert mock_restore_yum_repos.call_count == 1
+        assert mock_versionlock_file_restore.call_count == 1
+        assert mock_backup_control_pop_all.call_count == 1
+        assert mock_restore_varsdir.call_count == 1
