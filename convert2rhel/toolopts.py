@@ -151,7 +151,7 @@ class CLI(object):
         # when nothing is provided in the CLI.
         self._convert_parser = subparsers.add_parser(
             "convert",
-            help="Convert the system.",
+            help="Convert the system. If no subcommand is given, 'convert' is used as a default.",
             parents=[self._shared_options_parser],
             usage=self.usage(),
         )

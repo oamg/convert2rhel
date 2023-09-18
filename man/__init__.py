@@ -23,7 +23,7 @@ def get_parser():
     cli = toolopts.CLI()
     # Show the subcommands in the SYNOPSIS section, but hide in the
     # `convert2rhel convert` section.
-    cli._convert_parser.usage = cli.usage(include_subcommands=False)
+    cli._convert_parser.usage = cli.usage(include_subcommands=False, subcommand_name="convert")
     parser = cli._parser
 
     # Description taken out of our Confluence page.
@@ -33,8 +33,8 @@ def get_parser():
         "The whole conversion procedure is performed on the running RHEL derivative OS "
         "installation and a restart is needed at the end of the conversion to "
         "boot into the RHEL kernel. The utility replaces the original OS packages "
-        "with the RHEL ones. Available are conversions of CentOS Linux 6/7/8, "
-        "Oracle Linux 6/7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
+        "with the RHEL ones. Available are conversions of CentOS Linux 7/8, "
+        "Oracle Linux 7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
         "to the respective major version of RHEL.".strip()
     )
     return parser
