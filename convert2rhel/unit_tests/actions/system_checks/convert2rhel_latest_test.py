@@ -987,9 +987,9 @@ class Test_ExtractConvert2rhelVersions:
                 "Output\nfrom repoquery where\nno strings were for\npackages",
                 [],
             ),
-        ),
+        )
     )
-    def test_extract_convert2rhel_version(self, raw_versions, expected_versions):
-        list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(raw_versions)
+    def test_extract_convert2rhel_version(self, precise_raw_version, expected_versions):
+        list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(precise_raw_version)
 
         assert list_of_versions == expected_versions
