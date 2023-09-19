@@ -294,6 +294,7 @@ class Convert2rhelLatest(actions.Action):
 
         logger.info("Latest available convert2rhel version is installed.")
 
+
 def _format_EVR(epoch, version, release):
     return "%s:%s-%s" % (epoch, version, release)
 
