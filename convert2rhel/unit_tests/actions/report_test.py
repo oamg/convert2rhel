@@ -716,7 +716,6 @@ def test_messages_summary_with_long_message(long_message, caplog):
     ),
 )
 def test_results_summary_ordering(results, include_all_reports, expected_results, caplog):
-
     report.summary(results, include_all_reports, disable_colors=True)
 
     # Prove that all the messages occurred and in the right order.
@@ -953,7 +952,6 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
     ),
 )
 def test_messages_summary_ordering(results, include_all_reports, expected_results, caplog):
-
     report.summary(results, include_all_reports, disable_colors=True)
 
     # Filter informational messages and empty strings out of message.splitlines
@@ -1103,3 +1101,371 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
     report.summary(results, include_all_reports=True, disable_colors=False)
     assert expected_result in caplog.records[-1].message
     assert expected_message in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("results", "text_lines"),
+    (
+        (
+            {
+                "SkipAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["SKIP"],
+                        "id": "SKIP",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "OverridableAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["OVERRIDABLE"],
+                        "id": "OVERRIDABLE",
+                        "title": "Overridable",
+                        "description": "Action overridable",
+                        "diagnosis": "User overridable",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "ErrorAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "ERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "TestAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "SECONDERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+            },
+            [
+                "{begin_fail}(ERROR) ErrorAction::ERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediation: move on\n{end}",
+                "{begin_fail}(ERROR) TestAction::SECONDERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediation: move on\n{end}",
+                "{begin_fail}(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n Description: Action overridable\n Diagnosis: User overridable\n Remediation: move on\n{end}",
+                "{begin_fail}(SKIP) SkipAction::SKIP - Skip\n Description: Action skip\n Diagnosis: User skip\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) SkipAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) OverridableAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) ErrorAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) TestAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+            ],
+        ),
+    ),
+)
+def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
+    convert2rhel_txt_results = tmpdir.join("convert2rhel-pre-conversion.txt")
+
+    monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
+
+    # Call the summary instead of report_to_txt since report to text file is written during the
+    # summary. Also part of the summary code is used for the report to text file.
+    report.summary_as_txt(results)
+
+    for expected in text_lines:
+        assert (
+            expected.format(begin_fail=bcolors.FAIL, begin_warning=bcolors.WARNING, end=bcolors.ENDC)
+            in convert2rhel_txt_results.read()
+        )
+    assert "test" not in convert2rhel_txt_results.read()
+
+
+@pytest.mark.parametrize(
+    ("results", "text_lines"),
+    (
+        (
+            {
+                "SkipAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["SKIP"],
+                        "id": "SKIP",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "OverridableAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["OVERRIDABLE"],
+                        "id": "OVERRIDABLE",
+                        "title": "Overridable",
+                        "description": "Action overridable",
+                        "diagnosis": "User overridable",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "ErrorAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "ERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+                "TestAction": dict(
+                    messages=[
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    result={
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "SECONDERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                ),
+            },
+            [
+                "{begin_fail}(ERROR) ErrorAction::ERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediation: move on\n{end}",
+                "{begin_fail}(ERROR) TestAction::SECONDERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediation: move on\n{end}",
+                "{begin_fail}(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n Description: Action overridable\n Diagnosis: User overridable\n Remediation: move on\n{end}",
+                "{begin_fail}(SKIP) SkipAction::SKIP - Skip\n Description: Action skip\n Diagnosis: User skip\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) SkipAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) OverridableAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) ErrorAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+                "{begin_warning}(WARNING) TestAction::WARNING_ID - Warning\n Description: Action warning\n Diagnosis: User warning\n Remediation: move on\n{end}",
+            ],
+        ),
+    ),
+)
+def test_summary_as_txt_file_exists(results, text_lines, tmpdir, monkeypatch):
+    convert2rhel_txt_results = tmpdir.join("convert2rhel-pre-conversion.txt")
+    convert2rhel_txt_results.write("test")
+
+    monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
+
+    # Call the summary instead of report_to_txt since report to text file is written during the
+    # summary. Also part of the summary code is used for the report to text file.
+    report.summary_as_txt(results)
+
+    for expected in text_lines:
+        assert (
+            expected.format(begin_fail=bcolors.FAIL, begin_warning=bcolors.WARNING, end=bcolors.ENDC)
+            in convert2rhel_txt_results.read()
+        )
+    assert "test" not in convert2rhel_txt_results.read()
+
+
+@pytest.mark.parametrize(
+    ("results", "expected"),
+    (
+        (
+            {
+                "PreSubscription": {
+                    "messages": [
+                        {
+                            "level": 51,
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": 0,
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediation": "",
+                        "variables": {},
+                    },
+                }
+            },
+            {
+                ("PreSubscription", "SUCCESS"): {
+                    "level": 0,
+                    "title": "",
+                    "description": "",
+                    "remediation": "",
+                    "diagnosis": "",
+                    "variables": {},
+                },
+                ("PreSubscription", "WARNING_ID"): {
+                    "level": 51,
+                    "title": "Warning",
+                    "description": "Action warning",
+                    "remediation": "move on",
+                    "diagnosis": "User warning",
+                    "variables": {},
+                },
+            },
+        ),
+        (
+            {
+                "PreSubscription": {
+                    "messages": [],
+                    "result": {
+                        "level": 0,
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediation": "",
+                        "variables": {},
+                    },
+                },
+                "PreSubscription2": {
+                    "messages": [
+                        {
+                            "level": 51,
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediation": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": 101,
+                        "id": "SKIPPED",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediation": "move on",
+                        "variables": {},
+                    },
+                },
+            },
+            {
+                ("PreSubscription", "SUCCESS"): {
+                    "level": 0,
+                    "title": "",
+                    "description": "",
+                    "remediation": "",
+                    "diagnosis": "",
+                    "variables": {},
+                },
+                ("PreSubscription2", "SKIPPED"): {
+                    "level": 101,
+                    "title": "Skip",
+                    "description": "Action skip",
+                    "remediation": "move on",
+                    "diagnosis": "User skip",
+                    "variables": {},
+                },
+                ("PreSubscription2", "WARNING_ID"): {
+                    "level": 51,
+                    "title": "Warning",
+                    "description": "Action warning",
+                    "remediation": "move on",
+                    "diagnosis": "User warning",
+                    "variables": {},
+                },
+            },
+        ),
+    ),
+)
+def test_get_combined_results_and_message(results, expected):
+    combined_results_and_message = report.get_combined_results_and_message(results)
+
+    assert combined_results_and_message == expected

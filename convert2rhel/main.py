@@ -205,6 +205,7 @@ def main_locked(process_phase):
         # parse and act upon it.
         if pre_conversion_results:
             actions.report.summary_as_json(pre_conversion_results)
+            actions.report.summary_as_txt(pre_conversion_results)
 
     return 0
 
