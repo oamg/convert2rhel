@@ -37,11 +37,11 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /rhsm_non_eus:
+            enabled: false
             adjust+:
-                - enabled: false
-                  # TODO EUS Bump disabled version
+                - enabled: true
                   when: >
-                    distro != centos-8.4
+                    distro == alma-8.6, rocky-8.6
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -81,7 +81,7 @@ description+: |
         /pre_registered_system:
             adjust+:
               - enabled: false
-                when: distro == oraclelinux
+                when: distro == oracle
                 because: There is no subscription-manager package in Oracle Linux repositories
               - environment+:
                   C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
@@ -99,10 +99,11 @@ description+: |
 
     /single_yum_transaction:
         /single_yum_transaction_all_errors:
+            enabled: false
             adjust+:
-                - enabled: false
+                - enabled: true
                   when: >
-                      distro != oraclelinux-7
+                      distro == oracle-7
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -117,11 +118,11 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /single_yum_transaction_mismatch_errors:
+            enabled: false
             adjust+:
-                - enabled: false
+                - enabled: true
                   when: >
-                      distro != centos-8-latest and
-                      distro != oraclelinux-8
+                      distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -136,10 +137,10 @@ description+: |
                   playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /single_yum_transaction_excld_pkgs:
+            enabled: false
             adjust+:
-                - enabled: false
-                  when: >
-                    distro != centos-7
+                - enabled: true
+                  when: distro == centos-7
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -168,7 +169,7 @@ description+: |
             discover+:
                   filter: tag:checks-after-conversion
             prepare+:
-                  - name: enable extras repo for Oracle Linux
+                  - name: enable CentOS' extras repo
                     how: ansible
                     playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                   - name: install problematic package
@@ -182,6 +183,10 @@ description+: |
                     playbook: tests/ansible_collections/roles/reboot/main.yml
 
         /resolve_dependency:
+            adjust+:
+                - enabled: false
+                  when: distro == alma, rocky
+                  because: We do not have any tracked packages with Rocky and Alma for this test case
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
@@ -201,7 +206,7 @@ description+: |
           # Disabled due to known issue: https://issues.redhat.com/browse/RHELC-1040
           # Enable once this gets fixed
           - enabled: false
-            when: distro == oraclelinux-7
+            when: distro == oracle-7
         discover+:
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             filter: tag:checks-after-conversion & tag:-rhel-subman

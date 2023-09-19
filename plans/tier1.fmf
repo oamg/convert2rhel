@@ -25,12 +25,20 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /remove_excld_pkgs_epel8:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                distro != centos-8
-        environment+:
-            PACKAGES: centos-backgrounds centos-gpg-keys
+            - enabled: true
+              when: distro == centos-8, alma-8, rocky-8
+            - environment+:
+                PACKAGES: centos-backgrounds centos-gpg-keys
+              when: distro == centos
+            - environment+:
+                PACKAGES: almalinux-backgrounds
+              when: distro == alma
+              because: No almalinux-gpg-keys package for release 8 available
+            - environment+:
+                PACKAGES: rocky-backgrounds rocky-gpg-keys
+              when: distro == rocky
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -42,9 +50,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /remove_excld_pkgs_epel7:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: distro != oraclelinux-7 and distro != centos-7
+            - enabled: true
+              when: distro == oracle-7, centos-7
         environment+:
             PACKAGES: gnome-documents-libs shim-x64
         discover+:
@@ -59,11 +68,10 @@ description+: |
 
 
     /one_kernel_scenario:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-7 and
-                  distro != oraclelinux-7
+            - enabled: true
+              when: distro == centos-7, oracle-7
         discover+:
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             filter: tag:checks-after-conversion & tag:-rhel-subman
@@ -142,10 +150,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /removed_pkgs_centos_85:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8-latest
+            - enabled: true
+              when: distro == centos-8-latest
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -163,7 +171,7 @@ description+: |
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
-            - name: modify grub config file with valid changes
+            - name: modify grub config with valid changes
               how: shell
               script: pytest -svv tests/integration/*/destructive/changed-grub-file/test_valid_changed_grub.py
             - name: reboot after conversion
@@ -181,12 +189,11 @@ description+: |
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
-    /kernel-core-only:
+    /kernel_core_only:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8 and
-                  distro != oraclelinux-8.
+            - enabled: true
+              when: distro == alma-8, centos-8, oracle-8, rocky-8
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -204,10 +211,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /config_file:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: >
-                  distro != centos-8-latest
+            - enabled: true
+              when: distro == centos-8-latest
         discover+:
             filter: tag:checks-after-conversion
         prepare+:
@@ -219,9 +226,10 @@ description+: |
               playbook: tests/ansible_collections/roles/reboot/main.yml
 
     /detect_correct_boot_partition:
+        enabled: false
         adjust+:
-            - enabled: false
-              when: trigger == commit
+            - enabled: true
+              when: initiator == human
               because: There are no UEFI images available on the Testing Farm yet.
         discover+:
             filter: tag:checks-after-conversion
@@ -260,7 +268,7 @@ description+: |
         enabled: false
         adjust+:
             - enabled: true
-              when: distro == centos-7, oraclelinux-7
+              when: distro == centos-7, oracle-7
         environment+:
             CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK: 1
             # Since we are removing all the repositories other than rhel-7-server-rpms

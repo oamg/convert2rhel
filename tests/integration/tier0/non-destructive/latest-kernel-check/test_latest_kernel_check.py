@@ -12,18 +12,18 @@ def tainted_repository(shell):
     Add a tainted repository with intentionally bad baseurl so the repoquery fails successfully.
     """
     repofile = "broken_repo"
-    centos_custom_reposdir = "/usr/share/convert2rhel/repos/"
+    centos_custom_reposdir = "/usr/share/convert2rhel/repos"
 
     # For CentOS, we are working with hardcoded repos in /usr/share/convert2rhel/repos/centos-8.5
     if "centos-8" in SYSTEM_RELEASE_ENV:
-        shell(f"cp -r files/{repofile}.repo {centos_custom_reposdir}/{SYSTEM_RELEASE_ENV}/")
+        shell(f"cp -r files/{repofile}.repo {centos_custom_reposdir}/centos-8.5/")
     shell(f"cp -r files/{repofile}.repo /etc/yum.repos.d/")
 
     yield
 
     # Cleanup the tainted repository.
     if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell(f"rm -f {centos_custom_reposdir}/{SYSTEM_RELEASE_ENV}/{repofile}.repo").returncode == 0
+        assert shell(f"rm -f {centos_custom_reposdir}/centos-8.5/{repofile}.repo").returncode == 0
     assert shell(f"rm -f /etc/yum.repos.d/{repofile}.repo").returncode == 0
 
 

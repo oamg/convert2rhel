@@ -56,9 +56,9 @@ def shell(tmp_path):
 
 @pytest.fixture()
 def convert2rhel(shell):
-    """Context manager to run Convert2RHEL utility.
+    """Context manager to run convert2rhel utility.
 
-    This fixture runs the Convert2RHEL with the specified options and
+    This fixture runs the convert2rhel with the specified options and
     do automatic teardown for you. It yields pexpext.spawn object.
 
     You can verify that some text is in stdout, by using:
@@ -224,8 +224,8 @@ class ConfigUtils:
 
 @pytest.fixture()
 def c2r_config(os_release):
-    """ConfigUtils object with already loaded Convert2RHEL config."""
-    release_id2conf = {"centos": "centos", "ol": "oracle"}
+    """ConfigUtils object with already loaded convert2rhel config."""
+    release_id2conf = {"centos": "centos", "ol": "oracle", "almalinux": "almalinux", "rocky": "rocky"}
     config_path = (
         Path("/usr/share/convert2rhel/configs/")
         / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
@@ -368,19 +368,36 @@ def repositories(shell):
 
 
 @pytest.fixture(autouse=True)
-def missing_centos_release_workaround(system_release, shell):
+def missing_os_release_package_workaround(shell):
     # TODO(danmyway) remove when/if the issue gets fixed
     """
-    Fixture to workaround issues with missing `centos-linux-release`
-    after incomplete rollback.
+    Fixture to workaround issues with missing `*-linux-release`
+    package, after incomplete rollback.
     """
     # run only after the test finishes
     yield
 
-    if "centos-8.5" in system_release:
-        rpm_output = shell("rpm -q centos-linux-release").output
+    os_to_pkg_mapping = {
+        "oracle-7": "oracle-release-el7",
+        "oracle-8": "oraclelinux-release-el8",
+        "centos-7": "centos-release",
+        "centos-8": "centos-linux-release",
+        "alma-8": "almalinux-release",
+        "rocky-8": "rocky-release",
+    }
+
+    # Run only for non-destructive tests.
+    # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
+    if "INT_TESTS_NONDESTRUCTIVE" in os.environ:
+        os_name = SYSTEM_RELEASE_ENV.split("-")[0]
+        os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
+        os_key = f"{os_name}-{os_ver[0]}"
+
+        system_release_pkg = os_to_pkg_mapping.get(os_key)
+
+        rpm_output = shell(f"rpm -q {system_release_pkg}").output
         if "not installed" in rpm_output:
-            shell("yum install -y --releasever=8 centos-linux-release")
+            shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
 
 
 def _load_json_schema(path):
@@ -459,3 +476,20 @@ def disabled_telemetry(shell):
 
     if os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]:
         del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
+
+
+@pytest.fixture()
+def hybrid_rocky_image(shell, system_release):
+    """
+    Fixture to detect a hybrid Rocky Linux cloud image.
+    Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
+    The symlink prevents grub to read the grubenv and boot to a different
+    kernel than the last selected.
+    """
+    grubenv_file = "/boot/grub2/grubenv"
+    if "rocky" in system_release:
+        if os.path.islink(grubenv_file):
+            target_grubenv_file = os.path.realpath(grubenv_file)
+
+            os.remove(grubenv_file)
+            shutil.copy2(target_grubenv_file, grubenv_file)

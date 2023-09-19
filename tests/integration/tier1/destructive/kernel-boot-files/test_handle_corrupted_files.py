@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 
 import pytest
@@ -81,7 +82,7 @@ def test_corrupted_initramfs_file(convert2rhel, shell):
         data than removing random parts of it.
     """
     kernel_name = "kernel"
-    if "centos-8" in SYSTEM_RELEASE_ENV or "oracle-8" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(centos|oracle|alma|rocky)-8", SYSTEM_RELEASE_ENV):
         kernel_name = "kernel-core"
 
     with convert2rhel(

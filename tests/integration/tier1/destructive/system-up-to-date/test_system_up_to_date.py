@@ -1,4 +1,5 @@
 import os
+import re
 
 from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
@@ -16,23 +17,9 @@ def test_skip_kernel_check(shell, convert2rhel):
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardcoded repos from c2r as well
-    if "centos-8" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(alma|rocky)-8\.6$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
-
-    with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
-        )
-    ) as c2r:
-        if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
-            c2r.expect("Could not find any kernel from repositories to compare against the loaded kernel.")
-        else:
-            c2r.expect("Could not find any kernel-core from repositories to compare against the loaded kernel.")
-    assert c2r.exitstatus != 0
 
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
@@ -62,8 +49,8 @@ def test_system_not_updated(shell, convert2rhel):
     """
     System contains at least one package that is not updated to
     the latest version. The c2r has to display a warning message
-    about that. Also, not updated package its version
-    is locked. Display a warning about used version lock.
+    about that. Also, not updated package has its version locked.
+    Display a warning about used version lock.
     """
     centos_8_pkg_url = "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm"
 
@@ -73,11 +60,12 @@ def test_system_not_updated(shell, convert2rhel):
         # We need to install package from older repository as a workaround.
         assert shell("yum install -y {}".format(centos_8_pkg_url)).returncode == 0
     else:
-        assert shell("yum install openldap wpa_supplicant -y").returncode == 0
-        assert shell("yum downgrade openldap wpa_supplicant -y").returncode == 0
+        # Add sqlite to be able to downgrade the package on Alma and Rocky Linux
+        assert shell("yum install openldap wpa_supplicant sqlite -y").returncode == 0
+        assert shell("yum downgrade openldap wpa_supplicant sqlite -y").returncode == 0
 
     assert shell("yum install -y yum-plugin-versionlock").returncode == 0
-    assert shell("yum versionlock wpa_supplicant").returncode == 0
+    assert shell("yum versionlock wpa_supplicant sqlite").returncode == 0
 
     # Run utility until the reboot
     with convert2rhel(

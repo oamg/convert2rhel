@@ -12,16 +12,25 @@ adjust+:
       when: distro == centos-7
     - environment+:
         SYSTEM_RELEASE_ENV: oracle-7
-      when: distro == oraclelinux-7
+      when: distro == oracle-7
     - environment+:
-        SYSTEM_RELEASE_ENV: centos-8.5
+        SYSTEM_RELEASE_ENV: centos-8-latest
       when: distro == centos-8-latest
     - environment+:
-        #TODO bump distro context to 8.7 when the image is available on the testing farm
-        # Even though the distro context is 8.6 we are setting the SYSTEM_RELEASE_ENV to '8-latest'
-        # to tag the updated system correctly
         SYSTEM_RELEASE_ENV: oracle-8-latest
-      when: distro == oraclelinux-8
+      when: distro == oracle-8-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: alma-8.6
+      when: distro == alma-8.6
+    - environment+:
+        SYSTEM_RELEASE_ENV: alma-8-latest
+      when: distro == alma-8-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-8.6
+      when: distro == rocky-8.6
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-8-latest
+      when: distro == rocky-8-latest
 
 prepare:
     - name: main preparation step

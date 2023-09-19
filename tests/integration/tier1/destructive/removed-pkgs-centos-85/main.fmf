@@ -7,9 +7,9 @@ description: |
     exists, and proceeds to the conversion.
 
 
+enabled: false
 adjust+:
-    - enabled: false
-      when: >
-        distro != centos-8-latest
+    - enabled: true
+      when: distro == centos-8-latest
 
 test: pytest -svv

@@ -13,16 +13,28 @@ def assign_packages(packages=None):
     ol_8_pkgs = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
     cos_7_pkgs = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
     cos_8_pkgs = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
+    alm_8_pkgs = ["almalinux-release", "usermode", "rhn-setup", "python3-syspurpose", "almalinux-logos"]
+    roc_8_pkgs = ["rocky-release", "usermode", "rhn-setup", "python3-syspurpose", "rocky-logos"]
     # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
     # and Oracle Linux 8.2 respectively.
-    if "centos-7" in SYSTEM_RELEASE_ENV:
-        packages += cos_7_pkgs
-    elif "centos-8" in SYSTEM_RELEASE_ENV:
-        packages += cos_8_pkgs
-    elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        packages += ol_7_pkgs
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        packages += ol_8_pkgs
+
+    release_mapping = {
+        "centos-7": cos_7_pkgs,
+        "centos-8": cos_8_pkgs,
+        "oracle-7": ol_7_pkgs,
+        "oracle-8": ol_8_pkgs,
+        "alma-8": alm_8_pkgs,
+        "rocky-8": roc_8_pkgs,
+    }
+
+    release_key = SYSTEM_RELEASE_ENV
+
+    if "." in SYSTEM_RELEASE_ENV:
+        release_key = SYSTEM_RELEASE_ENV.split(".")[0]
+    elif "-latest" in SYSTEM_RELEASE_ENV:
+        release_key = SYSTEM_RELEASE_ENV.split("-latest")[0]
+
+    packages = release_mapping.get(release_key)
 
     return packages
 

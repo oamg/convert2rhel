@@ -26,7 +26,7 @@ tag+:
         to throw the following yum error: pkgmanager.Errors.YumDownloadError
     adjust+:
         - enabled: false
-          when: distro == centos-8 or distro == oraclelinux-8
+          when: distro == centos-8, alma-8, rocky-8, oracle-8
     tag+:
         - transaction-validation-error
     test: |
@@ -49,7 +49,7 @@ tag+:
     adjust+:
         - enabled: true
           when: >
-            distro == oraclelinux-8, centos-8
+            distro == oracle-8, centos-8
     summary+: |
         Unhandled exception for packages with in name period
     description+: |
