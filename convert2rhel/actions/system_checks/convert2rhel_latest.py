@@ -162,7 +162,7 @@ class Convert2rhelLatest(actions.Action):
 
         running_convert2rhel_NEVRA = _extract_convert2rhel_versions(running_convert2rhel_NEVRA)
 
-        # If we couldn't get a NEVRA above, then print a warning that we could not determine the rpm release and use convert2rhel.__version__ to compare with the latest packaged version
+        # If any of those steps fail, we print a warning that we could not determine the rpm release and use convert2rhel.{}version{} to compare with the latest packaged version
         if return_code != 0 or len(running_convert2rhel_NEVRA) != 1:
             logger.warning(
                 "Couldn't determine the rpm release; We will check that the version of convert2rhel (%s) is the latest but ignore the rpm release."
