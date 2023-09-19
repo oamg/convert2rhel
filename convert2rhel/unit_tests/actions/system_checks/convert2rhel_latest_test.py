@@ -850,3 +850,75 @@ class TestCheckConvert2rhelLatest:
         )
 
         assert log_msg in caplog.text
+
+
+class Test_ExtractConvert2rhelVersions:
+    @pytest.mark.parametrize(
+        ("precise_raw_version", "expected_versions"),
+        (
+            (
+                "C2R convert2rhel-0:0.18.0-1.el7.noarch\n",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "C2R convert2rhel-1:1.0-99.el8.noarch\n",
+                [
+                    "convert2rhel-1:1.0-99.el8.noarch",
+                ],
+            ),
+            (
+                "C2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                    "convert2rhel-0:0.17.0-1.el7.noarch",
+                    "convert2rhel-0:0.20.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "C2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch\nconvert2rhel-0:0.21-1.el7.noarch",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                    "convert2rhel-0:0.17.0-1.el7.noarch",
+                    "convert2rhel-0:0.20.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "C2R convert2rhel-0:0.18.0-1.el7.noarch\nconvert2rhel-0:0.21-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch\n",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                    "convert2rhel-0:0.17.0-1.el7.noarch",
+                    "convert2rhel-0:0.20.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "convert2rhel-0:0.21-1.el7.noarch\nC2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch\n",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                    "convert2rhel-0:0.17.0-1.el7.noarch",
+                    "convert2rhel-0:0.20.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "convert2rhel-0:0.21-1.el7.noarch\nC2R convert2rhel-0:0.18.0-1.el7.noarch\nC2R convert2rhel-0:0.17.0-1.el7.noarch\nconvert2rhel-1:2.27-9.el8.noarch\nC2R convert2rhel-0:0.20.0-1.el7.noarch\n",
+                [
+                    "convert2rhel-0:0.18.0-1.el7.noarch",
+                    "convert2rhel-0:0.17.0-1.el7.noarch",
+                    "convert2rhel-0:0.20.0-1.el7.noarch",
+                ],
+            ),
+            (
+                "",
+                [],
+            ),
+            (
+                "Output\nfrom repoquery where\nno strings were for\npackages",
+                [],
+            ),
+        )
+    )
+    def test_extract_convert2rhel_version(self, precise_raw_version, expected_versions):
+        list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(precise_raw_version)
+
+        assert list_of_versions == expected_versions
