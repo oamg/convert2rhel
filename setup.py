@@ -65,6 +65,5 @@ setup(
             "convert2rhel = convert2rhel.initialize:run",
         ]
     },
-    # cmdclass={"build_manpage": build_manpages},
     include_package_data=True,
 )

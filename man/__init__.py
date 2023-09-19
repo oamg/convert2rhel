@@ -19,12 +19,15 @@ from convert2rhel import toolopts
 
 
 def get_parser():
-    """Return OptionParser instance used by manpage generator."""
-    cli = toolopts.CLI()
-    # Show the subcommands in the SYNOPSIS section, but hide in the
-    # `convert2rhel convert` section.
-    cli._convert_parser.usage = cli.usage(include_subcommands=False, subcommand_name="convert")
-    parser = cli._parser
+    """
+    Return ArgumentParser instance to be used by argparse-manpage manpage generator.
+
+    Generate the manpage locally by running the following in the root of the git repo:
+    $ sudo dnf install -y argparse-manpage
+    $ python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+    $ PYTHONPATH=$PYTHONPATH:`pwd` argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel <ver>" --prog="convert2rhel" --include man/synopsis > man/convert2rhel.8
+    """
+    parser = toolopts.CLI()._parser
 
     # Description taken out of our Confluence page.
     parser.description = (
