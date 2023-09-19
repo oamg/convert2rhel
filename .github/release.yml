@@ -18,6 +18,9 @@ changelog:
     - title: Bug Fixes 🐛
       labels:
         - bug-fix
+    - title: Test Coverage Enhancements 🔧
+      labels:
+        - test-coverage-enhancement
     - title: Other Changes
       labels:
         - "*"
