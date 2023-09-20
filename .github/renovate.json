@@ -11,6 +11,7 @@
     "**/centos7.Containerfile",
     "**/rpmbuild.centos7.Containerfile"
   ],
+  "labels": ["no-changelog", "tests-skip"],
   "packageRules": [
     {
       "matchPackageNames": [
