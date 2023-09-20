@@ -86,9 +86,11 @@ def main():
     try:
         with applock.ApplicationLock("convert2rhel"):
             return main_locked(process_phase)
-    except applock.ApplicationLockedError:
+    except applock.ApplicationLockedError as e:
         # We have not rotated the log files at this point because main.initialize_logger()
         # has not yet been called.  So we use sys.stderr.write() instead of loggerinst.error()
+        sys.stderr.write(e.message)
+        sys.stderr.write("\nos-getpid(): %s" % os.getpid())
         sys.stderr.write("Another copy of convert2rhel is running.\n")
         sys.stderr.write("\nNo changes were made to the system.\n")
         return 1
