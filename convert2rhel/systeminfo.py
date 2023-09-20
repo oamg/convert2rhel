@@ -60,6 +60,8 @@ class SystemInfo(object):
         self.name = None
         # Single-word lowercase identificator of the system (e.g. oracle)
         self.id = None  # pylint: disable=C0103
+        # The optional last part of the distribution name in brackets: "... (Core)" or "... (Oopta)"
+        self.distribution_id = None
         # Major and minor version of the operating system (e.g. version.major == 8, version.minor == 7)
         self.version = None
         # Platform architecture
@@ -102,6 +104,7 @@ class SystemInfo(object):
         self.system_release_file_content = self.get_system_release_file_content()
         self.name = self._get_system_name()
         self.id = self.name.split()[0].lower()
+        self.distribution_id = self._get_system_distribution_id()
         self.version = self._get_system_version()
         self.arch = self._get_architecture()
 
@@ -148,9 +151,7 @@ class SystemInfo(object):
         content = self.system_release_file_content if not system_release_content else system_release_content
         match = re.search(r".+?(\d+)\.(\d+)\D?", content)
         if not match:
-            from convert2rhel import redhatrelease
-
-            self.logger.critical("Couldn't get system version from %s" % redhatrelease.get_system_release_filepath())
+            self.logger.critical("Couldn't get system version from the content string: %s" % content)
         version = Version(int(match.group(1)), int(match.group(2)))
 
         return version
@@ -437,7 +438,7 @@ class SystemInfo(object):
         as it have a parameter to to read from the contents of a system-release file (if called from somewhere else).
 
         :param system_release_content: The contents of the system_release file if needed.
-        :type refresh_system_release_content: str
+        :type system_release_content: str
         :returns: A dictionary containing the system release information
         :rtype: dict[str, str]
         """
