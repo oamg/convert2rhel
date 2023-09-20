@@ -1,0 +1,27 @@
+name: Generate Manpages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-manpages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install argparse-manpages
+
+      - name: Generate Manpages
+        run: |
+          chmod +x scripts/manpage_generation.sh
+          bash scripts/manpage_generation.sh
