@@ -23,5 +23,5 @@ jobs:
 
       - name: Generate Manpages
         run: |
-          chmod +x scripts/manpage_generate.sh
-          bash scripts/manpage_generate.sh
+          chmod +x scripts/manpage_generation.sh
+          bash scripts/manpage_generation.sh
