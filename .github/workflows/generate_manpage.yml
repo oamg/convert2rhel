@@ -19,7 +19,7 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install argparse-manpages
+        run: pip install argparse-manpage
 
       - name: Generate Manpages
         run: |
