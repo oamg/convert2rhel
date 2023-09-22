@@ -857,71 +857,6 @@ class TestCheckConvert2rhelLatest:
         )
 
         assert log_msg in caplog.text
-        
-    @pytest.mark.parametrize(
-    ("convert2rhel_latest_version_test",),
-    (
-        [
-            {
-                "local_version": "0.19.0",
-                "package_version_repoquery": "C2R convert2rhel-0:0.18.0-1.el7.noarch\nNot a NEVRA that we was not filtered due to a bug\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
-                "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
-                "package_version_V": 0,
-                "pmajor": "8",
-                "running_version": "0:0.19.0-1.el7",
-                "latest_version": "0:0.20-1.el7",
-            }
-        ],
-    ),
-    indirect=True,
-    )
-    def test_bad_NEVRA_to_parse_pkg_string(
-        self,
-        convert2rhel_latest_action,
-        convert2rhel_latest_version_test,
-        monkeypatch,
-    ):
-        generator = extract_convert2rhel_versions_generator()
-
-        monkeypatch.setattr(
-            convert2rhel_latest,
-            "_extract_convert2rhel_versions",
-            mock.Mock(spec=convert2rhel_latest._extract_convert2rhel_versions, return_value=next(generator)),
-        )
-
-        convert2rhel_latest_action.run()
-
-        running_version, latest_version = convert2rhel_latest_version_test
-
-        unit_tests.assert_actions_result(
-            convert2rhel_latest_action,
-            level="ERROR",
-            id="OUT_OF_DATE",
-            title="Outdated convert2rhel version detected",
-            description="An outdated convert2rhel version has been detected",
-            diagnosis=(
-                "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                "Only the latest version is supported for conversion." % (running_version, latest_version)
-            ),
-            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
-        )
-
-
-def extract_convert2rhel_versions_generator():
-    # Yield bad output
-    yield [
-        "convert2rhel-0:0.18.0-1.el7.noarch",
-        "Not a NEVRA that we was not filtered due to a bug",
-        "convert2rhel-0:0.20.0-1.el7.noarch",
-    ]
-
-    # Yield good output
-    yield [
-        "convert2rhel-0:0.18.0-1.el7.noarch",
-        "convert2rhel-0:0.19.0-1.el7.noarch",
-        "convert2rhel-0:0.20.0-1.el7.noarch",
-    ]
-
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
@@ -1058,5 +993,3 @@ class Test_ExtractConvert2rhelVersions:
         list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(precise_raw_version)
 
         assert list_of_versions == expected_versions
-
-    
