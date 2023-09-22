@@ -850,23 +850,23 @@ class TestCheckConvert2rhelLatest:
         )
 
         assert log_msg in caplog.text
-        
+
     @pytest.mark.parametrize(
-    ("convert2rhel_latest_version_test",),
-    (
-        [
-            {
-                "local_version": "0.19.0",
-                "package_version_repoquery": "C2R convert2rhel-0:0.18.0-1.el7.noarch\nNot a NEVRA that we was not filtered due to a bug\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
-                "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
-                "package_version_V": 0,
-                "pmajor": "8",
-                "running_version": "0:0.19.0-1.el7",
-                "latest_version": "0:0.20-1.el7",
-            }
-        ],
-    ),
-    indirect=True,
+        ("convert2rhel_latest_version_test",),
+        (
+            [
+                {
+                    "local_version": "0.19.0",
+                    "package_version_repoquery": "C2R convert2rhel-0:0.18.0-1.el7.noarch\nNot a NEVRA that we was not filtered due to a bug\nC2R convert2rhel-0:0.20.0-1.el7.noarch",
+                    "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
+                    "package_version_V": 0,
+                    "pmajor": "8",
+                    "running_version": "0:0.19.0-1.el7",
+                    "latest_version": "0:0.20.0-1.el7",
+                }
+            ],
+        ),
+        indirect=True,
     )
     def test_bad_NEVRA_to_parse_pkg_string(
         self,
@@ -876,10 +876,10 @@ class TestCheckConvert2rhelLatest:
     ):
         generator = extract_convert2rhel_versions_generator()
 
-        monkeypatch.setattr(
-            convert2rhel_latest,
-            "_extract_convert2rhel_versions",
-            mock.Mock(spec=convert2rhel_latest._extract_convert2rhel_versions, return_value=next(generator)),
+        # Use mock.patch with side_effect set to the generator
+        mock.patch(
+            "convert2rhel_latest._extract_convert2rhel_versions",
+            side_effect=generator,
         )
 
         convert2rhel_latest_action.run()
@@ -914,7 +914,6 @@ def extract_convert2rhel_versions_generator():
         "convert2rhel-0:0.19.0-1.el7.noarch",
         "convert2rhel-0:0.20.0-1.el7.noarch",
     ]
-
 
 
 class Test_ExtractConvert2rhelVersions:
@@ -987,5 +986,3 @@ class Test_ExtractConvert2rhelVersions:
         list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(precise_raw_version)
 
         assert list_of_versions == expected_versions
-
-    
