@@ -24,7 +24,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager, unit_tests
+from convert2rhel import actions, pkgmanager, systeminfo, unit_tests
 from convert2rhel.actions.system_checks import is_loaded_kernel_latest
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
@@ -43,11 +43,9 @@ def is_loaded_kernel_latest_action():
 class TestIsLoadedKernelLatest:
     @oracle8
     def test_is_loaded_kernel_latest_skip_on_not_latest_ol(
-        self,
-        pretend_os,
-        caplog,
-        is_loaded_kernel_latest_action,
+        self, pretend_os, caplog, is_loaded_kernel_latest_action, monkeypatch
     ):
+        monkeypatch.setattr(systeminfo.SystemInfo, "get_latest_distro_release_version", mock.Mock(return_value="8.7"))
         message = (
             "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
         )

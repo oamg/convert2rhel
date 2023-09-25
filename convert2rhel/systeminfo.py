@@ -24,6 +24,9 @@ import re
 import time
 
 from collections import namedtuple
+from datetime import datetime as dt
+
+import rpm
 
 from six.moves import configparser, urllib
 
@@ -51,13 +54,20 @@ RELEASE_VER_MAPPING = {
     "7.9": "7Server",
 }
 
-# List of EUS minor versions supported
-EUS_MINOR_VERSIONS = ["8.6"]
+# Dictionary of EUS minor versions supported and their EUS period start date
+EUS_MINOR_VERSIONS = {
+    "8.6": "2022-11-09",
+    "8.8": "2023-11-14",
+}
 
 Version = namedtuple("Version", ["major", "minor"])
 
 
-class SystemInfo:
+class RepoqueryFailure(Exception):
+    """Custom exception for repoquery failure"""
+
+
+class SystemInfo(object):
     def __init__(self):
         # Operating system name (e.g. Oracle Linux)
         self.name = None
@@ -85,6 +95,8 @@ class SystemInfo:
         self.excluded_pkgs = []
         # Release packages to be removed before the system conversion
         self.repofile_pkgs = []
+        # Main release package used to query release version
+        self.release_pkg = None
         self.cfg_filename = None
         self.cfg_content = None
         self.system_release_file_content = None
@@ -120,6 +132,7 @@ class SystemInfo:
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
+        self.release_pkg = self._get_release_package()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
         self.has_internet_access = self._check_internet_access()
@@ -242,6 +255,9 @@ class SystemInfo:
 
     def _get_repofile_pkgs(self):
         return self._get_cfg_opt("repofile_pkgs").split()
+
+    def _get_release_package(self):
+        return self._get_cfg_opt("release_pkg")
 
     def _get_releasever(self):
         """
@@ -403,10 +419,60 @@ class SystemInfo:
         For example if we detect CentOS Linux 8.4, the corresponding RHEL 8.4 is an EUS release, but if we detect
         CentOS Linux 8.5, the corresponding RHEL 8.5 is not an EUS release.
 
-        :return: Whether or not the current system has a EUS correspondent in RHEL.
+        :return: Whether or not the current system has an EUS correspondent in RHEL.
         :rtype: bool
         """
-        return "%s.%s" % (self.version.major, self.version.minor) in EUS_MINOR_VERSIONS
+
+        eus_release_date = EUS_MINOR_VERSIONS.get("%s.%s" % (self.version.major, self.version.minor), False)
+        if eus_release_date:
+            eus_release_date = dt.strptime(eus_release_date, "%Y-%m-%d")
+            current_datetime = dt.today()
+            if not self.has_internet_access:
+                return self.datetime_comparison_returns(current_datetime, eus_release_date)
+            elif current_datetime > eus_release_date:
+                try:
+                    latest_release_version = self.get_latest_distro_release_version()
+                except RepoqueryFailure:
+                    return self.datetime_comparison_returns(current_datetime, eus_release_date)
+
+                latest_major, latest_minor = latest_release_version.split(".")
+                if int(latest_minor) > int(self.version.minor):
+                    return "%s.%s" % (self.version.major, self.version.minor) in EUS_MINOR_VERSIONS
+                if int(latest_minor) < int(self.version.minor):
+                    pass
+                    # some form of warning
+                    # corner case that should not happen, need to decide what to do in case we land in this condition
+                    # where the users system on a version that hasn't been released yet
+        return False
+
+    def datetime_comparison_returns(self, current_datetime, eus_release_date):
+        if current_datetime > eus_release_date:
+            return "%s.%s" % (self.version.major, self.version.minor) in EUS_MINOR_VERSIONS
+        return False
+
+    def get_latest_distro_release_version(self):
+        """Extract minor version from release name using yum list"""
+        cmd = [
+            "repoquery",
+            "--setopt=exclude=",
+            "--quiet",
+            "--qf",
+            "C2R\\t%{VERSION}",
+            self.release_pkg,
+        ]
+        yum_output, return_code = run_subprocess(cmd, print_output=False)
+        if return_code != 0:
+            self.logger.debug("Got the following output: %s", yum_output)
+            raise RepoqueryFailure("Repoquery failed to execute")
+
+        latest_release_version = "0.0"
+        for line in yum_output.split("\n"):
+            line = line.strip()
+            if "C2R" in line:
+                _, release_version = line.split("\t")
+                if rpm.labelCompare(("0", latest_release_version, "0"), ("0", release_version, "0")) == -1:
+                    latest_release_version = release_version
+        return latest_release_version
 
     def _is_dbus_running(self):
         """
