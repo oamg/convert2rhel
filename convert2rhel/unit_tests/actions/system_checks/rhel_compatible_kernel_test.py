@@ -226,7 +226,7 @@ def test_bad_kernel_substring_invalid_substring(kernel_release, error_id, templa
 
 
 @pytest.mark.parametrize(
-    ("kernel_release", "kernel_pkg", "kernel_pkg_information", "get_installed_pkg_objects", "exp_return"),
+    ("kernel_release", "kernel_pkg", "kernel_pkg_information", "exp_return"),
     (
         (
             "4.18.0-240.22.1.el8_3.x86_64",
@@ -239,7 +239,6 @@ def test_bad_kernel_substring_invalid_substring(kernel_release, error_id, templa
                 arch="x86_64",
                 fingerprint="05b555b38483c65d",
             ),
-            "yajl.x86_64",
             False,
         ),
     ),
@@ -249,7 +248,6 @@ def test_bad_kernel_package_signature_success(
     kernel_release,
     kernel_pkg,
     kernel_pkg_information,
-    get_installed_pkg_objects,
     exp_return,
     monkeypatch,
     pretend_os,
@@ -278,7 +276,6 @@ def test_bad_kernel_package_signature_success(
         "kernel_release",
         "kernel_pkg",
         "kernel_pkg_information",
-        "get_installed_pkg_objects",
         "error_id",
         "template",
         "variables",
@@ -295,7 +292,6 @@ def test_bad_kernel_package_signature_success(
                 arch="x86_64",
                 fingerprint="somebadsig",
             ),
-            "somepkgobj",
             "INVALID_KERNEL_PACKAGE_SIGNATURE",
             "Custom kernel detected. The booted kernel needs to be signed by {os_vendor}.",
             dict(os_vendor="CentOS"),
@@ -307,7 +303,6 @@ def test_bad_kernel_package_signature_invalid_signature(
     kernel_release,
     kernel_pkg,
     kernel_pkg_information,
-    get_installed_pkg_objects,
     error_id,
     template,
     variables,

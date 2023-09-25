@@ -20,14 +20,9 @@ __metaclass__ = type
 import os
 
 import pytest
-import six
 
 from convert2rhel import actions, systeminfo, unit_tests, utils
 from convert2rhel.actions.system_checks import convert2rhel_latest
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 @pytest.fixture
