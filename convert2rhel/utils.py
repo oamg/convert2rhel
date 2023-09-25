@@ -567,12 +567,7 @@ def log_traceback(debug):
     on the debug parameter.
     """
     traceback_str = get_traceback_str()
-    if debug:
-        # Print the traceback to the user when debug option used
-        loggerinst.debug(traceback_str)
-    else:
-        # Print the traceback to the log file in any way
-        loggerinst.file(traceback_str)
+    loggerinst.debug(traceback_str)
 
 
 def get_traceback_str():

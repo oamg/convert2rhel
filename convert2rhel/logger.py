@@ -23,8 +23,6 @@ WARNING   (30)    Prints warning message using date/time
 INFO      (20)    Prints info message (no date/time, just plain message)
 TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG     (10)    Prints debug message (using date/time)
-FILE      (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
-                  handle (using date/time)
 """
 import logging
 import os
@@ -42,52 +40,47 @@ class LogLevelTask(object):
     label = "TASK"
 
 
-class LogLevelFile(object):
-    level = 5
-    # Label messages DEBUG as it is contains the same messages as debug, just that they always go
-    # to the log file.
-    label = "DEBUG"
-
-
 def setup_logger_handler(log_name, log_dir):
     """Setup custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
         log_name = the name for the log file
         log_dir = path to the dir where log file will be presented
     """
-    # set custom labels
+    # set the TASK custom label
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
-    logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
     logging.Logger.task = _task
-    logging.Logger.file = _file
-    logging.Logger.debug = _debug
     logging.Logger.critical = _critical
 
     # enable raising exceptions
     logging.raiseExceptions = True
-    # get root logger
+    # get the highest level app logger
     logger = logging.getLogger("convert2rhel")
-    # propagate
+    # propagate log messages up to the root logger to be able to capture them in unit tests
+    # refence: https://github.com/oamg/convert2rhel/pull/179
     logger.propagate = True
-    # set default logging level
-    logger.setLevel(LogLevelFile.level)
+    # set the DEBUG level as the lowest allowed level to be handled by convert2rhel
+    logger.setLevel(logging.DEBUG)
 
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
     formatter = CustomFormatter("%(message)s")
     formatter.disable_colors(should_disable_color_output())
     stdout_handler.setFormatter(formatter)
+    debug_flag_filter = DebugFlagFilter()
+    stdout_handler.addFilter(debug_flag_filter)
+    # Set the DEBUG level as the lowest allowed level to be printed to stdout.
+    # Whether a debug message is actually printed or not is decided in DebugFlagFilter.
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
 
-    # create file handler
+    # create a log file handler
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)  # pragma: no cover
     handler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
     formatter = CustomFormatter("%(message)s")
     formatter.disable_colors(True)
     handler.setFormatter(formatter)
-    handler.setLevel(LogLevelFile.level)
+    handler.setLevel(logging.DEBUG)
     logger.addHandler(handler)
 
 
@@ -102,6 +95,18 @@ def should_disable_color_output():
         return NO_COLOR != None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
 
     return False
+
+
+class DebugFlagFilter(logging.Filter):
+    """Print debug messages to the stdout only when --debug is used."""
+
+    def filter(self, record):
+        from convert2rhel.toolopts import tool_opts
+
+        if record.levelno == logging.DEBUG and not tool_opts.debug:
+            # not logging a debug level message if the --debug option hasn't been used
+            return False
+        return True
 
 
 def archive_old_logger_files(log_name, log_dir):
@@ -148,25 +153,10 @@ def _task(self, msg, *args, **kwargs):
         self._log(LogLevelTask.level, msg, args, **kwargs)
 
 
-def _file(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelFile.level):
-        self._log(LogLevelFile.level, msg, args, **kwargs)
-
-
 def _critical(self, msg, *args, **kwargs):
     if self.isEnabledFor(logging.CRITICAL):
         self._log(logging.CRITICAL, msg, args, **kwargs)
         sys.exit(msg)
-
-
-def _debug(self, msg, *args, **kwargs):
-    if self.isEnabledFor(logging.DEBUG):
-        from convert2rhel.toolopts import tool_opts
-
-        if tool_opts.debug:
-            self._log(logging.DEBUG, msg, args, **kwargs)
-        else:
-            self._log(LogLevelFile.level, msg, args, **kwargs)
 
 
 class bcolors:

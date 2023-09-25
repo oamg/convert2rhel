@@ -79,7 +79,7 @@ def test_logger_custom_logger(tmpdir, caplog, clear_loggers):
     logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
     logger = logging.getLogger(__name__)
     logger.task("Some task: %s", "data")
-    logger.file("Some task write to file: %s", "data")
+    logger.debug("Some task write to file: %s", "data")
     with pytest.raises(SystemExit):
         logger.critical("Critical error: %s", "data")
 
