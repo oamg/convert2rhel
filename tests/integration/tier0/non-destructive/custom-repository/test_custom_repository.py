@@ -55,7 +55,7 @@ class AssignRepositoryVariables:
             repofile = repofile_epel7
             enable_repo_opt = enable_repo_opt_epel7
         elif system_version.major == 8:
-            if system_version.minor == 6:
+            if system_version.minor in (6, 8):
                 repofile = repofile_epel8_eus
                 enable_repo_opt = enable_repo_opt_epel8_eus
             else:

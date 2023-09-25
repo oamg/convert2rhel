@@ -17,7 +17,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardcoded repos from c2r as well
-    if re.match(r"^(alma|rocky)-8\.6$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(alma|rocky)-8\.[68]$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 

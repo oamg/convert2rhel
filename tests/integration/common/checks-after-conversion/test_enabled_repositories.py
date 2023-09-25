@@ -1,4 +1,5 @@
 import os.path
+import re
 
 import pytest
 
@@ -28,7 +29,7 @@ def test_enabled_repositories(shell, system_release):
     enabled_repos = shell("yum repolist").output
 
     try:
-        if "redhat-8.6" in system_release:
+        if re.match(r"redhat-8\.[68]", system_release):
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories
             if os.path.exists("/non_eus_repos_used"):
