@@ -110,49 +110,53 @@ class CLI(object):
         self._register_options()
         self._process_cli_options()
 
-    @property
-    def usage(self):
+    @staticmethod
+    def usage(subcommand_to_print="<subcommand>"):
+        # Override the subcommand_to_print parameter if the tool has been executed through CLI but without
+        # subcommand specified. This is to make sure that runnning `convert2rhel --help` on the CLI will print the
+        # usage with generic <subcommand>, while the manpage generated using argparse_manpage will be able to print the
+        # usage correctly for subcommands as it does not execute convert2rhel from the CLI.
+        subcommand_not_used_on_cli = "/usr/bin/convert2rhel" in sys.argv[0] and not _subcommand_used(sys.argv)
+        if subcommand_not_used_on_cli:
+            subcommand_to_print = "<subcommand>"
         usage = (
             "\n"
-            "  convert2rhel\n"
-            "  convert2rhel [-h]\n"
-            "  convert2rhel [--version]\n"
-            "  convert2rhel [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart]"
-            " [-y]\n"
-            "  convert2rhel [--no-rhsm] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            "  convert2rhel [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
+            "  convert2rhel [--version] [-h]\n"
+            "  convert2rhel {subcommand} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
+            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+            "  convert2rhel {subcommand} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]\n"
+            "  convert2rhel {subcommand} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]\n"
-            r" convert2rhel {analyze}"
-            "\n\n"
-            "*WARNING* The tool needs to be run under the root user\n"
-        )
+        ).format(subcommand=subcommand_to_print)
+
+        if subcommand_not_used_on_cli:
+            usage = usage + "\n  Subcommands: analyze, convert"
         return usage
 
     def _get_argparser(self):
-        return argparse.ArgumentParser(conflict_handler="resolve", usage=self.usage)
+        return argparse.ArgumentParser(conflict_handler="resolve", usage=self.usage())
 
     def _register_commands(self):
         """Configures parsers specific to the analyze and convert subcommands"""
         subparsers = self._parser.add_subparsers(title="Subcommands", dest="command")
         self._analyze_parser = subparsers.add_parser(
             "analyze",
-            help="Run all Convert2RHEL initial checks up until the "
+            help="Run all Convert2RHEL initial checks up until the"
             " Point of no Return (PONR) and generate a report with the findings."
             " A rollback is initiated after the checks to put the system back"
             " in the original state.",
             parents=[self._shared_options_parser],
-            usage=self.usage,
+            usage=self.usage(subcommand_to_print="analyze"),
         )
         self._convert_parser = subparsers.add_parser(
             "convert",
-            help="Convert the system.",
+            help="Convert the system. If no subcommand is given, 'convert' is used as a default.",
             parents=[self._shared_options_parser],
-            usage=self.usage,
+            usage=self.usage(subcommand_to_print="convert"),
         )
 
-    def _register_parent_options(self, parser):
+    @staticmethod
+    def _register_parent_options(parser):
         """Prescribe what parent command line options the tool accepts."""
         parser.add_argument(
             "--version",
@@ -164,6 +168,11 @@ class CLI(object):
             "--debug",
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
+        )
+        parser.add_argument(
+            "-y",
+            help="Answer yes to all yes/no questions the tool asks.",
+            action="store_true",
         )
 
     def _register_options(self):
@@ -201,37 +210,23 @@ class CLI(object):
             " repositories by ID or glob. For more repositories to disable, use this option"
             " multiple times. This option defaults to all repositories ('*').",
         )
+        self._shared_options_parser.add_argument(
+            "-r",
+            "--restart",
+            help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel."
+            " It has no effect when used with the 'analyze' subcommand.",
+            action="store_true",
+        )
 
         self._add_subscription_manager_options()
         self._add_alternative_installation_options()
         self._register_commands()
-        self._add_automation_options(self._convert_parser, restart=True)
-        self._add_automation_options(self._analyze_parser, restart=False)
-
-    def _add_automation_options(self, parser, restart):
-        """Prescribe what automation command line options the tool accepts."""
-        group = parser.add_argument_group(
-            title="Automation Options",
-            description="The following options are used to automate the installation",
-        )
-        if restart:
-            group.add_argument(
-                "-r",
-                "--restart",
-                help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.",
-                action="store_true",
-            )
-        group.add_argument(
-            "-y",
-            help="Answer yes to all yes/no questions the tool asks.",
-            action="store_true",
-        )
 
     def _add_alternative_installation_options(self):
         """Prescribe what alternative command line options the tool accepts."""
         group = self._shared_options_parser.add_argument_group(
             title="Alternative Installation Options",
-            description="The following options are required if you do not intend on using subscription-manager",
+            description="The following options are required if you do not intend on using subscription-manager.",
         )
         group.add_argument(
             "--disable-submgr",
@@ -333,9 +328,10 @@ class CLI(object):
         )
         group.add_argument(
             "--serverurl",
-            help="Hostname of the subscription service with which to register the system through subscription-manager."
-            " The default is the Customer Portal Subscription Management service. It is not to be used to specify a"
-            " Satellite server. For that, read the product documentation at https://access.redhat.com/.",
+            help="Hostname of the subscription service to be used when registering the system with"
+            " subscription-manager. The default is the Customer Portal Subscription Management service"
+            " (subscription.rhsm.redhat.com). It is not to be used to specify a Satellite server. For that, read"
+            " the product documentation at https://access.redhat.com/.",
         )
         group.add_argument(
             "--keep-rhsm",
@@ -652,15 +648,21 @@ def _validate_serverurl_parsing(url_parts):
 
 def _add_default_command(argv):
     """Add the default command when none is given"""
+    subcommand = _subcommand_used(argv)
     args = argv
+    if not subcommand:
+        args.insert(0, "convert")
+
+    return args
+
+
+def _subcommand_used(args):
+    """Return what subcommand has been used by the user. Return None if no subcommand has been used."""
     for index, argument in enumerate(args):
         if argument in ("convert", "analyze"):
-            return args
-        if not argument in PARENT_ARGS and argv[index - 1] in ARGS_WITH_VALUES:
-            break
-
-    args.insert(0, "convert")
-    return args
+            return argument
+        if not argument in PARENT_ARGS and args[index - 1] in ARGS_WITH_VALUES:
+            return None
 
 
 def _should_subscribe(tool_opts):
