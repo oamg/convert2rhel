@@ -2,17 +2,23 @@ name: unit_tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   testing:
-    name: testing-centos${{ matrix.centos_ver }}
+    name: testing-${{ matrix.el.distro }}${{ matrix.el.ver }}
     strategy:
       fail-fast: false
       matrix:
-        centos_ver: [7, 8]
+        el:
+          - distro: centos
+            ver: 7
+          - distro: centos
+            ver: 8
+          - distro: oracle
+            ver: 9
 
     runs-on: ubuntu-22.04
     steps:
@@ -31,4 +37,4 @@ jobs:
 
       - name: Run command
         run: |
-          make tests${{ matrix.centos_ver }} BUILD_IMAGES=0
+          make tests${{ matrix.el.ver }} BUILD_IMAGES=0

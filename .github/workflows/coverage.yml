@@ -2,16 +2,22 @@ name: test_coverage
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   coverage:
-    name: coverage-centos${{ matrix.centos_ver }}
+    name: coverage-${{ matrix.el.distro }}${{ matrix.el.ver }}
     strategy:
       matrix:
-        centos_ver: [7, 8]
+          el:
+            - distro: centos
+              ver: 7
+            - distro: centos
+              ver: 8
+            - distro: oracle
+              ver: 9
 
     runs-on: ubuntu-22.04
     steps:
@@ -32,15 +38,15 @@ jobs:
 
       - name: Run pytest coverage
         run: |
-          make tests${{ matrix.centos_ver }} PYTEST_ARGS="--cov --cov-report xml --cov-report term" KEEP_TEST_CONTAINER=1 BUILD_IMAGES=0
+          make tests${{ matrix.el.ver }} PYTEST_ARGS="--cov --cov-report xml --cov-report term" KEEP_TEST_CONTAINER=1 BUILD_IMAGES=0
           podman cp pytest-container:/data/coverage.xml .
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           env_vars: OS,PYTHON
-          flags: centos-linux-${{ matrix.centos_ver }}
-          name: coverage-centos
+          flags: ${{ matrix.el.distro }}-linux-${{ matrix.el.ver }}
+          name: coverage-${{ matrix.el.distro }}
           fail_ci_if_error: true
           files: ./coverage.xml
           verbose: true # optional (default = false)
