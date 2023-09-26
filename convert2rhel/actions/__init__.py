@@ -543,15 +543,23 @@ class Stage:
                 to_be = "was"
                 if len(failed_deps) > 1:
                     to_be = "were"
-                description = "Skipped because %s %s not successful" % (
+                diagnosis = "Skipped because %s %s not successful" % (
                     utils.format_sequence_as_message(failed_deps),
                     to_be,
                 )
 
-                action.set_result(level="SKIP", id="SKIP", title="Skipped action", description=description)
+                action.set_result(
+                    level="SKIP",
+                    id="SKIP",
+                    title="Skipped action",
+                    description="This action was skipped due to another action failing.",
+                    diagnosis=diagnosis,
+                    remediation="Please ensure that the %s check passes so that this Action can evaluate your system"
+                    % utils.format_sequence_as_message(failed_deps),
+                )
                 skips.append(action)
                 failed_action_ids.add(action.id)
-                logger.error("Skipped %s. %s" % (action.id, description))
+                logger.error("Skipped %s. %s" % (action.id, diagnosis))
                 continue
 
             # Run the Action
