@@ -74,8 +74,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         """
         self._base = pkgmanager.Base()
         self._base.conf.substitutions["releasever"] = system_info.releasever
-        self._base.conf.module_platform_id = "platform:el8"
-
+        self._base.conf.module_platform_id = "platform:el" + str(system_info.version.major)
         # Keep the downloaded files after the transaction to prevent internet
         # issues in the second run of this class.
         # Ref: https://dnf.readthedocs.io/en/latest/conf_ref.html#keepcache-label
