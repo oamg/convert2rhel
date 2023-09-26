@@ -6,12 +6,13 @@
 	images \
 	image7 \
 	image8 \
+	image9 \
 	tests \
 	tests7 \
 	tests8 \
+	tests9 \
 	lint \
 	lint-errors \
-	tests8 \
 	rpms \
 
 # Project constants
@@ -72,16 +73,19 @@ clean:
 	@find . -name '__pycache__' -exec rm -fr {} +
 	@find . -name '*.pyc' -exec rm -f {} +
 	@find . -name '*.pyo' -exec rm -f {} +
+	@find . -name '.build-image*' -exec rm -f {} +
 
 ifeq ($(BUILD_IMAGES), 1)
-images: .build-image-message .build-image7 .build-image8
+images: .build-image-message .build-image7 .build-image8 .build-image9
 image7: .build-image-message .build-image7
 image8: .build-image-message .build-image8
+image9: .build-image-message .build-image9
 IMAGE=$(IMAGE_ORG)/$(IMAGE_PREFIX)
 else
-images: .fetch-image-message .fetch-image7 .fetch-image8
+images: .fetch-image-message .fetch-image7 .fetch-image8 .fetch-image9
 image7: .fetch-image-message .fetch-image7
 image8: .fetch-image-message .fetch-image8
+image9: .fetch-image-message .fetch-image9
 IMAGE=$(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)
 endif
 
@@ -99,6 +103,9 @@ endif
 .fetch-image8:
 	@echo "Pulling $(IMAGE)-centos8"
 	@$(PODMAN) pull $(IMAGE)-centos8
+.fetch-image9:
+	@echo "Pulling $(IMAGE)-centos9"
+	@$(PODMAN) pull $(IMAGE)-centos9
 
 .build-image-message:
 	@echo "Building images"
@@ -107,6 +114,9 @@ endif
 	touch $@
 .build-image8:
 	@$(PODMAN) build -f Containerfiles/centos8.Containerfile -t $(IMAGE)-centos8 .
+	touch $@
+.build-image9:
+	@$(PODMAN) build -f Containerfiles/centos9.Containerfile -t $(IMAGE)-centos9 .
 	touch $@
 
 lint: images
@@ -125,6 +135,10 @@ tests7: image7
 tests8: image8
 	@echo 'CentOS Linux 8 tests'
 	@$(call CONTAINER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
+
+tests9: image9
+	@echo 'CentOS 9 tests'
+	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
 rpms:
 	mkdir -p .rpms
