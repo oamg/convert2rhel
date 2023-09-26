@@ -114,25 +114,6 @@ class Convert2rhelLatest(actions.Action):
 
         raw_output_convert2rhel_versions = _extract_convert2rhel_versions(raw_output_convert2rhel_versions)
 
-        # temp_raw_output = []
-
-        # # We are expecting an repoquery output to be similar to this:
-        # # C2R convert2rhel-0:0.17-1.el7.noarch
-        # # We need the `C2R` identifier to be present on the line so we can know for
-        # # sure that the line we are working with is the a line that contains
-        # # relevant repoquery information to our check, otherwise, we just log the
-        # # information as debug and do nothing with it.
-        # for raw_version in raw_output_convert2rhel_versions:
-        #     if "C2R" in raw_version:
-        #         temp_raw_output.append(raw_version.lstrip("C2R "))
-        #     else:
-        #         # Mainly for debugging purposes to see what is happening if we got
-        #         # anything else that does not have the C2R identifier at the start
-        #         # of the line.
-        #         logger.debug("Got a line without the C2R identifier: %s" % raw_version)
-        # raw_output_convert2rhel_versions = temp_raw_output
-        # print(raw_output_convert2rhel_versions)
-
         latest_available_version = ("0", "0.00", "0")
         convert2rhel_versions = []
 
@@ -223,7 +204,7 @@ class Convert2rhelLatest(actions.Action):
         # and latest_available_version respectively, to compare **just** the version field.
         ver_compare = rpm.labelCompare(precise_convert2rhel_version, precise_available_version)
 
-        formatted_conver2rhel_version = _format_EVR(*precise_convert2rhel_version)
+        formatted_convert2rhel_version = _format_EVR(*precise_convert2rhel_version)
         formatted_available_version = _format_EVR(*precise_available_version)
 
         if ver_compare < 0:
@@ -248,7 +229,7 @@ class Convert2rhelLatest(actions.Action):
                 diagnosis = (
                     "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
-                    % (formatted_conver2rhel_version, formatted_available_version)
+                    % (formatted_convert2rhel_version, formatted_available_version)
                 )
                 logger.warning(diagnosis)
                 self.add_message(
