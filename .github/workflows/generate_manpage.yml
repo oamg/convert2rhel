@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: pip install argparse-manpages
 
+      - name: Install dependencies 'six' library
+        run: pip install six
+
       - name: Generate Manpages
         run: |
           chmod +x scripts/manpage_generation.sh
