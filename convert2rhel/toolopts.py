@@ -169,11 +169,6 @@ class CLI(object):
             action="store_true",
             help="Print traceback in case of an abnormal exit and messages that could help find an issue.",
         )
-        parser.add_argument(
-            "-y",
-            help="Answer yes to all yes/no questions the tool asks.",
-            action="store_true",
-        )
 
     def _register_options(self):
         """Prescribe what command line options the tool accepts."""
@@ -215,6 +210,11 @@ class CLI(object):
             "--restart",
             help="Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel."
             " It has no effect when used with the 'analyze' subcommand.",
+            action="store_true",
+        )
+        self._shared_options_parser.add_argument(
+            "-y",
+            help="Answer yes to all yes/no questions the tool asks.",
             action="store_true",
         )
 

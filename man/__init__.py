@@ -25,7 +25,7 @@ def get_parser():
     Generate the manpage locally by running the following in the root of the git repo:
     $ sudo dnf install -y argparse-manpage
     $ python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
-    $ PYTHONPATH=$PYTHONPATH:`pwd` argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel <ver>" --prog="convert2rhel" --include man/synopsis > man/convert2rhel.8
+    $ PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel <ver>" --prog="convert2rhel" --include man/distribution --include man/synopsis > man/convert2rhel.8
     """
     parser = toolopts.CLI()._parser
 
