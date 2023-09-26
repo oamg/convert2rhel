@@ -633,6 +633,136 @@ class TestRestorableRpmKey:
         assert rpm_key.enabled is False
 
 
+class TestNewRestorableFile:
+    @pytest.fixture
+    def get_backup_file_dir(self, tmpdir, filename="filename", content="content", backup_dir_name="backup"):
+        """Prepare the file for backup and backup folder"""
+        file_for_backup = tmpdir.join(filename)
+        file_for_backup.write(content)
+        backup_dir = tmpdir.mkdir(backup_dir_name)
+        return file_for_backup, backup_dir
+
+    @pytest.mark.parametrize(
+        ("filename", "message_backup", "message_remove", "message_restore", "backup_exists"),
+        (
+            ("filename", "Copying %s to %s.", "File %s removed.", "File %s restored.", True),
+            (None, "Can't find %s.", "Couldn't remove restored file %s", "Error(2): No such file or directory", False),
+        ),
+    )
+    def test_restorablefile_all(
+        self,
+        caplog,
+        filename,
+        get_backup_file_dir,
+        monkeypatch,
+        message_backup,
+        message_remove,
+        message_restore,
+        backup_exists,
+    ):
+        """Test the complete process of backup and restore the file using the BackupController"""
+        # Prepare file and folder
+        file_for_backup, backup_dir = get_backup_file_dir
+
+        if filename:
+            # location, where the file should be after backup
+            backedup_file = os.path.join(str(backup_dir), filename)
+        else:
+            file_for_backup = "/invalid/path/invalid_name"
+            backedup_file = os.path.join(str(backup_dir), "invalid_name")
+
+        # Format the messages which should be in output
+        if filename:
+            message_backup = message_backup % (str(file_for_backup), str(backup_dir))
+            message_restore = message_restore % (str(file_for_backup))
+        else:
+            message_backup = message_backup % file_for_backup
+        message_remove = message_remove % (str(file_for_backup))
+
+        monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
+
+        backup_controller = backup.BackupController()
+        file_backup = backup.NewRestorableFile(str(file_for_backup))
+
+        # Create the backup, testing method enable
+        backup_controller.push(file_backup)
+        assert message_backup in caplog.records[-1].message
+        assert os.path.isfile(backedup_file) == backup_exists
+
+        # Remove the file from original place, testing method remove
+        file_backup.remove()
+        assert message_remove in caplog.records[-1].message
+        assert os.path.isfile(backedup_file) == backup_exists
+        if filename:
+
+            assert not os.path.isfile(str(file_for_backup))
+
+        # Restore the file
+        backup_controller.pop()
+        assert message_restore in caplog.records[-1].message
+        if filename:
+            assert os.path.isfile(str(file_for_backup))
+
+    @pytest.mark.parametrize(
+        ("filename", "enabled_value", "message", "backup_exists"),
+        (
+            ("filename", True, "Copying %s to %s.", True),
+            (None, True, "Can't find %s.", False),
+        ),
+    )
+    def test_restorablefile_enable(
+        self, filename, get_backup_file_dir, monkeypatch, enabled_value, message, caplog, backup_exists
+    ):
+        file_for_backup, backup_dir = get_backup_file_dir
+        if filename:
+            backedup_file = os.path.join(str(backup_dir), filename)
+        else:
+            file_for_backup = "/invalid/path/invalid_name"
+            backedup_file = os.path.join(str(backup_dir), "invalid_name")
+
+        if filename:
+            message = message % (file_for_backup, backup_dir)
+        else:
+            message = message % file_for_backup
+
+        monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
+        file_backup = backup.NewRestorableFile(str(file_for_backup))
+
+        file_backup.enable()
+
+        assert os.path.isfile(backedup_file) == backup_exists
+        assert file_backup.enabled == enabled_value
+        assert message in caplog.records[-1].message
+
+    @pytest.mark.parametrize(
+        ("filename", "message", "enabled"),
+        (
+            ("filename", "File %s restored.", True),
+            (None, "Error(2): No such file or directory", True),
+            ("filename", "%s hasn't been backed up.", False),
+        ),
+    )
+    def test_restorablefile_restore(self, tmpdir, monkeypatch, caplog, filename, message, enabled):
+        backup_dir = tmpdir.mkdir("backup")
+        orig_path = os.path.join(str(tmpdir), "filename")
+
+        if filename:
+            file_for_restore = tmpdir.join("backup/filename")
+            file_for_restore.write("content")
+            message = message % orig_path
+
+        monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
+        file_backup = backup.NewRestorableFile(str(orig_path))
+
+        file_backup.enabled = enabled
+
+        file_backup.restore()
+
+        assert message in caplog.records[-1].message
+        if filename and enabled:
+            assert os.path.isfile(orig_path)
+
+
 @pytest.mark.parametrize(
     ("pkg_nevra", "nvra_without_epoch"),
     (
