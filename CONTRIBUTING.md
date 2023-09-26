@@ -236,6 +236,12 @@ function is used for.
 
 ## Additional information
 
+Additional technical information is located [on the
+wiki](https://github.com/oamg/convert2rhel/wiki).  When you add a new feature that others might need
+to plug into or affects how their code should be written in the future, please add a new page there
+and link it to the toplevel [Topics section](https://github.com/oamg/convert2rhel/wiki#topics).
+
+
 ### Building rpms locally
 
 For building the rpms locally, you will need:
