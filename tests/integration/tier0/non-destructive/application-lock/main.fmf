@@ -8,6 +8,7 @@ tier: 0
 
 tag+:
     - application-lock
+    - sanity
 
 /simultaneous_runs:
     summary+: |

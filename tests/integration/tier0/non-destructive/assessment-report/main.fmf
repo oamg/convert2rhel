@@ -2,7 +2,9 @@ summary+: |
     Pre-Assessment report
 
 description+: |
-    Verify that the Pre-Assessment report is working as intended.
+    Verify that the pre-assessment report is working as intended.
+    Verify the report is also created as json file
+    and validate the json report against its given json schema.
 
 tier: 0
 
@@ -28,6 +30,7 @@ tag+:
         and then, output the report to the user.
     tag+:
         - success-report
+        - sanity
     test: |
         pytest -svv -m test_successful_report
 

@@ -26,6 +26,7 @@ tag+:
             If custom module is loaded the conversion has to be inhibited.
         tag+:
             - custom-module-loaded
+            - sanity
         test: |
             pytest -svv -m test_custom_module_loaded
 

@@ -27,6 +27,7 @@ tag+:
                 convert2rhel warns the user and inhibits the conversion.
             tag+:
                 - no-envar
+                - sanity
             test: |
                 pytest -svv -m test_backup_os_release_no_envar
 

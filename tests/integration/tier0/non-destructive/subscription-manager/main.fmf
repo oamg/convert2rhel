@@ -56,6 +56,7 @@ enabled: false
             pytest -svv -m test_pre_registered_wont_unregister
         tag+:
             - pre-registered-wont-unregister
+            - sanity
 
     /pre_registered_system_will_re_register:
         summary+: |

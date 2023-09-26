@@ -10,4 +10,4 @@ jobs:
     steps:
       - uses: yogevbd/enforce-label-action@2.2.2
         with:
-          REQUIRED_LABELS_ANY: "tests-skip,tests-run-tier0,tests-run-all"
+          REQUIRED_LABELS_ANY: "tests-skip,tests-run-tier0,tests-run-all,tests-run-sanity"

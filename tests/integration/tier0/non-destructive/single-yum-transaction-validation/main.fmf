@@ -62,5 +62,6 @@ tag+:
         3/ End the conversion at the Point of no return
     tag+:
         - validation-packages-with-in-name-period
+        - sanity
     test: |
         pytest -svv -m test_validation_packages_with_in_name_period
