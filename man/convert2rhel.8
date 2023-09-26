@@ -1,4 +1,4 @@
-.TH CONVERT2RHEL "1" "2023\-09\-19" "convert2rhel 1.5.0" "General Commands Manual"
+.TH CONVERT2RHEL "1" "2023\-09\-26" "convert2rhel 1.5.0" "General Commands Manual"
 .SH NAME
 convert2rhel \- Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux.
 .SH SYNOPSIS
@@ -19,10 +19,6 @@ Show convert2rhel version and exit.
 \fB\-\-debug\fR
 Print traceback in case of an abnormal exit and messages that could help find
 an issue.
-
-.TP
-\fB\-y\fR
-Answer yes to all yes/no questions the tool asks.
 
 .SH
 SUBCOMMANDS
@@ -51,10 +47,6 @@ Print traceback in case of an abnormal exit and messages that could help find
 an issue.
 
 .TP
-\fB\-y\fR
-Answer yes to all yes/no questions the tool asks.
-
-.TP
 \fB\-\-no\-rpm\-va\fR
 Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
 before and after the conversion with the output stored in log files rpm_va.log
@@ -78,6 +70,10 @@ use this option multiple times. This option defaults to all repositories
 \fB\-r\fR, \fB\-\-restart\fR
 Restart the system when it is successfully converted to RHEL to boot the new
 RHEL kernel. It has no effect when used with the 'analyze' subcommand.
+
+.TP
+\fB\-y\fR
+Answer yes to all yes/no questions the tool asks.
 
 .SH SUBSCRIPTION MANAGER OPTIONS \fI\,'convert2rhel analyze'\/\fR
 The following options are specific to using subscription\-manager.
@@ -188,10 +184,6 @@ Print traceback in case of an abnormal exit and messages that could help find
 an issue.
 
 .TP
-\fB\-y\fR
-Answer yes to all yes/no questions the tool asks.
-
-.TP
 \fB\-\-no\-rpm\-va\fR
 Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
 before and after the conversion with the output stored in log files rpm_va.log
@@ -215,6 +207,10 @@ use this option multiple times. This option defaults to all repositories
 \fB\-r\fR, \fB\-\-restart\fR
 Restart the system when it is successfully converted to RHEL to boot the new
 RHEL kernel. It has no effect when used with the 'analyze' subcommand.
+
+.TP
+\fB\-y\fR
+Answer yes to all yes/no questions the tool asks.
 
 .SH SUBSCRIPTION MANAGER OPTIONS \fI\,'convert2rhel convert'\/\fR
 The following options are specific to using subscription\-manager.
