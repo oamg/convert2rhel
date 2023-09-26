@@ -5,7 +5,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import backup, repo, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import backup, exceptions, repo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.unit_tests import DownloadPkgMocked, MinimalRestorable, RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
 
@@ -257,7 +257,7 @@ def test_restorable_file_backup_oserror(tmpdir, caplog):
     tmp_file.write("test")
     rf = backup.RestorableFile(filepath=str(tmp_file))
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(exceptions.CriticalError):
         rf.backup()
 
     assert "Error(2): No such file or directory" in caplog.records[-1].message

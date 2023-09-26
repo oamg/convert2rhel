@@ -18,6 +18,7 @@
 __metaclass__ = type
 
 import os
+import sys
 
 from collections import OrderedDict
 
@@ -28,12 +29,27 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, cert, checks, grub
+from convert2rhel import actions, applock, backup, cert, checks, exceptions, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
+from convert2rhel.unit_tests import (
+    ClearVersionlockMocked,
+    CLIMocked,
+    CollectEarlyDataMocked,
+    FinishCollectionMocked,
+    InitializeLoggerMocked,
+    MainLockedMocked,
+    PrintDataCollectionMocked,
+    PrintSystemInformationMocked,
+    RequireRootMocked,
+    ResolveSystemInfoMocked,
+    RollbackChangesMocked,
+    ShowEulaMocked,
+    SummaryAsJsonMocked,
+)
 
 
 @pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
@@ -106,6 +122,25 @@ def test_post_ponr_conversion(monkeypatch):
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
+
+
+def test_help_exit(monkeypatch, tmp_path):
+    """
+    Check that --help exits before we enter main_locked().
+
+    We need special handling to deal with --help's exit if it occurs inside of the try: except in
+    main_locked(). (Consult git history for main.py if the special handling needs to be resurrected.
+    """
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", ["convert2rhel", "--help"])
+    monkeypatch.setattr(utils, "require_root", RequireRootMocked())
+    monkeypatch.setattr(main, "initialize_logger", InitializeLoggerMocked())
+    monkeypatch.setattr(main, "main_locked", MainLockedMocked())
+
+    with pytest.raises(SystemExit):
+        main.main()
+
+    assert main.main_locked.call_count == 0
 
 
 def test_main(monkeypatch, tmp_path):
@@ -206,6 +241,48 @@ class TestRollbackFromMain:
         assert show_eula_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert "No changes were made to the system." in caplog.records[-2].message
+
+    def test_main_traceback_in_clear_versionlock(self, caplog, monkeypatch, tmp_path):
+        monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
+        monkeypatch.setattr(utils, "require_root", RequireRootMocked())
+        monkeypatch.setattr(main, "initialize_logger", InitializeLoggerMocked())
+        monkeypatch.setattr(toolopts, "CLI", CLIMocked())
+        monkeypatch.setattr(main, "show_eula", ShowEulaMocked())
+        monkeypatch.setattr(breadcrumbs, "print_data_collection", PrintDataCollectionMocked())
+        monkeypatch.setattr(system_info, "resolve_system_info", ResolveSystemInfoMocked())
+        monkeypatch.setattr(system_info, "print_system_information", PrintSystemInformationMocked())
+        monkeypatch.setattr(breadcrumbs, "collect_early_data", CollectEarlyDataMocked())
+        monkeypatch.setattr(
+            pkghandler,
+            "clear_versionlock",
+            ClearVersionlockMocked(
+                side_effect=exceptions.CriticalError(
+                    id_="TestError", title="A Title", description="Long description", diagnosis="Clearing lock failed"
+                )
+            ),
+        )
+
+        # And mock rollback items
+        monkeypatch.setattr(breadcrumbs, "finish_collection", FinishCollectionMocked())
+        monkeypatch.setattr(main, "rollback_changes", RollbackChangesMocked())
+        monkeypatch.setattr(report, "summary_as_json", SummaryAsJsonMocked())
+
+        assert main.main() == 1
+        assert utils.require_root.call_count == 1
+        assert main.initialize_logger.call_count == 1
+        assert toolopts.CLI.call_count == 1
+        assert main.show_eula.call_count == 1
+        assert breadcrumbs.print_data_collection.call_count == 1
+        assert system_info.resolve_system_info.call_count == 1
+        assert breadcrumbs.collect_early_data.call_count == 1
+        assert pkghandler.clear_versionlock.call_count == 1
+
+        assert caplog.records[-2].levelname == "INFO"
+        assert caplog.records[-2].message.strip() == "No changes were made to the system."
+
+        critical_logs = [log for log in caplog.records if log.levelname == "CRITICAL"]
+        assert len(critical_logs) == 1
+        assert critical_logs[0].message == "Clearing lock failed"
 
     def test_main_traceback_before_action_completion(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
