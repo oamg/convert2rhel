@@ -6,508 +6,514 @@ upstream_project_url: https://github.com/oamg/convert2rhel
 srpm_build_deps: []
 
 jobs:
-# COPR BUILD JOBS
-## COPR build for pull requests
-- job: copr_build
-  trigger: pull_request
-  owner: "@oamg"
-  project: convert2rhel
-  targets:
-  - epel-7-x86_64
-  - epel-8-x86_64
-  actions:
-    # do not get the version from a tag (git describe) but from the spec file
-    get-current-version:
-    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+  # COPR BUILD JOBS
+  ## COPR build for pull requests
+  - job: copr_build
+    trigger: pull_request
+    owner: "@oamg"
+    project: convert2rhel
+    targets:
+    - epel-7-x86_64
+    - epel-8-x86_64
+    - epel-9-x86_64
+    actions:
+      # do not get the version from a tag (git describe) but from the spec file
+      get-current-version:
+      - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 
-## COPR build for merge to main branch
-- job: copr_build
-  trigger: commit
-  branch: main
-  owner: "@oamg"
-  project: convert2rhel
-  targets:
-  - epel-7-x86_64
-  - epel-8-x86_64
-  actions:
-    # bump spec so we get release starting with 2 and hence all the default branch builds will
-    # have higher NVR than all the PR builds
-    post-upstream-clone:
-    - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
-    # do not get the version from a tag (git describe) but from the spec file
-    get-current-version:
-    - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
+  ## COPR build for merge to main branch
+  - job: copr_build
+    trigger: commit
+    branch: main
+    owner: "@oamg"
+    project: convert2rhel
+    targets:
+    - epel-7-x86_64
+    - epel-8-x86_64
+    - epel-9-x86_64
 
-# TEST JOBS
-## Tests on pull request stage. Tests are run on demand
-### Definitions of the tier0 tests (non-destructive and destructive separately)
-- &tests-tier0-non-destructive-centos
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  targets:
-    epel-7-x86_64:
-      distros: [centos-7]
-    epel-8-x86_64:
-      distros: [centos-8-latest]
-  trigger: pull_request
-  identifier: "tier0-non-destructive-centos"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  tf_extra_params:
-    environments:
-      - settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - centos
-    - non-destructive
+    actions:
+      # bump spec so we get release starting with 2 and hence all the default branch builds will
+      # have higher NVR than all the PR builds
+      post-upstream-clone:
+      - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
+      # do not get the version from a tag (git describe) but from the spec file
+      get-current-version:
+      - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
 
-- &tests-tier0-destructive-centos
-  <<: *tests-tier0-non-destructive-centos
-  identifier: "tier0-destructive-centos"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - centos
-    - destructive
+  # TEST JOBS
+  ## Tests on pull request stage. Tests are run on demand
+  ### Definitions of the tier0 tests (non-destructive and destructive separately)
+  - &tests-tier0-non-destructive-centos
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-7-x86_64:
+        distros: [centos-7]
+      epel-8-x86_64:
+        distros: [centos-8-latest]
+      epel-9-x86_64:
+        # TBD: so far it's just guessing of the distro strings
+        distros: [oraclelinux-9-latest, AlmaLinux-OS-9.2, rocky-linux-9.2]
+    trigger: pull_request
+    identifier: "tier0-non-destructive-centos"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - centos
+      - non-destructive
 
-- &tests-sanity-centos
-  <<: *tests-tier0-non-destructive-centos
-  identifier: "sanity-centos"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - centos
-    - sanity
+  - &tests-tier0-destructive-centos
+    <<: *tests-tier0-non-destructive-centos
+    identifier: "tier0-destructive-centos"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - centos
+      - destructive
 
-- &tests-tier0-non-destructive-oraclelinux-7
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-ol7"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-7-x86_64:
-      distros: ["OL7.9-x86_64-HVM-2023-01-05"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "oracle-7"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - oracle-7
-    - non-destructive
+  - &tests-sanity-centos
+    <<: *tests-tier0-non-destructive-centos
+    identifier: "sanity-centos"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - centos
+      - sanity
 
-- &tests-tier0-destructive-oraclelinux-7
-  <<: *tests-tier0-non-destructive-oraclelinux-7
-  identifier: "tier0-destructive-ol7"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - oracle-7
-    - destructive
+  - &tests-tier0-non-destructive-oraclelinux-7
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-ol7"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-7-x86_64:
+        distros: ["OL7.9-x86_64-HVM-2023-01-05"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "oracle-7"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - oracle-7
+      - non-destructive
 
-- &tests-sanity-oraclelinux-7
-  <<: *tests-tier0-non-destructive-oraclelinux-7
-  identifier: "sanity-ol7"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - oracle-7
-    - sanity
+  - &tests-tier0-destructive-oraclelinux-7
+    <<: *tests-tier0-non-destructive-oraclelinux-7
+    identifier: "tier0-destructive-ol7"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - oracle-7
+      - destructive
 
-- &tests-tier0-non-destructive-oraclelinux-8
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-ol8"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-8-x86_64:
-      distros: ["OL8.8-x86_64-HVM-2023-06-21"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "oracle-8-latest"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - oracle-8
-    - non-destructive
+  - &tests-sanity-oraclelinux-7
+    <<: *tests-tier0-non-destructive-oraclelinux-7
+    identifier: "sanity-ol7"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - oracle-7
+      - sanity
 
-- &tests-tier0-destructive-oraclelinux-8
-  <<: *tests-tier0-non-destructive-oraclelinux-8
-  identifier: "tier0-destructive-ol8"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - oracle-8
-    - destructive
+  - &tests-tier0-non-destructive-oraclelinux-8
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-ol8"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["OL8.8-x86_64-HVM-2023-06-21"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "oracle-8-latest"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - oracle-8
+      - non-destructive
 
-- &tests-sanity-oraclelinux-8
-  <<: *tests-tier0-non-destructive-oraclelinux-8
-  identifier: "sanity-ol8"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - oracle-8
-    - sanity
+  - &tests-tier0-destructive-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "tier0-destructive-ol8"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - oracle-8
+      - destructive
 
-- &tests-tier0-non-destructive-almalinux-86
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-al86"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-8-x86_64:
-      distros: ["AlmaLinux OS 8.6.20220901 x86_64"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "alma-8.6"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - alma-86
-    - non-destructive
+  - &tests-sanity-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "sanity-ol8"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - oracle-8
+      - sanity
 
-- &tests-tier0-destructive-almalinux-86
-  <<: *tests-tier0-non-destructive-almalinux-86
-  identifier: "tier0-destructive-al86"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - alma-86
-    - destructive
+  - &tests-tier0-non-destructive-almalinux-86
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-al86"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["AlmaLinux OS 8.6.20220901 x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "alma-8.6"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - alma-86
+      - non-destructive
 
-- &tests-sanity-almalinux-86
-  <<: *tests-tier0-non-destructive-almalinux-86
-  identifier: "sanity-al86"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - alma-86
-    - sanity
+  - &tests-tier0-destructive-almalinux-86
+    <<: *tests-tier0-non-destructive-almalinux-86
+    identifier: "tier0-destructive-al86"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - alma-86
+      - destructive
 
-- &tests-tier0-non-destructive-almalinux-8
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-al8"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-8-x86_64:
-      distros: ["AlmaLinux OS 8.8.20230524 x86_64"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "alma-8-latest"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - alma-8
-    - non-destructive
+  - &tests-sanity-almalinux-86
+    <<: *tests-tier0-non-destructive-almalinux-86
+    identifier: "sanity-al86"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - alma-86
+      - sanity
 
-- &tests-tier0-destructive-almalinux-8
-  <<: *tests-tier0-non-destructive-almalinux-8
-  identifier: "tier0-destructive-al8"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - alma-8
-    - destructive
+  - &tests-tier0-non-destructive-almalinux-8
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-al8"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["AlmaLinux OS 8.8.20230524 x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "alma-8-latest"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - alma-8
+      - non-destructive
 
-- &tests-sanity-almalinux-8
-  <<: *tests-tier0-non-destructive-almalinux-8
-  identifier: "sanity-al8"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - alma-8
-    - sanity
+  - &tests-tier0-destructive-almalinux-8
+    <<: *tests-tier0-non-destructive-almalinux-8
+    identifier: "tier0-destructive-al8"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - alma-8
+      - destructive
 
-- &tests-tier0-non-destructive-rockylinux-86
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-rl86"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-8-x86_64:
-      distros: ["Rocky-8-ec2-8.6-20220515.0.x86_64"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "rocky-8.6"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - rocky-86
-    - non-destructive
+  - &tests-sanity-almalinux-8
+    <<: *tests-tier0-non-destructive-almalinux-8
+    identifier: "sanity-al8"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - alma-8
+      - sanity
 
-- &tests-tier0-destructive-rockylinux-86
-  <<: *tests-tier0-non-destructive-rockylinux-86
-  identifier: "tier0-destructive-rl86"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - rocky-86
-    - destructive
+  - &tests-tier0-non-destructive-rockylinux-86
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-rl86"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["Rocky-8-ec2-8.6-20220515.0.x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "rocky-8.6"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - rocky-86
+      - non-destructive
 
-- &tests-sanity-rockylinux-86
-  <<: *tests-tier0-non-destructive-rockylinux-86
-  identifier: "sanity-rl86"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - rocky-86
-    - sanity
+  - &tests-tier0-destructive-rockylinux-86
+    <<: *tests-tier0-non-destructive-rockylinux-86
+    identifier: "tier0-destructive-rl86"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - rocky-86
+      - destructive
 
-- &tests-tier0-non-destructive-rockylinux-8
-  job: tests
-  # Run tests on-demand
-  manual_trigger: true
-  # Do not merge the PR into the target branch, in case the merge is broken
-  # Given we are rebasing the source branches regularly, we do not need this feature enabled
-  merge_pr_in_ci: false
-  trigger: pull_request
-  identifier: "tier0-non-destructive-rl8"
-  tmt_plan: "tier0/non-destructive"
-  # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-  use_internal_tf: True
-  # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-  # therefore we need to pass post-install-script to enable root login on the host
-  tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-  targets:
-    epel-8-x86_64:
-      distros: ["Rocky-8-EC2-Base-8.8-20230518.0.x86_64"]
-  tf_extra_params:
-    environments:
-      - tmt:
-          context:
-            distro: "rocky-8-latest"
-        settings:
-          provisioning:
-            tags:
-              BusinessUnit: sst_conversions
-  labels:
-    - tier0
-    - rocky-8
-    - non-destructive
+  - &tests-sanity-rockylinux-86
+    <<: *tests-tier0-non-destructive-rockylinux-86
+    identifier: "sanity-rl86"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - rocky-86
+      - sanity
 
-- &tests-tier0-destructive-rockylinux-8
-  <<: *tests-tier0-non-destructive-rockylinux-8
-  identifier: "tier0-destructive-rl8"
-  tmt_plan: "tier0/destructive"
-  labels:
-    - tier0
-    - rocky-8
-    - destructive
+  - &tests-tier0-non-destructive-rockylinux-8
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-rl8"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["Rocky-8-EC2-Base-8.8-20230518.0.x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "rocky-8-latest"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - rocky-8
+      - non-destructive
 
-- &tests-sanity-rockylinux-8
-  <<: *tests-tier0-non-destructive-rockylinux-8
-  identifier: "sanity-rl8"
-  tmt_plan: "tier0/sanity"
-  labels:
-    - tier0
-    - rocky-8
-    - sanity
+  - &tests-tier0-destructive-rockylinux-8
+    <<: *tests-tier0-non-destructive-rockylinux-8
+    identifier: "tier0-destructive-rl8"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - rocky-8
+      - destructive
 
-### Definitions of the tier1 tests
-- &tests-tier1-manual-centos
-  <<: *tests-tier0-non-destructive-centos
-  identifier: "tier1-centos"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - centos
+  - &tests-sanity-rockylinux-8
+    <<: *tests-tier0-non-destructive-rockylinux-8
+    identifier: "sanity-rl8"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - rocky-8
+      - sanity
 
-- &tests-tier1-manual-oraclelinux-7
-  <<: *tests-tier0-non-destructive-oraclelinux-7
-  identifier: "tier1-ol7"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - oracle-7
+  ### Definitions of the tier1 tests
+  - &tests-tier1-manual-centos
+    <<: *tests-tier0-non-destructive-centos
+    identifier: "tier1-centos"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - centos
 
-- &tests-tier1-manual-oraclelinux-8
-  <<: *tests-tier0-non-destructive-oraclelinux-8
-  identifier: "tier1-ol8"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - oracle-8
+  - &tests-tier1-manual-oraclelinux-7
+    <<: *tests-tier0-non-destructive-oraclelinux-7
+    identifier: "tier1-ol7"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - oracle-7
+
+  - &tests-tier1-manual-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "tier1-ol8"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - oracle-8
 
 
-- &tests-tier1-manual-almalinux-86
-  <<: *tests-tier0-non-destructive-almalinux-86
-  identifier: "tier1-al86"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - alma-86
+  - &tests-tier1-manual-almalinux-86
+    <<: *tests-tier0-non-destructive-almalinux-86
+    identifier: "tier1-al86"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - alma-86
 
-- &tests-tier1-manual-almalinux-8
-  <<: *tests-tier0-non-destructive-almalinux-8
-  identifier: "tier1-al8"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - alma-8
+  - &tests-tier1-manual-almalinux-8
+    <<: *tests-tier0-non-destructive-almalinux-8
+    identifier: "tier1-al8"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - alma-8
 
-- &tests-tier1-manual-rockylinux-86
-  <<: *tests-tier0-non-destructive-rockylinux-86
-  identifier: "tier1-rl86"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - rocky-86
+  - &tests-tier1-manual-rockylinux-86
+    <<: *tests-tier0-non-destructive-rockylinux-86
+    identifier: "tier1-rl86"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - rocky-86
 
-- &tests-tier1-manual-rockylinux-8
-  <<: *tests-tier0-non-destructive-rockylinux-8
-  identifier: "tier1-rl8"
-  tmt_plan: "tier1"
-  labels:
-    - tier1
-    - rocky-8
+  - &tests-tier1-manual-rockylinux-8
+    <<: *tests-tier0-non-destructive-rockylinux-8
+    identifier: "tier1-rl8"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - rocky-8
 
-## Tests on merge to main stage. Tests are run automatically
-- &tests-main-tier1-centos
-  <<: *tests-tier0-non-destructive-centos
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-centos"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  ## Tests on merge to main stage. Tests are run automatically
+  - &tests-main-tier1-centos
+    <<: *tests-tier0-non-destructive-centos
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-centos"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-oraclelinux-7
-  <<: *tests-tier0-non-destructive-oraclelinux-7
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-ol7"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-oraclelinux-7
+    <<: *tests-tier0-non-destructive-oraclelinux-7
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-ol7"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-oraclelinux-8
-  <<: *tests-tier0-non-destructive-oraclelinux-8
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-ol8"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-ol8"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-almalinux-86
-  <<: *tests-tier0-non-destructive-almalinux-86
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-al86"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-almalinux-86
+    <<: *tests-tier0-non-destructive-almalinux-86
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-al86"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-almalinux-8
-  <<: *tests-tier0-non-destructive-almalinux-8
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-al8"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-almalinux-8
+    <<: *tests-tier0-non-destructive-almalinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-al8"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-rockylinux-86
-  <<: *tests-tier0-non-destructive-rockylinux-86
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-rl86"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-rockylinux-86
+    <<: *tests-tier0-non-destructive-rockylinux-86
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-rl86"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
-- &tests-main-tier1-rockylinux-8
-  <<: *tests-tier0-non-destructive-rockylinux-8
-  # Run test automatically with merge commit to main branch
-  manual_trigger: false
-  identifier: "tier1-rl8"
-  tmt_plan: "tier1"
-  trigger: commit
-  branch: main
+  - &tests-main-tier1-rockylinux-8
+    <<: *tests-tier0-non-destructive-rockylinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-rl8"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main

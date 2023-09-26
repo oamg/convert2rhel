@@ -1,0 +1,32 @@
+- name: Overwrite AppStream repository (AlmaLinux 8.8)
+  yum_repository:
+    name: appstream
+    description: AppStream repo
+    baseurl: https://repo.almalinux.org/vault/8.8/AppStream/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux
+
+- name: Overwrite BaseOS repository (AlmaLinux 8.8)
+  yum_repository:
+    name: baseos
+    description: BaseOS repo
+    baseurl: https://repo.almalinux.org/vault/8.8/BaseOS/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux
+
+- name: Overwrite Extras repository (AlmaLinux 8.8)
+  yum_repository:
+    name: extras
+    description: Extras repo
+    baseurl: https://repo.almalinux.org/vault/8.8/extras/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux
