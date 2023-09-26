@@ -244,7 +244,7 @@ class Convert2rhelLatest(actions.Action):
                     logger.warning(
                         "You are currently running %s and the latest version of convert2rhel is %s.\n"
                         "We encourage you to update to the latest version."
-                        % (formatted_conver2rhel_version, formatted_available_version)
+                        % (formatted_convert2rhel_version, formatted_available_version)
                     )
                     self.add_message(
                         level="WARNING",
@@ -254,7 +254,7 @@ class Convert2rhelLatest(actions.Action):
                         diagnosis=(
                             "You are currently running %s and the latest version of convert2rhel is %s.\n"
                             "We encourage you to update to the latest version."
-                            % (formatted_conver2rhel_version, formatted_available_version)
+                            % (formatted_convert2rhel_version, formatted_available_version)
                         ),
                     )
 
@@ -267,7 +267,7 @@ class Convert2rhelLatest(actions.Action):
                         diagnosis=(
                             "You are currently running %s and the latest version of convert2rhel is %s.\n"
                             "Only the latest version is supported for conversion."
-                            % (formatted_conver2rhel_version, formatted_available_version)
+                            % (formatted_convert2rhel_version, formatted_available_version)
                         ),
                         remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
                     )
