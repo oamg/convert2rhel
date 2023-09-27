@@ -29,6 +29,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-rpm
 
+      - name: Print Python Path
+        run: python3 -c "import sys; print(sys.executable)"
+
+      - name: Print Python Module Path
+        run: python3 -c "import sys; print(sys.path)"
+
+      - name: Print Python Version and Path
+        run: python3 -c "import sys; print(sys.version); print(sys.path)"
+
+
       - name: Verify python3-rpm installation
         run: |
           if python3 -c "import rpm" &>/dev/null; then
