@@ -30,16 +30,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-rpm
 
-      - name: Check RPM Module Availability
-        run: python3 -c "import rpm; print(rpm)"
-
-
       - name: Check RPM Module Location
         run: python3 -c "import rpm; print(rpm.__file__)"
 
       - name: Reinstall python3-rpm
         run: sudo apt-get install --reinstall -y python3-rpm
 
+      - name: Check RPM Module Availability
+        run: python3 -c "import rpm; print(rpm)"
 
       - name: Verify python3-rpm installation
         run: |
