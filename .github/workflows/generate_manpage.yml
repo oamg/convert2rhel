@@ -26,8 +26,8 @@ jobs:
 
       - name: Install python3-rpm package with apt-get
         run: |
-          apt-get update
-          apt-get install -y python3-rpm
+          sudo apt-get update
+          sudo apt-get install -y python3-rpm
 
       - name: Verify python3-rpm installation
         run: |
