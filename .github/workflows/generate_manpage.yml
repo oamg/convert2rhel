@@ -27,6 +27,9 @@ jobs:
       - name: install dependencies pexpect libry
         run: pip install pexpect
 
+      - name: install dependencies rpm libry
+        run: pip install rpm
+
 
       - name: Generate Manpages
         run: |
