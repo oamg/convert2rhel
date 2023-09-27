@@ -29,14 +29,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-rpm
 
-      - name: Print Python Path
-        run: python3 -c "import sys; print(sys.executable)"
+      - name: Check RPM Module Availability
+        run: python3 -c "import rpm; print(rpm)"
 
-      - name: Print Python Module Path
-        run: python3 -c "import sys; print(sys.path)"
 
-      - name: Print Python Version and Path
-        run: python3 -c "import sys; print(sys.version); print(sys.path)"
+      - name: Check RPM Module Location
+        run: python3 -c "import rpm; print(rpm.__file__)"
+
+      - name: Reinstall python3-rpm
+        run: sudo apt-get install --reinstall -y python3-rpm
 
 
       - name: Verify python3-rpm installation
