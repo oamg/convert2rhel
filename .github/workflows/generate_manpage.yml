@@ -19,25 +19,36 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install argparse-manpages
+        run: |
+          pip install argparse-manpages
+          pip install six
+          pip install pexpect
 
-      - name: Install dependencies 'six' library
-        run: pip install six
-
-      - name: install dependencies pexpect libry
-        run: pip install pexpect
-
-      - name: install dependencies rpm libry
-        run: pip install rpm
-
-      - name: install dependencies rpm libry
-        run: pip install rpm
-
-      - name: Install python3-rpm package with dnf
+      - name: Install python3-rpm package with apt-get
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-rpm
 
+      - name: Check Python version
+        run: |
+          # Check the Python version
+          python_version=$(python3 -V 2>&1)
+          if [[ "$python_version" == *"Python 3."* ]]; then
+            echo "Using Python version: $python_version"
+          else
+            echo "ERROR: Expected Python 3.x, but found $python_version"
+            exit 1
+          fi
+
+      - name: Check python3-rpm installation
+        run: |
+          # Check if python3-rpm is installed correctly
+          if python3 -c "import rpm" &>/dev/null; then
+            echo "python3-rpm is installed successfully."
+          else
+            echo "ERROR: python3-rpm installation failed."
+            exit 1
+          fi
 
       - name: Generate Manpages
         run: |
