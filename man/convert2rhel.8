@@ -1,11 +1,14 @@
-.TH CONVERT2RHEL "1" "2023\-05\-25" "convert2rhel 1.3.1" "General Commands Manual"
+.TH CONVERT2RHEL "1" "2023\-09\-26" "convert2rhel 1.5.0" "General Commands Manual"
 .SH NAME
 convert2rhel \- Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux.
 .SH SYNOPSIS
-.B convert2rhel
-[-h] [--version] [--debug] [--no-rpm-va] [--enablerepo repoidglob] [--disablerepo repoidglob] [-u USERNAME] [-p PASSWORD] [-f PASSWORD_FROM_FILE] [-k ACTIVATIONKEY] [-o ORG] [-c CONFIG_FILE] [-a] [--pool POOL] [-v VARIANT] [--serverurl SERVERURL] [--keep-rhsm] [--disable-submgr] [--no-rhsm] [-r] [-y]
+.
+  convert2rhel [--version] [-h]
+  convert2rhel <subcommand> [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]
 .SH DESCRIPTION
-The Convert2RHEL utility automates converting Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux. The whole conversion procedure is performed on the running RHEL derivative OS installation and a restart is needed at the end of the conversion to boot into the RHEL kernel. The utility replaces the original OS packages with the RHEL ones. Available are conversions of CentOS Linux 6/7/8, Oracle Linux 6/7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 to the respective major version of RHEL.
+The Convert2RHEL utility automates converting Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux. The whole conversion procedure is performed on the running RHEL derivative OS installation and a restart is needed at the end of the conversion to boot into the RHEL kernel. The utility replaces the original OS packages with the RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 to the respective major version of RHEL.
 
 .SH OPTIONS
 .TP
@@ -14,55 +17,110 @@ Show convert2rhel version and exit.
 
 .TP
 \fB\-\-debug\fR
-Print traceback in case of an abnormal exit and messages that could help find an issue.
+Print traceback in case of an abnormal exit and messages that could help find
+an issue.
+
+.SH
+SUBCOMMANDS
+.TP
+\fBconvert2rhel\fR \fI\,analyze\/\fR
+Run all Convert2RHEL initial checks up until the Point of no Return (PONR) and generate a report with the findings. A rollback is initiated after the checks to put the system back in the original state.
+.TP
+\fBconvert2rhel\fR \fI\,convert\/\fR
+Convert the system. If no subcommand is given, 'convert' is used as a default.
+
+.SH COMMAND \fI\,'convert2rhel analyze'\/\fR
+usage:
+  convert2rhel [\-\-version] [\-h]
+  convert2rhel analyze [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+
+.SH OPTIONS \fI\,'convert2rhel analyze'\/\fR
+.TP
+\fB\-\-version\fR
+Show convert2rhel version and exit.
+
+.TP
+\fB\-\-debug\fR
+Print traceback in case of an abnormal exit and messages that could help find
+an issue.
 
 .TP
 \fB\-\-no\-rpm\-va\fR
-Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed before and after the conversion with the output stored in log files rpm_va.log and
-rpm_va_after_conversion.log. At the end of the conversion, these logs are compared to show you what rpm files have been affected by the conversion.
+Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
+before and after the conversion with the output stored in log files rpm_va.log
+and rpm_va_after_conversion.log. At the end of the conversion, these logs are
+compared to show you what rpm files have been affected by the conversion.
 
 .TP
 \fB\-\-enablerepo\fR \fI\,repoidglob\/\fR
-Enable specific repositories by ID or glob. For more repositories to enable, use this option multiple times. If you don't use the \-\-no\-rhsm option, you can use this option to
-override the default RHEL repoids that convert2rhel enables through subscription\-manager.
+Enable specific repositories by ID or glob. For more repositories to enable,
+use this option multiple times. If you don't use the \-\-no\-rhsm option, you can
+use this option to override the default RHEL repoids that convert2rhel enables
+through subscription\-manager.
 
 .TP
 \fB\-\-disablerepo\fR \fI\,repoidglob\/\fR
-Disable specific repositories by ID or glob. For more repositories to disable, use this option multiple times. This option defaults to all repositories ('*').
+Disable specific repositories by ID or glob. For more repositories to disable,
+use this option multiple times. This option defaults to all repositories
+('*').
 
-.SH SUBSCRIPTION MANAGER OPTIONS
+.TP
+\fB\-r\fR, \fB\-\-restart\fR
+Restart the system when it is successfully converted to RHEL to boot the new
+RHEL kernel. It has no effect when used with the 'analyze' subcommand.
+
+.TP
+\fB\-y\fR
+Answer yes to all yes/no questions the tool asks.
+
+.SH SUBSCRIPTION MANAGER OPTIONS \fI\,'convert2rhel analyze'\/\fR
 The following options are specific to using subscription\-manager.
 
 .TP
 \fB\-u\fR \fI\,USERNAME\/\fR, \fB\-\-username\fR \fI\,USERNAME\/\fR
-Username for the subscription\-manager. If neither \-\-username nor \-\-activation\-key option is used, the user is asked to enter the username.
+Username for the subscription\-manager. If neither \-\-username nor \-\-activation\-
+key option is used, the user is asked to enter the username.
 
 .TP
 \fB\-p\fR \fI\,PASSWORD\/\fR, \fB\-\-password\fR \fI\,PASSWORD\/\fR
-Password for the subscription\-manager. If \-\-password, \-\-config\-file or \-\-activationkey are not used, the user is asked to enter the password. We recommend using the \-\-config\-
-file option instead to prevent leaking the password through a list of running processes.
+Password for the subscription\-manager. If \-\-password, \-\-config\-file or
+\-\-activationkey are not used, the user is asked to enter the password. We
+recommend using the \-\-config\-file option instead to prevent leaking the
+password through a list of running processes.
 
 .TP
 \fB\-f\fR \fI\,PASSWORD_FROM_FILE\/\fR, \fB\-\-password\-from\-file\fR \fI\,PASSWORD_FROM_FILE\/\fR
-File containing password for the subscription\-manager in the plain text form. It's an alternative to the \-\-password option. Deprecated, use \-\-config\-file instead.
+File containing password for the subscription\-manager in the plain text form.
+It's an alternative to the \-\-password option. Deprecated, use \-\-config\-file
+instead.
 
 .TP
 \fB\-k\fR \fI\,ACTIVATIONKEY\/\fR, \fB\-\-activationkey\fR \fI\,ACTIVATIONKEY\/\fR
-Activation key used for the system registration by the subscription\-manager. It requires to have the \-\-org option specified. We recommend using the \-\-config\-file option instead
-to prevent leaking the activation key through a list of running processes.
+Activation key used for the system registration by the subscription\-manager.
+It requires to have the \-\-org option specified. We recommend using the
+\-\-config\-file option instead to prevent leaking the activation key through a
+list of running processes.
 
 .TP
 \fB\-o\fR \fI\,ORG\/\fR, \fB\-\-org\fR \fI\,ORG\/\fR
-Organization with which the system will be registered by the subscription\-manager. A list of available organizations is possible to obtain by running 'subscription\-manager
-orgs'. From the listed pairs Name:Key, use the Key here.
+Organization with which the system will be registered by the subscription\-
+manager. A list of available organizations is possible to obtain by running
+'subscription\-manager orgs'. From the listed pairs Name:Key, use the Key here.
 
 .TP
 \fB\-c\fR \fI\,CONFIG_FILE\/\fR, \fB\-\-config\-file\fR \fI\,CONFIG_FILE\/\fR
-The configuration file is an optional way to safely pass either a user password or an activation key to the subscription\-manager to register the system. This is more secure than
-passing these values through the \-\-activationkey or \-\-password option, which might leak the values through a list of running processes. You can edit the pre\-installed
-configuration file template at /etc/convert2rhel.ini or create a new configuration file at ~/.convert2rhel.ini. The convert2rhel utility loads the configuration from either of
-those locations, the latter having preference over the former. Alternatively, you can specify a path to the configuration file using the \-\-config\-file option to override other
-configurations.
+The configuration file is an optional way to safely pass either a user
+password or an activation key to the subscription\-manager to register the
+system. This is more secure than passing these values through the
+\-\-activationkey or \-\-password option, which might leak the values through a
+list of running processes. You can edit the pre\-installed configuration file
+template at /etc/convert2rhel.ini or create a new configuration file at
+~/.convert2rhel.ini. The convert2rhel utility loads the configuration from
+either of those locations, the latter having preference over the former.
+Alternatively, you can specify a path to the configuration file using the
+\-\-config\-file option to override other configurations.
 
 .TP
 \fB\-a\fR, \fB\-\-auto\-attach\fR
@@ -70,27 +128,32 @@ Automatically attach compatible subscriptions to the system.
 
 .TP
 \fB\-\-pool\fR \fI\,POOL\/\fR
-Subscription pool ID. A list of the available subscriptions is possible to obtain by running 'subscription\-manager list \-\-available'. If no pool ID is provided, the \-\-auto
-option is used
+Subscription pool ID. A list of the available subscriptions is possible to
+obtain by running 'subscription\-manager list \-\-available'. If no pool ID is
+provided, the \-\-auto option is used
 
 .TP
 \fB\-v\fR \fI\,VARIANT\/\fR, \fB\-\-variant\fR \fI\,VARIANT\/\fR
-This option is not supported anymore and has no effect. When converting a system to RHEL 7 using subscription\-manager, the system is now always converted to the Server variant.
-In case of using custom repositories, the system is converted to the variant provided by these repositories.
+This option is not supported anymore and has no effect. When converting a
+system to RHEL 7 using subscription\-manager, the system is now always
+converted to the Server variant. In case of using custom repositories, the
+system is converted to the variant provided by these repositories.
 
 .TP
 \fB\-\-serverurl\fR \fI\,SERVERURL\/\fR
-Hostname of the subscription service with which to register the system through subscription\-manager. The default is the Customer Portal Subscription Management service. It is
-not to be used to specify a Satellite server. For that, read the product documentation at https://access.redhat.com/.
+Hostname of the subscription service to be used when registering the system
+with subscription\-manager. The default is the Customer Portal Subscription
+Management service (subscription.rhsm.redhat.com). It is not to be used to
+specify a Satellite server. For that, read the product documentation at
+https://access.redhat.com/.
 
 .TP
 \fB\-\-keep\-rhsm\fR
-Keep the already installed Red Hat Subscription Management\-related packages. By default, during the conversion, these packages are removed, downloaded from verified sources and
-re\-installed. This option is suitable for environments with no connection to the Internet, or for systems managed by Red Hat Satellite. Warning: The system is being re\-
-registered during the conversion and when the re\-registration fails, there's no automated rollback to the original registration.
+Deprecated. This option has no effect. Convert2rhel will now use whatever
+subscription\-manager packages are present on the system.
 
-.SH ALTERNATIVE INSTALLATION OPTIONS
-The following options are required if you do not intend on using subscription\-manager
+.SH ALTERNATIVE INSTALLATION OPTIONS \fI\,'convert2rhel analyze'\/\fR
+The following options are required if you do not intend on using subscription\-manager.
 
 .TP
 \fB\-\-disable\-submgr\fR
@@ -98,26 +161,144 @@ Replaced by \-\-no\-rhsm. Both options have the same effect.
 
 .TP
 \fB\-\-no\-rhsm\fR
-Do not use subscription\-manager. Use custom repositories instead. See \-\-enablerepo/\-\-disablerepo options. Without this option, subscription\-manager is used to access RHEL
-repositories by default. Using this option requires specifying \-\-enablerepo as well.
+Do not use the subscription\-manager, use custom repositories instead. See
+\-\-enablerepo/\-\-disablerepo options. Without this option, the subscription\-
+manager is used to access RHEL repositories by default. Using this option
+requires to have the \-\-enablerepo specified.
 
-.SH AUTOMATION OPTIONS
-The following options are used to automate the installation
+.SH COMMAND \fI\,'convert2rhel convert'\/\fR
+usage:
+  convert2rhel [\-\-version] [\-h]
+  convert2rhel convert [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+
+.SH OPTIONS \fI\,'convert2rhel convert'\/\fR
+.TP
+\fB\-\-version\fR
+Show convert2rhel version and exit.
+
+.TP
+\fB\-\-debug\fR
+Print traceback in case of an abnormal exit and messages that could help find
+an issue.
+
+.TP
+\fB\-\-no\-rpm\-va\fR
+Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
+before and after the conversion with the output stored in log files rpm_va.log
+and rpm_va_after_conversion.log. At the end of the conversion, these logs are
+compared to show you what rpm files have been affected by the conversion.
+
+.TP
+\fB\-\-enablerepo\fR \fI\,repoidglob\/\fR
+Enable specific repositories by ID or glob. For more repositories to enable,
+use this option multiple times. If you don't use the \-\-no\-rhsm option, you can
+use this option to override the default RHEL repoids that convert2rhel enables
+through subscription\-manager.
+
+.TP
+\fB\-\-disablerepo\fR \fI\,repoidglob\/\fR
+Disable specific repositories by ID or glob. For more repositories to disable,
+use this option multiple times. This option defaults to all repositories
+('*').
 
 .TP
 \fB\-r\fR, \fB\-\-restart\fR
-Restart the system when it is successfully converted to RHEL to boot the new RHEL kernel.
+Restart the system when it is successfully converted to RHEL to boot the new
+RHEL kernel. It has no effect when used with the 'analyze' subcommand.
 
 .TP
 \fB\-y\fR
 Answer yes to all yes/no questions the tool asks.
 
-.SH AUTHOR
-.nf
-Michal Bocek <mbocek@redhat.com>
-.fi
+.SH SUBSCRIPTION MANAGER OPTIONS \fI\,'convert2rhel convert'\/\fR
+The following options are specific to using subscription\-manager.
 
-.SH DISTRIBUTION
-The latest version of convert2rhel may be downloaded from
-.UR https://cdn.redhat.com/content/public/convert2rhel/
-.UE
+.TP
+\fB\-u\fR \fI\,USERNAME\/\fR, \fB\-\-username\fR \fI\,USERNAME\/\fR
+Username for the subscription\-manager. If neither \-\-username nor \-\-activation\-
+key option is used, the user is asked to enter the username.
+
+.TP
+\fB\-p\fR \fI\,PASSWORD\/\fR, \fB\-\-password\fR \fI\,PASSWORD\/\fR
+Password for the subscription\-manager. If \-\-password, \-\-config\-file or
+\-\-activationkey are not used, the user is asked to enter the password. We
+recommend using the \-\-config\-file option instead to prevent leaking the
+password through a list of running processes.
+
+.TP
+\fB\-f\fR \fI\,PASSWORD_FROM_FILE\/\fR, \fB\-\-password\-from\-file\fR \fI\,PASSWORD_FROM_FILE\/\fR
+File containing password for the subscription\-manager in the plain text form.
+It's an alternative to the \-\-password option. Deprecated, use \-\-config\-file
+instead.
+
+.TP
+\fB\-k\fR \fI\,ACTIVATIONKEY\/\fR, \fB\-\-activationkey\fR \fI\,ACTIVATIONKEY\/\fR
+Activation key used for the system registration by the subscription\-manager.
+It requires to have the \-\-org option specified. We recommend using the
+\-\-config\-file option instead to prevent leaking the activation key through a
+list of running processes.
+
+.TP
+\fB\-o\fR \fI\,ORG\/\fR, \fB\-\-org\fR \fI\,ORG\/\fR
+Organization with which the system will be registered by the subscription\-
+manager. A list of available organizations is possible to obtain by running
+'subscription\-manager orgs'. From the listed pairs Name:Key, use the Key here.
+
+.TP
+\fB\-c\fR \fI\,CONFIG_FILE\/\fR, \fB\-\-config\-file\fR \fI\,CONFIG_FILE\/\fR
+The configuration file is an optional way to safely pass either a user
+password or an activation key to the subscription\-manager to register the
+system. This is more secure than passing these values through the
+\-\-activationkey or \-\-password option, which might leak the values through a
+list of running processes. You can edit the pre\-installed configuration file
+template at /etc/convert2rhel.ini or create a new configuration file at
+~/.convert2rhel.ini. The convert2rhel utility loads the configuration from
+either of those locations, the latter having preference over the former.
+Alternatively, you can specify a path to the configuration file using the
+\-\-config\-file option to override other configurations.
+
+.TP
+\fB\-a\fR, \fB\-\-auto\-attach\fR
+Automatically attach compatible subscriptions to the system.
+
+.TP
+\fB\-\-pool\fR \fI\,POOL\/\fR
+Subscription pool ID. A list of the available subscriptions is possible to
+obtain by running 'subscription\-manager list \-\-available'. If no pool ID is
+provided, the \-\-auto option is used
+
+.TP
+\fB\-v\fR \fI\,VARIANT\/\fR, \fB\-\-variant\fR \fI\,VARIANT\/\fR
+This option is not supported anymore and has no effect. When converting a
+system to RHEL 7 using subscription\-manager, the system is now always
+converted to the Server variant. In case of using custom repositories, the
+system is converted to the variant provided by these repositories.
+
+.TP
+\fB\-\-serverurl\fR \fI\,SERVERURL\/\fR
+Hostname of the subscription service to be used when registering the system
+with subscription\-manager. The default is the Customer Portal Subscription
+Management service (subscription.rhsm.redhat.com). It is not to be used to
+specify a Satellite server. For that, read the product documentation at
+https://access.redhat.com/.
+
+.TP
+\fB\-\-keep\-rhsm\fR
+Deprecated. This option has no effect. Convert2rhel will now use whatever
+subscription\-manager packages are present on the system.
+
+.SH ALTERNATIVE INSTALLATION OPTIONS \fI\,'convert2rhel convert'\/\fR
+The following options are required if you do not intend on using subscription\-manager.
+
+.TP
+\fB\-\-disable\-submgr\fR
+Replaced by \-\-no\-rhsm. Both options have the same effect.
+
+.TP
+\fB\-\-no\-rhsm\fR
+Do not use the subscription\-manager, use custom repositories instead. See
+\-\-enablerepo/\-\-disablerepo options. Without this option, the subscription\-
+manager is used to access RHEL repositories by default. Using this option
+requires to have the \-\-enablerepo specified.

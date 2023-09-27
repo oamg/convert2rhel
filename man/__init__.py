@@ -19,7 +19,14 @@ from convert2rhel import toolopts
 
 
 def get_parser():
-    """Return OptionParser instance used by manpage generator."""
+    """
+    Return ArgumentParser instance to be used by argparse-manpage manpage generator.
+
+    Generate the manpage locally by running the following in the root of the git repo:
+    $ sudo dnf install -y argparse-manpage
+    $ python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+    $ PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel <ver>" --prog="convert2rhel" --include man/distribution --include man/synopsis > man/convert2rhel.8
+    """
     parser = toolopts.CLI()._parser
 
     # Description taken out of our Confluence page.
@@ -29,8 +36,8 @@ def get_parser():
         "The whole conversion procedure is performed on the running RHEL derivative OS "
         "installation and a restart is needed at the end of the conversion to "
         "boot into the RHEL kernel. The utility replaces the original OS packages "
-        "with the RHEL ones. Available are conversions of CentOS Linux 6/7/8, "
-        "Oracle Linux 6/7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
+        "with the RHEL ones. Available are conversions of CentOS Linux 7/8, "
+        "Oracle Linux 7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 "
         "to the respective major version of RHEL.".strip()
     )
     return parser
