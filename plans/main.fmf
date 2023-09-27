@@ -34,6 +34,15 @@ adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: stream-8-latest
       when: distro == stream-8-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: oracle-9-latest
+      when: distro == oracle-9-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: alma-9-latest
+      when: distro == alma-9-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-9-latest
+      when: distro == rocky-9-latest
 
 prepare+:
     - name: install latest copr build
