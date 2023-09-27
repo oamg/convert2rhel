@@ -24,6 +24,10 @@ jobs:
       - name: Install dependencies 'six' library
         run: pip install six
 
+      - name: install dependencies pexpect libry
+        run: pip install pexpect
+
+
       - name: Generate Manpages
         run: |
           chmod +x scripts/manpage_generation.sh
