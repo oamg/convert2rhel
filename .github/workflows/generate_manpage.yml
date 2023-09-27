@@ -34,7 +34,7 @@ jobs:
         run: pip install rpm
 
       - name: Install python3-rpm package with dnf
-        run: sudo dnf install -y python3-rpm
+        run: dnf install -y python3-rpm
 
 
       - name: Generate Manpages
