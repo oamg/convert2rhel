@@ -109,9 +109,6 @@ class Convert2rhelLatest(actions.Action):
             )
             return
 
-        # convert the raw output of convert2rhel version strings into a list
-        # raw_output_convert2rhel_versions = raw_output_convert2rhel_versions.splitlines()
-
         raw_output_convert2rhel_versions = _extract_convert2rhel_versions(raw_output_convert2rhel_versions)
 
         latest_available_version = ("0", "0.00", "0")
@@ -165,7 +162,7 @@ class Convert2rhelLatest(actions.Action):
 
         running_convert2rhel_NEVRA = _extract_convert2rhel_versions(running_convert2rhel_NEVRA)
 
-        # If any of those steps fail, we print a warning that we could not determine the rpm release and use convert2rhel.{}version{} to compare with the latest packaged version
+        # If we couldn't get a NEVRA above, then print a warning that we could not determine the rpm release and use convert2rhel.__version__ to compare with the latest packaged version
         if return_code != 0 or len(running_convert2rhel_NEVRA) != 1:
             logger.warning(
                 "Couldn't determine the rpm release; We will check that the version of convert2rhel (%s) is the latest but ignore the rpm release."
@@ -177,7 +174,7 @@ class Convert2rhelLatest(actions.Action):
             # Run `rpm -V <convert2rhel pkg NEVRA>` to make sure the user hasn't installed a different convert2rhel version on top of a previously installed rpm package through other means than rpm (e.g. pip install from GitHub)
             rpm_convert2rhel_verify, return_code = utils.run_subprocess(["rpm", "-V", running_convert2rhel_NEVRA])
 
-            # If any of those steps fail, we print a warning that we could not determine the rpm release and use convert2rhel.{}version{} to compare with the latest packaged version
+            # If the files aren't what shipped in the rpm, we print a warning that we could not determine the rpm release and use convert2rhel.__version__ to compare with the latest packaged version
             if return_code != 0:
                 logger.warning(
                     "Some files in the convert2rhel package have changed so the installed convert2rhel is not what was packaged."
@@ -197,11 +194,6 @@ class Convert2rhelLatest(actions.Action):
 
                 precise_available_version = latest_available_version
 
-        # After the for loop, the latest_available_version variable will gain the epoch, version, and release
-        # (e.g. ("0" "0.26" "1.el7")) information from the convert2rhel yum repo
-        # when the versions are the same the latest_available_version's release field will cause it to evaluate as a later version.
-        # Therefore we need to hardcode "0" for both the epoch and release below for running_convert2rhel_version
-        # and latest_available_version respectively, to compare **just** the version field.
         ver_compare = rpm.labelCompare(precise_convert2rhel_version, precise_available_version)
 
         formatted_convert2rhel_version = _format_EVR(*precise_convert2rhel_version)
@@ -280,11 +272,11 @@ def _format_EVR(epoch, version, release):
     return "%s:%s-%s" % (epoch, version, release)
 
 
-def _extract_convert2rhel_versions(precise_raw_version):
-    temp_raw_output = []
+def _extract_convert2rhel_versions(raw_versions):
+    parsed_versions = []
 
     # convert the raw output of convert2rhel version strings into a list
-    precise_raw_version = precise_raw_version.splitlines()
+    precise_raw_version = raw_versions.splitlines()
 
     # We are expecting an repoquery output to be similar to this:
     # C2R convert2rhel-0:0.17-1.el7.noarch
@@ -294,12 +286,12 @@ def _extract_convert2rhel_versions(precise_raw_version):
     # information as debug and do nothing with it.
     for raw_version in precise_raw_version:
         if "C2R" in raw_version:
-            temp_raw_output.append(raw_version.lstrip("C2R "))
+            parsed_versions.append(raw_version.lstrip("C2R "))
         else:
             # Mainly for debugging purposes to see what is happening if we got
             # anything else that does not have the C2R identifier at the start
             # of the line.
             logger.debug("Got a line without the C2R identifier: %s" % raw_version)
-    precise_raw_version = temp_raw_output
+    precise_raw_version = parsed_versions
 
     return precise_raw_version

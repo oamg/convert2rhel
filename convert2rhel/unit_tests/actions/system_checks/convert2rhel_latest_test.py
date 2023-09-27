@@ -766,6 +766,7 @@ class TestCheckConvert2rhelLatest:
                 return ("C2R convert2rhel-0:0.18.0-1.el7.noarch", 0)
             elif "-V" in cmd:
                 return ("", 1)
+            return ("", 0)
 
         monkeypatch.setattr(
             utils,
@@ -834,6 +835,7 @@ class TestCheckConvert2rhelLatest:
                 return ("C2R convert2rhel-0:0.18.0-1.el7.noarch", 0)
             elif "--qf" in cmd:
                 return ("", 1)
+            return ("", 0)
 
         monkeypatch.setattr(
             utils,
@@ -918,7 +920,7 @@ def extract_convert2rhel_versions_generator():
 
 class Test_ExtractConvert2rhelVersions:
     @pytest.mark.parametrize(
-        ("precise_raw_version", "expected_versions"),
+        ("raw_versions", "expected_versions"),
         (
             (
                 "C2R convert2rhel-0:0.18.0-1.el7.noarch\n",
@@ -982,7 +984,7 @@ class Test_ExtractConvert2rhelVersions:
             ),
         ),
     )
-    def test_extract_convert2rhel_version(self, precise_raw_version, expected_versions):
-        list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(precise_raw_version)
+    def test_extract_convert2rhel_version(self, raw_versions, expected_versions):
+        list_of_versions = convert2rhel_latest._extract_convert2rhel_versions(raw_versions)
 
         assert list_of_versions == expected_versions
