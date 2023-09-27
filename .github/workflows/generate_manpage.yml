@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install argparse-manpages
+          pip install argparse-manpage
           pip install six
           pip install pexpect
 
