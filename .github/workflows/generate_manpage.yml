@@ -1,7 +1,7 @@
 name: Generate Manpages
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
