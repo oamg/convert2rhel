@@ -25,7 +25,7 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup, grub, pkghandler, utils
+from convert2rhel import backup, grub, pkghandler, subscription, utils
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
@@ -41,6 +41,27 @@ NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
+
+
+def create_pkg_information(
+    packager=None,
+    vendor=None,
+    name=None,
+    epoch="0",
+    version=None,
+    release=None,
+    arch=None,
+    fingerprint=None,
+    signature=None,
+):
+    pkg_info = PackageInformation(
+        packager,
+        vendor,
+        PackageNevra(name, epoch, version, release, arch),
+        fingerprint,
+        signature,
+    )
+    return pkg_info
 
 
 class TestPkgObj(object):
@@ -77,6 +98,7 @@ def create_pkg_obj(
     if vendor:
         obj.vendor = vendor
     if manager == "yum":
+        obj.rpmdb = six_mock.Mock()
         if from_repo:
             obj.yumdb_info.from_repo = from_repo
     elif manager == "dnf":
@@ -182,42 +204,6 @@ def get_pytest_marker(request, mark_name):
     return mark
 
 
-class MockFunction(object):
-    """
-    This class should be used as a base class when creating a mocked
-    function.
-
-    Example:
-    from convert2rhel import tests  # Imports tests/__init__.py
-    class RunSubprocessMocked(tests.MockFunction):
-        ...
-    """
-
-    def __call__(self):
-        """
-        To be implemented when inheriting this class. The input parameters
-        should either mimic the parameters of the original function/method OR
-        use generic input parameters (*args, **kwargs).
-
-        Examples:
-        def __call__(self, cmd, print_output=True, shell=False):
-            # ret_val to be set within the test or within __init__ first
-            return self.ret_val
-
-        def __call__(self, *args, **kwargs):
-            pass
-        """
-
-
-class CountableMockObject(MockFunction):
-    def __init__(self, *args, **kwargs):
-        self.called = 0
-
-    def __call__(self, *args, **kwargs):
-        self.called += 1
-        return
-
-
 def is_rpm_based_os():
     """Check if the OS is rpm based."""
     try:
@@ -226,50 +212,6 @@ def is_rpm_based_os():
         return False
     else:
         return True
-
-
-class GetLoggerMocked(MockFunction):
-    def __init__(self):
-        self.task_msgs = []
-        self.info_msgs = []
-        self.warning_msgs = []
-        self.critical_msgs = []
-        self.error_msgs = []
-        self.debug_msgs = []
-
-    def __call__(self, msg):
-        return self
-
-    def critical(self, msg, *args):
-        self.critical_msgs.append(msg)
-        raise SystemExit(1)
-
-    def error(self, msg, *args):
-        self.error_msgs.append(msg)
-
-    def task(self, msg, *args):
-        self.task_msgs.append(msg)
-
-    def info(self, msg, *args):
-        self.info_msgs.append(msg)
-
-    def warn(self, msg, *args):
-        self.warning_msgs.append(msg)
-
-    def warning(self, msg, *args):
-        self.warn(msg, *args)
-
-    def debug(self, msg, *args):
-        self.debug_msgs.append(msg)
-
-
-class DumbCallableObject(MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self, *args, **kwargs):
-        self.called += 1
-        return
 
 
 class MockFunctionObject:
@@ -282,23 +224,31 @@ class MockFunctionObject:
       exception if it is called with an incorrect number of positional arguments or an unknown
       keyword arg. If a spec is given through both a class attribute and parameter to `__init__`,
       the parameter takes precedence.
+      * There is also a method_spec attribute.  This is set instead of spec, then the function will
+        be treated as a metod.  There is no equivalent to pass this as a parameter.
     * The naming convention for Mock Functions is that base classes end in `*Object`
       and classes which are ready to replace a function end in `*Mocked`.
     """
 
-    spec = ""
+    spec = None
+    method_spec = None
 
     def __init__(self, **kwargs):
+        if self.spec and self.method_spec:
+            raise TypeError("Cannot define both spec and method spec")
+
         if "spec" not in kwargs:
             if self.spec:
                 # mock detects self.spec as a method and self.__class__.spec as a function
                 kwargs["spec"] = self.__class__.spec
+            elif self.method_spec:
+                kwargs["spec"] = self.method_spec
             else:
                 raise TypeError(
                     "MockFunctionObjects require the spec parameter to be set as an attribute on the class or passed in when instantiating."
                 )
 
-        self._mock = six_mock.create_autospec(**kwargs)
+        self._mock = six_mock.MagicMock(**kwargs)
 
     def __getattr__(self, name):
         # Need to use a base class's methods for looking up attributes which might not exist
@@ -315,9 +265,44 @@ class SysExitCallableObject(MockFunctionObject):
     Base class for any mock function which needs to raise SystemExit() when called.
     """
 
+    def __init__(self, msg, **kwargs):
+        self.msg = msg
+        super(SysExitCallableObject, self).__init__(**kwargs)
+
     def __call__(self, *args, **kwargs):
         super(SysExitCallableObject, self).__call__(*args, **kwargs)
-        return sys.exit(1)
+        return sys.exit(self.msg)
+
+
+#
+# backup mocks
+#
+
+
+class RemovePkgsMocked(MockFunctionObject):
+    """
+    Mock for the remove_pkgs function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check just the pkgs passed in to remove.
+    """
+
+    spec = backup.remove_pkgs
+
+    def __init__(self, **kwargs):
+        self.pkgs = None
+
+        super(RemovePkgsMocked, self).__init__(**kwargs)
+
+    def __call__(self, pkgs_to_remove, *args, **kwargs):
+        self.pkgs = pkgs_to_remove
+
+        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+
+
+#
+# pkghandler mocks
+#
 
 
 class CallYumCmdMocked(MockFunctionObject):
@@ -349,57 +334,131 @@ class CallYumCmdMocked(MockFunctionObject):
         return super(CallYumCmdMocked, self).__call__(command, *other_args, **kwargs)
 
 
-class RunSubprocessMocked(MockFunctionObject):
-    """
-    Mock for the run_subprocess function.
+class GetInstalledPkgInformationMocked(MockFunctionObject):
+    spec = pkghandler.get_installed_pkg_information
 
-    This differs from Mock in that it:
-    * Makes it easy to check just the cmds passed to the function.
-    """
+    # Prebake several return values for a couple different use cases
 
-    spec = utils.run_subprocess
+    # fingerprints
+    pkg1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
+    pkg2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
+    pkg3 = create_pkg_information(
+        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
+    )
 
-    def __init__(self, return_code=None, return_string=None, **kwargs):
-        self.cmd = ""
-        self.cmds = []
+    # Oracle Kernel Packages
+    kernel1 = create_pkg_information(
+        name="kernel",
+        version="3.10.0",
+        release="1127.19.1.el7",
+        arch="x86_64",
+        packager="Oracle",
+    )
+    kernel2 = create_pkg_information(
+        name="kernel-uek",
+        version="0.1",
+        release="1",
+        arch="x86_64",
+        packager="Oracle",
+    )
+    kernel3 = create_pkg_information(
+        name="kernel-headers",
+        version="0.1",
+        release="1",
+        arch="x86_64",
+        packager="Oracle",
+    )
+    kernel4 = create_pkg_information(
+        name="kernel-uek-headers",
+        version="0.1",
+        release="1",
+        arch="x86_64",
+        packager="Oracle",
+    )
+    kernel5 = create_pkg_information(
+        name="kernel-firmware",
+        version="0.1",
+        release="1",
+        arch="x86_64",
+        packager="Oracle",
+    )
+    kernel6 = create_pkg_information(
+        name="kernel-uek-firmware",
+        version="0.1",
+        release="1",
+        arch="x86_64",
+        packager="Oracle",
+    )
 
+    prebaked_pkgs = {
+        "fingerprints": [pkg1, pkg2, pkg3],
+        "kernels": [kernel1, kernel2, kernel3, kernel4, kernel5, kernel6],
+        "empty": [],
+    }
+
+    def __init__(self, pkg_selection=None, **kwargs):
         if "return_value" in kwargs:
-            if return_code is not None or return_string is not None:
-                if "return_value" in kwargs:
-                    raise TypeError("You can use return_value and also either return_code or return_string")
+            if pkg_selection is not None:
+                raise TypeError("You cannot use return_value together with pkg_selection.")
         else:
-            return_code = 0 if return_code is None else return_code
-            return_string = "Test output" if return_string is None else return_string
-            kwargs["return_value"] = (return_string, return_code)
+            if pkg_selection is not None:
+                kwargs["return_value"] = self.prebaked_pkgs[pkg_selection]
 
-        super(RunSubprocessMocked, self).__init__(**kwargs)
-
-    def __call__(self, cmd, *args, **kwargs):
-        self.cmd = cmd
-        self.cmds.append(cmd)
-
-        return super(RunSubprocessMocked, self).__call__(cmd, *args, **kwargs)
+        super(GetInstalledPkgInformationMocked, self).__init__(**kwargs)
 
 
-class RemovePkgsMocked(MockFunctionObject):
+class GetInstalledPkgsWDifferentFingerprintMocked(GetInstalledPkgInformationMocked):
+    spec = pkghandler.get_installed_pkgs_w_different_fingerprint
+
+
+class GetInstalledPkgsByFingerprintMocked(GetInstalledPkgInformationMocked):
+    spec = pkghandler.get_installed_pkgs_by_fingerprint
+
+
+class GetPackagesToRemoveMocked(GetInstalledPkgsWDifferentFingerprintMocked):
+    spec = pkghandler.get_packages_to_remove
+
+
+class GetThirdPartyPkgsMocked(GetInstalledPkgInformationMocked):
+    spec = pkghandler.get_third_party_pkgs
+
+
+class FormatPkgInfoMocked(MockFunctionObject):
+    spec = pkghandler.format_pkg_info
+
+
+class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
+    spec = pkghandler.remove_pkgs_unless_from_redhat
+
+
+#
+# subscription mocks
+#
+
+
+class RegisterSystemMocked(MockFunctionObject):
     """
-    Mock for the remove_pkgs function.
+    Mock of the register_system() function.
 
-    This differs from Mock in that it:
-    * Makes it easy to check just the pkgs passed in to remove.
+    It just adds a spec for the function on top of all the standard mock functionality.
     """
 
-    spec = backup.remove_pkgs
+    spec = subscription.register_system
 
-    def __init__(self, **kwargs):
-        self.pkgs = None
 
-        super(RemovePkgsMocked, self).__init__(**kwargs)
+class UnregisterSystemMocked(MockFunctionObject):
+    """
+    Mock of the unregister_system() function.
 
-    def __call__(self, pkgs_to_remove, *args, **kwargs):
-        self.pkgs = pkgs_to_remove
+    It just adds a spec for the function on top of all the standard mock functionality.
+    """
 
-        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+    spec = subscription.unregister_system
+
+
+#
+# utils mocks
+#
 
 
 class DownloadPkgMocked(MockFunctionObject):
@@ -427,6 +486,88 @@ class DownloadPkgMocked(MockFunctionObject):
         self.disable_repos = kwargs.get("disable_repos", [])
 
         return super(DownloadPkgMocked, self).__call__(pkg, *args, **kwargs)
+
+
+class PromptUserMocked(MockFunctionObject):
+    spec = utils.prompt_user
+
+    def __init__(self, retries=0, **kwargs):
+        self.retries = retries
+        self.prompts = collections.Counter()
+
+        if "return_value" not in kwargs:
+            kwargs["return_value"] = "test"
+
+        super(PromptUserMocked, self).__init__(**kwargs)
+
+    def __call__(self, question, *args, **kwargs):
+        return_value = super(PromptUserMocked, self).__call__(question, *args, **kwargs)
+        self.prompts[question] += 1
+
+        # Emulate the user not providing a valid value until retries times.
+        if self.prompts[question] <= self.retries:
+            return ""
+
+        return return_value
+
+
+class RunSubprocessMocked(MockFunctionObject):
+    """
+    Mock for the run_subprocess function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check just the cmds passed to the function.
+    """
+
+    spec = utils.run_subprocess
+
+    def __init__(self, return_code=None, return_string=None, **kwargs):
+        self.cmd = ""
+        self.cmds = []
+
+        if "return_value" in kwargs:
+            if return_code is not None or return_string is not None:
+                raise TypeError("You cannot use return_code together or return_string with return_value.")
+        else:
+            return_code = 0 if return_code is None else return_code
+            return_string = "Test output" if return_string is None else return_string
+            kwargs["return_value"] = (return_string, return_code)
+
+        super(RunSubprocessMocked, self).__init__(**kwargs)
+
+    def __call__(self, cmd, *args, **kwargs):
+        self.cmd = cmd
+        self.cmds.append(cmd)
+
+        return super(RunSubprocessMocked, self).__call__(cmd, *args, **kwargs)
+
+
+class RunCmdInPtyMocked(RunSubprocessMocked):
+    """
+    Mock for utils.run_cmd_in_pty.
+
+    It offers the same features as RunSubrocessMocked.
+    """
+
+    spec = utils.run_cmd_in_pty
+
+
+class StoreContentToFileMocked(MockFunctionObject):
+    spec = utils.store_content_to_file
+
+    def __init__(self, **kwargs):
+        self.filename = None
+        self.content = None
+
+        super(StoreContentToFileMocked, self).__init__(**kwargs)
+
+    def __call__(self, filename, content, *args, **kwargs):
+        self.filename = filename
+        self.content = content
+
+        super(StoreContentToFileMocked, self).__call__(filename, content, *args, **kwargs)
+
+        return True
 
 
 def run_subprocess_side_effect(*stubs):
@@ -458,92 +599,12 @@ def run_subprocess_side_effect(*stubs):
     return factory
 
 
-def create_pkg_information(
-    packager=None,
-    vendor=None,
-    name=None,
-    epoch="0",
-    version=None,
-    release=None,
-    arch=None,
-    fingerprint=None,
-    signature=None,
-):
-    pkg_info = PackageInformation(
-        packager,
-        vendor,
-        PackageNevra(name, epoch, version, release, arch),
-        fingerprint,
-        signature,
-    )
-    return pkg_info
-
-
-class TestPkgObj(object):
-    class PkgObjHdr(object):
-        def sprintf(self, *args, **kwargs):
-            return "RSA/SHA256, Sun Feb  7 18:35:40 2016, Key ID 73bde98381b46521"
-
-    hdr = PkgObjHdr()
-
-
-def create_pkg_obj(
-    name,
-    epoch=0,
-    version="",
-    release="",
-    arch="",
-    packager=None,
-    from_repo="",
-    manager="yum",
-    vendor=None,
-):
-    class DumbObj(object):
-        pass
-
-    obj = TestPkgObj()
-    obj.yumdb_info = DumbObj()
-    obj.name = name
-    obj.epoch = obj.e = epoch
-    obj.version = obj.v = version
-    obj.release = obj.r = release
-    obj.evr = version + "-" + release
-    obj.arch = arch
-    obj.packager = packager
-    if vendor:
-        obj.vendor = vendor
-    if manager == "yum":
-        obj.rpmdb = six_mock.Mock()
-        if from_repo:
-            obj.yumdb_info.from_repo = from_repo
-    elif manager == "dnf":
-        if from_repo:
-            obj._from_repo = from_repo
-        else:
-            obj._from_repo = "@@System"
-    return obj
-
-
 def mock_decorator(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         return func(*args, **kwargs)
 
     return wrapped
-
-
-class GetInstalledPkgsWFingerprintsMocked(MockFunction):
-    obj1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
-    obj2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
-    obj3 = create_pkg_information(
-        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
-    )
-
-    def __call__(self, *args, **kwargs):
-        return self.get_packages()
-
-    def get_packages(self):
-        return [self.obj1, self.obj2, self.obj3]
 
 
 #: Used as a sentinel value for assert_action_result() so we only check

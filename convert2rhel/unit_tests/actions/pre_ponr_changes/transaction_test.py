@@ -20,6 +20,7 @@ import six
 from convert2rhel import pkgmanager, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import transaction
+from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.unit_tests.conftest import all_systems
 
 
@@ -44,25 +45,19 @@ def test_validate_package_manager_transaction_dependency_order(validate_package_
     assert expected_dependencies == validate_package_manager_transaction.dependencies
 
 
-class TransactionHandlerMock(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-        self.validate_transaction = False
-
-    def run_transaction(self, validate_transaction):
-        self.called += 1
-        self.validate_transaction = validate_transaction
-
-
 @all_systems
 def test_validate_package_manager_transaction(pretend_os, validate_package_manager_transaction, monkeypatch):
-    transaction_handler_instance = TransactionHandlerMock()
-    monkeypatch.setattr(pkgmanager, "create_transaction_handler", lambda: transaction_handler_instance)
+    transaction_handler_instance = mock.create_autospec(TransactionHandlerBase)
+    monkeypatch.setattr(
+        pkgmanager,
+        "create_transaction_handler",
+        mock.Mock(spec=pkgmanager.create_transaction_handler, return_value=transaction_handler_instance),
+    )
 
     validate_package_manager_transaction.run()
 
-    assert transaction_handler_instance.called == 1
-    assert transaction_handler_instance.validate_transaction
+    assert transaction_handler_instance.run_transaction.call_count == 1
+    assert transaction_handler_instance.run_transaction.call_args == mock.call(validate_transaction=True)
     assert validate_package_manager_transaction.result.level == STATUS_CODE["SUCCESS"]
 
 
@@ -73,7 +68,11 @@ def test_validate_package_manager_transaction_unknown_error(
     # TODO(r0x0d): Update this test once we have better execeptions to change
     # the SystemExit references.
 
-    monkeypatch.setattr(pkgmanager, "create_transaction_handler", mock.Mock(side_effect=SystemExit("Exiting...")))
+    monkeypatch.setattr(
+        pkgmanager,
+        "create_transaction_handler",
+        mock.Mock(spec=pkgmanager.create_transaction_handler, side_effect=SystemExit("Exiting...")),
+    )
 
     validate_package_manager_transaction.run()
 

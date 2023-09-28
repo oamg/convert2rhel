@@ -25,7 +25,7 @@ import six
 from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
-from convert2rhel.unit_tests import is_rpm_based_os
+from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
@@ -80,9 +80,10 @@ class TestGenerateRPMVA:
     def test_generate_rpm_va(self, global_tool_opts, monkeypatch, tmpdir):
         global_tool_opts.no_rpm_va = False
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("rpmva\n", 0)))
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string="rpmva\n"))
         monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
         rpmva_output_file = str(tmpdir / "rpm_va.log")
+
         system_info.generate_rpm_va()
 
         # Check that rpm -Va is executed (default)
@@ -96,7 +97,7 @@ class TestGenerateRPMVA:
     def test_generate_rpm_va_skip(self, global_tool_opts, monkeypatch, tmpdir):
         global_tool_opts.no_rpm_va = True
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
         rpmva_output_file = str(tmpdir / "rpm_va.log")
 
@@ -147,10 +148,10 @@ def test_get_system_version_failed(monkeypatch):
     ],
 )
 def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monkeypatch):
-    run_subprocess_mocked = mock.Mock(return_value=("", 0) if present_on_system else ("", 1))
+    run_subprocess_mocked = RunSubprocessMocked(return_value=("", 0) if present_on_system else ("", 1))
     monkeypatch.setattr(systeminfo, "run_subprocess", value=run_subprocess_mocked)
     assert system_info.is_rpm_installed(pkg_name) == expected_return
-    assert run_subprocess_mocked
+    assert run_subprocess_mocked.called
 
 
 @all_systems
@@ -251,11 +252,11 @@ def test_check_internet_access(side_effect, expected, message, monkeypatch, capl
 def test_get_dbus_status(monkeypatch, version_major, command_output, expected_command, expected_output):
     monkeypatch.setattr(system_info, "version", Version(version_major, 0))
     monkeypatch.setattr(time, "sleep", mock.Mock)
-    run_subprocess_mocked = mock.Mock(return_value=(command_output, 0))
+    run_subprocess_mocked = RunSubprocessMocked(return_string=command_output)
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
 
     assert system_info._is_dbus_running() == expected_output
-    assert run_subprocess_mocked.called_once_with(expected_command)
+    run_subprocess_mocked.assert_called_with(expected_command, print_output=mock.ANY)
 
 
 @pytest.mark.parametrize(
@@ -301,7 +302,7 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
     for state in states:
         side_effects.append(("ActiveState=%s\n" % state, 0))
 
-    run_subprocess_mocked = mock.Mock(side_effect=side_effects)
+    run_subprocess_mocked = RunSubprocessMocked(side_effect=side_effects)
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
 
     assert system_info._is_dbus_running() is expected

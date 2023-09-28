@@ -20,14 +20,9 @@ __metaclass__ = type
 import os
 
 import pytest
-import six
 
 from convert2rhel import actions, systeminfo, unit_tests, utils
 from convert2rhel.actions.system_checks import convert2rhel_latest
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 @pytest.fixture
@@ -43,7 +38,7 @@ def convert2rhel_latest_version_test(monkeypatch, tmpdir, request, global_system
     marker = request.param
     monkeypatch.setattr(convert2rhel_latest, "installed_convert2rhel_version", marker["local_version"])
 
-    run_subprocess_mocked = mock.Mock(spec=utils.run_subprocess, return_value=(marker["package_version"], 0))
+    run_subprocess_mocked = unit_tests.RunSubprocessMocked(return_string=marker["package_version"])
 
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)
     monkeypatch.setattr(global_system_info, "version", systeminfo.Version(marker["pmajor"], 0))
@@ -307,7 +302,9 @@ class TestCheckConvert2rhelLatest:
     def test_c2r_up_to_date_repoquery_error(
         self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
     ):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("Repoquery did not run", 1)))
+        monkeypatch.setattr(
+            utils, "run_subprocess", unit_tests.RunSubprocessMocked(return_value=("Repoquery did not run", 1))
+        )
         expected = set(
             (
                 actions.ActionMessage(

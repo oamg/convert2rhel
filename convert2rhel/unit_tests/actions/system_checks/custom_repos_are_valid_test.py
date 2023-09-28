@@ -28,29 +28,11 @@ def custom_repos_are_valid_action():
     return custom_repos_are_valid.CustomReposAreValid()
 
 
-class CallYumCmdMocked(unit_tests.MockFunction):
-    def __init__(self, ret_code, ret_string):
-        self.called = 0
-        self.return_code = ret_code
-        self.return_string = ret_string
-        self.fail_once = False
-        self.command = None
-
-    def __call__(self, command, *args, **kwargs):
-        if self.fail_once and self.called == 0:
-            self.return_code = 1
-        if self.fail_once and self.called > 0:
-            self.return_code = 0
-        self.called += 1
-        self.command = command
-        return self.return_string, self.return_code
-
-
 def test_custom_repos_are_valid(custom_repos_are_valid_action, monkeypatch, caplog):
     monkeypatch.setattr(
         custom_repos_are_valid,
         "call_yum_cmd",
-        CallYumCmdMocked(ret_code=0, ret_string="Abcdef"),
+        unit_tests.CallYumCmdMocked(return_code=0, return_string="Abcdef"),
     )
     monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
 
@@ -63,7 +45,7 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
     monkeypatch.setattr(
         custom_repos_are_valid,
         "call_yum_cmd",
-        CallYumCmdMocked(ret_code=1, ret_string="YUM/DNF failed"),
+        unit_tests.CallYumCmdMocked(return_code=1, return_string="YUM/DNF failed"),
     )
     monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
 

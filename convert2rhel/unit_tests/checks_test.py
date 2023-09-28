@@ -19,6 +19,7 @@ import pytest
 import six
 
 from convert2rhel import checks
+from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
 
 
@@ -41,7 +42,7 @@ def test_is_initramfs_file_valid(latest_installed_kernel, subprocess_output, exp
         pass
 
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
-    monkeypatch.setattr(checks, "run_subprocess", mock.Mock(return_value=subprocess_output))
+    monkeypatch.setattr(checks, "run_subprocess", RunSubprocessMocked(return_value=subprocess_output))
     result = checks._is_initramfs_file_valid(initramfs_file)
     assert result == expected
 
@@ -69,7 +70,9 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch):
 
     monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
-    monkeypatch.setattr(checks, "run_subprocess", mock.Mock(side_effect=[rpm_last_kernel_output, ("test", 0)]))
+    monkeypatch.setattr(
+        checks, "run_subprocess", RunSubprocessMocked(side_effect=[rpm_last_kernel_output, ("test", 0)])
+    )
 
     checks.check_kernel_boot_files()
     assert "The initramfs and vmlinuz files are valid." in caplog.records[-1].message

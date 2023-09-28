@@ -71,7 +71,10 @@ class TestShowEula:
 
         main.show_eula()
 
-    def test_show_eula_nonexisting_file(self, caplog, monkeypatch):
+    def test_show_eula_nonexisting_file(self, caplog, monkeypatch, tmpdir):
+        # Needed in case convert2rhel is installed on this system
+        monkeypatch.setattr(utils, "DATA_DIR", str(tmpdir))
+
         with pytest.raises(SystemExit, match="EULA file not found"):
             main.show_eula()
 

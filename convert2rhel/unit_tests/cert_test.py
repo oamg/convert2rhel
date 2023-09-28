@@ -184,7 +184,11 @@ class TestPEMCert:
         assert "OSError(13): Permission denied" == caplog.messages[-1]
 
     def test_restore_cert(self, caplog, monkeypatch, system_cert_with_target_path):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("479.pem is not owned by any package", 1)))
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            unit_tests.RunSubprocessMocked(return_string="479.pem is not owned by any package", return_code=1),
+        )
         system_cert_with_target_path.enable()
 
         system_cert_with_target_path.restore()
@@ -257,7 +261,9 @@ class TestPEMCert:
     def test_restore_rpm_package_owns(
         self, caplog, monkeypatch, system_cert_with_target_path, rpm_exit_code, rpm_stdout, expected
     ):
-        monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=(rpm_stdout, rpm_exit_code)))
+        monkeypatch.setattr(
+            utils, "run_subprocess", unit_tests.RunSubprocessMocked(return_string=rpm_stdout, return_code=rpm_exit_code)
+        )
         system_cert_with_target_path.enable()
 
         system_cert_with_target_path.restore()

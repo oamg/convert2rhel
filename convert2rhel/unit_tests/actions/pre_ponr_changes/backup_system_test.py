@@ -19,8 +19,9 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import repo, unit_tests
+from convert2rhel import backup, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
+from convert2rhel.unit_tests import SysExitCallableObject
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -37,32 +38,21 @@ def backup_repository_action():
     return backup_system.BackupRepository()
 
 
-class RestorableFileMock(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-
-    def __call__(self, filepath):
-        self.filepath = filepath
-        return self
-
-    def backup(self):
-        self.called += 1
-
-
-class RestorableFileExceptionMock(RestorableFileMock):
-    def backup(self):
-        raise SystemExit("File not found")
+class RestorableFileBackupMocked(SysExitCallableObject):
+    method_spec = backup.RestorableFile.backup
 
 
 class TestBackupSystem:
     def test_backup_redhat_release_calls(self, backup_redhat_release_action, monkeypatch):
-        monkeypatch.setattr(backup_system, "system_release_file", RestorableFileMock())
-        monkeypatch.setattr(backup_system, "os_release_file", RestorableFileMock())
+        monkeypatch.setattr(
+            backup_system, "system_release_file", mock.create_autospec(backup_system.system_release_file)
+        )
+        monkeypatch.setattr(backup_system, "os_release_file", mock.create_autospec(backup_system.os_release_file))
 
         backup_redhat_release_action.run()
 
-        assert backup_system.system_release_file.called == 1
-        assert backup_system.os_release_file.called == 1
+        assert backup_system.system_release_file.backup.call_count == 1
+        assert backup_system.os_release_file.backup.call_count == 1
 
     def test_backup_repository_calls(self, backup_repository_action, monkeypatch):
         backup_varsdir_mock = mock.Mock()
@@ -77,9 +67,12 @@ class TestBackupSystem:
         backup_varsdir_mock.assert_called_once()
 
     def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
-        monkeypatch.setattr(backup_system, "system_release_file", RestorableFileExceptionMock())
+        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
+        mock_sys_release_file.backup = RestorableFileBackupMocked("File not found")
+        monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
 
         backup_redhat_release_action.run()
+
         unit_tests.assert_actions_result(
             backup_redhat_release_action,
             level="ERROR",
@@ -89,10 +82,15 @@ class TestBackupSystem:
         )
 
     def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
-        monkeypatch.setattr(backup_system, "system_release_file", mock.Mock())
-        monkeypatch.setattr(backup_system, "os_release_file", RestorableFileExceptionMock())
+        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
+        mock_os_release_file = mock.create_autospec(backup_system.os_release_file)
+        mock_os_release_file.backup = RestorableFileBackupMocked("File not found")
+
+        monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
+        monkeypatch.setattr(backup_system, "os_release_file", mock_os_release_file)
 
         backup_redhat_release_action.run()
+
         unit_tests.assert_actions_result(
             backup_redhat_release_action,
             level="ERROR",

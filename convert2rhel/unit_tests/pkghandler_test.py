@@ -40,8 +40,13 @@ from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
     DownloadPkgMocked,
+    FormatPkgInfoMocked,
+    GetInstalledPkgInformationMocked,
+    GetInstalledPkgsByFingerprintMocked,
+    GetInstalledPkgsWDifferentFingerprintMocked,
     RemovePkgsMocked,
     RunSubprocessMocked,
+    StoreContentToFileMocked,
     SysExitCallableObject,
     TestPkgObj,
     create_pkg_information,
@@ -75,82 +80,20 @@ Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
 
-class GetInstalledPkgsWDifferentFingerprintMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.is_only_rhel_kernel_installed = False
-        self.called = 0
+class FakeDnfQuery:
+    def __init__(self, *args, **kwargs):
+        self.instantiation_args = args
+        self.instantiation_kwargs = kwargs
 
-    def __call__(self, *args, **kwargs):
-        self.called += 1
-        if self.is_only_rhel_kernel_installed:
-            return []  # No third-party kernel
-        else:
-            return [
-                create_pkg_information(
-                    name="kernel",
-                    version="3.10.0",
-                    release="1127.19.1.el7",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-                create_pkg_information(
-                    name="kernel-uek",
-                    version="0.1",
-                    release="1",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-                create_pkg_information(
-                    name="kernel-headers",
-                    version="0.1",
-                    release="1",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-                create_pkg_information(
-                    name="kernel-uek-headers",
-                    version="0.1",
-                    release="1",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-                create_pkg_information(
-                    name="kernel-firmware",
-                    version="0.1",
-                    release="1",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-                create_pkg_information(
-                    name="kernel-uek-firmware",
-                    version="0.1",
-                    release="1",
-                    arch="x86_64",
-                    packager="Oracle",
-                ),
-            ]
-
-
-class PrintPkgInfoMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-        self.pkgs = []
-
-    def __call__(self, pkgs):
-        self.called += 1
-        self.pkgs = pkgs
-
-
-class QueryMocked(unit_tests.MockFunction):
-    def __init__(self):
         self.filter_called = 0
         self.installed_called = 0
         self.stop_iteration = False
-        self.pkg_obj = None
 
-    def __call__(self, *args):
         self._setup_pkg()
-        return self
+
+    def _setup_pkg(self):
+        self.pkg_obj = TestPkgObj()
+        self.pkg_obj.name = "installed_pkg"
 
     def __iter__(self):  # pylint: disable=non-iterator-returned
         return self
@@ -161,10 +104,6 @@ class QueryMocked(unit_tests.MockFunction):
             raise StopIteration
         self.stop_iteration = True
         return self.pkg_obj
-
-    def _setup_pkg(self):
-        self.pkg_obj = TestPkgObj()
-        self.pkg_obj.name = "installed_pkg"
 
     def filterm(self, empty):
         # Called internally in DNF when calling fill_sack - ignore, not needed
@@ -183,8 +122,15 @@ class QueryMocked(unit_tests.MockFunction):
         return self
 
 
-class ReturnPackagesMocked(unit_tests.MockFunction):
-    def __call__(self, patterns=None):
+class ReturnPackagesObject(unit_tests.MockFunctionObject):
+    """
+    Code using this needs to pass in spec when they instantiate it.
+    """
+
+    def __call__(self, *args, **kwargs):
+        super(ReturnPackagesObject, self).__call__(*args, **kwargs)
+
+        patterns = kwargs.get("patterns", None)
         if patterns:
             if "non_existing" in patterns:
                 return []
@@ -194,39 +140,32 @@ class ReturnPackagesMocked(unit_tests.MockFunction):
         return [pkg_obj]
 
 
-class DownloadPkgsMocked(unit_tests.MockFunction):
-    def __init__(self, destdir=None):
-        self.called = 0
-        self.to_return = ["/path/to.rpm"]
+class DownloadPkgsMocked(unit_tests.MockFunctionObject):
+    spec = utils.download_pkgs
+
+    def __init__(self, destdir=None, **kwargs):
         self.destdir = destdir
 
-    def __call__(self, pkgs, dest, reposdir=None):
-        self.called += 1
+        self.pkgs = []
+        self.dest = None
+
+        if "return_value" not in kwargs:
+            kwargs["return_value"] = ["/path/to.rpm"]
+
+        super(DownloadPkgsMocked, self).__init__(**kwargs)
+
+    def __call__(self, pkgs, dest, *args, **kwargs):
         self.pkgs = pkgs
         self.dest = dest
-        self.reposdir = reposdir
+        self.reposdir = kwargs.get("reposdir", None)
+
         if self.destdir and not os.path.exists(self.destdir):
             os.mkdir(self.destdir, 0o700)
-        return self.to_return
+
+        return super(DownloadPkgsMocked, self).__call__(pkgs, dest, *args, **kwargs)
 
 
-class StoreContentMocked(unit_tests.MockFunction):
-    def __init__(self):
-        self.called = 0
-        self.filename = None
-        self.content = None
-
-    def __call__(self, filename, content):
-        self.called += 1
-        self.filename = filename
-        self.content = content
-        return True
-
-
-class TransactionSetMocked(unit_tests.MockFunction):
-    def __call__(self):
-        return self
-
+class FakeTransactionSet:
     def dbMatch(self, key="name", value=""):
         db = [
             {
@@ -275,10 +214,12 @@ class TestClearVersionlock:
         assert pkghandler.call_yum_cmd.args == ["clear"]
 
     def test_clear_versionlock_user_says_no(self, monkeypatch):
-        monkeypatch.setattr(utils, "ask_to_continue", SysExitCallableObject(spec=utils.ask_to_continue))
+        monkeypatch.setattr(
+            utils, "ask_to_continue", SysExitCallableObject(msg="User said no", spec=utils.ask_to_continue)
+        )
         monkeypatch.setattr(os.path, "isfile", mock.Mock(return_value=True))
         monkeypatch.setattr(os.path, "getsize", mock.Mock(return_value=1))
-        monkeypatch.setattr(pkghandler, "call_yum_cmd", mock.Mock())
+        monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
 
         with pytest.raises(SystemExit):
             pkghandler.clear_versionlock()
@@ -374,7 +315,7 @@ class TestGetRpmHeader:
         reason="Current test runs only on rpm based systems.",
     )
     def test_get_rpm_header(self, monkeypatch):
-        monkeypatch.setattr(rpm, "TransactionSet", TransactionSetMocked())
+        monkeypatch.setattr(rpm, "TransactionSet", FakeTransactionSet)
         pkg = create_pkg_obj(name="pkg1", version="1", release="2")
 
         hdr = pkghandler.get_rpm_header(pkg)
@@ -387,7 +328,7 @@ class TestGetRpmHeader:
         }
 
     def test_get_rpm_header_failure(self, monkeypatch):
-        monkeypatch.setattr(rpm, "TransactionSet", TransactionSetMocked())
+        monkeypatch.setattr(rpm, "TransactionSet", FakeTransactionSet)
         unknown_pkg = create_pkg_obj(name="unknown", version="1", release="1")
 
         with pytest.raises(SystemExit):
@@ -403,10 +344,14 @@ class TestPreserveOnlyRHELKernel:
         monkeypatch.setattr(pkghandler, "remove_non_rhel_kernels", mock.Mock(return_value=[]))
         monkeypatch.setattr(pkghandler, "install_gpg_keys", mock.Mock())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", mock.Mock(return_value=["kernel"]))
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_by_fingerprint",
+            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
+        )
         monkeypatch.setattr(system_info, "name", "CentOS7")
         monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(utils, "store_content_to_file", mock.Mock())
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
         pkghandler.preserve_only_rhel_kernel()
 
@@ -568,7 +513,7 @@ class TestIsRHELKernelInstalled:
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkgs_by_fingerprint",
-            lambda x, name: ["kernel"],
+            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
         )
 
         assert pkghandler.is_rhel_kernel_installed()
@@ -656,7 +601,7 @@ class TestFixDefaultKernel:
             "get_file_content",
             lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=%s\n" % old_kernel,
         )
-        monkeypatch.setattr(utils, "store_content_to_file", mock.Mock())
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
         pkghandler.fix_default_kernel()
 
@@ -682,7 +627,7 @@ class TestFixDefaultKernel:
             "get_file_content",
             lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=kernel\n",
         )
-        monkeypatch.setattr(utils, "store_content_to_file", mock.Mock())
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
         pkghandler.fix_default_kernel()
 
@@ -753,7 +698,7 @@ class TestRestorablePackageSet:
         global_system_info.version = Version(*rhel_major_version)
         monkeypatch.setattr(pkghandler, "system_info", global_system_info)
 
-        monkeypatch.setattr(utils, "download_pkg", self.fake_download_pkg)
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
         monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
         monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
@@ -776,9 +721,11 @@ class TestRestorablePackageSet:
         monkeypatch.setattr(pkghandler, "system_info", global_system_info)
 
         monkeypatch.setattr(
-            pkghandler, "get_installed_pkg_information", mock.Mock(side_effect=(["sbscription-manager"], [], []))
+            pkghandler,
+            "get_installed_pkg_information",
+            GetInstalledPkgInformationMocked(side_effect=(["subscription-manager"], [], [])),
         )
-        monkeypatch.setattr(utils, "download_pkg", self.fake_download_pkg)
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
 
         yum_cmd = CallYumCmdMocked(return_code=1)
         monkeypatch.setattr(pkghandler, "call_yum_cmd", yum_cmd)
@@ -814,7 +761,7 @@ class TestRestorablePackageSet:
         assert "All packages were already installed" in caplog.records[-1].message
 
     def test_restore(self, package_set, monkeypatch):
-        mock_remove_pkgs = mock.Mock()
+        mock_remove_pkgs = RemovePkgsMocked()
         monkeypatch.setattr(backup, "remove_pkgs", mock_remove_pkgs)
         package_set.enabled = 1
         package_set.installed_pkgs = ["one", "two"]
@@ -822,30 +769,52 @@ class TestRestorablePackageSet:
         package_set.restore()
 
         assert mock_remove_pkgs.call_count == 1
-        assert mock_remove_pkgs.called_with(["one", "two"], backup=False, critical=False)
+        mock_remove_pkgs.assert_called_with(["one", "two"], backup=False, critical=False)
 
-    def test_restore_jsonc_in_upgrade_pkgs(self, package_set):
+    @pytest.mark.parametrize(
+        ("install", "update", "removed"),
+        (
+            (
+                ["subscription-manager", "python-syspurpose", "json-c.x86_64"],
+                ["json-c.i686"],
+                ["subscription-manager", "python-syspurpose", "json-c.x86_64"],
+            ),
+            (
+                ["subscription-manager", "python-syspurpose", "json-c.x86_64"],
+                ["python-syspurpose"],
+                ["subscription-manager", "python-syspurpose", "json-c.x86_64"],
+            ),
+            (
+                ["subscription-manager", "json-c.x86_64"],
+                ["python-syspurpose"],
+                ["subscription-manager", "json-c.x86_64"],
+            ),
+            (
+                ["subscription-manager", "python-syspurpose"],
+                ["json-c.x86_64", "json-c.i686"],
+                ["subscription-manager", "python-syspurpose"],
+            ),
+            (
+                ["subscription-manager", "python3-cloud-what"],
+                ["json-c.x86_64", "python3-syspurpose"],
+                ["subscription-manager", "python3-cloud-what"],
+            ),
+        ),
+    )
+    def test_restore_with_pkgs_in_updates(self, install, update, removed, package_set, monkeypatch):
+        remove_pkgs_mock = RemovePkgsMocked()
+        monkeypatch.setattr(backup, "remove_pkgs", remove_pkgs_mock)
+
         package_set.enabled = 1
-        package_set.installed_pkgs = ["subscription-manager", "python-syspurpose", "json-c"]
-        package_set.pkgs_to_update = ["json-c.x86_64"]
-        remove_pkgs_mock = mock.Mock()
+        package_set.installed_pkgs = install
+        package_set.updated_pkgs = update
 
         package_set.restore()
 
-        assert remove_pkgs_mock.called_with(installed_pkgs=["subscription-manager", "python-syspurpose"])
-
-    def test_restore_syspurpose_in_upgrade_pkgs(self, package_set):
-        package_set.enabled = 1
-        package_set.installed_pkgs = ["subscription-manager", "python-syspurpose", "json-c"]
-        package_set.pkgs_to_update = ["python-syspurpose"]
-        remove_pkgs_mock = mock.Mock()
-
-        package_set.restore()
-
-        assert remove_pkgs_mock.called_with(installed_pkgs=["subscription-manager"])
+        remove_pkgs_mock.assert_called_with(removed, backup=False, critical=False)
 
     def test_restore_not_enabled(self, package_set, monkeypatch):
-        mock_remove_pkgs = mock.Mock()
+        mock_remove_pkgs = RemovePkgsMocked()
         monkeypatch.setattr(backup, "remove_pkgs", mock_remove_pkgs)
 
         package_set.enabled = 1
@@ -864,22 +833,20 @@ class TestDownloadRHSMPkgs:
         download_rpms_directory = tmpdir.join("submgr-downloads")
         monkeypatch.setattr(pkghandler, "SUBMGR_RPMS_DIR", str(download_rpms_directory))
 
-        monkeypatch.setattr(utils, "store_content_to_file", mock.Mock())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(str(download_rpms_directory)))
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(destdir=str(download_rpms_directory)))
 
         pkghandler.download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
 
-        assert utils.store_content_to_file.call_args == mock.call(filename="/path/to.repo", content="content")
-        assert utils.download_pkgs.called == 1
+        assert utils.store_content_to_file.call_args == mock.call("/path/to.repo", "content")
+        assert utils.download_pkgs.call_count == 1
 
     def test_download_rhsm_pkgs_one_package_failed_to_download(self, monkeypatch):
         """
         Test that download_rhsm_pkgs() aborts when one of the subscription-manager packages fails to download.
         """
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentMocked())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked())
-
-        utils.download_pkgs.to_return.append(None)
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
+        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(return_value=["/path/to.rpm", None]))
 
         with pytest.raises(SystemExit):
             pkghandler.download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
@@ -1509,7 +1476,9 @@ def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
 )
 @centos7
 def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch):
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", value=lambda: pkgs)
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=pkgs)
+    )
 
     result = pkghandler.get_system_packages_for_replacement()
     assert expected == result
@@ -1528,7 +1497,11 @@ def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeyp
     ),
 )
 def test_get_installed_pkg_objects_yum(name, version, release, arch, total_pkgs_installed, monkeypatch):
-    monkeypatch.setattr(pkgmanager.rpmsack.RPMDBPackageSack, "returnPackages", ReturnPackagesMocked())
+    monkeypatch.setattr(
+        pkgmanager.rpmsack.RPMDBPackageSack,
+        "returnPackages",
+        ReturnPackagesObject(spec=pkgmanager.rpmsack.RPMDBPackageSack.returnPackages),
+    )
     pkgs = pkghandler.get_installed_pkg_objects(name, version, release, arch)
 
     assert len(pkgs) == total_pkgs_installed
@@ -1549,7 +1522,7 @@ def test_get_installed_pkg_objects_yum(name, version, release, arch, total_pkgs_
     ),
 )
 def test_get_installed_pkg_objects_dnf(name, version, release, arch, total_pkgs_installed, monkeypatch):
-    monkeypatch.setattr(pkgmanager.query, "Query", QueryMocked())
+    monkeypatch.setattr(pkgmanager.query, "Query", FakeDnfQuery)
     pkgs = pkghandler.get_installed_pkg_objects(name, version, release, arch)
 
     assert len(pkgs) == total_pkgs_installed
@@ -1594,7 +1567,9 @@ def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monke
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=package)
+    )
     pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
 
     for pkg in pkgs_by_fingerprint:
@@ -1638,7 +1613,9 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
             signature="test",
         ),
     ]
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: package)
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=package)
+    )
     pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
 
     assert not pkgs_by_fingerprint
@@ -1784,29 +1761,30 @@ C2R gpg-pubkey-0:0.1-1.x86_64&test
     )
 
 
-class GetInstalledPkgObjectsWDiffFingerprintMocked(unit_tests.MockFunction):
-    def __call__(self, fingerprints, name=""):
-        if name and name != "installed_pkg":
-            return []
-        if "rhel_fingerprint" in fingerprints:
-            pkg_obj = create_pkg_information(
-                packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
-            )
-        else:
-            pkg_obj = create_pkg_information(
-                packager="Red Hat",
-                name="installed_pkg",
-                version="0.1",
-                release="1",
-                arch="x86_64",
-            )
-        return [pkg_obj]
+def different_fingerprints_for_packages_to_remove(fingerprints, name=""):
+    if name and name != "installed_pkg":
+        return []
+    if "rhel_fingerprint" in fingerprints:
+        pkg_obj = create_pkg_information(
+            packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
+        )
+    else:
+        pkg_obj = create_pkg_information(
+            packager="Red Hat",
+            name="installed_pkg",
+            version="0.1",
+            release="1",
+            arch="x86_64",
+        )
+    return [pkg_obj]
 
 
-def testget_packages_to_remove(monkeypatch):
+def test_get_packages_to_remove(monkeypatch):
     monkeypatch.setattr(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgObjectsWDiffFingerprintMocked()
+        pkghandler,
+        "get_installed_pkgs_w_different_fingerprint",
+        GetInstalledPkgsWDifferentFingerprintMocked(side_effect=different_fingerprints_for_packages_to_remove),
     )
     original_func = pkghandler.get_packages_to_remove.__wrapped__
     monkeypatch.setattr(pkghandler, "get_packages_to_remove", mock_decorator(original_func))
@@ -1818,7 +1796,7 @@ def testget_packages_to_remove(monkeypatch):
 
 def test_remove_pkgs_with_confirm(monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
-    monkeypatch.setattr(pkghandler, "format_pkg_info", mock.Mock())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
 
     pkghandler.remove_pkgs_unless_from_redhat(
@@ -1916,23 +1894,27 @@ def test_get_pkg_nevra(pkgmanager_name, package, include_zero_epoch, expected, m
 )
 def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs, monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
-    monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(system_info, "fingerprints_orig_os", fingerprint_orig_os)
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", unit_tests.GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+    )
 
     pkgs = pkghandler.get_third_party_pkgs()
 
-    assert pkghandler.format_pkg_info.called == expected_count
+    assert pkghandler.format_pkg_info.call_count == expected_count
     assert len(pkgs) == expected_pkgs
 
 
 def test_list_non_red_hat_pkgs_left(monkeypatch):
-    monkeypatch.setattr(pkghandler, "format_pkg_info", PrintPkgInfoMocked())
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", unit_tests.GetInstalledPkgsWFingerprintsMocked())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+    )
     pkghandler.list_non_red_hat_pkgs_left()
 
-    assert len(pkghandler.format_pkg_info.pkgs) == 1
-    assert pkghandler.format_pkg_info.pkgs[0].nevra.name == "pkg2"
+    assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
+    assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"
 
 
 @pytest.mark.parametrize(
@@ -1956,11 +1938,17 @@ def test_list_non_red_hat_pkgs_left(monkeypatch):
 def test_install_rhel_kernel(subprocess_output, is_only_rhel_kernel, expected, pretend_os, monkeypatch):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
     monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-    monkeypatch.setattr(
-        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
-    )
 
-    pkghandler.get_installed_pkgs_w_different_fingerprint.is_only_rhel_kernel_installed = is_only_rhel_kernel
+    if is_only_rhel_kernel:
+        pkg_selection = "empty"
+    else:
+        pkg_selection = "kernels"
+
+    monkeypatch.setattr(
+        pkghandler,
+        "get_installed_pkgs_w_different_fingerprint",
+        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
+    )
 
     update_kernel = pkghandler.install_rhel_kernel()
 
@@ -1978,19 +1966,23 @@ def test_install_rhel_kernel(subprocess_output, is_only_rhel_kernel, expected, p
 def test_install_rhel_kernel_already_installed_regexp(subprocess_output, pretend_os, monkeypatch):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+        pkghandler,
+        "get_installed_pkgs_w_different_fingerprint",
+        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
     )
 
     pkghandler.install_rhel_kernel()
 
-    assert pkghandler.get_installed_pkgs_w_different_fingerprint.called == 1
+    assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
 
 
 def test_remove_non_rhel_kernels(monkeypatch):
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+        pkghandler,
+        "get_installed_pkgs_w_different_fingerprint",
+        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
     )
-    monkeypatch.setattr(pkghandler, "format_pkg_info", mock.Mock())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
 
     removed_pkgs = pkghandler.remove_non_rhel_kernels()
@@ -2008,9 +2000,11 @@ def test_remove_non_rhel_kernels(monkeypatch):
 
 def test_install_additional_rhel_kernel_pkgs(monkeypatch):
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkgs_w_different_fingerprint", GetInstalledPkgsWDifferentFingerprintMocked()
+        pkghandler,
+        "get_installed_pkgs_w_different_fingerprint",
+        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
     )
-    monkeypatch.setattr(pkghandler, "format_pkg_info", mock.Mock())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
     monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
 

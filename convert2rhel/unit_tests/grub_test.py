@@ -24,7 +24,7 @@ import pytest
 import six
 
 from convert2rhel import grub, utils
-from convert2rhel.unit_tests import EFIBootInfoMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests import EFIBootInfoMocked, RunSubprocessMocked, run_subprocess_side_effect
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -56,13 +56,13 @@ BLKID_NUMBER_OUTPUT = '/dev/sda1: PART_ENTRY_NUMBER="1"'
     ),
 )
 def test_is_secure_boot(monkeypatch, expected_res, is_efi, subproc):
-    def mocked_subproc(dummyCMD, print_output=False):
+    def subproc_output(*args, **kwargs):
         if subproc is None:
             raise OSError("dummy error msg")
         return subproc
 
     monkeypatch.setattr("convert2rhel.grub.is_efi", lambda: is_efi)
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mocked_subproc)
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(side_effect=subproc_output))
     res = grub.is_secure_boot()
     assert res == expected_res
 
@@ -91,7 +91,7 @@ def test_canonical_path_to_efi_format(canonical_path, efi_path):
     ),
 )
 def test__get_partition(monkeypatch, caplog, expected_res, directory, exception, subproc):
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
 
     if exception:
         with pytest.raises(exception):
@@ -113,7 +113,7 @@ def test__get_partition(monkeypatch, caplog, expected_res, directory, exception,
     ),
 )
 def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, subproc_called, subproc):
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
 
     if exception:
         # Device not passed to the _get_blk_device function, or
@@ -139,7 +139,7 @@ def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, s
     ),
 )
 def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subproc_called, subproc):
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
 
     if exc:
         # The lsblk call returns non-0 exit code
@@ -433,7 +433,7 @@ BootOrder: 0004,0002,0000,0003
 def test_efibootinfo(
     monkeypatch, is_efi, subproc_called, subproc, total_entries, current_bootnum, boot_order, exception
 ):
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
     monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
 
     if exception:
@@ -483,7 +483,7 @@ def test__add_rhel_boot_entry(efi_file_exists, exc, exc_msg, rhel_entry_exists, 
     monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
     monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_file_exists))
     monkeypatch.setattr("convert2rhel.grub._is_rhel_in_boot_entries", mock.Mock(return_value=rhel_entry_exists))
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
     monkeypatch.setattr("convert2rhel.grub.EFIBootInfo", EFIBootInfoMocked())
 
     if exc:
@@ -512,7 +512,7 @@ def test__remove_orig_boot_entry(
     orig_removed, curr_boot_label, pxe_orig_efi_bin, efi_bin_exists, subproc, log_msg, caplog, monkeypatch
 ):
     monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_bin_exists))
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", mock.Mock(return_value=subproc))
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
     bootinfo_orig = EFIBootInfoMocked()
     bootinfo_new = EFIBootInfoMocked()
 
@@ -567,8 +567,7 @@ def test_update_grub_after_conversion(
     monkeypatch.setattr(
         "convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major"])(releasever_major)
     )
-    run_subprocess_mocked = mock.Mock(
-        spec=utils.run_subprocess,
+    run_subprocess_mocked = RunSubprocessMocked(
         side_effect=run_subprocess_side_effect(
             (
                 (
