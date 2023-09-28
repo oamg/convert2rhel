@@ -778,7 +778,7 @@ def format_action_status_message(status_code, action_id, id, result):
     """
     level_name = _STATUS_NAME_FROM_CODE[status_code]
     template = "({LEVEL}) {ACTION_ID}::{ID} -"
-    default_message = "[No further information given]"
+    default_message = "N/A"
 
     # Success results doesn't need to have id, title or anything else. Instead,
     # we can output a simple message with the addition of the `No further

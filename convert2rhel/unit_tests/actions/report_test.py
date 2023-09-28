@@ -155,7 +155,7 @@ def test_summary_as_json(results, expected, tmpdir):
             True,
             [
                 "(WARNING) PreSubscription::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on",
-                "(SUCCESS) PreSubscription::SUCCESS - [No further information given]",
+                "(SUCCESS) PreSubscription::SUCCESS - N/A",
             ],
         ),
         (
@@ -197,7 +197,7 @@ def test_summary_as_json(results, expected, tmpdir):
             },
             True,
             [
-                "(SUCCESS) PreSubscription::SUCCESS - [No further information given]",
+                "(SUCCESS) PreSubscription::SUCCESS - N/A",
                 "(WARNING) PreSubscription2::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on",
                 "(SKIP) PreSubscription2::SKIPPED - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediation: move on",
             ],
@@ -710,7 +710,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                 r"\(ERROR\) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediation: move on",
                 r"\(OVERRIDABLE\) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action override\n     Diagnosis: User override\n     Remediation: move on",
                 r"\(SKIP\) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediation: move on",
-                r"\(SUCCESS\) PreSubscription::SUCCESS - \[No further information given\]",
+                r"\(SUCCESS\) PreSubscription::SUCCESS - N/A",
             ],
         ),
     ),
@@ -947,7 +947,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                 "(WARNING) SkipAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on",
                 "(WARNING) OverridableAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on",
                 "(WARNING) ErrorAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on",
-                "(SUCCESS) PreSubscription::SUCCESS - [No further information given]",
+                "(SUCCESS) PreSubscription::SUCCESS - N/A",
             ],
         ),
     ),
@@ -1092,9 +1092,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     },
                 )
             },
-            "{begin}(SUCCESS) SuccessfulAction::SUCCESS - [No further information given]{end}".format(
-                begin=bcolors.OKGREEN, end=bcolors.ENDC
-            ),
+            "{begin}(SUCCESS) SuccessfulAction::SUCCESS - N/A{end}".format(begin=bcolors.OKGREEN, end=bcolors.ENDC),
             "{begin}(WARNING) SuccessfulAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediation: move on{end}".format(
                 begin=bcolors.WARNING, end=bcolors.ENDC
             ),

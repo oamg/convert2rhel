@@ -168,7 +168,7 @@ def summary(results, include_all_reports=False, with_colors=True):
 
         In case of `message` being empty (as it is optional for some cases), a
         default message will be used::
-            * (ERROR) SubscribeSystem.ERROR: [No further information given]
+            * (ERROR) SubscribeSystem.ERROR: N/A
 
         In case of all actions executed without warnings or errors, the
         following message is used::
