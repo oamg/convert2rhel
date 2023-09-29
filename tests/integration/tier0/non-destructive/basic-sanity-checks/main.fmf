@@ -11,7 +11,7 @@ description: |
 tier: 0
 
 tag+:
-    - sanity
+    - basic-sanity-checks
 
 /root_privileges:
     summary+: |
@@ -20,6 +20,7 @@ tag+:
         Verify that convert2rhel enforces root privileges
     tag+:
         - root-privileges
+        - sanity
     test: |
       pytest -svv -m test_root_privileges
 
@@ -43,6 +44,7 @@ tag+:
         Exit on first prompt passing 'no'.
     tag+:
         - smoke
+        - sanity
     test: |
       pytest -svv -m test_smoke
 
@@ -54,6 +56,7 @@ tag+:
         Verify that the log file is created at the expected location.
     tag+:
         - log-file
+        - sanity
     test: |
       pytest -svv -m test_log_file_exists
 
@@ -68,6 +71,7 @@ tag+:
             Verify that running the latest or newer than latest version does not inhibit the conversion.
         tag+:
             - version-latest-or-newer
+            - sanity
         test: |
           pytest -svv -m test_version_latest_or_newer
 

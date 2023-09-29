@@ -8,6 +8,7 @@ tier: 0
 
 tag+:
     - rollback-handling
+    - sanity
 
 /rhsm_cleanup:
     summary+: |

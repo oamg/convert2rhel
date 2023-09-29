@@ -23,3 +23,8 @@ labels:
     labeled:
       pr:
         body: This PR does not require integration tests to be run.
+
+  - name: tests-run-sanity
+    labeled:
+      pr:
+        body: /packit test --labels sanity

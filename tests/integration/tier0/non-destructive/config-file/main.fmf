@@ -41,6 +41,7 @@ tag+:
         to those provided in the config file.
     tag+:
         - config-cli-priority
+        - sanity
     test: |
         pytest -svv -m test_config_cli_priority
 
@@ -52,6 +53,7 @@ tag+:
         is preferred to the config file.
     tag+:
         - config-password-file-priority
+        - sanity
     test: |
         pytest -svv -m test_config_password_file_priority
 

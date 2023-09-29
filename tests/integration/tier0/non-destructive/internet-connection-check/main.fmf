@@ -31,5 +31,6 @@ tag+:
         therefore the connection seems to be unavailable.
     tag+:
         - unavailable-connection
+        - sanity
     test: |
         pytest -svv -m test_unavailable_connection

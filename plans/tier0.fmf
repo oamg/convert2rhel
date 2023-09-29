@@ -4,34 +4,86 @@ description+: |
     Critical set of tests/plans to be run for each upstream PR
     before merge commit to the main branch.
 
+/sanity:
+    /non-destructive:
+        discover+:
+            filter+:
+                ['tier: 0', 'tag: non-destructive', 'tag: sanity']
+
+    /destructive:
+        /conversion_methods:
+            /activation_key:
+                adjust+:
+                    - environment+:
+                        CONVERT2RHEL_DISABLE_TELEMETRY: 1
+                discover+:
+                    filter: tag:checks-after-conversion
+                prepare+:
+                    - name: main conversion preparation
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/method/activation_key.py
+                    - name: reboot after conversion
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/reboot/main.yml
+
+            /rhsm:
+                discover+:
+                    filter: tag:checks-after-conversion
+                prepare+:
+                    - name: main conversion preparation
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/method/rhsm.py
+                    - name: reboot after conversion
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/reboot/main.yml
+
+            /pre_registered_system:
+                adjust+:
+                  - enabled: false
+                    when: distro == oracle
+                    because: There is no subscription-manager package in Oracle Linux repositories
+                  - environment+:
+                      C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                discover+:
+                    filter: tag:checks-after-conversion
+                prepare+:
+                    - name: Convert pre-registered system
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/method/pre_registered.py
+                    - name: reboot after conversion
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/reboot/main.yml
+
+            /satellite:
+                discover+:
+                    filter: tag:checks-after-conversion
+                prepare+:
+                    - name: main conversion preparation
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/method/satellite.py
+                    - name: reboot after conversion
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/reboot/main.yml
+
+
 /non-destructive:
     discover+:
         filter+:
-            ['tier: 0', 'tag: non-destructive']
+            ['tier: 0', 'tag: non-destructive', 'tag: -sanity']
 
 /destructive:
     /conversion_methods:
-        /activation_key:
-            adjust+:
-                - environment+:
-                    CONVERT2RHEL_DISABLE_TELEMETRY: 1
+        /custom_repos:
             discover+:
-                filter: tag:checks-after-conversion | tag:CONVERT2RHEL_DISABLE_TELEMETRY
+                # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                filter: tag:checks-after-conversion & tag:-rhel-subman
             prepare+:
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/activation_key.py
-                - name: reboot after conversion
+                - name: add custom repos
                   how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /rhsm:
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
+                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
                 - name: main conversion preparation
                   how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/rhsm.py
+                  script: pytest -svv tests/integration/*/destructive/method/custom_repos.py
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -51,50 +103,6 @@ description+: |
                 - name: reboot after conversion
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /satellite:
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/satellite.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /custom_repos:
-            discover+:
-                # Exclude the rhel_subman check, we don't use RHSM for the conversion
-                filter: tag:checks-after-conversion & tag:-rhel-subman
-            prepare+:
-                - name: add custom repos
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/custom_repos.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /pre_registered_system:
-            adjust+:
-              - enabled: false
-                when: distro == oracle
-                because: There is no subscription-manager package in Oracle Linux repositories
-              - environment+:
-                  C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: Convert pre-registered system
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/pre_registered.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
 
 
     /single_yum_transaction:

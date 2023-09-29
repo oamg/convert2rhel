@@ -81,6 +81,15 @@ jobs:
     - centos
     - destructive
 
+- &tests-sanity-centos
+  <<: *tests-tier0-non-destructive-centos
+  identifier: "sanity-centos"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - centos
+    - sanity
+
 - &tests-tier0-non-destructive-oraclelinux-7
   job: tests
   # Run tests on-demand
@@ -121,6 +130,15 @@ jobs:
     - tier0
     - oracle-7
     - destructive
+
+- &tests-sanity-oraclelinux-7
+  <<: *tests-tier0-non-destructive-oraclelinux-7
+  identifier: "sanity-ol7"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - oracle-7
+    - sanity
 
 - &tests-tier0-non-destructive-oraclelinux-8
   job: tests
@@ -163,6 +181,15 @@ jobs:
     - oracle-8
     - destructive
 
+- &tests-sanity-oraclelinux-8
+  <<: *tests-tier0-non-destructive-oraclelinux-8
+  identifier: "sanity-ol8"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - oracle-8
+    - sanity
+
 - &tests-tier0-non-destructive-almalinux-86
   job: tests
   # Run tests on-demand
@@ -203,6 +230,15 @@ jobs:
     - tier0
     - alma-86
     - destructive
+
+- &tests-sanity-almalinux-86
+  <<: *tests-tier0-non-destructive-almalinux-86
+  identifier: "sanity-al86"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - alma-86
+    - sanity
 
 - &tests-tier0-non-destructive-almalinux-8
   job: tests
@@ -245,6 +281,15 @@ jobs:
     - alma-8
     - destructive
 
+- &tests-sanity-almalinux-8
+  <<: *tests-tier0-non-destructive-almalinux-8
+  identifier: "sanity-al8"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - alma-8
+    - sanity
+
 - &tests-tier0-non-destructive-rockylinux-86
   job: tests
   # Run tests on-demand
@@ -286,6 +331,15 @@ jobs:
     - rocky-86
     - destructive
 
+- &tests-sanity-rockylinux-86
+  <<: *tests-tier0-non-destructive-rockylinux-86
+  identifier: "sanity-rl86"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - rocky-86
+    - sanity
+
 - &tests-tier0-non-destructive-rockylinux-8
   job: tests
   # Run tests on-demand
@@ -326,6 +380,15 @@ jobs:
     - tier0
     - rocky-8
     - destructive
+
+- &tests-sanity-rockylinux-8
+  <<: *tests-tier0-non-destructive-rockylinux-8
+  identifier: "sanity-rl8"
+  tmt_plan: "tier0/sanity"
+  labels:
+    - tier0
+    - rocky-8
+    - sanity
 
 ### Definitions of the tier1 tests
 - &tests-tier1-manual-centos
