@@ -36,7 +36,6 @@ class _AnalyzeExit(Exception):
 
 
 class ConversionPhase:
-    INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return
     PRE_PONR_CHANGES = 2
@@ -74,8 +73,6 @@ def main():
     the application lock, to do the conversion process.
     """
 
-    process_phase = ConversionPhase.INIT
-
     # Make sure we're being run by root
     utils.require_root()
 
@@ -87,7 +84,7 @@ def main():
 
     try:
         with applock.ApplicationLock("convert2rhel"):
-            return main_locked(process_phase)
+            return main_locked()
     except applock.ApplicationLockedError:
         # We have not rotated the log files at this point because main.initialize_logger()
         # has not yet been called.  So we use sys.stderr.write() instead of loggerinst.error()
@@ -96,12 +93,12 @@ def main():
         return 1
 
 
-def main_locked(process_phase):
+def main_locked():
     """Perform all steps for the entire conversion process."""
 
     pre_conversion_results = None
+    process_phase = ConversionPhase.POST_CLI
     try:
-        process_phase = ConversionPhase.POST_CLI
         perform_boilerplate()
 
         gather_system_info()
@@ -184,9 +181,7 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
     no_changes_msg = "No changes were made to the system."
     utils.log_traceback(toolopts.tool_opts.debug)
 
-    if process_phase == ConversionPhase.INIT:
-        print(no_changes_msg)
-    elif process_phase == ConversionPhase.POST_CLI:
+    if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)
     elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
         rollback_changes()
@@ -314,15 +309,6 @@ def post_ponr_conversion():
 #
 # Cleanup and exit
 #
-
-
-def is_help_msg_exit(process_phase, err):
-    """After printing the help message, optparse within the toolopts.CLI()
-    call terminates the process with sys.exit(0).
-    """
-    if process_phase == ConversionPhase.INIT and isinstance(err, SystemExit) and err.args[0] == 0:
-        return True
-    return False
 
 
 def rollback_changes():
