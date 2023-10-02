@@ -50,7 +50,6 @@ class BackupRedhatRelease(actions.Action):
                 remediation=e.remediation,
                 variables=e.variables,
             )
-        return
 
 
 class BackupRepository(actions.Action):
