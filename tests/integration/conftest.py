@@ -162,7 +162,7 @@ def convert2rhel(shell):
                     elif action["result"].id == "UNEXPECTED_ERROR":
                         message.extend(
                             (
-                                "== Action Framework caught SystemExit and returned an UNEXPECTED_ERROR:",
+                                "== Action Framework caught an unhandled exception from an Action and returned an UNEXPECTED_ERROR:",
                                 "%s: %s" % (action.id, action["result"]),
                             )
                         )
