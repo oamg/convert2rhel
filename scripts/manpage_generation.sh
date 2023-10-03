@@ -1,6 +1,7 @@
 #!/bin/bash
-PYTHONPATH="/usr/lib/python3.10/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'import sys;print(sys.path)'
-PYTHONPATH="/usr/lib/python3.10/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+PPYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'import sys;print(sys.path)'
+PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+echo "HERE WE ARE"
 
 # Directory to store the generated manpages
 MANPAGE_DIR="man"
