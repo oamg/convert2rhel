@@ -1,4 +1,5 @@
 #!/bin/bash
+PYTHONPATH="$PYTHONPATH:/usr/lib/python3/dist-packages/" bash scripts/manpage_generation.sh
 
 # Directory to store the generated manpages
 MANPAGE_DIR="man"
