@@ -1,5 +1,5 @@
 #!/bin/bash
-PYTHONPATH="$PYTHONPATH:/usr/lib/python3/dist-packages/" bash scripts/manpage_generation.sh
+/usr/bin/python3.10 -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
 
 # Directory to store the generated manpages
 MANPAGE_DIR="man"
