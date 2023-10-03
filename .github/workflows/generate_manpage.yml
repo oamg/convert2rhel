@@ -20,8 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install argparse-manpage six pexpect rpm
-
+          pip install argparse-manpage six pexpect
       - name: Install python3-rpm and python3-dnf package with apt-get
         run: |
           sudo apt-get update
