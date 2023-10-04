@@ -6,8 +6,8 @@ MANPAGE_DIR="man"
 VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
 
 # Generate a file with convert2rhel synopsis for argparse-manpage
-PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'import sys;print(sys.path)'
-PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH" /usr/bin/python3.10 -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+/usr/bin/python3.10 -c 'import sys;print(sys.path)'
+/usr/bin/python3.10 -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
 
 /usr/bin/python3.10 -m pip install argparse-manpage six pexpect
 /usr/bin/python3.10 -m pip show --files argparse-manpage
