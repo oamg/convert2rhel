@@ -302,7 +302,7 @@ SomethingElse=yes
                 "We've detected that firewalld unit is running and that causes iptables and nftables "
                 "failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure."
             ),
-            remediation=(
+            remediations=(
                 "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf "
                 "to no prior to running convert2rhel:\n"
                 " sed -i -- 's/^CleanupModulesOnExit.*/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload\n"

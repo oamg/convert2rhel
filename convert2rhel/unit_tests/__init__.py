@@ -290,12 +290,12 @@ class CriticalErrorCallableObject(MockFunctionObject):
     Base class for any mock function which raises the CriticalError Exception.
     """
 
-    def __init__(self, id_, title, description=None, diagnosis=None, remediation=None, variables=None, **kwargs):
+    def __init__(self, id_, title, description=None, diagnosis=None, remediations=None, variables=None, **kwargs):
         self.id = id_
         self.title = title
         self.description = description
         self.diagnosis = diagnosis
-        self.remediation = remediation
+        self.remediations = remediations
         self.variables = {} if variables is None else variables
 
         super(CriticalErrorCallableObject, self).__init__(**kwargs)
@@ -307,7 +307,7 @@ class CriticalErrorCallableObject(MockFunctionObject):
             self.title,
             description=self.description,
             diagnosis=self.diagnosis,
-            remediation=self.remediation,
+            remediations=self.remediations,
             variables=self.variables,
         )
 
@@ -734,7 +734,7 @@ def assert_actions_result(
     title=_NO_USER_VALUE,
     description=_NO_USER_VALUE,
     diagnosis=_NO_USER_VALUE,
-    remediation=_NO_USER_VALUE,
+    remediations=_NO_USER_VALUE,
     variables=_NO_USER_VALUE,
 ):
     """Helper function to assert result set by Actions Framework."""
@@ -754,8 +754,8 @@ def assert_actions_result(
     if diagnosis and diagnosis != _NO_USER_VALUE:
         assert diagnosis in instance.result.diagnosis
 
-    if remediation and remediation != _NO_USER_VALUE:
-        assert remediation in instance.result.remediation
+    if remediations and remediations != _NO_USER_VALUE:
+        assert remediations in instance.result.remediations
 
     if variables and variables != _NO_USER_VALUE:
         assert variables in instance.result.variables

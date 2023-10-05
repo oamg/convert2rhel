@@ -52,7 +52,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
                 title="Skipping the package updates check",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
-                remediation=None,
+                remediations=None,
                 variables={},
             ),
         )
@@ -130,7 +130,7 @@ def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, pack
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
-                remediation="Run yum update to update all the packages on the system.",
+                remediations="Run yum update to update all the packages on the system.",
             ),
         )
     )
@@ -158,7 +158,7 @@ def test_check_package_updates_with_repoerror(pretend_os, monkeypatch, caplog, p
         title="Package up to date check fail",
         description="Please refer to the diagnosis for further information",
         diagnosis=diagnosis,
-        remediation="If you wish to ignore this message, set the environment variable "
+        remediations="If you wish to ignore this message, set the environment variable "
         "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
         variables={},
     )
@@ -187,7 +187,7 @@ def test_check_package_updates_with_repoerror_skip(pretend_os, monkeypatch, capl
                 title="Package up to date check fail",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
-                remediation=None,
+                remediations=None,
                 variables={},
             ),
             actions.ActionMessage(
@@ -200,7 +200,7 @@ def test_check_package_updates_with_repoerror_skip(pretend_os, monkeypatch, capl
                     "Beware, this could leave your system in a broken state."
                 ),
                 diagnosis=None,
-                remediation=None,
+                remediations=None,
                 variables={},
             ),
         )
@@ -225,7 +225,7 @@ def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch,
                 title="Skipping the package updates check",
                 description=description,
                 diagnosis=None,
-                remediation=None,
+                remediations=None,
             ),
         )
     )

@@ -23,5 +23,5 @@ class BTest(actions.Action):
             title="failure title",
             description="failure description",
             diagnosis="failure diagnosis",
-            remediation="failure remediation",
+            remediations="failure remediations",
         )

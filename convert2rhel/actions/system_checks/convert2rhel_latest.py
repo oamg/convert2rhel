@@ -220,7 +220,7 @@ class Convert2rhelLatest(actions.Action):
                         title="Deprecated environment variable",
                         description="A deprecated environment variable has been detected",
                         diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
-                        remediation="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
+                        remediations="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
                     )
 
                 diagnosis = (
@@ -266,7 +266,7 @@ class Convert2rhelLatest(actions.Action):
                             "Only the latest version is supported for conversion."
                             % (formatted_convert2rhel_version, formatted_available_version)
                         ),
-                        remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+                        remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
                     )
                     return
 

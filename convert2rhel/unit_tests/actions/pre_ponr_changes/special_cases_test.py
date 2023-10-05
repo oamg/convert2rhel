@@ -144,7 +144,7 @@ def test_remove_iwlax2xx_firmware_message(
                 title="Package removal failed",
                 description="Unable to remove the package iwlax2xx-firmware.",
                 diagnosis=None,
-                remediation=None,
+                remediations=None,
             ),
         )
     )

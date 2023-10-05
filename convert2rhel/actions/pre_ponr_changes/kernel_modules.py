@@ -273,7 +273,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                     diagnosis="The following loaded kernel modules are not available in RHEL:\n{0}\n".format(
                         "\n".join(unsupported_kmods)
                     ),
-                    remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
+                    remediations="Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
                     "message persists, you can prevent the modules from loading by following {0} and rerun convert2rhel.\n"
                     "Keeping them loaded could cause the system to malfunction after the conversion as they might not work "
                     "properly with the RHEL kernel.\n"
@@ -298,7 +298,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 title="No RHEL kernel modules were found",
                 description="This check was unable to find any kernel modules in the packages in the enabled yum repositories.",
                 diagnosis=str(e),
-                remediation="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
+                remediations="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
             )
         except ValueError as e:
             self.set_result(

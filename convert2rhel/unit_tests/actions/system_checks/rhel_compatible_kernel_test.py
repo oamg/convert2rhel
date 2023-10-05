@@ -83,7 +83,7 @@ def test_check_rhel_compatible_kernel_failure(
         title="Incompatible booted kernel version",
         description="Please refer to the diagnosis for further information",
         diagnosis="The booted kernel version is incompatible with the standard RHEL kernel",
-        remediation=(
+        remediations=(
             "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
             " by executing the following steps:\n\n"
             "1. Ensure that the {0} {1} base repository is enabled\n"

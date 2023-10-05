@@ -106,7 +106,7 @@ def test_mounted_are_readonly_mnt(readonly_mounts_mnt, monkeypatch):
             "Mount at a subdirectory of /mnt to have /mnt writeable."
         ),
         diagnosis="",
-        remediation="",
+        remediations="",
     )
 
 
@@ -135,5 +135,5 @@ def test_mounted_are_readonly_sys(readonly_mounts_sys, monkeypatch):
             "Ensure mount point is writable before executing convert2rhel."
         ),
         diagnosis=None,
-        remediation=None,
+        remediations=None,
     )

@@ -111,7 +111,7 @@ def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance,
                 description="We have identified installed packages that match a pre-defined list of packages that are"
                 " to be removed during the conversion",
                 diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
-                remediation=None,
+                remediations=None,
             ),
         )
     )
@@ -141,7 +141,7 @@ def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packag
                 title="Excluded packages not removed",
                 description="Excluded packages which could not be removed",
                 diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
-                remediation=None,
+                remediations=None,
             ),
             actions.ActionMessage(
                 level="INFO",
@@ -150,7 +150,7 @@ def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packag
                 description="We have identified installed packages that match a pre-defined list of packages that are"
                 " to be removed during the conversion",
                 diagnosis="The following packages will be removed during the conversion: kernel-core",
-                remediation=None,
+                remediations=None,
             ),
         )
     )
@@ -209,7 +209,7 @@ def test_remove_repository_files_packages_all_removed(remove_repository_files_pa
                 description="We have identified installed packages that match a pre-defined list of packages that are"
                 " to be removed during the conversion",
                 diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
-                remediation=None,
+                remediations=None,
             ),
         )
     )
@@ -242,7 +242,7 @@ def test_remove_repository_files_packages_not_removed(
                 title="Repository file packages not removed",
                 description="Repository file packages which could not be removed",
                 diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
-                remediation=None,
+                remediations=None,
             ),
             actions.ActionMessage(
                 level="INFO",
@@ -251,7 +251,7 @@ def test_remove_repository_files_packages_not_removed(
                 description="We have identified installed packages that match a pre-defined list of packages that are"
                 " to be removed during the conversion",
                 diagnosis="The following packages will be removed during the conversion: kernel-core",
-                remediation=None,
+                remediations=None,
             ),
         )
     )

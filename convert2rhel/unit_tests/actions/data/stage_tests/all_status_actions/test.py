@@ -15,7 +15,7 @@ class ErrorTest(actions.Action):
             title="Failed on an error",
             description="error",
             diagnosis="error",
-            remediation="error",
+            remediations="error",
         )
 
 
@@ -31,7 +31,7 @@ class OverridableTest(actions.Action):
             title="Check failed but user may override",
             description="overridable",
             diagnosis="overridable",
-            remediation="overridable",
+            remediations="overridable",
         )
 
 
@@ -66,7 +66,7 @@ class WarningTest(actions.Action):
             title="User disabled check",
             description="warning",
             diagnosis="warning",
-            remediation="warning",
+            remediations="warning",
         )
 
 

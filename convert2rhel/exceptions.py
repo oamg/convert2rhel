@@ -38,24 +38,24 @@ class CriticalError(Exception):
         something about it. So when we have a chance to address the technical debt, each place deep
         within the call stack should raise its own, unique exception which the callers can choose to
         catch or allow to bubble up to `Action.run`.  `Action.run` will catch any of the exceptions
-        that have bubbled up and can decide what id, description, diagnosis, remediation, etc to emit.
+        that have bubbled up and can decide what id, description, diagnosis, remediations, etc to emit.
     """
 
-    def __init__(self, id_=None, title=None, description=None, diagnosis=None, remediation=None, variables=None):
+    def __init__(self, id_=None, title=None, description=None, diagnosis=None, remediations=None, variables=None):
         self.id = id_ or "MISSING_ID"
         self.title = title or "Missing title"
         self.description = description or "Missing description"
         self.diagnosis = diagnosis or ""
-        self.remediation = remediation or ""
+        self.remediations = remediations or ""
         self.variables = variables or {}
 
     def __repr__(self):
-        return "%s(%r, %r, description=%r, diagnosis=%r, remediation=%r, variables=%r)" % (
+        return "%s(%r, %r, description=%r, diagnosis=%r, remediations=%r, variables=%r)" % (
             self.__class__.__name__,
             self.id,
             self.title,
             self.description,
             self.diagnosis,
-            self.remediation,
+            self.remediations,
             self.variables,
         )

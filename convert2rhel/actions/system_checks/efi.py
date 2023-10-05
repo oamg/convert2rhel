@@ -52,7 +52,7 @@ class Efi(actions.Action):
                 title="EFI boot manager not found",
                 description="The EFI boot manager could not be found.",
                 diagnosis="The EFI boot manager tool - efibootmgr could not be found on your system",
-                remediation="Install efibootmgr to continue converting the UEFI-based system.",
+                remediations="Install efibootmgr to continue converting the UEFI-based system.",
             )
             return
         if grub.is_secure_boot():
@@ -63,7 +63,7 @@ class Efi(actions.Action):
                 title="Secure boot detected",
                 description="Secure boot has been detected.",
                 diagnosis="The conversion with secure boot is currently not possible.",
-                remediation="To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
+                remediations="To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
             )
             return
 

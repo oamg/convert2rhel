@@ -53,7 +53,7 @@ class CustomReposAreValid(actions.Action):
                 title="Unable to access repositories",
                 description="Access could not be made to the custom repositories.",
                 diagnosis="Unable to access the repositories passed through the --enablerepo option.",
-                remediation="For more details, see YUM/DNF output:\n{0}".format(output),
+                remediations="For more details, see YUM/DNF output:\n{0}".format(output),
             )
             return
 

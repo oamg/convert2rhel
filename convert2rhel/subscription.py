@@ -608,7 +608,7 @@ def attach_subscription():
             id_="FAILED_TO_ATTACH_SUBSCRIPTION",
             title="Failed to attach a subscription to the system.",
             description="convert2rhel was unable to attach a subscription to the system. An attached subscription is required for RHEL package installation.",
-            remediation="Refer to https://access.redhat.com/management/ where you can enable Simple Content Access, create an activation key, or find a Pool ID of the subscription you wish to use and pass it to convert2rhel through the `--pool` CLI option.",
+            remediations="Refer to https://access.redhat.com/management/ where you can enable Simple Content Access, create an activation key, or find a Pool ID of the subscription you wish to use and pass it to convert2rhel through the `--pool` CLI option.",
         )
     return True
 
@@ -648,7 +648,7 @@ def verify_rhsm_installed():
             id_="FAILED_TO_VERIFY_SUBSCRIPTION_MANAGER",
             title="Failed to verify subscription-manager package.",
             description="The subscription-manager package is not installed correctly. Therefore, the pre-conversion analysis cannot verify that the correct package is installed on your system.",
-            remediation="Manually installing subscription-manager before running convert2rhel.",
+            remediations="Manually installing subscription-manager before running convert2rhel.",
         )
     else:
         loggerinst.info("subscription-manager installed correctly.")

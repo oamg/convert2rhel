@@ -88,7 +88,7 @@ class PackageUpdates(actions.Action):
                     title="Package up to date check fail",
                     description="Please refer to the diagnosis for further information",
                     diagnosis=package_up_to_date_error_message,
-                    remediation="If you wish to ignore this message, set the environment variable "
+                    remediations="If you wish to ignore this message, set the environment variable "
                     "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
                 )
                 return
@@ -160,7 +160,7 @@ class PackageUpdates(actions.Action):
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=package_not_up_to_date_error_message,
-                remediation="Run yum update to update all the packages on the system.",
+                remediations="Run yum update to update all the packages on the system.",
             )
         else:
             logger.info("System is up-to-date.")

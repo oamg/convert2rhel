@@ -150,7 +150,7 @@ class IsLoadedKernelLatest(actions.Action):
                 diagnosis=(
                     "Could not find any %s from repositories to compare against the loaded kernel." % package_to_check
                 ),
-                remediation=(
+                remediations=(
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
                     "If you wish to ignore this message, set the environment variable "
                     "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1."
@@ -195,7 +195,7 @@ class IsLoadedKernelLatest(actions.Action):
                     " Latest kernel version available in %s: %s\n"
                     " Loaded kernel version: %s" % (repos_message, repoid, latest_kernel, loaded_kernel)
                 ),
-                remediation=(
+                remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                     "1. yum install %s-%s -y\n"
                     "2. reboot" % (package_to_check, latest_kernel)

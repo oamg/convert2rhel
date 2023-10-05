@@ -28,7 +28,7 @@ from convert2rhel.actions.system_checks import efi
 from convert2rhel.unit_tests import EFIBootInfoMocked
 
 
-ExpectedMessage = namedtuple("ExpectedMessage", ("id", "title", "description", "diagnosis", "remediation", "log_msg"))
+ExpectedMessage = namedtuple("ExpectedMessage", ("id", "title", "description", "diagnosis", "remediations", "log_msg"))
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ class TestEFIChecks:
                     title="EFI boot manager not found",
                     description="The EFI boot manager could not be found.",
                     diagnosis="The EFI boot manager tool - efibootmgr could not be found on your system",
-                    remediation="Install efibootmgr to continue converting the UEFI-based system.",
+                    remediations="Install efibootmgr to continue converting the UEFI-based system.",
                     log_msg="UEFI detected",
                 ),
             ),
@@ -76,7 +76,7 @@ class TestEFIChecks:
                     title="None x86_64 system detected",
                     description="Only x86_64 systems are supported for UEFI conversions.",
                     diagnosis="",
-                    remediation="",
+                    remediations="",
                     log_msg="",
                 ),
             ),
@@ -92,7 +92,7 @@ class TestEFIChecks:
                     title="Secure boot detected",
                     description="Secure boot has been detected.",
                     diagnosis="The conversion with secure boot is currently not possible.",
-                    remediation="To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
+                    remediations="To disable secure boot, follow the instructions available in this article: https://access.redhat.com/solutions/6753681",
                     log_msg="Secure boot detected.",
                 ),
             ),
@@ -108,7 +108,7 @@ class TestEFIChecks:
                     title="Bootloader error detected",
                     description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
                     diagnosis="errmsg",
-                    remediation="",
+                    remediations="",
                     log_msg="",
                 ),
             ),
@@ -149,7 +149,7 @@ class TestEFIChecks:
             title=expected.title,
             description=expected.description,
             diagnosis=expected.diagnosis,
-            remediation=expected.remediation,
+            remediations=expected.remediations,
         )
         assert expected.log_msg in caplog.text
 
@@ -174,7 +174,7 @@ class TestEFIChecks:
                         "The current UEFI bootloader '0002' is not referring to any binary UEFI"
                         " file located on local EFI System Partition (ESP)."
                     ),
-                    remediation="",
+                    remediations="",
                 ),
             )
         )
