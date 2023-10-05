@@ -127,7 +127,7 @@ def main_locked(process_phase):
         report.summary(
             pre_conversion_results,
             include_all_reports=False,
-            with_colors=logger_module.should_disable_color_output(),
+            disable_colors=logger_module.should_disable_color_output(),
         )
 
         loggerinst.warning("********************************************************")
@@ -155,7 +155,7 @@ def main_locked(process_phase):
         report.summary(
             pre_conversion_results,
             include_all_reports=True,
-            with_colors=logger_module.should_disable_color_output(),
+            disable_colors=logger_module.should_disable_color_output(),
         )
         return 0
 
@@ -181,7 +181,7 @@ def main_locked(process_phase):
                 report.summary(
                     pre_conversion_results,
                     include_all_reports=(toolopts.tool_opts.activity == "analysis"),
-                    with_colors=logger_module.should_disable_color_output(),
+                    disable_colors=logger_module.should_disable_color_output(),
                 )
         elif process_phase == ConversionPhase.POST_PONR_CHANGES:
             # After the process of subscription is done and the mass update of

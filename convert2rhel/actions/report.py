@@ -118,7 +118,7 @@ def wrap_paragraphs(text, width=70, **kwargs):
     return "\n".join(output)
 
 
-def summary(results, include_all_reports=False, with_colors=True):
+def summary(results, include_all_reports=False, disable_colors=False):
     """Output a summary regarding the actions execution.
 
     This summary is intended to be used to inform the user about the results
@@ -176,8 +176,8 @@ def summary(results, include_all_reports=False, with_colors=True):
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
-    :keyword with_colors: Whether to color the messages according to their status
-    :type with_colors: bool
+    :keyword disable_colors: Whether to color the messages according to their status
+    :type disable_colors: bool
     :keyword include_all_reports: If all reports should be logged instead of the
         highest ones.
     :type include_all_reports: bool
@@ -228,7 +228,7 @@ def summary(results, include_all_reports=False, with_colors=True):
 
         entry = format_action_status_message(combined_result["level"], message_id[0], message_id[1], combined_result)
         entry = wrap_paragraphs(entry, width=terminal_size[0])
-        if with_colors:
+        if not disable_colors:
             entry = colorize(entry, _STATUS_TO_COLOR[combined_result["level"]])
         report.append(entry)
 
