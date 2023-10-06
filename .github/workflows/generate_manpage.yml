@@ -1,7 +1,7 @@
 name: Generate Manpages
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -16,10 +16,16 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: 3.10.13
 
       - name: Install dependencies
-        run: pip install argparse-manpage
+        run: |
+          pip install argparse-manpage six pexpect
+
+      - name: Install python3-rpm and python3-dnf package with apt-get
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-rpm python3-dnf
 
       - name: Generate Manpages
         run: |
