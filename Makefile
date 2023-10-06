@@ -122,7 +122,7 @@ endif
 lint: images
 	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "$(PYLINT) --rcfile=.pylintrc $(PYLINT_ARGS) convert2rhel/"
 
-tests: tests7 tests8
+tests: tests7 tests8 tests9
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
@@ -143,6 +143,7 @@ tests9: image9
 rpms:
 	mkdir -p .rpms
 	rm -frv .rpms/*
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild .
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos7.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
@@ -152,6 +153,7 @@ rpms:
 copr-build: rpms
 	mkdir -p .srpms
 	rm -frv .srpms/*
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.srpms .
 	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
