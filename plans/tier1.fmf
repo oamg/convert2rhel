@@ -13,6 +13,31 @@ description+: |
             ['tier: 1', 'tag: non-destructive']
 
 /destructive:
+    /multiple-nic:
+        provision:
+          how: artemis
+          pool: beaker
+          hardware:
+            network:
+              - type: eth
+              - type: eth
+        enabled: false
+        adjust+:
+          - enabled: true
+            when: distro == centos-7, centos-8
+        discover+:
+            filter: tag:checks-after-conversion
+        prepare+:
+            - name: Verify multiple NIC are present
+              how: shell
+              script: pytest -svv tests/integration/*/destructive/multiple-nic/multiple_nic.py
+            - name: main conversion preparation
+              how: shell
+              script: pytest -svv tests/integration/*/destructive/method/rhsm.py
+            - name: reboot after conversion
+              how: ansible
+              playbook: tests/ansible_collections/roles/reboot/main.yml
+
     /changed_yum_conf:
         discover+:
             filter: tag:checks-after-conversion
