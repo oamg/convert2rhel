@@ -566,7 +566,6 @@ def test_kernel_modules_rhel_kernel_module_not_found_error(ensure_kernel_modules
         ),
     )
     ensure_kernel_modules_compatibility_instance.run()
-    print(ensure_kernel_modules_compatibility_instance.result)
     assert_actions_result(
         ensure_kernel_modules_compatibility_instance,
         level="ERROR",

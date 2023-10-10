@@ -124,9 +124,8 @@ def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
     vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
 
-    kernel_pkg, return_code = run_subprocess(
-        ["rpm", "-qf", "--qf", "%{VERSION}&%{RELEASE}&%{ARCH}&%{NAME}", vmlinuz_path], print_output=False
-    )
+    kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NEVRA}", vmlinuz_path], print_output=False)
+    logger.debug("Booted kernel package name: %s", kernel_pkg)
 
     os_vendor = system_info.name.split()[0]
     if return_code == 1:
@@ -137,15 +136,8 @@ def _bad_kernel_package_signature(kernel_release):
             dict(vmlinuz_path=vmlinuz_path, os_vendor=os_vendor),
         )
 
-    version, release, arch, name = tuple(kernel_pkg.split("&"))
-    logger.debug("Booted kernel package name: {0}".format(name))
-
-    kernel_pkg_obj = get_installed_pkg_objects(name, version, release, arch)[0]
-    package = get_installed_pkg_information(str(kernel_pkg_obj))[0]
-    bad_signature = system_info.cfg_content["gpg_fingerprints"] != package.fingerprint
-
-    # e.g. Oracle Linux Server -> Oracle or
-    #      Oracle Linux Server -> CentOS Linux
+    kernel_pkg_obj = get_installed_pkg_information(pkg_name=kernel_pkg)
+    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_obj[0].fingerprint
     if bad_signature:
         raise KernelIncompatibleError(
             "INVALID_KERNEL_PACKAGE_SIGNATURE",
