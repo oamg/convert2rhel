@@ -160,6 +160,7 @@ class SubscribeSystem(actions.Action):
         # Implicit dependency for `BACKUP_REDHAT_RELEASE`
         "REMOVE_REPOSITORY_FILES_PACKAGES",
         "PRE_SUBSCRIPTION",
+        "EUS_SYSTEM_CHECK",
     )
 
     def run(self):

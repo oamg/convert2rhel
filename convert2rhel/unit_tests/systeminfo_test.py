@@ -27,12 +27,10 @@ import pytest
 import six
 
 from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
-from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, RELEASE_VER_MAPPING, RepoqueryFailure, Version, system_info
+from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
-
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import all_systems, centos8
-from convert2rhel.utils import run_subprocess
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -315,88 +313,40 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 
 
 @pytest.mark.parametrize(
-    ("major", "minor", "latest_distro_version", "has_internet", "repoquery_exception", "expected"),
+    ("major", "minor", "expected"),
     (
-        (7, 9, "7.9", True, False, False),
-        (8, 5, "8.5", True, False, False),
-        (8, 6, "8.7", True, False, True),
-        (8, 6, "8.7", False, False, True),
-        (8, 6, "8.6", False, False, True),  # no internet so eus is determined by hardcoded eus date
-        (8, 6, "8.7", True, True, True),
-        (8, 6, "8.7", False, True, True),
-        (8, 6, "8.6", False, False, True),
-        (8, 7, "8.7", True, False, False),
-        (8, 8, "8.9", True, False, False),  # Change expected to true after eus_release date
-        (8, 8, "8.9", False, False, False),  # Change expected to true after eus_release date
-        (8, 8, "8.8", False, False, False),  # Change expected to true after eus_release date
-        (8, 8, "8.9", True, True, False),  # Change expected to true after eus_release date
-        (8, 8, "8.9", False, True, False),  # Change expected to true after eus_release date
-        (8, 8, "8.8", False, True, False),  # Change expected to true after eus_release date
-        (8, 9, "8.9", True, False, False),
+        (7, 9, False),
+        (8, 5, False),
+        (8, 6, True),
+        (8, 7, False),
+        (8, 8, False),  # Change expected to true after eus_release date
+        (8, 9, False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(
-    major, minor, latest_distro_version, has_internet, repoquery_exception, expected, monkeypatch
-):
+def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
     version = Version(major, minor)
     monkeypatch.setattr(system_info, "version", version)
-    monkeypatch.setattr(system_info, "has_internet_access", has_internet)
-    if repoquery_exception:
-        monkeypatch.setattr(
-            systeminfo.SystemInfo,
-            "get_latest_distro_release_version",
-            mock.Mock(side_effect=RepoqueryFailure("Repoquery failed to execute")),
-        )
-    else:
-        monkeypatch.setattr(
-            systeminfo.SystemInfo, "get_latest_distro_release_version", mock.Mock(return_value=latest_distro_version)
-        )
 
     assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
 @pytest.mark.parametrize(
-    ("major", "minor", "eus_release_date", "expected"),
+    ("major", "minor", "expected"),
     (
-        (7, 9, dt(2022, 10, 22), False),
-        (8, 5, dt(2022, 10, 22), False),
-        (8, 6, dt(2022, 11, 9), True),
-        (8, 6, dt(2022, 11, 9), True),
-        (8, 7, dt(2022, 10, 22), False),
-        (8, 8, dt(2023, 11, 14), False),  # Change expected to true after eus_release date
-        (8, 8, dt(2023, 11, 14), False),  # Change expected to true after eus_release date
-        (8, 9, dt(2022, 10, 14), False),
+        (7, 9, False),
+        (8, 5, False),
+        (8, 6, True),
+        (8, 7, False),
+        (8, 8, True),
+        (8, 9, False),
     ),
 )
-def test_datetime_comparison_returns(major, minor, eus_release_date, monkeypatch, expected):
+def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)
     monkeypatch.setattr(system_info, "version", version)
-    current_datetime = dt.today()
-
-    assert system_info.datetime_comparison_returns(current_datetime, eus_release_date) == expected
-
-
-@pytest.mark.parametrize(
-    ("repoquery_output", "repoquery_return_code", "expected"),
-    (
-        ("C2R\t7.9\nC2R\t7.10", 0, "7.10"),
-        ("C2R\t8.5\nC2R\t8.4", 0, "8.5"),
-        ("C2R\t8.6", 1, "8.6"),
-        ("C2R\t8.6", 0, "8.6"),
-        ("C2R\t8.7", 1, "8.7"),
-        ("C2R\t8.8", 0, "8.8"),
-        ("C2R\t8.9", 1, "8.9"),
-        ("C2R\t8.9", 0, "8.9"),
-    ),
-)
-@centos8
-def test_get_latest_distro_release_version(repoquery_output, repoquery_return_code, expected, monkeypatch, pretend_os):
-    monkeypatch.setattr(systeminfo, "run_subprocess", mock.Mock(return_value=(repoquery_output, repoquery_return_code)))
-    if repoquery_return_code != 0:
-        with pytest.raises(RepoqueryFailure, match="Repoquery failed to execute"):
-            system_info.get_latest_distro_release_version()
-    else:
-        assert system_info.get_latest_distro_release_version() == expected
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+    global_tool_opts.eus = True
+    assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
 @pytest.mark.parametrize(

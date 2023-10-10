@@ -433,7 +433,7 @@ class RestorablePackage:
             # mainly because of CentOS Linux which we have hardcoded repofiles.
             # If we ever put Oracle Linux repofiles to ship with convert2rhel,
             # them the second part of this condition can be dropped.
-            if system_info.corresponds_to_rhel_eus_release() and system_info.id == "centos":
+            if system_info.eus_system and system_info.id == "centos":
                 reposdir = get_hardcoded_repofiles_dir()
 
             # One of the reasons we hardcode repofiles pointing to archived

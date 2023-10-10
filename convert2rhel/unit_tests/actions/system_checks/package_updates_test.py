@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager, systeminfo, unit_tests
+from convert2rhel import actions, pkgmanager, unit_tests
 from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests.conftest import centos8, oracle8
@@ -39,7 +39,8 @@ def package_updates_action():
 
 @oracle8
 def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package_updates_action, monkeypatch):
-    monkeypatch.setattr(systeminfo.SystemInfo, "get_latest_distro_release_version", mock.Mock(return_value="8.7"))
+    monkeypatch.setattr(package_updates.system_info, "eus_system", value=True)
+
     diagnosis = (
         "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
     )

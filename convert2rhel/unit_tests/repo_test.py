@@ -51,7 +51,7 @@ from six.moves import mock
 )
 @centos8
 def test_get_rhel_repoids(pretend_os, is_eus_release, expected, monkeypatch):
-    monkeypatch.setattr(repo.system_info, "corresponds_to_rhel_eus_release", value=lambda: is_eus_release)
+    monkeypatch.setattr(repo.system_info, "eus_system", value=is_eus_release)
     repos = repo.get_rhel_repoids()
     assert repos == expected
 

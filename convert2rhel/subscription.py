@@ -858,7 +858,7 @@ def lock_releasever_in_rhel_repositories():
 
     # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
     # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be available.
-    if system_info.corresponds_to_rhel_eus_release() and not tool_opts.no_rhsm:
+    if system_info.eus_system and not tool_opts.no_rhsm:
         loggerinst.info(
             "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
             % system_info.releasever

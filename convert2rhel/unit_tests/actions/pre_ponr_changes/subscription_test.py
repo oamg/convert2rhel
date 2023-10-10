@@ -200,10 +200,7 @@ class TestPreSubscription:
 
 class TestSubscribeSystem:
     def test_subscribe_system_dependency_order(self, subscribe_system_instance):
-        expected_dependencies = (
-            "REMOVE_REPOSITORY_FILES_PACKAGES",
-            "PRE_SUBSCRIPTION",
-        )
+        expected_dependencies = ("REMOVE_REPOSITORY_FILES_PACKAGES", "PRE_SUBSCRIPTION", "EUS_SYSTEM_CHECK")
 
         assert expected_dependencies == subscribe_system_instance.dependencies
 
