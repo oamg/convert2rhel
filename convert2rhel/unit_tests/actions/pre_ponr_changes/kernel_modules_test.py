@@ -556,6 +556,7 @@ def test_get_unsupported_kmods(
 
 def test_kernel_modules_rhel_kernel_module_not_found_error(ensure_kernel_modules_compatibility_instance, monkeypatch):
     # need to trigger the raise event
+    monkeypatch.setattr(EnsureKernelModulesCompatibility, "_get_loaded_kmods", mock.Mock(return_value=None))
     monkeypatch.setattr(
         EnsureKernelModulesCompatibility,
         "_get_rhel_supported_kmods",
