@@ -1,3 +1,6 @@
+import os.path
+import re
+
 import jsonschema
 import pytest
 
@@ -6,7 +9,8 @@ from envparse import env
 from pexpect import EOF
 
 
-PRE_CONVERSION_REPORT = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+PRE_CONVERSION_REPORT_JSON = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+PRE_CONVERSION_REPORT_TXT = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
 PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.0.json")
 
 
@@ -15,8 +19,17 @@ def _validate_report():
     Helper function.
     Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
     and it corresponds to its respective schema.
+    Additionally verify that the report is created as a .txt file.
     """
-    report_data_json = _load_json_schema(PRE_CONVERSION_REPORT)
+    # Validate the txt variant of the report exists
+    os.path.exists(PRE_CONVERSION_REPORT_TXT)
+    headers = "(ERROR|WARNING|OVERRIDABLE|INFO)"
+    # assert any of the headers exists in the report data, validating it's not empty
+    with open(PRE_CONVERSION_REPORT_TXT) as report_txt:
+        report_data = report_txt.read()
+        assert re.search(headers, report_data)
+
+    report_data_json = _load_json_schema(PRE_CONVERSION_REPORT_JSON)
 
     # If some difference between generated json and its schema invoke exception
     try:
