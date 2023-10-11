@@ -437,7 +437,7 @@ class SystemInfo:
         status = False
 
         while retries < CHECK_DBUS_STATUS_RETRIES:
-            status = _is_systemd_managed_dbus_running()
+            status = is_systemd_managed_service_running("dbus")
 
             if status is not None:
                 # We know that DBus is definitely running or stopped
@@ -480,14 +480,12 @@ class SystemInfo:
         return release_info
 
 
-def _is_systemd_managed_dbus_running():
-    """Get DBus status from systemd."""
+def is_systemd_managed_service_running(service):
+    """Get service status from systemd."""
     # Reloading, activating, etc will return None which means to retry
     running = None
 
-    output, ret_code = utils.run_subprocess(
-        ["/usr/bin/systemctl", "show", "-p", "ActiveState", "dbus"], print_output=False
-    )
+    output, _ = utils.run_subprocess(["/usr/bin/systemctl", "show", "-p", "ActiveState", service], print_output=False)
     for line in output.splitlines():
         # Note: systemctl seems to always emit an ActiveState line (ActiveState=inactive if
         # the service doesn't exist).  So this check is just defensive coding.
@@ -495,12 +493,12 @@ def _is_systemd_managed_dbus_running():
             state = line.split("=", 1)[1]
 
             if state == "active":
-                # DBus is definitely running
+                # service is definitely running
                 running = True
                 break
 
             if state in ("inactive", "deactivating", "failed"):
-                # DBus is definitely not running
+                # service is definitely not running
                 running = False
                 break
 

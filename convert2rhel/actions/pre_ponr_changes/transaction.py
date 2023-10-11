@@ -32,6 +32,7 @@ class ValidatePackageManagerTransaction(actions.Action):
         # is depending on this action, it may run whenever it wants to, which
         # can cause problems.
         "REMOVE_IWLAX2XX_FIRMWARE",
+        "CHECK_FIREWALLD_AVAILABILITY",
         "ENSURE_KERNEL_MODULES_COMPATIBILITY",
         "SUBSCRIBE_SYSTEM",
     )
