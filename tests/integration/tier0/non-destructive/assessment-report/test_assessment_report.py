@@ -22,7 +22,7 @@ def _validate_report():
     Additionally verify that the report is created as a .txt file.
     """
     # Validate the txt variant of the report exists
-    os.path.exists(PRE_CONVERSION_REPORT_TXT)
+    assert os.path.exists(PRE_CONVERSION_REPORT_TXT)
     headers = "(ERROR|WARNING|OVERRIDABLE|INFO)"
     # assert any of the headers exists in the report data, validating it's not empty
     with open(PRE_CONVERSION_REPORT_TXT) as report_txt:

@@ -289,6 +289,6 @@ def summary_as_txt(results):
 
     txt_result = txt_result.strip()
 
-    # We need info from the last run, any old results needed
+    # We need info from the last run, any old results are discarded
     with open(CONVERT2RHEL_TXT_RESULTS, "w") as file:
         file.write(txt_result)

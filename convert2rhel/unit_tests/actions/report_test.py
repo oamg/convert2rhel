@@ -1215,8 +1215,6 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
 
     monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
 
-    # Call the summary instead of report_to_txt since report to text file is written during the
-    # summary. Also part of the summary code is used for the report to text file.
     report.summary_as_txt(results)
 
     for expected in text_lines:
@@ -1340,8 +1338,6 @@ def test_summary_as_txt_file_exists(results, text_lines, tmpdir, monkeypatch):
 
     monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
 
-    # Call the summary instead of report_to_txt since report to text file is written during the
-    # summary. Also part of the summary code is used for the report to text file.
     report.summary_as_txt(results)
 
     for expected in text_lines:
