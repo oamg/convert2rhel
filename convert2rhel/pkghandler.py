@@ -27,7 +27,7 @@ from collections import namedtuple
 
 import rpm
 
-from convert2rhel import backup, pkgmanager, utils
+from convert2rhel import backup, exceptions, pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -208,9 +208,9 @@ class RestorablePackageSet(backup.RestorableChange):
         rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
 
         loggerinst.info("Installing subscription-manager RPMs.")
-        loggerinst.debug("Rpms scheduled to be installed: %s" % utils.format_sequence_as_message(rpms_to_install))
+        loggerinst.debug("RPMs scheduled for installation: %s" % utils.format_sequence_as_message(rpms_to_install))
 
-        _, ret_code = call_yum_cmd(
+        output, ret_code = call_yum_cmd(
             # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
             # and we need these packages to be replaced with the provided RPMs from RHEL.
             command="install",
@@ -225,8 +225,15 @@ class RestorablePackageSet(backup.RestorableChange):
             set_releasever=False,
         )
         if ret_code:
-            loggerinst.critical(
+            loggerinst.critical_no_exit(
                 "Failed to install subscription-manager packages. See the above yum output for details."
+            )
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_INSTALL_SUBSCRIPTION_MANAGER_PACKAGES",
+                title="Failed to install subscription-manager packages.",
+                description="convert2rhel was unable to install subscription-manager packages. These packages are required to subscribe the system and install RHEL packages.",
+                diagnosis="Failed to install packages %s. Output: %s, Status: %s"
+                % (utils.format_sequence_as_message(rpms_to_install), output, ret_code),
             )
 
         installed_pkg_names = get_pkg_names_from_rpm_paths(rpms_to_install)
@@ -258,18 +265,37 @@ class RestorablePackageSet(backup.RestorableChange):
 
 
 def download_rhsm_pkgs(pkgs_to_download, repo_path, repo_content):
-    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
-
-    utils.store_content_to_file(filename=repo_path, content=repo_content)
-    paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
-
-    _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")
+    paths = None
+    try:
+        _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "before RHEL rhsm packages download")
+        utils.store_content_to_file(filename=repo_path, content=repo_content)
+        paths = utils.download_pkgs(pkgs_to_download, dest=SUBMGR_RPMS_DIR, reposdir=_RHSM_TMP_DIR)
+        _log_rhsm_download_directory_contents(SUBMGR_RPMS_DIR, "after RHEL rhsm packages download")
+    except (OSError, IOError) as err:
+        loggerinst.warning("OSError({0}): {1}".format(err.errno, err.strerror))
+    except SystemExit as e:
+        loggerinst.critical_no_exit(
+            "Unable to download the subscription-manager package and its dependencies. See details of"
+            " the failed yumdownloader call above. These packages are necessary for the conversion"
+            " unless you use the --no-rhsm option."
+        )
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_DOWNLOAD_SUBSCRIPTION_MANAGER_PACKAGES",
+            title="Failed to download subscription-manager package and its dependencies.",
+            description="To be able to subscribe the system to Red Hat we need the subscription-manager package and its dependencies to do so. Without these packages we cannot subscribe the system and we cannot install Red Hat Enterprise Linux packages.",
+            diagnosis="Failed to download subscription-manager package %s." % (str(e)),
+        )
 
     if None in paths:
-        loggerinst.critical(
+        loggerinst.critical_no_exit(
             "Unable to download the subscription-manager package or its dependencies. See details of"
             " the failed yumdownloader call above. These packages are necessary for the conversion"
             " unless you use the --no-rhsm option."
+        )
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_DOWNLOAD_SUBSCRIPTION_MANAGER_PACKAGES",
+            title="Failed to download subscription-manager package and its dependencies.",
+            description="To be able to subscribe the system to Red Hat we need the subscription-manager package and its dependencies to do so. Without these packages we cannot subscribe the system and we cannot install Red Hat Enterprise Linux packages.",
         )
 
 
