@@ -27,7 +27,7 @@ import dbus.exceptions
 import pytest
 import six
 
-from convert2rhel import backup, pkghandler, subscription, toolopts, unit_tests, utils
+from convert2rhel import backup, exceptions, pkghandler, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, Version, system_info
 from convert2rhel.unit_tests import (
     PromptUserMocked,
@@ -295,7 +295,7 @@ class TestRestorableSystemSubscription:
         monkeypatch.setattr(tool_opts, "username", "user")
         monkeypatch.setattr(tool_opts, "password", "pass")
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             system_subscription.enable()
 
         assert caplog.records[-1].levelname == "CRITICAL"
@@ -379,7 +379,7 @@ class TestAttachSubscription:
 
     def test_attach_subscription_fail(self, monkeypatch, caplog):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             subscription.attach_subscription()
         assert caplog.records[-1].levelname == "CRITICAL"
 
@@ -439,7 +439,7 @@ class TestRegisterSystem:
         tool_opts.username = "user"
         tool_opts.password = "pass"
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             subscription.register_system()
 
         assert caplog.records[-1].levelname == "CRITICAL"
@@ -975,7 +975,7 @@ class TestVerifyRhsmInstalled:
     def test_verify_rhsm_installed_failure(self, monkeypatch, caplog):
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda _: None)
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             subscription.verify_rhsm_installed()
 
         assert "The subscription-manager package is not installed correctly." in caplog.text

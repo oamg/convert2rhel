@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import actions, backup, cert, pkghandler, repo, subscription, toolopts, utils
+from convert2rhel import actions, backup, cert, exceptions, pkghandler, repo, subscription, toolopts, utils
 
 
 logger = logging.getLogger(__name__)
@@ -124,22 +124,24 @@ class PreSubscription(actions.Action):
             backup.backup_control.push(product_cert)
 
         except SystemExit as e:
-            # TODO(r0x0d): Places where we raise SystemExit and need to be
-            # changed to something more specific.
-            #   - If we can't import the gpg key.
-            #   - if directory does not exist or is empty
-            #   - if we can't download a package
-            #   - if we can't install sub-man rpms
-            #   - If sub-man is not installed and --keep-rhsm was used.
-
-            # TODO(r0x0d): This should be refactored to handle each case
-            # individually rather than relying on SystemExit.
+            # This should not occur anymore as all the relevant SystemExits has been changed to a CriticalError
+            # exception. This exception handler is just a precaution
             self.set_result(
                 level="ERROR",
                 id="UNKNOWN_ERROR",
                 title="Unknown error",
                 description="The cause of this error is unknown, please look at the diagnosis for more information.",
                 diagnosis=str(e),
+            )
+        except exceptions.CriticalError as e:
+            self.set_result(
+                level="ERROR",
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
             )
         except subscription.UnregisterError as e:
             self.set_result(
@@ -214,11 +216,8 @@ class SubscribeSystem(actions.Action):
             logger.task("Convert: Subscription Manager - Enable RHEL repositories")
             subscription.enable_repos(rhel_repoids)
         except OSError as e:
-            # TODO(r0x0d): Places where we raise OSError and need to be
-            # changed to something more specific.
-            #  - Could fail in invoking subscription-manager to get repos     (get_avail_repos)
-            #  - Could fail in invoking subscirption-manager to disable repos (disable_repos)
-            #  - ""                                          to enable repos  (enable_repos)
+            # This should not occur anymore as all the relevant OSError has been changed to a CriticalError
+            # exception. This exception handler is just a precaution
             self.set_result(
                 level="ERROR",
                 id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
@@ -226,15 +225,19 @@ class SubscribeSystem(actions.Action):
                 description="There is a missing subscription-manager binary",
                 diagnosis="Failed to execute command: %s" % e,
             )
+        except exceptions.CriticalError as e:
+            self.set_result(
+                level="ERROR",
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
+            )
         except SystemExit as e:
-            # TODO(r0x0d): This should be refactored to handle each case
-            # individually rather than relying on SystemExit.
-
-            # TODO(r0x0d): Places where we raise SystemExit and need to be
-            # changed to something more specific.
-            #   - Maximum sub-man retries reached
-            #   - If the return-code is different from 0 in disabling repos,
-            #     SystemExit is raised.
+            # This should not occur anymore as all the relevant SystemExits has been changed to a CriticalError
+            # exception. This exception handler is just a precaution
             self.set_result(
                 level="ERROR",
                 id="UNKNOWN_ERROR",

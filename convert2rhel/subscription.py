@@ -28,7 +28,7 @@ import dbus
 import dbus.connection
 import dbus.exceptions
 
-from convert2rhel import backup, i18n, pkghandler, utils
+from convert2rhel import backup, exceptions, i18n, pkghandler, utils
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import _should_subscribe, tool_opts
@@ -127,6 +127,7 @@ def register_system():
 
     # Loop the registration process until successful registration
     attempt = 0
+    troublesome_exception = None
     while attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
         attempt_msg = ""
         if attempt > 0:
@@ -193,6 +194,7 @@ def register_system():
             raise
         except Exception as e:
             loggerinst.info("System registration failed with error: %s" % str(e))
+            troublesome_exception = e
             sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
             attempt += 1
             continue
@@ -201,7 +203,13 @@ def register_system():
 
     else:  # While-else
         # We made the maximum number of subscription-manager retries and still failed
-        loggerinst.critical("Unable to register the system through subscription-manager.")
+        loggerinst.critical_no_exit("Unable to register the system through subscription-manager.")
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_SUBSCRIBE_SYSTEM",
+            title="Failed to subscribe system.",
+            description="After several attempts, convert2rhel was unable to subscribe the system using subscription-manager. This issue might occur because of but not limited to DBus, file permission-related issues, bad credentials, or network issues.",
+            diagnosis="System registration failed with error %s." % (str(troublesome_exception)),
+        )
 
     return None
 
@@ -591,10 +599,16 @@ def attach_subscription():
     if ret_code != 0:
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
-        loggerinst.critical(
+        loggerinst.critical_no_exit(
             "Unsuccessful attachment of a subscription. Please refer to https://access.redhat.com/management/"
             " where you can either enable the SCA, create an activation key, or find a Pool ID of the subscription"
-            " you wish to use and pass it to convert2rhel through the --pool CLI option."
+            " you wish to use and pass it to convert2rhel through the `--pool` CLI option."
+        )
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_ATTACH_SUBSCRIPTION",
+            title="Failed to attach a subscription to the system.",
+            description="convert2rhel was unable to attach a subscription to the system. An attached subscription is required for RHEL package installation.",
+            remediation="Refer to https://access.redhat.com/management/ where you can enable Simple Content Access, create an activation key, or find a Pool ID of the subscription you wish to use and pass it to convert2rhel through the `--pool` CLI option.",
         )
     return True
 
@@ -627,8 +641,14 @@ def get_repo(repos_raw):
 def verify_rhsm_installed():
     """Make sure that subscription-manager has been installed."""
     if not pkghandler.get_installed_pkg_information("subscription-manager"):
-        loggerinst.critical(
-            "The subscription-manager package is not installed correctly.  You could try manually installing it before running convert2rhel"
+        loggerinst.critical_no_exit(
+            "The subscription-manager package is not installed correctly. You could try manually installing it before running convert2rhel"
+        )
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_VERIFY_SUBSCRIPTION_MANAGER",
+            title="Failed to verify subscription-manager package.",
+            description="The subscription-manager package is not installed correctly. Therefore, the pre-conversion analysis cannot verify that the correct package is installed on your system.",
+            remediation="Manually installing subscription-manager before running convert2rhel.",
         )
     else:
         loggerinst.info("subscription-manager installed correctly.")
@@ -651,7 +671,13 @@ def disable_repos():
     disable_cmd.extend(disable_repos)
     output, ret_code = utils.run_subprocess(disable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repositories were not possible to disable through subscription-manager:\n%s" % output)
+        loggerinst.critical_no_exit("Could not disable subscription-manager repositories:\n%s" % output)
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_DISABLE_SUBSCRIPTION_MANAGER_REPOSITORIES",
+            title="Could not disable repositories through subscription-manager.",
+            description="As part of the conversion process, convert2rhel disables all current subscription-manager repositories and enables only repositories required for the conversion. convert2rhel was unable to disable these repositories, and the conversion is unable to proceed.",
+            diagnosis="Failed to disable repositories: %s." % (output),
+        )
     loggerinst.info("Repositories disabled.")
     return
 
