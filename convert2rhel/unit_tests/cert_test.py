@@ -24,7 +24,7 @@ import pytest
 
 from six.moves import mock
 
-from convert2rhel import cert, unit_tests, utils
+from convert2rhel import cert, exceptions, unit_tests, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -181,7 +181,7 @@ class TestPEMCert:
         fake_mkdir_p = mock.Mock(side_effect=OSError(13, "Permission denied"))
         monkeypatch.setattr(utils, "mkdir_p", fake_mkdir_p)
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             system_cert_with_target_path.enable()
 
         assert "OSError(13): Permission denied" == caplog.messages[-1]
