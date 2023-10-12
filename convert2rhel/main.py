@@ -21,7 +21,7 @@ import logging
 import os
 import sys
 
-from convert2rhel import actions, applock, backup, breadcrumbs, checks, grub
+from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
@@ -36,7 +36,6 @@ class _AnalyzeExit(Exception):
 
 
 class ConversionPhase:
-    INIT = 0
     POST_CLI = 1
     # PONR means Point Of No Return
     PRE_PONR_CHANGES = 2
@@ -74,8 +73,6 @@ def main():
     the application lock, to do the conversion process.
     """
 
-    process_phase = ConversionPhase.INIT
-
     # Make sure we're being run by root
     utils.require_root()
 
@@ -87,7 +84,7 @@ def main():
 
     try:
         with applock.ApplicationLock("convert2rhel"):
-            return main_locked(process_phase)
+            return main_locked()
     except applock.ApplicationLockedError:
         # We have not rotated the log files at this point because main.initialize_logger()
         # has not yet been called.  So we use sys.stderr.write() instead of loggerinst.error()
@@ -96,12 +93,12 @@ def main():
         return 1
 
 
-def main_locked(process_phase):
+def main_locked():
     """Perform all steps for the entire conversion process."""
 
     pre_conversion_results = None
+    process_phase = ConversionPhase.POST_CLI
     try:
-        process_phase = ConversionPhase.POST_CLI
         perform_boilerplate()
 
         gather_system_info()
@@ -161,45 +158,13 @@ def main_locked(process_phase):
         )
         return 0
 
+    except exceptions.CriticalError as err:
+        loggerinst.critical_no_exit(err.diagnosis)
+        return _handle_main_exceptions(process_phase, pre_conversion_results)
+
     except (Exception, SystemExit, KeyboardInterrupt) as err:
-        # Catching the three exception types separately due to python 2.4
-        # (RHEL 5) - 2.7 (RHEL 7) compatibility.
-        breadcrumbs.breadcrumbs.finish_collection()
+        return _handle_main_exceptions(process_phase, pre_conversion_results)
 
-        no_changes_msg = "No changes were made to the system."
-        utils.log_traceback(toolopts.tool_opts.debug)
-
-        if is_help_msg_exit(process_phase, err):
-            return 0
-        elif process_phase == ConversionPhase.INIT:
-            print(no_changes_msg)
-        elif process_phase == ConversionPhase.POST_CLI:
-            loggerinst.info(no_changes_msg)
-        elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
-            rollback_changes()
-            if pre_conversion_results is None:
-                loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
-            else:
-                report.summary(
-                    pre_conversion_results,
-                    include_all_reports=(toolopts.tool_opts.activity == "analysis"),
-                    disable_colors=logger_module.should_disable_color_output(),
-                )
-        elif process_phase == ConversionPhase.POST_PONR_CHANGES:
-            # After the process of subscription is done and the mass update of
-            # packages is started convert2rhel will not be able to guarantee a
-            # system rollback without user intervention. If a proper rollback
-            # solution is necessary it will need to be future implemented here
-            # or with the use of other backup tools.
-            loggerinst.warning(
-                "The conversion process failed.\n\n"
-                "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
-                " fully converted, and might incorrectly be reporting as a Red Hat Enterprise Linux machine.\n\n"
-                "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
-                " the system from a backup."
-            )
-            subscription.update_rhsm_custom_facts()
-        return 1
     finally:
         # Write the assessment to a file as json data so that other tools can
         # parse and act upon it.
@@ -207,6 +172,42 @@ def main_locked(process_phase):
             actions.report.summary_as_json(pre_conversion_results)
 
     return 0
+
+
+def _handle_main_exceptions(process_phase, pre_conversion_results=None):
+    """Common steps to handle graceful exit due to several different Exception types."""
+    breadcrumbs.breadcrumbs.finish_collection()
+
+    no_changes_msg = "No changes were made to the system."
+    utils.log_traceback(toolopts.tool_opts.debug)
+
+    if process_phase == ConversionPhase.POST_CLI:
+        loggerinst.info(no_changes_msg)
+    elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
+        rollback_changes()
+        if pre_conversion_results is None:
+            loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
+        else:
+            report.summary(
+                pre_conversion_results,
+                include_all_reports=(toolopts.tool_opts.activity == "analysis"),
+                disable_colors=logger_module.should_disable_color_output(),
+            )
+    elif process_phase == ConversionPhase.POST_PONR_CHANGES:
+        # After the process of subscription is done and the mass update of
+        # packages is started convert2rhel will not be able to guarantee a
+        # system rollback without user intervention. If a proper rollback
+        # solution is necessary it will need to be future implemented here
+        # or with the use of other backup tools.
+        loggerinst.warning(
+            "The conversion process failed.\n\n"
+            "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
+            " fully converted, and might incorrectly be reporting as a Red Hat Enterprise Linux machine.\n\n"
+            "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+            " the system from a backup."
+        )
+        subscription.update_rhsm_custom_facts()
+    return 1
 
 
 #
@@ -308,15 +309,6 @@ def post_ponr_conversion():
 #
 # Cleanup and exit
 #
-
-
-def is_help_msg_exit(process_phase, err):
-    """After printing the help message, optparse within the toolopts.CLI()
-    call terminates the process with sys.exit(0).
-    """
-    if process_phase == ConversionPhase.INIT and isinstance(err, SystemExit) and err.args[0] == 0:
-        return True
-    return False
 
 
 def rollback_changes():

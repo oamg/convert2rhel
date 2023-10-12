@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, repo
+from convert2rhel import actions, exceptions, repo
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 
 
@@ -39,14 +39,16 @@ class BackupRedhatRelease(actions.Action):
             # https://github.com/oamg/convert2rhel/blob/v1.2/convert2rhel/subscription.py#L189-L200
             system_release_file.backup()
             os_release_file.backup()
-        except SystemExit as e:
-            # TODO(pr-watson): Places where we raise SystemExit and need to be
-            # changed to something more specific.
-            # Raised in module redhatrelease on lines 49 and 60
-            #   - If unable to find the /etc/system-release file,
-            #     SystemExit is raised
+
+        except exceptions.CriticalError as e:
             self.set_result(
-                level="ERROR", id="UNKNOWN_ERROR", title="An unknown error has occurred", description=str(e)
+                level="ERROR",
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
             )
 
 

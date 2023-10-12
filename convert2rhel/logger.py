@@ -14,20 +14,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__metaclass__ = type
+
 """
 Customized logging functionality
 
-CRITICAL  (50)    Calls critical() function and sys.exit(1)
-ERROR     (40)    Prints error message using date/time
-WARNING   (30)    Prints warning message using date/time
-INFO      (20)    Prints info message (no date/time, just plain message)
-TASK      (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
-DEBUG     (10)    Prints debug message (using date/time)
-FILE      (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
-                  handle (using date/time)
+CRITICAL_NO_EXIT    (50)    Calls critical() function
+CRITICAL            (50)    Calls critical() function and sys.exit(1)
+ERROR               (40)    Prints error message using date/time
+WARNING             (30)    Prints warning message using date/time
+INFO                (20)    Prints info message (no date/time, just plain message)
+TASK                (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
+DEBUG               (10)    Prints debug message (using date/time)
+FILE                (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
 """
-
-__metaclass__ = type
 
 import logging
 import os
@@ -38,6 +39,11 @@ from time import gmtime, strftime
 
 
 LOG_DIR = "/var/log/convert2rhel"
+
+
+class LogLevelCriticalNoExit:
+    level = 50
+    label = "CRITICAL"
 
 
 class LogLevelTask:
@@ -61,10 +67,12 @@ def setup_logger_handler(log_name, log_dir):
     # set custom labels
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
+    logging.addLevelName(LogLevelCriticalNoExit.level, LogLevelCriticalNoExit.label)
     logging.Logger.task = _task
     logging.Logger.file = _file
     logging.Logger.debug = _debug
     logging.Logger.critical = _critical
+    logging.Logger.critical_no_exit = _critical_no_exit
 
     # enable raising exceptions
     logging.raiseExceptions = True
@@ -162,6 +170,11 @@ def _critical(self, msg, *args, **kwargs):
         sys.exit(msg)
 
 
+def _critical_no_exit(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelCriticalNoExit.level):
+        self._log(LogLevelCriticalNoExit.level, msg, args, **kwargs)
+
+
 def _debug(self, msg, *args, **kwargs):
     if self.isEnabledFor(logging.DEBUG):
         from convert2rhel.toolopts import tool_opts
@@ -221,7 +234,8 @@ class CustomFormatter(logging.Formatter):
             new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "WARNING")
             self._fmt = new_fmt
             self.datefmt = ""
-        elif record.levelno in [logging.CRITICAL, logging.ERROR]:
+        elif record.levelno >= logging.ERROR:
+            # Error, Critical, Critical_no_exit
             fmt_orig = "%(levelname)s - %(message)s"
             new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "FAIL")
             self._fmt = new_fmt

@@ -25,7 +25,7 @@ import shutil
 
 import six
 
-from convert2rhel import utils
+from convert2rhel import exceptions, utils
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR, download_pkg, remove_orphan_folders, run_subprocess
@@ -354,7 +354,16 @@ class RestorableFile:
                 shutil.copy2(self.filepath, BACKUP_DIR)
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
-                loggerinst.critical("Error(%s): %s" % (err.errno, err.strerror))
+
+                # Replace this with loggerinst.critical_no_exit() once that is
+                # written.
+                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+                    title="Failed to copy file to the backup directory.",
+                    description="During convert2rhel's tests of whether it is likely to succeed, some files on the system are changed. To enable rollback in case we detect something that we would fail to do, we backup those files prior to changing them. In the current case, we encountered a failure while performing that backup so it is unsafe to continue.",
+                    diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
+                )
         else:
             loggerinst.info("Can't find %s.", self.filepath)
 

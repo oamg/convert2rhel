@@ -75,20 +75,77 @@ def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opt
     assert "debug entry 2: data" not in stdouterr_out
 
 
-def test_logger_custom_logger(tmpdir, caplog, clear_loggers):
-    """Test CustomLogger."""
-    log_fname = "convert2rhel.log"
-    logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
-    logger = logging.getLogger(__name__)
-    logger.task("Some task: %s", "data")
-    logger.file("Some task write to file: %s", "data")
-    with pytest.raises(SystemExit):
+class TestCustomLogger:
+    @pytest.mark.parametrize(
+        ("log_method_name", "level_name"),
+        (
+            ("task", "TASK"),
+            ("file", "DEBUG"),
+            ("warning", "WARNING"),
+            ("critical_no_exit", "CRITICAL"),
+        ),
+    )
+    def test_logger_custom_logger(self, log_method_name, level_name, caplog, monkeypatch, tmpdir, clear_loggers):
+        """Test CustomLogger."""
+        log_fname = "convert2rhel.log"
+        logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
+        logger = logging.getLogger(__name__)
+        log_method = getattr(logger, log_method_name)
+
+        log_method("Some task: %s", "data")
+
+        assert len(caplog.records) == 1
+        assert "Some task: data" == caplog.records[-1].message
+        assert caplog.records[-1].levelname == level_name
+
+    def test_logger_critical(self, caplog, tmpdir, clear_loggers):
+        """Test CustomLogger."""
+        log_fname = "convert2rhel.log"
+        logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
+        logger = logging.getLogger(__name__)
+
+        with pytest.raises(SystemExit):
+            logger.critical("Critical error: %s", "data")
+
+        assert len(caplog.records) == 1
+        assert "Critical error: data\n" in caplog.text
+
+    @pytest.mark.parametrize(
+        ("log_method_name", "level_name"),
+        (
+            ("task", "TASK"),
+            ("file", "DEBUG"),
+            ("debug", "DEBUG"),
+            ("warning", "WARNING"),
+            ("critical_no_exit", "CRITICAL"),
+        ),
+    )
+    def test_logger_custom_logger_insufficient_level(
+        self, log_method_name, level_name, caplog, monkeypatch, tmpdir, clear_loggers
+    ):
+        """Test CustomLogger."""
+        log_fname = "convert2rhel.log"
+        logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.CRITICAL + 40)
+        log_method = getattr(logger, log_method_name)
+
+        log_method("Some task: %s", "data")
+
+        assert "Some task: data" not in caplog.text
+        assert not caplog.records
+
+    def test_logger_critical_insufficient_level(self, caplog, tmpdir, clear_loggers):
+        """Test CustomLogger."""
+        log_fname = "convert2rhel.log"
+        logger_module.setup_logger_handler(log_name=log_fname, log_dir=str(tmpdir))
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.CRITICAL + 40)
+
         logger.critical("Critical error: %s", "data")
 
-    assert len(caplog.records) == 3
-    assert "Some task: data\n" in caplog.text
-    assert "Some task write to file: data\n" in caplog.text
-    assert "Critical error: data\n" in caplog.text
+        assert not caplog.records
+        assert "Critical error: data\n" not in caplog.text
 
 
 @pytest.mark.parametrize(

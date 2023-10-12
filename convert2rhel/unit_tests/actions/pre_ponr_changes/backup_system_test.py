@@ -21,7 +21,7 @@ import six
 
 from convert2rhel import backup, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
-from convert2rhel.unit_tests import SysExitCallableObject
+from convert2rhel.unit_tests import CriticalErrorCallableObject
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -38,7 +38,7 @@ def backup_repository_action():
     return backup_system.BackupRepository()
 
 
-class RestorableFileBackupMocked(SysExitCallableObject):
+class RestorableFileBackupMocked(CriticalErrorCallableObject):
     method_spec = backup.RestorableFile.backup
 
 
@@ -68,7 +68,12 @@ class TestBackupSystem:
 
     def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
         mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
-        mock_sys_release_file.backup = RestorableFileBackupMocked("File not found")
+        mock_sys_release_file.backup = RestorableFileBackupMocked(
+            id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+            title="Failed to copy file to the backup directory.",
+            description="Failure while backing up a file.",
+            diagnosis="Failed to backup /etc/system-release. Errno: 2, Error: File not found",
+        )
         monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
 
         backup_redhat_release_action.run()
@@ -76,15 +81,21 @@ class TestBackupSystem:
         unit_tests.assert_actions_result(
             backup_redhat_release_action,
             level="ERROR",
-            id="UNKNOWN_ERROR",
-            title="An unknown error has occurred",
-            description="File not found",
+            id="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+            title="Failed to copy file to the backup directory.",
+            description="Failure while backing up a file.",
+            diagnosis="Failed to backup /etc/system-release. Errno: 2, Error: File not found",
         )
 
     def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
         mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
         mock_os_release_file = mock.create_autospec(backup_system.os_release_file)
-        mock_os_release_file.backup = RestorableFileBackupMocked("File not found")
+        mock_os_release_file.backup = RestorableFileBackupMocked(
+            id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+            title="Failed to copy file to the backup directory.",
+            description="Failure while backing up a file.",
+            diagnosis="Failed to backup /etc/os-release. Errno: 2, Error: File not found",
+        )
 
         monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
         monkeypatch.setattr(backup_system, "os_release_file", mock_os_release_file)
@@ -94,7 +105,8 @@ class TestBackupSystem:
         unit_tests.assert_actions_result(
             backup_redhat_release_action,
             level="ERROR",
-            id="UNKNOWN_ERROR",
-            title="An unknown error has occurred",
-            description="File not found",
+            id="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+            title="Failed to copy file to the backup directory.",
+            description="Failure while backing up a file.",
+            diagnosis="Failed to backup /etc/os-release. Errno: 2, Error: File not found",
         )

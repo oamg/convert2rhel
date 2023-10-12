@@ -25,8 +25,19 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup, grub, pkghandler, subscription, utils
-from convert2rhel.actions import STATUS_CODE
+from convert2rhel import (
+    backup,
+    breadcrumbs,
+    exceptions,
+    grub,
+    main,
+    pkghandler,
+    subscription,
+    systeminfo,
+    toolopts,
+    utils,
+)
+from convert2rhel.actions import STATUS_CODE, report
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
 
@@ -274,6 +285,42 @@ class SysExitCallableObject(MockFunctionObject):
         return sys.exit(self.msg)
 
 
+class CriticalErrorCallableObject(MockFunctionObject):
+    """
+    Base class for any mock function which raises the CriticalError Exception.
+    """
+
+    def __init__(self, id_, title, description=None, diagnosis=None, remediation=None, variables=None, **kwargs):
+        self.id = id_
+        self.title = title
+        self.description = description
+        self.diagnosis = diagnosis
+        self.remediation = remediation
+        self.variables = {} if variables is None else variables
+
+        super(CriticalErrorCallableObject, self).__init__(**kwargs)
+
+    def __call__(self, *args, **kwargs):
+        super(CriticalErrorCallableObject, self).__call__(*args, **kwargs)
+        raise exceptions.CriticalError(
+            self.id,
+            self.title,
+            description=self.description,
+            diagnosis=self.diagnosis,
+            remediation=self.remediation,
+            variables=self.variables,
+        )
+
+
+#
+# actions.report mocks
+#
+
+
+class SummaryAsJsonMocked(MockFunctionObject):
+    spec = report.summary_as_json
+
+
 #
 # backup mocks
 #
@@ -298,6 +345,44 @@ class RemovePkgsMocked(MockFunctionObject):
         self.pkgs = pkgs_to_remove
 
         return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+
+
+#
+# breadcrumbs mocks
+#
+
+
+class CollectEarlyDataMocked(MockFunctionObject):
+    spec = breadcrumbs.Breadcrumbs.collect_early_data
+
+
+class FinishCollectionMocked(MockFunctionObject):
+    spec = breadcrumbs.Breadcrumbs.finish_collection
+
+
+class PrintDataCollectionMocked(MockFunctionObject):
+    spec = breadcrumbs.Breadcrumbs.print_data_collection
+
+
+#
+# main mocks
+#
+
+
+class InitializeLoggerMocked(MockFunctionObject):
+    spec = main.initialize_logger
+
+
+class MainLockedMocked(MockFunctionObject):
+    spec = main.main_locked
+
+
+class RollbackChangesMocked(MockFunctionObject):
+    spec = main.rollback_changes
+
+
+class ShowEulaMocked(MockFunctionObject):
+    spec = main.show_eula
 
 
 #
@@ -332,6 +417,10 @@ class CallYumCmdMocked(MockFunctionObject):
         self.args = kwargs.get("args", [])
 
         return super(CallYumCmdMocked, self).__call__(command, *other_args, **kwargs)
+
+
+class ClearVersionlockMocked(MockFunctionObject):
+    spec = pkghandler.clear_versionlock
 
 
 class GetInstalledPkgInformationMocked(MockFunctionObject):
@@ -457,6 +546,28 @@ class UnregisterSystemMocked(MockFunctionObject):
 
 
 #
+# systeminfo mocks
+#
+
+
+class PrintSystemInformationMocked(MockFunctionObject):
+    spec = systeminfo.system_info.print_system_information
+
+
+class ResolveSystemInfoMocked(MockFunctionObject):
+    spec = systeminfo.system_info.resolve_system_info
+
+
+#
+# toolopts mocks
+#
+
+
+class CLIMocked(MockFunctionObject):
+    spec = toolopts.CLI
+
+
+#
 # utils mocks
 #
 
@@ -509,6 +620,10 @@ class PromptUserMocked(MockFunctionObject):
             return ""
 
         return return_value
+
+
+class RequireRootMocked(MockFunctionObject):
+    spec = utils.require_root
 
 
 class RunSubprocessMocked(MockFunctionObject):
