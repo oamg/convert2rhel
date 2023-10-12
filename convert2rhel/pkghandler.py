@@ -27,7 +27,7 @@ from collections import namedtuple
 
 import rpm
 
-from convert2rhel import backup, pkgmanager, utils
+from convert2rhel import backup, exceptions, pkgmanager, utils
 from convert2rhel.backup import RestorableFile, remove_pkgs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -208,9 +208,9 @@ class RestorablePackageSet(backup.RestorableChange):
         rpms_to_install = [os.path.join(SUBMGR_RPMS_DIR, filename) for filename in os.listdir(SUBMGR_RPMS_DIR)]
 
         loggerinst.info("Installing subscription-manager RPMs.")
-        loggerinst.debug("Rpms scheduled to be installed: %s" % utils.format_sequence_as_message(rpms_to_install))
+        loggerinst.debug("RPMs scheduled for installation: %s" % utils.format_sequence_as_message(rpms_to_install))
 
-        _, ret_code = call_yum_cmd(
+        output, ret_code = call_yum_cmd(
             # We're using distro-sync as there might be various versions of the subscription-manager pkgs installed
             # and we need these packages to be replaced with the provided RPMs from RHEL.
             command="install",
@@ -225,8 +225,15 @@ class RestorablePackageSet(backup.RestorableChange):
             set_releasever=False,
         )
         if ret_code:
-            loggerinst.critical(
+            loggerinst.critical_no_exit(
                 "Failed to install subscription-manager packages. See the above yum output for details."
+            )
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_INSTALL_SUBSCRIPTION-MANAGER_PACKAGES",
+                title="Failed to install subscription-manager packages.",
+                description="To be able to subscribe the system to Red Hat we need subscription-manager packages to do so. Without these packages we can not subscribe the system and we can not install Red Hat Enterprise Linux packages.",
+                diagnosis="Failed to install packages %s. Errno: %s, Error: %s"
+                % (utils.format_sequence_as_message(rpms_to_install), ret_code, output),
             )
 
         installed_pkg_names = get_pkg_names_from_rpm_paths(rpms_to_install)

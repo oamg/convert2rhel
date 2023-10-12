@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import actions, backup, cert, pkghandler, repo, subscription, toolopts, utils
+from convert2rhel import actions, backup, cert, exceptions, pkghandler, repo, subscription, toolopts, utils
 
 
 logger = logging.getLogger(__name__)
@@ -126,10 +126,10 @@ class PreSubscription(actions.Action):
         except SystemExit as e:
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
-            #   - If we can't import the gpg key.
-            #   - if directory does not exist or is empty
+            #   - If we can't import the gpg key. (done)
+            #   - if directory does not exist or is empty (done)
             #   - if we can't download a package
-            #   - if we can't install sub-man rpms
+            #   - if we can't install sub-man rpms (done)
             #   - If sub-man is not installed and --keep-rhsm was used.
 
             # TODO(r0x0d): This should be refactored to handle each case
@@ -140,6 +140,16 @@ class PreSubscription(actions.Action):
                 title="Unknown error",
                 description="The cause of this error is unknown, please look at the diagnosis for more information.",
                 diagnosis=str(e),
+            )
+        except exceptions.CriticalError as e:
+            self.set_result(
+                level="ERROR",
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
             )
         except subscription.UnregisterError as e:
             self.set_result(
@@ -226,15 +236,25 @@ class SubscribeSystem(actions.Action):
                 description="There is a missing subscription-manager binary",
                 diagnosis="Failed to execute command: %s" % e,
             )
+        except exceptions.CriticalError as e:
+            self.set_result(
+                level="ERROR",
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
+            )
         except SystemExit as e:
             # TODO(r0x0d): This should be refactored to handle each case
             # individually rather than relying on SystemExit.
 
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
-            #   - Maximum sub-man retries reached
+            #   - Maximum sub-man retries reached (done)
             #   - If the return-code is different from 0 in disabling repos,
-            #     SystemExit is raised.
+            #     SystemExit is raised. (done)
             self.set_result(
                 level="ERROR",
                 id="UNKNOWN_ERROR",

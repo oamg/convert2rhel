@@ -22,7 +22,7 @@ import logging
 import os
 import shutil
 
-from convert2rhel import backup, utils
+from convert2rhel import backup, exceptions, utils
 
 
 loggerinst = logging.getLogger(__name__)
@@ -61,7 +61,14 @@ class PEMCert(backup.RestorableChange):
                 utils.mkdir_p(self._target_cert_dir)
                 shutil.copy2(self._source_cert_path, self._target_cert_dir)
             except OSError as err:
-                loggerinst.critical("OSError({0}): {1}".format(err.errno, err.strerror))
+                loggerinst.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_INSTALL_CERTIFICATE",
+                    title="Failed to install certificate.",
+                    description="To be able to verify packages we need to install this certificate to the system. This allows convert2rhel to make sure that the package is a legitimate Red Hat Enterprise Linux package.",
+                    diagnosis="Failed to install certificate %s to %s. Errno: %s, Error: %s"
+                    % (self._get_source_cert_path, self._target_cert_dir, err.errno, err.strerror),
+                )
 
             loggerinst.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
 
