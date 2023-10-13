@@ -17,7 +17,7 @@ jobs:
             ver: 7
           - distro: centos
             ver: 8
-          - distro: oracle
+          - distro: centos
             ver: 9
 
     runs-on: ubuntu-22.04

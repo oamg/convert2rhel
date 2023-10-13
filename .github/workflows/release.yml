@@ -60,6 +60,7 @@ jobs:
           asset_content_type: ${{ steps.rpm_build_el8.outputs.content_type }}
 
   build_el9_rpm:
+    if: false
     name: Build EL9 RPM
     runs-on: ubuntu-latest
     steps:
