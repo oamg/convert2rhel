@@ -19,7 +19,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import pkgmanager
+from convert2rhel import exceptions, pkgmanager
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.dnf.callback import (
@@ -104,7 +104,13 @@ class DnfTransactionHandler(TransactionHandlerBase):
             self._base.fill_sack()
         except pkgmanager.exceptions.RepoError as e:
             loggerinst.debug("Loading repository metadata failed: %s" % e)
-            loggerinst.critical("Failed to populate repository metadata.")
+            loggerinst.critical_no_exit("Failed to populate repository metadata.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_ENABLE_REPOS",
+                title="Failed to enable repositories.",
+                description="We've encountered a failure when accessing repository metadata.",
+                diagnosis="Loading repository metadata failed with error %s." % (str(e)),
+            )
 
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
@@ -156,14 +162,26 @@ class DnfTransactionHandler(TransactionHandlerBase):
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
-            loggerinst.critical("Failed to resolve dependencies in the transaction.")
+            loggerinst.critical_no_exit("Failed to resolve dependencies in the transaction.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_RESOLVE_DEPENDENCIES",
+                title="Failed to resolve dependencies.",
+                description="During package transaction dnf failed to resolve the necessary dependencies needed for a package replacement.",
+                diagnosis="Resolve dependencies failed with error %s." % (str(e)),
+            )
 
         loggerinst.info("Downloading the packages that were added to the dnf transaction set.")
         try:
             self._base.download_packages(self._base.transaction.install_set, PackageDownloadCallback())
         except pkgmanager.exceptions.DownloadError as e:
             loggerinst.debug("Got the following exception message: %s" % e)
-            loggerinst.critical("Failed to download the transaction packages.")
+            loggerinst.critical_no_exit("Failed to download the transaction packages.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGES",
+                title="Failed to download packages in the transaction.",
+                description="During package transaction dnf failed to download the necessary packages needed for the transaction.",
+                diagnosis="Package download failed with error %s." % (str(e)),
+            )
 
     def _process_transaction(self, validate_transaction):
         """Internal method that will process the transaction.
@@ -187,7 +205,13 @@ class DnfTransactionHandler(TransactionHandlerBase):
             pkgmanager.exceptions.TransactionCheckError,
         ) as e:
             loggerinst.debug("Got the following exception message: %s", e)
-            loggerinst.critical("Failed to validate the dnf transaction.")
+            loggerinst.critical_no_exit("Failed to validate the dnf transaction.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_VALIDATE_TRANSACTION",
+                title="Failed to validate dnf transaction.",
+                description="During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction.",
+                diagnosis="Transaction processing failed with error %s." % (str(e)),
+            )
 
         if validate_transaction:
             loggerinst.info("Successfully validated the dnf transaction set.")

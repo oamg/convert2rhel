@@ -22,7 +22,7 @@ import os
 import re
 import shutil
 
-from convert2rhel import pkgmanager, utils
+from convert2rhel import exceptions, pkgmanager, utils
 from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
@@ -155,7 +155,13 @@ class YumTransactionHandler(TransactionHandlerBase):
                 self._base.repos.enableRepo(repo)
         except pkgmanager.Errors.RepoError as e:
             loggerinst.debug("Loading repository metadata failed: %s" % e)
-            loggerinst.critical("Failed to populate repository metadata.")
+            loggerinst.critical_no_exit("Failed to populate repository metadata.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_ENABLE_REPOS",
+                title="Failed to enable repositories.",
+                description="We've encountered a failure when accessing repository metadata.",
+                diagnosis="Loading repository metadata failed with error %s." % (str(e)),
+            )
 
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
@@ -195,7 +201,13 @@ class YumTransactionHandler(TransactionHandlerBase):
                         loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
         except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
             loggerinst.debug("Got the following exception message: %s", e)
-            loggerinst.critical("There are no suitable mirrors available for the loaded repositories.")
+            loggerinst.critical_no_exit("There are no suitable mirrors available for the loaded repositories.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_LOAD_REPOSITORIES",
+                title="Failed to find suitable mirrors for the load repositories.",
+                description="All available mirrors were tried and none were available.",
+                diagnosis="Repository mirrors failed with error %s." % (str(e)),
+            )
 
     def _resolve_dependencies(self, validate_transaction):
         """Try to resolve the transaction dependencies.
@@ -292,7 +304,13 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
             loggerinst.debug("Got the following exception message: %s", e)
-            loggerinst.critical("Failed to validate the yum transaction.")
+            loggerinst.critical_no_exit("Failed to validate the yum transaction.")
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_VALIDATE_TRANSACTION",
+                title="Failed to validate yum transaction.",
+                description="During the yum transaction execution an error occured and convert2rhel could no longer process the transaction.",
+                diagnosis="Transaction processing failed with error %s." % (str(e)),
+            )
 
         if validate_transaction:
             loggerinst.info("Successfully validated the yum transaction set.")
@@ -362,7 +380,12 @@ class YumTransactionHandler(TransactionHandlerBase):
                     break
 
             if not resolve_deps_finished:
-                loggerinst.critical("Failed to resolve dependencies in the transaction.")
+                loggerinst.critical_no_exit("Failed to resolve dependencies in the transaction.")
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_RESOLVE_DEPENDENCIES",
+                    title="Failed to resolve dependencies.",
+                    description="During package transaction yum failed to resolve the necessary dependencies needed for a package replacement.",
+                )
 
             self._process_transaction(validate_transaction)
         finally:
