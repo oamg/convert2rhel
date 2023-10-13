@@ -95,7 +95,7 @@ class TestRemovePkgs:
         )
 
         if critical:
-            with pytest.raises(SystemExit):
+            with pytest.raises(exceptions.CriticalError):
                 backup.remove_pkgs(
                     pkgs_to_remove=pkgs_to_remove,
                     backup=backup_pkg,
@@ -359,7 +359,7 @@ def test_changedrpms_packages_controller_install_local_rpms_system_exit(monkeypa
     )
 
     control = backup.ChangedRPMPackagesController()
-    with pytest.raises(SystemExit):
+    with pytest.raises(exceptions.CriticalError):
         control._install_local_rpms(pkgs_to_install=pkgs, replace=False, critical=True)
 
     assert run_subprocess_mock.call_count == 1

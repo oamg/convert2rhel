@@ -105,7 +105,14 @@ class ChangedRPMPackagesController:
             pkgs_as_str = " ".join(pkgs_to_install)
             loggerinst.debug(output.strip())
             if critical:
-                loggerinst.critical("Error: Couldn't install %s packages." % pkgs_as_str)
+                loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
+                raise exceptions.CriticalError(
+                    id_="COULDNT_INSTALL_PACKAGES",
+                    title="Couldn't install packages.",
+                    description="XXX DESCRIPTION.",
+                    diagnosis="Couldn't install %s packages. Command: %s Output: %s Status: %d"
+                    % (pkgs_as_str, cmd, output, ret_code),
+                )
 
             loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
             return False
@@ -355,8 +362,6 @@ class RestorableFile:
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
 
-                # Replace this with loggerinst.critical_no_exit() once that is
-                # written.
                 loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
@@ -514,10 +519,17 @@ def remove_pkgs(
             pkgs_removed.append(nevra)
 
     if pkgs_failed_to_remove:
+        pkgs_as_str = ", ".join(pkgs_failed_to_remove)
         if critical:
-            loggerinst.critical("Error: Couldn't remove %s." % ", ".join(pkgs_failed_to_remove))
+            loggerinst.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
+            raise exceptions.CriticalError(
+                id_="COULDNT_REMOVE_PACKAGES",
+                title="Couldn't remove packages.",
+                description="XXX DESCRIPTION.",
+                diagnosis="Couldn't remove %s." % pkgs_as_str,
+            )
         else:
-            loggerinst.warning("Couldn't remove %s." % ", ".join(pkgs_failed_to_remove))
+            loggerinst.warning("Couldn't remove %s." % pkgs_as_str)
 
     return pkgs_removed
 
