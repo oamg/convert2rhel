@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 #: The filename to store the results of running preassessment
 CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+CONVERT2RHEL_TXT_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
 
 #: Map Status codes (from convert2rhel.actions.STATUS_CODE) to color name (from
 #: convert2rhel.logger.bcolor)
@@ -118,6 +119,31 @@ def wrap_paragraphs(text, width=70, **kwargs):
     return "\n".join(output)
 
 
+def get_combined_results_and_message(results):
+    combined_results_and_message = {}
+
+    for action_id, action_value in results.items():
+        combined_results_and_message[(action_id, action_value["result"]["id"])] = {
+            "level": action_value["result"]["level"],
+            "title": action_value["result"]["title"],
+            "description": action_value["result"]["description"],
+            "remediation": action_value["result"]["remediation"],
+            "diagnosis": action_value["result"]["diagnosis"],
+            "variables": action_value["result"]["variables"],
+        }
+        for message in action_value["messages"]:
+            combined_results_and_message[(action_id, message["id"])] = {
+                "level": message["level"],
+                "title": message["title"],
+                "description": message["description"],
+                "remediation": message["remediation"],
+                "diagnosis": message["diagnosis"],
+                "variables": message["variables"],
+            }
+
+    return combined_results_and_message
+
+
 def summary(results, include_all_reports=False, disable_colors=False):
     """Output a summary regarding the actions execution.
 
@@ -183,27 +209,9 @@ def summary(results, include_all_reports=False, disable_colors=False):
     :type include_all_reports: bool
     """
     logger.task("Pre-conversion analysis report")
-    combined_results_and_message = {}
     report = []
 
-    for action_id, action_value in results.items():
-        combined_results_and_message[(action_id, action_value["result"]["id"])] = {
-            "level": action_value["result"]["level"],
-            "title": action_value["result"]["title"],
-            "description": action_value["result"]["description"],
-            "remediation": action_value["result"]["remediation"],
-            "diagnosis": action_value["result"]["diagnosis"],
-            "variables": action_value["result"]["variables"],
-        }
-        for message in action_value["messages"]:
-            combined_results_and_message[(action_id, message["id"])] = {
-                "level": message["level"],
-                "title": message["title"],
-                "description": message["description"],
-                "remediation": message["remediation"],
-                "diagnosis": message["diagnosis"],
-                "variables": message["variables"],
-            }
+    combined_results_and_message = get_combined_results_and_message(results)
 
     if include_all_reports:
         combined_results_and_message = combined_results_and_message.items()
@@ -254,3 +262,33 @@ def format_report_section_heading(status_code):
 
     heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
     return heading
+
+
+def summary_as_txt(results):
+    """
+    Print the report to txt file. Used mainly by Satellite.
+    Accepts the data preformatted by summary function.
+
+    There is no special formatting needed, just the output of the checks.
+    The data are sorted from ERROR to INFO, SUCCESS aren't included.
+    """
+    txt_result = ""
+
+    combined_results_and_message = get_combined_results_and_message(results)
+
+    combined_results_and_message = find_actions_of_severity(
+        combined_results_and_message, "INFO", level_for_combined_action_data
+    )
+    combined_results_and_message = sorted(combined_results_and_message, key=lambda item: item[1]["level"], reverse=True)
+
+    for message_id, combined_result in combined_results_and_message:
+        entry = format_action_status_message(combined_result["level"], message_id[0], message_id[1], combined_result)
+        entry = colorize(entry, _STATUS_TO_COLOR[combined_result["level"]])
+        entry += "\n"
+        txt_result += entry
+
+    txt_result = txt_result.strip()
+
+    # We need info from the last run, any old results are discarded
+    with open(CONVERT2RHEL_TXT_RESULTS, "w") as file:
+        file.write(txt_result)

@@ -167,6 +167,7 @@ def test_main(monkeypatch, tmp_path):
     check_kernel_boot_files_mock = mock.Mock()
     update_rhsm_custom_facts_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
+    summary_as_txt_mock = mock.Mock()
 
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     monkeypatch.setattr(utils, "require_root", require_root_mock)
@@ -192,6 +193,7 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
     monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+    monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
     assert main.main() == 0
     assert require_root_mock.call_count == 1
@@ -215,6 +217,7 @@ def test_main(monkeypatch, tmp_path):
     assert check_kernel_boot_files_mock.call_count == 1
     assert update_rhsm_custom_facts_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
+    assert summary_as_txt_mock.call_count == 1
 
 
 class TestRollbackFromMain:
@@ -296,6 +299,7 @@ class TestRollbackFromMain:
         clean_yum_metadata_mock = mock.Mock()
         run_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
         clear_versionlock_mock = mock.Mock()
+        summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
@@ -317,6 +321,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
         assert main.main() == 1
         assert require_root_mock.call_count == 1
@@ -332,7 +337,7 @@ class TestRollbackFromMain:
         assert finish_collection_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 0
-        print(caplog.records)
+        assert summary_as_txt_mock.call_count == 0
         assert (
             caplog.records[-2].message.strip()
             == "Conversion interrupted before analysis of system completed. Report not generated."
@@ -353,6 +358,7 @@ class TestRollbackFromMain:
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         find_actions_of_severity_mock = mock.Mock()
+        summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
@@ -376,6 +382,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
         assert main.main() == 1
         assert require_root_mock.call_count == 1
@@ -393,6 +400,7 @@ class TestRollbackFromMain:
         assert finish_collection_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
+        assert summary_as_txt_mock.call_count == 1
         assert caplog.records[-3].message == "Conversion failed."
         assert caplog.records[-3].levelname == "CRITICAL"
 
@@ -410,6 +418,7 @@ class TestRollbackFromMain:
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
+        summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
@@ -432,6 +441,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
         global_tool_opts.activity = "analysis"
 
         assert main.main() == 0
@@ -449,6 +459,7 @@ class TestRollbackFromMain:
         assert finish_collection_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
+        assert summary_as_txt_mock.call_count == 1
 
     def test_main_rollback_post_ponr_changes_phase(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
@@ -467,6 +478,7 @@ class TestRollbackFromMain:
         ask_to_continue_mock = mock.Mock()
         post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
         summary_as_json_mock = mock.Mock()
+        summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
@@ -491,6 +503,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
+        monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
         assert main.main() == 1
         assert require_root_mock.call_count == 1
@@ -509,6 +522,7 @@ class TestRollbackFromMain:
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
+        assert summary_as_txt_mock.call_count == 1
         assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
         assert update_rhsm_custom_facts_mock.call_count == 1
 

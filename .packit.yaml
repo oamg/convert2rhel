@@ -56,9 +56,6 @@ jobs:
         distros: [centos-7]
       epel-8-x86_64:
         distros: [centos-8-latest]
-      epel-9-x86_64:
-        # TBD: so far it's just guessing of the distro strings
-        distros: [oraclelinux-9-latest, AlmaLinux-OS-9.2, rocky-linux-9.2]
     trigger: pull_request
     identifier: "tier0-non-destructive-centos"
     tmt_plan: "tier0/non-destructive"

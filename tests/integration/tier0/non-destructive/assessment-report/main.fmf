@@ -5,6 +5,7 @@ description+: |
     Verify that the pre-assessment report is working as intended.
     Verify the report is also created as json file
     and validate the json report against its given json schema.
+    Verify the report is also created as a txt file.
 
 tier: 0
 
