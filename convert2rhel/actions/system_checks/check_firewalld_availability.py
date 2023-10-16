@@ -32,7 +32,7 @@ class CheckFirewalldAvailability(actions.Action):
         super(CheckFirewalldAvailability, self).run()
         logger.task("Prepare: Check that firewalld is running")
 
-        if system_info.version.major < 8:
+        if system_info.version.major != 8 and system_info.minor != 8:
             description = "Skipping the check as it is relevant only for Oracle/Alma/Rocky Linux 8."
             logger.info(description)
             self.add_message(
