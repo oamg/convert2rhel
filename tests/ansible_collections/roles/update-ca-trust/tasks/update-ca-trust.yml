@@ -2,7 +2,7 @@
 - name: Download the internal CA certificate
   get_url:
     url: "{{ lookup('ansible.builtin.env', 'CACERT_URL') }}"
-    dest: /etc/pki/ca-trust/source/anchors/RH-IT-Root-CA.crt
+    dest: /etc/pki/ca-trust/source/anchors/Current-IT-Root-CAs.pem
 
 - name: Add the certificate to trusted CA's
   shell: update-ca-trust
