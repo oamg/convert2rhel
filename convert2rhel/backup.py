@@ -107,7 +107,7 @@ class ChangedRPMPackagesController:
             if critical:
                 loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
                 raise exceptions.CriticalError(
-                    id_="COULDNT_INSTALL_PACKAGES",
+                    id_="FAILED_TO_INSTALL_PACKAGES",
                     title="Couldn't install packages.",
                     description="While attempting to roll back changes, we encountered an unexpected failure while attempting to reinstall one or more packages that we removed as part of the conversion.",
                     diagnosis="Couldn't install %s packages. Command: %s Output: %s Status: %d"
@@ -523,7 +523,7 @@ def remove_pkgs(
         if critical:
             loggerinst.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
             raise exceptions.CriticalError(
-                id_="COULDNT_REMOVE_PACKAGES",
+                id_="FAILED_TO_REMOVE_PACKAGES",
                 title="Couldn't remove packages.",
                 description="While attempting to roll back changes, we encountered an unexpected failure while attempting to remove one or more of the packages we installed earlier.",
                 diagnosis="Couldn't remove %s." % pkgs_as_str,
