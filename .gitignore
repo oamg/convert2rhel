@@ -18,6 +18,6 @@ system_tests/vmdefs/centos*/.vagrant/
 .cache/
 .pytest_cache/*
 .mypy_cache/*
-
+TAGS
 .vscode/*
 !.vscode/extensions.json
