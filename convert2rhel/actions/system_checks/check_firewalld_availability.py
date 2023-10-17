@@ -32,26 +32,27 @@ class CheckFirewalldAvailability(actions.Action):
         super(CheckFirewalldAvailability, self).run()
         logger.task("Prepare: Check that firewalld is running")
 
-        if system_info.version.major != 8 and system_info.minor != 8:
-            description = "Skipping the check as it is relevant only for Oracle/Alma/Rocky Linux 8."
-            logger.info(description)
-            self.add_message(
-                level="INFO",
-                id="CHECK_FIREWALLD_AVAILABILITY_SKIP",
-                title="Skipping the check for firewalld availability.",
-                description=description,
-            )
+        if system_info.id == "oracle" and (system_info.version.major == 8 and system_info.version.minor >= 8):
+            if systeminfo.is_systemd_managed_service_running("firewalld"):
+                self.set_result(
+                    level="ERROR",
+                    id="FIREWALLD_DAEMON_RUNNING",
+                    title="Firewalld is running",
+                    description="Firewalld is running and can cause problem during the package replacement phase.",
+                    diagnosis="Firewalld daemon unit is running and it may cause problems during package replacement in later phases.",
+                    remediation="Please stop firewalld using `systemctl stop firewalld` until the conversion is done, and then, start it again with `systemctl start firewalld`",
+                )
+                return
+
+            logger.info("Firewalld is not running.")
             return
 
-        if systeminfo.is_systemd_managed_service_running("firewalld"):
-            self.set_result(
-                level="ERROR",
-                id="FIREWALLD_DAEMON_RUNNING",
-                title="Firewalld is running",
-                description="Firewalld is running and can cause problem during the package replacement phase.",
-                diagnosis="Firewalld daemon unit is running and it may cause problems during package replacement in later phases.",
-                remediation="Please stop firewalld using `systemctl stop firewalld` until the conversion is done, and then, start it again with `systemctl start firewalld`",
-            )
-            return
-
-        logger.info("Firewalld is not running.")
+        description = "Skipping the check as it is relevant only for Oracle Linux 8.8 and above."
+        logger.info(description)
+        self.add_message(
+            level="INFO",
+            id="CHECK_FIREWALLD_AVAILABILITY_SKIP",
+            title="Skipping the check for firewalld availability.",
+            description=description,
+        )
+        return

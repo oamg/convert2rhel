@@ -50,7 +50,7 @@ def test_check_firewalld_availability_not_supported_system(
                 level="INFO",
                 id="CHECK_FIREWALLD_AVAILABILITY_SKIP",
                 title="Skipping the check for firewalld availability.",
-                description="Skipping the check as it is relevant only for Oracle/Alma/Rocky Linux 8.",
+                description="Skipping the check as it is relevant only for Oracle Linux 8.8 and above.",
                 diagnosis=None,
                 remediation=None,
             ),
@@ -62,11 +62,15 @@ def test_check_firewalld_availability_not_supported_system(
 
 @oracle8
 def test_check_firewalld_availability_is_running(
-    pretend_os, check_firewalld_availability_is_running_action, monkeypatch
+    pretend_os, check_firewalld_availability_is_running_action, monkeypatch, global_system_info
 ):
+    monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
     monkeypatch.setattr(
         check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: True
     )
+    global_system_info.id = "oracle"
+    global_system_info.version = Version(8, 8)
+
     check_firewalld_availability_is_running_action.run()
 
     unit_tests.assert_actions_result(
@@ -82,11 +86,15 @@ def test_check_firewalld_availability_is_running(
 
 @oracle8
 def test_check_firewalld_availability_not_running(
-    pretend_os, check_firewalld_availability_is_running_action, caplog, monkeypatch
+    pretend_os, check_firewalld_availability_is_running_action, caplog, monkeypatch, global_system_info
 ):
+    monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
     monkeypatch.setattr(
         check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: False
     )
+    global_system_info.id = "oracle"
+    global_system_info.version = Version(8, 8)
+
     check_firewalld_availability_is_running_action.run()
 
     assert caplog.records[-1].message == "Firewalld is not running."
