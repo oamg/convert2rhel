@@ -102,7 +102,7 @@ class ChangedRPMPackagesController:
         cmd = cmd_param + pkgs_to_install
         output, ret_code = run_subprocess(cmd, print_output=False)
         if ret_code != 0:
-            pkgs_as_str = " ".join(pkgs_to_install)
+            pkgs_as_str = utils.format_sequence_as_message(pkgs_to_install)
             loggerinst.debug(output.strip())
             if critical:
                 loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
@@ -519,7 +519,7 @@ def remove_pkgs(
             pkgs_removed.append(nevra)
 
     if pkgs_failed_to_remove:
-        pkgs_as_str = ", ".join(pkgs_failed_to_remove)
+        pkgs_as_str = utils.format_sequence_as_message(pkgs_failed_to_remove)
         if critical:
             loggerinst.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
             raise exceptions.CriticalError(
