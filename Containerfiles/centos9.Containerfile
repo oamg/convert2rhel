@@ -1,4 +1,4 @@
-FROM centos:stream9 as base
+FROM quay.io/centos/centos:stream9 as base
 
 ENV PYTHON python3
 ENV PIP pip3
