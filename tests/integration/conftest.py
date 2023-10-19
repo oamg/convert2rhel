@@ -142,6 +142,62 @@ def convert2rhel(shell):
             if unregister:
                 shell("subscription-manager unregister")
 
+            # Scan for unknown errors in the pre-conversion assessment.
+            try:
+                with open("JSON") as f:
+                    assessment = json.read(f)
+            except Exception:
+                # We only check for unknown errors when the run created the
+                # json formatted assessment.
+                pass
+            else:
+                message = []
+                for action in assessment:
+                    if action["result"].id == "UNKNOWN_ERROR":
+                        message.extend(
+                            (
+                                "== Action caught SystemExit and returned an UNKNOWN_ERROR:",
+                                "%s: %s" % (action.id, action["result"]),
+                            )
+                        )
+
+                    elif action["result"].id == "UNEXPECTED_ERROR":
+                        message.extend(
+                            (
+                                "== Action Framework caught an unhandled exception from an Action and returned an UNEXPECTED_ERROR:",
+                                "%s: %s" % (action.id, action["result"]),
+                            )
+                        )
+
+                    # The next two are specific to two Actions. We can remove these from this
+                    # function once they are ported in convert2rhel.
+                    elif (
+                        action.id == "REMOVE_EXCLUDED_PACKAGES"
+                        and action["result"].id == "EXCLUDED_PACKAGE_REMOVAL_FAILED"
+                        and "unknown" in action["result"].description
+                    ):
+                        message.extend(
+                            (
+                                "== Action caught SystemExit while removing packages:",
+                                "%s: %s" % (action.id, action["result"]),
+                            )
+                        )
+
+                    elif (
+                        action.id == "REMOVE_EXCLUDED_PACKAGES"
+                        and action["result"].id == "REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED"
+                        and "unknown" in action["result"].description
+                    ):
+                        message.extend(
+                            (
+                                "== Action caught SystemExit while removing packages:",
+                                "%s: %s" % (action.id, action["result"]),
+                            )
+                        )
+
+                if message:
+                    raise RuntimeError("\n".join(message))
+
     return factory
 
 
