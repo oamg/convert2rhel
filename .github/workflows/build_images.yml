@@ -8,6 +8,7 @@ jobs:
   build_and_publish:
     name: build-${{ matrix.el.distro }}${{ matrix.el.ver }}
     strategy:
+      fail-fast: false
       matrix:
         el:
           - distro: centos
