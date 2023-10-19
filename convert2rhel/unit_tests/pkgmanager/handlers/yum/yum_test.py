@@ -29,7 +29,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import exceptions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RemovePkgsMocked, create_pkg_information, mock_decorator
@@ -137,7 +137,7 @@ class TestYumTransactionHandler:
 
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
         monkeypatch.setattr(pkgmanager.RepoStorage, "enableRepo", mock.Mock(side_effect=pkgmanager.Errors.RepoError))
-        with pytest.raises(SystemExit, match="Failed to populate repository metadata."):
+        with pytest.raises(exceptions.CriticalError):
             instance._enable_repos()
 
         assert pkgmanager.RepoStorage.disableRepo.called_once()
@@ -184,7 +184,7 @@ class TestYumTransactionHandler:
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
 
-        with pytest.raises(SystemExit, match="There are no suitable mirrors available for the loaded repositories."):
+        with pytest.raises(exceptions.CriticalError):
             instance._perform_operations()
 
     @centos7
@@ -239,7 +239,7 @@ class TestYumTransactionHandler:
         instance._set_up_base()
         pkgmanager.YumBase.processTransaction.side_effect = side_effects
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             instance._process_transaction(validate_transaction=False)
 
         assert "Failed to validate the yum transaction." in caplog.records[-1].message
@@ -295,7 +295,7 @@ class TestYumTransactionHandler:
         instance = YumTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(SystemExit, match="Failed to resolve dependencies in the transaction."):
+        with pytest.raises(exceptions.CriticalError):
             instance.run_transaction(validate_transaction=False)
 
         perform_operations_count, resolve_dependencies_count = expected_count

@@ -19,7 +19,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import pkghandler, pkgmanager
+from convert2rhel import exceptions, pkghandler, pkgmanager
 from convert2rhel.pkgmanager.handlers.dnf import DnfTransactionHandler
 from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgressIndicatorCallback
 from convert2rhel.systeminfo import system_info
@@ -210,7 +210,7 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
         pkgmanager.repodict.RepoDict.all = mock.Mock(return_value=enabled_repos)
         pkgmanager.Base.fill_sack = mock.Mock(side_effect=pkgmanager.exceptions.RepoError)
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             instance._enable_repos()
 
         assert "Failed to populate repository metadata." in caplog.records[-1].message
@@ -297,7 +297,7 @@ class TestDnfTransactionHandler:
         instance = DnfTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             instance._resolve_dependencies()
 
         assert pkgmanager.Base.resolve.call_count == 1
@@ -309,7 +309,7 @@ class TestDnfTransactionHandler:
         instance = DnfTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             instance._resolve_dependencies()
 
         assert pkgmanager.Base.resolve.call_count == 1
@@ -342,7 +342,7 @@ class TestDnfTransactionHandler:
         instance = DnfTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             instance._process_transaction(validate_transaction=False)
 
         assert pkgmanager.Base.do_transaction.called_once()
