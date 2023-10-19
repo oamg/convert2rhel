@@ -10,6 +10,7 @@ jobs:
   coverage:
     name: coverage-${{ matrix.el.distro }}${{ matrix.el.ver }}
     strategy:
+      fail-fast: false
       matrix:
           el:
             - distro: centos
