@@ -27,7 +27,7 @@ import pytest
 import rpm
 import six
 
-from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import backup, exceptions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkghandler import (
     PackageInformation,
     PackageNevra,
@@ -731,7 +731,7 @@ class TestRestorablePackageSet:
         monkeypatch.setattr(pkghandler, "call_yum_cmd", yum_cmd)
         monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             package_set.enable()
 
         assert (
@@ -848,7 +848,7 @@ class TestDownloadRHSMPkgs:
         monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
         monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(return_value=["/path/to.rpm", None]))
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             pkghandler.download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
 
 
