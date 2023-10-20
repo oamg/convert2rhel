@@ -82,13 +82,13 @@ description+: |
             - name: install one kernel
               how: shell
               script: pytest -svv tests/integration/*/destructive/one-kernel-scenario/install_one_kernel.py
-            - name: reboot machine
+            - name: reboot machine to the one kernel
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
             - name: remove other kernels
               how: shell
               script: pytest -svv tests/integration/*/destructive/one-kernel-scenario/remove_other_kernels.py
-            - name: reboot machine
+            - name: reboot after all other kernels were removed
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
             - name: run conversion
@@ -133,13 +133,13 @@ description+: |
             - name: prepare non latest kernel
               how: shell
               script: pytest -svv tests/integration/*/destructive/system-up-to-date/install_non_latest_kernel.py
-            - name: reboot machine
+            - name: reboot machine to the non latest kernel
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
             - name: test inhibitor on non latest kernels
               how: shell
               script: pytest -svv tests/integration/*/destructive/system-up-to-date/test_non_latest_kernel_inhibitor.py
-            - name: reboot machine
+            - name: reboot machine back to the latest kernel
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
             - name: test conversion non updated package
