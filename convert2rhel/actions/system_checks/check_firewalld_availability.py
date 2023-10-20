@@ -38,9 +38,9 @@ class CheckFirewalldAvailability(actions.Action):
                     level="ERROR",
                     id="FIREWALLD_DAEMON_RUNNING",
                     title="Firewalld is running",
-                    description="Firewalld is running and can cause problem during the package replacement phase.",
-                    diagnosis="Firewalld daemon unit is running and it may cause problems during package replacement in later phases.",
-                    remediation="Please stop firewalld using `systemctl stop firewalld` until the conversion is done, and then, start it again with `systemctl start firewalld`",
+                    description="Firewalld is running and can cause problems during the package replacement phase.",
+                    diagnosis="Firewalld daemon unit is running and might cause problems during package replacement in later phases.",
+                    remediation="Stop firewalld by using the `systemctl stop firewalld` command. After the conversion, restart firewalld using the `systemctl start firewalld` command.",
                 )
                 return
 
