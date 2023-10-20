@@ -19,6 +19,8 @@ __metaclass__ = type
 
 import os
 
+from unittest import mock
+
 import pytest
 
 from convert2rhel import actions, systeminfo, unit_tests, utils
