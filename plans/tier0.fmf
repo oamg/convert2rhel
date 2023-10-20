@@ -177,7 +177,7 @@ description+: |
             discover+:
                   filter: tag:checks-after-conversion
             prepare+:
-                  - name: enable CentOS' extras repo
+                  - name: enable CentOS extras repo
                     how: ansible
                     playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                   - name: install problematic package
