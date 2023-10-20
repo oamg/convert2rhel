@@ -78,9 +78,9 @@ def test_check_firewalld_availability_is_running(
         level="ERROR",
         id="FIREWALLD_DAEMON_RUNNING",
         title="Firewalld is running",
-        description="Firewalld is running and can cause problem during the package replacement phase.",
-        diagnosis="Firewalld daemon unit is running and it may cause problems during package replacement in later phases.",
-        remediation="Please stop firewalld using `systemctl stop firewalld` until the conversion is done, and then, start it again with `systemctl start firewalld`",
+        description="Firewalld is running and can cause problems during the package replacement phase.",
+        diagnosis="We've detected that firewalld unit is running and might cause system problems after the conversion is done.",
+        remediation="Stop firewalld by using the `systemctl stop firewalld` command. This will prevent errors while convert2rhel replaces the system packages and the kernel, whoever, that might not prevent errors from appearing the firewalld logs after the conversion.",
     )
 
 
