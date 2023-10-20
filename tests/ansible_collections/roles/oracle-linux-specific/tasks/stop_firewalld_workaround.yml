@@ -1,0 +1,3 @@
+---
+- name: Stop the firewalld process
+  shell: 'rpm -q firewalld && systemctl stop firewalld && systemctl disable firewalld'
