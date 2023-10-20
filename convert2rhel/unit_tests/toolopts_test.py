@@ -712,3 +712,48 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
     t_opts.no_rhsm = no_rhsm
 
     assert convert2rhel.toolopts._should_subscribe(t_opts) is expected
+
+
+@pytest.mark.parametrize(
+    ("argv", "env_var", "expected", "message"),
+    (
+        (
+            ["analyze", "--no-rpm-va"],
+            False,
+            False,
+            "We will proceed with ignoring the --no-rpm-va option as running rpm -Va in the analysis mode is essential for a complete rollback to the original system state at the end of the analysis.",
+        ),
+        (
+            ["analyze", "--no-rpm-va"],
+            True,
+            False,
+            "We will proceed with ignoring the --no-rpm-va option as running rpm -Va in the analysis mode is essential for a complete rollback to the original system state at the end of the analysis.",
+        ),
+        (
+            ["--no-rpm-va"],
+            False,
+            False,
+            "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
+        ),
+        (["--no-rpm-va"], True, True, ""),
+    ),
+)
+def test_setting_no_rpm_va(argv, env_var, expected, message, monkeypatch, global_tool_opts, caplog):
+    monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
+    if env_var:
+        os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+    else:
+        # Unset the variable
+        try:
+            os.environ.pop("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
+        except KeyError:
+            pass
+
+    try:
+        convert2rhel.toolopts.CLI()
+    except SystemExit:
+        pass
+
+    assert global_tool_opts.no_rpm_va == expected
+    if message:
+        assert caplog.records[-1].message == message

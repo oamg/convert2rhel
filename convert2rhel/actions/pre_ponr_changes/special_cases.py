@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class RemoveIwlax2xxFirmware(actions.Action):
     id = "REMOVE_IWLAX2XX_FIRMWARE"
+    dependencies = ("BACKUP_PACKAGE_FILES",)
 
     def run(self):
         """
