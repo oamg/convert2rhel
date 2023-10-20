@@ -565,6 +565,7 @@ def test_kernel_modules_rhel_kernel_module_not_found_error(ensure_kernel_modules
             )
         ),
     )
+    monkeypatch.setattr(EnsureKernelModulesCompatibility, "_get_loaded_kmods", mock.Mock(return_value="loaded_kmods"))
     ensure_kernel_modules_compatibility_instance.run()
     print(ensure_kernel_modules_compatibility_instance.result)
     assert_actions_result(
