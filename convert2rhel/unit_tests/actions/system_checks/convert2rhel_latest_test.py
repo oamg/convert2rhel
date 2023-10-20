@@ -19,6 +19,8 @@ __metaclass__ = type
 
 import os
 
+from unittest import mock
+
 import pytest
 import six
 
