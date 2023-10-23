@@ -36,11 +36,15 @@ class CheckFirewalldAvailability(actions.Action):
             if systeminfo.is_systemd_managed_service_running("firewalld"):
                 self.set_result(
                     level="ERROR",
-                    id="FIREWALLD_DAEMON_RUNNING",
+                    id="FIREWALLD_RUNNING",
                     title="Firewalld is running",
                     description="Firewalld is running and can cause problems during the package replacement phase.",
-                    diagnosis="We've detected that firewalld unit is running and might cause system problems after the conversion is done.",
-                    remediation="Stop firewalld by using the `systemctl stop firewalld` command. This will prevent errors while convert2rhel replaces the system packages and the kernel, whoever, that might not prevent errors from appearing the firewalld logs after the conversion.",
+                    diagnosis="We've detected that firewalld unit is running and might cause problems related to kernel modules after the conversion is done.",
+                    remediation=(
+                        "Stop firewalld by using the `systemctl stop firewalld` command. This will prevent errors while convert2rhel replaces the system packages"
+                        " and the kernel, whoever, that might not prevent errors from appearing the firewalld logs after the conversion. After the conversion is done,"
+                        " reboot the system to load the new RHEL kernel modules and start firewalld with `systemctl start firewalld` once more."
+                    ),
                 )
                 return
 
