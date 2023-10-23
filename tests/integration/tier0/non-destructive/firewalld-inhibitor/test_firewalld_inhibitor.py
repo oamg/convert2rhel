@@ -10,6 +10,7 @@ def test_firewalld_inhibitor(shell, convert2rhel):
     """
     assert shell("rpm -q firewalld").returncode == 0
     assert shell("systemctl start firewalld").returncode == 0
+    assert shell("systemctl enable firewalld").returncode == 0
 
     with convert2rhel("-y --no-rpm-va --debug", unregister=True) as c2r:
         c2r.expect(
@@ -21,3 +22,4 @@ def test_firewalld_inhibitor(shell, convert2rhel):
 
     # Clean up
     assert shell("systemctl stop firewalld").returncode == 0
+    assert shell("systemctl disable firewalld").returncode == 0

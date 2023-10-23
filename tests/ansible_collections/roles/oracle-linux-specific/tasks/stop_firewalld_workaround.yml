@@ -1,3 +1,12 @@
 ---
+- name: Check that the firewalld package is installed
+  shell: 'rpm -q firewalld'
+  ignore_errors: True
+  register: rpm_out
+
 - name: Stop the firewalld process
-  shell: 'rpm -q firewalld && systemctl stop firewalld && systemctl disable firewalld'
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  when: rpm_out.rc == 0

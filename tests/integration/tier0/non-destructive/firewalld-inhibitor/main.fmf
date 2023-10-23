@@ -1,13 +1,9 @@
 summary: |
-    Check that the the c2r inhibits in certain scenario when the firewalld is running
+    Running firewalld inhibitor
 description: |
-    On Oracle Linux 8.8 there is an issue with the running firewalld process
-    that breaks the conversion. In such case the inhibitor has to be raised.
-
-tier: 0
-
-tag+:
-    - firewalld-inhibitor
+    Verify that the inhibitor is raised, when the firewalld service is running before
+    and during the conversion.
+    This only applies to Oracle Linux (>=) 8.8.
 
 enabled: false
 adjust+:
