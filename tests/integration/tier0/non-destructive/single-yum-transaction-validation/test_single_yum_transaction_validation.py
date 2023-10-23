@@ -22,7 +22,6 @@ elif "rocky" in SYSTEM_RELEASE_ENV:
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
-    FINAL_MESSAGE = "Diagnosis: Failed to download the transaction packages."
 
 
 @pytest.fixture()
@@ -90,8 +89,16 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
 
         remove_entitlement_certs()
 
-        assert c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNKNOWN_ERROR") == 0
-        assert c2r.expect(FINAL_MESSAGE, timeout=600) == 0
+        # Error header first
+        c2r.expect("Pre-conversion analysis report", timeout=600)
+        c2r.expect("Must fix before conversion")
+        if "8" in SYSTEM_RELEASE_ENV:
+            # TODO
+            # The second message should be in plural - FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGES,
+            # but the regex has troubles finding it, as it reports on another line
+            c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGE")
+        else:
+            c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_LOAD_REPOSITORIES")
 
     assert c2r.exitstatus == 1
 
@@ -124,14 +131,15 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
 
         remove_entitlement_certs()
-        assert (
-            c2r.expect_exact(
-                "VALIDATE_PACKAGE_MANAGER_TRANSACTION::UNKNOWN_ERROR - Unknown",
-                timeout=600,
-            )
-            == 0
+        c2r.expect("Failed to validate the yum transaction.", timeout=600)
+
+        # Error header first
+        c2r.expect("Pre-conversion analysis report", timeout=600)
+        c2r.expect("Must fix before conversion")
+        c2r.expect_exact(
+            "VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_VALIDATE_TRANSACTION",
+            timeout=600,
         )
-        assert c2r.expect("Failed to validate the yum transaction.", timeout=600) == 0
 
     assert c2r.exitstatus == 1
 
@@ -181,7 +189,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        assert c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded") == 0
+        c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
         # Exit at PONR
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")

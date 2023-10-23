@@ -58,18 +58,18 @@ def test_failures_and_skips_in_report(convert2rhel):
         c2r.sendline("y")
 
         # Assert that we start rollback first
-        assert c2r.expect_exact("TASK - [Rollback:") == 0
+        c2r.expect_exact("TASK - [Rollback:")
 
         # Then, verify that the analysis report is printed
-        assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0
+        c2r.expect("Pre-conversion analysis report", timeout=600)
 
         # Error header first
-        assert c2r.expect("Must fix before conversion", timeout=600) == 0
-        c2r.expect("SUBSCRIBE_SYSTEM::UNKNOWN_ERROR - Unknown error")
-        c2r.expect("Unable to register the system through subscription-manager.")
+        c2r.expect("Must fix before conversion", timeout=600)
+        c2r.expect("SUBSCRIBE_SYSTEM::FAILED_TO_SUBSCRIBE_SYSTEM")
+        c2r.expect("Diagnosis: System registration failed with error")
 
         # Skip header
-        assert c2r.expect("Could not be checked due to other failures", timeout=600) == 0
+        c2r.expect("Could not be checked due to other failures", timeout=600)
         c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY::SKIP - Skipped")
         c2r.expect("Skipped because SUBSCRIBE_SYSTEM was not successful")
 
@@ -98,10 +98,10 @@ def test_successful_report(convert2rhel):
         c2r.sendline("y")
 
         # Assert that we start rollback first
-        assert c2r.expect("Rollback: RHSM-related actions") == 0
+        c2r.expect("Rollback: RHSM-related actions")
 
         # Then, verify that the analysis report is printed
-        assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0
+        c2r.expect("Pre-conversion analysis report", timeout=600)
 
         # Verify that only success header printed out, assert if error or skip header appears
         c2r_report_header_index = c2r.expect(
@@ -144,10 +144,10 @@ def test_convert_successful_report(convert2rhel):
         c2r.sendline("n")
 
         # Assert that the utility starts the rollback first
-        assert c2r.expect("Rollback: RHSM-related actions") == 0
+        c2r.expect("Rollback: RHSM-related actions")
 
         # Then, verify that the analysis report TASK header is printed
-        assert c2r.expect("Pre-conversion analysis report", timeout=600) == 0
+        c2r.expect("Pre-conversion analysis report", timeout=600)
 
         # Verify that none of the headers is present, assert if it is present
         c2r_report_header_index = c2r.expect(
