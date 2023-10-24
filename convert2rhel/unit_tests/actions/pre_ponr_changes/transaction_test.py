@@ -17,7 +17,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import pkgmanager, unit_tests
+from convert2rhel import exceptions, pkgmanager, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import transaction
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
@@ -71,7 +71,10 @@ def test_validate_package_manager_transaction_unknown_error(
     monkeypatch.setattr(
         pkgmanager,
         "create_transaction_handler",
-        mock.Mock(spec=pkgmanager.create_transaction_handler, side_effect=SystemExit("Exiting...")),
+        mock.Mock(
+            spec=pkgmanager.create_transaction_handler,
+            side_effect=exceptions.CriticalError(id_="ID", title="Title", description="Description"),
+        ),
     )
 
     validate_package_manager_transaction.run()
@@ -79,8 +82,7 @@ def test_validate_package_manager_transaction_unknown_error(
     unit_tests.assert_actions_result(
         validate_package_manager_transaction,
         level="ERROR",
-        id="UNKNOWN_ERROR",
-        title="Unknown",
-        description="The cause of this error is unknown, please look at the diagnosis for more information.",
-        diagnosis="Exiting...",
+        id="ID",
+        title="Title",
+        description="Description",
     )
