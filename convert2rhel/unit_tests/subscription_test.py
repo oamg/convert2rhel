@@ -1189,22 +1189,22 @@ def test_enable_repos_toolopts_enablerepo(
         (("output", 1), "Locking RHEL repositories failed"),
     ),
 )
-def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch, caplog):
+@centos8
+def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch, caplog, pretend_os):
     cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd, subprocess),
         )
     )
+    version = Version(8, 6)
+    monkeypatch.setattr(system_info, "version", version)
     monkeypatch.setattr(
         utils,
         "run_subprocess",
         value=run_subprocess_mock,
     )
-    eus_version = EUS_MINOR_VERSIONS[0].split(".")
-    major_version = eus_version[0]
-    minor_version = eus_version[1]
-    monkeypatch.setattr(system_info, "version", Version(major_version, minor_version))
+    monkeypatch.setattr(system_info, "eus_system", value=True)
     subscription.lock_releasever_in_rhel_repositories()
 
     assert expected in caplog.records[-1].message

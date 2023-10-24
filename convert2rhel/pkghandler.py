@@ -677,7 +677,7 @@ def _get_package_repositories(pkgs):
 
     output, retcode = utils.run_subprocess(
         ["repoquery", "--quiet", "-q"] + pkgs + ["--qf", query_format],
-        print_cmd=False,
+        print_cmd=True,
         print_output=False,
     )
     output = [line for line in output.split("\n") if line]

@@ -37,7 +37,7 @@ class IsLoadedKernelLatest(actions.Action):
         super(IsLoadedKernelLatest, self).run()
         logger.task("Prepare: Check if the loaded kernel version is the most recent")
 
-        if system_info.id == "oracle" and system_info.corresponds_to_rhel_eus_release():
+        if system_info.id == "oracle" and system_info.eus_system:
             logger.info(
                 "Skipping the check because there are no publicly available %s %d.%d repositories available."
                 % (system_info.name, system_info.version.major, system_info.version.minor)

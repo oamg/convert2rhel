@@ -51,8 +51,11 @@ RELEASE_VER_MAPPING = {
     "7.9": "7Server",
 }
 
-# List of EUS minor versions supported
-EUS_MINOR_VERSIONS = ["8.6"]
+# Dictionary of EUS minor versions supported and their EUS period start date
+EUS_MINOR_VERSIONS = {
+    "8.6": "2022-11-09",
+    "8.8": "2023-11-14",
+}
 
 Version = namedtuple("Version", ["major", "minor"])
 
@@ -81,6 +84,10 @@ class SystemInfo:
             # RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e",
         ]
+        # Whether the system has internet access
+        self.has_internet_access = None
+        # Whether the system release corresponds to a rhel eus release
+        self.eus_system = None
         # Packages to be removed before the system conversion
         self.excluded_pkgs = []
         # Release packages to be removed before the system conversion
@@ -124,6 +131,7 @@ class SystemInfo:
         self.booted_kernel = self._get_booted_kernel()
         self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
+        self.eus_system = self.corresponds_to_rhel_eus_release()
 
     def print_system_information(self):
         """Print system related information."""
@@ -403,10 +411,18 @@ class SystemInfo:
         For example if we detect CentOS Linux 8.4, the corresponding RHEL 8.4 is an EUS release, but if we detect
         CentOS Linux 8.5, the corresponding RHEL 8.5 is not an EUS release.
 
-        :return: Whether or not the current system has a EUS correspondent in RHEL.
+        :return: Whether or not the current system has an EUS correspondent in RHEL.
         :rtype: bool
         """
-        return "%s.%s" % (self.version.major, self.version.minor) in EUS_MINOR_VERSIONS
+        current_version = "%s.%s" % (self.version.major, self.version.minor)
+        # This check will be dropped once 8.6 is no longer supported under EUS
+        if current_version == "8.6":
+            return True
+        if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
+            self.logger.info("EUS argument detected, automatically evaluating system as EUS")
+            return True
+
+        return False
 
     def _is_dbus_running(self):
         """

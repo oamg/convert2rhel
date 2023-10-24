@@ -38,7 +38,9 @@ def package_updates_action():
 
 
 @oracle8
-def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package_updates_action):
+def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package_updates_action, monkeypatch):
+    monkeypatch.setattr(package_updates.system_info, "eus_system", value=True)
+
     diagnosis = (
         "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
     )

@@ -43,11 +43,11 @@ def is_loaded_kernel_latest_action():
 class TestIsLoadedKernelLatest:
     @oracle8
     def test_is_loaded_kernel_latest_skip_on_not_latest_ol(
-        self,
-        pretend_os,
-        caplog,
-        is_loaded_kernel_latest_action,
+        self, pretend_os, caplog, is_loaded_kernel_latest_action, monkeypatch
     ):
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "eus_system", value=True)
+        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", value=True)
+
         message = (
             "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
         )

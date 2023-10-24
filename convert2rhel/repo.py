@@ -39,11 +39,7 @@ def get_rhel_repoids():
     we preferably enable the RHEL EUS repoids as those provide security updates over two years, in comparison to 6 months
     in case of the standard non-EUS repoids.
     """
-
-    if system_info.corresponds_to_rhel_eus_release():
-        repos_needed = system_info.eus_rhsm_repoids
-    else:
-        repos_needed = system_info.default_rhsm_repoids
+    repos_needed = system_info.eus_rhsm_repoids if system_info.eus_system else system_info.default_rhsm_repoids
 
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 

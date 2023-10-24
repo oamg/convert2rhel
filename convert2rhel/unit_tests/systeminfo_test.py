@@ -21,6 +21,8 @@ import logging
 import os
 import time
 
+from datetime import datetime as dt
+
 import pytest
 import six
 
@@ -317,13 +319,33 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
         (8, 5, False),
         (8, 6, True),
         (8, 7, False),
-        (8, 8, False),
+        (8, 8, False),  # Change expected to true after eus_release date
         (8, 9, False),
     ),
 )
 def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
     version = Version(major, minor)
     monkeypatch.setattr(system_info, "version", version)
+
+    assert system_info.corresponds_to_rhel_eus_release() == expected
+
+
+@pytest.mark.parametrize(
+    ("major", "minor", "expected"),
+    (
+        (7, 9, False),
+        (8, 5, False),
+        (8, 6, True),
+        (8, 7, False),
+        (8, 8, True),
+        (8, 9, False),
+    ),
+)
+def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, monkeypatch, global_tool_opts):
+    version = Version(major, minor)
+    monkeypatch.setattr(system_info, "version", version)
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+    global_tool_opts.eus = True
     assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
