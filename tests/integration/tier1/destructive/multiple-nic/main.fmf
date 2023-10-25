@@ -1,0 +1,10 @@
+summary+: |
+  Conversion with multiple NICs
+
+description+: |
+  Verify, that it's possible to do a full conversion of the system
+  that has more than one NIC connected and running.
+  The test uses RHSM as a conversion method.
+
+test: |
+  pytest -svv
