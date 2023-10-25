@@ -1,5 +1,7 @@
 import pytest
 
+from envparse import env
+
 
 @pytest.mark.test_firewalld_inhibitor
 def test_firewalld_inhibitor(shell, convert2rhel):
@@ -12,9 +14,14 @@ def test_firewalld_inhibitor(shell, convert2rhel):
     assert shell("systemctl start firewalld").returncode == 0
     assert shell("systemctl enable firewalld").returncode == 0
 
-    with convert2rhel("-y --no-rpm-va --debug", unregister=True) as c2r:
+    with convert2rhel(
+        "-y --no-rpm-va --debug --serverurl {} --username {} --password {}".format(
+            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+        ),
+        unregister=True,
+    ) as c2r:
         c2r.expect(
-            "CHECK_FIREWALLD_AVAILABILITY::FIREWALLD_DAEMON_RUNNING - Firewalld is running",
+            "CHECK_FIREWALLD_AVAILABILITY::FIREWALLD_RUNNING - Firewalld is running",
             timeout=600,
         )
 
