@@ -821,11 +821,10 @@ def _relevant_subscription_manager_pkgs():
     """
     relevant_pkgs = [
         "subscription-manager",
-        "subscription-manager-rhsm-certificates",
     ]
 
     if system_info.version.major == 7:
-        relevant_pkgs += ["subscription-manager-rhsm", "python-syspurpose"]
+        relevant_pkgs += ["subscription-manager-rhsm", "subscription-manager-rhsm-certificates", "python-syspurpose"]
 
     elif system_info.version.major == 8:
         relevant_pkgs += [
@@ -834,6 +833,15 @@ def _relevant_subscription_manager_pkgs():
             "python3-syspurpose",
             "python3-cloud-what",
             "json-c.x86_64",  # there's also an i686 version we don't need unless the json-c.i686 is already installed
+            "subscription-manager-rhsm-certificates",
+        ]
+
+    elif system_info.version.major >= 9:
+        relevant_pkgs += [
+            "libdnf-plugin-subscription-manager",
+            "python3-subscription-manager-rhsm",
+            "python3-cloud-what",
+            "subscription-manager-rhsm-certificates.x86_64",
         ]
 
     if system_info.is_rpm_installed("json-c.i686"):
