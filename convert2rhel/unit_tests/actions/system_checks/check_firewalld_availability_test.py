@@ -124,3 +124,72 @@ def test_check_firewalld_availability_not_running(
     check_firewalld_availability_is_running_action.run()
 
     assert caplog.records[-1].message == "Firewalld is not running."
+
+
+@pytest.fixture
+def write_firewalld_mockup_config(tmpdir, request):
+    config_file = tmpdir.join("firewalld.conf")
+    content = request.param["content"] if request.param["content"] else ""
+    config_file.write(content)
+    return str(config_file)
+
+
+@pytest.mark.parametrize(
+    ("write_firewalld_mockup_config", "expected"),
+    (
+        (
+            {
+                "content": """
+CleanupModulesOnExit=yes
+"""
+            },
+            True,
+        ),
+        (
+            {
+                "content": """
+# firewalld config file
+
+DefaultZone=public
+
+MinimalMark=100
+
+CleanupOnExit=yes
+
+Lockdown=no
+
+IPv6_rpfilter=yes
+
+IndividualCalls=no
+
+LogDenied=off
+
+AutomaticHelpers=system
+
+AllowZoneDrifting=yes
+"""
+            },
+            False,
+        ),
+        (
+            {
+                "content": """
+# firewalld config file
+
+AllowZoneDrifting=yes
+
+CleanupModulesOnExit=yes
+"""
+            },
+            True,
+        ),
+        (
+            {"content": None},
+            False,
+        ),
+    ),
+    indirect=("write_firewalld_mockup_config",),
+)
+def test_is_modules_cleanup_enabled(monkeypatch, write_firewalld_mockup_config, expected):
+    monkeypatch.setattr(check_firewalld_availability, "FIREWALLD_CONFIG_FILE", write_firewalld_mockup_config)
+    assert check_firewalld_availability._is_modules_cleanup_enabled() == expected
