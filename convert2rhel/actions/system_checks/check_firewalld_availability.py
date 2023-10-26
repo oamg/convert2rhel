@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 
-def _check_for_modules_cleanup_config():
+def _is_modules_cleanup_enabled():
     """Verify firewalld modules cleanup config
 
     :rtype: bool
@@ -65,7 +65,7 @@ class CheckFirewalldAvailability(actions.Action):
                 if _check_for_modules_cleanup_config():
                     self.set_result(
                         level="ERROR",
-                        id="FIREWALLD_MODULESS_CLEANUP_ON_EXIT_CONFIG",
+                        id="FIREWALLD_MODULES_CLEANUP_ON_EXIT_CONFIG",
                         title="Firewalld is set to cleanup modules after exit.",
                         description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
                         diagnosis="We've detected that firewalld unit is running and that causes iptables and nftables failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure.",
@@ -89,21 +89,8 @@ class CheckFirewalldAvailability(actions.Action):
                     return
 
             description = "Firewalld service reported that it is not running."
-            logger.info()
-            self.add_message(
-                level="INFO",
-                id="FIREWALLD_IS_NOT_RUNNING",
-                title="Firewalld not running",
-                description=description,
-            )
+            logger.info(description)
             return
 
-        description = "Skipping the check as it is relevant only for Oracle Linux 8.8 and above."
-        logger.info(description)
-        self.add_message(
-            level="INFO",
-            id="CHECK_FIREWALLD_AVAILABILITY_SKIP",
-            title="Skipping the check for firewalld availability.",
-            description=description,
-        )
+        logger.info("Skipping the check as it is relevant only for Oracle Linux 8.8 and above.")
         return
