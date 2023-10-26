@@ -1,0 +1,30 @@
+summary: |
+    Verify the EUS releases are treated correctly
+description: |
+    Test verifying correct behavior when converting EUS candidates.
+    EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+    Verified scenarios (handled by patest parametrization):
+    1/ The running minor version is removed from the mapping to not be considered an EUS candidate.
+        The --eus option is used in the command and enabling regular (non-eus) repoids is verified.
+    2/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+        did not start yet.
+        The --eus option *is not used* and regular repoids enablement is expected.
+    3/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+        did not start yet.
+        The --eus option *is used* and EUS repoids enablement is expected.
+    4/ The date of the start of the EUS phase is set far to the past to simulate the EUS phase began.
+        The --eus option *is used*.
+        The report is expected to print out a WARNING and advise to use the --eus option.
+
+tag+:
+    - eus
+
+/eus_support:
+    enabled: false
+    adjust+:
+        enabled: true
+        when: distro == alma-8-latest, rocky-8-latest
+    tag+:
+        - test-eus-support
+    test: |
+      pytest -svv -m test_eus_support
