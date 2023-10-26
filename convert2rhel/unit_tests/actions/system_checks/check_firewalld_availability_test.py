@@ -60,32 +60,54 @@ def test_check_firewalld_availability_not_supported_system(
     assert expected.issubset(check_firewalld_availability_is_running_action.messages)
 
 
+@pytest.mark.parametrize(
+    ("systemd_service_running", "modules_cleanup_config", "set_result"),
+    (
+        (True, True, True),
+        (False, False, False),
+        (False, True, False),
+        (True, False, False),
+    ),
+)
 @oracle8
 def test_check_firewalld_availability_is_running(
-    pretend_os, check_firewalld_availability_is_running_action, monkeypatch, global_system_info
+    pretend_os,
+    check_firewalld_availability_is_running_action,
+    monkeypatch,
+    global_system_info,
+    systemd_service_running,
+    modules_cleanup_config,
+    set_result,
 ):
     monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
     monkeypatch.setattr(
-        check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: True
+        check_firewalld_availability.systeminfo,
+        "is_systemd_managed_service_running",
+        lambda name: systemd_service_running,
+    )
+    monkeypatch.setattr(
+        check_firewalld_availability, "_check_for_modules_cleanup_config", lambda: modules_cleanup_config
     )
     global_system_info.id = "oracle"
     global_system_info.version = Version(8, 8)
 
     check_firewalld_availability_is_running_action.run()
-
-    unit_tests.assert_actions_result(
-        check_firewalld_availability_is_running_action,
-        level="ERROR",
-        id="FIREWALLD_RUNNING",
-        title="Firewalld is running",
-        description="Firewalld is running and can cause problems during the package replacement phase.",
-        diagnosis="We've detected that firewalld unit is running and might cause problems related to kernel modules after the conversion is done.",
-        remediation=(
-            "Stop firewalld by using the `systemctl stop firewalld` command. This will prevent errors while convert2rhel replaces the system packages"
-            " and the kernel, whoever, that might not prevent errors from appearing the firewalld logs after the conversion. After the conversion is done,"
-            " reboot the system to load the new RHEL kernel modules and start firewalld with `systemctl start firewalld` once more."
-        ),
-    )
+    if set_result:
+        unit_tests.assert_actions_result(
+            check_firewalld_availability_is_running_action,
+            level="ERROR",
+            id="FIREWALLD_MODULESS_CLEANUP_ON_EXIT_CONFIG",
+            title="Firewalld is set to cleanup modules after exit.",
+            description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
+            diagnosis="We've detected that firewalld unit is running and that causes iptables and nftables failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure.",
+            remediation=(
+                "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf to no prior to running convert2rhel:\n"
+                "1. sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
+                "You can change the option back to yes after the system reboot - that is after the system boots into the RHEL kernel."
+            ),
+        )
+    else:
+        pass
 
 
 @oracle8
