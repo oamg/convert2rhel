@@ -37,62 +37,68 @@ EUS_REPOID_MSG = (
     "RHEL repository IDs to enable: rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms"
 )
 
-EUS_SYS_PRE_EUS_PHASE = '"8.8": "2042-04-08",'
-EUS_SYS_EUS_PHASE = '"8.8": "1970-01-01",'
+MOCKED_PRE_EUS_PHASE = '"8.8": "2042-04-08",'
+MOCKED_EUS_PHASE = '"8.8": "1970-01-01",'
 
 
 eus_support_parameters = [
     # System not recognized as an EUS candidate with --eus option used
     ("--eus", REGULAR_REPOID_MSG, "", False, False),
-    # System recognized as and EUS candidate before the start of EUS phase without --eus option
-    ("", REGULAR_REPOID_MSG, EUS_SYS_PRE_EUS_PHASE, False, False),
-    # System recognized as and EUS candidate before the start of EUS phase with --eus option
-    ("--eus", EUS_REPOID_MSG, EUS_SYS_PRE_EUS_PHASE, True, False),
-    # System recognized as and EUS candidate after the start of EUS phase without --eus option
-    ("", REGULAR_REPOID_MSG, EUS_SYS_EUS_PHASE, False, True),
+    # System recognized as an EUS candidate before the start of EUS phase without --eus option
+    ("", REGULAR_REPOID_MSG, MOCKED_PRE_EUS_PHASE, False, False),
+    # System recognized as an EUS candidate before the start of EUS phase with --eus option
+    ("--eus", EUS_REPOID_MSG, MOCKED_PRE_EUS_PHASE, True, False),
+    # System recognized as an EUS candidate after the start of EUS phase without --eus option
+    ("", REGULAR_REPOID_MSG, MOCKED_EUS_PHASE, False, True),
 ]
 
 
 @pytest.mark.parametrize(
-    "additional_options, repoid_message, modified_mapping, is_eus, eus_recommend",
+    "additional_option, repoid_message, modified_mapping, is_eus, recommend_eus_msg_displayed",
     eus_support_parameters,
     ids=["non-eus-sys-eus-opt", "eus-sys-pre-eus-no-opt", "eus-sys-pre-eus-eus-opt", "eus-sys-eus-phase-no-opt"],
 )
 @pytest.mark.test_eus_support
 def test_eus_support(
-    convert2rhel, eus_mapping_update, additional_options, repoid_message, modified_mapping, is_eus, eus_recommend
+    convert2rhel,
+    eus_mapping_update,
+    additional_option,
+    repoid_message,
+    modified_mapping,
+    is_eus,
+    recommend_eus_msg_displayed,
 ):
     """
     Test verifying correct behavior when converting EUS candidates.
     EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
-    Verified scenarios (handled by patest parametrization):
-    1/ The running minor version is removed from the mapping to not be considered an EUS candidate.
-        The --eus option is used in the command and enabling regular (non-eus) repoids is verified.
-    2/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+    Verified scenarios (handled by pytest parametrization):
+    1/ The system is considered as a non-EUS. This is done by removing the 8.8 version from the mapping file
+        (note that this workaround works only on 8.8 systems).
+        The --eus option is used in the command. Only regular (non-eus) repoids should be enabled.
+    2/ The start date of the EUS phase is set far to the future to simulate the EUS phase
         did not start yet.
         The --eus option *is not used* and regular repoids enablement is expected.
-    3/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+    3/ The start date of the EUS phase is set far to the future to simulate the EUS phase
         did not start yet.
         The --eus option *is used* and EUS repoids enablement is expected.
-    4/ The date of the start of the EUS phase is set far to the past to simulate the EUS phase began.
+    4/ The start date of the EUS phase is set far to the past to simulate the EUS phase began.
         The --eus option *is used*.
         The report is expected to print out a WARNING and advise to use the --eus option.
     """
     eus_mapping_update(modified_mapping)
     with convert2rhel(
         "analyze -y --debug --no-rpm-va --serverurl {} -u {} -p {} {}".format(
-            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD"), additional_options
+            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD"), additional_option
         )
     ) as c2r:
+        c2r.expect(repoid_message, timeout=120)
         # If the system is an EUS candidate and current date is past the beginning of the EUS phase
         # we set the eus_recommend parameter to True
         # We expect the report to print out a warning to use --eus option
-        if eus_recommend:
-            c2r.expect(repoid_message, timeout=120)
+        if recommend_eus_msg_displayed:
             c2r.expect("EUS_SYSTEM_CHECK::EUS_COMMAND_LINE_OPTION_UNUSED")
         else:
-            c2r.expect(repoid_message, timeout=120)
-            # In case the EUS repositories should get enabled, we set is_eus parameter to True
+            # If is_eus is True, expect a corresponding EUS message displayed
             if is_eus:
                 c2r.expect_exact(
                     "The system version corresponds to a RHEL Extended Update Support (EUS) release.",

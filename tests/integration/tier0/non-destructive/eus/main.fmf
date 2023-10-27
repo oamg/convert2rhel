@@ -3,16 +3,17 @@ summary: |
 description: |
     Test verifying correct behavior when converting EUS candidates.
     EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
-    Verified scenarios (handled by patest parametrization):
-    1/ The running minor version is removed from the mapping to not be considered an EUS candidate.
-        The --eus option is used in the command and enabling regular (non-eus) repoids is verified.
-    2/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+    Verified scenarios (handled by pytest parametrization):
+    1/ The system is considered as a non-EUS. This is done by removing the 8.8 version from the mapping file
+        (note that this workaround works only on 8.8 systems).
+        The --eus option is used in the command. Only regular (non-eus) repoids should be enabled.
+    2/ The start date of the EUS phase is set far to the future to simulate the EUS phase
         did not start yet.
         The --eus option *is not used* and regular repoids enablement is expected.
-    3/ The date of the start of the EUS phase is set far to the future to simulate the EUS phase
+    3/ The start date of the EUS phase is set far to the future to simulate the EUS phase
         did not start yet.
         The --eus option *is used* and EUS repoids enablement is expected.
-    4/ The date of the start of the EUS phase is set far to the past to simulate the EUS phase began.
+    4/ The start date of the EUS phase is set far to the past to simulate the EUS phase began.
         The --eus option *is used*.
         The report is expected to print out a WARNING and advise to use the --eus option.
 
@@ -23,7 +24,9 @@ tag+:
     enabled: false
     adjust+:
         enabled: true
+        #TODO change 8-latest to 8.8, when 8.9 is latest
         when: distro == alma-8-latest, rocky-8-latest
+        because: The only consistently relevant EUS releases are Alma and Rocky.
     tag+:
         - test-eus-support
     test: |
