@@ -33,28 +33,39 @@ CLEANUP_MODULES_ON_EXIT_REGEX = re.compile(r"CleanupModulesOnExit\s*=\s*(yes|tru
 
 
 def _is_modules_cleanup_enabled():
-    """Verify firewalld modules cleanup config
+    """Verify firewalld modules cleanup config is enabled.
 
-    :rtype: bool
     :returns: Whether or not the CleanupModulesOnExit is set to true in
         firewalld config.
+    :rtype: bool
     """
-    if os.path.exists(FIREWALLD_CONFIG_FILE):
-        contents = ""
-        with open(FIREWALLD_CONFIG_FILE, mode="r") as handler:
-            contents = handler.read()
+    # Return false if the config file does not exist. Either it means that
+    # firewalld is not installed or the config file was removed.
+    if not os.path.exists(FIREWALLD_CONFIG_FILE):
+        return False
 
-        # Contents list is empty for some reason, better to assume that there
-        # is no content in the file that was read.
-        if not contents:
-            return False
+    contents = ""
+    with open(FIREWALLD_CONFIG_FILE, mode="r") as handler:
+        contents = [line.strip() for line in handler.readlines() if line.strip()]
 
-        # If the config file has this option set to true/yes, then we need to
-        # return True to ask the user to change it to self.
-        if re.match(CLEANUP_MODULES_ON_EXIT_REGEX, contents):
-            return True
+    # Contents list is empty for some reason, better to assume that there
+    # is no content in the file that was read.
+    if not contents:
+        return False
 
-    return False
+    # If the config file has this option set to true/yes, then we need to
+    # return True to ask the user to change it to self.
+    if list(filter(CLEANUP_MODULES_ON_EXIT_REGEX.match, contents)):
+        logger.debug("Found CleanupModulesOnExit option in firewalld.conf")
+        return True
+
+    logger.debug(
+        "Couldn't find CleanupModulesOnExit in firewalld.conf. Treating it as enabled because of default behavior."
+    )
+    # Return true anyway at the end even if the option was not found as the
+    # default value for CleanupModulesOnExit in the firewalld.conf is to be
+    # enabled always.
+    return True
 
 
 class CheckFirewalldAvailability(actions.Action):
@@ -82,14 +93,16 @@ class CheckFirewalldAvailability(actions.Action):
                     )
                 else:
                     # Firewalld is running but the configuration for CleanupModulesOnExit was not set to true/yes
+                    description = (
+                        "We've detected that firewalld is running and we couldn't find check for the CleanupModulesOnExit configuration. "
+                        "This means that a reboot will be necessary after the conversion is done to reload the kernel modules and prevent firewalld from stop working."
+                    )
+                    logger.warning(description)
                     self.add_message(
                         level="WARNING",
                         id="FIREWALLD_IS_RUNNING",
                         title="Firewalld is running",
-                        description=(
-                            "We've detected that firewalld is running and we couldn't find check for the CleanupModulesOnExit configuration. "
-                            "This means that a reboot will be necessary after the conversion is done to reload the kernel modules and prevent firewalld from stop working."
-                        ),
+                        description=description,
                     )
                     return
 

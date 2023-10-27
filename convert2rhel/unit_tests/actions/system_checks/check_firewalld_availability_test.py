@@ -17,113 +17,10 @@ __metaclass__ = type
 
 import pytest
 
-from convert2rhel import actions, unit_tests
+from convert2rhel import actions, pkgmanager, unit_tests
 from convert2rhel.actions.system_checks import check_firewalld_availability
 from convert2rhel.systeminfo import Version
 from convert2rhel.unit_tests.conftest import oracle8
-
-
-@pytest.fixture
-def check_firewalld_availability_is_running_action():
-    return check_firewalld_availability.CheckFirewalldAvailability()
-
-
-@pytest.mark.parametrize(
-    ("major", "id"),
-    (
-        (7, "centos"),
-        (7, "oracle"),
-    ),
-)
-def test_check_firewalld_availability_not_supported_system(
-    major, id, monkeypatch, global_system_info, check_firewalld_availability_is_running_action
-):
-    monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
-    global_system_info.id = id
-    global_system_info.version = Version(major, 0)
-
-    check_firewalld_availability_is_running_action.run()
-
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="CHECK_FIREWALLD_AVAILABILITY_SKIP",
-                title="Skipping the check for firewalld availability.",
-                description="Skipping the check as it is relevant only for Oracle Linux 8.8 and above.",
-                diagnosis=None,
-                remediation=None,
-            ),
-        )
-    )
-    assert expected.issuperset(check_firewalld_availability_is_running_action.messages)
-    assert expected.issubset(check_firewalld_availability_is_running_action.messages)
-
-
-@pytest.mark.parametrize(
-    ("systemd_service_running", "modules_cleanup_config", "set_result"),
-    (
-        (True, True, True),
-        (False, False, False),
-        (False, True, False),
-        (True, False, False),
-    ),
-)
-@oracle8
-def test_check_firewalld_availability_is_running(
-    pretend_os,
-    check_firewalld_availability_is_running_action,
-    monkeypatch,
-    global_system_info,
-    systemd_service_running,
-    modules_cleanup_config,
-    set_result,
-):
-    monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
-    monkeypatch.setattr(
-        check_firewalld_availability.systeminfo,
-        "is_systemd_managed_service_running",
-        lambda name: systemd_service_running,
-    )
-    monkeypatch.setattr(
-        check_firewalld_availability, "_check_for_modules_cleanup_config", lambda: modules_cleanup_config
-    )
-    global_system_info.id = "oracle"
-    global_system_info.version = Version(8, 8)
-
-    check_firewalld_availability_is_running_action.run()
-    if set_result:
-        unit_tests.assert_actions_result(
-            check_firewalld_availability_is_running_action,
-            level="ERROR",
-            id="FIREWALLD_MODULESS_CLEANUP_ON_EXIT_CONFIG",
-            title="Firewalld is set to cleanup modules after exit.",
-            description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
-            diagnosis="We've detected that firewalld unit is running and that causes iptables and nftables failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure.",
-            remediation=(
-                "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf to no prior to running convert2rhel:\n"
-                "1. sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
-                "You can change the option back to yes after the system reboot - that is after the system boots into the RHEL kernel."
-            ),
-        )
-    else:
-        pass
-
-
-@oracle8
-def test_check_firewalld_availability_not_running(
-    pretend_os, check_firewalld_availability_is_running_action, caplog, monkeypatch, global_system_info
-):
-    monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
-    monkeypatch.setattr(
-        check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: False
-    )
-    global_system_info.id = "oracle"
-    global_system_info.version = Version(8, 8)
-
-    check_firewalld_availability_is_running_action.run()
-
-    assert caplog.records[-1].message == "Firewalld is not running."
 
 
 @pytest.fixture
@@ -169,7 +66,7 @@ AutomaticHelpers=system
 AllowZoneDrifting=yes
 """
             },
-            False,
+            True,
         ),
         (
             {
@@ -184,6 +81,18 @@ CleanupModulesOnExit=yes
             True,
         ),
         (
+            {
+                "content": """
+# firewalld config file
+
+AllowZoneDrifting=yes
+
+CleanupModulesOnExit=true
+"""
+            },
+            True,
+        ),
+        (
             {"content": None},
             False,
         ),
@@ -193,3 +102,113 @@ CleanupModulesOnExit=yes
 def test_is_modules_cleanup_enabled(monkeypatch, write_firewalld_mockup_config, expected):
     monkeypatch.setattr(check_firewalld_availability, "FIREWALLD_CONFIG_FILE", write_firewalld_mockup_config)
     assert check_firewalld_availability._is_modules_cleanup_enabled() == expected
+
+
+@pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="Test is only relevant for RHEL 8+")
+class TestCheckFirewalldAvailabilityAction:
+    @pytest.fixture
+    def check_firewalld_availability_is_running_action(self):
+        return check_firewalld_availability.CheckFirewalldAvailability()
+
+    @pytest.mark.parametrize(
+        ("major", "id"),
+        (
+            (7, "centos"),
+            (7, "oracle"),
+        ),
+    )
+    def test_check_firewalld_availability_not_supported_system(
+        self, major, id, monkeypatch, global_system_info, check_firewalld_availability_is_running_action, caplog
+    ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        global_system_info.id = id
+        global_system_info.version = Version(major, 0)
+
+        check_firewalld_availability_is_running_action.run()
+
+        assert "Skipping the check as it is relevant only for Oracle Linux 8.8 and above." in caplog.records[-1].message
+
+    @oracle8
+    def test_check_firewalld_availability_is_running(
+        self,
+        pretend_os,
+        check_firewalld_availability_is_running_action,
+        monkeypatch,
+        global_system_info,
+    ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        monkeypatch.setattr(
+            check_firewalld_availability.systeminfo,
+            "is_systemd_managed_service_running",
+            lambda name: True,
+        )
+        monkeypatch.setattr(check_firewalld_availability, "_is_modules_cleanup_enabled", lambda: True)
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
+
+        check_firewalld_availability_is_running_action.run()
+        unit_tests.assert_actions_result(
+            check_firewalld_availability_is_running_action,
+            level="ERROR",
+            id="FIREWALLD_MODULES_CLEANUP_ON_EXIT_CONFIG",
+            title="Firewalld is set to cleanup modules after exit.",
+            description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
+            diagnosis="We've detected that firewalld unit is running and that causes iptables and nftables failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure.",
+            remediation=(
+                "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf to no prior to running convert2rhel: "
+                "sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
+                "You can change the option back to yes after the system reboot - that is after the system boots into the RHEL kernel."
+            ),
+        )
+
+    @oracle8
+    def test_check_firewalld_availability_modules_cleanup_not_found(
+        self,
+        pretend_os,
+        check_firewalld_availability_is_running_action,
+        monkeypatch,
+        global_system_info,
+    ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        monkeypatch.setattr(
+            check_firewalld_availability.systeminfo,
+            "is_systemd_managed_service_running",
+            lambda name: True,
+        )
+        monkeypatch.setattr(check_firewalld_availability, "_is_modules_cleanup_enabled", lambda: False)
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
+
+        check_firewalld_availability_is_running_action.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="FIREWALLD_IS_RUNNING",
+                    title="Firewalld is running",
+                    description=(
+                        "We've detected that firewalld is running and we couldn't find check for the CleanupModulesOnExit configuration. "
+                        "This means that a reboot will be necessary after the conversion is done to reload the kernel modules and prevent firewalld from stop working."
+                    ),
+                    diagnosis=None,
+                    remediation=None,
+                ),
+            )
+        )
+        assert expected.issuperset(check_firewalld_availability_is_running_action.messages)
+        assert expected.issubset(check_firewalld_availability_is_running_action.messages)
+
+    @oracle8
+    def test_check_firewalld_availability_not_running(
+        self, pretend_os, check_firewalld_availability_is_running_action, caplog, monkeypatch, global_system_info
+    ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        monkeypatch.setattr(
+            check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: False
+        )
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
+
+        check_firewalld_availability_is_running_action.run()
+
+        assert caplog.records[-1].message == "Firewalld service reported that it is not running."
