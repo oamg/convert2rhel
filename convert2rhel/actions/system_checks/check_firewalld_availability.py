@@ -42,6 +42,7 @@ def _is_modules_cleanup_enabled():
     # Return false if the config file does not exist. Either it means that
     # firewalld is not installed or the config file was removed.
     if not os.path.exists(FIREWALLD_CONFIG_FILE):
+        logger.debug("%s does not exist." % FIREWALLD_CONFIG_FILE)
         return False
 
     contents = ""
@@ -51,12 +52,13 @@ def _is_modules_cleanup_enabled():
     # Contents list is empty for some reason, better to assume that there
     # is no content in the file that was read.
     if not contents:
-        return False
+        logger.debug("%s is empty." % FIREWALLD_CONFIG_FILE)
+        return True
 
     # If the config file has this option set to true/yes, then we need to
-    # return True to ask the user to change it to self.
+    # return True to ask the user to change it to False.
     if list(filter(CLEANUP_MODULES_ON_EXIT_REGEX.match, contents)):
-        logger.debug("Found CleanupModulesOnExit option in firewalld.conf")
+        logger.debug("CleanupModulesOnExit option enabled in %s" % FIREWALLD_CONFIG_FILE)
         return True
 
     logger.debug(
@@ -76,9 +78,13 @@ class CheckFirewalldAvailability(actions.Action):
         super(CheckFirewalldAvailability, self).run()
         logger.task("Prepare: Check that firewalld is running")
 
-        if system_info.id == "oracle" and (system_info.version.major == 8 and system_info.version.minor >= 8):
-            if systeminfo.is_systemd_managed_service_running("firewalld"):
-                if _is_modules_cleanup_enabled():
+        if system_info.id != "oracle" and system_info.version.major != 8 and system_info.version.minor < 8:
+            logger.info("Skipping the check as it is relevant only for Oracle Linux 8.8 and above.")
+            return
+        if not systeminfo.is_systemd_managed_service_running("firewalld"):
+            logger.info("Firewalld service reported that it is not running.")
+            return
+        if _is_modules_cleanup_enabled():
                     self.set_result(
                         level="ERROR",
                         id="FIREWALLD_MODULES_CLEANUP_ON_EXIT_CONFIG",
@@ -86,8 +92,8 @@ class CheckFirewalldAvailability(actions.Action):
                         description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
                         diagnosis="We've detected that firewalld unit is running and that causes iptables and nftables failures on Oracle Linux 8 and under certain conditions it can lead to a conversion failure.",
                         remediation=(
-                            "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf to no prior to running convert2rhel: "
-                            "sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
+                            "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf to no prior to running convert2rhel:\n"
+                            " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
                             "You can change the option back to yes after the system reboot - that is after the system boots into the RHEL kernel."
                         ),
                     )
