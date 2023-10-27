@@ -25,10 +25,11 @@ from convert2rhel.systeminfo import system_info
 
 logger = logging.getLogger(__name__)
 
-#:
+# Path to the firewalld config file.
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
-#:
+# Regex that identify if CleanupModulesOnExit is set to either yes or true
+# considering blank spaces in between the value and case insensitive.
 CLEANUP_MODULES_ON_EXIT_REGEX = re.compile(r"(?i)CleanupModulesOnExit\s*=\s*(yes|true)")
 
 
@@ -57,8 +58,12 @@ def _is_modules_cleanup_enabled():
 
     # If the CleanupModulesOnExit is not present inside the contents list, we
     # can return True since the default behavior for firewalld is to consider
-    # CleanupModulesOnExit as true.
-    option_present = any(item.startswith("CleanupModulesOnExit") for item in contents)
+    # CleanupModulesOnExit as true. Ignoring # and ; as they are ignored in the
+    # config parser for firewalld as well:
+    # https://github.com/firewalld/firewalld/blob/46d54dcbdff94423686d67befc78ca8d601fce60/src/firewall/core/io/firewalld_conf.py#L85
+    option_present = any(
+        item.strip().startswith("CleanupModulesOnExit") for item in contents if not item.startswith(("#", ";"))
+    )
     if not option_present:
         logger.debug(
             "Couldn't find CleanupModulesOnExit in firewalld.conf. Treating it as enabled because of default behavior."
@@ -105,7 +110,7 @@ class CheckFirewalldAvailability(actions.Action):
                 remediation=(
                     "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf "
                     "to no prior to running convert2rhel:\n"
-                    " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
+                    " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload"
                     "You can change the option back to yes after the system reboot "
                     "- that is after the system boots into the RHEL kernel."
                 ),

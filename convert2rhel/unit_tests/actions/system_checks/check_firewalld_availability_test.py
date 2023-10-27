@@ -128,6 +128,65 @@ def test_is_modules_cleanup_enabled(monkeypatch, write_firewalld_mockup_config, 
     assert check_firewalld_availability._is_modules_cleanup_enabled() == expected
 
 
+@pytest.mark.parametrize(
+    ("write_firewalld_mockup_config", "option_parsed", "expected"),
+    (
+        (
+            {
+                "content": """
+#CleanupModulesOnExit=yes
+"""
+            },
+            False,
+            True,
+        ),
+        (
+            {
+                "content": """
+;CleanupModulesOnExit=yes
+"""
+            },
+            False,
+            True,
+        ),
+        (
+            {
+                "content": """
+;CleanupModulesOnExit=yes
+CleanupModulesOnExit=yes
+"""
+            },
+            True,
+            True,
+        ),
+        (
+            {
+                "content": """
+#CleanupModulesOnExit=yes
+CleanupModulesOnExit=yes
+"""
+            },
+            True,
+            True,
+        ),
+    ),
+    indirect=("write_firewalld_mockup_config",),
+)
+def test_is_modules_cleanup_config_commented(
+    monkeypatch, write_firewalld_mockup_config, option_parsed, expected, caplog
+):
+    monkeypatch.setattr(check_firewalld_availability, "FIREWALLD_CONFIG_FILE", write_firewalld_mockup_config)
+    assert check_firewalld_availability._is_modules_cleanup_enabled() == expected
+
+    if not option_parsed:
+        assert (
+            "Couldn't find CleanupModulesOnExit in firewalld.conf. Treating it as enabled because of default behavior."
+            in caplog.records[-1].message
+        )
+    else:
+        assert "CleanupModulesOnExit option enabled" in caplog.records[-1].message
+
+
 @pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="Test is only relevant for RHEL 8+")
 class TestCheckFirewalldAvailabilityAction:
     @pytest.mark.parametrize(
@@ -213,7 +272,7 @@ SomethingElse=yes
             remediation=(
                 "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf "
                 "to no prior to running convert2rhel:\n"
-                " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n"
+                " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload"
                 "You can change the option back to yes after the system reboot "
                 "- that is after the system boots into the RHEL kernel."
             ),
