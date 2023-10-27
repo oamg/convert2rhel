@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, pkgmanager
+from convert2rhel import actions, exceptions, pkgmanager
 
 
 logger = logging.getLogger(__name__)
@@ -46,30 +46,13 @@ class ValidatePackageManagerTransaction(actions.Action):
             transaction_handler.run_transaction(
                 validate_transaction=True,
             )
-            # TODO: Handling SystemExit here as way to speedup exception
-            # handling and not refactor contents of the underlying function.
-            # Most of the issues raised during that function call should be
-            # handled inside the function, so, it's safe for now to only catch
-            # SystemExit here, and later, change it to something more suitable.
-        except SystemExit as e:
-            # TODO(r0x0d): Places where we raise SystemExit and need to be
-            # changed to something more specific.
-            #   - Yum transaction:
-            #       - Removing an package in case of conflicts
-            #       - In case of exceeding Mirrors for repos
-            #       - In case we reach max numbers of retry for dependency
-            #         solving.
-            #       - In case of transaction validation failure
-            #
-            #   - Dnf transaction:
-            #       - If we fail to populate repository metadata
-            #       - If we fail to resolve dependencies in the transaction
-            #       - If we fail to download the transaction packages
-            #       - If we fail to validate the transaction
+        except exceptions.CriticalError as e:
             self.set_result(
                 level="ERROR",
-                id="UNKNOWN_ERROR",
-                title="Unknown",
-                description="The cause of this error is unknown, please look at the diagnosis for more information.",
-                diagnosis=str(e),
+                id=e.id,
+                title=e.title,
+                description=e.description,
+                diagnosis=e.diagnosis,
+                remediation=e.remediation,
+                variables=e.variables,
             )

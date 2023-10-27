@@ -41,10 +41,10 @@ class CriticalError(Exception):
         that have bubbled up and can decide what id, description, diagnosis, remediation, etc to emit.
     """
 
-    def __init__(self, id_, title, description, diagnosis=None, remediation=None, variables=None):
-        self.id = id_
-        self.title = title
-        self.description = description
+    def __init__(self, id_=None, title=None, description=None, diagnosis=None, remediation=None, variables=None):
+        self.id = id_ or "MISSING_ID"
+        self.title = title or "Missing title"
+        self.description = description or "Missing description"
         self.diagnosis = diagnosis or ""
         self.remediation = remediation or ""
         self.variables = variables or {}
