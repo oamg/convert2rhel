@@ -68,3 +68,7 @@ link:
     tag+:
         - log-file
     test: pytest -svv -m verify_logging_is_not_duplicated
+
+/check_firewalld_errors:
+    summary+: Check if there are any problems with firewalld on the system
+    test: pytest -svv -m check_firewalld_errors

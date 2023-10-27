@@ -1,8 +1,9 @@
 summary: |
     Running firewalld inhibitor
 description: |
-    Verify that the inhibitor is raised, when the firewalld service is running before
-    and during the conversion.
+    Verify that on the OL8.8 the conversion is inhibited due to
+    running firewalld on the system and the `CleanupModulesOnExit` configuration
+    option is set to `yes` in firewalld configuration file.
     This only applies to Oracle Linux (>=) 8.8.
 
 enabled: false

@@ -318,3 +318,18 @@ description+: |
             - name: main conversion
               how: shell
               script: pytest -svv tests/integration/*/destructive/kernel-check-skip/test_latest_kernel_check_skip.py
+
+    /firewalld-config-ol8:
+        enabled: false
+        adjust+:
+            - enabled: true
+              when: distro == oracle-8-latest
+        discover+:
+            filter: tag:checks-after-conversion
+        prepare+:
+            - name: main conversion preparation
+              how: shell
+              script: pytest -svv tests/integration/*/destructive/firewalld-config-ol8/test_firewalld_config_ol8.py
+            - name: reboot after conversion
+              how: ansible
+              playbook: tests/ansible_collections/roles/reboot/main.yml
