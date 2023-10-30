@@ -319,7 +319,7 @@ description+: |
               how: shell
               script: pytest -svv tests/integration/*/destructive/kernel-check-skip/test_latest_kernel_check_skip.py
 
-    /firewalld-config-ol8:
+    /firewalld-disabled-ol8:
         enabled: false
         adjust+:
             - enabled: true
@@ -329,7 +329,7 @@ description+: |
         prepare+:
             - name: main conversion preparation
               how: shell
-              script: pytest -svv tests/integration/*/destructive/firewalld-config-ol8/test_firewalld_config_ol8.py
+              script: pytest -svv tests/integration/*/destructive/firewalld-disabled-ol8/test_firewalld_disabled_ol8.py
             - name: reboot after conversion
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml

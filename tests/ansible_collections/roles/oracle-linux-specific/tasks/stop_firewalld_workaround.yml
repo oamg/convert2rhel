@@ -4,9 +4,16 @@
   ignore_errors: True
   register: rpm_out
 
-- name: Stop the firewalld process
+- name: Replace the firewalld configuration option
+  ansible.builtin.replace:
+    path: /etc/firewalld/firewalld.conf
+    regexp: 'CleanupModulesOnExit=yes'
+    replace: 'CleanupModulesOnExit=no'
+  when: rpm_out.rc == 0
+
+- name: Restart the firewalld process
   ansible.builtin.service:
     name: firewalld
-    state: stopped
-    enabled: false
+    state: restarted
+    enabled: true
   when: rpm_out.rc == 0

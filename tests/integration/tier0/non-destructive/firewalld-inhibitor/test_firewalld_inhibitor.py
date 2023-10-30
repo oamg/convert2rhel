@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from envparse import env
@@ -8,16 +10,18 @@ from convert2rhel.actions.system_checks.check_firewalld_availability import FIRE
 @pytest.mark.test_firewalld_inhibitor
 def test_firewalld_inhibitor(shell, convert2rhel):
     """
-    Verify that on the OL8.8 the conversion is inhibited due to
-    running firewalld on the system and the `CleanupModulesOnExit` configuration
-    option is set to `yes` in firewalld configuration file.
+    Verify that on the OL8.8 the conversion is inhibited when
+    the firewalld is running on the system and the `CleanupModulesOnExit`
+    configuration option is set to `yes` in firewalld configuration file.
     The reference ticket: https://issues.redhat.com/browse/RHELC-1180
     """
-    assert shell("rpm -q firewalld").returncode == 0
-    assert shell("systemctl start firewalld").returncode == 0
-    assert shell("systemctl enable firewalld").returncode == 0
+    if not os.path.exists(FIREWALLD_CONFIG_FILE):
+        pytest.fail("Firewalld configuration file does not exist")
 
-    assert shell(f"grep 'CleanupModulesOnExit=yes' {FIREWALLD_CONFIG_FILE}").returncode == 0
+    shell(f"sed -i 's/CleanupModulesOnExit=no/CleanupModulesOnExit=yes/g' {FIREWALLD_CONFIG_FILE}")
+
+    shell("firewall-cmd --reload")
+    assert shell("systemctl status firewalld").returncode == 0
 
     with convert2rhel(
         "-y --no-rpm-va --debug --serverurl {} --username {} --password {}".format(
@@ -37,6 +41,4 @@ def test_firewalld_inhibitor(shell, convert2rhel):
         "grep 'Firewalld running on Oracle Linux 8 can lead to a conversion failure' /var/log/convert2rhel/convert2rhel.log"
     )
 
-    # Clean up
-    assert shell("systemctl stop firewalld").returncode == 0
-    assert shell("systemctl disable firewalld").returncode == 0
+    shell(f"sed -i 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' {FIREWALLD_CONFIG_FILE}")
