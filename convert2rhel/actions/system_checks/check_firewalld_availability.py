@@ -77,6 +77,7 @@ def _is_modules_cleanup_enabled():
 
     # Default to return False as it is possible that the CleanupModulesOnExit
     # is set to no in the config already.
+    logger.debug("CleanupModulesOnExit option is disabled in %s" % FIREWALLD_CONFIG_FILE)
     return False
 
 
