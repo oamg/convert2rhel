@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import pytest
 
-from convert2rhel import actions, pkgmanager, unit_tests
+from convert2rhel import pkgmanager, unit_tests
 from convert2rhel.actions.system_checks import check_firewalld_availability
 from convert2rhel.systeminfo import Version
 from convert2rhel.unit_tests.conftest import oracle8
@@ -118,7 +118,7 @@ CleanupModulesOnExit=true
         ),
         (
             {"content": None},
-            False,
+            True,
         ),
     ),
     indirect=("write_firewalld_mockup_config",),
@@ -190,29 +190,49 @@ def test_is_modules_cleanup_config_commented(
 @pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="Test is only relevant for RHEL 8+")
 class TestCheckFirewalldAvailabilityAction:
     @pytest.mark.parametrize(
-        ("major", "id"),
-        ((7, "centos"),),
+        ("major", "minor", "id"),
+        (
+            (7, 9, "centos"),
+            (7, 9, "oracle"),
+            (8, 6, "oracle"),
+            (8, 5, "centos"),
+        ),
     )
     def test_not_supported_system(
-        self, major, id, monkeypatch, global_system_info, check_firewalld_availability_is_running_action, caplog
+        self, major, minor, id, monkeypatch, global_system_info, check_firewalld_availability_is_running_action, caplog
     ):
         monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
         global_system_info.id = id
-        global_system_info.version = Version(major, 0)
+        global_system_info.version = Version(major, minor)
 
         check_firewalld_availability_is_running_action.run()
 
         assert "Skipping the check as it is relevant only for Oracle Linux 8.8 and above." in caplog.records[-1].message
 
     @oracle8
-    def test_service_is_not_running(
-        self, pretend_os, check_firewalld_availability_is_running_action, monkeypatch, caplog
+    def test_systemd_managed_service_not_running(
+        self, pretend_os, global_system_info, monkeypatch, check_firewalld_availability_is_running_action, caplog
     ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
+        monkeypatch.setattr(check_firewalld_availability.system_info, "is_rpm_installed", lambda name: True)
         monkeypatch.setattr(
             check_firewalld_availability.systeminfo, "is_systemd_managed_service_running", lambda name: False
         )
         check_firewalld_availability_is_running_action.run()
         assert "Firewalld service reported that it is not running." in caplog.records[-1].message
+
+    @oracle8
+    def test_firewalld_rpm_not_installed(
+        self, pretend_os, global_system_info, monkeypatch, check_firewalld_availability_is_running_action, caplog
+    ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
+        monkeypatch.setattr(check_firewalld_availability.system_info, "is_rpm_installed", lambda name: False)
+        check_firewalld_availability_is_running_action.run()
+        assert "The firewalld package is not installed. Nothing to do." in caplog.records[-1].message
 
     @pytest.mark.parametrize(
         ("write_firewalld_mockup_config",),
@@ -250,12 +270,25 @@ SomethingElse=yes
     )
     @oracle8
     def test_cleanup_modules_on_exit_is_true(
-        self, pretend_os, check_firewalld_availability_is_running_action, write_firewalld_mockup_config, monkeypatch
+        self,
+        pretend_os,
+        global_system_info,
+        check_firewalld_availability_is_running_action,
+        write_firewalld_mockup_config,
+        monkeypatch,
     ):
+        monkeypatch.setattr(check_firewalld_availability, "system_info", global_system_info)
+        global_system_info.id = "oracle"
+        global_system_info.version = Version(8, 8)
         monkeypatch.setattr(check_firewalld_availability, "FIREWALLD_CONFIG_FILE", write_firewalld_mockup_config)
         monkeypatch.setattr(
             check_firewalld_availability.systeminfo,
             "is_systemd_managed_service_running",
+            lambda name: True,
+        )
+        monkeypatch.setattr(
+            check_firewalld_availability.system_info,
+            "is_rpm_installed",
             lambda name: True,
         )
         check_firewalld_availability_is_running_action.run()
@@ -277,48 +310,3 @@ SomethingElse=yes
                 "- that is after the system boots into the RHEL kernel."
             ),
         )
-
-    @pytest.mark.parametrize(
-        ("write_firewalld_mockup_config",),
-        (
-            (
-                {
-                    "content": """
-CleanupModulesOnExit=no
-"""
-                },
-            ),
-            ({"content": None},),
-        ),
-        indirect=("write_firewalld_mockup_config",),
-    )
-    @oracle8
-    def test_cleanup_modules_on_exit_is_false_or_missing(
-        self, pretend_os, check_firewalld_availability_is_running_action, write_firewalld_mockup_config, monkeypatch
-    ):
-        monkeypatch.setattr(check_firewalld_availability, "FIREWALLD_CONFIG_FILE", write_firewalld_mockup_config)
-        monkeypatch.setattr(
-            check_firewalld_availability.systeminfo,
-            "is_systemd_managed_service_running",
-            lambda name: True,
-        )
-        check_firewalld_availability_is_running_action.run()
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="WARNING",
-                    id="FIREWALLD_IS_RUNNING",
-                    title="Firewalld is running",
-                    description=(
-                        "We've detected that firewalld is running and we couldn't find "
-                        "check for the CleanupModulesOnExit configuration. "
-                        "This means that a reboot will be necessary after the conversion is done to reload the "
-                        "kernel modules and prevent firewalld from stop working."
-                    ),
-                    diagnosis=None,
-                    remediation=None,
-                ),
-            )
-        )
-        assert expected.issuperset(check_firewalld_availability_is_running_action.messages)
-        assert expected.issubset(check_firewalld_availability_is_running_action.messages)
