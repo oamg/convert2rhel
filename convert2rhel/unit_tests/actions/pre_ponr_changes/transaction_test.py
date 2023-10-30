@@ -38,6 +38,7 @@ def test_validate_package_manager_transaction_dependency_order(validate_package_
         "INSTALL_RED_HAT_GPG_KEY",
         "REMOVE_EXCLUDED_PACKAGES",
         "REMOVE_IWLAX2XX_FIRMWARE",
+        "CHECK_FIREWALLD_AVAILABILITY",
         "ENSURE_KERNEL_MODULES_COMPATIBILITY",
         "SUBSCRIBE_SYSTEM",
     )

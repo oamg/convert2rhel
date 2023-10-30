@@ -1,0 +1,19 @@
+---
+- name: Check that the firewalld package is installed
+  shell: 'rpm -q firewalld'
+  ignore_errors: True
+  register: rpm_out
+
+- name: Replace the firewalld configuration option
+  ansible.builtin.replace:
+    path: /etc/firewalld/firewalld.conf
+    regexp: 'CleanupModulesOnExit=yes'
+    replace: 'CleanupModulesOnExit=no'
+  when: rpm_out.rc == 0
+
+- name: Restart the firewalld process
+  ansible.builtin.service:
+    name: firewalld
+    state: restarted
+    enabled: true
+  when: rpm_out.rc == 0

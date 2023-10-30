@@ -64,7 +64,7 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_system_info, dbus
     )
 
 
-def test_check_dbus_is_running_info_message(monkeypatch, global_system_info, dbus_is_running_action):
+def test_check_dbus_is_running_info_message(monkeypatch, dbus_is_running_action):
     monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
 
     dbus_is_running_action.run()

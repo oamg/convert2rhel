@@ -1,0 +1,15 @@
+summary: |
+    Running conversion when firewalld is not running.
+description: |
+    Verify that on the OL8.8 the conversion does not break when
+    firewalld is not running and the the `CleanupModulesOnExit` configuration
+    option is set to `yes` in firewalld configuration file (default value).
+    This only applies to Oracle Linux (>=) 8.8.
+
+enabled: false
+
+tag+:
+    - firewalld-disabled
+
+test: |
+    pytest -svv

@@ -1,0 +1,19 @@
+summary: |
+    Running firewalld inhibitor
+description: |
+    Verify that on the OL8.8 the conversion is inhibited when
+    the firewalld is running on the system and the `CleanupModulesOnExit`
+    configuration option is set to `yes` in firewalld configuration file.
+    This only applies to Oracle Linux (>=) 8.8.
+
+enabled: false
+adjust+:
+    - enabled: true
+      when: distro == oracle-8-latest
+      because: The test case applies to Oracle Linux 8.8
+
+/firewalld_inhibitor:
+    tag+:
+        - firewalld-inhibitor
+    test: |
+        pytest -svv -m test_firewalld_inhibitor

@@ -1,2 +1,5 @@
 ---
 - include_tasks: boot_standard_kernel.yml
+# Workaround reference: https://issues.redhat.com/browse/RHELC-1180
+- include_tasks: stop_firewalld_workaround.yml
+  when: ansible_facts['distribution_major_version'] ==  "8"
