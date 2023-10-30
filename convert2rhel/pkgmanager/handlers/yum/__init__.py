@@ -308,7 +308,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             raise exceptions.CriticalError(
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate yum transaction.",
-                description="During the yum transaction execution an error occured and convert2rhel could no longer process the transaction.",
+                description="During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction.",
             )
 
         if validate_transaction:
