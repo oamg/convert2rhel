@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.4.1
+Version:        1.5.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,16 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon Oct 30 2023 Michal Bocek <mbocek@redhat.com> 1.5.0
+- Display system packages that are not up to date in alphabetical order
+- Change the default message of an empty report message field
+- Update Skip results to have diagnosis and remediation fields
+- Update configs and code to enable el9 conversions
+- Print the pre-conversion analysis report to a txt file
+- Support 8.8 as an EUS release for conversions
+- OL 8: Prevent conversion failure with firewalld running
+- Fix colors in the text-based analysis log being reversed from what it should be
+
 * Fri Sep 08 2023 Eric Gustavsson <egustavs@redhat.com> 1.4.1
 - Alma and Rocky Linux 8: Fix subscription-manager not being installed
 - Fix packages not being imported by move application lock into main
