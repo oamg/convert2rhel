@@ -31,8 +31,9 @@ import pexpect
 import pytest
 import six
 
-from convert2rhel.utils import prompt_user
 from convert2rhel.unit_tests.conftest import centos7
+from convert2rhel.utils import prompt_user
+
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from collections import namedtuple
@@ -214,6 +215,7 @@ class TestDownloadPkg(object):
         assert path is None
 
         assert expected_log in caplog.records[-1].message
+
 
 @pytest.mark.parametrize(
     "command, expected_output, expected_code",

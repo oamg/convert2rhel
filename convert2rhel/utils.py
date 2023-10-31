@@ -725,7 +725,6 @@ def download_pkg(
         #     framework, we are limited to returning a FAILURE for the Action
         #     plugin whereas returning SKIP would be more accurate.
         from convert2rhel import toolopts
-        from convert2rhel.systeminfo import system_info
 
         if toolopts.tool_opts.activity == "conversion":
             # add in the new envar that should be changed to along with the old one
