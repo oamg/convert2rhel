@@ -16,6 +16,7 @@
 __metaclass__ = type
 
 import logging
+import os
 
 from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.pkghandler import get_total_packages_to_update
@@ -73,18 +74,38 @@ class PackageUpdates(actions.Action):
             # exception is based on the `pkgmanager` module and the message
             # sent to the output can differ depending if the code is running in
             # RHEL7 (yum) or RHEL8 (dnf).
+            package_up_to_date_check_skip = os.environ.get("CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP", None)
             package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
                 " before proceeding with the conversion. %s" % str(e)
             )
+            if not package_up_to_date_check_skip:
+                logger.warning(package_up_to_date_error_message)
+                self.set_result(
+                    level="OVERRIDABLE",
+                    id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
+                    title="Package up to date check fail",
+                    description="Please refer to the diagnosis for further information",
+                    diagnosis=package_up_to_date_error_message,
+                    remediation="If you wish to ignore this message, set the environment variable "
+                    "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
+                )
+                return
+            skip_package_up_to_date_check_message = (
+                "Detected 'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' environment variable, we will skip "
+                "the package up-to-date check.\n"
+                "Beware, this could leave your system in a broken state."
+            )
+            logger.warning(skip_package_up_to_date_check_message)
+            self.add_message(
+                level="WARNING",
+                id="SKIP_PACKAGE_UP_TO_DATE_CHECK",
+                title="Skip package up to date check",
+                description=skip_package_up_to_date_check_message,
+            )
 
             logger.warning(package_up_to_date_error_message)
-            self.set_result(
-                level="SUCCESS",
-                id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-                title="Package up to date check fail",
-            )
             self.add_message(
                 level="WARNING",
                 id="PACKAGE_UP_TO_DATE_CHECK_MESSAGE",
@@ -100,6 +121,7 @@ class PackageUpdates(actions.Action):
                 if not reposdir
                 else "on repositories defined in the %s folder" % reposdir
             )
+            package_not_up_to_date_skip = os.environ.get("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP", None)
             package_not_up_to_date_error_message = (
                 "The system has %s package(s) not updated based %s.\n"
                 "List of packages to update: %s.\n\n"
@@ -107,15 +129,34 @@ class PackageUpdates(actions.Action):
                 "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), repos_message, " ".join(packages_to_update))
             )
-            logger.warning(package_not_up_to_date_error_message)
-            self.set_result(
-                level="SUCCESS",
-                id="OUT_OF_DATE_PACKAGES",
-                title="Outdated packages detected",
+            if not package_not_up_to_date_skip:
+                logger.warning(package_not_up_to_date_error_message)
+                self.set_result(
+                    level="OVERRIDABLE",
+                    id="OUT_OF_DATE_PACKAGES",
+                    title="Outdated packages detected",
+                    description="Please refer to the diagnosis for further information",
+                    diagnosis=package_not_up_to_date_error_message,
+                )
+                return
+
+            skip_package_not_up_to_date_message = (
+                "Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable, we will skip "
+                "the package up-to-date check.\n"
+                "Beware, this could leave your system in a broken state."
             )
+            logger.warning(skip_package_not_up_to_date_message)
             self.add_message(
                 level="WARNING",
-                id="PACKAGE_NOT_UP_TO_DATE_MESSAGE",
+                id="SKIP_OUTDATED_PACKAGE_CHECK",
+                title="Skip package not up to date check",
+                description=skip_package_not_up_to_date_message,
+            )
+
+            logger.warning(package_not_up_to_date_error_message)
+            self.add_message(
+                level="WARNING",
+                id="OUTDATED_PACKAGE_MESSAGE",
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=package_not_up_to_date_error_message,
