@@ -864,21 +864,33 @@ def find_keyid(keyfile):
         if ret_code != 0:
             raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: %s" % output)
     finally:
-        try:
-            # Remove the temporary keyring.  We can't use the context manager
-            # for this because it isn't available on Python-2.7 (RHEL7)
-            shutil.rmtree(temporary_dir)
-        except OSError as e:
-            # Gpg writes a temporary socket file for a gpg-agent into
-            # --homedir.  Sometimes gpg removes that socket file after rmtree
-            # has determined it should delete that file but before the deletion
-            # occurs. This will cause a FileNotFoundError (OSError on Python
-            # 2).  If we encounter that, try to run shutil.rmtree again since
-            # we should now be able to remove all the files that were left.
-            if e.errno == 2:
+        # Try five times to work around a race condition:
+        #
+        # Gpg writes a temporary socket file for a gpg-agent into
+        # --homedir.  Sometimes gpg removes that socket file after rmtree
+        # has determined it should delete that file but before the deletion
+        # occurs. This will cause a FileNotFoundError (OSError on Python
+        # 2).  If we encounter that, try to run shutil.rmtree again since
+        # we should now be able to remove all the files that were left.
+        for _dummy in range(0, 5):
+            try:
+                # Remove the temporary keyring.  We can't use the context manager
+                # for this because it isn't available on Python-2.7 (RHEL7)
                 shutil.rmtree(temporary_dir)
+            except OSError as e:
+                # File not found means rmtree tried to remove a file that had
+                # already been removed by the time it tried.
+                if e.errno != 2:
+                    raise
             else:
-                raise
+                break
+        else:
+            # If we get here, we tried and failed to rmtree five times
+            # Don't make this fatal but do let the user know so they can clean
+            # it up themselves.
+            loggerinst.info(
+                "Failed to remove temporary directory %s that held Red Hat gpg public keys." % temporary_dir
+            )
 
     keyid = None
     for line in output.splitlines():

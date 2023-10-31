@@ -21,6 +21,7 @@ import getpass
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 
@@ -330,10 +331,37 @@ class TestFindKeys:
         assert utils.find_keyid(self.gpg_key) == "fd431d51"
 
     def test_find_keyid_race_in_gpg_cleanup(self, monkeypatch):
+        """Test that we do not fail if gpg-agent removes the files once."""
         real_rmtree = shutil.rmtree
         monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(OSError(2, "File not found"), real_rmtree))
 
         assert utils.find_keyid(self.gpg_key) == "fd431d51"
+
+    def test_find_keyid_race_while_removing_directory(self, caplog, monkeypatch):
+        """Test that we do not fail if gpg-agent removes the files everytime."""
+        exception = OSError(2, "File not found")
+        monkeypatch.setattr(shutil, "rmtree", mock.Mock(spec=shutil.rmtree, side_effect=exception))
+
+        assert utils.find_keyid(self.gpg_key) == "fd431d51"
+
+        assert re.match(
+            "Failed to remove temporary directory.*that held Red Hat gpg public keys.", caplog.records[-1].message
+        )
+
+    def test_find_keyid_gpg_bad_keyring_and_race_deleting_tmp_dir(self, caplog, monkeypatch):
+        """Test that we do not fail with original error f gpg-agent removes the files."""
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
+        exception = OSError(2, "File not found")
+        monkeypatch.setattr(shutil, "rmtree", mock.Mock(spec=shutil.rmtree, side_effect=exception))
+
+        with pytest.raises(
+            utils.ImportGPGKeyError, match="Failed to read the temporary keyring with the rpm gpg key:.*"
+        ):
+            utils.find_keyid(self.gpg_key)
+
+        assert re.match(
+            "Failed to remove temporary directory.*that held Red Hat gpg public keys.", caplog.records[-1].message
+        )
 
     def test_find_keyid_bad_file(self, tmpdir):
         gpg_key = os.path.join(str(tmpdir), "badkeyfile")
@@ -353,17 +381,6 @@ class TestFindKeys:
         ):
             utils.find_keyid(self.gpg_key)
 
-    def test_find_keyid_gpg_bad_keyring_and_race_deleting_tmp_dir(self, monkeypatch):
-        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
-
-        real_rmtree = shutil.rmtree
-        monkeypatch.setattr(shutil, "rmtree", self.MockedRmtree(OSError(2, "File not found"), real_rmtree))
-
-        with pytest.raises(
-            utils.ImportGPGKeyError, match="Failed to read the temporary keyring with the rpm gpg key:.*"
-        ):
-            utils.find_keyid(self.gpg_key)
-
     def test_find_keyid_no_gpg_output(self, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=0))
 
@@ -371,6 +388,17 @@ class TestFindKeys:
             utils.ImportGPGKeyError, match="Unable to determine the gpg keyid for the rpm key file: %s" % self.gpg_key
         ):
             utils.find_keyid(self.gpg_key)
+
+    def test_find_keyid_error_and_race_removing_directory(self, caplog, monkeypatch):
+        """Test that we do not fail if gpg-agent removes the files."""
+        exception = OSError(2, "File not found")
+        monkeypatch.setattr(shutil, "rmtree", mock.Mock(spec=shutil.rmtree, side_effect=exception))
+
+        utils.find_keyid(self.gpg_key)
+
+        assert re.match(
+            "Failed to remove temporary directory.*that held Red Hat gpg public keys.", caplog.records[-1].message
+        )
 
     @pytest.mark.parametrize(
         ("exception", "exception_msg"),
