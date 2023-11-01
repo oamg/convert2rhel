@@ -126,7 +126,7 @@ def test_is_rpm_based_os():
     assert is_rpm_based_os() in (True, False)
 
 
-class TestDownloadPkg(object):
+class TestDownloadPkg:
     @centos7
     def test_download_pkg_failed_download_overridden(
         self,
@@ -611,27 +611,6 @@ class TestDownload_pkg:
 
         with pytest.raises(SystemExit):
             utils.download_pkg("kernel")
-
-    # def test_download_pkg_failed_during_analysis_download_exit(self, monkeypatch):
-    #     monkeypatch.setattr(system_info, "releasever", "7Server")
-    #     monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-    #     monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
-    #     monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
-    #     monkeypatch.setattr(toolopts.tool_opts, "activity", "analysis")
-
-    #     with pytest.raises(SystemExit):
-    #         utils.download_pkg("kernel")
-
-    # def test_download_pkg_failed_download_overridden(self, monkeypatch):
-    #     monkeypatch.setattr(system_info, "releasever", "7Server")
-    #     monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
-    #     monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
-    #     monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
-    #     monkeypatch.setattr(toolopts.tool_opts, "activity", "conversion")
-
-    #     path = utils.download_pkg("kernel")
-
-    #     assert path is None
 
     @pytest.mark.parametrize(
         ("output",),
