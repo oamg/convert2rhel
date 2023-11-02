@@ -51,8 +51,9 @@ def test_applock_basic(tmp_lock):
 
 def test_applock_basic_islocked(tmp_lock):
     with open(tmp_lock._pidfile, "w") as f:
-        pid = os.getpid()
-        f.write(str(pid) + "\n")
+        # Our parent process will be running and have a different pid
+        ppid = os.getppid()
+        f.write(str(ppid) + "\n")
     with pytest.raises(applock.ApplicationLockedError):
         tmp_lock.try_to_lock()
     os.unlink(tmp_lock._pidfile)
