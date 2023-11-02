@@ -59,6 +59,14 @@ def test_applock_basic_islocked(tmp_lock):
     os.unlink(tmp_lock._pidfile)
 
 
+def test_applock_basic_lock_idempotent(tmp_lock):
+    with open(tmp_lock._pidfile, "w") as f:
+        pid = os.getpid()
+        f.write(str(pid) + "\n")
+    tmp_lock.try_to_lock()
+    os.unlink(tmp_lock._pidfile)
+
+
 def test_applock_basic_reap(tmp_lock):
     """Test the case where the lockfile was held by a process
     that has exited."""
