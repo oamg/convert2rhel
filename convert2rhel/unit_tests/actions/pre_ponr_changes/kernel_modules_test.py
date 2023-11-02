@@ -94,21 +94,11 @@ def ensure_kernel_modules_compatibility_instance():
 @pytest.mark.parametrize(
     (
         "host_kmods",
-        "exception",
         "should_be_in_logs",
-        "shouldnt_be_in_logs",
     ),
     (
         (
             HOST_MODULES_STUB_GOOD,
-            False,
-            "loaded kernel modules are available in RHEL",
-            None,
-        ),
-        (
-            HOST_MODULES_STUB_BAD,
-            True,
-            None,
             "loaded kernel modules are available in RHEL",
         ),
     ),
@@ -120,9 +110,7 @@ def test_ensure_compatibility_of_kmods(
     pretend_os,
     caplog,
     host_kmods,
-    exception,
     should_be_in_logs,
-    shouldnt_be_in_logs,
 ):
     monkeypatch.setattr(
         ensure_kernel_modules_compatibility_instance, "_get_loaded_kmods", mock.Mock(return_value=host_kmods)
@@ -130,6 +118,7 @@ def test_ensure_compatibility_of_kmods(
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("yum", "makecache"), ("", 0)),
             (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
@@ -140,25 +129,82 @@ def test_ensure_compatibility_of_kmods(
         value=run_subprocess_mock,
     )
 
-    if exception:
-        ensure_kernel_modules_compatibility_instance.run()
-        assert_actions_result(
-            ensure_kernel_modules_compatibility_instance,
-            level="OVERRIDABLE",
-            id="UNSUPPORTED_KERNEL_MODULES",
-            title="Unsupported kernel modules",
-            description="Unsupported kernel modules were found",
-            diagnosis="The following loaded kernel modules are not available in RHEL:",
-            remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.",
-        )
-    else:
-        ensure_kernel_modules_compatibility_instance.run()
-        assert_actions_result(ensure_kernel_modules_compatibility_instance, level="SUCCESS")
+    ensure_kernel_modules_compatibility_instance.run()
+    assert_actions_result(ensure_kernel_modules_compatibility_instance, level="SUCCESS")
 
-    if should_be_in_logs:
-        assert should_be_in_logs in caplog.records[-1].message
-    if shouldnt_be_in_logs:
-        assert shouldnt_be_in_logs not in ensure_kernel_modules_compatibility_instance.result.diagnosis
+    assert should_be_in_logs in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    (
+        "host_kmods",
+        "repo_kmod_pkgs",
+        "makecache_output",
+        "error_id",
+        "level",
+    ),
+    (
+        (
+            HOST_MODULES_STUB_BAD,
+            REPOQUERY_F_STUB_GOOD,
+            ("", 0),
+            "UNSUPPORTED_KERNEL_MODULES",
+            "OVERRIDABLE",
+        ),
+        (
+            HOST_MODULES_STUB_BAD,
+            REPOQUERY_F_STUB_GOOD,
+            ("Insufficient space to run makecache", 1),
+            "PROBLEM_WITH_PACKAGE_REPO",
+            "ERROR",
+        ),
+        (
+            HOST_MODULES_STUB_BAD,
+            "",
+            ("", 0),
+            "NO_RHEL_KERNEL_MODULES_FOUND",
+            "ERROR",
+        ),
+        (
+            HOST_MODULES_STUB_BAD,
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n" "kernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
+            ("", 0),
+            "CANNOT_COMPARE_PACKAGE_VERSIONS",
+            "ERROR",
+        ),
+    ),
+)
+@centos8
+def test_ensure_compatibility_of_kmods_failure(
+    ensure_kernel_modules_compatibility_instance,
+    monkeypatch,
+    pretend_os,
+    caplog,
+    host_kmods,
+    repo_kmod_pkgs,
+    makecache_output,
+    error_id,
+    level,
+):
+    monkeypatch.setattr(
+        ensure_kernel_modules_compatibility_instance, "_get_loaded_kmods", mock.Mock(return_value=host_kmods)
+    )
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("yum", "makecache"), makecache_output),
+            (("repoquery", "-f"), (repo_kmod_pkgs, 0)),
+            (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
+        )
+    )
+    monkeypatch.setattr(
+        kernel_modules,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    ensure_kernel_modules_compatibility_instance.run()
+    assert_actions_result(ensure_kernel_modules_compatibility_instance, level=level, id=error_id)
 
 
 @centos8
@@ -176,6 +222,7 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("yum", "makecache"), ("", 0)),
             (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
@@ -246,6 +293,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     run_subprocess_mock = mock.Mock(
         side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
+            (("yum", "makecache"), ("", 0)),
             (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
@@ -366,6 +414,10 @@ def test_get_rhel_supported_kmods(
                 ("repoquery", "-l"),
                 (repoquery_l_stub, 0),
             ),
+            (
+                ("yum", "makecache"),
+                ("", 0),
+            ),
         )
     )
     monkeypatch.setattr(
@@ -384,6 +436,75 @@ def test_get_rhel_supported_kmods(
             "kernel/lib/c.ko",
         )
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "repoquery_f_return",
+        "repoquery_l_return",
+        "makecache_return",
+        "exception",
+        "exception_msg",
+    ),
+    (
+        (
+            (REPOQUERY_F_STUB_GOOD, 0),
+            (REPOQUERY_L_STUB_GOOD, 0),
+            ("", 1),
+            kernel_modules.PackageRepositoryError,
+            "We were unable to download the repository metadata for (.*) to determine packages containing kernel modules.  Can be caused by not enough disk space in /var/cache or too little memory.  The yum output below may have a clue for what went wrong in this case:\n\n.*",
+        ),
+        (
+            (REPOQUERY_F_STUB_BAD, 1),
+            (REPOQUERY_L_STUB_GOOD, 0),
+            ("", 0),
+            kernel_modules.PackageRepositoryError,
+            "We were unable to query the repositories (.*) to determine packages containing kernel modules. Output from the failed repoquery command:\n\n.*",
+        ),
+        (
+            ("", 0),
+            (REPOQUERY_L_STUB_GOOD, 0),
+            ("", 0),
+            kernel_modules.RHELKernelModuleNotFound,
+            "No packages containing kernel modules available in the enabled repositories (.*).",
+        ),
+    ),
+)
+@centos8
+def test_get_rhel_supported_kmods_repoquery_fails(
+    ensure_kernel_modules_compatibility_instance,
+    monkeypatch,
+    pretend_os,
+    repoquery_f_return,
+    repoquery_l_return,
+    makecache_return,
+    exception,
+    exception_msg,
+):
+    run_subprocess_mock = mock.Mock(
+        side_effect=run_subprocess_side_effect(
+            (
+                ("repoquery", "-f"),
+                repoquery_f_return,
+            ),
+            (
+                ("repoquery", "-l"),
+                repoquery_l_return,
+            ),
+            (
+                ("yum", "makecache"),
+                makecache_return,
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        kernel_modules,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+
+    with pytest.raises(exception, match=exception_msg):
+        ensure_kernel_modules_compatibility_instance._get_rhel_supported_kmods()
 
 
 @pytest.mark.parametrize(

@@ -735,7 +735,7 @@ class TestRestorablePackageSet:
             package_set.enable()
 
         assert (
-            "Failed to install subscription-manager packages. See the above yum output for details."
+            "Failed to install subscription-manager packages. Check the yum output below for details"
             in caplog.records[-1].message
         )
 
