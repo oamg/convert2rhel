@@ -198,7 +198,7 @@ class BackupController:
 
         return restorable
 
-    def pop_all(self):
+    def pop_all(self, _honor_partitions=False):
         """
         Restores all RestorableChanges known to the Controller and then returns them.
 
@@ -206,25 +206,49 @@ class BackupController:
         :raises IndexError: If there are no RestorableChanges currently known to the Controller.
 
         After running, the Controller object will not know about any RestorableChanges.
-        """
-        # This code ignores partitions.  Only restore_to_partition() honors
-        # them.
-        restorables = [r for r in self._restorables if r is not self.partition]
 
-        if not restorables:
+        .. note:: _honor_partitions is part of a hack for 1.4 to let us split restoring changes into
+            two parts.  During rollback, the part before the partition is restored before the legacy
+            backups.  Then the remainder of the changes managed by BackupController are restored.
+            This can go away once we merge all of the legacy backups into RestorableChanges managed
+            by BackupController.
+
+            .. seealso:: Jira ticket to track porting to BackupController: https://issues.redhat.com/browse/RHELC-1153
+        """
+        # Only raise IndexError if there are no restorables registered.
+        # Partitions are ignored for this check as they aren't really Changes.
+        if not self._restorables or all(r == self.partition for r in self._restorables):
             raise IndexError("No backups to restore")
 
-        # We want to restore in the reverse order the changes were enabled.
-        for restorable in reversed(restorables):
-            restorable.restore()
+        # Restore the Changes in the reverse order the changes were enabled.
+        processed_restorables = []
+        while True:
+            try:
+                restorable = self._restorables.pop()
+            except IndexError:
+                break
 
-        # Reset the internal storage in case we want to use it again
-        self._restorables = []
+            if restorable is self.partition:
+                if _honor_partitions:
+                    # Stop once a partition is reached (this is how
+                    # pop_to_partition() is implemented.
+                    return []
+                else:
+                    # This code ignores partitions.  Only pop_to_partition() honors
+                    # them.
+                    continue
 
-        # Now that we know everything succeeded, reverse the list that we return to the user
-        restorables.reverse()
+            try:
+                restorable.restore()
+            # Catch SystemExit too because we might still be calling
+            # logger.critical in some places.
+            except (Exception, SystemExit) as e:
+                # Don't let a failure in one restore influence the others
+                loggerinst.warning("Error while rolling back a %s: %s" % (restorable.__class__.__name__, str(e)))
 
-        return restorables
+            processed_restorables.append(restorable)
+
+        return processed_restorables
 
     def pop_to_partition(self):
         """
@@ -236,34 +260,10 @@ class BackupController:
 
         .. warning::
             * For the hack to 1.4, you need to make sure that at least one partition has been pushed
-              onto the stack.
+                onto the stack.
             * Unlike pop() and pop_all(), this method doesn't return anything.
         """
-        # This code is based on pop() instead of pop_all() because we need to
-        # stop when we reach the first parition.
-        try:
-            restorable = self._restorables.pop()
-        except IndexError as e:
-            # Use a more specific error message
-            args = list(e.args)
-            args[0] = "No backups to restore"
-            e.args = tuple(args)
-            raise e
-
-        if restorable is self.partition:
-            return
-
-        restorable.restore()
-
-        try:
-            self.pop_to_partition()
-        except IndexError:
-            # We only want to raise IndexError if there were no restorables in
-            # the stack to begin with.  So as long as we've called ourselves
-            # recursively, we will ignore it
-            pass
-
-        return
+        self.pop_all(_honor_partitions=True)
 
 
 @six.add_metaclass(abc.ABCMeta)

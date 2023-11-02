@@ -818,3 +818,13 @@ class MinimalRestorable(backup.RestorableChange):
     def restore(self):
         self.called["restore"] += 1
         super(MinimalRestorable, self).restore()
+
+
+class ErrorOnRestoreRestorable(MinimalRestorable):
+    def __init__(self, exception=None):
+        self.exception = exception or Exception()
+        super(ErrorOnRestoreRestorable, self).__init__()
+
+    def restore(self):
+        super(ErrorOnRestoreRestorable, self).restore()
+        raise self.exception
