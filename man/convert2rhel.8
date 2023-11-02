@@ -1,12 +1,12 @@
-.TH CONVERT2RHEL "1" "2023\-09\-26" "convert2rhel 1.5.0" "General Commands Manual"
+.TH CONVERT2RHEL "1" "2023\-11\-02" "convert2rhel 1.6.0" "General Commands Manual"
 .SH NAME
 convert2rhel \- Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux.
 .SH SYNOPSIS
 .
   convert2rhel [--version] [-h]
-  convert2rhel <subcommand> [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]
-  convert2rhel <subcommand> [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--debug] [--restart] [-y]
-  convert2rhel <subcommand> [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
 .SH DESCRIPTION
 The Convert2RHEL utility automates converting Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux. The whole conversion procedure is performed on the running RHEL derivative OS installation and a restart is needed at the end of the conversion to boot into the RHEL kernel. The utility replaces the original OS packages with the RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 to the respective major version of RHEL.
 
@@ -32,9 +32,9 @@ Convert the system. If no subcommand is given, 'convert' is used as a default.
 .SH COMMAND \fI\,'convert2rhel analyze'\/\fR
 usage:
   convert2rhel [\-\-version] [\-h]
-  convert2rhel analyze [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel analyze [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel analyze [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
 
 .SH OPTIONS \fI\,'convert2rhel analyze'\/\fR
 .TP
@@ -52,6 +52,12 @@ Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
 before and after the conversion with the output stored in log files rpm_va.log
 and rpm_va_after_conversion.log. At the end of the conversion, these logs are
 compared to show you what rpm files have been affected by the conversion.
+
+.TP
+\fB\-\-eus\fR
+Automatically recognize the system as eus, utilizing eus repos. 8.6 systems do
+not require this option as they are recognized as eus automatically. This
+option is meant for 8.8+ systems.
 
 .TP
 \fB\-\-enablerepo\fR \fI\,repoidglob\/\fR
@@ -169,9 +175,9 @@ requires to have the \-\-enablerepo specified.
 .SH COMMAND \fI\,'convert2rhel convert'\/\fR
 usage:
   convert2rhel [\-\-version] [\-h]
-  convert2rhel convert [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel convert [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel convert [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
 
 .SH OPTIONS \fI\,'convert2rhel convert'\/\fR
 .TP
@@ -189,6 +195,12 @@ Skip gathering changed rpm files using 'rpm \-Va'. By default it's performed
 before and after the conversion with the output stored in log files rpm_va.log
 and rpm_va_after_conversion.log. At the end of the conversion, these logs are
 compared to show you what rpm files have been affected by the conversion.
+
+.TP
+\fB\-\-eus\fR
+Automatically recognize the system as eus, utilizing eus repos. 8.6 systems do
+not require this option as they are recognized as eus automatically. This
+option is meant for 8.8+ systems.
 
 .TP
 \fB\-\-enablerepo\fR \fI\,repoidglob\/\fR
