@@ -79,7 +79,7 @@ class IsLoadedKernelLatest(actions.Action):
 
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
         # we allow the user to provide a environment variable to override the functionality and proceed
-        # with the conversion, otherwise, we just throw an critical logging to them.
+        # with the conversion, otherwise, we just throw a critical logging to them.
         allow_older_envvar_names = (
             "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK",
             "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK",
