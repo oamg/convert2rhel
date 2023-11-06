@@ -135,6 +135,8 @@ class TestDownloadPkg:
         caplog,
         global_tool_opts,
     ):
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
+
         global_tool_opts.activity = "conversion"
         expected_log = (
             "Couldn't back up the packages: kernel. This means that if a rollback is needed,"
@@ -204,6 +206,8 @@ class TestDownloadPkg:
         caplog,
         global_tool_opts,
     ):
+        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
+
         global_tool_opts.activity = "conversion"
 
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": incomplete_rollback})
