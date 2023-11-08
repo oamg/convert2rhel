@@ -14,9 +14,29 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Trigger Manpage Generation
-        uses: ./.github/workflows
-        with:
-          workflow: generate_manpage.yml
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            --data '{"event_type": "trigger-manpage-generation"}'
+
+      - name: Show File Modification
+        run: |
+          FILE_PATH="man/convert2rhel.8"
+
+          # Fetch the changes from the remote repository
+          git fetch --quiet
+
+          # Check if the file has been modified
+          if git diff origin/main $FILE_PATH; then
+            echo "No changes detected in $FILE_PATH."
+          else
+            echo "Changes detected in $FILE_PATH. Printing diff:"
+            git diff origin/main $FILE_PATH
+            exit 0
+          fi
 
       - name: Build RPM package for EL7
         id: rpm_build_el7
