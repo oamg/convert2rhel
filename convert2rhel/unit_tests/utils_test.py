@@ -135,7 +135,8 @@ class TestDownloadPkg:
         caplog,
         global_tool_opts,
     ):
-        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
+
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
 
         global_tool_opts.activity = "conversion"
         expected_log = (
@@ -206,7 +207,7 @@ class TestDownloadPkg:
         caplog,
         global_tool_opts,
     ):
-        monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=1))
+        monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
 
         global_tool_opts.activity = "conversion"
 
