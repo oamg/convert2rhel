@@ -24,6 +24,7 @@ from convert2rhel import utils
 from convert2rhel.actions import (
     _STATUS_HEADER,
     _STATUS_NAME_FROM_CODE,
+    STATUS_CODE,
     find_actions_of_severity,
     format_action_status_message,
     level_for_combined_action_data,
@@ -75,9 +76,13 @@ def summary_as_json(results, json_file=CONVERT2RHEL_JSON_RESULTS):
     * The results are modified so that status codes use their symbolic names
       instead of the numeric values.
     """
+    # Collect the highest report level to use as status key
+    highest_level = find_highest_report_level(results)
+
     # Use an envelope so we can add other, non-result info if necessary.
     envelope = {
-        "format_version": "1.0",
+        "format_version": "1.1",
+        "status": highest_level,
         "actions": copy.deepcopy(results),
     }
 
@@ -261,6 +266,29 @@ def format_report_section_heading(status_code):
 
     heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
     return heading
+
+
+def find_highest_report_level(results):
+    """
+    Gather status codes from messages and result. We are not seeking for
+    differences between them as we want all the results, no matter where
+    they come from.
+
+    :param results: The results from the Actions which have been run.
+    :type results: dict
+    :return: The highest status code from messages and result
+    :rtype: str
+    """
+    action_level_combined = []
+    for value in results.values():
+        action_level_combined.append(value["result"]["level"])
+        for message in value["messages"]:
+            action_level_combined.append(message["level"])
+
+    valid_action_levels = [level for level in action_level_combined if level in STATUS_CODE.values()]
+    valid_action_levels.sort(reverse=True)
+    highest_action_level = _STATUS_NAME_FROM_CODE[valid_action_levels[0]]
+    return highest_action_level
 
 
 def summary_as_txt(results):
