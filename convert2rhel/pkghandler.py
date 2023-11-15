@@ -706,8 +706,8 @@ def _get_package_repositories(pkgs):
             repositories_mapping[package] = "N/A"
     else:
         for line in output:
-            if "C2R" in line:
-                split_output = line.lstrip("C2R ").split("&")
+            if line.startswith("C2R "):
+                split_output = line[4:].split("&")
                 nevra = split_output[0]
                 repoid = split_output[1]
                 repositories_mapping[nevra] = repoid if repoid else "N/A"
