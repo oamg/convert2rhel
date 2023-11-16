@@ -899,6 +899,51 @@ def update_rhsm_custom_facts():
         loggerinst.info("Skipping updating RHSM custom facts.")
 
 
+def _parse_rhsm_facts(facts_string):
+    """Parse the RHSM facts string into a dictionary.
+
+    Args:
+        facts_string (str): The facts string returned by subscription-manager.
+
+    Returns:
+        dict: The RHSM facts.
+    """
+    facts = {}
+    for line in facts_string.splitlines():
+        parts = line.split(":", 1)
+        if len(parts) == 2:
+            key, value = parts
+            facts[key.strip()] = value.strip()
+
+    return facts
+
+
+def get_rhsm_facts():
+    """Get the RHSM facts.
+
+    Returns:
+        dict: The RHSM facts.
+    """
+    if not tool_opts.no_rhsm:
+        loggerinst.info("Getting RHSM facts.")
+        cmd = ["subscription-manager", "facts"]
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+
+        if ret_code != 0:
+            loggerinst.warning(
+                "Failed to get the RHSM facts with return code '%s' and output '%s'.",
+                ret_code,
+                output,
+            )
+            return {}
+        else:
+            loggerinst.info("RHSM facts collected successfully.")
+            return _parse_rhsm_facts(output)
+    else:
+        loggerinst.info("Skipping getting RHSM facts.")
+        return {}
+
+
 # subscription is the natural place to look for should_subscribe but it
 # is needed by toolopts.  So define it as a private function in toolopts but
 # create a public identifier to access it here.

@@ -1257,3 +1257,30 @@ def test_update_rhsm_custom_facts_no_rhsm(global_tool_opts, caplog, monkeypatch)
 
     subscription.update_rhsm_custom_facts()
     assert "Skipping updating RHSM custom facts." in caplog.records[-1].message
+
+
+def test_get_rhsm_facts(monkeypatch):
+    facts_string = """\
+invalid value
+cpu.cpu(s): 8
+cpu.cpu_socket(s): 3
+"""
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_string=facts_string),
+    )
+    facts = subscription.get_rhsm_facts()
+    assert facts == {"cpu.cpu(s)": "8", "cpu.cpu_socket(s)": "3"}
+
+
+def test_get_rhsm_facts_no_rhsm(global_tool_opts, monkeypatch):
+    run_mock = RunSubprocessMocked(return_string="")
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+    global_tool_opts.no_rhsm = True
+
+    facts = subscription.get_rhsm_facts()
+
+    assert isinstance(facts, dict)
+    assert len(facts) == 0
+    assert run_mock.call_count == 0

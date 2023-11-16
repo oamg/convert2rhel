@@ -29,7 +29,7 @@ from convert2rhel import backup
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, checks, exceptions, grub
+from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report
@@ -236,6 +236,7 @@ def test_main(monkeypatch, tmp_path):
     update_rhsm_custom_facts_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
     summary_as_txt_mock = mock.Mock()
+    configure_host_metering_mock = mock.Mock()
 
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     monkeypatch.setattr(utils, "require_root", require_root_mock)
@@ -262,6 +263,7 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
     monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
+    monkeypatch.setattr(hostmetering, "configure_host_metering", configure_host_metering_mock)
 
     assert main.main() == 0
     assert require_root_mock.call_count == 1

@@ -228,7 +228,6 @@ class CLI:
             help="Answer yes to all yes/no questions the tool asks.",
             action="store_true",
         )
-
         self._add_subscription_manager_options()
         self._add_alternative_installation_options()
         self._register_commands()
