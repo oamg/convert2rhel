@@ -140,6 +140,16 @@ class TestTooloptsParseFromCLI:
         )
         assert message in caplog.text
 
+    def test_payg(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--payg"]))
+        convert2rhel.toolopts.CLI()
+        assert global_tool_opts.payg is True
+
+    def test_no_payg(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(sys, "argv", mock_cli_arguments([]))
+        convert2rhel.toolopts.CLI()
+        assert global_tool_opts.payg is False
+
 
 def test_keep_rhsm(monkeypatch, caplog):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--keep-rhsm"]))

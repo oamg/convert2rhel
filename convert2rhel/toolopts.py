@@ -87,6 +87,7 @@ class ToolOpts:
         self.arch = None
         self.no_rpm_va = False
         self.eus = False
+        self.payg = False
         self.activity = None
 
     def set_opts(self, supported_opts):
@@ -125,10 +126,10 @@ class CLI:
             "\n"
             "  convert2rhel [--version] [-h]\n"
             "  convert2rhel {subcommand} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
+            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--payg] [--debug] [--restart] [-y]\n"
             "  convert2rhel {subcommand} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
             "  convert2rhel {subcommand} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
+            " repoid] [--serverurl url] [--no-rpm-va] [--eus] [--payg] [--debug] [--restart] [-y]\n"
         ).format(subcommand=subcommand_to_print)
 
         if subcommand_not_used_on_cli:
@@ -197,6 +198,11 @@ class CLI:
             " This option is meant for 8.8+ systems.",
         )
         self._shared_options_parser.add_argument(
+            "--payg",
+            action="store_true",
+            help="Configure host-metering for Pay-As-You-Go billing. This option is meant for 7.9 systems.",
+        )
+        self._shared_options_parser.add_argument(
             "--enablerepo",
             metavar="repoidglob",
             action="append",
@@ -226,7 +232,6 @@ class CLI:
             help="Answer yes to all yes/no questions the tool asks.",
             action="store_true",
         )
-
         self._add_subscription_manager_options()
         self._add_alternative_installation_options()
         self._register_commands()
@@ -487,6 +492,7 @@ class CLI:
             )
 
         tool_opts.autoaccept = parsed_opts.y
+        tool_opts.payg = parsed_opts.payg
         tool_opts.auto_attach = parsed_opts.auto_attach
 
         # conversion only options
