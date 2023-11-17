@@ -2259,6 +2259,19 @@ def test_get_installed_pkg_information_value_error(monkeypatch, caplog):
             },
         ),
         (
+            ["2:eog-44.1-1.fc38.x86_64", "2:gnome-backgrounds-44.0-1.fc38.noarch", "2:gnome-maps-44.1-1.fc38.x86_64"],
+            """\
+                C2R 2:eog-44.1-1.fc38.x86_64&updates
+                C2R 2:gnome-backgrounds-44.0-1.fc38.noarch&fedora
+                C2R 2:gnome-maps-44.1-1.fc38.x86_64&updates
+            """,
+            {
+                "2:eog-44.1-1.fc38.x86_64": "updates",
+                "2:gnome-backgrounds-44.0-1.fc38.noarch": "fedora",
+                "2:gnome-maps-44.1-1.fc38.x86_64": "updates",
+            },
+        ),
+        (
             ["0:eog-44.1-1.fc38.x86_64", "0:gnome-backgrounds-44.0-1.fc38.noarch", "0:gnome-maps-44.1-1.fc38.x86_64"],
             """\
                 C2R 0:eog-44.1-1.fc38.x86_64&updates
