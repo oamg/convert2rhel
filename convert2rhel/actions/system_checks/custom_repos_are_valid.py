@@ -38,14 +38,7 @@ class CustomReposAreValid(actions.Action):
         logger.task("Prepare: Check if --enablerepo repositories are accessible")
 
         if not tool_opts.no_rhsm:
-            description = "Skipping the check of repositories due to the use of RHSM for the conversion."
-            logger.info(description)
-            self.add_message(
-                level="INFO",
-                id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
-                title="Skipping the custom repos are valid check",
-                description=description,
-            )
+            logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
             return
 
         output, ret_code = call_yum_cmd(
