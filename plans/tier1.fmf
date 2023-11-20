@@ -333,3 +333,19 @@ description+: |
             - name: reboot after conversion
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
+
+    /payg:
+        enabled: false
+        adjust+:
+            - enabled: true
+              when: distro == centos-7
+        discover+:
+            filter:
+            - tag:checks-after-conversion | tag:payg
+        prepare+:
+            - name: test payg
+              how: shell
+              script: pytest -svv tests/integration/*/destructive/payg/run_conversion.py
+            - name: reboot after conversion
+              how: ansible
+              playbook: tests/ansible_collections/roles/reboot/main.yml
