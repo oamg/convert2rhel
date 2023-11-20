@@ -1,0 +1,10 @@
+---
+- hosts: all
+  tasks:
+    - name: Add host-metering repo
+      yum_repository:
+        name: copr:copr.fedorainfracloud.org:pvoborni:host-metering
+        description: host-metering COPR repo
+        baseurl: https://download.copr.fedorainfracloud.org/results/pvoborni/host-metering/epel-7-$basearch/
+        enabled: no
+        gpgcheck: no

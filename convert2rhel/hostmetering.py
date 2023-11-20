@@ -44,7 +44,8 @@ def configure_host_metering():
         return False
 
     logger.info("Installing host-metering rpms.")
-    output, ret_install = call_yum_cmd("install", ["host-metering"])
+    copr_repo = "copr:copr.fedorainfracloud.org:pvoborni:host-metering"
+    output, ret_install = call_yum_cmd("install", ["host-metering"], enable_repos=[copr_repo])
     logger.debug("Output of yum call: %s" % output)
     if ret_install:
         logger.warning("Failed to install host-metering rpms.")

@@ -36,7 +36,10 @@ def test_payg(monkeypatch):
     if not ret:
         pytest.fail("Failed to configure host-metering.")
 
-    run_mock.assert_any_call(["yum", "install", "-y", "host-metering"], print_output=True)
+    copr_repo = "copr:copr.fedorainfracloud.org:pvoborni:host-metering"
+    run_mock.assert_any_call(
+        ["yum", "install", "-y", "--enablerepo=%s" % copr_repo, "host-metering"], print_output=True
+    )
     run_mock.assert_any_call(["systemctl", "enable", "host-metering.service"])
     run_mock.assert_any_call(["systemctl", "start", "host-metering.service"])
 

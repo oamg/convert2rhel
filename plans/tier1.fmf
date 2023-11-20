@@ -343,6 +343,9 @@ description+: |
             filter:
             - tag:checks-after-conversion | tag:payg
         prepare+:
+            - name: add host-metering COPR repo
+              how: ansible
+              playbook: tests/integration/tier1/destructive/payg/ansible/host-metering-copr.yml
             - name: test payg
               how: shell
               script: pytest -svv tests/integration/*/destructive/payg/run_conversion.py
