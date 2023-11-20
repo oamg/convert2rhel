@@ -249,3 +249,20 @@ description+: |
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion
+
+    /host-metering:
+        enabled: false
+        adjust+:
+            # TODO: enable only when running on AWS, GCP, Azure
+            - enabled: true
+              when: distro == centos-7
+        discover+:
+            filter:
+            - tag:checks-after-conversion | tag:host-metering
+        prepare+:
+            - name: test host-metering
+              how: shell
+              script: pytest -svv tests/integration/*/destructive/host-metering/run_conversion.py
+            - name: reboot after conversion
+              how: ansible
+              playbook: tests/ansible_collections/roles/reboot/main.yml

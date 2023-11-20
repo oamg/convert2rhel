@@ -1,0 +1,15 @@
+summary+: |
+    Check expected state after --payg
+
+description+: |
+    Test convert2rhel with --payg option.
+    Verify that:
+    - host-metering service is enabled and started
+
+link:
+    - https://issues.redhat.com/browse/RHELC-1226
+
+tag+:
+    - host-metering
+
+test: pytest -svv -m test_host_metering
