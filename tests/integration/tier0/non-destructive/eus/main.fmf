@@ -24,8 +24,7 @@ tag+:
     enabled: false
     adjust+:
         enabled: true
-        #TODO change 8-latest to 8.8, when 8.9 is latest
-        when: distro == alma-8-latest, rocky-8-latest
+        when: distro == alma-8.8, rocky-8.8
         because: The only consistently relevant EUS releases are Alma and Rocky.
     tag+:
         - test-eus-support

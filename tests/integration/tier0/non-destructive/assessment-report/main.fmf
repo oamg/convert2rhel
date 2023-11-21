@@ -16,8 +16,12 @@ tag+:
     summary+: |
         Verify that some actions failures and skips appeared in the report.
     description+: |
-        Verify that the conversion will proceed until the point of no return
-        even with failures and skips, and then, output the report to the user.
+        Verify that the assessment report contains the following headers and messages:
+        Error header, skip header, success header.
+        Also verify the message severity ordering.
+
+        Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
+        and it corresponds to its respective schema.
     tag+:
         - failed-report
     test: |

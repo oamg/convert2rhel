@@ -44,6 +44,7 @@ def test_failures_and_skips_in_report(convert2rhel):
     """
     Verify that the assessment report contains the following headers and messages:
     Error header, skip header, success header.
+    Also verify the message severity ordering.
 
     Verify the report is created in /var/log/convert2rhel/convert2rhel-pre-conversion.json,
     and it corresponds to its respective schema.
@@ -63,15 +64,26 @@ def test_failures_and_skips_in_report(convert2rhel):
         # Then, verify that the analysis report is printed
         c2r.expect("Pre-conversion analysis report", timeout=600)
 
-        # Error header first
-        c2r.expect("Must fix before conversion", timeout=600)
-        c2r.expect("SUBSCRIBE_SYSTEM::FAILED_TO_SUBSCRIBE_SYSTEM")
-        c2r.expect("Diagnosis: System registration failed with error")
+        # Verify the ordering and contents
+        # of the skip and error header
+        # Success header first
+        c2r.expect_exact("Success (No changes needed)")
+
+        # Info header
+        c2r.expect_exact("Info (No changes needed)")
+
+        # Warning header
+        c2r.expect_exact("Warning (Review and fix if needed)")
 
         # Skip header
-        c2r.expect("Could not be checked due to other failures", timeout=600)
+        c2r.expect_exact("Skip (Could not be checked due to other failures)", timeout=600)
         c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY::SKIP - Skipped")
         c2r.expect("Skipped because SUBSCRIBE_SYSTEM was not successful")
+
+        # Error header
+        c2r.expect_exact("Error (Must fix before conversion)", timeout=600)
+        c2r.expect("SUBSCRIBE_SYSTEM::FAILED_TO_SUBSCRIBE_SYSTEM")
+        c2r.expect("Diagnosis: System registration failed with error")
 
     assert c2r.exitstatus == 0
 

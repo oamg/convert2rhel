@@ -13,6 +13,10 @@
   # ensurepip won't install pip if it is already installed
   command: python3 -m ensurepip --default-pip
 
+- name: Update pip
+  # Possible workaround to fix failing installation of the test dependencies
+  command: python3 -m pip install --upgrade pip
+
 - name: Install pytest framework dependencies
   pip:
     name:

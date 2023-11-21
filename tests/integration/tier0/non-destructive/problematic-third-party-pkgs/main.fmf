@@ -1,0 +1,20 @@
+summary+: |
+    Problematic 3rd party packages listed
+description+: |
+    Verify that the overridable checks work as intended in both
+    scenarios with or without the respective envar set.
+
+
+/list_third_party_pkgs:
+    summary+: |
+        List third party packages check
+    description+: |
+        This test verifies, that the  TASK - [Convert: List third-party packages]
+        won't fail listing packages if previously problematic third party packages are installed.
+        Installed package(s):
+        v8-devel from the epel repository
+        nodejs from the epel repository
+    tag+:
+        - test-list-third-party-pkgs-error
+    test: |
+        pytest -svv -m test_list_third_party_pkgs_error
