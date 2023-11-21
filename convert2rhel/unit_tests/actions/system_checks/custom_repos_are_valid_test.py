@@ -62,22 +62,9 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
     )
 
 
-def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch):
+def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch, caplog):
     monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", False)
 
     custom_repos_are_valid_action.run()
 
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="CUSTOM_REPOSITORIES_ARE_VALID_CHECK_SKIP",
-                title="Skipping the custom repos are valid check",
-                description="Skipping the check of repositories due to the use of RHSM for the conversion.",
-                diagnosis="",
-                remediation="",
-            ),
-        )
-    )
-    assert expected.issuperset(custom_repos_are_valid_action.messages)
-    assert expected.issubset(custom_repos_are_valid_action.messages)
+    assert "Skipping the check of repositories due to the use of RHSM for the conversion." in caplog.records[-1].message
