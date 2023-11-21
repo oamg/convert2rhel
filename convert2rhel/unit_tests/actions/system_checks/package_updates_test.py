@@ -92,6 +92,8 @@ def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_u
         title="Outdated packages detected",
         description="Please refer to the diagnosis for further information",
         diagnosis=diagnosis,
+        remediations="If you wish to ignore this message, set the environment variable "
+        "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1.",
     )
 
     assert diagnosis in caplog.records[-1].message
