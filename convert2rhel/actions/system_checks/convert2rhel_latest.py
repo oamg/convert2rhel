@@ -60,12 +60,12 @@ class Convert2rhelLatest(actions.Action):
         super(Convert2rhelLatest, self).run()
 
         if not system_info.has_internet_access:
-            description = "Skipping the check because no internet connection has been detected."
+            description = "Did not perform the check because no internet connection has been detected."
             logger.warning(description)
             self.add_message(
                 level="WARNING",
                 id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
-                title="Skipping convert2rhel latest version check",
+                title="Did not perform convert2rhel latest version check",
                 description=description,
             )
             return
@@ -104,7 +104,7 @@ class Convert2rhelLatest(actions.Action):
                 level="WARNING",
                 id="CONVERT2RHEL_LATEST_CHECK_SKIP",
                 title="convert2rhel latest version check skip",
-                description="Skipping the convert2hel latest version check",
+                description="Did not perform the convert2hel latest version check",
                 diagnosis=diagnosis,
             )
             return

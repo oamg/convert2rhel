@@ -38,7 +38,7 @@ class CustomReposAreValid(actions.Action):
         logger.task("Prepare: Check if --enablerepo repositories are accessible")
 
         if not tool_opts.no_rhsm:
-            logger.info("Skipping the check of repositories due to the use of RHSM for the conversion.")
+            logger.info("Did not perform the check of repositories due to the use of RHSM for the conversion.")
             return
 
         output, ret_code = call_yum_cmd(

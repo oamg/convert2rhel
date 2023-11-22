@@ -29,8 +29,8 @@ def dbus_is_running_action():
 @pytest.mark.parametrize(
     ("should_subscribe", "dbus_running", "log_msg"),
     (
-        (False, True, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
-        (False, False, "Skipping the check because we have been asked not to subscribe this system to RHSM."),
+        (False, True, "Did not perform the check because we have been asked not to subscribe this system to RHSM."),
+        (False, False, "Did not perform the check because we have been asked not to subscribe this system to RHSM."),
         (True, True, "DBus Daemon is running"),
     ),
 )
@@ -74,8 +74,8 @@ def test_check_dbus_is_running_info_message(monkeypatch, dbus_is_running_action)
             actions.ActionMessage(
                 level="INFO",
                 id="DBUS_IS_RUNNING_CHECK_SKIP",
-                title="Skipping the dbus is running check",
-                description="Skipping the check because we have been asked not to subscribe this system to RHSM.",
+                title="Did not perform the dbus is running check",
+                description="Did not perform the check because we have been asked not to subscribe this system to RHSM.",
                 diagnosis=None,
                 remediations=None,
             ),

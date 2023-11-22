@@ -48,9 +48,7 @@ class TestIsLoadedKernelLatest:
         monkeypatch.setattr(is_loaded_kernel_latest.system_info, "eus_system", value=True)
         monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", value=True)
 
-        message = (
-            "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
-        )
+        message = "Did not perform the check because there were no publicly available Oracle Linux Server 8.6 repositories available."
         is_loaded_kernel_latest_action.run()
 
         assert message in caplog.records[-1].message
@@ -378,8 +376,8 @@ class TestIsLoadedKernelLatest:
                 actions.ActionMessage(
                     level="WARNING",
                     id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
-                    title="Skipping the is loaded kernel latest check",
-                    description="Skipping the check as no internet connection has been detected.",
+                    title="Did not perform the is loaded kernel latest check",
+                    description="Did not perform the check as no internet connection has been detected.",
                     diagnosis=None,
                     remediations=None,
                 ),
@@ -387,7 +385,7 @@ class TestIsLoadedKernelLatest:
         )
 
         is_loaded_kernel_latest_action.run()
-        assert "Skipping the check as no internet connection has been detected." in caplog.records[-1].message
+        assert "Did not perform the check as no internet connection has been detected." in caplog.records[-1].message
         assert expected.issuperset(is_loaded_kernel_latest_action.messages)
         assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
@@ -413,7 +411,7 @@ class TestIsLoadedKernelLatest:
                 "1",
                 "WARNING",
                 "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
-                "Skipping the kernel currency check",
+                "Did not perform the kernel currency check",
                 (
                     "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
                 ),
@@ -515,7 +513,7 @@ class TestIsLoadedKernelLatest:
                 "0",
                 "WARNING",
                 "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
-                "Skipping the kernel currency check",
+                "Did not perform the kernel currency check",
                 (
                     "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
                 ),
@@ -614,7 +612,7 @@ class TestIsLoadedKernelLatest:
                 "Unable to fetch recent kernels",
                 (
                     "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Skipping the loaded kernel check."
+                    "the repositories. Did not perform the loaded kernel check."
                 ),
                 None,
                 None,

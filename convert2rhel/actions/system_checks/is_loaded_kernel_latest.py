@@ -39,7 +39,7 @@ class IsLoadedKernelLatest(actions.Action):
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(
-                "Skipping the check because there are no publicly available %s %d.%d repositories available."
+                "Did not perform the check because there were no publicly available %s %d.%d repositories available."
                 % (system_info.name, system_info.version.major, system_info.version.minor)
             )
             return
@@ -54,12 +54,12 @@ class IsLoadedKernelLatest(actions.Action):
 
         reposdir = get_hardcoded_repofiles_dir()
         if reposdir and not system_info.has_internet_access:
-            logger.warning("Skipping the check as no internet connection has been detected.")
+            logger.warning("Did not perform the check as no internet connection has been detected.")
             self.add_message(
                 level="WARNING",
                 id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
-                title="Skipping the is loaded kernel latest check",
-                description="Skipping the check as no internet connection has been detected.",
+                title="Did not perform the is loaded kernel latest check",
+                description="Did not perform the check as no internet connection has been detected.",
             )
             return
 
@@ -104,7 +104,7 @@ class IsLoadedKernelLatest(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
-                title="Skipping the kernel currency check",
+                title="Did not perform the kernel currency check",
                 description=(
                     "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                     "the %s comparison.\n"
@@ -125,7 +125,7 @@ class IsLoadedKernelLatest(actions.Action):
             logger.debug("Got the following output: %s", repoquery_output)
             logger.warning(
                 "Couldn't fetch the list of the most recent kernels available in "
-                "the repositories. Skipping the loaded kernel check."
+                "the repositories. Did not perform the loaded kernel check."
             )
             self.add_message(
                 level="WARNING",
@@ -133,7 +133,7 @@ class IsLoadedKernelLatest(actions.Action):
                 title="Unable to fetch recent kernels",
                 description=(
                     "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Skipping the loaded kernel check."
+                    "the repositories. Did not perform the loaded kernel check."
                 ),
             )
             return

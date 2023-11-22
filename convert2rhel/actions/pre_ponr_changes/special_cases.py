@@ -76,4 +76,4 @@ class RemoveIwlax2xxFirmware(actions.Action):
                     "The iwl7260-firmware and iwlax2xx-firmware packages are not both installed. Nothing to do."
                 )
         else:
-            logger.info("Relevant to Oracle Linux 8 only. Skipping.")
+            logger.info("Relevant to Oracle Linux 8 only. Did not perform the check.")

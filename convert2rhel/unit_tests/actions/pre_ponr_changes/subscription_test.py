@@ -88,7 +88,7 @@ class TestPreSubscription:
                     level="WARNING",
                     id="PRE_SUBSCRIPTION_CHECK_SKIP",
                     title="Pre-subscription check skip",
-                    description="Detected --no-rhsm option. Skipping.",
+                    description="Detected --no-rhsm option. Did not perform the check.",
                     diagnosis=None,
                     remediations=None,
                 ),
@@ -97,7 +97,7 @@ class TestPreSubscription:
 
         pre_subscription_instance.run()
 
-        assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
+        assert "Detected --no-rhsm option. Did not perform the check." in caplog.records[-1].message
         assert pre_subscription_instance.result.level == STATUS_CODE["SUCCESS"]
         assert expected.issuperset(pre_subscription_instance.messages)
         assert expected.issubset(pre_subscription_instance.messages)
@@ -237,7 +237,7 @@ class TestSubscribeSystem:
                     level="WARNING",
                     id="SUBSCRIPTION_CHECK_SKIP",
                     title="Subscription check skip",
-                    description="Detected --no-rhsm option. Skipping.",
+                    description="Detected --no-rhsm option. Did not perform the check.",
                     diagnosis=None,
                     remediations=None,
                 ),
@@ -246,7 +246,7 @@ class TestSubscribeSystem:
 
         subscribe_system_instance.run()
 
-        assert "Detected --no-rhsm option. Skipping" in caplog.records[-1].message
+        assert "Detected --no-rhsm option. Did not perform subscription step." in caplog.records[-1].message
         assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
         assert expected.issuperset(subscribe_system_instance.messages)
         assert expected.issubset(subscribe_system_instance.messages)

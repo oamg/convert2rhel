@@ -107,7 +107,7 @@ def test_remove_iwlax2xx_firmware_not_ol8(pretend_os, caplog):
     instance = special_cases.RemoveIwlax2xxFirmware()
     instance.run()
 
-    assert "Relevant to Oracle Linux 8 only. Skipping." in caplog.records[-1].message
+    assert "Relevant to Oracle Linux 8 only. Did not perform the check." in caplog.records[-1].message
     assert instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
 
