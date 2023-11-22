@@ -29,8 +29,8 @@ def get_convert2rhel_version(spec_path: str) -> None:
                         (
                             # Any word could be here
                             (?:\w+)|
-                            # Or int or float i.e. 21 or 0.21
-                            (?:\d+[.]*\d*)
+                            # Or int or float i.e. 21 or 0.21 or 1.5.0
+                            (?:\d+[.]*\d*[.]*\d*)
                         )
                         # some special internal rpm spec var (skipping it)
                         (?:%{.+)*$
