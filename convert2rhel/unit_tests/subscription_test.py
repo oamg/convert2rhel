@@ -224,7 +224,7 @@ class TestNeededSubscriptionManagerPkgs:
                 frozenset(
                     (
                         "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
+                        "subscription-manager-rhsm-certificates.noarch",
                         "python3-subscription-manager-rhsm",
                         "dnf-plugin-subscription-manager",
                         "python3-syspurpose",
@@ -239,7 +239,7 @@ class TestNeededSubscriptionManagerPkgs:
                 frozenset(
                     (
                         "subscription-manager",
-                        "subscription-manager-rhsm-certificates",
+                        "subscription-manager-rhsm-certificates.noarch",
                         "python3-subscription-manager-rhsm",
                         "dnf-plugin-subscription-manager",
                         "python3-syspurpose",
@@ -255,7 +255,7 @@ class TestNeededSubscriptionManagerPkgs:
                 frozenset(
                     (
                         "subscription-manager",
-                        "subscription-manager-rhsm-certificates.x86_64",
+                        "subscription-manager-rhsm-certificates.noarch",
                         "python3-subscription-manager-rhsm",
                         "python3-cloud-what",
                         "libdnf-plugin-subscription-manager",
