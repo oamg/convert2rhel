@@ -5,6 +5,7 @@ discover:
 
 environment+:
     NO_COLOR: 1
+    CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP: 1
 
 adjust+:
     - environment+:
