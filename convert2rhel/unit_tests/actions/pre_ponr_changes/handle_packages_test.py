@@ -62,57 +62,20 @@ def test_list_third_party_packages(pretend_os, list_third_party_packages_instanc
         " for the following third party packages:\npkg1-None-None.None, pkg2-None-None.None, gpg-pubkey-1.0.0-1.x86_64"
     )
     list_third_party_packages_instance.run()
-    unit_tests.assert_actions_result(
-        list_third_party_packages_instance,
-        level="OVERRIDABLE",
-        id="THIRD_PARTY_PACKAGE_DETECTED",
-        title="Third party packages detected",
-        description="Third party packages will not be replaced during the conversion.",
-        diagnosis=diagnosis,
-        remediation="If you wish to ignore this message, set the environment variable "
-        "'CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP' to 1.",
-    )
-
-    assert len(pkghandler.format_pkg_info.call_args[0][0]) == 3
-
-
-@centos7
-def test_list_third_party_packages_skip(list_third_party_packages_instance, pretend_os, monkeypatch, caplog):
-    monkeypatch.setattr(pkghandler, "get_third_party_pkgs", GetThirdPartyPkgsMocked(pkg_selection="fingerprints"))
-    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked(return_value=["shim", "ruby", "pytest"]))
-    monkeypatch.setattr(
-        os,
-        "environ",
-        {"CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP": 1},
-    )
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="THIRD_PARTY_PACKAGE_DETECTED_MESSAGE",
+                id="THIRD_PARTY_PACKAGE_DETECTED",
                 title="Third party packages detected",
                 description="Third party packages will not be replaced during the conversion.",
-                diagnosis=(
-                    "Only packages signed by CentOS Linux are to be replaced. Red Hat support won't be provided"
-                    " for the following third party packages:\npkg1-None-None.None, pkg2-None-None.None, gpg-pubkey-1.0.0-1.x86_64"
-                ),
-            ),
-            actions.ActionMessage(
-                level="WARNING",
-                id="SKIP_THIRD_PARTY_PACKAGE_CHECK",
-                title="Skip third party package check",
-                description=(
-                    "Detected 'CONVERT2RHEL_THIRD_PARTY_PACKAGE_CHECK_SKIP' environment variable, we will skip "
-                    "the third party package check.\n"
-                    "Beware, this could leave your system in a broken state."
-                ),
+                diagnosis=diagnosis,
             ),
         )
     )
-    list_third_party_packages_instance.run()
     assert expected.issuperset(list_third_party_packages_instance.messages)
     assert expected.issubset(list_third_party_packages_instance.messages)
-    assert list_third_party_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
+    assert len(pkghandler.format_pkg_info.call_args[0][0]) == 3
 
 
 @pytest.fixture
