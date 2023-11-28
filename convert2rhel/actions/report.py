@@ -223,9 +223,8 @@ def summary(results, include_all_reports=False, disable_colors=False):
 
     terminal_size = utils.get_terminal_size()
 
-    # Sort the results in reverse order, this way, the most important messages
-    # will be on top.
-    combined_results_and_message = sorted(combined_results_and_message, key=lambda item: item[1]["level"], reverse=True)
+    # Sort results to put Critical messages last, as in cli use-cases people read the logs from the bottom up.
+    combined_results_and_message = sorted(combined_results_and_message, key=lambda item: item[1]["level"])
 
     last_level = ""
     for message_id, combined_result in combined_results_and_message:
