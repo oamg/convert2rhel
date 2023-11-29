@@ -2,8 +2,9 @@
 name: Build release RPMs
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - '*'
 
 jobs:
   build_el7_rpm:
@@ -22,21 +23,21 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/dispatches \
             --data '{"event_type": "trigger-manpage-generation"}'
 
-      - name: Show File Modification
+      - name: Generate Manpages
         run: |
-          FILE_PATH="man/convert2rhel.8"
+          chmod +x scripts/manpage_generation.sh
 
-          # Fetch the changes from the remote repository
-          git fetch --quiet
+          # Add debug output
+          echo "Debug: Before running the script, current directory contents:"
+          ls -la
 
-          # Check if the file has been modified
-          if git diff origin/main $FILE_PATH; then
-            echo "No changes detected in $FILE_PATH."
-          else
-            echo "Changes detected in $FILE_PATH. Printing diff:"
-            git diff origin/main $FILE_PATH
-            exit 0
-          fi
+          # Run the manpage generation script
+          bash scripts/manpage_generation.sh
+
+          # Add more debug output
+          echo "Debug: After running the script, current directory contents:"
+          ls -la
+
 
       - name: Build RPM package for EL7
         id: rpm_build_el7
