@@ -14,12 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
-      - name: before Generate Manpages
-        run: |
-          # Add debug output
-          echo "Debug: Before running the script, current directory contents:"
-          ls -la
-
       - name: Trigger Manpage Generation
         run: |
           ./generate_manpage.yml
@@ -27,9 +21,7 @@ jobs:
 
       - name: after Generate Manpages
         run: |
-          # Add more debug output
-          echo "Debug: After running the script, current directory contents:"
-          ls -la
+          git status
 
 
       - name: Build RPM package for EL7
