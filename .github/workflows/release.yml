@@ -14,6 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
+      - name: before Generate Manpages
+        run: |
+          # Add debug output
+          echo "Debug: Before running the script, current directory contents:"
+          ls -la
+
       - name: Trigger Manpage Generation
         run: |
           curl -X POST \
@@ -23,17 +29,8 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/dispatches \
             --data '{"event_type": "trigger-manpage-generation"}'
 
-      - name: Generate Manpages
+      - name: after Generate Manpages
         run: |
-          chmod +x scripts/manpage_generation.sh
-
-          # Add debug output
-          echo "Debug: Before running the script, current directory contents:"
-          ls -la
-
-          # Run the manpage generation script
-          bash scripts/manpage_generation.sh
-
           # Add more debug output
           echo "Debug: After running the script, current directory contents:"
           ls -la

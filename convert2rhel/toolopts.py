@@ -146,7 +146,8 @@ class CLI:
             help="Run all Convert2RHEL initial checks up until the"
             " Point of no Return (PONR) and generate a report with the findings."
             " A rollback is initiated after the checks to put the system back"
-            " in the original state.",
+            " in the original state."
+            "test this action",
             parents=[self._shared_options_parser],
             usage=self.usage(subcommand_to_print="analyze"),
         )
