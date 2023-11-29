@@ -1,8 +1,24 @@
 ---
-- name: Hardcode Alma Linux repositories to vault
+- name: Hardcode Alma Linux repositories to 8.6 vault
   include_tasks: alma-86-repos.yml
-  when: ansible_facts['distribution'] == "AlmaLinux"
+  when: >
+    ansible_facts['distribution'] == "AlmaLinux"
+    and ansible_facts['distribution_version'] ==  "8.6"
 
-- name: Hardcode RockyLinux repositories to vault
+- name: Hardcode RockyLinux repositories to 8.6 vault
   include_tasks: rocky-86-repos.yml
-  when: ansible_facts['distribution'] == "Rocky"
+  when: >
+    ansible_facts['distribution'] == "Rocky"
+    and ansible_facts['distribution_version'] ==  "8.6"
+
+- name: Hardcode Alma Linux repositories to 8.8 vault
+  include_tasks: alma-88-repos.yml
+  when: >
+    ansible_facts['distribution'] == "AlmaLinux"
+    and ansible_facts['distribution_version'] ==  "8.8"
+
+- name: Hardcode RockyLinux repositories to 8.8 vault
+  include_tasks: rocky-88-repos.yml
+  when: >
+    ansible_facts['distribution'] == "Rocky"
+    and ansible_facts['distribution_version'] ==  "8.8"

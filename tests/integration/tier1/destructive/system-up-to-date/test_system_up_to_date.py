@@ -17,7 +17,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     assert shell("mv /etc/yum.repos.d/* /tmp/s_backup/").returncode == 0
 
     # EUS version use hardcoded repos from c2r as well
-    if re.match(r"^(alma|rocky)-8\.6$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(alma|rocky)-8\.[68]$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell("mkdir /tmp/s_backup_eus").returncode == 0
         assert shell("mv /usr/share/convert2rhel/repos/* /tmp/s_backup_eus/").returncode == 0
 
@@ -51,6 +51,9 @@ def test_system_not_updated(shell, convert2rhel):
     the latest version. The c2r has to display a warning message
     about that. Also, not updated package has its version locked.
     Display a warning about used version lock.
+    Since the introduction of overridables, we need to use
+    CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP to override out of date
+    packages.
     """
     centos_8_pkg_url = "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm"
 
@@ -67,6 +70,24 @@ def test_system_not_updated(shell, convert2rhel):
     assert shell("yum install -y yum-plugin-versionlock").returncode == 0
     assert shell("yum versionlock wpa_supplicant sqlite").returncode == 0
 
+    # Expect the utility fail with not updated packages on the system
+    with convert2rhel(
+        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+            env.str("RHSM_SERVER_URL"),
+            env.str("RHSM_USERNAME"),
+            env.str("RHSM_PASSWORD"),
+            env.str("RHSM_POOL"),
+        )
+    ) as c2r:
+        c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
+        c2r.expect_exact("ERROR - (OVERRIDABLE) PACKAGE_UPDATES::OUT_OF_DATE_PACKAGES - Outdated packages detected")
+    assert c2r.exitstatus != 0
+
+    # We need to set envar to override the out of date packages check
+    # to perform the full conversion
+    os.environ["CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP"] = "1"
+
     # Run utility until the reboot
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -77,5 +98,6 @@ def test_system_not_updated(shell, convert2rhel):
         )
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        c2r.expect_exact("Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
     assert c2r.exitstatus == 0

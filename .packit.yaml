@@ -175,23 +175,23 @@ jobs:
       - oracle-8
       - non-destructive
 
-#  - &tests-tier0-destructive-oraclelinux-8
-#    <<: *tests-tier0-non-destructive-oraclelinux-8
-#    identifier: "tier0-destructive-ol8"
-#    tmt_plan: "tier0/destructive"
-#    labels:
-#      - tier0
-#      - oracle-8
-#      - destructive
-#
-#  - &tests-sanity-oraclelinux-8
-#    <<: *tests-tier0-non-destructive-oraclelinux-8
-#    identifier: "sanity-ol8"
-#    tmt_plan: "tier0/sanity"
-#    labels:
-#      - tier0
-#      - oracle-8
-#      - sanity
+  - &tests-tier0-destructive-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "tier0-destructive-ol8"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - oracle-8
+      - destructive
+
+  - &tests-sanity-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "sanity-ol8"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - oracle-8
+      - sanity
 
   - &tests-tier0-non-destructive-almalinux-86
     job: tests
@@ -243,6 +243,56 @@ jobs:
       - alma-86
       - sanity
 
+  - &tests-tier0-non-destructive-almalinux-88
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-al88"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["AlmaLinux OS 8.8.20230524 x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "alma-8.8"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - alma-88
+      - non-destructive
+
+  - &tests-tier0-destructive-almalinux-88
+    <<: *tests-tier0-non-destructive-almalinux-88
+    identifier: "tier0-destructive-al88"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - alma-88
+      - destructive
+
+  - &tests-sanity-almalinux-88
+    <<: *tests-tier0-non-destructive-almalinux-88
+    identifier: "sanity-al88"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - alma-88
+      - sanity
+
   - &tests-tier0-non-destructive-almalinux-8
     job: tests
     # Run tests on-demand
@@ -260,7 +310,7 @@ jobs:
     tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
     targets:
       epel-8-x86_64:
-        distros: ["AlmaLinux OS 8.8.20230524 x86_64"]
+        distros: ["AlmaLinux OS 8.9.20231123 x86_64"]
     tf_extra_params:
       environments:
         - tmt:
@@ -343,6 +393,56 @@ jobs:
       - rocky-86
       - sanity
 
+  - &tests-tier0-non-destructive-rockylinux-88
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    trigger: pull_request
+    identifier: "tier0-non-destructive-rl88"
+    tmt_plan: "tier0/non-destructive"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    targets:
+      epel-8-x86_64:
+        distros: ["Rocky-8-EC2-Base-8.8-20230518.0.x86_64"]
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "rocky-8.8"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+    labels:
+      - tier0
+      - rocky-88
+      - non-destructive
+
+  - &tests-tier0-destructive-rockylinux-88
+    <<: *tests-tier0-non-destructive-rockylinux-88
+    identifier: "tier0-destructive-rl88"
+    tmt_plan: "tier0/destructive"
+    labels:
+      - tier0
+      - rocky-88
+      - destructive
+
+  - &tests-sanity-rockylinux-88
+    <<: *tests-tier0-non-destructive-rockylinux-88
+    identifier: "sanity-rl88"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - rocky-88
+      - sanity
+
   - &tests-tier0-non-destructive-rockylinux-8
     job: tests
     # Run tests on-demand
@@ -360,7 +460,7 @@ jobs:
     tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
     targets:
       epel-8-x86_64:
-        distros: ["Rocky-8-EC2-Base-8.8-20230518.0.x86_64"]
+        distros: ["Rocky-8-EC2-Base-8.9-20231119.0.x86_64"]
     tf_extra_params:
       environments:
         - tmt:
@@ -410,13 +510,13 @@ jobs:
       - tier1
       - oracle-7
 
-#  - &tests-tier1-manual-oraclelinux-8
-#    <<: *tests-tier0-non-destructive-oraclelinux-8
-#    identifier: "tier1-ol8"
-#    tmt_plan: "tier1"
-#    labels:
-#      - tier1
-#      - oracle-8
+  - &tests-tier1-manual-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    identifier: "tier1-ol8"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - oracle-8
 
 
   - &tests-tier1-manual-almalinux-86
@@ -426,6 +526,14 @@ jobs:
     labels:
       - tier1
       - alma-86
+
+  - &tests-tier1-manual-almalinux-88
+    <<: *tests-tier0-non-destructive-almalinux-88
+    identifier: "tier1-al88"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - alma-88
 
   - &tests-tier1-manual-almalinux-8
     <<: *tests-tier0-non-destructive-almalinux-8
@@ -442,6 +550,14 @@ jobs:
     labels:
       - tier1
       - rocky-86
+
+  - &tests-tier1-manual-rockylinux-88
+    <<: *tests-tier0-non-destructive-rockylinux-88
+    identifier: "tier1-rl88"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - rocky-88
 
   - &tests-tier1-manual-rockylinux-8
     <<: *tests-tier0-non-destructive-rockylinux-8
@@ -470,20 +586,29 @@ jobs:
     trigger: commit
     branch: main
 
-#  - &tests-main-tier1-oraclelinux-8
-#    <<: *tests-tier0-non-destructive-oraclelinux-8
-#    # Run test automatically with merge commit to main branch
-#    manual_trigger: false
-#    identifier: "tier1-ol8"
-#    tmt_plan: "tier1"
-#    trigger: commit
-#    branch: main
+  - &tests-main-tier1-oraclelinux-8
+    <<: *tests-tier0-non-destructive-oraclelinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-ol8"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
 
   - &tests-main-tier1-almalinux-86
     <<: *tests-tier0-non-destructive-almalinux-86
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al86"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-almalinux-88
+    <<: *tests-tier0-non-destructive-almalinux-88
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-al88"
     tmt_plan: "tier1"
     trigger: commit
     branch: main
@@ -502,6 +627,15 @@ jobs:
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-rl86"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-rockylinux-88
+    <<: *tests-tier0-non-destructive-rockylinux-88
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-rl88"
     tmt_plan: "tier1"
     trigger: commit
     branch: main

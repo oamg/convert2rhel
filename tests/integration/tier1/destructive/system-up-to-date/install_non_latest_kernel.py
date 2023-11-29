@@ -8,6 +8,14 @@ def test_install_non_latest_kernel(shell, hybrid_rocky_image):
     latest one available in repositories.
     """
 
+    # TODO(danmyway) test for latest minor only
+    #  We can use grub2-reboot to utilize the one-time boot
+    #  ( source <(grubby --info $(grubby --default-kernel)); echo "'$title'"; ) to get the original_kernel_title
+    #  install older kernel
+    #  ( source <(grubby --info $(grubby --default-kernel)); echo "'$title'"; ) to get the older_kernel_title
+    #  grub2-set-default original_kernel_title
+    #  grub2-reboot older_kernel_title
+
     # Set default kernel
     if "centos-7" in SYSTEM_RELEASE_ENV:
         assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
@@ -27,12 +35,12 @@ def test_install_non_latest_kernel(shell, hybrid_rocky_image):
             assert shell("yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y")
             shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
         else:
-            assert shell("yum install kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
+            assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
             shell("grub2-set-default 'AlmaLinux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
     elif "rocky-8" in SYSTEM_RELEASE_ENV:
         if "rocky-8.6" in SYSTEM_RELEASE_ENV:
             assert shell("yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y")
             shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
         else:
-            assert shell("yum install kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
+            assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
             shell("grub2-set-default 'Rocky Linux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Green Obsidian)'")

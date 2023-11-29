@@ -93,7 +93,7 @@ description+: |
             adjust+:
                 - enabled: true
                   when: >
-                    distro == alma-8.6, rocky-8.6
+                    distro == alma-8.6, rocky-8.6, alma-8.8, rocky-8.8
             discover+:
                 filter: tag:checks-after-conversion
             prepare+:
