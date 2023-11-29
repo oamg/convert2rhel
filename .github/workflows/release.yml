@@ -21,7 +21,9 @@ jobs:
           ls -la
 
       - name: Trigger Manpage Generation
-        uses: .github/workflows/generate_manpage.yml
+        run: |
+          ./generate_manpage.yml
+
 
       - name: after Generate Manpages
         run: |
