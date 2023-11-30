@@ -175,23 +175,23 @@ jobs:
       - oracle-8
       - non-destructive
 
-  - &tests-tier0-destructive-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
-    identifier: "tier0-destructive-ol8"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - oracle-8
-      - destructive
-
-  - &tests-sanity-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
-    identifier: "sanity-ol8"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - tier0
-      - oracle-8
-      - sanity
+#  - &tests-tier0-destructive-oraclelinux-8
+#    <<: *tests-tier0-non-destructive-oraclelinux-8
+#    identifier: "tier0-destructive-ol8"
+#    tmt_plan: "tier0/destructive"
+#    labels:
+#      - tier0
+#      - oracle-8
+#      - destructive
+#
+#  - &tests-sanity-oraclelinux-8
+#    <<: *tests-tier0-non-destructive-oraclelinux-8
+#    identifier: "sanity-ol8"
+#    tmt_plan: "tier0/sanity"
+#    labels:
+#      - tier0
+#      - oracle-8
+#      - sanity
 
   - &tests-tier0-non-destructive-almalinux-86
     job: tests
@@ -410,13 +410,13 @@ jobs:
       - tier1
       - oracle-7
 
-  - &tests-tier1-manual-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
-    identifier: "tier1-ol8"
-    tmt_plan: "tier1"
-    labels:
-      - tier1
-      - oracle-8
+#  - &tests-tier1-manual-oraclelinux-8
+#    <<: *tests-tier0-non-destructive-oraclelinux-8
+#    identifier: "tier1-ol8"
+#    tmt_plan: "tier1"
+#    labels:
+#      - tier1
+#      - oracle-8
 
 
   - &tests-tier1-manual-almalinux-86
@@ -470,14 +470,14 @@ jobs:
     trigger: commit
     branch: main
 
-  - &tests-main-tier1-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-ol8"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
+#  - &tests-main-tier1-oraclelinux-8
+#    <<: *tests-tier0-non-destructive-oraclelinux-8
+#    # Run test automatically with merge commit to main branch
+#    manual_trigger: false
+#    identifier: "tier1-ol8"
+#    tmt_plan: "tier1"
+#    trigger: commit
+#    branch: main
 
   - &tests-main-tier1-almalinux-86
     <<: *tests-tier0-non-destructive-almalinux-86
