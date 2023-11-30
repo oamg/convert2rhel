@@ -179,6 +179,14 @@ def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packag
                 diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
                 remediation=None,
             ),
+            actions.ActionMessage(
+                level="INFO",
+                id="EXCLUDED_PACKAGES_REMOVED",
+                title="Excluded packages removed",
+                description="Excluded packages that have been removed",
+                diagnosis="The following packages were removed: kernel-core",
+                remediation=None,
+            ),
         )
     )
     monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
@@ -233,7 +241,7 @@ def test_remove_repository_files_packages_all_removed(remove_repository_files_pa
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
                 title="Repository file packages removed",
-                description="Repository file packages that were removed",
+                description="Repository file packages that have been removed",
                 diagnosis="The following packages were removed: centos-logos-70.0.6-3.el7.centos.noarch",
                 remediation=None,
             ),
@@ -268,6 +276,14 @@ def test_remove_repository_files_packages_not_removed(
                 title="Repository file packages not removed",
                 description="Repository file packages which could not be removed",
                 diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
+                remediation=None,
+            ),
+            actions.ActionMessage(
+                level="INFO",
+                id="REPOSITORY_FILE_PACKAGES_REMOVED",
+                title="Repository file packages removed",
+                description="Repository file packages that have been removed",
+                diagnosis="The following packages were removed: kernel-core",
                 remediation=None,
             ),
         )

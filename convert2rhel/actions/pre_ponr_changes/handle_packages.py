@@ -102,6 +102,9 @@ class RemoveExcludedPackages(actions.Action):
 
         logger.task("Convert: Remove excluded packages")
         logger.info("Searching for the following excluded packages:\n")
+
+        pkgs_removed = []
+
         try:
             pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
             # this call can return None, which is not ideal to use with sorted.
@@ -134,7 +137,7 @@ class RemoveExcludedPackages(actions.Action):
                 description="Excluded packages which could not be removed",
                 diagnosis=message,
             )
-        else:
+        if pkgs_removed:
             message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
@@ -175,6 +178,9 @@ class RemoveRepositoryFilesPackages(actions.Action):
 
         logger.task("Convert: Remove packages containing .repo files")
         logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
+
+        pkgs_removed = []
+
         try:
             pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
             # this call can return None, which is not ideal to use with sorted.
@@ -207,13 +213,13 @@ class RemoveRepositoryFilesPackages(actions.Action):
                 description="Repository file packages which could not be removed",
                 diagnosis=message,
             )
-        else:
+        if pkgs_removed:
             message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
                 title="Repository file packages removed",
-                description="Repository file packages that were removed",
+                description="Repository file packages that have been removed",
                 diagnosis=message,
             )
