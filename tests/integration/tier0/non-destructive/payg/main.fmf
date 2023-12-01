@@ -1,0 +1,17 @@
+summary: |
+    Verify --payg warnings
+description: |
+    Verify that --payg produces warning in unsupported scenarios.
+
+/no_payg:
+    enabled: false
+    adjust+:
+        enabled: true
+        when: distro == centos-8-latest
+        because: PAYG is not support on other systems than RHEL 7.
+    tag+:
+        - no-payg
+    summary+: |
+        --payg should produce warning
+    test: |
+        pytest -svv -m test_payg_warning
