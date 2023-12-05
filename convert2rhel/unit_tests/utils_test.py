@@ -49,6 +49,10 @@ DOWNLOADED_RPM_NEVRA = "7:%s" % DOWNLOADED_RPM_NVRA
 DOWNLOADED_RPM_FILENAME = "%s.rpm" % DOWNLOADED_RPM_NVRA
 
 YUMDOWNLOADER_OUTPUTS = (
+    "{0}                  97% [================================================- ] 6.8 MB/s |  21 MB  00:00:00 ETA\n"
+    "rpmdb time: 0.000\n"
+    "{0}                                                                                    |  21 MB  00:00:01\n"
+    "== Rebuilding _local repo. with 1 new packages ==".format(DOWNLOADED_RPM_FILENAME),
     "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
     "%s         2.7 MB/s | 2.8 MB     00:01" % DOWNLOADED_RPM_FILENAME,
     "/var/lib/convert2rhel/%s already exists and appears to be complete" % DOWNLOADED_RPM_FILENAME,
@@ -548,9 +552,8 @@ class TestDownload_pkg:
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_string=output))
 
-        path = utils.download_pkg("kernel")
-
-        assert path is None
+        with pytest.raises(SystemExit):
+            utils.download_pkg("kernel")
 
 
 @pytest.mark.parametrize(("output",), [[out] for out in YUMDOWNLOADER_OUTPUTS])
@@ -558,6 +561,28 @@ def test_get_rpm_path_from_yumdownloader_output(output):
     path = utils.get_rpm_path_from_yumdownloader_output("cmd not important", output, utils.TMP_DIR)
 
     assert path == os.path.join(utils.TMP_DIR, DOWNLOADED_RPM_FILENAME)
+
+
+@pytest.mark.parametrize(
+    ("envvar", "activity", "should_raise", "message"),
+    (
+        (None, "conversion", True, "If you would rather ignore this check"),
+        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "conversion", False, "environment variable detected"),
+        (None, "analysis", True, "you can choose to ignore this check"),
+        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to ignore this check"),
+    ),
+)
+def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog):
+    monkeypatch.setattr(toolopts.tool_opts, "activity", activity)
+    monkeypatch.setattr(os, "environ", {envvar: "1"})
+
+    if should_raise:
+        with pytest.raises(SystemExit):
+            utils.report_on_a_download_error("yd_output", "pkg_name")
+    else:
+        utils.report_on_a_download_error("yd_output", "pkg_name")
+
+    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
