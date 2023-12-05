@@ -111,13 +111,14 @@ class RemoveExcludedPackages(actions.Action):
                 diagnosis=message,
             )
         if pkgs_removed:
-            message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
+            message = "The following packages will be removed during the conversion: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
                 level="INFO",
                 id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages removed",
-                description="Excluded packages that have been removed",
+                title="Excluded packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
                 diagnosis=message,
             )
 
@@ -187,12 +188,13 @@ class RemoveRepositoryFilesPackages(actions.Action):
                 diagnosis=message,
             )
         if pkgs_removed:
-            message = "The following packages were removed: %s" % ", ".join(pkgs_removed)
+            message = "The following packages will be removed during the conversion: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages removed",
-                description="Repository file packages that have been removed",
+                title="Repository file packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
                 diagnosis=message,
             )

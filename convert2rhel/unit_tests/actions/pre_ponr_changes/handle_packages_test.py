@@ -107,9 +107,10 @@ def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance,
             actions.ActionMessage(
                 level="INFO",
                 id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages removed",
-                description="Excluded packages that have been removed",
-                diagnosis="The following packages were removed: centos-logos-70.0.6-3.el7.centos.noarch",
+                title="Excluded packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
+                diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
                 remediation=None,
             ),
         )
@@ -145,9 +146,10 @@ def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packag
             actions.ActionMessage(
                 level="INFO",
                 id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages removed",
-                description="Excluded packages that have been removed",
-                diagnosis="The following packages were removed: kernel-core",
+                title="Excluded packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
+                diagnosis="The following packages will be removed during the conversion: kernel-core",
                 remediation=None,
             ),
         )
@@ -203,9 +205,10 @@ def test_remove_repository_files_packages_all_removed(remove_repository_files_pa
             actions.ActionMessage(
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages removed",
-                description="Repository file packages that have been removed",
-                diagnosis="The following packages were removed: centos-logos-70.0.6-3.el7.centos.noarch",
+                title="Repository file packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
+                diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
                 remediation=None,
             ),
         )
@@ -244,9 +247,10 @@ def test_remove_repository_files_packages_not_removed(
             actions.ActionMessage(
                 level="INFO",
                 id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages removed",
-                description="Repository file packages that have been removed",
-                diagnosis="The following packages were removed: kernel-core",
+                title="Repository file packages to be removed",
+                description="We have identified installed packages that match a pre-defined list of packages that are"
+                " to be removed during the conversion",
+                diagnosis="The following packages will be removed during the conversion: kernel-core",
                 remediation=None,
             ),
         )
