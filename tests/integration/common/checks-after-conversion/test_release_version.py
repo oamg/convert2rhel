@@ -22,7 +22,6 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.6"},
     ),
     "Red Hat Enterprise Linux release 8.8 (Ootpa)": (
-        {"id": "null", "name": "Oracle Linux Server", "version": "8.8"},
         {"id": "Sapphire Caracal", "name": "AlmaLinux", "version": "8.8"},
         {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.8"},
     ),
