@@ -94,11 +94,12 @@ def terminate_and_assert_good_rollback(c2r):
     c2r.expect("Rollback: Remove installed certificate", timeout=120)
 
 
-@pytest.mark.test_yum_plugin_local
-def test_proper_rhsm_clean_up(shell, convert2rhel):
+@pytest.mark.test_polluted_yumdownloader_output_by_yum_plugin_local
+def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel):
     """
-    yum-plugin-local was causing that excluded packages were not detected as downlaoded during a backup. Then, the
-    removed excluded packages were not installed back during a rollback (RHELC-1272).
+    Verify that the yumdownloader output in the backup packages task is parsed correctly.
+    In this scenario the yum-plugin-local was causing that excluded packages were not detected as downlaoded during
+    a backup. Then, the removed excluded packages were not installed back during a rollback (RHELC-1272).
     In this test we look specifically at the *-logos excluded package - it needs to be installed after the rollback.
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
@@ -106,7 +107,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
     with convert2rhel("analyze --debug -y --no-rpm-va") as c2r:
         c2r.expect("[Rollback: Install removed packages]")
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 0
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
