@@ -502,7 +502,7 @@ class TestIsLoadedKernelLatest:
                 "1",
                 "0",
                 "WARNING",
-                "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED_1",
+                "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
                 "Skipping the kernel currency check",
                 (
                     "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
@@ -563,11 +563,6 @@ class TestIsLoadedKernelLatest:
             "environ",
             {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
         )
-        monkeypatch.setattr(
-            os,
-            "environ",
-            {"CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK": latest_skip},
-        )
 
         expected_set = set(
             (
@@ -582,7 +577,7 @@ class TestIsLoadedKernelLatest:
             )
         )
         is_loaded_kernel_latest_action.run()
-        assert unsupported_message in caplog.records[-1].message
+        assert unsupported_message in caplog.records[-2].message
         assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
         assert expected_set.issubset(is_loaded_kernel_latest_action.messages)
 
