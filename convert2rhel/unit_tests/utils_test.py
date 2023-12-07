@@ -56,7 +56,7 @@ YUMDOWNLOADER_OUTPUTS = (
     "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
     "%s         2.7 MB/s | 2.8 MB     00:01" % DOWNLOADED_RPM_FILENAME,
     "/var/lib/convert2rhel/%s already exists and appears to be complete" % DOWNLOADED_RPM_FILENAME,
-    "using local copy of %s" % DOWNLOADED_RPM_NEVRA,
+    "rpmdb time: 0.000\nusing local copy of %s" % DOWNLOADED_RPM_NEVRA,
     "[SKIPPED] %s: Already downloaded" % DOWNLOADED_RPM_FILENAME,
 )
 

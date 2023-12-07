@@ -788,7 +788,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
         return None
 
     rpm_name_match = re.search(r"\S*\.rpm", output)
-    pkg_nevra_match = re.search(r"^using local copy of (?:\d+:)?(.*)$", output)
+    pkg_nevra_match = re.search(r"using local copy of (?:\d+:)?(.*)$", output)
 
     if rpm_name_match:
         path = os.path.join(dest, rpm_name_match.group(0))
