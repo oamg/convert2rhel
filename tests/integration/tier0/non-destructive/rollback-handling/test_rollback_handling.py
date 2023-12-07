@@ -4,6 +4,20 @@ from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
+@pytest.fixture(autouse=True)
+def backup_removal(shell):
+    """
+    Fixture to remove all backed up files from
+    /var/lib/convert2rhel/backup/
+    /usr/share/convert2rhel/subscription-manager/
+    """
+    dirs_to_clear = ["/usr/share/convert2rhel/subscription-manager/", "/var/lib/convert2rhel/backup/"]
+    for dir in dirs_to_clear:
+        shell(f"rm -rf {dir}*")
+
+    yield
+
+
 def assign_packages(packages=None):
     # If nothing was passed down to packages, set it to an empty list
     if not packages:
@@ -100,16 +114,22 @@ def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel):
     Verify that the yumdownloader output in the backup packages task is parsed correctly.
     In this scenario the yum-plugin-local was causing that excluded packages were not detected as downlaoded during
     a backup. Then, the removed excluded packages were not installed back during a rollback (RHELC-1272).
-    In this test we look specifically at the *-logos excluded package - it needs to be installed after the rollback.
+    Verify the utility handles both - packages downloaded for the backup
+    and packages already existing in the backup directory.
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    packages_to_remove_at_cleanup += install_packages(shell, "yum-plugin-local")
+    packages_to_remove_at_cleanup += install_packages(shell, ["yum-plugin-local"])
 
-    with convert2rhel("analyze --debug -y --no-rpm-va") as c2r:
-        c2r.expect("[Rollback: Install removed packages]")
+    # Run the utility second time to verify the backup works
+    # even with the packages already backed up
+    for run in range(2):
+        with convert2rhel("analyze --debug -y --no-rpm-va") as c2r:
+            c2r.expect("Rollback: Install removed packages")
+            c2r.expect("Pre-conversion analysis report", timeout=600)
         assert c2r.exitstatus == 0
 
-    is_installed_post_rollback(shell, assign_packages())
+        is_installed_post_rollback(shell, assign_packages())
+
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 

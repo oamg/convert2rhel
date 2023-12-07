@@ -15,9 +15,10 @@ tag+:
         Verify yumdownloader output parsing, when polluted by plugins
     description+: |
         Verify that the yumdownloader output in the backup packages task is parsed correctly.
-        In this scenario the yum-plugin-local was causing that excluded packages were not detected
-        as downlaoded during a backup. Then, the removed excluded packages were not installed back
-        during a rollback (RHELC-1272).
+        In this scenario the yum-plugin-local was causing that excluded packages were not detected as downlaoded during
+        a backup. Then, the removed excluded packages were not installed back during a rollback (RHELC-1272).
+        Verify the utility handles both - packages downloaded for the backup
+        and packages already existing in the backup directory.
     tag+:
         - polluted-yumdownloader-output-by-yum-plugin-local
     test: |
