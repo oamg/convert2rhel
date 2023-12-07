@@ -1,4 +1,3 @@
-from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
@@ -14,7 +13,7 @@ def set_latest_kernel(shell):
         "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
     ).output
 
-    # Get the full name of the kerenl
+    # Get the full name of the kernel
     full_name = shell(
         "grubby --info ALL | grep \"title=.*{}\" | tr -d '\"' | sed 's/title=//'".format(latest_kernel)
     ).output
@@ -37,14 +36,7 @@ def test_non_latest_kernel(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        if "centos-8" in SYSTEM_RELEASE_ENV:
-            c2r.expect(
-                "The version of the loaded kernel is different from the latest version in repositories defined in the"
-            )
-        else:
-            c2r.expect(
-                "The version of the loaded kernel is different from the latest version in the enabled system repositories."
-            )
+        c2r.expect("The version of the loaded kernel is different from the latest version")
     assert c2r.exitstatus != 0
 
     # Clean up, reboot is required after setting the newest kernel

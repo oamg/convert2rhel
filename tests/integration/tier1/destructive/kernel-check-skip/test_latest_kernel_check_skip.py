@@ -26,6 +26,12 @@ def test_skip_kernel_check(shell, convert2rhel):
     # Intentionally use the deprecated variable to verify its compatibility
     assert os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] == "1"
 
+    # We need to set envar to override the out of date packages check
+    # to perform the full conversion
+    # The packages are outdated because the repoquery check is done
+    # against the rhel-7-server-rpms repository, not CentOS'.
+    os.environ["CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP"] = "1"
+
     # Resolve the $releasever for CentOS 7 latest manually as it gets resolved to `7` instead of required `7Server`
     if "centos-7" in SYSTEM_RELEASE_ENV:
         shell("sed -i 's/\$releasever/7Server/g' /etc/yum.repos.d/rhel7.repo")

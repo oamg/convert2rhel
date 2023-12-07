@@ -77,7 +77,7 @@ class PackageUpdates(actions.Action):
             package_up_to_date_check_skip = os.environ.get("CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP", None)
             package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
-                " an important prerequisite for a successful conversion. Consider verifyng the system is up to date manually"
+                " an important prerequisite for a successful conversion. Consider verifying the system is up to date manually"
                 " before proceeding with the conversion. %s" % str(e)
             )
             if not package_up_to_date_check_skip:

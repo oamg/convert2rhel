@@ -4,11 +4,9 @@
   become: false
 - import_playbook: rhel7-repos.yml
   when: ansible_facts['distribution_major_version'] == "7"
-  # When Oracle Linux 8.7 is released, the "8.6" needs to change to "8.7" and the
-  # "8.6" is to be moved to the condition below related to enabling RHEL 8 EUS repos
+  #TODO(danmyway) bump when new minor available
 - import_playbook: rhel8-repos.yml
-  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.7" or ansible_facts['distribution_version'] == "8.8"
+  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.9"
 - import_playbook: rhel8-eus-repos.yml
-  # We need to skip for Oracle Linux machine in case we end up provisioning
-  # an 8.6 machine which will get updated to latest
-  when: ansible_facts['distribution_version'] == "8.6" and ansible_facts['distribution'] != "OracleLinux"
+  # We need to skip for Oracle Linux machines since we don't test EUS on OL
+  when: (ansible_facts['distribution_version'] == "8.6" or ansible_facts['distribution_version'] == "8.8") and ansible_facts['distribution'] != "OracleLinux"
