@@ -35,7 +35,7 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
     Introduced fixes should get the process past the latest kernel check.
     """
     # Run the conversion just past the latest kernel check, if successful, end the conversion there.
-    with convert2rhel("--debug --no-rpm-va") as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -101,7 +101,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_e
     """
     # Run the conversion and verify that it proceeds past the latest kernel check
     # if so, interrupt the conversion
-    with convert2rhel("-y --debug --no-rpm-va") as c2r:
+    with convert2rhel("-y --debug") as c2r:
         c2r.expect("Prepare: Check if the loaded kernel version is the most recent")
         assert c2r.expect("Convert: List third-party packages", timeout=300) == 0
 

@@ -75,7 +75,6 @@ def convert2rhel(shell):
     >>> with convert2rhel(
     >>>     (
     >>>         "-y "
-    >>>         "--no-rpm-va "
     >>>         "--serverurl {} --username {} "
     >>>         "--password {} --pool {} "
     >>>         "--debug"

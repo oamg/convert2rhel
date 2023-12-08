@@ -66,7 +66,7 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rh
     If custom module is loaded the conversion has to be inhibited.
     """
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -103,7 +103,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
 
     # If custom module is not loaded the conversion should not be inhibited.
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -133,7 +133,7 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
     # Check for force loaded modules being flagged FE in /proc/modules
     assert "(FE)" in shell("cat /proc/modules").output
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -156,7 +156,7 @@ def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
     """
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -179,7 +179,7 @@ def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, 
     """
 
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

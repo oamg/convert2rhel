@@ -16,7 +16,7 @@ def test_single_yum_transaction(convert2rhel, shell):
         pkgmanager = "dnf"
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

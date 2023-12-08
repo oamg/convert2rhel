@@ -52,7 +52,7 @@ def configuration_files(shell):
 @pytest.mark.test_available_connection
 def test_check_if_internet_connection_is_reachable(convert2rhel):
     """Test if convert2rhel can access the internet."""
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -70,7 +70,7 @@ def test_check_if_internet_connection_is_reachable(convert2rhel):
 def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell, configuration_files):
     """Test a case where the internet connection is not reachable by any means."""
 
-    with convert2rhel("--no-rpm-va --debug") as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")

@@ -95,7 +95,7 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel, custom_subman
     """
     assert shell("find /etc/os-release").returncode == 0
 
-    with convert2rhel("-y --no-rpm-va -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
+    with convert2rhel("-y -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
         c2r.expect("Unable to register the system through subscription-manager.")
         c2r.expect("Restore /etc/os-release from backup")
 
@@ -124,7 +124,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
     If the file is missing inhibit the conversion.
     """
     with convert2rhel(
-        "-y --no-rpm-va -k {} -o {} --debug".format(
+        "-y -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )
@@ -147,7 +147,7 @@ def test_backup_os_release_no_envar(
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
-        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
+        "-y -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         ),
@@ -183,7 +183,7 @@ def test_backup_os_release_with_envar(
     assert shell("find /etc/os-release").returncode == 0
 
     with convert2rhel(
-        "-y --no-rpm-va -k {} -o {} --debug --keep-rhsm".format(
+        "-y -k {} -o {} --debug --keep-rhsm".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         ),

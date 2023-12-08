@@ -23,7 +23,7 @@ def test_firewalld_disabled_ol8(shell, convert2rhel):
     shell(f"sed -i 's/CleanupModulesOnExit=no/CleanupModulesOnExit=yes/g' {FIREWALLD_CONFIG_FILE}")
 
     with convert2rhel(
-        "-y --no-rpm-va --debug --serverurl {} --username {} --password {}".format(
+        "-y --debug --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
         ),
         unregister=True,

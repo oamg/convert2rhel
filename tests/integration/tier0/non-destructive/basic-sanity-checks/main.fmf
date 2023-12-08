@@ -176,3 +176,16 @@ tag+:
         - incomplete-rollback-in-analyze
     test: |
         pytest -svv -m test_analyze_incomplete_rollback
+
+/analyze_no_rpm_va_option:
+    summary+: |
+        The --no-rpm-va option not honored in analyze
+    description+: |
+        This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
+        The user should be warned that the --no-rpm-va option will be ignored and the command
+        will be called.
+    tag+:
+        - analyze-no-rpm-va-option
+        - sanity
+    test: |
+        pytest -svv -m test_analyze_no_rpm_va_option

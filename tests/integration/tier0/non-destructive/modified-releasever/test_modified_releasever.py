@@ -17,7 +17,7 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
 
     with c2r_config.replace_line(pattern="releasever=.*", repl="releasever=333"):
         with convert2rhel(
-            "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
                 env.str("RHSM_SERVER_URL"),
                 env.str("RHSM_USERNAME"),
                 env.str("RHSM_PASSWORD"),
@@ -47,7 +47,7 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
         f"release {os_release.version[0]}.1.1111",
     ):
         with convert2rhel(
-            "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
                 env.str("RHSM_SERVER_URL"),
                 env.str("RHSM_USERNAME"),
                 env.str("RHSM_PASSWORD"),

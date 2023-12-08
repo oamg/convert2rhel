@@ -24,7 +24,7 @@ def test_firewalld_inhibitor(shell, convert2rhel):
     assert shell("systemctl status firewalld").returncode == 0
 
     with convert2rhel(
-        "-y --no-rpm-va --debug --serverurl {} --username {} --password {}".format(
+        "-y --debug --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
         ),
         unregister=True,

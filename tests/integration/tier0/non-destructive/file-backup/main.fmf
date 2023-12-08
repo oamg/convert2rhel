@@ -1,0 +1,18 @@
+summary+: |
+    Handling file backup and restore
+
+description+: |
+    This test verifies correct handling backup and restore of config files.
+    Two configs (cloud-init, NetworkManager) are in scope of this test.
+    The following scenarios are verified:
+    1/  The config files are modified with additional data
+        The contents are compared pre- and post-conversion analysis task
+        and should remain the same.
+    2/  The config files are removed pre-conversion analysis task
+        and should remain absent post-rollback.
+
+tag+:
+    - file-backup
+
+test: |
+    pytest -svv -m test_file_backup
