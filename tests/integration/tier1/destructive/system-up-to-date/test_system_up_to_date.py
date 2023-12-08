@@ -24,7 +24,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
 
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -72,7 +72,7 @@ def test_system_not_updated(shell, convert2rhel):
 
     # Expect the utility fail with not updated packages on the system
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

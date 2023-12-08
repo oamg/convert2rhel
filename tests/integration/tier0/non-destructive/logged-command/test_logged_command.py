@@ -25,13 +25,13 @@ def test_verify_logfile_starts_with_command(convert2rhel):
     activation_key = "a-map-of-a-key"
     organization = "SoMe_NumberS-8_a_lettER"
 
-    command_long = "--debug --no-rpm-va --serverurl {} --username {} --password {} --activationkey {} --org {}".format(
+    command_long = "--debug --serverurl {} --username {} --password {} --activationkey {} --org {}".format(
         serverurl, username, password, activation_key, organization
     )
-    command_short = "--debug --no-rpm-va --serverurl {} -u {} -p {} -k {} -o {}".format(
+    command_short = "--debug --serverurl {} -u {} -p {} -k {} -o {}".format(
         serverurl, username, password, activation_key, organization
     )
-    command_verification = "convert2rhel --debug --no-rpm-va --serverurl {}".format(serverurl)
+    command_verification = "convert2rhel --debug --serverurl {}".format(serverurl)
 
     commands = [command_long, command_short]
 

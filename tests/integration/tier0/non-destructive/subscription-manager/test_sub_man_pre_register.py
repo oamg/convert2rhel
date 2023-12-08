@@ -14,7 +14,7 @@ def test_pre_registered_wont_unregister(shell, pre_registered, disabled_telemetr
     4. Exit at the point of no return.
     5. Verify that convert2rhel won't unregister the system at any point and the UUID is same before and after the run.
     """
-    with convert2rhel("--debug --no-rpm-va") as c2r:
+    with convert2rhel("--debug") as c2r:
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
             "WARNING - No rhsm credentials given to subscribe the system. Skipping the subscription step", timeout=300
@@ -38,7 +38,7 @@ def test_pre_registered_re_register(shell, pre_registered, disabled_telemetry, c
     4. Exit at the point of no return.
     """
     with convert2rhel(
-        "--debug --no-rpm-va --serverurl {} --username {} --password {}".format(
+        "--debug --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
         )
     ) as c2r:
@@ -58,7 +58,7 @@ def test_unregistered_no_credentials(shell, convert2rhel, disabled_telemetry):
     and credentials are not provided to the convert2rhel command.
     Expected ERROR: SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM
     """
-    with convert2rhel("--debug --no-rpm-va") as c2r:
+    with convert2rhel("--debug") as c2r:
         c2r.expect("SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM", timeout=300)
 
     assert c2r.exitstatus != 0

@@ -215,6 +215,12 @@ description+: |
           # Enable once this gets fixed
           - enabled: false
             when: distro == oracle-7
+          - environment+:
+                CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP: 1
+            when: distro == oracle-8
+            because: |
+                The subman is installed from CentOS repo, resulting in outdated python3-ethtool
+                package which is then interfering with the test, inhibiting the conversion.
         discover+:
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             filter: tag:checks-after-conversion & tag:-rhel-subman

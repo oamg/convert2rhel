@@ -87,7 +87,7 @@ def test_eus_support(
     """
     eus_mapping_update(modified_mapping)
     with convert2rhel(
-        "analyze -y --debug --no-rpm-va --serverurl {} -u {} -p {} {}".format(
+        "analyze -y --debug --serverurl {} -u {} -p {} {}".format(
             env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD"), additional_option
         )
     ) as c2r:

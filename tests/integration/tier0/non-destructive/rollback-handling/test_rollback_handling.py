@@ -104,7 +104,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug --no-rpm-va".format(
+        "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -137,7 +137,7 @@ def test_missing_credentials_rollback(convert2rhel, shell):
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
-    with convert2rhel("--debug -y --no-rpm-va") as c2r:
+    with convert2rhel("--debug -y") as c2r:
         c2r.expect_exact("ERROR - (ERROR) SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED")
 
     assert c2r.exitstatus != 0
@@ -155,7 +155,7 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     username = "foo"
     password = "bar"
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    with convert2rhel(f"--debug -y --no-rpm-va --username {username} --password {password}") as c2r:
+    with convert2rhel(f"--debug -y --username {username} --password {password}") as c2r:
         assert c2r.exitstatus != 0
 
     is_installed_post_rollback(shell, assign_packages())
@@ -169,7 +169,7 @@ def test_terminate_registration_start(convert2rhel):
     Verify that c2r goes successfully through the rollback.
     """
     with convert2rhel(
-        "--debug -y --no-rpm-va --serverurl {} --username {} --password {}".format(
+        "--debug -y --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -190,7 +190,7 @@ def test_terminate_registration_success(convert2rhel):
     Verify that the subscription is auto-attached.
     """
     with convert2rhel(
-        "--debug -y --no-rpm-va --serverurl {} --username {} --password {}".format(
+        "--debug -y --serverurl {} --username {} --password {}".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

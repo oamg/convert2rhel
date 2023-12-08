@@ -50,7 +50,7 @@ def test_failures_and_skips_in_report(convert2rhel):
     and it corresponds to its respective schema.
     """
     with convert2rhel(
-        "analyze --no-rpm-va --serverurl {} --username test --password test --pool a_pool --debug".format(
+        "analyze --serverurl {} --username test --password test --pool a_pool --debug".format(
             env.str("RHSM_SERVER_URL"),
         )
     ) as c2r:
@@ -98,7 +98,7 @@ def test_successful_report(convert2rhel):
     And does not contain: Error header, Skip header.
     """
     with convert2rhel(
-        "analyze --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -140,7 +140,7 @@ def test_convert_successful_report(convert2rhel):
     Success header, Error header, Skip header.
     """
     with convert2rhel(
-        "convert --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "convert --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

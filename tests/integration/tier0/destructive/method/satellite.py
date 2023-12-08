@@ -19,7 +19,7 @@ def test_satellite_conversion(shell, convert2rhel):
     )
 
     with convert2rhel(
-        "-y --no-rpm-va -k {} -o {} --debug".format(
+        "-y -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )

@@ -17,12 +17,12 @@ def test_simultaneous_runs(convert2rhel):
         Helper function initiating a second simultaneous run of convert2rhel.
         Expect exit immediately.
         """
-        with convert2rhel("--no-rpm-va --debug") as c2r_two:
+        with convert2rhel("--debug") as c2r_two:
             c2r_two.expect("Another copy of convert2rhel is running.")
         assert c2r_two.exitstatus == 1
 
     # Invoke a first instance
-    with convert2rhel("--no-rpm-va --debug") as c2r_one:
+    with convert2rhel("--debug") as c2r_one:
         c2r_one.expect("Continue with the system conversion?")
         # Invoke the helper function with a second run
         _run_second_instance()
@@ -31,7 +31,7 @@ def test_simultaneous_runs(convert2rhel):
     assert c2r_one.exitstatus == 1
 
     # Run for the third time to make sure, the application lock is removed
-    with convert2rhel("--no-rpm-va --debug") as c2r_three:
+    with convert2rhel("--debug") as c2r_three:
         c2r_three.expect("Continue with the system conversion?")
         c2r_three.sendline("n")
     assert c2r_three.exitstatus == 1

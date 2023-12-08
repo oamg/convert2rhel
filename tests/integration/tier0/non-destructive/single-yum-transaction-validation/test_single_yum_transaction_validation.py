@@ -73,7 +73,7 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     transaction.
     """
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -115,7 +115,7 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     tool is doing a proper rollback when the transaction is being processed.
     """
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
@@ -182,7 +182,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
     """
 
     with convert2rhel(
-        "--no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

@@ -36,7 +36,7 @@ def test_list_third_party_pkgs_error(convert2rhel, problematic_third_party_packa
     nodejs from the epel repository
     """
     with convert2rhel(
-        "analyze -y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
+        "analyze -y --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),

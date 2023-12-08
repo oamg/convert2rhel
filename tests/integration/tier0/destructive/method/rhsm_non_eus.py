@@ -16,7 +16,7 @@ def test_rhsm_non_eus_account(convert2rhel):
         pass
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug --eus".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug --eus".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
