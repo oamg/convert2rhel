@@ -741,13 +741,7 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
 def test_setting_no_rpm_va(argv, env_var, expected, message, monkeypatch, global_tool_opts, caplog):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
     if env_var:
-        os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
-    else:
-        # Unset the variable
-        try:
-            os.environ.pop("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
-        except KeyError:
-            pass
+        monkeypatch.setenv("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", 1)
 
     try:
         convert2rhel.toolopts.CLI()
