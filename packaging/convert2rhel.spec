@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.5.0
+Version:        1.6.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,20 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Fri Dec 08 2023 Preston Watson <prwatson@redhat.com> 1.6.0
+- Change Action results so that no information is given in SUCCESS results
+- Add OVERRIDABLE result to the third party package analysis
+- Add OVERRIDABLE result to package up to date analysis
+- Change the sorting order for the analysis report
+- Revert OVERRIDABLE result in package handling check
+- Update package handling check to properly report removed packages
+- Identify highest status in json report
+- Fix backtrace in kernel signature verification
+- Try to rollback all changes even if one of them fails
+- Fix error message when repoquery fails to retrieve information on kmod packages
+- Fix an exception when listing third-party packages with Epoch 2
+- Recover file changes during a rollback
+
 * Mon Oct 30 2023 Michal Bocek <mbocek@redhat.com> 1.5.0
 - Display system packages that are not up to date in alphabetical order
 - Change the default message of an empty report message field
