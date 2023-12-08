@@ -35,6 +35,7 @@ class ValidatePackageManagerTransaction(actions.Action):
         "CHECK_FIREWALLD_AVAILABILITY",
         "ENSURE_KERNEL_MODULES_COMPATIBILITY",
         "SUBSCRIBE_SYSTEM",
+        "BACKUP_PACKAGE_FILES",
     )
 
     def run(self):

@@ -41,6 +41,7 @@ def test_validate_package_manager_transaction_dependency_order(validate_package_
         "CHECK_FIREWALLD_AVAILABILITY",
         "ENSURE_KERNEL_MODULES_COMPATIBILITY",
         "SUBSCRIBE_SYSTEM",
+        "BACKUP_PACKAGE_FILES",
     )
 
     assert expected_dependencies == validate_package_manager_transaction.dependencies

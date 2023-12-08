@@ -64,7 +64,10 @@ class ListThirdPartyPackages(actions.Action):
 
 class RemoveExcludedPackages(actions.Action):
     id = "REMOVE_EXCLUDED_PACKAGES"
-    dependencies = ("BACKUP_REPOSITORY",)  # We use the backed up repos in remove_pkgs_unless_from_redhat()
+    dependencies = (
+        "BACKUP_REPOSITORY",
+        "BACKUP_PACKAGE_FILES",
+    )  # We use the backed up repos in remove_pkgs_unless_from_redhat()
 
     def run(self):
         """
@@ -131,6 +134,7 @@ class RemoveRepositoryFilesPackages(actions.Action):
         "BACKUP_REPOSITORY",
         # The installation of sub-man pkgs needs access to the original repofiles to get the sub-man deps from there
         "PRE_SUBSCRIPTION",
+        "BACKUP_PACKAGE_FILES",
     )
 
     def run(self):

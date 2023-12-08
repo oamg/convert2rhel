@@ -273,7 +273,7 @@ def test_remove_repository_files_packages_not_removed(
 
 
 def test_remove_repository_files_packages_dependency_order(remove_repository_files_packages_instance):
-    expected_dependencies = ("BACKUP_REDHAT_RELEASE", "BACKUP_REPOSITORY", "PRE_SUBSCRIPTION")
+    expected_dependencies = ("BACKUP_REDHAT_RELEASE", "BACKUP_REPOSITORY", "PRE_SUBSCRIPTION", "BACKUP_PACKAGE_FILES")
 
     assert expected_dependencies == remove_repository_files_packages_instance.dependencies
 

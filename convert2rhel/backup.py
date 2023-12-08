@@ -348,6 +348,125 @@ class RestorableRpmKey(RestorableChange):
         super(RestorableRpmKey, self).restore()
 
 
+class NewRestorableFile(RestorableChange):
+    def __init__(self, filepath):
+        super(NewRestorableFile, self).__init__()
+        self.filepath = filepath
+
+    def enable(self):
+        """Save current version of a file"""
+        # Prevent multiple backup
+        if self.enabled:
+            return
+
+        loggerinst.info("Backing up %s." % self.filepath)
+        if os.path.isfile(self.filepath):
+            try:
+                shutil.copy2(self.filepath, BACKUP_DIR)
+                loggerinst.debug("Copied %s to %s." % (self.filepath, BACKUP_DIR))
+
+            except (OSError, IOError) as err:
+                # IOError for py2 and OSError for py3
+                loggerinst.critical("Error(%s): %s" % (err.errno, err.strerror))
+        else:
+            loggerinst.info("Can't find %s.", self.filepath)
+
+        # Set the enabled value
+        super(NewRestorableFile, self).enable()
+
+    def restore(self, rollback=True):
+        """Restore a previously backed up file"""
+        if rollback:
+            loggerinst.task("Rollback: Restore %s from backup" % self.filepath)
+        else:
+            loggerinst.info("Restoring %s from backup" % self.filepath)
+
+        # We do not have backup or not backed up by this
+        if not self.enabled:
+            loggerinst.info("%s hasn't been backed up." % self.filepath)
+            return
+
+        backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
+
+        if not os.path.isfile(backup_filepath):
+            loggerinst.info("%s hasn't been backed up." % self.filepath)
+            return
+
+        try:
+            shutil.copy2(backup_filepath, self.filepath)
+        except (OSError, IOError) as err:
+            # Do not call 'critical' which would halt the program. We are in
+            # a rollback phase now and we want to rollback as much as possible.
+            # IOError for py2 and OSError for py3
+            loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
+            return
+
+        if rollback:
+            loggerinst.info("File %s restored." % self.filepath)
+            super(NewRestorableFile, self).restore()
+        else:
+            loggerinst.debug("File %s restored." % self.filepath)
+            # not setting enabled to false since this is not being rollback
+            # restoring the backed up file for conversion purposes
+
+    # Probably will be deprecated and unusable since using the BackupController
+    # Depends on specific usage of this
+    def remove(self):
+        """Remove restored file from original place, backup isn't removed"""
+        try:
+            os.remove(self.filepath)
+            loggerinst.debug("File %s removed." % self.filepath)
+        except (OSError, IOError):
+            loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
+
+
+class MissingFile(RestorableChange):
+    """
+    File not present before conversion. Could be created during
+    conversion so should be removed in rollback.
+    """
+
+    def __init__(self, filepath):
+        super(MissingFile, self).__init__()
+        self.filepath = filepath
+
+    def enable(self):
+        if self.enabled:
+            return
+
+        if os.path.isfile(self.filepath):
+            loggerinst.debug(
+                "Shouldn't be called, file {filepath} is present before conversion".format(filepath=self.filepath)
+            )
+            return
+
+        loggerinst.info("Marking file {filepath} as missing on system.".format(filepath=self.filepath))
+        super(MissingFile, self).enable()
+
+    def restore(self):
+        if not self.enabled:
+            return
+
+        loggerinst.task("Rollback: remove file created during conversion {filepath}".format(filepath=self.filepath))
+
+        if not os.path.isfile(self.filepath):
+            loggerinst.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
+        else:
+            try:
+                os.remove(self.filepath)
+                loggerinst.info("File {filepath} removed".format(filepath=self.filepath))
+            except OSError as err:
+                # Do not call 'critical' which would halt the program. We are in
+                # a rollback phase now and we want to rollback as much as possible.
+                loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
+                return
+
+        super(MissingFile, self).restore()
+
+
+# Legacy class for creating the restorable file
+# Can be removed after porting to new BackupController is finished
+# https://issues.redhat.com/browse/RHELC-1153
 class RestorableFile:
     def __init__(self, filepath):
         self.filepath = filepath
