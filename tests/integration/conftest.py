@@ -435,7 +435,7 @@ def missing_os_release_package_workaround(shell):
     yield
 
     os_to_pkg_mapping = {
-        "oracle-7": "oracle-release-el7",
+        "oracle-7": "oracle*-release-el7",
         "oracle-8": "oraclelinux-release-el8",
         "centos-7": "centos-release",
         "centos-8": "centos-linux-release",
@@ -452,7 +452,7 @@ def missing_os_release_package_workaround(shell):
 
         system_release_pkg = os_to_pkg_mapping.get(os_key)
 
-        rpm_output = shell(f"rpm -q {system_release_pkg}").output
+        rpm_output = shell(f"rpm -qa {system_release_pkg}").output
         if "not installed" in rpm_output:
             shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
 

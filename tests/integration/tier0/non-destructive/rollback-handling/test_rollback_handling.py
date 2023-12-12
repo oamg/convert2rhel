@@ -108,8 +108,23 @@ def terminate_and_assert_good_rollback(c2r):
     c2r.expect("Rollback: Remove installed certificate", timeout=120)
 
 
+@pytest.fixture
+def yum_plugin_local(shell):
+    """
+    Fixture to install and remove yum-plugin-local.
+    """
+    command = "yum install -y yum-plugin-local"
+    if "oracle-7" in SYSTEM_RELEASE_ENV:
+        command += " --enablerepo=ol7_optional_latest"
+    assert shell(command).returncode == 0
+
+    yield
+
+    assert shell("yum remove -y yum-plugin-local").returncode == 0
+
+
 @pytest.mark.test_polluted_yumdownloader_output_by_yum_plugin_local
-def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel):
+def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel, yum_plugin_local):
     """
     Verify that the yumdownloader output in the backup packages task is parsed correctly.
     In this scenario the yum-plugin-local was causing that excluded packages were not detected as downlaoded during
@@ -118,12 +133,11 @@ def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel):
     and packages already existing in the backup directory.
     """
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
-    packages_to_remove_at_cleanup += install_packages(shell, ["yum-plugin-local"])
 
     # Run the utility second time to verify the backup works
     # even with the packages already backed up
     for run in range(2):
-        with convert2rhel("analyze --debug -y --no-rpm-va") as c2r:
+        with convert2rhel("analyze --debug -y") as c2r:
             c2r.expect("Rollback: Install removed packages")
             c2r.expect("Pre-conversion analysis report", timeout=600)
         assert c2r.exitstatus == 0
