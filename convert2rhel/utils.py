@@ -761,7 +761,7 @@ def report_on_a_download_error(output, pkg):
             loggerinst.warning(
                 "Couldn't download the %s package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' environment variable detected, continuing"
+                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing"
                 " conversion." % pkg
             )
     else:
@@ -787,8 +787,8 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
         loggerinst.warning("The output of running yumdownloader is unexpectedly empty. Command:\n%s" % cmd)
         return None
 
-    rpm_name_match = re.search(r"\S*\.rpm", output)
-    pkg_nevra_match = re.search(r"using local copy of (?:\d+:)?(.*)$", output)
+    rpm_name_match = re.search(r"\S+\.rpm", output)
+    pkg_nevra_match = re.search(r"using local copy of (?:\d+:)?(\S+)", output)
 
     if rpm_name_match:
         path = os.path.join(dest, rpm_name_match.group(0))
