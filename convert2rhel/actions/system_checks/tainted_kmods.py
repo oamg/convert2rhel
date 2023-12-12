@@ -16,6 +16,7 @@
 __metaclass__ = type
 
 import logging
+import os
 
 from convert2rhel import actions
 from convert2rhel.utils import run_subprocess
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
+LINK_TAINTED_KMOD_DOCS = "https://docs.kernel.org/admin-guide/tainted-kernels.html"
 
 
 class TaintedKmods(actions.Action):
@@ -43,21 +45,54 @@ class TaintedKmods(actions.Action):
         logger.task("Prepare: Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
+        tainted_kmods_skip = os.environ.get("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP", None)
+        diagnosis = (
+            "Tainted kernel modules detected:\n  {0}\n"
+            "Third-party components are not supported per our "
+            "software support policy:\n {1}\n".format(module_names, LINK_KMODS_RH_POLICY)
+        )
+
         if unsigned_modules:
-            self.set_result(
-                level="ERROR",
-                id="TAINTED_KMODS_DETECTED",
-                description="Please refer to the diagnosis for further information",
-                title="Tainted kernel modules detected",
-                diagnosis=(
-                    "Tainted kernel modules detected:\n  {0}\n"
-                    "Third-party components are not supported per our "
-                    "software support policy:\n {1}\n".format(module_names, LINK_KMODS_RH_POLICY)
+            if not tainted_kmods_skip:
+                self.set_result(
+                    level="OVERRIDABLE",
+                    id="TAINTED_KMODS_DETECTED",
+                    title="Tainted kernel modules detected",
+                    description="Please refer to the diagnosis for further information",
+                    diagnosis=diagnosis,
+                    remediations=(
+                        "Prevent the modules from loading by following {0}"
+                        " and run convert2rhel again to continue with the conversion."
+                        " Although it is not recommended, you can ignore this message by setting the environment variable"
+                        " 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' to 1. Overriding this check can be dangerous"
+                        " so it is recommended that you do a system backup beforehand."
+                        " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                            LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
+                        )
+                    ),
+                )
+                return
+            self.add_message(
+                level="WARNING",
+                id="SKIP_TAINTED_KERNEL_MODULE_CHECK",
+                title="Skip tainted kernel module check",
+                description=(
+                    "Detected 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' environment variable, we will skip "
+                    "the tainted kernel module check.\n"
+                    "Beware, this could leave your system in a broken state."
                 ),
+            )
+            self.add_message(
+                level="WARNING",
+                id="TAINTED_KMODS_DETECTED_MESSAGE",
+                title="Tainted kernel modules detected",
+                description="Please refer to the diagnosis for further information",
+                diagnosis=diagnosis,
                 remediations=(
                     "Prevent the modules from loading by following {0}"
-                    " and run convert2rhel again to continue with the conversion.".format(
-                        LINK_PREVENT_KMODS_FROM_LOADING
+                    " and run convert2rhel again to continue with the conversion."
+                    " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                        LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
                     )
                 ),
             )
