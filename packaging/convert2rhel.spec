@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.6.0
+Version:        1.6.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,9 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed Dec 13 2023 Preston Watson <prwatson@redhat.com> 1.6.1
+- Fix parsing yumdownloader output with a carriage return
+
 * Fri Dec 08 2023 Preston Watson <prwatson@redhat.com> 1.6.0
 - Change Action results so that no information is given in SUCCESS results
 - Add OVERRIDABLE result to the third party package analysis
