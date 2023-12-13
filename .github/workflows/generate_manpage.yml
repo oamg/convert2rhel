@@ -29,5 +29,8 @@ jobs:
 
       - name: Generate Manpages
         run: |
+          echo "Setting execute permissions for manpage_generation.sh"
           chmod +x scripts/manpage_generation.sh
+
+          echo "Running manpage_generation.sh"
           bash scripts/manpage_generation.sh
