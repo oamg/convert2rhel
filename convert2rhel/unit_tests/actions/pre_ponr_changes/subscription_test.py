@@ -18,15 +18,18 @@ __metaclass__ = type
 import os.path
 import shutil
 
+from collections import namedtuple
 from functools import partial
 
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
+from convert2rhel.subscription import RefreshSubscriptionManagerError
+from convert2rhel.unit_tests import RunSubprocessMocked
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -134,6 +137,12 @@ class TestPreSubscription:
         monkeypatch.setattr(appc_subscription, "_REDHAT_CDN_CACERT_SOURCE_DIR", red_hat_ca_dir)
         monkeypatch.setattr(appc_subscription, "_RHSM_PRODUCT_CERT_SOURCE_DIR", product_cert_dir)
         monkeypatch.setattr(global_backup_control, "push", mock.Mock())
+        Version = namedtuple("Version", ("major", "minor"))
+        monkeypatch.setattr(
+            subscription.system_info,
+            "version",
+            value=Version(major=8, minor=0),
+        )
 
         pre_subscription_instance.run()
 
@@ -222,6 +231,7 @@ class TestSubscribeSystem:
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
         monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
         monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         fake_refresh = mock.Mock()
         monkeypatch.setattr(subscription, "refresh_subscription_info", fake_refresh)
@@ -258,6 +268,40 @@ class TestSubscribeSystem:
         assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
         assert expected.issuperset(subscribe_system_instance.messages)
         assert expected.issubset(subscribe_system_instance.messages)
+
+    def test_subscribe_system_not_registered(self, global_tool_opts, subscribe_system_instance, monkeypatch):
+
+        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
+
+        with pytest.raises(RefreshSubscriptionManagerError):
+            subscribe_system_instance.run()
+            print(subscribe_system_instance.result)
+
+            unit_tests.assert_actions_result(
+                subscribe_system_instance,
+                level="ERROR",
+                id="SYSTEM_NOT_REGISTERED",
+                title="Not registered with RHSM",
+                description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
+                remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
+            )
+
+    def test_subscribe_system_registered_without_sca(self, global_tool_opts, subscribe_system_instance, monkeypatch):
+        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(subscription, "is_registered", mock.Mock(return_value=True))
+        monkeypatch.setattr(subscription, "is_sca_enabled", mock.Mock(return_value=False))
+        fake_refresh = mock.Mock()
+        monkeypatch.setattr(subscription, "refresh_subscription_info", fake_refresh)
+        subscribe_system_instance.run()
+        unit_tests.assert_actions_result(
+            subscribe_system_instance,
+            level="ERROR",
+            id="SYSTEM_REGISTERED_WITHOUT_SCA",
+            title="Registered with RHSM but without SCA enabled",
+            description="This system has been registered with Red Hat Subscription Manager but Simple Content Access is not enabled.",
+            remediations="To resolve this error please enable Simple Content Access at https://access.redhat.com/management/ and run the conversion again.",
+        )
 
     def test_subscribe_system_run(self, subscribe_system_instance, monkeypatch):
         monkeypatch.setattr(subscription, "should_subscribe", lambda: True)

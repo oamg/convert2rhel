@@ -483,7 +483,7 @@ class RegistrationCommand:
                     # wrong server if the host is registered.
                     self._set_connection_opts_in_config()
 
-                    if not _is_registered():
+                    if not is_registered():
                         # Host is not registered so re-raise the error
                         raise
                 else:
@@ -535,7 +535,7 @@ class RegistrationCommand:
             loggerinst.info("Successfully set RHSM connection configuration.")
 
 
-def _is_registered():
+def is_registered():
     """Check if the machine we're running on is registered with subscription-manager."""
     loggerinst.debug("Checking whether the host was registered.")
     output, ret_code = utils.run_subprocess(["subscription-manager", "identity"])
@@ -578,14 +578,27 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     backup.backup_control.push(installed_pkg_set)
 
 
+def is_sca_enabled():
+    """
+    Check if Simple Content Access has been enabled for this system.
+
+    :returns: True if Simple Content Access is enabled.
+    :rtype: bool
+    """
+    # check if SCA is enabled
+    output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
+    if "content access mode is set to simple content access." in output.lower():
+        return True
+    return False
+
+
 def attach_subscription():
     """Attach a specific subscription to the registered OS. If no
     subscription ID has been provided through command line, let the user
     interactively choose one.
     """
     # check if SCA is enabled
-    output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
-    if "content access mode is set to simple content access." in output.lower():
+    if is_sca_enabled():
         loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
         if tool_opts.pool:
             loggerinst.warning(
