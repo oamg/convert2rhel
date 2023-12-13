@@ -1,27 +1,12 @@
 minimum_pre_commit_version: "2.9.0"
-ci:
-    skip: [regenerate-rerun-plan]
 repos:
   - repo: local
     hooks:
-      - id: regenerate-rerun-plan
-        name: regenerate plans/rerun.fmf
-        entry: sh
-        # Concatenate contents of all the .fmf files in the tier0 directory, include directory names as headers/plan names
-        # Replace the tag mappings from tests to a call to the discovery method and filter based on the test tag
-        # Remove all test calls, we need to handle the calling differently in plans
-        # Remove all 'tier: 0' tags
-        # Remove trailing whitespaces
-        args:
-          - -c
-          - |
-            find tests/integration/tier0/ -name "*.fmf" -exec sh -c 'echo "/$(basename $(dirname {})| tr "-" "_"):"; sed -e "s/^/    /" {}' \; | awk '/^\// && NR>1{print ""; print ""}1'> plans/rerun.fmf
-            sed -i 'N; s/\(^[[:space:]]*\)tag+:\n\([[:space:]]*\)-[[:space:]]*\([^-[:space:]]*\)/\1discover+:\n\2filter: tag:\3/g; P; D' plans/rerun.fmf
-            sed -i '/^[[:space:]]*test: \|^[[:space:]]*pytest/d' plans/rerun.fmf
-            sed -i '/^[[:space:]]*tier: 0/d' plans/rerun.fmf
-            sed -i 's/\s\+$//' plans/rerun.fmf
-        language: system
-        stages: [ manual ]
+      - id: regenerate-pytest-ini
+        name: Register custom pytest markers in the pytest.ini
+        entry: "scripts/regenerate_pytest_ini.py"
+        language: python
+        types: [python]
   - repo: local
     hooks:
       - id: black
