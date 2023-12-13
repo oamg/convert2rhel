@@ -13,9 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create and checkout branch
-        run: git checkout -b auto_gen_man_fix
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -42,4 +39,4 @@ jobs:
 
       - name: Push to Fork
         run: |
-          git push https://github.com/${{ github.actor }}/${{ github.repository_name }}.git HEAD:auto_gen_man_fix
+          git push https://github.com/${{ github.event.repository.owner.login }}/${{ github.event.repository.name }}.git ${{ github.head_ref }}
