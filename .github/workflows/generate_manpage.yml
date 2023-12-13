@@ -1,4 +1,4 @@
-name: Generate Manpages
+name: Generate Manpages and Push to Fork
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  generate-manpages:
+  generate-manpages-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,29 +22,21 @@ jobs:
         run: |
           pip install argparse-manpage six pexpect
 
-      - name: Install python3-rpm and python3-dnf package with apt-get
+      - name: Install python3-rpm and python3-dnf packages with apt-get
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-rpm python3-dnf
 
       - name: Generate Manpages
         run: |
-          echo "Setting execute permissions for manpage_generation.sh"
           chmod +x scripts/manpage_generation.sh
-
-          echo "Running manpage_generation.sh"
           bash scripts/manpage_generation.sh
 
-      - name: Check Git Status
+      - name: Configure Git
         run: |
-          echo "Checking Git Status"
-          git status
-
-      - name: Commit and Push Changes
-        run: |
-          echo "Committing changes"
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          git add .
-          git commit -m "Update manpages"
-          git push origin ${{ github.head_ref }}
+
+      - name: Push to Fork
+        run: |
+          git push https://github.com/${{ github.actor }}/${{ github.repository_name }}.git ${{ github.head_ref }}
