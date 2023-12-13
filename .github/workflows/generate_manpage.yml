@@ -34,3 +34,8 @@ jobs:
 
           echo "Running manpage_generation.sh"
           bash scripts/manpage_generation.sh
+
+      - name: Check Git Status
+        run: |
+          echo "Checking Git Status"
+          git status
