@@ -185,7 +185,15 @@ class SubscribeSystem(actions.Action):
                     return
                 raise
 
-            logger.warning("No rhsm credentials given to subscribe the system. Did not perform the subscription step.")
+            if subscription.is_registered() and not subscription.is_sca_enabled():
+                self.set_result(
+                    level="ERROR",
+                    id="SYSTEM_REGISTERED_WITHOUT_SCA",
+                    title="Registered with RHSM but without SCA enabled",
+                    description="This system has been registered with Red Hat Subscription Manager but Simple Content Access is not enabled.",
+                    remediations="To resolve this error please enable Simple Content Access at https://access.redhat.com/management/ and run the conversion again.",
+                )
+                return
 
         try:
             # In the future, refactor this to be an else on the previous

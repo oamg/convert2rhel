@@ -367,14 +367,26 @@ def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
     assert mock_backup_control.call_count == 1
 
 
+@pytest.mark.parametrize(
+    ("return_string", "expected"),
+    (
+        ("Content Access Mode is set to Simple Content Access.", True),
+        ("String stating no Simple Content Access", False),
+    ),
+)
+def test_is_sca_enabled(monkeypatch, return_string, expected):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_string=return_string),
+    )
+    assert subscription.is_sca_enabled() is expected
+
+
 @pytest.mark.usefixtures("tool_opts", scope="function")
 class TestAttachSubscription:
     def test_attach_subscription_sca_enabled(self, monkeypatch):
-        monkeypatch.setattr(
-            utils,
-            "run_subprocess",
-            RunSubprocessMocked(return_string="Content Access Mode is set to Simple Content Access"),
-        )
+        monkeypatch.setattr(subscription, "is_sca_enabled", mock.Mock(return_value=True))
         assert subscription.attach_subscription() is True
 
     def test_attach_subscription(self, monkeypatch):
