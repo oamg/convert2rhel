@@ -349,7 +349,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' but not during pre-conversion analysis",
+                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
                 timeout=300,
             )
             == 0

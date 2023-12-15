@@ -11,6 +11,11 @@ tag+:
     - sanity
 
 /polluted_yumdownloader_output_by_yum_plugin_local:
+    enabled: false
+    adjust+:
+        - enabled: true
+          when: distro == centos-7, oracle-7
+          because: There is no yum-plugin-local for EL8 releases.
     summary+: |
         Verify yumdownloader output parsing, when polluted by plugins
     description+: |

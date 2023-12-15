@@ -90,14 +90,15 @@ def test_system_not_updated(shell, convert2rhel):
 
     # Run utility until the reboot
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        # TODO(danmyway) Uncomment when the https://issues.redhat.com/browse/RHELC-1291 gets fixed
+        # c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         c2r.expect_exact("Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
     assert c2r.exitstatus == 0
