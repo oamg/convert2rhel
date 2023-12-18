@@ -893,7 +893,9 @@ def test_compare_package_versions(version1, version2, expected):
         (
             "kernel-core-0:390-287.fc36.aarch64",
             "kernel-core-0:391-287.fc36.i86",
-            re.escape("The arches ('aarch64' and 'i86') do not match. Can only compare versions for the same arches."),
+            re.escape(
+                "The arches ('aarch64' and 'i86') do not match. Can only compare versions for the same arches. There is an architecture mismatch likely due to incorrectly defined repositories on the system."
+            ),
         ),
     ),
 )

@@ -1353,7 +1353,7 @@ def compare_package_versions(version1, version2):
     # ensure package arches match, error if not
     if version1_components[4] != version2_components[4] and all(([version1_components[4]], version2_components[4])):
         raise ValueError(
-            "The arches ('%s' and '%s') do not match. Can only compare versions for the same arches."
+            "The arches ('%s' and '%s') do not match. Can only compare versions for the same arches. There is an architecture mismatch likely due to incorrectly defined repositories on the system."
             % (version1_components[4], version2_components[4])
         )
 

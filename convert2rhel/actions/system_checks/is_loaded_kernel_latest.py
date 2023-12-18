@@ -143,7 +143,7 @@ class IsLoadedKernelLatest(actions.Action):
         # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
             self.set_result(
-                level="ERROR",
+                level="OVERRIDABLE",
                 id="KERNEL_CURRENCY_CHECK_FAIL",
                 title="Kernel currency check failed",
                 description="Please refer to the diagnosis for further information",
@@ -170,8 +170,8 @@ class IsLoadedKernelLatest(actions.Action):
         try:
             match = compare_package_versions(latest_kernel_pkg, loaded_kernel_pkg)
         except ValueError as exc:
-            self.set_result(
-                level="ERROR",
+            self.add_message(
+                level="WARNING",
                 id="INVALID_KERNEL_PACKAGE",
                 title="Invalid kernel package found",
                 description="Please refer to the diagnosis for further information",
@@ -186,7 +186,7 @@ class IsLoadedKernelLatest(actions.Action):
                 else "in repositories defined in the %s folder" % reposdir
             )
             self.set_result(
-                level="ERROR",
+                level="OVERRIDABLE",
                 id="INVALID_KERNEL_VERSION",
                 title="Invalid kernel version detected",
                 description="The loaded kernel version mismatch the latest one available %s" % repos_message,
@@ -198,7 +198,9 @@ class IsLoadedKernelLatest(actions.Action):
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                     "1. yum install %s-%s -y\n"
-                    "2. reboot" % (package_to_check, latest_kernel)
+                    "2. reboot"
+                    "If you wish to ignore this message, set the environment variable "
+                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % (package_to_check, latest_kernel)
                 ),
             )
             return
