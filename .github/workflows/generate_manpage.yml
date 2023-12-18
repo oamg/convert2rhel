@@ -16,7 +16,6 @@ jobs:
           ref: ${{ github.head_ref }}
         retries: 3
 
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -43,8 +42,8 @@ jobs:
 
       - name: Commit changes
         run: |
-            git add man/convert2rhel.8
-            git commit -m "Auto update manpages"
+          git add man/convert2rhel.8
+          git commit -m "Auto update manpages"
 
       - name: Push to Fork
         run: git push https://github.com/${{ github.repository_owner }}/${{ github.repository }}.git ${{ github.head_ref }}
