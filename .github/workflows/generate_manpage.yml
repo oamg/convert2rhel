@@ -10,10 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
+      - name: Checkout PR Branch
+        uses: ./checkout-pr-action
 
       - name: Setup Python
         uses: actions/setup-python@v4
