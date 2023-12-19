@@ -32,18 +32,13 @@ jobs:
           chmod +x scripts/manpage_generation.sh
           bash scripts/manpage_generation.sh
 
-      - name: Configure Git
+
+      - name: Push changes
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-
-      - name: Commit changes
-        run: |
-          git add man/convert2rhel.8
+          git add .
           git commit -m "Auto update manpages"
-
-      - name: Push to Fork
-        run: |
-          git push origin https://github.com/${{ github.repository_owner }}/${{ github.repository }}.git ${{ github.head_ref }}:${{ github.head_ref }}
+          git push origin ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
