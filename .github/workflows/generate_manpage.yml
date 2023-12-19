@@ -44,6 +44,6 @@ jobs:
 
       - name: Push to Fork
         run: |
-          git push https://github.com/${{ github.event.repository.owner.login }}/${{ github.event.repository.name }}.git ${{ github.head_ref }}
+          git push origin HEAD:${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
