@@ -3,7 +3,7 @@ name: Generate Manpages
 on:
   pull_request:
     branches:
-      - main
+      - '*'
 
 jobs:
   generate-manpages-and-push:
@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v4
