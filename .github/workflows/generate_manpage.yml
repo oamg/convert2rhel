@@ -43,6 +43,8 @@ jobs:
           git commit -m "Auto update manpages"
 
       - name: Push to Fork
-        run: git push https://github.com/${{ github.repository_owner }}/${{ github.repository }}.git ${{ github.head_ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth login --with-token "${{ secrets.GITHUB_TOKEN }}"
+          gh repo clone "${{ github.repository }}"
+          cd "$(basename "${{ github.repository }}")"
+          git push origin HEAD:${{ github.head_ref }}
