@@ -43,6 +43,6 @@ jobs:
           git commit -m "Auto update manpages"
 
       - name: Push to Fork
-        run: git push https://github.com/${{ github.actor }}/${{ github.repository_name }} HEAD:${{ github.head_ref }}
+        run: git push https://github.com/${{ github.actor }}/${{ github.repository_name }} HEAD:${{ github.head_ref }}:${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
