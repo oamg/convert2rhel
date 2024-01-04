@@ -60,9 +60,7 @@ def _is_modules_cleanup_enabled():
     # CleanupModulesOnExit as true. Ignoring # and ; as they are ignored in the
     # config parser for firewalld as well:
     # https://github.com/firewalld/firewalld/blob/46d54dcbdff94423686d67befc78ca8d601fce60/src/firewall/core/io/firewalld_conf.py#L85
-    option_present = any(
-        item.strip().startswith("CleanupModulesOnExit") for item in contents if not item.startswith(("#", ";"))
-    )
+    option_present = any(item.strip().startswith("CleanupModulesOnExit") for item in contents)
     if not option_present:
         logger.debug(
             "Couldn't find CleanupModulesOnExit in firewalld.conf. Treating it as enabled because of default behavior."
@@ -112,11 +110,10 @@ class CheckFirewalldAvailability(actions.Action):
                     remediation=(
                         "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf "
                         "to no prior to running convert2rhel:\n"
-                        " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload."
-                        " You can change the option back to yes after the system reboot "
+                        " sed -i -- 's/^CleanupModulesOnExit.*/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload\n"
+                        "You can change the option back to yes after the system reboot "
                         "- that is after the system boots into the RHEL kernel."
                     ),
                 )
-                return
-
-        logger.info("Skipping the check as it is relevant only for Oracle Linux 8.8 and above.")
+        else:
+            logger.info("Skipping the check as it is relevant only for Oracle Linux 8.8 and above.")

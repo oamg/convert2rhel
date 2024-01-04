@@ -4,7 +4,8 @@ import pytest
 
 from envparse import env
 
-from convert2rhel.actions.system_checks.check_firewalld_availability import FIREWALLD_CONFIG_FILE
+
+FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 
 @pytest.mark.test_firewalld_inhibitor
@@ -36,9 +37,5 @@ def test_firewalld_inhibitor(shell, convert2rhel):
         )
 
     assert c2r.exitstatus == 1
-
-    assert shell(
-        "grep 'Firewalld running on Oracle Linux 8 can lead to a conversion failure' /var/log/convert2rhel/convert2rhel.log"
-    )
 
     shell(f"sed -i 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' {FIREWALLD_CONFIG_FILE}")

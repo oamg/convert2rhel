@@ -305,8 +305,8 @@ SomethingElse=yes
             remediation=(
                 "Set the option CleanupModulesOnExit in /etc/firewalld/firewalld.conf "
                 "to no prior to running convert2rhel:\n"
-                " sed -i -- 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload."
-                " You can change the option back to yes after the system reboot "
+                " sed -i -- 's/^CleanupModulesOnExit.*/CleanupModulesOnExit=no/g' /etc/firewalld/firewalld.conf\n && firewall-cmd --reload\n"
+                "You can change the option back to yes after the system reboot "
                 "- that is after the system boots into the RHEL kernel."
             ),
         )

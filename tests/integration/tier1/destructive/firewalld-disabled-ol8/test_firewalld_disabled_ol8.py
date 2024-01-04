@@ -4,7 +4,8 @@ import pytest
 
 from envparse import env
 
-from convert2rhel.actions.system_checks.check_firewalld_availability import FIREWALLD_CONFIG_FILE
+
+FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 
 @pytest.mark.test_firewalld_disabled
