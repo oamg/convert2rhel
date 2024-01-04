@@ -44,7 +44,7 @@ repos:
             "--rcfile=.pylintrc", # Link to your config file
           ]
   - repo: "https://github.com/timothycrosley/isort"
-    rev: 5.13.0
+    rev: 5.13.2
     hooks:
       - id: isort
         additional_dependencies: [toml]
@@ -61,7 +61,7 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.29.0"
+    rev: "1.30.0"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
