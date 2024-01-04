@@ -14,6 +14,9 @@
 	lint \
 	lint-errors \
 	rpms \
+	rpm7 \
+	rpm8 \
+	rpm9 \
 
 # Project constants
 IMAGE_REPOSITORY ?= ghcr.io
@@ -140,15 +143,29 @@ tests9: image9
 	@echo 'CentOS 9 tests'
 	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
-rpms:
-	mkdir -p .rpms
-	rm -frv .rpms/*
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild .
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
+
+.rpm7:
+	rm -frv .rpms/*el7*
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos7.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
-	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.rpms .
+
+.rpm8:
+	rm -frv .rpms/*el8*
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
+
+.rpm9:
+	rm -frv .rpms/*el9*
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild):/data/.rpms .
+
+.rpm-container-cleanup:
 	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
+
+rpms: .rpm7 .rpm8 .rpm9 .rpm-container-cleanup
+rpm7: .rpm7 .rpm-container-cleanup
+rpm8: .rpm8 .rpm-container-cleanup
+rpm9: .rpm9 .rpm-container-cleanup
 
 copr-build: rpms
 	mkdir -p .srpms
