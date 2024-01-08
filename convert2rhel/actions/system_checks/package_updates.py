@@ -74,35 +74,10 @@ class PackageUpdates(actions.Action):
             # exception is based on the `pkgmanager` module and the message
             # sent to the output can differ depending if the code is running in
             # RHEL7 (yum) or RHEL8 (dnf).
-            package_up_to_date_check_skip = os.environ.get("CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP", None)
             package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifying the system is up to date manually"
                 " before proceeding with the conversion. %s" % str(e)
-            )
-            if not package_up_to_date_check_skip:
-                logger.warning(package_up_to_date_error_message)
-                self.set_result(
-                    level="OVERRIDABLE",
-                    id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-                    title="Package up to date check fail",
-                    description="Please refer to the diagnosis for further information",
-                    diagnosis=package_up_to_date_error_message,
-                    remediations="If you wish to disregard this message, set the environment variable "
-                    "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
-                )
-                return
-            skip_package_up_to_date_check_message = (
-                "Detected 'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' environment variable, we will skip "
-                "the package up-to-date check.\n"
-                "Beware, this could leave your system in a broken state."
-            )
-            logger.warning(skip_package_up_to_date_check_message)
-            self.add_message(
-                level="WARNING",
-                id="SKIP_PACKAGE_UP_TO_DATE_CHECK",
-                title="Skip package up to date check",
-                description=skip_package_up_to_date_check_message,
             )
 
             logger.warning(package_up_to_date_error_message)
