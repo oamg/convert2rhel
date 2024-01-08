@@ -120,8 +120,8 @@ class Convert2rhelLatest(actions.Action):
         # relevant repoquery information to our check, otherwise, we just log the
         # information as debug and do nothing with it.
         for raw_version in raw_output_convert2rhel_versions:
-            if "C2R" in raw_version:
-                temp_raw_output.append(raw_version.lstrip("C2R "))
+            if raw_version.startswith("C2R "):
+                temp_raw_output.append(raw_version[4:])
             else:
                 # Mainly for debugging purposes to see what is happening if we got
                 # anything else that does not have the C2R identifier at the start
