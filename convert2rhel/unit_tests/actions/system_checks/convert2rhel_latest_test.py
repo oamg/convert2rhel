@@ -144,8 +144,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.21-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "7",
-                    "running_version": "0:0.21-1.el7",
-                    "latest_version": "0:0.22-1.el7",
+                    "running_version": "0.21",
+                    "latest_version": "0.22",
                 }
             ],
             [
@@ -156,8 +156,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.21-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "7",
-                    "running_version": "0:0.21-1.el7",
-                    "latest_version": "0:1.10-1.el7",
+                    "running_version": "0.21",
+                    "latest_version": "1.10",
                 }
             ],
             [
@@ -168,8 +168,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "7",
-                    "running_version": "0:1.21.0-1.el7",
-                    "latest_version": "0:1.21.1-1.el7",
+                    "running_version": "1.21.0",
+                    "latest_version": "1.21.1",
                 }
             ],
             [
@@ -180,8 +180,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "7",
-                    "running_version": "0:1.21-1.el7",
-                    "latest_version": "0:1.21.1-1.el7",
+                    "running_version": "1.21",
+                    "latest_version": "1.21.1",
                 }
             ],
             [
@@ -192,8 +192,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21.1-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "7",
-                    "running_version": "0:1.21.1-1.el7",
-                    "latest_version": "0:1.22-1.el7",
+                    "running_version": "1.21.1",
+                    "latest_version": "1.22",
                 }
             ],
         ),
@@ -228,8 +228,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.21-1.el7.noarch",
                     "package_version_V": " ",
                     "pmajor": "6",
-                    "running_version": "0:0.21-1.el7",
-                    "latest_version": "0:0.22-1.el7",
+                    "running_version": "0.21",
+                    "latest_version": "0.22",
                 }
             ],
             [
@@ -240,8 +240,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.21-1.el7.noarch",
                     "package_version_V": " ",
                     "pmajor": "6",
-                    "running_version": "0:0.21-1.el7",
-                    "latest_version": "0:1.10-1.el7",
+                    "running_version": "0.21",
+                    "latest_version": "1.10",
                 }
             ],
             [
@@ -252,8 +252,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21.0-1.el7.noarch",
                     "package_version_V": " ",
                     "pmajor": "6",
-                    "running_version": "0:1.21.0-1.el7",
-                    "latest_version": "0:1.21.1-1.el7",
+                    "running_version": "1.21.0",
+                    "latest_version": "1.21.1",
                 }
             ],
             [
@@ -264,8 +264,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "6",
-                    "running_version": "0:1.21-1.el7",
-                    "latest_version": "0:1.21.1-1.el7",
+                    "running_version": "1.21",
+                    "latest_version": "1.21.1",
                 }
             ],
             [
@@ -276,8 +276,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:1.21.1-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "6",
-                    "running_version": "0:1.21.1-1.el7",
-                    "latest_version": "0:1.22-1.el7",
+                    "running_version": "1.21.1",
+                    "latest_version": "1.22",
                 }
             ],
         ),
@@ -320,8 +320,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_V": 0,
                     "pmajor": "6",
                     "enset": "1",
-                    "running_version": "0:0.18.0-1.el7",
-                    "latest_version": "0:0.22.0-1.el7",
+                    "running_version": "0.18.0",
+                    "latest_version": "0.22.0",
                 }
             ],
             [
@@ -333,8 +333,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_V": 0,
                     "pmajor": "7",
                     "enset": "1",
-                    "running_version": "0:0.18.1-1.el7",
-                    "latest_version": "0:0.22.0-1.el7",
+                    "running_version": "0.18.1",
+                    "latest_version": "0.22.0",
                 }
             ],
             [
@@ -346,8 +346,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_V": 0,
                     "pmajor": "8",
                     "enset": "1",
-                    "running_version": "0:0.18.3-1.el7",
-                    "latest_version": "0:0.22.1-1.el7",
+                    "running_version": "0.18.3",
+                    "latest_version": "0.22.1",
                 }
             ],
             [
@@ -359,8 +359,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_V": 0,
                     "pmajor": "8",
                     "enset": "1",
-                    "running_version": "0:0.18-1.el7",
-                    "latest_version": "0:1.10.2-1.el7",
+                    "running_version": "0.18",
+                    "latest_version": "1.10.2",
                 }
             ],
             [
@@ -372,8 +372,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_V": 0,
                     "pmajor": "8",
                     "enset": "1",
-                    "running_version": "0:0.18.0-1.el7",
-                    "latest_version": "0:1.10-1.el7",
+                    "running_version": "0.18.0",
+                    "latest_version": "1.10",
                 }
             ],
         ),
@@ -589,8 +589,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.19.0-1.el7",
-                    "latest_version": "0:0.20.0-1.el7",
+                    "running_version": "0.19.0",
+                    "latest_version": "0.20.0",
                 }
             ],
             [
@@ -601,8 +601,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.19-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.19-1.el7",
-                    "latest_version": "0:0.20.0-1.el7",
+                    "running_version": "0.19",
+                    "latest_version": "0.20.0",
                 }
             ],
             [
@@ -613,8 +613,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.19.0-1.el7",
-                    "latest_version": "0:0.20-1.el7",
+                    "running_version": "0.19.0",
+                    "latest_version": "0.20",
                 }
             ],
         ),
@@ -649,8 +649,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.17.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.17.0-1.el7",
-                    "latest_version": "0:0.18.0-1.el7",
+                    "running_version": "0.17.0",
+                    "latest_version": "0.18.0",
                 }
             ],
             [
@@ -661,8 +661,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.17-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.17-1.el7",
-                    "latest_version": "0:0.18.0-1.el7",
+                    "running_version": "0.17",
+                    "latest_version": "0.18.0",
                 }
             ],
             [
@@ -673,8 +673,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.17.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.17.0-1.el7",
-                    "latest_version": "0:0.18-1.el7",
+                    "running_version": "0.17.0",
+                    "latest_version": "0.18",
                 }
             ],
         ),
@@ -868,8 +868,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.19.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "8",
-                    "running_version": "0:0.19.0-1.el7",
-                    "latest_version": "0:0.20.0-1.el7",
+                    "running_version": "0.19.0",
+                    "latest_version": "0.20.0",
                 }
             ],
         ),

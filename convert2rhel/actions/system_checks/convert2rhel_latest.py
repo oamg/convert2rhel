@@ -201,6 +201,8 @@ class Convert2rhelLatest(actions.Action):
 
         formatted_convert2rhel_version = _format_EVR(*precise_convert2rhel_version)
         formatted_available_version = _format_EVR(*precise_available_version)
+        print("Formatted convert2rhel version: %s" % formatted_convert2rhel_version)
+        print("Formatted avaliable version: %s" % formatted_available_version)
 
         if ver_compare < 0:
             # Current and deprecated env var names
@@ -272,7 +274,7 @@ class Convert2rhelLatest(actions.Action):
 
 
 def _format_EVR(epoch, version, release):
-    return "%s:%s-%s" % (epoch, version, release)
+    return "%s" % (version)
 
 
 def _extract_convert2rhel_versions(raw_versions):
