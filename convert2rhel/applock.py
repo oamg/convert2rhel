@@ -59,7 +59,8 @@ class ApplicationLock:
     def __init__(self, name):
         # Our application name
         self._name = name
-        # Our process ID
+        # Our process ID. We save this when the lock is created so it will be
+        # consistent even if we check from inside a fork.
         self._pid = os.getpid()
         # Path to the file that contains the process id
         self._pidfile = os.path.join(_DEFAULT_LOCK_DIR, self._name + ".pid")
@@ -95,7 +96,7 @@ class ApplicationLock:
             except OSError as exc:
                 if exc.errno == errno.EEXIST:
                     return False
-                raise exc
+                raise
         loggerinst.debug("%s." % self)
         return True
 
@@ -114,23 +115,19 @@ class ApplicationLock:
         :returns: the file contents as an integer, or None if it doesn't exist
         :raises: ApplicationLockedError if the contents are corrupt
         """
-        if os.path.exists(self._pidfile):
-            try:
-                with open(self._pidfile, "r") as f:
-                    file_contents = f.read()
-                pid = int(file_contents.rstrip())
-            except OSError as exc:
-                # This addresses a race condition in which another process
-                # deletes the lock file between our check that it exists
-                # and our attempt to read the contents.
-                # In Python 3 this could be changed to FileNotFoundError.
-                if exc.errno == errno.ENOENT:
-                    return None
-                raise exc
-            except ValueError:
-                raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
+        try:
+            with open(self._pidfile, "r") as f:
+                file_contents = f.read()
+            pid = int(file_contents.rstrip())
             return pid
-        return None
+        except IOError as exc:
+            # The open() failed because the file exists.
+            # In Python 3 this could be changed to FileNotFoundError.
+            if exc.errno == errno.ENOENT:
+                return None
+            raise
+        except ValueError:
+            raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
 
     @staticmethod
     def _pid_exists(pid):
@@ -157,7 +154,7 @@ class ApplicationLock:
             # In Python 3 this could be changed to FileNotFoundError.
             if exc.errno == errno.ENOENT:
                 return
-            raise exc
+            raise
 
     def try_to_lock(self):
         """Try to get a lock on this application. If this method does
