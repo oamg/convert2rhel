@@ -373,6 +373,10 @@ class InitializeLoggerMocked(MockFunctionObject):
     spec = main.initialize_logger
 
 
+class FinalizeLoggerMocked(MockFunctionObject):
+    spec = main.finalize_logger
+
+
 class MainLockedMocked(MockFunctionObject):
     spec = main.main_locked
 

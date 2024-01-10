@@ -287,11 +287,13 @@ def get_executable_name():
     return os.path.basename(inspect.stack()[-1][1])
 
 
+def is_root():
+    return os.geteuid() == 0
+
+
 def require_root():
-    if os.geteuid() != 0:
-        print("The tool needs to be run under the root user.")
-        print("\nNo changes were made to the system.")
-        sys.exit(1)
+    if not is_root():
+        loggerinst.critical("The tool needs to be run under the root user.\nNo changes were made to the system.")
 
 
 def get_file_content(filename, as_list=False):

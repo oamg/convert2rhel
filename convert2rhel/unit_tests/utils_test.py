@@ -905,12 +905,12 @@ class TestRunSubprocess:
         assert 0 == rc
 
 
-def test_require_root_is_not_root(monkeypatch, capsys):
+def test_require_root_is_not_root(monkeypatch, caplog):
     monkeypatch.setattr(os, "geteuid", GetEUIDMocked(1000))
     with pytest.raises(SystemExit):
         utils.require_root()
 
-    assert "The tool needs to be run under the root user." in capsys.readouterr().out
+    assert "The tool needs to be run under the root user." in caplog.text
 
 
 def test_require_root_is_root(monkeypatch):

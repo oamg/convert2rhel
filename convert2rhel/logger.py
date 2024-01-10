@@ -35,10 +35,14 @@ import os
 import shutil
 import sys
 
+from logging.handlers import BufferingHandler
 from time import gmtime, strftime
 
 
 LOG_DIR = "/var/log/convert2rhel"
+
+# get root logger
+logger = logging.getLogger("convert2rhel")
 
 
 class LogLevelCriticalNoExit:
@@ -58,11 +62,63 @@ class LogLevelFile:
     label = "DEBUG"
 
 
-def setup_logger_handler(log_name, log_dir):
+class LogfileBufferHandler(BufferingHandler):
+    """
+    FileHandler we use in Convert2RHEL requries root due to the location and the
+    tool itself checking for root user explicitly. Since we cannot obviously
+    use the logger if we aren't root in that case we simply add the FileHandler
+    after determining we're root.
+
+    Caveat of that approach is that any logging prior to the initialization of
+    the FileHandler would be lost, to help with this we have this custom handler
+    which will keep a buffer of the logs and flush it to the FileHandler
+    """
+
+    name = "logfile_buffer_handler"
+
+    def __init__(self, capacity, handler_name="file_handler"):
+        """_summary_
+
+        :param int capacity: Initialize with a buffer size
+        :param str handler_name: Handler to flush buffer to, defaults to "file_handler"
+        """
+        super(LogfileBufferHandler, self).__init__(capacity)
+        # the FileLogger handler that we are logging to
+        self._handler_name = handler_name
+
+    @property
+    def target(self):
+        """The computed Filehandler target that we are supposed to send to. This
+        is mostly copied over from logging's MemoryHandler but instead of setting
+        the target manually we find it automatically given the name of the handler
+
+        :return logging.Handler: Either the found FileHandler setup or temporary NullHandler
+        """
+        for handler in logger.handlers:
+            if handler.name == self._handler_name:
+                return handler
+        return logging.NullHandler()
+
+    def flush(self):
+        for record in self.buffer:
+            self.target.handle(record)
+
+    def shouldFlush(self, record):
+        """We should never flush automatically, so we set this to always return false, that way we need to flush
+        manually each time. Which is exactly what we want when it comes to keeping a buffer before we confirm we are
+        a root user.
+
+        :param logging.LogRecord record: The record to log
+        :return bool: Always returns false
+        """
+        if super(LogfileBufferHandler, self).shouldFlush(record):
+            self.buffer = self.buffer[1:]
+        return False
+
+
+def setup_logger_handler():
     """Setup custom logging levels, handlers, and so on. Call this method
     from your application's main start point.
-        log_name = the name for the log file
-        log_dir = path to the dir where log file will be presented
     """
     # set custom labels
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
@@ -76,8 +132,6 @@ def setup_logger_handler(log_name, log_dir):
 
     # enable raising exceptions
     logging.raiseExceptions = True
-    # get root logger
-    logger = logging.getLogger("convert2rhel")
     # propagate
     logger.propagate = True
     # set default logging level
@@ -91,22 +145,47 @@ def setup_logger_handler(log_name, log_dir):
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
 
-    # create file handler
+    # Setup a buffer for the file handler that we will add later, that way we
+    # can flush logs to the file that were logged before initializing the file handler
+    logger.addHandler(LogfileBufferHandler(100))
+
+
+def add_file_handler(log_name, log_dir):
+    """Create a file handler for the logger instance
+
+    :param str log_name: Name of the log file
+    :param str log_dir: Full path location
+    """
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)  # pragma: no cover
-    handler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
+    filehandler = logging.FileHandler(os.path.join(log_dir, log_name), "a")
+    filehandler.name = "file_handler"
     formatter = CustomFormatter("%(message)s")
+
+    # With a file we don't really need colors
+    # This might change in the future depending on customer requests
+    # or if we do something with UI work in the future that would be more
+    # helpful with colors
     formatter.disable_colors(True)
-    handler.setFormatter(formatter)
-    handler.setLevel(LogLevelFile.level)
-    logger.addHandler(handler)
+    filehandler.setFormatter(formatter)
+    filehandler.setLevel(LogLevelFile.level)
+    logger.addHandler(filehandler)
+
+    # We now have a FileHandler added, but we still need the logs from before
+    # this point. Luckily we have the memory buffer that we can flush logs from
+    for handler in logger.handlers:
+        if handler.name == "logfile_buffer_handler":
+            handler.flush()
+            # after we've flushed to the file we don't need the handler anymore
+            logger.removeHandler(handler)
+            break
 
 
 def should_disable_color_output():
     """
     Return whether NO_COLOR exists in environment parameter and is true.
 
-    See http://no-color.org/
+    See https://no-color.org/
     """
     if "NO_COLOR" in os.environ:
         NO_COLOR = os.environ["NO_COLOR"]

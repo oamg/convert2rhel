@@ -8,7 +8,7 @@ import pytest
 import six
 
 from convert2rhel import backup, cert, pkgmanager, redhatrelease, systeminfo, toolopts, utils
-from convert2rhel.logger import setup_logger_handler
+from convert2rhel.logger import add_file_handler, setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import MinimalRestorable
@@ -107,8 +107,12 @@ def pkg_root():
 
 
 @pytest.fixture(autouse=True)
-def setup_logger(tmpdir):
-    setup_logger_handler(log_name="convert2rhel", log_dir=str(tmpdir))
+def setup_logger(tmpdir, request):
+    # This makes it so we can skip this using @pytest.mark.noautofixtures
+    if "noautofixtures" in request.keywords:
+        return
+    setup_logger_handler()
+    add_file_handler(log_name="convert2rhel", log_dir=str(tmpdir))
 
 
 @pytest.fixture
