@@ -115,10 +115,18 @@ class ApplicationLock:
         :raises: ApplicationLockedError if the contents are corrupt
         """
         if os.path.exists(self._pidfile):
-            with open(self._pidfile, "r") as f:
-                file_contents = f.read()
             try:
+                with open(self._pidfile, "r") as f:
+                    file_contents = f.read()
                 pid = int(file_contents.rstrip())
+            except OSError as exc:
+                # This addresses a race condition in which another process
+                # deletes the lock file between our check that it exists
+                # and our attempt to read the contents.
+                # In Python 3 this could be changed to FileNotFoundError.
+                if exc.errno == errno.ENOENT:
+                    return None
+                raise exc
             except ValueError:
                 raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
             return pid
@@ -138,10 +146,23 @@ class ApplicationLock:
                 return False
         return True
 
+    def _safe_unlink(self):
+        """Unlink the lock file. If the unlink fails because the file
+        doesn't exist, swallow the exception; this avoids spurious
+        errors due to race conditions.
+        """
+        try:
+            os.unlink(self._pidfile)
+        except OSError as exc:
+            # In Python 3 this could be changed to FileNotFoundError.
+            if exc.errno == errno.ENOENT:
+                return
+            raise exc
+
     def try_to_lock(self):
-        """Try to get a lock on this application. If successful,
-        the application will be locked; the lock should be released
-        with unlock().
+        """Try to get a lock on this application. If this method does
+        not raise an Exception, the application will be locked and we
+        hold the lock; the lock should be released with unlock().
 
         If the file has unexpected contents, for safety we treat the
         application as locked, since it is probably the result of
@@ -159,22 +180,22 @@ class ApplicationLock:
         # The lock file was created by a process that has exited;
         # remove it and try again.
         loggerinst.info("Cleaning up lock held by exited process %d." % pid)
-        os.unlink(self._pidfile)
+        self._safe_unlink()
         if not self._try_create():
-            # Race condition: between the unlink and our attempt to
-            # create the lock file, another process got there first.
+            # Between the unlink and our attempt to create the lock
+            # file, another process got there first.
             raise ApplicationLockedError("%s is locked" % self._pidfile)
 
     def unlock(self):
         """Release the lock on this application.
 
-        Note that if the unlink fails (a pathological failure) the
-        object will stay locked and the OSError or other
+        Note that if the safe unlink fails (a pathological failure)
+        the object will stay locked and the OSError or other
         system-generated exception will be raised.
         """
         if not self.is_locked:
             return
-        os.unlink(self._pidfile)
+        self._safe_unlink()
         loggerinst.debug("%s." % self)
 
     def __enter__(self):
