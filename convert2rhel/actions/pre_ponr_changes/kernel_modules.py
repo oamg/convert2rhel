@@ -56,7 +56,9 @@ class EnsureKernelModulesCompatibility(actions.Action):
         lsmod_output, _ = run_subprocess(["/usr/sbin/lsmod"], print_output=False)
         modules = re.findall(r"^(\w+)\s.+$", lsmod_output, flags=re.MULTILINE)[1:]
         kernel_modules = [
-            self._get_kmod_comparison_key(run_subprocess(["modinfo", "-F", "filename", module], print_output=False)[0])
+            self._get_kmod_comparison_key(
+                run_subprocess(["/usr/sbin/modinfo", "-F", "filename", module], print_output=False)[0]
+            )
             for module in modules
         ]
         return set(kernel_modules)

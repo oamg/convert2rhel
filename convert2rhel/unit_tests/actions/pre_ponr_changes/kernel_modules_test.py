@@ -366,15 +366,15 @@ def test_get_loaded_kmods(ensure_kernel_modules_compatibility_instance, monkeypa
                 ),
             ),
             (
-                ("modinfo", "-F", "filename", "a"),
+                ("/usr/sbin/modinfo", "-F", "filename", "a"),
                 (MODINFO_STUB.split()[0] + "\n", 0),
             ),
             (
-                ("modinfo", "-F", "filename", "b"),
+                ("/usr/sbin/modinfo", "-F", "filename", "b"),
                 (MODINFO_STUB.split()[1] + "\n", 0),
             ),
             (
-                ("modinfo", "-F", "filename", "c"),
+                ("/usr/sbin/modinfo", "-F", "filename", "c"),
                 (MODINFO_STUB.split()[2] + "\n", 0),
             ),
         ),
