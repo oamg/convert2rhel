@@ -408,8 +408,8 @@ class TestCheckConvert2rhelLatest:
                     "package_version_qf": "C2R convert2rhel-0:0.17.0-1.el7.noarch",
                     "package_version_V": 0,
                     "pmajor": "6",
-                    "running_version": "0:0.17.1-1.el7",
-                    "latest_version": "0:0.17.0-1.el7",
+                    "running_version": "0.17.1",
+                    "latest_version": "0.17.0",
                 }
             ],
             [
