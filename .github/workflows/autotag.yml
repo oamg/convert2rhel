@@ -1,0 +1,30 @@
+name: Auto Tag
+
+on:
+  schedule:
+    - cron: "1 12 * * 5"
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Latest Tag
+        id: current_tag
+        run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        id: create_tag
+        run: echo "tag=${{ steps.current_tag.outputs.tag }}-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Push tag
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git tag ${{ steps.create_tag.outputs.tag  }}
+          git push origin ${{ steps.create_tag.outputs.tag }}
