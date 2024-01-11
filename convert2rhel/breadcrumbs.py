@@ -84,6 +84,7 @@ class Breadcrumbs:
         self._set_signature()
         self._set_source_os()
         self._set_started()
+        self._set_env()
 
     def finish_collection(self, success=False):
         """Set the final data for breadcrumbs after the conversion ends.
