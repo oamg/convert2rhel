@@ -18,7 +18,6 @@
 __metaclass__ = type
 
 import json
-import os
 
 import pytest
 import six
