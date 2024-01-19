@@ -125,6 +125,8 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(pkgmanager.Base, "do_transaction", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "transaction", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "sack", value=SackMock())
+        monkeypatch.setattr(pkgmanager.Base, "install", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.Base, "remove", value=mock.Mock())
 
     @centos8
     def test_set_up_base(self, pretend_os):
@@ -214,18 +216,22 @@ class TestDnfTransactionHandler:
         assert "Failed to populate repository metadata." in caplog.records[-1].message
 
     @centos8
-    def test_perform_operations(self, pretend_os, caplog, monkeypatch):
+    def test_perform_operations(self, pretend_os, monkeypatch):
+        swap_base_os_specific_packages = mock.Mock()
+
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkg_information",
             value=lambda: SYSTEM_PACKAGES,
         )
+        monkeypatch.setattr(DnfTransactionHandler, "_swap_base_os_specific_packages", swap_base_os_specific_packages)
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
         assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.Base.downgrade.call_count == 0
+        assert swap_base_os_specific_packages.call_count == 1
 
     @centos8
     def test_package_marked_for_update(self, pretend_os, monkeypatch):
@@ -277,7 +283,7 @@ class TestDnfTransactionHandler:
 
         assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.Base.downgrade.call_count == len(SYSTEM_PACKAGES)
-        assert "not available in RHEL repositories" in caplog.records[-1].message
+        assert "not available in RHEL repositories" in caplog.text
 
     @centos8
     def test_resolve_dependencies(self, pretend_os, caplog, monkeypatch):
@@ -364,3 +370,35 @@ class TestDnfTransactionHandler:
         assert instance._perform_operations.call_count == 1
         assert instance._resolve_dependencies.call_count == 1
         assert instance._process_transaction.call_count == 1
+
+    @centos8
+    @pytest.mark.parametrize(
+        ("installed_pkgs", "swap_pkgs", "swaps"),
+        (
+            (["pkg0", "pkg1"], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 2),
+            (["pkg1"], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 1),
+            ([], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 0),
+            (["pkg0", "pkg1", "pkg2"], {}, 0),
+            ([], {}, 0),
+        ),
+    )
+    def test_swap_base_os_specific_packages(
+        self, monkeypatch, installed_pkgs, swap_pkgs, _mock_dnf_api_calls, pretend_os, swaps
+    ):
+        def return_installed(pkg):
+            """Dynamically change the return value."""
+            return True if pkg in installed_pkgs else False
+
+        is_rpm_installed = mock.Mock(side_effect=return_installed)
+
+        monkeypatch.setattr(system_info, "is_rpm_installed", value=is_rpm_installed)
+        monkeypatch.setattr(system_info, "swap_pkgs", value=swap_pkgs)
+
+        instance = DnfTransactionHandler()
+        # Need to setup the base, in the production code it's done in upper level
+        instance._set_up_base()
+
+        instance._swap_base_os_specific_packages()
+
+        assert pkgmanager.Base.install.call_count == swaps
+        assert pkgmanager.Base.remove.call_count == swaps

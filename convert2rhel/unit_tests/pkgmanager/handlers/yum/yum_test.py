@@ -107,6 +107,8 @@ class TestYumTransactionHandler:
         monkeypatch.setattr(pkgmanager.YumBase, "downgrade", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.YumBase, "resolveDeps", value=mock.Mock(return_value=(0, "Success.")))
         monkeypatch.setattr(pkgmanager.YumBase, "processTransaction", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.YumBase, "install", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.YumBase, "remove", value=mock.Mock())
 
     @centos7
     def test_set_up_base(self, pretend_os):
@@ -143,8 +145,11 @@ class TestYumTransactionHandler:
         assert pkgmanager.RepoStorage.disableRepo.called_once()
 
     @centos7
-    def test_perform_operations(self, pretend_os, caplog, monkeypatch):
+    def test_perform_operations(self, pretend_os, monkeypatch):
+        swap_base_os_specific_packages = mock.Mock()
+
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
+        monkeypatch.setattr(YumTransactionHandler, "_swap_base_os_specific_packages", swap_base_os_specific_packages)
         instance = YumTransactionHandler()
 
         instance._perform_operations()
@@ -152,6 +157,7 @@ class TestYumTransactionHandler:
         assert pkgmanager.YumBase.update.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.YumBase.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.YumBase.downgrade.call_count == 0
+        assert swap_base_os_specific_packages.call_count == 1
 
     @centos7
     def test_perform_operations_reinstall_exception(self, pretend_os, caplog, monkeypatch):
@@ -176,7 +182,7 @@ class TestYumTransactionHandler:
 
         assert pkgmanager.YumBase.reinstall.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.YumBase.downgrade.call_count == len(SYSTEM_PACKAGES)
-        assert "not available in RHEL repositories." in caplog.records[-1].message
+        assert "not available in RHEL repositories." in caplog.text
 
     @centos7
     def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, monkeypatch):
@@ -323,6 +329,38 @@ class TestYumTransactionHandler:
         assert pkgmanager.YumBase.update.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.YumBase.reinstall.call_count == 0
         assert pkgmanager.YumBase.downgrade.call_count == 0
+
+    @centos7
+    @pytest.mark.parametrize(
+        ("installed_pkgs", "swap_pkgs", "swaps"),
+        (
+            (["pkg0", "pkg1"], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 2),
+            (["pkg1"], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 1),
+            ([], {"pkg0": "new_pkg0", "pkg1": "new_pkg1"}, 0),
+            (["pkg0", "pkg1", "pkg2"], {}, 0),
+            ([], {}, 0),
+        ),
+    )
+    def test_swap_base_os_specific_packages(
+        self, monkeypatch, installed_pkgs, swap_pkgs, _mock_yum_api_calls, pretend_os, swaps
+    ):
+        def return_installed(pkg):
+            """Dynamically change the return value."""
+            return True if pkg in installed_pkgs else False
+
+        is_rpm_installed = mock.Mock(side_effect=return_installed)
+
+        monkeypatch.setattr(system_info, "is_rpm_installed", value=is_rpm_installed)
+        monkeypatch.setattr(system_info, "swap_pkgs", value=swap_pkgs)
+
+        instance = YumTransactionHandler()
+        # Need to setup the base, in the production code it's done in upper level
+        instance._set_up_base()
+
+        instance._swap_base_os_specific_packages()
+
+        assert pkgmanager.YumBase.remove.call_count == swaps
+        assert pkgmanager.YumBase.install.call_count == swaps
 
 
 @centos7

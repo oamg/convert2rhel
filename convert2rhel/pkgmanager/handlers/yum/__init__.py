@@ -163,6 +163,26 @@ class YumTransactionHandler(TransactionHandlerBase):
                 diagnosis="Loading repository metadata failed with error %s." % (str(e)),
             )
 
+    def _swap_base_os_specific_packages(self):
+        """Swap base os specific packages for their RHEL counterparts in the transaction.
+
+        Some packages need to be manually injected in the transaction as a
+        "swap", since those packages are not always able to be installed
+        automatically by yum if they don't exist in the system anymore, this
+        can cause problems during the transaction as missing dependencies.
+        """
+        # Related issue: https://issues.redhat.com/browse/RHELC-1130, see comments
+        # to get more proper description of solution
+        for old_package, new_package in system_info.swap_pkgs.items():
+            loggerinst.debug("Checking if %s installed for later swap." % old_package)
+            is_installed = system_info.is_rpm_installed(old_package)
+            if is_installed:
+                loggerinst.debug("Package %s will be swapped to %s during conversion." % (old_package, new_package))
+                # Order of operations based on YUM implementation of swap:
+                # https://github.com/rpm-software-management/yum/blob/master/yumcommands.py#L3488
+                self._base.remove(pattern=old_package)
+                self._base.install(pattern=new_package)
+
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
 
@@ -187,7 +207,6 @@ class YumTransactionHandler(TransactionHandlerBase):
                 # being outdated in the system after the conversion.
                 if can_update:
                     continue
-
                 try:
                     self._base.reinstall(pattern=pkg)
                 except (pkgmanager.Errors.ReinstallInstallError, pkgmanager.Errors.ReinstallRemoveError):
@@ -199,6 +218,10 @@ class YumTransactionHandler(TransactionHandlerBase):
                         pkgmanager.Errors.DowngradeError,
                     ):
                         loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
+
+            # Swapping the packages needs to be after the operations
+            # If not, swapped packages are removed from transaction as obsolete
+            self._swap_base_os_specific_packages()
         except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical_no_exit("There are no suitable mirrors available for the loaded repositories.")

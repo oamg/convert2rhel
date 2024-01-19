@@ -407,3 +407,61 @@ def test_print_system_information(pretend_os, caplog):
     assert "8.5" in caplog.records[-3].message
     assert "x86_64" in caplog.records[-2].message
     assert "centos-8-x86_64.cfg" in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("file_content", "expected", "message"),
+    (
+        (
+            """
+[system_info]
+swap_pkgs =
+  centos-logos | redhat-logos
+  centos-indexhtml | redhat-indexhtml
+
+""",
+            {"centos-indexhtml": "redhat-indexhtml", "centos-logos": "redhat-logos"},
+            "",
+        ),
+        (
+            """
+[system_info]
+swap_pkgs =
+""",
+            {},
+            "Leaving the swap package list empty. No packages defined.",
+        ),
+        (
+            """
+[system_info]
+swap_pkgs =
+    centos-logos | redhat-logos
+    centos-logos | redhat-logos2
+""",
+            {"centos-logos": "redhat-logos2"},
+            "Old package centos-logos will be swapped by redhat-logos2 instead of redhat-logos.",
+        ),
+        (
+            """
+[system_info]
+""",
+            {},
+            "Leaving the swap package list empty. Missing swap_pkgs key in configuration file.",
+        ),
+    ),
+)
+def test_get_swap_pkgs(monkeypatch, file_content, tmpdir, expected, message, caplog):
+    cfg_filename = "test.cfg"
+    cfg_path = tmpdir.mkdir("configs").join(cfg_filename)
+    cfg_path.write(file_content)
+
+    monkeypatch.setattr(utils, "DATA_DIR", str(tmpdir))
+    monkeypatch.setattr(system_info, "cfg_filename", cfg_filename)
+    monkeypatch.setattr(system_info, "cfg_content", system_info._get_cfg_content())
+
+    assert system_info._get_swap_pkgs() == expected
+
+    if message:
+        assert message in caplog.text
+    else:
+        assert "" == caplog.text

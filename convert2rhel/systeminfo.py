@@ -93,6 +93,8 @@ class SystemInfo:
         self.eus_system = None
         # Packages to be removed before the system conversion
         self.excluded_pkgs = []
+        # Packages that need to perform a swap in the transaction
+        self.swap_pkgs = {}
         # Release packages to be removed before the system conversion
         self.repofile_pkgs = []
         self.cfg_filename = None
@@ -124,6 +126,7 @@ class SystemInfo:
         self.cfg_filename = self._get_cfg_filename()
         self.cfg_content = self._get_cfg_content()
         self.excluded_pkgs = self._get_excluded_pkgs()
+        self.swap_pkgs = self._get_swap_pkgs()
         self.repofile_pkgs = self._get_repofile_pkgs()
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
@@ -250,6 +253,36 @@ class SystemInfo:
 
     def _get_excluded_pkgs(self):
         return self._get_cfg_opt("excluded_pkgs").split()
+
+    def _get_swap_pkgs(self):
+        pkgs_to_swap = {}
+
+        try:
+            lines = self._get_cfg_opt("swap_pkgs").strip().split("\n")
+            for line in lines:
+                old_package, new_package = tuple(line.split("|"))
+
+                old_package = old_package.strip()
+                new_package = new_package.strip()
+
+                if old_package in pkgs_to_swap:
+                    self.logger.warning(
+                        "Package {old_package} redefined in swap packages list.\n"
+                        "Old package {old_package} will be swapped by {newest_package} instead of {new_package}.".format(
+                            old_package=old_package, new_package=pkgs_to_swap[old_package], newest_package=new_package
+                        )
+                    )
+                pkgs_to_swap.update({old_package: new_package})
+
+        except ValueError:
+            # Leave the swap packages dict empty, packages for swap aren't defined
+            self.logger.debug("Leaving the swap package list empty. No packages defined.")
+
+        except AttributeError:
+            # Leave the swap packages dict empty, missing swap_pkgs in config file
+            self.logger.warning("Leaving the swap package list empty. Missing swap_pkgs key in configuration file.")
+
+        return pkgs_to_swap
 
     def _get_repofile_pkgs(self):
         return self._get_cfg_opt("repofile_pkgs").split()
