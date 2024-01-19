@@ -59,3 +59,16 @@ class CriticalError(Exception):
             self.remediation,
             self.variables,
         )
+
+
+class UnableToSerialize(Exception):
+    """
+    Internal class that is used to declare that a object was not able to be
+    serialized with Pickle inside the Process subclass.
+    """
+
+    pass
+
+
+class ImportGPGKeyError(Exception):
+    """Raised for failures during the rpm import of gpg keys."""
