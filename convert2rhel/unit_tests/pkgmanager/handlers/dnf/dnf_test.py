@@ -119,7 +119,7 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(pkgmanager.Base, "fill_sack", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "upgrade", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "reinstall", value=mock.Mock())
-        monkeypatch.setattr(pkgmanager.Base, "downgrade", value=mock.Mock())
+        monkeypatch.setattr(pkgmanager.Base, "downgrade_to", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "resolve", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "download_packages", value=mock.Mock())
         monkeypatch.setattr(pkgmanager.Base, "do_transaction", value=mock.Mock())
@@ -230,8 +230,8 @@ class TestDnfTransactionHandler:
         instance._perform_operations()
 
         assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
-        assert pkgmanager.Base.downgrade.call_count == 0
         assert swap_base_os_specific_packages.call_count == 1
+        assert pkgmanager.Base.downgrade_to.call_count == 0
 
     @centos8
     def test_package_marked_for_update(self, pretend_os, monkeypatch):
@@ -249,7 +249,7 @@ class TestDnfTransactionHandler:
 
         assert pkgmanager.Base.upgrade.call_count == len(SYSTEM_PACKAGES)
         assert pkgmanager.Base.reinstall.call_count == 0
-        assert pkgmanager.Base.downgrade.call_count == 0
+        assert pkgmanager.Base.downgrade_to.call_count == 0
 
     @centos8
     def test_perform_operations_reinstall_exception(self, pretend_os, caplog, monkeypatch):
@@ -264,7 +264,7 @@ class TestDnfTransactionHandler:
         instance._perform_operations()
 
         assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
-        assert pkgmanager.Base.downgrade.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.Base.downgrade_to.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos8
@@ -275,14 +275,14 @@ class TestDnfTransactionHandler:
             value=lambda: SYSTEM_PACKAGES,
         )
         pkgmanager.Base.reinstall.side_effect = pkgmanager.exceptions.PackagesNotAvailableError
-        pkgmanager.Base.downgrade.side_effect = pkgmanager.exceptions.PackagesNotInstalledError
+        pkgmanager.Base.downgrade_to.side_effect = pkgmanager.exceptions.PackagesNotInstalledError
 
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._perform_operations()
 
         assert pkgmanager.Base.reinstall.call_count == len(SYSTEM_PACKAGES)
-        assert pkgmanager.Base.downgrade.call_count == len(SYSTEM_PACKAGES)
+        assert pkgmanager.Base.downgrade_to.call_count == len(SYSTEM_PACKAGES)
         assert "not available in RHEL repositories" in caplog.text
 
     @centos8
