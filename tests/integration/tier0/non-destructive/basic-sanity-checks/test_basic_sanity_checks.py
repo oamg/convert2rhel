@@ -23,7 +23,7 @@ def test_check_user_privileges(shell):
     # Check the program exits as it is required to be run by root
     assert result.returncode != 0
     # Check the program exits for the correct reason
-    assert "The tool needs to be run under the root user.\n" "\n" "No changes were made to the system." in result.output
+    assert "The tool needs to be run under the root user.\nNo changes were made to the system." in result.output
     # Delete testuser (if present)
     assert shell(f"userdel -r '{user}'").returncode == 0
 
