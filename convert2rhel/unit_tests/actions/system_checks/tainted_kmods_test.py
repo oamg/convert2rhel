@@ -73,7 +73,7 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
             diagnosis=(
                 "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                 "components are not supported per our software support"
-                " policy:\n %s\n" % LINK_KMODS_RH_POLICY
+                " policy:\n%s\n" % LINK_KMODS_RH_POLICY
             ),
             remediations=(
                 "Prevent the modules from loading by following {0}"
@@ -129,7 +129,7 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                     diagnosis=(
                         "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                         "components are not supported per our software support"
-                        " policy:\n %s\n" % LINK_KMODS_RH_POLICY
+                        " policy:\n%s\n" % LINK_KMODS_RH_POLICY
                     ),
                     remediations=(
                         "Prevent the modules from loading by following {0}"
@@ -151,5 +151,7 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                 ),
             )
         )
+        print(expected)
+        print(tainted_kmods_action.messages)
         assert expected.issuperset(tainted_kmods_action.messages)
         assert expected.issubset(tainted_kmods_action.messages)

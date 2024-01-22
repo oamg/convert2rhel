@@ -47,7 +47,7 @@ class TaintedKmods(actions.Action):
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         tainted_kmods_skip = os.environ.get("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP", None)
         diagnosis = (
-            "Tainted kernel modules detected:\n{0}\n"
+            "Tainted kernel modules detected:\n  {0}\n"
             "Third-party components are not supported per our "
             "software support policy:\n{1}\n".format(module_names, LINK_KMODS_RH_POLICY)
         )
@@ -72,7 +72,7 @@ class TaintedKmods(actions.Action):
                     ),
                 )
                 return
-                
+
             self.add_message(
                 level="WARNING",
                 id="SKIP_TAINTED_KERNEL_MODULE_CHECK",
