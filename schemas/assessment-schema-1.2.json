@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/oamg/convert2rhel/main/schemas/assessment-schema-1.1.json",
+    "$id": "https://raw.githubusercontent.com/oamg/convert2rhel/main/schemas/assessment-schema-1.2.json",
     "title": "Convert2rhel Assessment Schema",
     "description": "Convert2rhel analyzes the system to determine suitability for conversions before it actually starts to convert the system.  This schema defines the format that would be used.",
     "type": "object",
