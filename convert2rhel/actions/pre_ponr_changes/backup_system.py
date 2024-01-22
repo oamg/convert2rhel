@@ -63,7 +63,7 @@ class BackupRedhatRelease(actions.Action):
                 title=e.title,
                 description=e.description,
                 diagnosis=e.diagnosis,
-                remediation=e.remediation,
+                remediations=e.remediations,
                 variables=e.variables,
             )
 

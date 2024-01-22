@@ -11,7 +11,7 @@ from pexpect import EOF
 
 PRE_CONVERSION_REPORT_JSON = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
 PRE_CONVERSION_REPORT_TXT = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
-PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.1.json")
+PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.2.json")
 
 
 def _validate_report():

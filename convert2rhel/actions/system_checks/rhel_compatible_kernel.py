@@ -75,7 +75,7 @@ class RhelCompatibleKernel(actions.Action):
                         "The booted kernel version is incompatible with the standard RHEL kernel. %s"
                         % bad_kernel_message
                     ),
-                    remediation=(
+                    remediations=(
                         "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
                         " by executing the following steps:\n\n"
                         "1. Ensure that the {0} {1} base repository is enabled\n"

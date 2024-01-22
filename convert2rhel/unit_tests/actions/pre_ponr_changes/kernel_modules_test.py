@@ -318,7 +318,7 @@ def test_ensure_compatibility_of_kmods_excluded(
             title="Unsupported kernel modules",
             description="Unsupported kernel modules were found",
             diagnosis="The following loaded kernel modules are not available in RHEL:",
-            remediation="Ensure you have updated the kernel to the latest available version and rebooted the system.",
+            remediations="Ensure you have updated the kernel to the latest available version and rebooted the system.",
         )
     else:
         ensure_kernel_modules_compatibility_instance.run()
@@ -696,7 +696,7 @@ def test_kernel_modules_rhel_kernel_module_not_found_error(ensure_kernel_modules
         title="No RHEL kernel modules were found",
         description="This check was unable to find any kernel modules in the packages in the enabled yum repositories.",
         diagnosis="No packages containing kernel modules available in the enabled repositories",
-        remediation="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
+        remediations="Adding additional repositories to those mentioned in the diagnosis may solve this issue.",
     )
 
 

@@ -130,7 +130,7 @@ class TestIsLoadedKernelLatest:
             % fake_reposdir_path,
             diagnosis="The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
             % fake_reposdir_path,
-            remediation="To proceed with the conversion, update the kernel version by executing the following step:\n\n",
+            remediations="To proceed with the conversion, update the kernel version by executing the following step:\n\n",
         )
 
     @pytest.mark.parametrize(
@@ -142,7 +142,7 @@ class TestIsLoadedKernelLatest:
             "title",
             "description",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             (
@@ -179,7 +179,7 @@ class TestIsLoadedKernelLatest:
         title,
         description,
         diagnosis,
-        remediation,
+        remediations,
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
@@ -219,7 +219,7 @@ class TestIsLoadedKernelLatest:
             title=title,
             description=description,
             diagnosis=diagnosis,
-            remediation=remediation,
+            remediations=remediations,
         )
 
     @pytest.mark.parametrize(
@@ -231,7 +231,7 @@ class TestIsLoadedKernelLatest:
             "title",
             "description",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             (
@@ -268,7 +268,7 @@ class TestIsLoadedKernelLatest:
         title,
         description,
         diagnosis,
-        remediation,
+        remediations,
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
@@ -309,7 +309,7 @@ class TestIsLoadedKernelLatest:
             title=title,
             description=description,
             diagnosis=diagnosis,
-            remediation=remediation,
+            remediations=remediations,
         )
 
     @centos8
@@ -369,7 +369,7 @@ class TestIsLoadedKernelLatest:
                     title="Skipping the is loaded kernel latest check",
                     description="Skipping the check as no internet connection has been detected.",
                     diagnosis=None,
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -390,7 +390,7 @@ class TestIsLoadedKernelLatest:
             "title",
             "description",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             pytest.param(
@@ -437,7 +437,7 @@ class TestIsLoadedKernelLatest:
         title,
         description,
         diagnosis,
-        remediation,
+        remediations,
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
@@ -479,7 +479,7 @@ class TestIsLoadedKernelLatest:
                     title=title,
                     description=description,
                     diagnosis=diagnosis,
-                    remediation=remediation,
+                    remediations=remediations,
                 ),
             )
         )
@@ -497,7 +497,7 @@ class TestIsLoadedKernelLatest:
             "title",
             "description",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             pytest.param(
@@ -520,7 +520,7 @@ class TestIsLoadedKernelLatest:
         package_name,
         title,
         description,
-        remediation,
+        remediations,
         diagnosis,
         monkeypatch,
         is_loaded_kernel_latest_action,
@@ -558,7 +558,7 @@ class TestIsLoadedKernelLatest:
             title=title,
             description=description,
             diagnosis=diagnosis,
-            remediation=remediation,
+            remediations=remediations,
         )
 
     @pytest.mark.parametrize(
@@ -721,5 +721,5 @@ class TestIsLoadedKernelLatest:
             title="Invalid kernel version detected",
             description="The loaded kernel version mismatch the latest one available in the enabled system repositories",
             diagnosis="The version of the loaded kernel is different from the latest version in the enabled system repositories.",
-            remediation="To proceed with the conversion, update the kernel version by executing the following step:",
+            remediations="To proceed with the conversion, update the kernel version by executing the following step:",
         )

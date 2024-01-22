@@ -132,7 +132,7 @@ def get_combined_results_and_message(results):
             "level": action_value["result"]["level"],
             "title": action_value["result"]["title"],
             "description": action_value["result"]["description"],
-            "remediation": action_value["result"]["remediation"],
+            "remediations": action_value["result"]["remediations"],
             "diagnosis": action_value["result"]["diagnosis"],
             "variables": action_value["result"]["variables"],
         }
@@ -141,7 +141,7 @@ def get_combined_results_and_message(results):
                 "level": message["level"],
                 "title": message["title"],
                 "description": message["description"],
-                "remediation": message["remediation"],
+                "remediations": message["remediations"],
                 "diagnosis": message["diagnosis"],
                 "variables": message["variables"],
             }
@@ -165,7 +165,7 @@ def summary(results, include_all_reports=False, disable_colors=False):
                         "title": "" or "$title",
                         "description": "" or "$description",
                         "diagnosis": "" or "$diagnosis",
-                        "remediation": "" or "$remediation",
+                        "remediations": "" or "$remediations",
                         "variables": None or "$variables",
                     }
                 ],
@@ -175,7 +175,7 @@ def summary(results, include_all_reports=False, disable_colors=False):
                     "title": "" or "$title",
                     "description": "" or "$description",
                     "diagnosis": "" or "$diagnosis",
-                    "remediation": "" or "$remediation",
+                    "remediations": "" or "$remediations",
                     "variables": None or "$variables",
                 }
             },

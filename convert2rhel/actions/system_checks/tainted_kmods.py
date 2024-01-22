@@ -54,7 +54,7 @@ class TaintedKmods(actions.Action):
                     "Third-party components are not supported per our "
                     "software support policy:\n {1}\n".format(module_names, LINK_KMODS_RH_POLICY)
                 ),
-                remediation=(
+                remediations=(
                     "Prevent the modules from loading by following {0}"
                     " and run convert2rhel again to continue with the conversion.".format(
                         LINK_PREVENT_KMODS_FROM_LOADING

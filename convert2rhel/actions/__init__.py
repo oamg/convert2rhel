@@ -225,9 +225,9 @@ class Action:
 
         self._result = action_message
 
-    def set_result(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
+    def set_result(self, level, id, title="", description="", diagnosis="", remediations="", variables=None):
         """
-        Helper method that sets the resulting values for level, id, title, description, diagnosis and remediation.
+        Helper method that sets the resulting values for level, id, title, description, diagnosis and remediations.
 
         :param id: The id to identify the result.
         :type id: str
@@ -239,17 +239,17 @@ class Action:
         :type description: str
         :param diagnosis: The outline of the issue found.
         :type diagnosis: str | None
-        :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str | None
+        :param remediations: The steps that can be taken to resolve the issue.
+        :type remediations: str | None
         :param variables: Variables to interpolate in other fields.
         :type variables: dict[str, str] | None
         """
         if level not in ("ERROR", "OVERRIDABLE", "SKIP", "SUCCESS"):
             raise KeyError("The level of result must be FAILURE, OVERRIDABLE, SKIP, or SUCCESS.")
 
-        self.result = ActionResult(level, id, title, description, diagnosis, remediation, variables)
+        self.result = ActionResult(level, id, title, description, diagnosis, remediations, variables)
 
-    def add_message(self, level, id, title="", description="", diagnosis="", remediation="", variables=None):
+    def add_message(self, level, id, title="", description="", diagnosis="", remediations="", variables=None):
         """
         Helper method that adds a new informational message to display to the user.
         The passed in values for level, id and message of a warning or info log message are
@@ -265,12 +265,12 @@ class Action:
         :type description: str
         :param diagnosis: The outline of the issue found.
         :type diagnosis: str | None
-        :param remediation: The steps that can be taken to resolve the issue.
-        :type remediation: str | None
+        :param remediations: The steps that can be taken to resolve the issue.
+        :type remediations: str | None
         :param variables: Variables to interpolate in other fields.
         :type variables: dict[str, str] | None
         """
-        msg = ActionMessage(level, id, title, description, diagnosis, remediation, variables)
+        msg = ActionMessage(level, id, title, description, diagnosis, remediations, variables)
         self.messages.append(msg)
 
 
@@ -289,14 +289,14 @@ class ActionMessageBase:
     :type description: str
     :keyword diagnosis: The diagnosis to be set.
     :type diagnosis: str | None
-    :keyword remediation: The remediation to be set.
-    :type remediation: str | None
+    :keyword remediations: The remediations to be set.
+    :type remediations: str | None
     :keyword variables: The variables to be set.
     :type variables: dict[str,str] | None
     """
 
     def __init__(
-        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediations="", variables=None
     ):
         # Note, a common programming mistake to affect this base class is for
         # subclasses to pass None as a default value instead of empty string.
@@ -309,7 +309,7 @@ class ActionMessageBase:
         self.title = title or ""
         self.description = description or ""
         self.diagnosis = diagnosis or ""
-        self.remediation = remediation or ""
+        self.remediations = remediations or ""
 
         if variables is None:
             variables = {}
@@ -321,17 +321,17 @@ class ActionMessageBase:
         return False
 
     def __hash__(self):
-        return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediation))
+        return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediations))
 
     def __repr__(self):
-        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediation=%s, variables=%s)" % (
+        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediations=%s, variables=%s)" % (
             self.__class__.__name__,
             _STATUS_NAME_FROM_CODE[self.level],
             self.id,
             self.title,
             self.description,
             self.diagnosis,
-            self.remediation,
+            self.remediations,
             self.variables,
         )
 
@@ -347,7 +347,7 @@ class ActionMessageBase:
             "title": self.title,
             "description": self.description,
             "diagnosis": self.diagnosis,
-            "remediation": self.remediation,
+            "remediations": self.remediations,
             "variables": self.variables,
         }
 
@@ -357,7 +357,7 @@ class ActionMessage(ActionMessageBase):
     A class that defines the contents and rules for messages set through :meth:`Action.add_message`.
     """
 
-    def __init__(self, level="", id="", title="", description="", diagnosis="", remediation="", variables=None):
+    def __init__(self, level="", id="", title="", description="", diagnosis="", remediations="", variables=None):
         if not (id and level and title and description):
             raise InvalidMessageError("Messages require id, level, title and description fields")
 
@@ -366,7 +366,7 @@ class ActionMessage(ActionMessageBase):
         if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
             raise InvalidMessageError("Invalid level '%s', set for a non-result message" % level)
 
-        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediation, variables)
+        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediations, variables)
 
 
 class ActionResult(ActionMessageBase):
@@ -375,12 +375,12 @@ class ActionResult(ActionMessageBase):
     """
 
     def __init__(
-        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation="", variables=None
+        self, level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediations="", variables=None
     ):
         if level == "SUCCESS":
-            if description or diagnosis or remediation:
+            if description or diagnosis or remediations:
                 raise InvalidMessageError(
-                    "Success results cannot have description, diagnosis or remediation fields set"
+                    "Success results cannot have description, diagnosis or remediations fields set"
                 )
         if not id:
             raise InvalidMessageError("Results require the id field")
@@ -395,7 +395,7 @@ class ActionResult(ActionMessageBase):
                 "Invalid level '%s', the level for result must be SKIP or more fatal or SUCCESS." % level
             )
 
-        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediation, variables)
+        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediations, variables)
 
 
 def get_actions(actions_path, prefix):
@@ -559,7 +559,7 @@ class Stage:
                     title="Skipped action",
                     description="This action was skipped due to another action failing.",
                     diagnosis=diagnosis,
-                    remediation="Please ensure that the %s check passes so that this Action can evaluate your system"
+                    remediations="Please ensure that the %s check passes so that this Action can evaluate your system"
                     % utils.format_sequence_as_message(failed_deps),
                 )
                 skips.append(action)
@@ -753,7 +753,7 @@ def level_for_combined_action_data(message):
 
 def find_actions_of_severity(results, severity, key):
     """
-    Filter results from :func:`run_actions` to include only results of ``severity`` or higher.
+    Filter results from p:func:`run_actions` to include only results of ``severity`` or higher.
 
     :param results: Results dictionary as returned by :func:`run_actions`
     :type results: Mapping
@@ -810,8 +810,8 @@ def format_action_status_message(status_code, action_id, id, result):
     diagnosis = result["diagnosis"] if result["diagnosis"] else default_message
     template += " Diagnosis: {DIAGNOSIS}\n"
 
-    remediation = result["remediation"] if result["remediation"] else default_message
-    template += " Remediation: {REMEDIATION}\n"
+    remediations = result["remediations"] if result["remediations"] else default_message
+    template += " Remediations: {REMEDIATIONS}\n"
 
     return template.format(
         LEVEL=level_name,
@@ -820,5 +820,5 @@ def format_action_status_message(status_code, action_id, id, result):
         TITLE=title,
         DESCRIPTION=description,
         DIAGNOSIS=diagnosis,
-        REMEDIATION=remediation,
+        REMEDIATIONS=remediations,
     )

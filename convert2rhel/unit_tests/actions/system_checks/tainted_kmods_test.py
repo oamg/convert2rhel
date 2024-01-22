@@ -65,7 +65,7 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
             title="Tainted kernel modules detected",
             description="Please refer to the diagnosis for further information",
             diagnosis="Tainted kernel modules detected:\n  system76_io\n",
-            remediation=(
+            remediations=(
                 "Prevent the modules from loading by following {0}"
                 " and run convert2rhel again to continue with the conversion.".format(
                     tainted_kmods.LINK_PREVENT_KMODS_FROM_LOADING

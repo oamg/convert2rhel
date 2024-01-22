@@ -90,7 +90,7 @@ class TestPreSubscription:
                     title="Pre-subscription check skip",
                     description="Detected --no-rhsm option. Skipping.",
                     diagnosis=None,
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -177,7 +177,7 @@ class TestPreSubscription:
             ),
         ),
     )
-    def test_pre_subscription_exceptions_with_remediation(
+    def test_pre_subscription_exceptions_with_remediations(
         self, exception, expected_level, pre_subscription_instance, monkeypatch
     ):
         # In the actual code, the exceptions can happen at different stages, but
@@ -188,7 +188,7 @@ class TestPreSubscription:
 
         pre_subscription_instance.run()
 
-        level, id, title, description, diagnosis, remediation = expected_level
+        level, id, title, description, diagnosis, remediations = expected_level
         unit_tests.assert_actions_result(
             pre_subscription_instance,
             level=level,
@@ -239,7 +239,7 @@ class TestSubscribeSystem:
                     title="Subscription check skip",
                     description="Detected --no-rhsm option. Skipping.",
                     diagnosis=None,
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )

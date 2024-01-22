@@ -59,7 +59,7 @@ class TestAction:
             # Set one result field
             (
                 dict(level="SUCCESS", id="SUCCESS"),
-                dict(level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediation=""),
+                dict(level="SUCCESS", id="SUCCESS", title="", description="", diagnosis="", remediations=""),
             ),
             # Set all result fields
             (
@@ -69,7 +69,7 @@ class TestAction:
                     title="Problem detected",
                     description="problem",
                     diagnosis="detected",
-                    remediation="move on",
+                    remediations="move on",
                 ),
                 dict(
                     level="ERROR",
@@ -77,7 +77,7 @@ class TestAction:
                     title="Problem detected",
                     description="problem",
                     diagnosis="detected",
-                    remediation="move on",
+                    remediations="move on",
                 ),
             ),
         ),
@@ -94,7 +94,7 @@ class TestAction:
         assert action.result.title == expected["title"]
         assert action.result.description == expected["description"]
         assert action.result.diagnosis == expected["diagnosis"]
-        assert action.result.remediation == expected["remediation"]
+        assert action.result.remediations == expected["remediations"]
 
     @pytest.mark.parametrize(
         ("level", "id"),
@@ -141,7 +141,7 @@ class TestAction:
             title="warning message 1",
             description="action warning",
             diagnosis="user warning",
-            remediation="move on",
+            remediations="move on",
         )
         action.add_message(
             level="WARNING",
@@ -149,7 +149,7 @@ class TestAction:
             title="warning message 2",
             description="action warning",
             diagnosis="user warning",
-            remediation="move on",
+            remediations="move on",
         )
         action.add_message(
             level="INFO",
@@ -157,7 +157,7 @@ class TestAction:
             title="info message 1",
             description="action info",
             diagnosis="user info",
-            remediation="move on",
+            remediations="move on",
         )
         action.add_message(
             level="INFO",
@@ -165,7 +165,7 @@ class TestAction:
             title="info message 2",
             description="action info",
             diagnosis="user info",
-            remediation="move on",
+            remediations="move on",
         )
         actual_messages = []
         for msg in action.messages:
@@ -177,7 +177,7 @@ class TestAction:
                 "title": "warning message 1",
                 "description": "action warning",
                 "diagnosis": "user warning",
-                "remediation": "move on",
+                "remediations": "move on",
                 "variables": {},
             },
             {
@@ -186,7 +186,7 @@ class TestAction:
                 "title": "warning message 2",
                 "description": "action warning",
                 "diagnosis": "user warning",
-                "remediation": "move on",
+                "remediations": "move on",
                 "variables": {},
             },
             {
@@ -195,7 +195,7 @@ class TestAction:
                 "title": "info message 1",
                 "description": "action info",
                 "diagnosis": "user info",
-                "remediation": "move on",
+                "remediations": "move on",
                 "variables": {},
             },
             {
@@ -204,7 +204,7 @@ class TestAction:
                 "title": "info message 2",
                 "description": "action info",
                 "diagnosis": "user info",
-                "remediation": "move on",
+                "remediations": "move on",
                 "variables": {},
             },
         ]
@@ -746,7 +746,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     )
@@ -783,7 +783,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -795,7 +795,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -815,7 +815,7 @@ class TestRunActions:
                                 title="Error",
                                 description="Action error",
                                 diagnosis="User error",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -830,7 +830,7 @@ class TestRunActions:
                             title="Error",
                             description="Action error",
                             diagnosis="User error",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -849,7 +849,7 @@ class TestRunActions:
                                 title="Overridable",
                                 description="Action overridable",
                                 diagnosis="User overridable",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -864,7 +864,7 @@ class TestRunActions:
                             title="Overridable",
                             description="Action overridable",
                             diagnosis="User overridable",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -884,7 +884,7 @@ class TestRunActions:
                                 title="Skip",
                                 description="Action skip",
                                 diagnosis="User skip",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -898,7 +898,7 @@ class TestRunActions:
                             title="Skip",
                             description="Action skip",
                             diagnosis="User skip",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -920,7 +920,7 @@ class TestRunActions:
                                 title="Error",
                                 description="Action error",
                                 diagnosis="User error",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -934,7 +934,7 @@ class TestRunActions:
                                 title="Skip",
                                 description="Action skip",
                                 diagnosis="User skip",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -948,7 +948,7 @@ class TestRunActions:
                             title="Error",
                             description="Action error",
                             diagnosis="User error",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -960,7 +960,7 @@ class TestRunActions:
                             title="Skip",
                             description="Action skip",
                             diagnosis="User skip",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -972,7 +972,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -1005,7 +1005,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(level="SUCCESS", id="SUCCESS"),
@@ -1023,7 +1023,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1033,7 +1033,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     )
@@ -1051,7 +1051,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(level="SUCCESS", id="SUCCESS"),
@@ -1066,7 +1066,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(level="SUCCESS", id="SUCCESS"),
@@ -1088,7 +1088,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1098,7 +1098,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -1110,7 +1110,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1120,7 +1120,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -1140,7 +1140,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(
@@ -1149,7 +1149,7 @@ class TestRunActions:
                                 title="Error",
                                 description="Action error",
                                 diagnosis="User error",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -1164,7 +1164,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1174,7 +1174,7 @@ class TestRunActions:
                             title="Error",
                             description="Action error",
                             diagnosis="User error",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -1193,7 +1193,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(
@@ -1202,7 +1202,7 @@ class TestRunActions:
                                 title="Overridable",
                                 description="Action overridable",
                                 diagnosis="User overridable",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -1217,7 +1217,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1227,7 +1227,7 @@ class TestRunActions:
                             title="Overridable",
                             description="Action overridable",
                             diagnosis="User overridable",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -1247,7 +1247,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(
@@ -1256,7 +1256,7 @@ class TestRunActions:
                                 title="Skip",
                                 description="Action skip",
                                 diagnosis="User skip",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -1270,7 +1270,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1280,7 +1280,7 @@ class TestRunActions:
                             title="Skip",
                             description="Action skip",
                             diagnosis="User skip",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -1299,7 +1299,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(level="SUCCESS", id="SUCCESS"),
@@ -1315,7 +1315,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(
@@ -1324,7 +1324,7 @@ class TestRunActions:
                                 title="Error",
                                 description="Action error",
                                 diagnosis="User error",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -1338,7 +1338,7 @@ class TestRunActions:
                                     title="Warning",
                                     description="Action warning",
                                     diagnosis="User warning",
-                                    remediation="move on",
+                                    remediations="move on",
                                 )
                             ],
                             result=ActionResult(
@@ -1347,7 +1347,7 @@ class TestRunActions:
                                 title="Skip",
                                 description="Action skip",
                                 diagnosis="User skip",
-                                remediation="move on",
+                                remediations="move on",
                             ),
                         ),
                     ],
@@ -1361,7 +1361,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1371,7 +1371,7 @@ class TestRunActions:
                             title="Error",
                             description="Action error",
                             diagnosis="User error",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -1383,7 +1383,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1393,7 +1393,7 @@ class TestRunActions:
                             title="Skip",
                             description="Action skip",
                             diagnosis="User skip",
-                            remediation="move on",
+                            remediations="move on",
                             variables={},
                         ),
                     ),
@@ -1405,7 +1405,7 @@ class TestRunActions:
                                 title="Warning",
                                 description="Action warning",
                                 diagnosis="User warning",
-                                remediation="move on",
+                                remediations="move on",
                                 variables={},
                             )
                         ],
@@ -1415,7 +1415,7 @@ class TestRunActions:
                             title="",
                             description="",
                             diagnosis="",
-                            remediation="",
+                            remediations="",
                             variables={},
                         ),
                     ),
@@ -1470,7 +1470,7 @@ class TestFindFailedActions:
 
 class TestActionClasses:
     @pytest.mark.parametrize(
-        ("id", "level", "title", "description", "diagnosis", "remediation", "expected"),
+        ("id", "level", "title", "description", "diagnosis", "remediations", "expected"),
         (
             (
                 "SUCCESS",
@@ -1485,7 +1485,7 @@ class TestActionClasses:
                     title="",
                     description="",
                     diagnosis="",
-                    remediation="",
+                    remediations="",
                     variables={},
                 ),
             ),
@@ -1495,14 +1495,14 @@ class TestActionClasses:
                 "Skip message",
                 "skip description",
                 "skip diagnosis",
-                "skip remediation",
+                "skip remediations",
                 dict(
                     id="SKIP_ID",
                     level=STATUS_CODE["SKIP"],
                     title="Skip message",
                     description="skip description",
                     diagnosis="skip diagnosis",
-                    remediation="skip remediation",
+                    remediations="skip remediations",
                     variables={},
                 ),
             ),
@@ -1512,14 +1512,14 @@ class TestActionClasses:
                 "Overridable message",
                 "overridable description",
                 "overridable diagnosis",
-                "overridable remediation",
+                "overridable remediations",
                 dict(
                     id="OVERRIDABLE_ID",
                     level=STATUS_CODE["OVERRIDABLE"],
                     title="Overridable message",
                     description="overridable description",
                     diagnosis="overridable diagnosis",
-                    remediation="overridable remediation",
+                    remediations="overridable remediations",
                     variables={},
                 ),
             ),
@@ -1529,27 +1529,27 @@ class TestActionClasses:
                 "Error message",
                 "error description",
                 "error diagnosis",
-                "error remediation",
+                "error remediations",
                 dict(
                     id="ERROR_ID",
                     level=STATUS_CODE["ERROR"],
                     title="Error message",
                     description="error description",
                     diagnosis="error diagnosis",
-                    remediation="error remediation",
+                    remediations="error remediations",
                     variables={},
                 ),
             ),
         ),
     )
-    def test_action_message_base(self, level, id, title, description, diagnosis, remediation, expected):
+    def test_action_message_base(self, level, id, title, description, diagnosis, remediations, expected):
         action_message_base = ActionMessageBase(
-            level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediation=remediation
+            level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediations=remediations
         )
         assert action_message_base.to_dict() == expected
 
     @pytest.mark.parametrize(
-        ("id", "level", "title", "description", "diagnosis", "remediation", "expected"),
+        ("id", "level", "title", "description", "diagnosis", "remediations", "expected"),
         (
             (None, None, None, None, None, None, "Messages require id, level, title and description fields"),
             ("SUCCESS_ID", None, None, None, None, None, "Messages require id, level, title and description fields"),
@@ -1610,14 +1610,14 @@ class TestActionClasses:
             ),
         ),
     )
-    def test_action_message_exceptions(self, level, id, title, description, diagnosis, remediation, expected):
+    def test_action_message_exceptions(self, level, id, title, description, diagnosis, remediations, expected):
         with pytest.raises(InvalidMessageError, match=expected):
             ActionMessage(
-                level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediation=remediation
+                level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediations=remediations
             )
 
     @pytest.mark.parametrize(
-        ("id", "level", "title", "description", "diagnosis", "remediation", "expected"),
+        ("id", "level", "title", "description", "diagnosis", "remediations", "expected"),
         (
             (
                 "WARNING_ID",
@@ -1625,14 +1625,14 @@ class TestActionClasses:
                 "Warning message",
                 "warning description",
                 "warning diagnosis",
-                "warning remediation",
+                "warning remediations",
                 dict(
                     id="WARNING_ID",
                     level=STATUS_CODE["WARNING"],
                     title="Warning message",
                     description="warning description",
                     diagnosis="warning diagnosis",
-                    remediation="warning remediation",
+                    remediations="warning remediations",
                     variables={},
                 ),
             ),
@@ -1642,14 +1642,14 @@ class TestActionClasses:
                 "Info message",
                 "info description",
                 "info diagnosis",
-                "info remediation",
+                "info remediations",
                 dict(
                     id="INFO_ID",
                     level=STATUS_CODE["INFO"],
                     title="Info message",
                     description="info description",
                     diagnosis="info diagnosis",
-                    remediation="info remediation",
+                    remediations="info remediations",
                     variables={},
                 ),
             ),
@@ -1659,27 +1659,27 @@ class TestActionClasses:
                 "Info message",
                 "info description",
                 "info diagnosis",
-                "info remediation",
+                "info remediations",
                 dict(
                     id="INFO_ID",
                     level=STATUS_CODE["INFO"],
                     title="Info message",
                     description="info description",
                     diagnosis="info diagnosis",
-                    remediation="info remediation",
+                    remediations="info remediations",
                     variables={},
                 ),
             ),
         ),
     )
-    def test_action_message_success(self, level, id, title, description, diagnosis, remediation, expected):
+    def test_action_message_success(self, level, id, title, description, diagnosis, remediations, expected):
         action_message = ActionMessage(
-            level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediation=remediation
+            level=level, id=id, title=title, description=description, diagnosis=diagnosis, remediations=remediations
         )
         assert action_message.to_dict() == expected
 
     @pytest.mark.parametrize(
-        ("id", "level", "title", "description", "diagnosis", "remediation", "variables", "expected"),
+        ("id", "level", "title", "description", "diagnosis", "remediations", "variables", "expected"),
         (
             (
                 "SUCCESS",
@@ -1689,7 +1689,7 @@ class TestActionClasses:
                 "Successful diagnosis",
                 "Successful remediation",
                 {},
-                "Success results cannot have description, diagnosis or remediation fields set",
+                "Success results cannot have description, diagnosis or remediations fields set",
             ),
             (
                 "SUCCESS",
@@ -1699,7 +1699,7 @@ class TestActionClasses:
                 None,
                 None,
                 {},
-                "Success results cannot have description, diagnosis or remediation fields set",
+                "Success results cannot have description, diagnosis or remediations fields set",
             ),
             (
                 None,
@@ -1747,13 +1747,15 @@ class TestActionClasses:
                 "Warning message",
                 "Warning description",
                 "Warning diagnosis",
-                "Warning remediation",
+                "Warning remediations",
                 {},
                 "Invalid level 'WARNING', the level for result must be SKIP or more fatal or SUCCESS.",
             ),
         ),
     )
-    def test_action_result_exceptions(self, level, id, title, description, diagnosis, remediation, variables, expected):
+    def test_action_result_exceptions(
+        self, level, id, title, description, diagnosis, remediations, variables, expected
+    ):
         with pytest.raises(InvalidMessageError, match=expected):
             ActionResult(
                 level=level,
@@ -1761,12 +1763,12 @@ class TestActionClasses:
                 title=title,
                 description=description,
                 diagnosis=diagnosis,
-                remediation=remediation,
+                remediations=remediations,
                 variables=variables,
             )
 
     @pytest.mark.parametrize(
-        ("id", "level", "title", "description", "diagnosis", "remediation", "variables", "expected"),
+        ("id", "level", "title", "description", "diagnosis", "remediations", "variables", "expected"),
         (
             (
                 "SUCCESS_ID",
@@ -1782,7 +1784,7 @@ class TestActionClasses:
                     title="",
                     description="",
                     diagnosis="",
-                    remediation="",
+                    remediations="",
                     variables={},
                 ),
             ),
@@ -1792,7 +1794,7 @@ class TestActionClasses:
                 "Skip",
                 "skip description",
                 "skip diagnosis",
-                "skip remediation",
+                "skip remediations",
                 {},
                 dict(
                     id="SKIP_ID",
@@ -1800,7 +1802,7 @@ class TestActionClasses:
                     title="Skip",
                     description="skip description",
                     diagnosis="skip diagnosis",
-                    remediation="skip remediation",
+                    remediations="skip remediations",
                     variables={},
                 ),
             ),
@@ -1810,7 +1812,7 @@ class TestActionClasses:
                 "Overridable",
                 "overridable description",
                 "overridable diagnosis",
-                "overridable remediation",
+                "overridable remediations",
                 {},
                 dict(
                     id="OVERRIDABLE_ID",
@@ -1818,7 +1820,7 @@ class TestActionClasses:
                     title="Overridable",
                     description="overridable description",
                     diagnosis="overridable diagnosis",
-                    remediation="overridable remediation",
+                    remediations="overridable remediations",
                     variables={},
                 ),
             ),
@@ -1828,7 +1830,7 @@ class TestActionClasses:
                 "Error",
                 "error description",
                 "error diagnosis",
-                "error remediation",
+                "error remediations",
                 {},
                 dict(
                     id="ERROR_ID",
@@ -1836,20 +1838,20 @@ class TestActionClasses:
                     title="Error",
                     description="error description",
                     diagnosis="error diagnosis",
-                    remediation="error remediation",
+                    remediations="error remediations",
                     variables={},
                 ),
             ),
         ),
     )
-    def test_action_result_success(self, level, id, title, description, diagnosis, remediation, variables, expected):
+    def test_action_result_success(self, level, id, title, description, diagnosis, remediations, variables, expected):
         action_message = ActionResult(
             level=level,
             id=id,
             title=title,
             description=description,
             diagnosis=diagnosis,
-            remediation=remediation,
+            remediations=remediations,
             variables=variables,
         )
         assert action_message.to_dict() == expected
@@ -1873,9 +1875,9 @@ class TestActionClasses:
                 "title": "A normal title",
                 "description": "A normal description",
                 "diagnosis": "A normal diagnosis",
-                "remediation": "A normal remediation",
+                "remediations": "A normal remediations",
             },
-            "(WARNING) Test::TestID - A normal title\n Description: A normal description\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
+            "(WARNING) Test::TestID - A normal title\n Description: A normal description\n Diagnosis: A normal diagnosis\n Remediations: A normal remediations\n",
         ),
         (
             STATUS_CODE["ERROR"],
@@ -1885,9 +1887,9 @@ class TestActionClasses:
                 "title": "A normal title",
                 "description": "",
                 "diagnosis": "A normal diagnosis",
-                "remediation": "A normal remediation",
+                "remediations": "A normal remediations",
             },
-            "(ERROR) Test::TestID - A normal title\n Description: N/A\n Diagnosis: A normal diagnosis\n Remediation: A normal remediation\n",
+            "(ERROR) Test::TestID - A normal title\n Description: N/A\n Diagnosis: A normal diagnosis\n Remediations: A normal remediations\n",
         ),
         (
             STATUS_CODE["ERROR"],
@@ -1897,9 +1899,9 @@ class TestActionClasses:
                 "title": "A normal title",
                 "description": "",
                 "diagnosis": "",
-                "remediation": "",
+                "remediations": "",
             },
-            "(ERROR) Test::TestID - A normal title\n Description: N/A\n Diagnosis: N/A\n Remediation: N/A\n",
+            "(ERROR) Test::TestID - A normal title\n Description: N/A\n Diagnosis: N/A\n Remediations: N/A\n",
         ),
     ),
 )

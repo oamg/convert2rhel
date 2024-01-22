@@ -58,7 +58,7 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
         title="Unable to access repositories",
         description="Access could not be made to the custom repositories.",
         diagnosis="Unable to access the repositories passed through the --enablerepo option.",
-        remediation="For more details, see YUM/DNF output:\nYUM/DNF failed",
+        remediations="For more details, see YUM/DNF output:\nYUM/DNF failed",
     )
 
 

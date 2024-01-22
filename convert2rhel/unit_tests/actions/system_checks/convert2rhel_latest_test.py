@@ -122,7 +122,7 @@ class TestCheckConvert2rhelLatest:
                     title="Skipping convert2rhel latest version check",
                     description="Skipping the check because no internet connection has been detected.",
                     diagnosis=None,
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -214,7 +214,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
     @pytest.mark.parametrize(
@@ -301,7 +301,7 @@ class TestCheckConvert2rhelLatest:
                         "You are currently running %s and the latest version of convert2rhel is %s.\n"
                         "We encourage you to update to the latest version." % (running_version, latest_version)
                     ),
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -564,7 +564,7 @@ class TestCheckConvert2rhelLatest:
                         "Couldn't check if the current installed convert2rhel is the latest version.\n"
                         "repoquery failed with the following output:\nRepoquery did not run"
                     ),
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -635,7 +635,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
     @pytest.mark.parametrize(
@@ -694,7 +694,7 @@ class TestCheckConvert2rhelLatest:
                     title="Deprecated environment variable",
                     description="A deprecated environment variable has been detected",
                     diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
-                    remediation="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
+                    remediations="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
                 ),
                 actions.ActionMessage(
                     level="WARNING",
@@ -704,7 +704,7 @@ class TestCheckConvert2rhelLatest:
                     diagnosis="You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
                     % (running_version, latest_version),
-                    remediation=None,
+                    remediations=None,
                 ),
             )
         )
@@ -903,7 +903,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediation="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
 

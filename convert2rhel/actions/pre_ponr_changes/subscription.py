@@ -140,7 +140,7 @@ class PreSubscription(actions.Action):
                 title=e.title,
                 description=e.description,
                 diagnosis=e.diagnosis,
-                remediation=e.remediation,
+                remediations=e.remediations,
                 variables=e.variables,
             )
         except subscription.UnregisterError as e:
@@ -150,7 +150,7 @@ class PreSubscription(actions.Action):
                 title="System unregistration failure",
                 description="The system is already registered with subscription-manager even though it is running CentOS not RHEL. We have failed to remove that registration.",
                 diagnosis="Failed to unregister the system: %s" % e,
-                remediation="You may want to unregister the system manually and re-run convert2rhel.",
+                remediations="You may want to unregister the system manually and re-run convert2rhel.",
             )
 
 
@@ -190,7 +190,7 @@ class SubscribeSystem(actions.Action):
                         id="SYSTEM_NOT_REGISTERED",
                         title="Not registered with RHSM",
                         description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
-                        remediation="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
+                        remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
                     )
                     return
                 raise
@@ -233,7 +233,7 @@ class SubscribeSystem(actions.Action):
                 title=e.title,
                 description=e.description,
                 diagnosis=e.diagnosis,
-                remediation=e.remediation,
+                remediations=e.remediations,
                 variables=e.variables,
             )
         except SystemExit as e:

@@ -52,5 +52,5 @@ class DbusIsRunning(actions.Action):
             title="Dbus daemon not running",
             description="The Dbus daemon is not running",
             diagnosis="Could not find a running DBus Daemon which is needed to register with subscription manager.",
-            remediation="Please start dbus using `systemctl start dbus`",
+            remediations="Please start dbus using `systemctl start dbus`",
         )
