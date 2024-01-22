@@ -47,19 +47,29 @@ class ConversionPhase:
 def initialize_logger():
     """
     Entrypoint function that aggregates other calls for initialization logic
-    and setup for logger handlers.
+    and setup for logger handlers that do not require root.
+    """
+
+    return logger_module.setup_logger_handler()
+
+
+def initialize_file_logging(log_name, log_dir):
+    """
+    Archive existing file logs and setup all logging handlers that require
+    root, like FileHandlers.
+
+    This function should be called after
+    :func:`~convert2rhel.main.initialize_logger`.
 
     .. warning::
         Setting log_dir underneath a world-writable directory (including
         letting it be user settable) is insecure.  We will need to write
         some checks for all calls to `os.makedirs()` if we allow changing
         log_dir.
+
+    :param str log_name: Name of the logfile to archive and log to
+    :param str log_dir: Directory where logfiles are stored
     """
-
-    return logger_module.setup_logger_handler()
-
-
-def finalize_logger(log_name, log_dir):
     try:
         logger_module.archive_old_logger_files(log_name, log_dir)
     except (IOError, OSError) as e:
@@ -101,9 +111,9 @@ def main_locked():
     pre_conversion_results = None
     process_phase = ConversionPhase.POST_CLI
 
-    # since we now have root, we can add the FileLogger
+    # since we now have root, we can add the FileLogging
     # and also archive previous logs
-    finalize_logger("convert2rhel.log", logger_module.LOG_DIR)
+    initialize_file_logging("convert2rhel.log", logger_module.LOG_DIR)
 
     try:
         perform_boilerplate()

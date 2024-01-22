@@ -287,12 +287,8 @@ def get_executable_name():
     return os.path.basename(inspect.stack()[-1][1])
 
 
-def is_root():
-    return os.geteuid() == 0
-
-
 def require_root():
-    if not is_root():
+    if os.geteuid() != 0:
         loggerinst.critical("The tool needs to be run under the root user.\nNo changes were made to the system.")
 
 

@@ -26,7 +26,7 @@ import pytest
 from convert2rhel import logger as logger_module
 
 
-def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_tool_opts, clear_loggers):
+def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
     """Test if the logger handlers emits the events to the file and stdout."""
     monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
 
@@ -52,9 +52,8 @@ def test_logger_handlers(monkeypatch, tmpdir, caplog, read_std, is_py2, global_t
     assert "Test debug: other data" in stdouterr_out
 
 
-def test_tools_opts_debug(monkeypatch, tmpdir, read_std, is_py2, global_tool_opts, clear_loggers):
+def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
     monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
-    log_fname = "convert2rhel.log"
     logger_module.setup_logger_handler()
     logger = logging.getLogger(__name__)
     global_tool_opts.debug = True
@@ -87,9 +86,8 @@ class TestCustomLogger:
             ("critical_no_exit", "CRITICAL"),
         ),
     )
-    def test_logger_custom_logger(self, log_method_name, level_name, caplog, monkeypatch, tmpdir, clear_loggers):
+    def test_logger_custom_logger(self, log_method_name, level_name, caplog):
         """Test CustomLogger."""
-        log_fname = "convert2rhel.log"
         logger_module.setup_logger_handler()
         logger = logging.getLogger(__name__)
         log_method = getattr(logger, log_method_name)
@@ -100,9 +98,8 @@ class TestCustomLogger:
         assert "Some task: data" == caplog.records[-1].message
         assert caplog.records[-1].levelname == level_name
 
-    def test_logger_critical(self, caplog, tmpdir, clear_loggers):
+    def test_logger_critical(self, caplog):
         """Test CustomLogger."""
-        log_fname = "convert2rhel.log"
         logger_module.setup_logger_handler()
         logger = logging.getLogger(__name__)
 
@@ -113,20 +110,17 @@ class TestCustomLogger:
         assert "Critical error: data\n" in caplog.text
 
     @pytest.mark.parametrize(
-        ("log_method_name", "level_name"),
-        (
-            ("task", "TASK"),
-            ("file", "DEBUG"),
-            ("debug", "DEBUG"),
-            ("warning", "WARNING"),
-            ("critical_no_exit", "CRITICAL"),
-        ),
+        "log_method_name",
+        [
+            "task",
+            "file",
+            "debug",
+            "warning",
+            "critical_no_exit",
+        ],
     )
-    def test_logger_custom_logger_insufficient_level(
-        self, log_method_name, level_name, caplog, monkeypatch, tmpdir, clear_loggers
-    ):
+    def test_logger_custom_logger_insufficient_level(self, log_method_name, caplog):
         """Test CustomLogger."""
-        log_fname = "convert2rhel.log"
         logger_module.setup_logger_handler()
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.CRITICAL + 40)
@@ -137,9 +131,8 @@ class TestCustomLogger:
         assert "Some task: data" not in caplog.text
         assert not caplog.records
 
-    def test_logger_critical_insufficient_level(self, caplog, tmpdir, clear_loggers):
+    def test_logger_critical_insufficient_level(self, caplog):
         """Test CustomLogger."""
-        log_fname = "convert2rhel.log"
         logger_module.setup_logger_handler()
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.CRITICAL + 40)
@@ -157,7 +150,7 @@ class TestCustomLogger:
         ("convert2rhel.log", False),
     ),
 )
-def test_archive_old_logger_files(log_name, path_exists, tmpdir, caplog):
+def test_archive_old_logger_files(log_name, path_exists, tmpdir):
     tmpdir = str(tmpdir)
     archive_dir = os.path.join(tmpdir, "archive")
     log_file = os.path.join(tmpdir, log_name)

@@ -77,9 +77,10 @@ class LogfileBufferHandler(BufferingHandler):
     name = "logfile_buffer_handler"
 
     def __init__(self, capacity, handler_name="file_handler"):
-        """_summary_
+        """
+        Initialize the handler with the buffer size.
 
-        :param int capacity: Initialize with a buffer size
+        :param int capacity: Buffer size for the handler
         :param str handler_name: Handler to flush buffer to, defaults to "file_handler"
         """
         super(LogfileBufferHandler, self).__init__(capacity)
@@ -88,8 +89,9 @@ class LogfileBufferHandler(BufferingHandler):
 
     @property
     def target(self):
-        """The computed Filehandler target that we are supposed to send to. This
-        is mostly copied over from logging's MemoryHandler but instead of setting
+        """The computed Filehandler target that we are supposed to send to.
+
+        This is mostly copied over from logging's MemoryHandler but instead of setting
         the target manually we find it automatically given the name of the handler
 
         :return logging.Handler: Either the found FileHandler setup or temporary NullHandler
@@ -104,8 +106,8 @@ class LogfileBufferHandler(BufferingHandler):
             self.target.handle(record)
 
     def shouldFlush(self, record):
-        """We should never flush automatically, so we set this to always return false, that way we need to flush
-        manually each time. Which is exactly what we want when it comes to keeping a buffer before we confirm we are
+        """
+        We should never flush automatically, so we set this to always return false, that way we need to flush manually each time. Which is exactly what we want when it comes to keeping a buffer before we confirm we are
         a root user.
 
         :param logging.LogRecord record: The record to log
@@ -145,9 +147,8 @@ def setup_logger_handler():
     stdout_handler.setLevel(logging.DEBUG)
     logger.addHandler(stdout_handler)
 
-    # Setup a buffer for the file handler that we will add later, that way we
     # can flush logs to the file that were logged before initializing the file handler
-    logger.addHandler(LogfileBufferHandler(100))
+    logger.addHandler(LogfileBufferHandler(capacity=100))
 
 
 def add_file_handler(log_name, log_dir):
