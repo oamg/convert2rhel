@@ -102,7 +102,7 @@
                     }
                 }
             },
-            "required": ["title", "description", "diagnosis", "id", "remediation", "variables"]
+            "required": ["title", "description", "diagnosis", "id", "remediations", "variables"]
         },
         "action_message": {
             "description": "Informational message from a particular convert2rhel check.",
