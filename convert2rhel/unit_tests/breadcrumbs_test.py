@@ -54,13 +54,14 @@ def breadcrumbs_instance(_mock_pkg_obj, _mock_pkg_information, monkeypatch):
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
     monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
     monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: [_mock_pkg_information])
+    monkeypatch.setenv("CONVERT2RHEL_FOO_BAR", "1")
     breadcrumbs.breadcrumbs.collect_early_data()
 
     yield breadcrumbs.Breadcrumbs()
 
 
 @pytest.fixture
-def finish_collection_mocks(monkeypatch):
+def finish_collection_mocks():
     save_migration_results_mock = mock.Mock()
     save_rhsm_facts_mock = mock.Mock()
 
@@ -68,7 +69,7 @@ def finish_collection_mocks(monkeypatch):
 
 
 @centos7
-def test_collect_early_data(pretend_os, breadcrumbs_instance, global_tool_opts, monkeypatch):
+def test_collect_early_data(pretend_os, breadcrumbs_instance, global_tool_opts):
     global_tool_opts.activity = "analysis"
 
     breadcrumbs_instance.collect_early_data()
@@ -82,6 +83,7 @@ def test_collect_early_data(pretend_os, breadcrumbs_instance, global_tool_opts, 
     assert breadcrumbs_instance.executed != "null"
     assert breadcrumbs_instance.activity_started != "null"
     assert breadcrumbs_instance._pkg_object is not None
+    assert "CONVERT2RHEL_FOO_BAR" in breadcrumbs_instance.env
 
 
 @pytest.mark.parametrize(
