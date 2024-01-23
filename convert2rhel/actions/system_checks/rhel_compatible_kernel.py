@@ -138,7 +138,7 @@ def _bad_kernel_package_signature(kernel_release):
         )
 
     kernel_pkg_obj = get_installed_pkg_information(pkg_name=kernel_pkg)
-    bad_signature = system_info.cfg_content["gpg_fingerprints"] != kernel_pkg_obj[0].fingerprint
+    bad_signature = kernel_pkg_obj[0].fingerprint not in system_info.fingerprints_orig_os
     if bad_signature:
         raise KernelIncompatibleError(
             "INVALID_KERNEL_PACKAGE_SIGNATURE",
