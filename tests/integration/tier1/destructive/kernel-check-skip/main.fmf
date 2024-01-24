@@ -5,7 +5,7 @@ description+: |
     Verify that it's possible to run the full conversion with older kernel,
     than available in the RHEL repositories.
         1/ Install older kernel on the system
-        2/ Make sure the `CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK` is in place
+        2/ Make sure the `CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK` is in place
             * doing that we also verify, the deprecated envar is still allowed
         3/ Enable *just* the rhel-7-server-rpms repository
         4/ Run conversion verifying the conversion is not inhibited and completes successfully

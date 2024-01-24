@@ -50,8 +50,7 @@ def test_skip_kernel_check(shell, convert2rhel):
         )
     ) as c2r:
         # Verify that using the deprecated environment variable is still allowed and continues the conversion
-        # TODO(danmyway) uncomment in #684
-        # assert c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'") == 0
+        assert c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'") == 0
         # Make sure the kernel comparison is skipped
         c2r_expect_index = c2r.expect(
             [

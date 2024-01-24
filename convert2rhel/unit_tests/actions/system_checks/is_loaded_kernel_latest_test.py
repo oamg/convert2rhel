@@ -385,6 +385,7 @@ class TestIsLoadedKernelLatest:
             "repoquery_stdout",
             "return_code",
             "unsupported_skip",
+            "skip_check",
             "level",
             "id",
             "title",
@@ -396,42 +397,27 @@ class TestIsLoadedKernelLatest:
             pytest.param(
                 "",
                 0,
+                "0",
                 "1",
                 "WARNING",
                 "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
                 "Skipping the kernel currency check",
                 (
-                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                    "the kernel-core comparison.\n"
-                    "Beware, this could leave your system in a broken state."
+                    "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
                 ),
                 None,
                 None,
                 id="Unsupported skip with environment var set to 1",
             ),
-            pytest.param(
-                "",
-                1,
-                None,
-                "WARNING",
-                "UNABLE_TO_FETCH_RECENT_KERNELS",
-                "Unable to fetch recent kernels",
-                (
-                    "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Skipping the loaded kernel check."
-                ),
-                None,
-                None,
-                id="Unsupported skip with environment var not set",
-            ),
         ),
     )
-    def test_is_loaded_kernel_latest_unsupported_skip_warnings(
+    def test_is_loaded_kernel_latest_skip_warnings(
         self,
         pretend_os,
         repoquery_stdout,
         return_code,
         unsupported_skip,
+        skip_check,
         level,
         id,
         title,
@@ -471,6 +457,199 @@ class TestIsLoadedKernelLatest:
             "environ",
             {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
         )
+        monkeypatch.setattr(
+            os,
+            "environ",
+            {"CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK": skip_check},
+        )
+
+        expected_set = set(
+            (
+                actions.ActionMessage(
+                    level=level,
+                    id=id,
+                    title=title,
+                    description=description,
+                    diagnosis=diagnosis,
+                    remediation=remediation,
+                ),
+            )
+        )
+        is_loaded_kernel_latest_action.run()
+        assert description in caplog.records[-1].message
+        assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected_set.issubset(is_loaded_kernel_latest_action.messages)
+
+    @centos8
+    @pytest.mark.parametrize(
+        (
+            "repoquery_stdout",
+            "return_code",
+            "unsupported_skip",
+            "latest_skip",
+            "level",
+            "id",
+            "title",
+            "description",
+            "unsupported_message",
+            "diagnosis",
+            "remediation",
+        ),
+        (
+            pytest.param(
+                "",
+                0,
+                "1",
+                "0",
+                "WARNING",
+                "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
+                "Skipping the kernel currency check",
+                (
+                    "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
+                ),
+                (
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable. Please switch to 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' instead."
+                ),
+                None,
+                None,
+                id="Unsupported skip with environment var set to 1",
+            ),
+        ),
+    )
+    def test_is_loaded_kernel_latest_unsupported_skip_warning(
+        self,
+        pretend_os,
+        repoquery_stdout,
+        return_code,
+        unsupported_skip,
+        latest_skip,
+        level,
+        id,
+        title,
+        description,
+        unsupported_message,
+        diagnosis,
+        remediation,
+        monkeypatch,
+        caplog,
+        is_loaded_kernel_latest_action,
+    ):
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "kernel-core",
+                    ),
+                    (
+                        repoquery_stdout,
+                        return_code,
+                    ),
+                ),
+            ),
+        )
+        monkeypatch.setattr(
+            is_loaded_kernel_latest,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+        monkeypatch.setattr(
+            os,
+            "environ",
+            {"CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK": unsupported_skip},
+        )
+
+        expected_set = set(
+            (
+                actions.ActionMessage(
+                    level=level,
+                    id=id,
+                    title=title,
+                    description=description,
+                    diagnosis=diagnosis,
+                    remediation=remediation,
+                ),
+            )
+        )
+        is_loaded_kernel_latest_action.run()
+        assert unsupported_message in caplog.records[-2].message
+        assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected_set.issubset(is_loaded_kernel_latest_action.messages)
+
+    @centos8
+    @pytest.mark.parametrize(
+        (
+            "repoquery_stdout",
+            "return_code",
+            "level",
+            "id",
+            "title",
+            "description",
+            "diagnosis",
+            "remediation",
+        ),
+        (
+            pytest.param(
+                "",
+                1,
+                "WARNING",
+                "UNABLE_TO_FETCH_RECENT_KERNELS",
+                "Unable to fetch recent kernels",
+                (
+                    "Couldn't fetch the list of the most recent kernels available in "
+                    "the repositories. Skipping the loaded kernel check."
+                ),
+                None,
+                None,
+                id="Unsupported skip with environment var not set",
+            ),
+        ),
+    )
+    def test_is_loaded_kernel_latest_unable_to_fetch_kernels(
+        self,
+        pretend_os,
+        repoquery_stdout,
+        return_code,
+        level,
+        id,
+        title,
+        description,
+        diagnosis,
+        remediation,
+        monkeypatch,
+        caplog,
+        is_loaded_kernel_latest_action,
+    ):
+        run_subprocess_mocked = mock.Mock(
+            spec=run_subprocess,
+            side_effect=run_subprocess_side_effect(
+                (
+                    (
+                        "repoquery",
+                        "--setopt=exclude=",
+                        "--quiet",
+                        "--qf",
+                        "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                        "kernel-core",
+                    ),
+                    (
+                        repoquery_stdout,
+                        return_code,
+                    ),
+                ),
+            ),
+        )
+        monkeypatch.setattr(
+            is_loaded_kernel_latest,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+
         expected_set = set(
             (
                 actions.ActionMessage(

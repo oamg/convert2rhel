@@ -77,21 +77,36 @@ class IsLoadedKernelLatest(actions.Action):
         # Append the package name as the last item on the list
         cmd.append(package_to_check)
 
-        unsupported_skip = os.environ.get("CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK", None)
+        # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
+        # we allow the user to provide a environment variable to override the functionality and proceed
+        # with the conversion, otherwise, we just throw a critical logging to them.
+        allow_older_envvar_names = (
+            "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK",
+            "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK",
+        )
+        # This check is to see which environment variable is set, To allow users in the next version
+        # to adjust their environmental variable names. This check will be removed in the future and
+        # will only have the 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable
+        if any(envvar in os.environ for envvar in allow_older_envvar_names):
+            if "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK" in os.environ:
+                logger.warning(
+                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'"
+                    " environment variable. Please switch to 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK'"
+                    " instead."
+                )
 
-        # Skip the kernel package check and print a warning if the user used the special environment variable for it
-        if unsupported_skip:
             logger.warning(
-                "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the %s comparison.\n"
                 "Beware, this could leave your system in a broken state." % package_to_check
             )
+
             self.add_message(
                 level="WARNING",
                 id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
                 title="Skipping the kernel currency check",
                 description=(
-                    "Detected 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
+                    "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                     "the %s comparison.\n"
                     "Beware, this could leave your system in a broken state." % package_to_check
                 ),
