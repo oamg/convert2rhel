@@ -471,7 +471,7 @@ class TestIsLoadedKernelLatest:
                     title=title,
                     description=description,
                     diagnosis=diagnosis,
-                    remediation=remediation,
+                    remediations=remediations,
                 ),
             )
         )
@@ -493,7 +493,7 @@ class TestIsLoadedKernelLatest:
             "description",
             "unsupported_message",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             pytest.param(
@@ -529,7 +529,7 @@ class TestIsLoadedKernelLatest:
         description,
         unsupported_message,
         diagnosis,
-        remediation,
+        remediations,
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
@@ -572,7 +572,7 @@ class TestIsLoadedKernelLatest:
                     title=title,
                     description=description,
                     diagnosis=diagnosis,
-                    remediation=remediation,
+                    remediations=remediations,
                 ),
             )
         )
@@ -591,7 +591,7 @@ class TestIsLoadedKernelLatest:
             "title",
             "description",
             "diagnosis",
-            "remediation",
+            "remediations",
         ),
         (
             pytest.param(
@@ -620,7 +620,7 @@ class TestIsLoadedKernelLatest:
         title,
         description,
         diagnosis,
-        remediation,
+        remediations,
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
