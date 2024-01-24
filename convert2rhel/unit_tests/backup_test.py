@@ -239,7 +239,9 @@ def test_changed_pkgs_control_restore_pkgs(monkeypatch):
         ("test.rpm", "backup", "", "Can't find"),
     ),
 )
-def test_restorable_file_backup(filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog):
+def test_restorable_file_backup(
+    filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog, global_backup_control
+):
     tmp_file = tmpdir.join(filepath)
     tmp_backup = tmpdir.mkdir(backup_dir)
     if file_content:
@@ -247,19 +249,19 @@ def test_restorable_file_backup(filepath, backup_dir, file_content, expected, tm
 
     monkeypatch.setattr(backup, "BACKUP_DIR", str(tmp_backup))
     rf = backup.RestorableFile(filepath=str(tmp_file))
-    rf.backup()
+    global_backup_control.push(rf)
 
     if expected:
         assert expected in caplog.records[-1].message
 
 
-def test_restorable_file_backup_oserror(tmpdir, caplog):
+def test_restorable_file_backup_oserror(tmpdir, caplog, global_backup_control):
     tmp_file = tmpdir.join("test.rpm")
     tmp_file.write("test")
     rf = backup.RestorableFile(filepath=str(tmp_file))
 
     with pytest.raises(exceptions.CriticalError):
-        rf.backup()
+        global_backup_control.push(rf)
 
     assert "Error(2): No such file or directory" in caplog.records[-1].message
 
@@ -271,7 +273,9 @@ def test_restorable_file_backup_oserror(tmpdir, caplog):
         ("test.rpm", "backup", "", "hasn't been backed up"),
     ),
 )
-def test_restorable_file_restore(filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog):
+def test_restorable_file_restore(
+    filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog, global_backup_control
+):
     tmp_backup = tmpdir
     tmp_file = tmpdir.join(filepath)
     tmp_backup = tmp_backup.mkdir(backup_dir).join(filepath)
@@ -280,13 +284,14 @@ def test_restorable_file_restore(filepath, backup_dir, file_content, expected, t
 
     monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
     rf = backup.RestorableFile(filepath=str(tmp_file))
-    rf.restore()
+    global_backup_control.push(rf)
+    global_backup_control.pop()
 
     if expected:
         assert expected in caplog.records[-1].message
 
 
-def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
+def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch, global_backup_control):
     tmp_backup = tmpdir
     tmp_backup = tmp_backup.mkdir("backup").join("test.rpm")
     tmp_backup.write("test")
@@ -294,7 +299,8 @@ def test_restorable_file_restore_oserror(tmpdir, caplog, monkeypatch):
     monkeypatch.setattr(backup, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
 
     rf = backup.RestorableFile(filepath="/non-existing/test.rpm")
-    rf.restore()
+    global_backup_control.push(rf)
+    global_backup_control.pop()
 
     # Source and dest files are the same, which throws this error
     assert "Error(2): No such file or directory" in caplog.records[-1].message
@@ -716,7 +722,7 @@ class TestNewRestorableFile:
         monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
 
         backup_controller = backup.BackupController()
-        file_backup = backup.NewRestorableFile(str(file_for_backup))
+        file_backup = backup.RestorableFile(str(file_for_backup))
 
         # Create the backup, testing method enable
         backup_controller.push(file_backup)
@@ -768,7 +774,7 @@ class TestNewRestorableFile:
         message = message.format(file_for_backup=file_for_backup, backup_dir=backup_dir)
 
         monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
-        file_backup = backup.NewRestorableFile(str(file_for_backup))
+        file_backup = backup.RestorableFile(str(file_for_backup))
         # Set the enabled value if needed, default is False
         file_backup.enabled = enabled_preset
 
@@ -808,7 +814,7 @@ class TestNewRestorableFile:
             messages[i] = messages[i].format(orig_path=orig_path)
 
         monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
-        file_backup = backup.NewRestorableFile(str(orig_path))
+        file_backup = backup.RestorableFile(str(orig_path))
 
         file_backup.enabled = enabled
 
@@ -830,7 +836,7 @@ class TestNewRestorableFile:
 
         monkeypatch.setattr(shutil, "copy2", copy2)
         monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
-        file_backup = backup.NewRestorableFile(str(orig_path))
+        file_backup = backup.RestorableFile(str(orig_path))
 
         file_backup.enabled = True
 
@@ -849,7 +855,7 @@ class TestNewRestorableFile:
 
         monkeypatch.setattr(shutil, "copy2", copy2)
         monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
-        file_backup = backup.NewRestorableFile(str(orig_path))
+        file_backup = backup.RestorableFile(str(orig_path))
 
         file_backup.enabled = True
 
@@ -873,7 +879,7 @@ class TestNewRestorableFile:
         else:
             path = filepath
 
-        restorable_file = backup.NewRestorableFile(path)
+        restorable_file = backup.RestorableFile(path)
         restorable_file.remove()
 
         assert message in caplog.text

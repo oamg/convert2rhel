@@ -134,9 +134,9 @@ class BackupController:
     """
     Controls backup and restore for all restorable types.
 
-    This is the second version of a backup controller.  It handles all types of things that
-    convert2rhel will change on the system which it can restore in case of a failure before the
-    Point-of-no-return (PONR).
+    This is the second version of a backup controller.  It handles all types of
+    things that convert2rhel will change on the system which it can restore in
+    case of a failure before the Point-of-no-return (PONR).
 
     The basic interface to this is a LIFO stack.  When a Restorable is pushed
     onto the stack, it is backed up.  When it is popped off of the stack, it is
@@ -348,9 +348,9 @@ class RestorableRpmKey(RestorableChange):
         super(RestorableRpmKey, self).restore()
 
 
-class NewRestorableFile(RestorableChange):
+class RestorableFile(RestorableChange):
     def __init__(self, filepath):
-        super(NewRestorableFile, self).__init__()
+        super(RestorableFile, self).__init__()
         self.filepath = filepath
 
     def enable(self):
@@ -367,12 +367,19 @@ class NewRestorableFile(RestorableChange):
 
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
-                loggerinst.critical("Error(%s): %s" % (err.errno, err.strerror))
+
+                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
+                    title="Failed to copy file to the backup directory.",
+                    description="During convert2rhel's tests of whether it is likely to succeed, some files on the system are changed. To enable rollback in case we detect something that we would fail to do, we backup those files prior to changing them. In the current case, we encountered a failure while performing that backup so it is unsafe to continue.",
+                    diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
+                )
         else:
             loggerinst.info("Can't find %s.", self.filepath)
 
         # Set the enabled value
-        super(NewRestorableFile, self).enable()
+        super(RestorableFile, self).enable()
 
     def restore(self, rollback=True):
         """Restore a previously backed up file"""
@@ -381,14 +388,10 @@ class NewRestorableFile(RestorableChange):
         else:
             loggerinst.info("Restoring %s from backup" % self.filepath)
 
-        # We do not have backup or not backed up by this
-        if not self.enabled:
-            loggerinst.info("%s hasn't been backed up." % self.filepath)
-            return
-
         backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
 
-        if not os.path.isfile(backup_filepath):
+        # We do not have backup or not backed up by this
+        if not self.enabled or not os.path.isfile(backup_filepath):
             loggerinst.info("%s hasn't been backed up." % self.filepath)
             return
 
@@ -403,7 +406,7 @@ class NewRestorableFile(RestorableChange):
 
         if rollback:
             loggerinst.info("File %s restored." % self.filepath)
-            super(NewRestorableFile, self).restore()
+            super(RestorableFile, self).restore()
         else:
             loggerinst.debug("File %s restored." % self.filepath)
             # not setting enabled to false since this is not being rollback
@@ -464,69 +467,9 @@ class MissingFile(RestorableChange):
         super(MissingFile, self).restore()
 
 
-# Legacy class for creating the restorable file
-# Can be removed after porting to new BackupController is finished
-# https://issues.redhat.com/browse/RHELC-1153
-class RestorableFile:
-    def __init__(self, filepath):
-        self.filepath = filepath
-
-    def backup(self):
-        """Save current version of a file"""
-        loggerinst.info("Backing up %s." % self.filepath)
-        if os.path.isfile(self.filepath):
-            try:
-                loggerinst.debug("Copying %s to %s." % (self.filepath, BACKUP_DIR))
-                shutil.copy2(self.filepath, BACKUP_DIR)
-            except (OSError, IOError) as err:
-                # IOError for py2 and OSError for py3
-
-                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
-                raise exceptions.CriticalError(
-                    id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-                    title="Failed to copy file to the backup directory.",
-                    description="During convert2rhel's tests of whether it is likely to succeed, some files on the system are changed. To enable rollback in case we detect something that we would fail to do, we backup those files prior to changing them. In the current case, we encountered a failure while performing that backup so it is unsafe to continue.",
-                    diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
-                )
-        else:
-            loggerinst.info("Can't find %s.", self.filepath)
-
-    def restore(self, rollback=True):
-        """Restore a previously backed up file"""
-        backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
-        if rollback:
-            loggerinst.task("Rollback: Restore %s from backup" % self.filepath)
-        else:
-            loggerinst.info("Restoring %s from backup" % self.filepath)
-
-        if not os.path.isfile(backup_filepath):
-            loggerinst.info("%s hasn't been backed up." % self.filepath)
-            return
-        try:
-            shutil.copy2(backup_filepath, self.filepath)
-        except (OSError, IOError) as err:
-            # Do not call 'critical' which would halt the program. We are in
-            # a rollback phase now and we want to rollback as much as possible.
-            # IOError for py2 and OSError for py3
-            loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
-            return
-
-        if rollback:
-            loggerinst.info("File %s restored." % self.filepath)
-        else:
-            loggerinst.debug("File %s restored." % self.filepath)
-
-    def remove(self):
-        """Remove restored file from original place, backup isn't removed"""
-        try:
-            os.remove(self.filepath)
-            loggerinst.debug("File %s removed." % self.filepath)
-        except (OSError, IOError):
-            loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
-
-
-# Over time we want to replace this with pkghandler.RestorablePackageSet
-# Right now, this is still used for removed packages.  Installed packages are handled by pkghandler.RestorablePackageSet
+# Over time we want to replace this with pkghandler.RestorablePackageSet Right
+# now, this is still used for removed packages. Installed packages are handled
+# by pkghandler.RestorablePackageSet
 class RestorablePackage:
     def __init__(self, pkgname):
         self.name = pkgname

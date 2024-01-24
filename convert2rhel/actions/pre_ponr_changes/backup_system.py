@@ -53,9 +53,8 @@ class BackupRedhatRelease(actions.Action):
             # TODO(r0x0d): We need to keep calling those global objects from
             # redhatrelease.py because of the below code:
             # https://github.com/oamg/convert2rhel/blob/v1.2/convert2rhel/subscription.py#L189-L200
-            system_release_file.backup()
-            os_release_file.backup()
-
+            backup.backup_control.push(system_release_file)
+            backup.backup_control.push(os_release_file)
         except exceptions.CriticalError as e:
             self.set_result(
                 level="ERROR",
@@ -109,7 +108,7 @@ class BackupPackageFiles(actions.Action):
                 # Check if the file is not already backed up or the path is not backed up
                 if os.path.dirname(file["path"]) not in backed_up_paths and file["path"] not in backed_up_files:
                     # If the MD5 checksum differs, the content of the file differs
-                    restorable_file = backup.NewRestorableFile(file["path"])
+                    restorable_file = backup.RestorableFile(file["path"])
                     backup.backup_control.push(restorable_file)
                 else:
                     loggerinst.debug(

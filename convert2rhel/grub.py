@@ -618,8 +618,8 @@ def update_grub_after_conversion():
     rather re-generate the GRUB2 config file and install the GRUB2 image.
     """
 
-    backup.RestorableFile(GRUB2_BIOS_CONFIG_FILE).backup()
-    backup.RestorableFile(GRUB2_BIOS_ENV_FILE).backup()
+    backup.backup_control.push(backup.RestorableFile(GRUB2_BIOS_CONFIG_FILE))
+    backup.backup_control.push(backup.RestorableFile(GRUB2_BIOS_ENV_FILE))
 
     grub2_config_file = get_grub_config_file()
 

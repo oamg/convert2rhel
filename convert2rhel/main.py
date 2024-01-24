@@ -333,9 +333,6 @@ def rollback_changes():
     backup.changed_pkgs_control.restore_pkgs()
     repo.restore_varsdir()
     repo.restore_yum_repos()
-    redhatrelease.system_release_file.restore()
-    redhatrelease.os_release_file.restore()
-    pkghandler.versionlock_file.restore()
 
     try:
         backup.backup_control.pop_all()

@@ -81,7 +81,6 @@ _UBI_9_REPO_CONTENT = (
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
-versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 #
 # Regular expressions used to find package names in yum output
@@ -1197,7 +1196,7 @@ def clear_versionlock():
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
-        versionlock_file.backup()
+        backup.backup_control.push(backup.RestorableFile(_VERSIONLOCK_FILE_PATH))
 
         loggerinst.info("Clearing package versions locks...")
         call_yum_cmd("versionlock", args=["clear"], print_output=False)

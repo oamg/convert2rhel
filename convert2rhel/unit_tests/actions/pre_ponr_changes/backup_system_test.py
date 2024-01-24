@@ -21,7 +21,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import backup, logger, repo, unit_tests
+from convert2rhel import backup, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 from convert2rhel.unit_tests import CriticalErrorCallableObject
@@ -42,7 +42,7 @@ def backup_repository_action():
 
 
 class RestorableFileBackupMocked(CriticalErrorCallableObject):
-    method_spec = backup.RestorableFile.backup
+    method_spec = backup.RestorableFile.enable
 
 
 @pytest.fixture
@@ -59,8 +59,8 @@ class TestBackupSystem:
 
         backup_redhat_release_action.run()
 
-        assert backup_system.system_release_file.backup.call_count == 1
-        assert backup_system.os_release_file.backup.call_count == 1
+        assert backup_system.system_release_file.enable.call_count == 1
+        assert backup_system.os_release_file.enable.call_count == 1
 
     def test_backup_repository_calls(self, backup_repository_action, monkeypatch):
         backup_varsdir_mock = mock.Mock()
@@ -75,14 +75,14 @@ class TestBackupSystem:
         backup_varsdir_mock.assert_called_once()
 
     def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
-        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
-        mock_sys_release_file.backup = RestorableFileBackupMocked(
+        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file.enable)
+        mock_sys_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
             title="Failed to copy file to the backup directory.",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/system-release. Errno: 2, Error: File not found",
         )
-        monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
+        monkeypatch.setattr(backup_system.system_release_file, "enable", mock_sys_release_file)
 
         backup_redhat_release_action.run()
 
@@ -96,17 +96,17 @@ class TestBackupSystem:
         )
 
     def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
-        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file)
-        mock_os_release_file = mock.create_autospec(backup_system.os_release_file)
-        mock_os_release_file.backup = RestorableFileBackupMocked(
+        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file.enable)
+        mock_os_release_file = mock.create_autospec(backup_system.os_release_file.enable)
+        mock_os_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
             title="Failed to copy file to the backup directory.",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/os-release. Errno: 2, Error: File not found",
         )
 
-        monkeypatch.setattr(backup_system, "system_release_file", mock_sys_release_file)
-        monkeypatch.setattr(backup_system, "os_release_file", mock_os_release_file)
+        monkeypatch.setattr(backup_system.system_release_file, "enable", mock_sys_release_file)
+        monkeypatch.setattr(backup_system.os_release_file, "enable", mock_os_release_file)
 
         backup_redhat_release_action.run()
 
@@ -275,6 +275,7 @@ class TestBackupSystem:
         tmpdir,
         monkeypatch,
         backup_package_files_action,
+        global_backup_control,
     ):
         # Prepare the rpm -va ouput to the PRE_RPM_VA_LOG_FILENAME file
         rpm_va_output = ""
@@ -326,7 +327,7 @@ class TestBackupSystem:
             else:
                 assert not os.path.isfile(backed_up_file_path)
 
-        backup.backup_control.pop_all()
+        global_backup_control.pop_all()
 
         # Check the existence/nonexistence and content rolled back file
         for i, line in enumerate(rpm_va_output_lines):

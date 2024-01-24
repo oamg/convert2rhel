@@ -199,12 +199,12 @@ class TestClearVersionlock:
         assert len(caplog.records) == 1
         assert caplog.records[-1].message == "Usage of YUM/DNF versionlock plugin not detected."
 
-    def test_clear_versionlock_user_says_yes(self, monkeypatch):
+    def test_clear_versionlock_user_says_yes(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
         monkeypatch.setattr(os.path, "isfile", mock.Mock(return_value=True))
         monkeypatch.setattr(os.path, "getsize", mock.Mock(return_value=1))
         monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-        monkeypatch.setattr(backup.RestorableFile, "backup", mock.Mock())
+        monkeypatch.setattr(backup.RestorableFile, "enable", mock.Mock())
         monkeypatch.setattr(backup.RestorableFile, "restore", mock.Mock())
 
         pkghandler.clear_versionlock()
@@ -212,6 +212,7 @@ class TestClearVersionlock:
         assert pkghandler.call_yum_cmd.call_count == 1
         assert pkghandler.call_yum_cmd.command == "versionlock"
         assert pkghandler.call_yum_cmd.args == ["clear"]
+        assert len(global_backup_control._restorables) == 1
 
     def test_clear_versionlock_user_says_no(self, monkeypatch):
         monkeypatch.setattr(

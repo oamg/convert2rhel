@@ -58,19 +58,17 @@ class TestRollbackChanges:
         monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock.Mock())
         monkeypatch.setattr(repo, "restore_yum_repos", mock.Mock())
         monkeypatch.setattr(repo, "restore_varsdir", mock.Mock())
-        monkeypatch.setattr(pkghandler.versionlock_file, "restore", mock.Mock())
 
-    def test_rollback_changes(self, monkeypatch):
-        monkeypatch.setattr(backup.backup_control, "pop_all", mock.Mock())
+    def test_rollback_changes(self, monkeypatch, global_backup_control):
+        monkeypatch.setattr(global_backup_control, "pop_all", mock.Mock())
 
         main.rollback_changes()
 
         assert backup.changed_pkgs_control.restore_pkgs.call_count == 1
         assert repo.restore_yum_repos.call_count == 1
-        assert pkghandler.versionlock_file.restore.call_count == 1
         # Note: when we remove the BackupController partition hack, the first
         # of these calls will go away
-        assert backup.backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
+        assert global_backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
         assert repo.restore_varsdir.call_count == 1
 
     # The tests below are for the 1.4 hack that splits restore of Changes
@@ -111,9 +109,9 @@ class TestRollbackChanges:
 
         assert "During rollback there were no backups to restore" not in caplog.text
 
-    def test_backup_control_unknown_exception(self, monkeypatch):
+    def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(
-            backup.backup_control,
+            global_backup_control,
             "pop_all",
             mock.Mock(side_effect=([], IndexError("Raised because of a bug in the code"))),
         )
