@@ -214,7 +214,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
     @pytest.mark.parametrize(
@@ -635,7 +635,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
     @pytest.mark.parametrize(
@@ -903,7 +903,7 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running %s and the latest version of convert2rhel is %s.\n"
                 "Only the latest version is supported for conversion." % (running_version, latest_version)
             ),
-            remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
 
 

@@ -88,7 +88,7 @@ class PackageUpdates(actions.Action):
                     title="Package up to date check fail",
                     description="Please refer to the diagnosis for further information",
                     diagnosis=package_up_to_date_error_message,
-                    remediations="If you wish to ignore this message, set the environment variable "
+                    remediations="If you wish to disregard this message, set the environment variable "
                     "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
                 )
                 return

@@ -266,7 +266,7 @@ class Convert2rhelLatest(actions.Action):
                             "Only the latest version is supported for conversion."
                             % (formatted_convert2rhel_version, formatted_available_version)
                         ),
-                        remediations="If you want to ignore this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+                        remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
                     )
                     return
 
