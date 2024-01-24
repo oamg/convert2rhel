@@ -23,6 +23,8 @@ import six
 
 from convert2rhel import backup, repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
+from convert2rhel.backup import files
+from convert2rhel.backup.files import RestorableFile
 from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 from convert2rhel.unit_tests import CriticalErrorCallableObject
 
@@ -42,7 +44,7 @@ def backup_repository_action():
 
 
 class RestorableFileBackupMocked(CriticalErrorCallableObject):
-    method_spec = backup.RestorableFile.enable
+    method_spec = RestorableFile.enable
 
 
 @pytest.fixture
@@ -299,7 +301,7 @@ class TestBackupSystem:
 
         backup_dir = tmpdir.mkdir("backup")
 
-        monkeypatch.setattr(backup, "BACKUP_DIR", str(backup_dir))
+        monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
 
         backup_package_files_action.run()

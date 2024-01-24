@@ -25,11 +25,13 @@ from collections import OrderedDict
 import pytest
 import six
 
+from convert2rhel import backup
+
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, checks, exceptions, grub
+from convert2rhel import actions, applock, checks, exceptions, grub
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report

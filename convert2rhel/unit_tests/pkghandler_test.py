@@ -28,6 +28,7 @@ import rpm
 import six
 
 from convert2rhel import backup, exceptions, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel.backup.files import RestorableFile
 from convert2rhel.pkghandler import (
     PackageInformation,
     PackageNevra,
@@ -204,8 +205,8 @@ class TestClearVersionlock:
         monkeypatch.setattr(os.path, "isfile", mock.Mock(return_value=True))
         monkeypatch.setattr(os.path, "getsize", mock.Mock(return_value=1))
         monkeypatch.setattr(pkghandler, "call_yum_cmd", CallYumCmdMocked())
-        monkeypatch.setattr(backup.RestorableFile, "enable", mock.Mock())
-        monkeypatch.setattr(backup.RestorableFile, "restore", mock.Mock())
+        monkeypatch.setattr(RestorableFile, "enable", mock.Mock())
+        monkeypatch.setattr(RestorableFile, "restore", mock.Mock())
 
         pkghandler.clear_versionlock()
 

@@ -28,7 +28,8 @@ from collections import namedtuple
 import rpm
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
-from convert2rhel.backup import RestorableFile, remove_pkgs
+from convert2rhel.backup import RestorableChange, remove_pkgs
+from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -132,7 +133,7 @@ PackageInformation = namedtuple(
 )
 
 
-class RestorablePackageSet(backup.RestorableChange):
+class RestorablePackageSet(RestorableChange):
     """Install a set of packages in a way that they can be uninstalled later.
 
     .. warn:: This functionality is incomplete (These are things that need cleanup)
@@ -1196,7 +1197,7 @@ def clear_versionlock():
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
-        backup.backup_control.push(backup.RestorableFile(_VERSIONLOCK_FILE_PATH))
+        backup.backup_control.push(RestorableFile(_VERSIONLOCK_FILE_PATH))
 
         loggerinst.info("Clearing package versions locks...")
         call_yum_cmd("versionlock", args=["clear"], print_output=False)

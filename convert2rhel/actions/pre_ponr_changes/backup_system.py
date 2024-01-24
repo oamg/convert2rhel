@@ -20,6 +20,7 @@ import os
 import re
 
 from convert2rhel import actions, backup, exceptions, repo
+from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
@@ -102,13 +103,13 @@ class BackupPackageFiles(actions.Action):
 
         for file in package_files_changes:
             if file["status"] == "missing":
-                missing_file = backup.MissingFile(file["path"])
+                missing_file = MissingFile(file["path"])
                 backup.backup_control.push(missing_file)
             elif "5" in file["status"]:
                 # Check if the file is not already backed up or the path is not backed up
                 if os.path.dirname(file["path"]) not in backed_up_paths and file["path"] not in backed_up_files:
                     # If the MD5 checksum differs, the content of the file differs
-                    restorable_file = backup.RestorableFile(file["path"])
+                    restorable_file = RestorableFile(file["path"])
                     backup.backup_control.push(restorable_file)
                 else:
                     loggerinst.debug(

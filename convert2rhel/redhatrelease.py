@@ -21,7 +21,8 @@ import logging
 import os
 import re
 
-from convert2rhel import backup, pkgmanager, utils
+from convert2rhel import pkgmanager, utils
+from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
 
 
@@ -108,5 +109,5 @@ class YumConf:
 
 
 # Code to be executed upon module import
-system_release_file = backup.RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
-os_release_file = backup.RestorableFile(OS_RELEASE_FILEPATH)  # pylint: disable=C0103
+system_release_file = RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
+os_release_file = RestorableFile(OS_RELEASE_FILEPATH)  # pylint: disable=C0103
