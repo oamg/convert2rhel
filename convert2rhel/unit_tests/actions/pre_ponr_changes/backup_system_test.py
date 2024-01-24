@@ -75,7 +75,6 @@ class TestBackupSystem:
         backup_varsdir_mock.assert_called_once()
 
     def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
-        mock_sys_release_file = mock.create_autospec(backup_system.system_release_file.enable)
         mock_sys_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
             title="Failed to copy file to the backup directory.",
@@ -97,7 +96,6 @@ class TestBackupSystem:
 
     def test_backup_redhat_release_error_os_release_file(self, backup_redhat_release_action, monkeypatch):
         mock_sys_release_file = mock.create_autospec(backup_system.system_release_file.enable)
-        mock_os_release_file = mock.create_autospec(backup_system.os_release_file.enable)
         mock_os_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
             title="Failed to copy file to the backup directory.",
