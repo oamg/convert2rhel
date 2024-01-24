@@ -663,7 +663,7 @@ class TestRestorableRpmKey:
         assert rpm_key.enabled is False
 
 
-class TestNewRestorableFile:
+class TestRestorableFile:
     @pytest.fixture
     def get_backup_file_dir(self, tmpdir, filename="filename", content="content", backup_dir_name="backup"):
         """Prepare the file for backup and backup folder"""
