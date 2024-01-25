@@ -698,7 +698,7 @@ class TestIsLoadedKernelLatest:
                 "Kernel currency check failed",
                 "Please refer to the diagnosis for further information",
                 "Could not find any {0} from repositories to compare against the loaded kernel.",
-                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\nIf you wish to ignore this message, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1.",
+                "Please, check if you have any vendor repositories enabled to proceed with the conversion.\nIf you wish to disregard this message, set the environment variable 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1.",
                 id="Repoquery failure without environment var",
             ),
         ),

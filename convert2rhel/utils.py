@@ -754,7 +754,7 @@ def report_on_a_download_error(output, pkg):
                 " complete rollback and may put the system in a broken state.\n"
                 "Check to make sure that the %s repositories are enabled"
                 " and the package is updated to its latest version.\n"
-                "If you would rather ignore this check set the environment variable"
+                "If you would rather disregard this check set the environment variable"
                 " 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1'." % (pkg, system_info.name)
             )
         else:
@@ -769,7 +769,7 @@ def report_on_a_download_error(output, pkg):
             "Couldn't download the %s package which is needed to do a rollback of this action."
             " Check to make sure that the %s repositories are enabled and the package is"
             " updated to its latest version.\n"
-            "Note that you can choose to ignore this check when running a conversion by"
+            "Note that you can choose to disregard this check when running a conversion by"
             " setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1'"
             " but not during a pre-conversion analysis." % (pkg, system_info.name)
         )

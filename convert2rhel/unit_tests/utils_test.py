@@ -567,10 +567,10 @@ def test_get_rpm_path_from_yumdownloader_output(output):
 @pytest.mark.parametrize(
     ("envvar", "activity", "should_raise", "message"),
     (
-        (None, "conversion", True, "If you would rather ignore this check"),
+        (None, "conversion", True, "If you would rather disregard this check"),
         ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "conversion", False, "environment variable detected"),
-        (None, "analysis", True, "you can choose to ignore this check"),
-        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to ignore this check"),
+        (None, "analysis", True, "you can choose to disregard this check"),
+        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to disregard this check"),
     ),
 )
 def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog):

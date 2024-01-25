@@ -167,7 +167,7 @@ class IsLoadedKernelLatest(actions.Action):
                 ),
                 remediations=(
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
-                    "If you wish to ignore this message, set the environment variable "
+                    "If you wish to disregard this message, set the environment variable "
                     "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1."
                 ),
             )

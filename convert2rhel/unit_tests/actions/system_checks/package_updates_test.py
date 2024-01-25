@@ -158,7 +158,7 @@ def test_check_package_updates_with_repoerror(pretend_os, monkeypatch, caplog, p
         title="Package up to date check fail",
         description="Please refer to the diagnosis for further information",
         diagnosis=diagnosis,
-        remediations="If you wish to ignore this message, set the environment variable "
+        remediations="If you wish to disregard this message, set the environment variable "
         "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
         variables={},
     )
