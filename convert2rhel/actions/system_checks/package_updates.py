@@ -137,6 +137,8 @@ class PackageUpdates(actions.Action):
                     title="Outdated packages detected",
                     description="Please refer to the diagnosis for further information",
                     diagnosis=package_not_up_to_date_error_message,
+                    remediations="If you wish to ignore this message, set the environment variable "
+                    "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1.",
                 )
                 return
 
