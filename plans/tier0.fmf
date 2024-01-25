@@ -11,33 +11,35 @@ description+: |
                 ['tier: 0', 'tag: non-destructive', 'tag: sanity']
 
     /destructive:
-        /conversion_methods:
-            /activation_key:
-                adjust+:
-                    - environment+:
+        discover+:
+            # List of tests run for every plan/test case.
+            # tmt-reboot feature is used for rebooting the system using
+            # the test management framework.
+            # The main test scenario gets prepended by the "+<" in each case.
+            test:
+                - utils/reboot-after-conversion
+                - checks-after-conversion
+
+        /basic_conversion_methods:
+
+            /activation_key_conversion:
+                environment+:
                         CONVERT2RHEL_DISABLE_TELEMETRY: 1
                 discover+:
-                    filter: tag:checks-after-conversion
-                prepare+:
-                    - name: main conversion preparation
-                      how: shell
-                      script: pytest -svv tests/integration/*/destructive/method/activation_key.py
-                    - name: reboot after conversion
-                      how: ansible
-                      playbook: tests/ansible_collections/roles/reboot/main.yml
+                    test+<:
+                        - conversion-method/activation_key_conversion
 
-            /rhsm:
+            /rhsm_conversion:
                 discover+:
-                    filter: tag:checks-after-conversion
-                prepare+:
-                    - name: main conversion preparation
-                      how: shell
-                      script: pytest -svv tests/integration/*/destructive/method/rhsm.py
-                    - name: reboot after conversion
-                      how: ansible
-                      playbook: tests/ansible_collections/roles/reboot/main.yml
+                    test+<:
+                        - conversion-method/rhsm_conversion
 
-            /pre_registered_system:
+            /satellite_conversion:
+                discover+:
+                    test+<:
+                        - conversion-method/satellite_conversion
+
+            /pre_registered_system_conversion:
                 adjust+:
                   - enabled: false
                     when: distro == oracle
@@ -45,26 +47,8 @@ description+: |
                   - environment+:
                       C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
                 discover+:
-                    filter: tag:checks-after-conversion
-                prepare+:
-                    - name: Convert pre-registered system
-                      how: shell
-                      script: pytest -svv tests/integration/*/destructive/method/pre_registered.py
-                    - name: reboot after conversion
-                      how: ansible
-                      playbook: tests/ansible_collections/roles/reboot/main.yml
-
-            /satellite:
-                discover+:
-                    filter: tag:checks-after-conversion
-                prepare+:
-                    - name: main conversion preparation
-                      how: shell
-                      script: pytest -svv tests/integration/*/destructive/method/satellite.py
-                    - name: reboot after conversion
-                      how: ansible
-                      playbook: tests/ansible_collections/roles/reboot/main.yml
-
+                    test+<:
+                        - conversion-method/pre_registered_system_conversion
 
 /non-destructive:
     discover+:
@@ -72,168 +56,140 @@ description+: |
             ['tier: 0', 'tag: non-destructive', 'tag: -sanity']
 
 /destructive:
-    /conversion_methods:
-        /custom_repos:
-            discover+:
-                # Exclude the rhel_subman check, we don't use RHSM for the conversion
-                filter: tag:checks-after-conversion & tag:-rhel-subman
-            prepare+:
-                - name: add custom repos
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/custom_repos.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
+    discover+:
+        # List of tests run for every plan/test case.
+        # tmt-reboot feature is used for rebooting the system using
+        # the test management framework.
+        # The main test scenario gets prepended by the "+<" in each case.
+        test:
+            - utils/reboot-after-conversion
+            - checks-after-conversion
 
-        /rhsm_non_eus:
+    /basic_conversion_methods:
+
+        /rhsm_non_eus_conversion:
             enabled: false
             adjust+:
                 - enabled: true
                   when: >
                     distro == alma-8.6, rocky-8.6, alma-8.8, rocky-8.8
             discover+:
-                filter: tag:checks-after-conversion
+                test+<:
+                    - conversion-method/rhsm_non_eus_account_conversion
+
+        /custom_repositories_conversion:
             prepare+:
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/rhsm_non_eus.py
-                - name: reboot after conversion
+                - name: Add custom repositories
                   how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
+                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+            discover+:
+                test+<:
+                    - conversion-method/custom_repos_conversion
+                # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                exclude:
+                    - checks-after-conversion/rhel_subman
 
 
     /single_yum_transaction:
-        /single_yum_transaction_all_errors:
-            enabled: false
-            adjust+:
-                - enabled: true
-                  when: >
-                      distro == oracle-7
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: install ntp package and remove one dependency
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /single_yum_transaction_mismatch_errors:
-            enabled: false
-            adjust+:
-                - enabled: true
-                  when: >
-                      distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: install multilib packages with dnf
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /single_yum_transaction_excld_pkgs:
-            enabled: false
-            adjust+:
-                - enabled: true
-                  when: distro == centos-7
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: remove some pkgs from the excld pkgs config list
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_single_yum_transaction.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /single_yum_transaction_check_for_latest_packages:
-            discover+:
-                filter: tag:checks-after-conversion
-            prepare+:
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/single-yum-transaction/test_check_for_latest_packages.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /yum_distro_sync:
-            discover+:
-                  filter: tag:checks-after-conversion
-            prepare+:
-                  - name: enable CentOS extras repo
-                    how: ansible
-                    playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
-                  - name: install problematic package
-                    how: shell
-                    script: pytest -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
-                  - name: main conversion preparation
-                    how: shell
-                    script: pytest -svv tests/integration/*/destructive/yum-distro-sync/test_yum_distro_sync.py
-                  - name: reboot after conversion
-                    how: ansible
-                    playbook: tests/ansible_collections/roles/reboot/main.yml
-
-        /resolve_dependency:
+        /packages_upgraded_after_conversion:
+            #TODO(danmyway) Enable again when RHELC-1190 gets fixed
             adjust+:
                 - enabled: false
-                  when: distro == alma, rocky
-                  because: We do not have any tracked packages with Rocky and Alma for this test case
+                  when:
+                    distro == alma-8.8
+                  because: There is a known issue causing the shim-x64 package not being reinstalled.
+
             discover+:
-                filter: tag:checks-after-conversion
+                test+<:
+                    - single-yum-transaction/packages_upgraded_after_conversion
+
+        /observe_errors:
+            enabled: false
+            discover+:
+                test+<:
+                    - single-yum-transaction/single_yum_transaction
+
+            /all_errors:
+                adjust+:
+                    - enabled: true
+                      when: >
+                        distro == oracle-7
+                prepare+:
+                    - name: Install ntp package and remove one dependency
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
+
+            /excluded_packages:
+                adjust+:
+                    - enabled: true
+                      when: distro == centos-7
+                prepare+:
+                    - name: Remove some packages from the excluded packages config list
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
+
+            /mismatch_errors:
+                adjust+:
+                    - enabled: true
+                      when: >
+                        distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
+                prepare+:
+                    - name: Install multilib packages with dnf
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+
+            /resolve_dependency:
+                adjust+:
+                    - enabled: false
+                      when: distro == alma, rocky
+                      because: We do not have any tracked packages with Rocky and Alma for this test case
+                summary+: |
+                    Handle dependency packages
+                description+: |
+                    This case installs a couple of packages that we know cause dependency
+                    issues during the package replacement, so the intention of this is to
+                    assert that convert2rhel can handle those packages and not fail during the
+                    replacement, especially with the yum transaction.
+                prepare+:
+                    - name: Install dependency packages
+                      how: shell
+                      script: pytest -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
+
+        /yum_distro_sync:
             prepare+:
-                - name: install dependency packages
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/resolve-dependency/install_dependency_packages.py
-                - name: main conversion preparation
-                  how: shell
-                  script: pytest -svv tests/integration/*/destructive/method/rhsm.py
-                - name: reboot after conversion
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/reboot/main.yml
+                  - name: enable CentOS' extras repo
+                    how: ansible
+                    playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
+                  - name: Install problematic package
+                    how: shell
+                    script: pytest -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
+            discover+:
+                test+<:
+                    - yum-distro-sync/yum_distro_sync
 
 
-    /convert_offline_systems:
+    /offline_system_conversion:
         adjust+:
           # Disabled due to known issue: https://issues.redhat.com/browse/RHELC-1040
           # Enable once this gets fixed
           - enabled: false
             when: distro == oracle-7
-          - environment+:
-                CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP: 1
+        environment+:
+            CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP: 1
             when: distro == oracle-8
             because: |
                 The subman is installed from CentOS repo, resulting in outdated python3-ethtool
                 package which is then interfering with the test, inhibiting the conversion.
-        discover+:
-            # Exclude the rhel_subman check, we don't use RHSM for the conversion
-            filter: tag:checks-after-conversion & tag:-rhel-subman
         prepare+:
-            - name: install subscription manager
+            - name: Install subscription manager
               how: ansible
               playbook: tests/ansible_collections/roles/install-submgr/main.yml
-            - name: allow access to Satellite only
+            - name: Allow access to Satellite only
               how: shell
-              script: pytest -svv tests/integration/*/destructive/convert-offline-systems/prepare_system.py
-            - name: run offline conversion using the satellite
-              how: shell
-              script: pytest -svv tests/integration/*/destructive/convert-offline-systems/run_conversion.py
-            - name: reboot after conversion
-              how: ansible
-              playbook: tests/ansible_collections/roles/reboot/main.yml
+              script: pytest -svv tests/integration/*/destructive/offline-system-conversion/prepare_system.py
+        discover+:
+            test+<:
+                - offline-system-conversion/offline_system_conversion
+            # Exclude the rhel_subman check, we don't use RHSM for the conversion
+            exclude:
+                - checks-after-conversion/rhel_subman

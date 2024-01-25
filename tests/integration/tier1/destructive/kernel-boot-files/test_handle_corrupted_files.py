@@ -55,23 +55,23 @@ def restore_original_initramfs(shell, kernel_version):
     assert os.path.exists(initramfs_file)
 
 
-@pytest.mark.corrupted_initramfs_file
+@pytest.mark.test_handle_corrupted_initramfs_file
 def test_corrupted_initramfs_file(convert2rhel, shell):
     """
-    Verify if an output with a warning message is sent to the user in case of a
+    Verify, that an output with a warning message is sent to the user in case of a
     corrupted initramfs file.
 
-    This case can happen when the transaction ran successfully, but, for lack of
-    disk space in the /boot partition, the kernel scriptlet will fail to copy
+    This case can happen when the transaction is run successfully, due to the lack of
+    a disk space in the /boot partition, the kernel scriptlet will fail to copy
     the uncompressed initramfs file to /boot/initramfs-*.img, thus, leaving the
-    file in an partial state and corrupted.
+    file in a partial state and corrupted.
 
     Since this could be a real scenario, we prepared this test to assert that,
     if it happens, Convert2RHEL can detect that partial file there and instruct
     the user on how to fix the problem.
 
     .. note::
-        @lnykryn made an reproducer for the `cp` issue that can be seen here:
+        @lnykryn made a reproducer for the `cp` issue that can be seen here:
         https://gist.github.com/r0x0d/5d6a93c5827bd365e934f3d612fdafae
 
         Since it would take very long to reproduce the `cp` issue as seen in
@@ -98,7 +98,7 @@ def test_corrupted_initramfs_file(convert2rhel, shell):
         kernel_version = get_latest_installed_kernel_version(kernel_name)
 
         # Corrupt the initramfs file to make the conversion to output steps on
-        # how to fix the problem. We backup the original one before corrupting
+        # how to fix the problem. We back up the original one before corrupting
         # it as we need to restore the file in order to properly finish the
         # tests.
         corrupt_initramfs_file(shell, kernel_version)

@@ -1,4 +1,5 @@
-summary: Handle kernel boot files
+summary: |
+    Handle kernel boot files issues
 
 description: |
     Verify that Convert2RHEL can detect and handle the kernel boot files in
@@ -11,3 +12,32 @@ description: |
 tag+:
     - kernel
     - boot
+    - initramfs
+
+/corrupted_initramfs_file:
+    summary+: |
+        Corrupted initramfs file
+    description+: |
+        Verify, that a warning message is printed out to the user in case of a corrupted initramfs file.
+        This case can happen when the transaction is run successfully, due to the lack of
+        a disk space in the /boot partition, the kernel scriptlet will fail to copy
+        the uncompressed initramfs file to /boot/initramfs-*.img, thus, leaving the
+        file in a partial state and corrupted.
+    test: pytest -svv -m test_handle_corrupted_initramfs_file
+
+/missing_kernel_boot_files:
+    summary+: |
+        Missing kernel boot files in /boot
+    description+: |
+        Verify, that a warning message is printed out to the user in case
+        the tool can't detect the initramfs and vmlinuz files in /boot.
+        This case can happen if the kernel scriptlet fails during the yum/dnf
+        transaction where Convert2RHEL tries to replace the packages. Even though
+        the scriptlet can fail, the transaction will still continue and the
+        workflow will continue to be executed. The problem is that, with a
+        scriptlet failure when replacing/installing a kernel, the initramfs and
+        vmlinuz may not be available in the /boot partition, especially if there
+        isn't sufficient disk space available in there. This test has the intention
+        to verify that the warning with the correct steps are provided to the
+        user in order to overcome this case and fix it for them.
+    test: pytest -svv -m test_missing_kernel_boot_files

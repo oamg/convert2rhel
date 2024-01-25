@@ -3,8 +3,11 @@ import json
 import pytest
 
 
-@pytest.mark.basic_conversion
-def test_basic_conversion(shell):
+@pytest.mark.test_conversion_sanity_rhel_in_os_release
+def test_sanity_conversion(shell):
+    """
+    After conversion sanity check to verify, that Red Hat Enterprise Linux is present in /etc/os-release.
+    """
     os_release = shell("cat /etc/os-release").output
     assert "Red Hat Enterprise Linux" in os_release
 
@@ -33,10 +36,10 @@ DISTRO_CONVERSION_MAPPING = {
 }
 
 
-@pytest.mark.correct_distro
+@pytest.mark.test_correct_distro
 def test_correct_distro():
-    """ "
-    Check that we landed on the correct version
+    """
+    Verify, that we landed on the correct system version.
     """
     with open("/etc/migration-results") as json_file:
         json_data = json.load(json_file)

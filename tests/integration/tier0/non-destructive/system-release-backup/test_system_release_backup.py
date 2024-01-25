@@ -99,6 +99,8 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel, custom_subman
         c2r.expect("Unable to register the system through subscription-manager.")
         c2r.expect("Restore /etc/os-release from backup")
 
+    assert c2r.exitstatus != 0
+
     assert shell("find /etc/os-release").returncode == 0
 
 

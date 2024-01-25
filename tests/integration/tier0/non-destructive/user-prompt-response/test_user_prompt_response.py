@@ -7,7 +7,7 @@ from envparse import env
 def test_check_user_response_user_and_password(convert2rhel):
     """
     Run c2r registration with no username and password provided.
-    Verify that user has to pass non empty username/password string to continue, otherwise enforce the input prompt again.
+    Verify that user has to pass non-empty username/password string to continue, otherwise enforce the input prompt again.
     """
     with convert2rhel("-y --serverurl {}".format(env.str("RHSM_SERVER_URL")), unregister=True) as c2r:
         c2r.expect(" ... activation key not found, username and password required")

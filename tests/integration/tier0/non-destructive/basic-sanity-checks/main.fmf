@@ -68,7 +68,8 @@ tag+:
         summary+: |
             Latest or newer version of convert2rhel
         description+: |
-            Verify that running the latest or newer than latest version does not inhibit the conversion.
+            Verify that running the latest or newer than latest version
+            does not raise the CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
         tag+:
             - version-latest-or-newer
             - sanity
@@ -80,7 +81,7 @@ tag+:
             Older convert2rhel version without envar
         description+: |
             Verify that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
-            environment variable in place, does inhibit the conversion.
+            environment variable in place, raises CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
         tag+:
             - version-older-no-envar
         test: |
@@ -91,7 +92,7 @@ tag+:
             Older convert2rhel version with envar
         description+: |
             Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
-            environment variable in place, does inhibit the conversion.
+            environment variable in place, does not raise CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE.
         tag+:
             - version-older-with-envar
         test: |

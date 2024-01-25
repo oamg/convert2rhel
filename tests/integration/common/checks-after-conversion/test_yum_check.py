@@ -1,7 +1,9 @@
 import pytest
 
 
-@pytest.mark.yum_check
+@pytest.mark.test_yum_check
 def test_yum_check(shell):
-    # Run yum check after the conversion
+    """
+    After conversion check verifying yum check is able to finis without any issues.
+    """
     assert shell("yum check").returncode == 0

@@ -32,7 +32,6 @@ tag+:
     test: |
         pytest -svv -m test_transaction_validation_error
 
-
 /package_download_error:
     summary+: |
         Error during the package download

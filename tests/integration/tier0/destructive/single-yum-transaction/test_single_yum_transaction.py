@@ -1,9 +1,12 @@
 import re
 
+import pytest
+
 from conftest import SYSTEM_RELEASE_ENV
 from envparse import env
 
 
+@pytest.mark.test_single_yum_transaction
 def test_single_yum_transaction(convert2rhel, shell):
     """Run the conversion using the single yum transaction.
 

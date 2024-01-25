@@ -13,4 +13,5 @@ description+: |
 tag+:
     - kernel
 
-test: pytest -svv -m test_latest_kernel_check_skip
+/latest_kernel_check_skip:
+    test: pytest -svv -m test_latest_kernel_check_skip

@@ -1,6 +1,8 @@
 import platform
 import subprocess
 
+import pytest
+
 from envparse import env
 
 
@@ -26,12 +28,13 @@ def get_device_name(device):
 
 
 def get_device_partition(device):
-    """Utllity function to retrieve the boot partition for a given device."""
+    """Utility function to retrieve the boot partition for a given device."""
     partition = subprocess.check_output(["blkid", "-p", "-s", "PART_ENTRY_NUMBER", device])
     partition = partition.decode().strip()
     return partition.rsplit("PART_ENTRY_NUMBER=", maxsplit=1)[-1].replace('"', "")
 
 
+@pytest.mark.test_detect_correct_boot_partition
 def test_detect_correct_boot_partition(convert2rhel):
     """
     Verify that the correct arguments for disk and partition will be used

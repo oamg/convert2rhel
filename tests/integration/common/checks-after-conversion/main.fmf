@@ -1,4 +1,5 @@
-summary: Checks after conversion
+summary: |
+    Checks after conversion
 description: |
     This set of checks looks at the system that has been freshly converted to see whether it has all signs of a
     successfully converted system. As an example one of the checks looks at /etc/system-release to see if it has
@@ -12,6 +13,27 @@ link:
   - https://issues.redhat.com/browse/RHELC-411
   - https://issues.redhat.com/browse/RHELC-291
 
+order: 52
+
+
+/sanity:
+    summary+:
+        Sanity check
+    /rhel_in_os_release:
+        summary+: |
+            RHEL present in /etc/os-release
+        description: |
+            Sanity check to verify, that Red Hat Enterprise Linux is present in /etc/os-release
+        test: pytest -svv -m test_conversion_sanity_rhel_in_os_release
+
+    /correct_distro:
+        summary+: |
+            Correct distro
+        description+: |
+            Verify, that the conversion successfully converted to the correct target system.
+        test: pytest -svv -m test_correct_distro
+
+
 /data_collection:
     summary+: |
         Data collection
@@ -21,54 +43,111 @@ link:
         When data collection is enabled, verify, the convert2rhel.facts file exists.
     test: pytest -svv -m test_check_data_collection
 
-/delete_temporary_folder:
-    test: pytest -svv -m delete_temporary_folder
+
+/deleted_temporary_folder:
+    summary+: |
+        Temporary folder deleted
+    description: |
+        Verify, that the temporary folder `/var/lib/convert2rhel/` was successfully removed after the conversion.
+    test: pytest -svv -m test_deleted_temporary_folder
+
 
 /enabled_repositories:
-    test: pytest -svv -m enabled_repositories
+    summary+: |
+        Required repositories enabled
+    description: |
+        Verify, that the suitable repositories are enabled after the conversion.
+        When running the conversion with the non-EUS RHSM account method scenario
+        (meaning the account does not have the EUS repositories enabled by default and the source system is EUS),
+        verify that the non-EUS repositories are enabled after conversion.
+        When running the conversion on an EUS machine with an EUS RHSM account
+        verify that the EUS repositories are enabled after the conversion.
+    test: pytest -svv -m test_enabled_repositories
+
 
 /flag_system_as_converted:
-    test: pytest -svv -m flag_system_as_converted
+    summary+: |
+        Flag system as converted
+    description: |
+        Verify, that the breadcrumbs file was created and corresponds to the JSON schema after the conversion.
+    test: pytest -svv -m test_flag_system_as_converted
 
-/basic_conversion:
-    test: pytest -svv -m basic_conversion
-
-/correct_distro:
-    test: pytest -svv -m correct_distro
-
-/rhel_kernel:
-    test: pytest -svv -m rhel_kernel
-
-/rhel_subman:
-    test: pytest -svv -m test_rhel_subscription_manager
-    tag+:
-        - rhel-subman
-
-/yum_check:
-    test: pytest -svv -m yum_check
-
-/verify_string_in_log:
-    tag+:
-        - verify-string-in-log
-    /initramfs_and_vmlinuz_present:
-        tag+:
-            - initramfs-and-vmlinuz-present
-        test: pytest -svv -m initramfs_and_vmlinuz_present
-    /failed_to_parse_package_not_present:
-        tag+:
-            - failed-to-parse-package-not-present
-        test: pytest -svv -m test_failed_to_parse_package_info_empty_arch_not_present
 
 /log_lines_not_duplicated:
     summary+: Logged lines are not duplicated
-    # TODO (danmyway) remove when the duplication of lines with multiple packages with different versions gets resolved
+    # TODO (danmyway) remove when the https://issues.redhat.com/browse/RHELC-969 gets resolved
     result: info
     description+: |
         Iterate over the log file and check that the lines are unique and not duplicated.
     tag+:
         - log-file
-    test: pytest -svv -m verify_logging_is_not_duplicated
+    test: pytest -svv -m test_verify_logging_is_not_duplicated
+
+
+/rhel_kernel:
+    summary+: |
+        Installed kernels signed by Red Hat
+    description+: |
+        Verify, that each of installed kernels on the system is signed by Red Hat.
+    tag+:
+        - rhel-kernel
+    test: pytest -svv -m test_rhel_kernel
+
+
+/rhel_subman:
+    summary+: |
+        Installed subscription-manager signed by Red Hat
+    description+: |
+        Verify, that the installed subscription-manager is signed by Red Hat.
+        The package should be signed by Red Hat for both scenarios -
+        either replaced or installed by convert2rhel.
+    tag+:
+        - rhel-subman
+    test: pytest -svv -m test_rhel_subscription_manager
+
+/verify_string_in_log:
+    summary+: |
+        Requested string is present in logfile
+    description+: |
+        Essentially a sanity check verifying required strings are present in a logfile.
+        In some cases, we do not need to catch an output during the conversion
+        as it is sufficient to verify it after the conversion has finished.
+    tag+:
+        - verify-string-in-log
+
+    /initramfs_and_vmlinuz_present:
+        summary+: |
+            initramfs and vmlinuz files are valid
+        description+: |
+            Verify that after a successful conversion the kernel boot files are present.
+            Our criteria, in this case, are related to the `check_kernel_boot_files()`
+            finding the two necessary boot files (initramfs and vmlinuz),
+            and validating that the initramfs file is not corrupted.
+        tag+:
+            - initramfs-and-vmlinuz-present
+        test: pytest -svv -m test_initramfs_and_vmlinuz_present
+
+    /failed_to_parse_package_not_present:
+        summary+: |
+            Failed to parse a package not present
+        description+: |
+            Verify that in case of package with the `arch` field missing in its information,
+            the message Failed to parse a package does not appear during the conversion run.
+        tag+:
+            - failed-to-parse-package-not-present
+        test: pytest -svv -m test_failed_to_parse_package_info_empty_arch_not_present
+
+
+/yum_check:
+    summary+: |
+        Run yum check
+    description+: |
+        After conversion check verifying yum check is able to finis without any issues.
+    test: pytest -svv -m test_yum_check
 
 /check_firewalld_errors:
-    summary+: Check if there are any problems with firewalld on the system
+    summary+: |
+        Firewalld issues after the conversion
+    description+: |
+        Verify that firewalld is not reporting any issues in the logs.
     test: pytest -svv -m check_firewalld_errors

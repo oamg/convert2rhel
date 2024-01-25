@@ -60,10 +60,11 @@ def kmod_in_different_directory(shell):
 
 
 @pytest.mark.test_custom_module_loaded
-def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rhel):
+def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel):
     """
     This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
-    If custom module is loaded the conversion has to be inhibited.
+    If custom module is loaded the conversion has to raise:
+    ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -80,11 +81,12 @@ def test_inhibit_if_custom_module_loaded(kmod_in_different_directory, convert2rh
 
 
 @pytest.mark.test_custom_module_not_loaded
-def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
+def test_do_not_error_if_module_is_not_loaded(shell, convert2rhel):
     """
     Load the kmod from custom location.
     Verify that it is loaded.
-    Remove the previously loaded 'custom' kmod and verify, the conversion is not inhibited.
+    Remove the previously loaded 'custom' kmod and verify, the conversion
+    does not raise the ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
     The kmod compatibility check is right before the point of no return.
     Abort the conversion right after the check.
     """
@@ -101,7 +103,7 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
     assert shell(f"rm -rf {CUSTOM_KMOD_DIRECTORY.as_posix()}").returncode == 0
     shell("depmod")
 
-    # If custom module is not loaded the conversion should not be inhibited.
+    # If custom module is not loaded the conversion should not raise an error
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
             env.str("RHSM_SERVER_URL"),
@@ -122,9 +124,10 @@ def test_do_not_inhibit_if_module_is_not_loaded(shell, convert2rhel):
 
 
 @pytest.mark.test_force_loaded_kmod
-def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
+def test_error_if_module_is_force_loaded(shell, convert2rhel):
     """
-    In this test case we force load kmod and verify that the convert2rhel run is inhibited.
+    In this test case we force load kmod and verify that the convert2rhel raises:
+    TAINTED_KMODS.TAINTED_KMODS_DETECTED.
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
@@ -149,10 +152,11 @@ def test_inhibit_if_module_is_force_loaded(shell, convert2rhel):
 
 
 @pytest.mark.test_tainted_kernel
-def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
+def test_tainted_kernel_error(custom_kmod, convert2rhel):
     """
     This test marks the kernel as tainted which is not supported by convert2rhel.
     We need to install specific kernel packages to build own custom kernel module.
+    Verify TAINTED_KMODS.TAINTED_KMODS_DETECTED is raised.
     """
 
     with convert2rhel(
@@ -174,7 +178,7 @@ def test_tainted_kernel_inhibitor(custom_kmod, convert2rhel):
 def test_envar_overrides_unsupported_module_loaded(kmod_in_different_directory, convert2rhel):
     """
     This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
-    will override the inhibition when there is RHEL unsupported kernel module detected.
+    will override the check error when there is RHEL unsupported kernel module detected.
     The environment variable is set through the test metadata.
     """
 

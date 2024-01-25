@@ -100,7 +100,7 @@ def terminate_and_assert_good_rollback(c2r):
     Helper function.
     Run conversion and terminate it to start the rollback.
     """
-    # Use 'Ctrl + c' first to check for unexpected behaviour
+    # Use 'Ctrl + c' to check for unexpected behaviour
     # of the rollback feature after process termination
     c2r.sendcontrol("c")
 

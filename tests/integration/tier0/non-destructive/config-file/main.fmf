@@ -5,6 +5,10 @@ description: |
 
 #TODO(danmyway) create test case with config file with insufficient permissions.
 
+link:
+    - https://issues.redhat.com/browse/RHELC-411
+    - https://issues.redhat.com/browse/RHELC-413
+
 tier: 0
 
 tag+:

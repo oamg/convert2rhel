@@ -24,7 +24,7 @@ tag+:
     summary+: |
         Set /etc/system-release to unsupported version
     description+: |
-        Verify that running the utility with unsupported version inhibits the conversion.
+        Verify that running the utility with unsupported OS version inhibits the conversion.
         Set the releasever to unsupported version (e.g. x.1.1111)
     tag+:
         - releasever-unknown-release

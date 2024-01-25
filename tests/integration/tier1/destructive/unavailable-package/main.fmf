@@ -1,0 +1,14 @@
+summary: |
+    Package removed from CentOS 8.5
+description: |
+    Verify that Convert2RHEL can correctly handle removal of package from the
+    excluded list that is listed under the configuration files.
+    This package is not available in the latest version of CentOS 8.5.
+    The package that needs to be removed is installed during the plan
+    preparation phase using an ansible playbook.
+    The test itself verifies the presence of the package on the system
+    and proceeds with the conversion.
+
+
+/package_removed_from_centos_85:
+    test: pytest -svv -m test_package_removed_from_centos_85

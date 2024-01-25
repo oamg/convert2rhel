@@ -8,8 +8,9 @@ from envparse import env
 @pytest.fixture(scope="function")
 def convert2rhel_repo(shell):
     assert shell("rpm -qi subscription-manager").returncode == 0
-    # The following repository requires the redhat-uep.pem certificate. convert2rhel will try accessing the repo and
-    # by running convert2rhel twice makes sure that the rollback of the first run correctly reinstalled the certificate
+    # The following repository requires the redhat-uep.pem certificate.
+    # convert2rhel will try accessing the repo and during the test we run the convert2rhel twice
+    # making sure that the rollback of the first run correctly reinstalled the certificate
     # when installing subscription-manager-rhsm-certificates.
     c2r_repo = "/etc/yum.repos.d/convert2rhel.repo"
 
@@ -40,7 +41,8 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_r
       back during the rollback and that lead to the $releasever variable being undefined, ultimately causing a traceback
       when using the DNF python API (https://issues.redhat.com/browse/RHELC-762)
     """
-
+    # By running convert2rhel twice we make sure that the rollback of the first run
+    # correctly reinstalled the certificate when installing subscription-manager-rhsm-certificates.
     for run in range(2):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(

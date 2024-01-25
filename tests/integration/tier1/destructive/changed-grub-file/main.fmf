@@ -1,10 +1,30 @@
-summary: Change the grub file
+summary: |
+    Change the grub file
 
 description: |
-    Modify the /etc/default/grub file with both 'valid' and 'invalid' changes.
-    Valid changes are represented by adding newlines, whitespaces and comments.
-    None of these should cause the `grub-mkfile` call to fail.
-    Invalid changes, e.g. removing the `=` should cause the 'grub2-mkfile' call to fail.
-    Verify a correct output of the call and a successful conversion.
+    Modify the /etc/default/grub file and verify correct output and successful conversion.
 
-test: pytest -svv
+tag+:
+    - grub
+    - grub-mkfile
+
+
+/valid_changes_to_grub_file:
+    summary+: |
+        Introduce valid changes
+    description+: |
+        Valid changes are represented by adding newlines, whitespaces and comments.
+        Verify a successful conversion.
+    tag+:
+        - grub-change-valid
+    test: pytest -svv -m test_valid_changes_to_grub_file
+
+/invalid_changes_to_grub_file:
+    summary+: |
+        Introduce invalid changes
+    description+: |
+        Invalid changes, e.g. removing the `=` should cause the 'grub2-mkfile' call to fail.
+        Verify a successful conversion.
+    tag+:
+        - grub-change-invalid
+    test: pytest -svv -m test_invalid_changes_to_grub_file

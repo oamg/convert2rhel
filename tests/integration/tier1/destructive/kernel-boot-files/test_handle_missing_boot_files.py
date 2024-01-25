@@ -36,10 +36,10 @@ def remove_kernel_boot_files(shell, kernel_version):
     assert shell("rm -f %s" % vmlinuz_file).returncode == 0
 
 
-@pytest.mark.missing_kernel_boot_files
+@pytest.mark.test_missing_kernel_boot_files
 def test_missing_kernel_boot_files(convert2rhel, shell):
     """
-    Verify if an output with a warning message is sent to the user in case of
+    Verify, that a warning message is printed out to the user in case
     the tool can't detect the initramfs and vmlinuz files in /boot.
 
     This case can happen if the kernel scriptlet fails during the yum/dnf

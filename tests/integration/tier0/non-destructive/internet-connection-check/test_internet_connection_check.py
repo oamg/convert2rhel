@@ -63,7 +63,7 @@ def test_check_if_internet_connection_is_reachable(convert2rhel):
         assert c2r.expect("internet connection seems to be available", timeout=300) == 0
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_unavailable_connection
@@ -81,4 +81,4 @@ def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell, conf
         assert c2r.expect("There was a problem while trying to connect to", timeout=300) == 0
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0

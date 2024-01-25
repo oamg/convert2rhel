@@ -1,8 +1,10 @@
-summary: Remove /etc/os-release
+summary: |
+    Remove /etc/os-release
 
 description: |
     Remove /etc/os-release file and verify, that the conversion is successful.
     NOTE: Using the Satellite method for registration would result in registration failure.
 
-
-test: pytest -svv
+tag+:
+    - sysrelease
+    - os-release

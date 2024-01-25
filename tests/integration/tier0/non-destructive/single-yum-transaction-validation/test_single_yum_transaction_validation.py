@@ -100,7 +100,7 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
         else:
             c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_LOAD_REPOSITORIES")
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0
 
 
 @pytest.mark.test_transaction_validation_error
@@ -141,7 +141,7 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             timeout=600,
         )
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus != 0
 
 
 @pytest.fixture

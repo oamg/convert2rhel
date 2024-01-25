@@ -1,13 +1,18 @@
 summary: Change yum configuration file
 
 description: |
-    Test the scenario in which the user modifies /etc/yum.conf
-    before the conversion. In that case, during the conversion,
-    the config file does not get replaced with the config file
-    from the RHEL package. Make sure that C2R patch the config file
+    Test a scenario in which the user modifies /etc/yum.conf
+    before the conversion. In that case, the config file does not get replaced
+    during the conversion with the config file from the RHEL package.
+    Make sure that C2R patches the config file
     and verify that the yum works after a successful conversion.
 
 link:
-   - https://issues.redhat.com/browse/RHELC-365
+   - verifies: https://issues.redhat.com/browse/RHELC-365
 
-test: pytest -svv
+/yum_conf_patch:
+    tag+:
+        - yum
+        - yum-patch
+
+    test: pytest -svv -m test_yum_conf_patch
