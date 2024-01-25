@@ -124,7 +124,7 @@ class TestIsLoadedKernelLatest:
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
             id="INVALID_KERNEL_VERSION",
-            level="ERROR",
+            level="OVERRIDABLE",
             title="Invalid kernel version detected",
             description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
             % fake_reposdir_path,
@@ -212,15 +212,21 @@ class TestIsLoadedKernelLatest:
         )
 
         is_loaded_kernel_latest_action.run()
-        unit_tests.assert_actions_result(
-            is_loaded_kernel_latest_action,
-            level="ERROR",
-            id="INVALID_KERNEL_PACKAGE",
-            title=title,
-            description=description,
-            diagnosis=diagnosis,
-            remediations=remediations,
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="INVALID_KERNEL_PACKAGE",
+                    title=title,
+                    description=description,
+                    diagnosis=diagnosis,
+                    remediations=remediations,
+                ),
+            )
         )
+
+        assert expected.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @pytest.mark.parametrize(
         (
@@ -302,15 +308,21 @@ class TestIsLoadedKernelLatest:
 
         is_loaded_kernel_latest_action.run()
 
-        unit_tests.assert_actions_result(
-            is_loaded_kernel_latest_action,
-            level="ERROR",
-            id="INVALID_KERNEL_PACKAGE",
-            title=title,
-            description=description,
-            diagnosis=diagnosis,
-            remediations=remediations,
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="INVALID_KERNEL_PACKAGE",
+                    title=title,
+                    description=description,
+                    diagnosis=diagnosis,
+                    remediations=remediations,
+                ),
+            )
         )
+
+        assert expected.issuperset(is_loaded_kernel_latest_action.messages)
+        assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     def test_is_loaded_kernel_latest_eus_system(
@@ -732,7 +744,7 @@ class TestIsLoadedKernelLatest:
         diagnosis = diagnosis.format(package_name)
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="KERNEL_CURRENCY_CHECK_FAIL",
             title=title,
             description=description,
@@ -895,7 +907,7 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action.run()
         unit_tests.assert_actions_result(
             is_loaded_kernel_latest_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="INVALID_KERNEL_VERSION",
             title="Invalid kernel version detected",
             description="The loaded kernel version mismatch the latest one available in the enabled system repositories",

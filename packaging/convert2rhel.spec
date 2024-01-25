@@ -44,7 +44,7 @@ Requires:       python%{python_pkgversion}-setuptools
 Requires:       python%{python_pkgversion}-six
 %if 0%{?rhel} && 0%{?rhel} >= 8
 Requires:       dnf
-# dnf-utils includes yumdownloader we use
+# dnf-utils includes yumdownloader and package-cleanup we use
 Requires:       dnf-utils
 Requires:       grubby
 Requires:       python3-pexpect
