@@ -17,7 +17,8 @@ def test_pre_registered_wont_unregister(shell, pre_registered, disabled_telemetr
     with convert2rhel("--debug") as c2r:
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
-            "WARNING - No rhsm credentials given to subscribe the system. Skipping the subscription step", timeout=300
+            "WARNING - No rhsm credentials given to subscribe the system. Did not perform the subscription step",
+            timeout=300,
         )
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
