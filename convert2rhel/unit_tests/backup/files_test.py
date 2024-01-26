@@ -333,7 +333,7 @@ class TestMissingFile:
     @pytest.mark.parametrize(
         ("exists", "expected", "message"),
         (
-            (True, False, "Shouldn't be called, file {filepath} is present before conversion"),
+            (True, False, "The file {filepath} is present on the system before conversion, skipping it."),
             (False, True, "Marking file {filepath} as missing on system."),
         ),
     )
@@ -394,7 +394,7 @@ class TestMissingFile:
         ("exists", "created", "message_push", "message_pop"),
         (
             (False, True, "Marking file {filepath} as missing on system.", "File {filepath} removed"),
-            (True, False, "Shouldn't be called, file {filepath} is present before conversion", None),
+            (True, False, "The file {filepath} is present on the system before conversion, skipping it.", None),
             (
                 False,
                 False,
@@ -427,3 +427,36 @@ class TestMissingFile:
             assert os.path.isfile(str(path))
         else:
             assert not os.path.isfile(str(path))
+
+    def test_enable_with_file_enabled(self, monkeypatch, caplog):
+        """Verify that we are not enabling the same file twice."""
+        monkeypatch.setattr(os.path, "isfile", lambda file: False)
+        missing_file = MissingFile("/file.txt")
+        missing_file.enable()
+
+        assert missing_file.enabled
+        assert "Marking file /file.txt as missing on system." in caplog.records[-1].message
+
+        missing_file.enable()
+        assert missing_file.enabled
+        # Comparing the length of the records with 1 means that we exited
+        # earlier in the `enable()` function. Not the strongest comparision,
+        # but this should do.
+        assert len(caplog.records) == 1
+
+    def test_restore_with_file_enabled(self, monkeypatch, caplog):
+        """Test that we are not restoring the same file twice"""
+        monkeypatch.setattr(os.path, "isfile", lambda file: True)
+
+        monkeypatch.setattr(os, "remove", lambda file: None)
+        missing_file = MissingFile("/file.txt")
+        missing_file.enabled = True
+
+        missing_file.restore()
+        assert "File /file.txt removed" in caplog.records[-1].message
+
+        missing_file.restore()
+        # Comparing the length of the records with 2 means that we exited
+        # earlier in the `enable()` function. Not the strongest comparision,
+        # but this should do.
+        assert len(caplog.records) == 2

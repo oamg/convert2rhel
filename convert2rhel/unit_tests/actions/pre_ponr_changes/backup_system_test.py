@@ -21,7 +21,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import backup, repo, unit_tests
+from convert2rhel import repo, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile

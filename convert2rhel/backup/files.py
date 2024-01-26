@@ -51,7 +51,12 @@ class RestorableFile(RestorableChange):
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
                     title="Failed to copy file to the backup directory.",
-                    description="During convert2rhel's tests of whether it is likely to succeed, some files on the system are changed. To enable rollback in case we detect something that we would fail to do, we backup those files prior to changing them. In the current case, we encountered a failure while performing that backup so it is unsafe to continue.",
+                    description=(
+                        "Copying the current file has failed. This can lead to inconsistency during the rollbacks as "
+                        "convert2rhel won't be able to restore the file in case of failures."
+                        "In the current case, we encountered a failure while performing that backup so it is unsafe "
+                        "to continue. See the diagnosis section to identify which problem ocurred during the backup."
+                    ),
                     diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
                 )
         else:
@@ -80,7 +85,7 @@ class RestorableFile(RestorableChange):
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
             # IOError for py2 and OSError for py3
-            loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
+            loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
             return
 
         if rollback:
@@ -118,7 +123,9 @@ class MissingFile(RestorableChange):
 
         if os.path.isfile(self.filepath):
             loggerinst.debug(
-                "Shouldn't be called, file {filepath} is present before conversion".format(filepath=self.filepath)
+                "The file {filepath} is present on the system before conversion, skipping it.".format(
+                    filepath=self.filepath
+                )
             )
             return
 
@@ -140,7 +147,7 @@ class MissingFile(RestorableChange):
             except OSError as err:
                 # Do not call 'critical' which would halt the program. We are in
                 # a rollback phase now and we want to rollback as much as possible.
-                loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
+                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
                 return
 
         super(MissingFile, self).restore()
