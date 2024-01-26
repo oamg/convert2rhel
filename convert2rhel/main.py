@@ -44,24 +44,38 @@ class ConversionPhase:
     POST_PONR_CHANGES = 4
 
 
-def initialize_logger(log_name, log_dir):
+def initialize_logger():
     """
     Entrypoint function that aggregates other calls for initialization logic
-    and setup for logger handlers.
+    and setup for logger handlers that do not require root.
+    """
+
+    return logger_module.setup_logger_handler()
+
+
+def initialize_file_logging(log_name, log_dir):
+    """
+    Archive existing file logs and setup all logging handlers that require
+    root, like FileHandlers.
+
+    This function should be called after
+    :func:`~convert2rhel.main.initialize_logger`.
 
     .. warning::
         Setting log_dir underneath a world-writable directory (including
         letting it be user settable) is insecure.  We will need to write
         some checks for all calls to `os.makedirs()` if we allow changing
         log_dir.
-    """
 
+    :param str log_name: Name of the logfile to archive and log to
+    :param str log_dir: Directory where logfiles are stored
+    """
     try:
         logger_module.archive_old_logger_files(log_name, log_dir)
     except (IOError, OSError) as e:
-        print("Warning: Unable to archive previous log: %s" % e)
+        loggerinst.warning("Unable to archive previous log: %s" % e)
 
-    logger_module.setup_logger_handler(log_name, log_dir)
+    logger_module.add_file_handler(log_name, log_dir)
 
 
 def main():
@@ -73,23 +87,21 @@ def main():
     the application lock, to do the conversion process.
     """
 
-    # Make sure we're being run by root
-    utils.require_root()
-
     # initialize logging
-    initialize_logger("convert2rhel.log", logger_module.LOG_DIR)
+    initialize_logger()
 
     # handle command line arguments
     toolopts.CLI()
+
+    # Make sure we're being run by root
+    utils.require_root()
 
     try:
         with applock.ApplicationLock("convert2rhel"):
             return main_locked()
     except applock.ApplicationLockedError:
-        # We have not rotated the log files at this point because main.initialize_logger()
-        # has not yet been called.  So we use sys.stderr.write() instead of loggerinst.error()
-        sys.stderr.write("Another copy of convert2rhel is running.\n")
-        sys.stderr.write("\nNo changes were made to the system.\n")
+        loggerinst.warning("Another copy of convert2rhel is running.\n")
+        loggerinst.warning("\nNo changes were made to the system.\n")
         return 1
 
 
@@ -98,6 +110,11 @@ def main_locked():
 
     pre_conversion_results = None
     process_phase = ConversionPhase.POST_CLI
+
+    # since we now have root, we can add the FileLogging
+    # and also archive previous logs
+    initialize_file_logging("convert2rhel.log", logger_module.LOG_DIR)
+
     try:
         perform_boilerplate()
 
