@@ -274,7 +274,7 @@ class Convert2rhelLatest(actions.Action):
 
 
 def _format_EVR(epoch, version, release):
-    return "%s" % (version)
+    return "%s:%s-%s" % (epoch, version, release)
 
 
 def _extract_convert2rhel_versions(raw_versions):
