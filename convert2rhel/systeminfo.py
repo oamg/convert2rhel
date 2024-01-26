@@ -390,7 +390,7 @@ class SystemInfo:
         try:
             # urlopen as a context manager is only available in Python-3.0+
             # pylint: disable=consider-using-with
-            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS)
+            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS, timeout=15)
             response.close()
             # pylint: enable=consider-using-with
             self.logger.info(
