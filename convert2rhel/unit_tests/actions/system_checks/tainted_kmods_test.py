@@ -15,12 +15,18 @@
 
 __metaclass__ = type
 
+import os
 
 import pytest
 import six
 
-from convert2rhel import unit_tests
+from convert2rhel import actions, unit_tests
 from convert2rhel.actions.system_checks import tainted_kmods
+from convert2rhel.actions.system_checks.tainted_kmods import (
+    LINK_KMODS_RH_POLICY,
+    LINK_PREVENT_KMODS_FROM_LOADING,
+    LINK_TAINTED_KMOD_DOCS,
+)
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -60,15 +66,92 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
     if is_error:
         unit_tests.assert_actions_result(
             tainted_kmods_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="TAINTED_KMODS_DETECTED",
             title="Tainted kernel modules detected",
             description="Please refer to the diagnosis for further information",
-            diagnosis="Tainted kernel modules detected:\n  system76_io\n",
+            diagnosis=(
+                "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
+                "components are not supported per our software support"
+                " policy:\n%s\n" % LINK_KMODS_RH_POLICY
+            ),
             remediations=(
                 "Prevent the modules from loading by following {0}"
-                " and run convert2rhel again to continue with the conversion.".format(
-                    tainted_kmods.LINK_PREVENT_KMODS_FROM_LOADING
+                " and run convert2rhel again to continue with the conversion."
+                " Although it is not recommended, you can ignore this message by setting the environment variable"
+                " 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' to 1. Overriding this check can be dangerous"
+                " so it is recommended that you do a system backup beforehand."
+                " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                    LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
                 )
             ),
         )
+
+
+@pytest.mark.parametrize(
+    ("command_return", "is_error"),
+    (
+        (("", 0), False),
+        (
+            (
+                (
+                    "system76_io 16384 0 - Live 0x0000000000000000 (OE)\n"
+                    "system76_acpi 16384 0 - Live 0x0000000000000000 (OE)"
+                ),
+                0,
+            ),
+            True,
+        ),
+    ),
+)
+def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted_kmods_action):
+    run_subprocess_mock = mock.Mock(return_value=command_return)
+    monkeypatch.setattr(
+        tainted_kmods,
+        "run_subprocess",
+        value=run_subprocess_mock,
+    )
+    monkeypatch.setattr(
+        os,
+        "environ",
+        {"CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP": 1},
+    )
+    tainted_kmods_action.run()
+
+    if is_error:
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="TAINTED_KMODS_DETECTED_MESSAGE",
+                    title="Tainted kernel modules detected",
+                    description="Please refer to the diagnosis for further information",
+                    diagnosis=(
+                        "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
+                        "components are not supported per our software support"
+                        " policy:\n%s\n" % LINK_KMODS_RH_POLICY
+                    ),
+                    remediations=(
+                        "Prevent the modules from loading by following {0}"
+                        " and run convert2rhel again to continue with the conversion."
+                        " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                            LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
+                        )
+                    ),
+                ),
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="SKIP_TAINTED_KERNEL_MODULE_CHECK",
+                    title="Skip tainted kernel module check",
+                    description=(
+                        "Detected 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' environment variable, we will skip "
+                        "the tainted kernel module check.\n"
+                        "Beware, this could leave your system in a broken state."
+                    ),
+                ),
+            )
+        )
+        print(expected)
+        print(tainted_kmods_action.messages)
+        assert expected.issuperset(tainted_kmods_action.messages)
+        assert expected.issubset(tainted_kmods_action.messages)
