@@ -78,7 +78,7 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
             remediations=(
                 "Prevent the modules from loading by following {0}"
                 " and run convert2rhel again to continue with the conversion."
-                " Although it is not recommended, you can ignore this message by setting the environment variable"
+                " Although it is not recommended, you can disregard this message by setting the environment variable"
                 " 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' to 1. Overriding this check can be dangerous"
                 " so it is recommended that you do a system backup beforehand."
                 " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
