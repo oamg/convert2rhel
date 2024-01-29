@@ -9,8 +9,15 @@
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
 	"postCreateCommand": "pre-commit install",
 	"runArgs": [
-		"--userns=keep-id"
+		"--userns", "keep-id",
+		// Make it easier to find the container by having the project name.
+		"--name", "convert2rhel-devcontainer"
 	],
+	// Default workspace path to open in container. Sometimes when the
+	// container crashes or you need to re-attach to the container, it opens in
+	// the default $HOME for the user. To make development easier, this setting
+	// will open the project as the default workspace.
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	// Need to mount manually as we run into SELinux issues otherwise
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,Z",
 	// Need to change home to avoid errors in Podman
