@@ -7,7 +7,8 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup, cert, pkgmanager, redhatrelease, systeminfo, toolopts, utils
+from convert2rhel import backup, pkgmanager, redhatrelease, systeminfo, toolopts, utils
+from convert2rhel.backup.certs import RestorablePEMCert
 from convert2rhel.logger import add_file_handler, setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -118,15 +119,15 @@ def setup_logger(tmpdir, request):
 @pytest.fixture
 def system_cert_with_target_path(monkeypatch, tmpdir, request):
     """
-    Create a single PEMCert backed by a temp file.
+    Create a single RestorablePEMCert backed by a temp file.
 
-    Use it in unit tests when you need a PEMCert that has a real file backing it.
+    Use it in unit tests when you need a RestorablePEMCert that has a real file backing it.
 
     The cert to be copied is the RHEL8 cert, 479.pem.
     """
     pem_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../data/8/x86_64/rhel-certs"))
 
-    sys_cert = cert.PEMCert(pem_dir, str(tmpdir))
+    sys_cert = RestorablePEMCert(pem_dir, str(tmpdir))
     return sys_cert
 
 

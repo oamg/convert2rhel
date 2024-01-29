@@ -23,7 +23,7 @@ from functools import partial
 import pytest
 import six
 
-from convert2rhel import actions, backup, cert, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, backup, pkghandler, repo, subscription, toolopts, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
@@ -55,7 +55,7 @@ def install_gpg_key_instance():
 
 class TestInstallRedHatCertForYumRepositories:
     def test_run(self, monkeypatch, install_repo_cert_instance, restorable):
-        monkeypatch.setattr(cert, "PEMCert", lambda x, y: restorable)
+        monkeypatch.setattr(appc_subscription, "RestorablePEMCert", lambda x, y: restorable)
         install_repo_cert_instance.run()
 
         assert restorable.called["enable"] == 1

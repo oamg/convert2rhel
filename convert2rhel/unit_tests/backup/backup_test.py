@@ -5,37 +5,13 @@ import os
 import pytest
 import six
 
-from convert2rhel import backup, exceptions, repo, unit_tests, utils
+from convert2rhel import backup, exceptions, repo, unit_tests
 from convert2rhel.unit_tests import DownloadPkgMocked, ErrorOnRestoreRestorable, MinimalRestorable, RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
-
-@pytest.fixture
-def run_subprocess_with_empty_rpmdb(monkeypatch, tmpdir):
-    """When we use rpm, inject our fake rpmdb instead of the system one."""
-    rpmdb = os.path.join(str(tmpdir), "rpmdb")
-    os.mkdir(rpmdb)
-
-    class RunSubprocessWithEmptyRpmdb(RunSubprocessMocked):
-        def __call__(self, *args, **kwargs):
-            # Call the super class for recordkeeping (update how we were
-            # called)
-            super(RunSubprocessWithEmptyRpmdb, self).__call__(*args, **kwargs)
-
-            if args[0][0] == "rpm":
-                args[0].extend(["--dbpath", rpmdb])
-
-            return real_run_subprocess(*args, **kwargs)
-
-    real_run_subprocess = utils.run_subprocess
-    instrumented_run_subprocess = RunSubprocessWithEmptyRpmdb()
-    monkeypatch.setattr(utils, "run_subprocess", instrumented_run_subprocess)
-
-    return instrumented_run_subprocess
 
 
 class TestRemovePkgs:
@@ -467,125 +443,6 @@ class TestBackupController:
         assert backup_controller._restorables == []
 
     # End of tests that are for the 1.4 partition hack.
-
-
-class TestRestorableRpmKey:
-    gpg_key = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), "../../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
-    )
-
-    @pytest.fixture
-    def rpm_key(self):
-        return backup.RestorableRpmKey(self.gpg_key)
-
-    def test_init(self):
-        rpm_key = backup.RestorableRpmKey(self.gpg_key)
-
-        assert rpm_key.previously_installed is None
-        assert rpm_key.enabled is False
-        assert rpm_key.keyid == "fd431d51"
-        assert rpm_key.keyfile.endswith("/data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
-
-    def test_installed_yes(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
-
-        assert rpm_key.installed is True
-
-    def test_installed_not_yet(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        assert rpm_key.installed is False
-
-    def test_installed_generic_failure(self, monkeypatch, rpm_key):
-        def run_subprocess_fail(*args, **kwargs):
-            return "Unknown error", 1
-
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=("Unknown error", 1)))
-
-        with pytest.raises(
-            utils.ImportGPGKeyError, match="Searching the rpmdb for the gpg key fd431d51 failed: Code 1: Unknown error"
-        ):
-            rpm_key.installed
-
-    def test_enable(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        rpm_key.enable()
-
-        assert rpm_key.enabled is True
-        assert rpm_key.installed is True
-        assert rpm_key.previously_installed is False
-
-    def test_enable_already_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        rpm_key.enable()
-        previous_number_of_calls = run_subprocess_with_empty_rpmdb.call_count
-        rpm_key.enable()
-
-        # Check that we do not double enable
-        assert run_subprocess_with_empty_rpmdb.call_count == previous_number_of_calls
-
-        # Check that nothing has changed
-        assert rpm_key.enabled is True
-        assert rpm_key.installed is True
-        assert rpm_key.previously_installed is False
-
-    def test_enable_already_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
-        rpm_key.enable()
-
-        # Check that we did not call rpm to import the key
-        # Omit the first call because that is the call we performed to setup the test.
-        for call in run_subprocess_with_empty_rpmdb.call_args_list[1:]:
-            assert not (call[0][0] == "rpm" and "--import" in call[0])
-
-        # Check that the key is installed and we show that it was previously installed
-        assert rpm_key.enabled is True
-        assert rpm_key.installed is True
-        assert rpm_key.previously_installed is True
-
-    def test_enable_failure_to_import(self, monkeypatch, run_subprocess_with_empty_rpmdb, rpm_key):
-        # Raise an error when we try to rpm --import
-        def run_subprocess_error(*args, **kwargs):
-            if args[0][0] == "rpm" and "--import" in args[0]:
-                return "Error importing", 1
-            return run_subprocess_with_empty_rpmdb(*args, **kwargs)
-
-        monkeypatch.setattr(utils, "run_subprocess", run_subprocess_error)
-
-        with pytest.raises(utils.ImportGPGKeyError, match="Failed to import the GPG key [^ ]+: Error importing"):
-            rpm_key.enable()
-
-    def test_restore_uninstall(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        rpm_key.enable()
-
-        rpm_key.restore()
-
-        # Check that the beginning of the run_subprocess call starts with the command to remove
-        # the key (The arguments our fixture has added to use the empty rpmdb come after that)
-        assert run_subprocess_with_empty_rpmdb.call_args_list[-1][0][0][0:3] == ["rpm", "-e", "gpg-pubkey-fd431d51"]
-
-        # Check that we actually removed the key from the rpmdb
-        output, status = run_subprocess_with_empty_rpmdb(["rpm", "-qa", "gpg-pubkey"])
-        assert output == ""
-
-    def test_restore_not_enabled(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        called_previously = run_subprocess_with_empty_rpmdb.call_count
-        rpm_key.restore()
-
-        assert run_subprocess_with_empty_rpmdb.call_count == called_previously
-        assert rpm_key.enabled is False
-
-    def test_restore_previously_installed(self, run_subprocess_with_empty_rpmdb, rpm_key):
-        utils.run_subprocess(["rpm", "--import", self.gpg_key], print_output=False)
-        rpm_key.enable()
-        called_previously = run_subprocess_with_empty_rpmdb.call_count
-
-        rpm_key.restore()
-
-        # run_subprocess has not been called again
-        assert run_subprocess_with_empty_rpmdb.call_count == called_previously
-
-        # Check that the key is still in the rpmdb
-        output, status = run_subprocess_with_empty_rpmdb(["rpm", "-q", "gpg-pubkey-fd431d51"])
-        assert status == 0
-        assert output.startswith("gpg-pubkey-fd431d51")
-        assert rpm_key.enabled is False
 
 
 @pytest.mark.parametrize(

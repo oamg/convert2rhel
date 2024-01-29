@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2020 Red Hat, Inc.
+# Copyright(C) 2024 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,17 +22,74 @@ import logging
 import os
 import shutil
 
-from convert2rhel import backup, exceptions, utils
+from convert2rhel import exceptions, utils
+from convert2rhel.backup import RestorableChange
 
 
 loggerinst = logging.getLogger(__name__)
 
 
-class PEMCert(backup.RestorableChange):
+class RestorableRpmKey(RestorableChange):
+    """Import a GPG key into rpm in a reversible fashion."""
+
+    def __init__(self, keyfile):
+        """
+        Setup a RestorableRpmKey to reflect the GPG key in a file.
+
+        :arg keyfile: Filepath for a GPG key.  The RestorableRpmKey instance will be able to import
+            this into the rpmdb when enabled and remove it when restored.
+        """
+        super(RestorableRpmKey, self).__init__()
+        self.previously_installed = None
+        self.keyfile = keyfile
+        self.keyid = utils.find_keyid(keyfile)
+
+    def enable(self):
+        """Ensure that the GPG key has been imported into the rpmdb."""
+        # For idempotence, do not back this up if we've already done so.
+        if self.enabled:
+            return
+
+        if not self.installed:
+            output, ret_code = utils.run_subprocess(["rpm", "--import", self.keyfile], print_output=False)
+            if ret_code != 0:
+                raise utils.ImportGPGKeyError("Failed to import the GPG key %s: %s" % (self.keyfile, output))
+
+            self.previously_installed = False
+
+        else:
+            self.previously_installed = True
+
+        super(RestorableRpmKey, self).enable()
+
+    @property
+    def installed(self):
+        """Whether the GPG key has been imported into the rpmdb."""
+        output, status = utils.run_subprocess(["rpm", "-q", "gpg-pubkey-%s" % self.keyid], print_output=False)
+
+        if status == 0:
+            return True
+
+        if status == 1 and "package gpg-pubkey-%s is not installed" % self.keyid in output:
+            return False
+
+        raise utils.ImportGPGKeyError(
+            "Searching the rpmdb for the gpg key %s failed: Code %s: %s" % (self.keyid, status, output)
+        )
+
+    def restore(self):
+        """Ensure the rpmdb has or does not have the GPG key according to the state before we ran."""
+        if self.enabled and self.previously_installed is False:
+            utils.run_subprocess(["rpm", "-e", "gpg-pubkey-%s" % self.keyid])
+
+        super(RestorableRpmKey, self).restore()
+
+
+class RestorablePEMCert(RestorableChange):
     """Handling certificates needed for verifying Red Hat services."""
 
     def __init__(self, source_cert_dir, target_cert_dir):
-        super(PEMCert, self).__init__()
+        super(RestorablePEMCert, self).__init__()
 
         self._target_cert_dir = target_cert_dir
         self._source_cert_dir = source_cert_dir
@@ -72,7 +129,7 @@ class PEMCert(backup.RestorableChange):
 
             loggerinst.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
 
-        super(PEMCert, self).enable()
+        super(RestorablePEMCert, self).enable()
 
     def restore(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""
@@ -83,7 +140,7 @@ class PEMCert(backup.RestorableChange):
         else:
             loggerinst.info("Certificate %s was present before conversion. Skipping removal." % self._cert_filename)
 
-        super(PEMCert, self).restore()
+        super(RestorablePEMCert, self).restore()
 
     def _restore(self):
         """The actual code to remove the certificate.  Done in a helper method so we can handle all

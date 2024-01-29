@@ -29,6 +29,7 @@ import rpm
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
 from convert2rhel.backup import RestorableChange, remove_pkgs
+from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
@@ -921,7 +922,7 @@ def install_gpg_keys():
     gpg_keys = [os.path.join(gpg_path, key) for key in os.listdir(gpg_path)]
     for gpg_key in gpg_keys:
         try:
-            restorable_key = backup.RestorableRpmKey(gpg_key)
+            restorable_key = RestorableRpmKey(gpg_key)
             backup.backup_control.push(restorable_key)
         except utils.ImportGPGKeyError as e:
             loggerinst.critical("Importing the GPG key into rpm failed:\n %s" % str(e))
