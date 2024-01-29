@@ -20,13 +20,13 @@
 	// Uncommented to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root
 	"remoteUser": "vscode",
 	"containerUser": "vscode",
-	"settings": {
-		"extensions.autoUpdate": false,
-		"extensions.autoCheckUpdates": false
-	},
 	// Extensions that are handy when developing
 	"customizations": {
 		"vscode": {
+			"settings": {
+				"extensions.autoUpdate": false,
+				"extensions.autoCheckUpdates": false
+			},
 			"extensions": [
 				"ms-python.vscode-pylance",
 				"eamodio.gitlens",
