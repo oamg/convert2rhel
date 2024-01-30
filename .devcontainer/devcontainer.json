@@ -32,7 +32,8 @@
 		"vscode": {
 			"settings": {
 				"extensions.autoUpdate": false,
-				"extensions.autoCheckUpdates": false
+				"extensions.autoCheckUpdates": false,
+				"python.languageServer": "Pylance"
 			},
 			"extensions": [
 				"ms-python.vscode-pylance",
