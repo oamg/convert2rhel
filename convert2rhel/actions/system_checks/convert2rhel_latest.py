@@ -203,24 +203,7 @@ class Convert2rhelLatest(actions.Action):
         formatted_available_version = _format_EVR(*precise_available_version)
 
         if ver_compare < 0:
-            # Current and deprecated env var names
-            allow_older_envvar_names = ("CONVERT2RHEL_ALLOW_OLDER_VERSION", "CONVERT2RHEL_UNSUPPORTED_VERSION")
-            if any(envvar in os.environ for envvar in allow_older_envvar_names):
-                if "CONVERT2RHEL_ALLOW_OLDER_VERSION" not in os.environ:
-                    logger.warning(
-                        "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
-                        " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
-                        " instead."
-                    )
-                    self.add_message(
-                        level="WARNING",
-                        id="DEPRECATED_ENVIRONMENT_VARIABLE",
-                        title="Deprecated environment variable",
-                        description="A deprecated environment variable has been detected",
-                        diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
-                        remediations="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
-                    )
-
+            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
                 diagnosis = (
                     "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"

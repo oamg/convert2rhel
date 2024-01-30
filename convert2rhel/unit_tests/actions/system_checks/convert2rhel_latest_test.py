@@ -394,9 +394,6 @@ class TestCheckConvert2rhelLatest:
         )
         assert log_msg in caplog.text
 
-        deprecated_var_name = "CONVERT2RHEL_UNSUPPORTED_VERSION"
-        assert deprecated_var_name not in caplog.text
-
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
         (
@@ -637,89 +634,6 @@ class TestCheckConvert2rhelLatest:
             ),
             remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
-
-    @pytest.mark.parametrize(
-        ("convert2rhel_latest_version_test",),
-        (
-            [
-                {
-                    "local_version": "0.17.0",
-                    "package_version": "C2R convert2rhel-0.18.0-1.el7.noarch",
-                    "package_version_repoquery": "C2R convert2rhel-0:0.18.0-1.el7.noarch",
-                    "package_version_qf": "C2R convert2rhel-0:0.17.0-1.el7.noarch",
-                    "package_version_V": 0,
-                    "pmajor": "8",
-                    "running_version": "0.17.0",
-                    "latest_version": "0.18.0",
-                }
-            ],
-            [
-                {
-                    "local_version": "0.17",
-                    "package_version": "C2R convert2rhel-0.18.0-1.el7.noarch",
-                    "package_version_repoquery": "C2R convert2rhel-0:0.18.0-1.el7.noarch",
-                    "package_version_qf": "C2R convert2rhel-0:0.17-1.el7.noarch",
-                    "package_version_V": 0,
-                    "pmajor": "8",
-                    "running_version": "0.17",
-                    "latest_version": "0.18.0",
-                }
-            ],
-            [
-                {
-                    "local_version": "0.17.0",
-                    "package_version": "C2R convert2rhel-0.18-1.el7.noarch",
-                    "package_version_repoquery": "C2R convert2rhel-0:0.18-1.el7.noarch",
-                    "package_version_qf": "C2R convert2rhel-0:0.17.0-1.el7.noarch",
-                    "package_version_V": 0,
-                    "pmajor": "8",
-                    "running_version": "0.17.0",
-                    "latest_version": "0.18",
-                }
-            ],
-        ),
-        indirect=True,
-    )
-    def test_c2r_up_to_date_deprecated_env_var(
-        self, caplog, monkeypatch, convert2rhel_latest_action, convert2rhel_latest_version_test
-    ):
-        running_version, latest_version = convert2rhel_latest_version_test
-        env = {"CONVERT2RHEL_UNSUPPORTED_VERSION": 1}
-        monkeypatch.setattr(os, "environ", env)
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="WARNING",
-                    id="DEPRECATED_ENVIRONMENT_VARIABLE",
-                    title="Deprecated environment variable",
-                    description="A deprecated environment variable has been detected",
-                    diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
-                    remediations="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
-                ),
-                actions.ActionMessage(
-                    level="WARNING",
-                    id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
-                    title="Outdated convert2rhel version detected",
-                    description="An outdated convert2rhel version has been detected",
-                    diagnosis="You are currently running %s and the latest version of convert2rhel is %s.\n"
-                    "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
-                    % (running_version, latest_version),
-                    remediations=None,
-                ),
-            )
-        )
-        convert2rhel_latest_action.run()
-
-        log_msg = (
-            "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
-            " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
-            " instead."
-        )
-        print(expected)
-        print(convert2rhel_latest_action.messages)
-        assert expected.issuperset(convert2rhel_latest_action.messages)
-        assert expected.issubset(convert2rhel_latest_action.messages)
-        assert log_msg in caplog.text
 
     @pytest.mark.parametrize(
         ("convert2rhel_latest_version_test",),
