@@ -12,7 +12,9 @@ ENV APP_MAIN_DEPS \
     python3-six \
     python3-dbus \
     python3-pexpect \
-    git
+    git \
+    man \
+    make
 
 ENV USERNAME=vscode
 ENV USER_UID=1000

@@ -121,7 +121,7 @@ description+: |
                 - enabled: true
                   when: distro == centos-7, oracle-7
             environment+:
-                CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK: 1
+                CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
                 # Since we are removing all the repositories other than rhel-7-server-rpms
                 # we need pass CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK due to the inability
                 # to download and backup packages
