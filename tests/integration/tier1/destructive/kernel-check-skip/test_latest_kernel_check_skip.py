@@ -13,7 +13,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     Verify that it's possible to run the full conversion with older kernel,
     than available in the RHEL repositories.
         1/ Install older kernel on the system
-        2/ Make sure the `CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK` is in place
+        2/ Make sure the `CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK` is in place
             * doing that we also verify, the deprecated envar is still allowed
         3/ Enable *just* the rhel-7-server-rpms repository prior to conversion
         4/ Run conversion verifying the conversion is not inhibited and completes successfully
@@ -30,7 +30,7 @@ def test_skip_kernel_check(shell, convert2rhel):
 
     # Verify the environment variable to bypass the check is in place
     # Intentionally use the deprecated variable to verify its compatibility
-    assert os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] == "1"
+    assert os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] == "1"
 
     # We need to set envar to override the out of date packages check
     # to perform the full conversion
@@ -55,8 +55,6 @@ def test_skip_kernel_check(shell, convert2rhel):
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        # Verify that using the deprecated environment variable is still allowed and continues the conversion
-        assert c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'") == 0
         # Make sure the kernel comparison is skipped
         c2r_expect_index = c2r.expect(
             [

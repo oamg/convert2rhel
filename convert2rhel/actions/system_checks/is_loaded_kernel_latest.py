@@ -80,21 +80,7 @@ class IsLoadedKernelLatest(actions.Action):
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
         # we allow the user to provide a environment variable to override the functionality and proceed
         # with the conversion, otherwise, we just throw a critical logging to them.
-        allow_older_envvar_names = (
-            "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK",
-            "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK",
-        )
-        # This check is to see which environment variable is set, To allow users in the next version
-        # to adjust their environmental variable names. This check will be removed in the future and
-        # will only have the 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable
-        if any(envvar in os.environ for envvar in allow_older_envvar_names):
-            if "CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK" in os.environ:
-                logger.warning(
-                    "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'"
-                    " environment variable. Please switch to 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK'"
-                    " instead."
-                )
-
+        if "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" in os.environ:
             logger.warning(
                 "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the %s comparison.\n"
