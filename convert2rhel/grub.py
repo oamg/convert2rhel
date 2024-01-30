@@ -152,7 +152,7 @@ def _get_blk_device(device):
     return output.strip().splitlines()[-1].strip()
 
 
-def _get_device_number(device):
+def get_device_number(device):
     """Get the partition number of a particular device.
 
     This method will use `blkid` to determinate what is the partition number
@@ -171,6 +171,8 @@ def _get_device_number(device):
         raise BootloaderError("Unable to get information about the '%s' device" % device)
     # We are spliting the partition entry number, and we are just taking that
     # output as our desired partition number
+    if not output:
+        raise BootloaderError("The '%s' device has no PART_ENTRY_NUMBER" % device)
     partition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
     return int(partition_number)
 
@@ -396,7 +398,7 @@ def _add_rhel_boot_entry(efibootinfo_orig):
 
     Return the new bootloader info (EFIBootInfo).
     """
-    dev_number = _get_device_number(get_efi_partition())
+    dev_number = get_device_number(get_efi_partition())
     blk_dev = get_grub_device()
 
     logger.debug("Block device: %s" % str(blk_dev))
