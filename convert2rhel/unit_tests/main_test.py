@@ -494,6 +494,7 @@ class TestRollbackFromMain:
             (applock, "_DEFAULT_LOCK_DIR", str(tmp_path)),
             (utils, "require_root", mock.Mock()),
             (main, "initialize_logger", mock.Mock()),
+            (main, "initialize_file_logging", mock.Mock()),
             (toolopts, "CLI", mock.Mock()),
             (main, "show_eula", mock.Mock()),
             (breadcrumbs, "print_data_collection", mock.Mock()),
