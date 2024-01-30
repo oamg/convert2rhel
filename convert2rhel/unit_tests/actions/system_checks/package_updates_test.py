@@ -140,40 +140,10 @@ def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, pack
 
 
 @centos8
-def test_check_package_updates_with_repoerror(pretend_os, monkeypatch, caplog, package_updates_action):
+def test_check_package_updates_with_repoerror_warning(pretend_os, monkeypatch, caplog, package_updates_action):
     get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError("This is an error"))
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
-    diagnosis = (
-        "There was an error while checking whether the installed packages are up-to-date."
-        " Having an updated system is an important prerequisite for a successful conversion."
-        " Consider verifying the system is up to date manually before proceeding with the conversion."
-        " This is an error"
-    )
-    package_updates_action.run()
 
-    unit_tests.assert_actions_result(
-        package_updates_action,
-        level="OVERRIDABLE",
-        id="PACKAGE_UP_TO_DATE_CHECK_FAIL",
-        title="Package up to date check fail",
-        description="Please refer to the diagnosis for further information",
-        diagnosis=diagnosis,
-        remediations="If you wish to disregard this message, set the environment variable "
-        "'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' to 1.",
-        variables={},
-    )
-    assert diagnosis in caplog.records[-1].message
-
-
-@centos8
-def test_check_package_updates_with_repoerror_skip(pretend_os, monkeypatch, caplog, package_updates_action):
-    get_total_packages_to_update_mock = mock.Mock(side_effect=pkgmanager.RepoError("This is an error"))
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=get_total_packages_to_update_mock)
-    monkeypatch.setattr(
-        os,
-        "environ",
-        {"CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP": 1},
-    )
     diagnosis = (
         "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
         " an important prerequisite for a successful conversion. Consider verifying the system is up to date manually"
@@ -190,23 +160,10 @@ def test_check_package_updates_with_repoerror_skip(pretend_os, monkeypatch, capl
                 remediations=None,
                 variables={},
             ),
-            actions.ActionMessage(
-                level="WARNING",
-                id="SKIP_PACKAGE_UP_TO_DATE_CHECK",
-                title="Skip package up to date check",
-                description=(
-                    "Detected 'CONVERT2RHEL_PACKAGE_UP_TO_DATE_CHECK_SKIP' environment variable, we will skip "
-                    "the package up-to-date check.\n"
-                    "Beware, this could leave your system in a broken state."
-                ),
-                diagnosis=None,
-                remediations=None,
-                variables={},
-            ),
         )
     )
-
     package_updates_action.run()
+
     assert diagnosis in caplog.records[-1].message
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)
