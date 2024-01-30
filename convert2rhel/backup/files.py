@@ -61,6 +61,7 @@ class RestorableFile(RestorableChange):
                 )
         else:
             loggerinst.info("Can't find %s.", self.filepath)
+            return
 
         # Set the enabled value
         super(RestorableFile, self).enable()
@@ -96,8 +97,6 @@ class RestorableFile(RestorableChange):
             # not setting enabled to false since this is not being rollback
             # restoring the backed up file for conversion purposes
 
-    # Probably will be deprecated and unusable since using the BackupController
-    # Depends on specific usage of this
     def remove(self):
         """Remove restored file from original place, backup isn't removed"""
         try:

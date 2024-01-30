@@ -16,80 +16,6 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
-@pytest.mark.parametrize(
-    ("filepath", "backup_dir", "file_content", "expected"),
-    (
-        ("test.rpm", "backup", "test", None),
-        ("test.rpm", "backup", "", "Can't find"),
-    ),
-)
-def test_restorable_file_backup(
-    filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog, global_backup_control
-):
-    tmp_file = tmpdir.join(filepath)
-    tmp_backup = tmpdir.mkdir(backup_dir)
-    if file_content:
-        tmp_file.write(file_content)
-
-    monkeypatch.setattr(files, "BACKUP_DIR", str(tmp_backup))
-    rf = RestorableFile(filepath=str(tmp_file))
-    global_backup_control.push(rf)
-
-    if expected:
-        assert expected in caplog.records[-1].message
-
-
-def test_restorable_file_backup_critical_error(tmpdir, caplog, global_backup_control):
-    tmp_file = tmpdir.join("test.rpm")
-    tmp_file.write("test")
-    rf = RestorableFile(filepath=str(tmp_file))
-
-    with pytest.raises(exceptions.CriticalError):
-        global_backup_control.push(rf)
-
-    assert "Error(2): No such file or directory" in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
-    ("filepath", "backup_dir", "file_content", "expected"),
-    (
-        ("test.rpm", "backup", "test", "restored"),
-        ("test.rpm", "backup", "", "hasn't been backed up"),
-    ),
-)
-def test_restorable_file_restore_backup_control(
-    filepath, backup_dir, file_content, expected, tmpdir, monkeypatch, caplog, global_backup_control
-):
-    tmp_backup = tmpdir
-    tmp_file = tmpdir.join(filepath)
-    tmp_backup = tmp_backup.mkdir(backup_dir).join(filepath)
-    if file_content:
-        tmp_backup.write(file_content)
-
-    monkeypatch.setattr(files, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
-    rf = RestorableFile(filepath=str(tmp_file))
-    global_backup_control.push(rf)
-    global_backup_control.pop()
-
-    if expected:
-        assert expected in caplog.records[-1].message
-
-
-def test_restorable_file_restore_oserror_backup_control(tmpdir, caplog, monkeypatch, global_backup_control):
-    tmp_backup = tmpdir
-    tmp_backup = tmp_backup.mkdir("backup").join("test.rpm")
-    tmp_backup.write("test")
-
-    monkeypatch.setattr(files, "BACKUP_DIR", os.path.dirname(str(tmp_backup)))
-
-    rf = RestorableFile(filepath="/non-existing/test.rpm")
-    global_backup_control.push(rf)
-    global_backup_control.pop()
-
-    # Source and dest files are the same, which throws this error
-    assert "Error(2): No such file or directory" in caplog.records[-1].message
-
-
 class TestRestorableFile:
     @pytest.fixture
     def get_backup_file_dir(self, tmpdir, filename="filename", content="content", backup_dir_name="backup"):
@@ -173,7 +99,7 @@ class TestRestorableFile:
         ("filename", "enabled_preset", "enabled_value", "message", "backed_up"),
         (
             ("filename", False, True, "Copied {file_for_backup} to {backup_dir}.", True),
-            (None, False, True, "Can't find {file_for_backup}.", False),
+            (None, False, False, "Can't find {file_for_backup}.", False),
             ("filename", True, True, "", False),
         ),
     )
@@ -306,27 +232,15 @@ class TestRestorableFile:
 
         assert message in caplog.text
 
+    def test_restorable_file_backup_critical_error(self, tmpdir, caplog, global_backup_control):
+        tmp_file = tmpdir.join("test.rpm")
+        tmp_file.write("test")
+        rf = RestorableFile(filepath=str(tmp_file))
 
-@pytest.mark.parametrize(
-    ("file", "filepath", "message"),
-    (
-        (False, "/invalid/path", "Couldn't remove restored file /invalid/path"),
-        (True, "filename", "File %s removed."),
-    ),
-)
-def test_restorable_file_remove(tmpdir, caplog, file, filepath, message):
-    if file:
-        path = tmpdir.join(filepath)
-        path.write("content")
-        path = str(path)
-        message = message % path
-    else:
-        path = filepath
+        with pytest.raises(exceptions.CriticalError):
+            global_backup_control.push(rf)
 
-    restorable_file = RestorableFile(path)
-    restorable_file.remove()
-
-    assert message in caplog.text
+        assert "Error(2): No such file or directory" in caplog.records[-1].message
 
 
 class TestMissingFile:
