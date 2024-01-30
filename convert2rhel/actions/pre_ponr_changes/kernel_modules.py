@@ -256,7 +256,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 self.add_message(
                     level="WARNING",
                     id="ALLOW_UNAVAILABLE_KERNEL_MODULES",
-                    title="Skipping the ensure kernel modules compatibility check",
+                    title="Did not perform the ensure kernel modules compatibility check",
                     description="Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable.",
                     diagnosis="We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods)),

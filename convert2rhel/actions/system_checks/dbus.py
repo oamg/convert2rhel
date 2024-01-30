@@ -33,12 +33,12 @@ class DbusIsRunning(actions.Action):
         logger.task("Prepare: Check that DBus Daemon is running")
 
         if not subscription.should_subscribe():
-            logger.info("Skipping the check because we have been asked not to subscribe this system to RHSM.")
+            logger.info("Did not perform the check because we have been asked not to subscribe this system to RHSM.")
             self.add_message(
                 level="INFO",
                 id="DBUS_IS_RUNNING_CHECK_SKIP",
-                title="Skipping the dbus is running check",
-                description="Skipping the check because we have been asked not to subscribe this system to RHSM.",
+                title="Did not perform the dbus is running check",
+                description="Did not perform the check because we have been asked not to subscribe this system to RHSM.",
             )
             return
 

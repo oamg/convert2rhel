@@ -119,15 +119,15 @@ class TestCheckConvert2rhelLatest:
                 actions.ActionMessage(
                     level="WARNING",
                     id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
-                    title="Skipping convert2rhel latest version check",
-                    description="Skipping the check because no internet connection has been detected.",
+                    title="Did not perform convert2rhel latest version check",
+                    description="Did not perform the check because no internet connection has been detected.",
                     diagnosis=None,
                     remediations=None,
                 ),
             )
         )
 
-        log_msg = "Skipping the check because no internet connection has been detected."
+        log_msg = "Did not perform the check because no internet connection has been detected."
         assert log_msg in caplog.text
         assert convert2rhel_latest_action.result.level == actions.STATUS_CODE["SUCCESS"]
         assert expected.issuperset(convert2rhel_latest_action.messages)
@@ -559,7 +559,7 @@ class TestCheckConvert2rhelLatest:
                     level="WARNING",
                     id="CONVERT2RHEL_LATEST_CHECK_SKIP",
                     title="convert2rhel latest version check skip",
-                    description="Skipping the convert2hel latest version check",
+                    description="Did not perform the convert2hel latest version check",
                     diagnosis=(
                         "Couldn't check if the current installed convert2rhel is the latest version.\n"
                         "repoquery failed with the following output:\nRepoquery did not run"

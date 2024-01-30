@@ -82,12 +82,12 @@ class PreSubscription(actions.Action):
             # user configured repos rather than system-manager configured repos
             # to get RHEL packages) that we do not need subscription-manager
             # packages.
-            logger.warning("Detected --no-rhsm option. Skipping.")
+            logger.warning("Detected --no-rhsm option. Did not perform the check.")
             self.add_message(
                 level="WARNING",
                 id="PRE_SUBSCRIPTION_CHECK_SKIP",
                 title="Pre-subscription check skip",
-                description="Detected --no-rhsm option. Skipping.",
+                description="Detected --no-rhsm option. Did not perform the check.",
             )
             return
 
@@ -168,12 +168,12 @@ class SubscribeSystem(actions.Action):
 
         if not subscription.should_subscribe():
             if toolopts.tool_opts.no_rhsm:
-                logger.warning("Detected --no-rhsm option. Skipping subscription step.")
+                logger.warning("Detected --no-rhsm option. Did not perform subscription step.")
                 self.add_message(
                     level="WARNING",
                     id="SUBSCRIPTION_CHECK_SKIP",
                     title="Subscription check skip",
-                    description="Detected --no-rhsm option. Skipping.",
+                    description="Detected --no-rhsm option. Did not perform the check.",
                 )
                 return
 
@@ -195,7 +195,7 @@ class SubscribeSystem(actions.Action):
                     return
                 raise
 
-            logger.warning("No rhsm credentials given to subscribe the system. Skipping the subscription step.")
+            logger.warning("No rhsm credentials given to subscribe the system. Did not perform the subscription step.")
 
         try:
             # In the future, refactor this to be an else on the previous

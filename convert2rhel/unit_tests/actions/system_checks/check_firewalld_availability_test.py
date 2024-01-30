@@ -207,7 +207,10 @@ class TestCheckFirewalldAvailabilityAction:
 
         check_firewalld_availability_is_running_action.run()
 
-        assert "Skipping the check as it is relevant only for Oracle Linux 8.8 and above." in caplog.records[-1].message
+        assert (
+            "Did not perform the check as it is relevant only for Oracle Linux 8.8 and above."
+            in caplog.records[-1].message
+        )
 
     @oracle8
     def test_systemd_managed_service_not_running(

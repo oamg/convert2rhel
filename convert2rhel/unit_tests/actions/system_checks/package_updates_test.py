@@ -41,15 +41,13 @@ def package_updates_action():
 def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package_updates_action, monkeypatch):
     monkeypatch.setattr(package_updates.system_info, "eus_system", value=True)
 
-    diagnosis = (
-        "Skipping the check because there are no publicly available Oracle Linux Server 8.6 repositories available."
-    )
+    diagnosis = "Did not perform the check because there were no publicly available Oracle Linux Server 8.6 repositories available."
     expected = set(
         (
             actions.ActionMessage(
                 level="INFO",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
-                title="Skipping the package updates check",
+                title="Did not perform the package updates check",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
                 remediations=None,
@@ -218,13 +216,13 @@ def test_check_package_updates_with_repoerror_skip(pretend_os, monkeypatch, capl
 def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch, caplog, package_updates_action):
     monkeypatch.setattr(package_updates, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
     monkeypatch.setattr(system_info, "has_internet_access", False)
-    description = "Skipping the check as no internet connection has been detected."
+    description = "Did not perform the check as no internet connection has been detected."
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
-                title="Skipping the package updates check",
+                title="Did not perform the package updates check",
                 description=description,
                 diagnosis=None,
                 remediations=None,

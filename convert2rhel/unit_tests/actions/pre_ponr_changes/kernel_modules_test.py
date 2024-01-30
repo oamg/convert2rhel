@@ -243,7 +243,7 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
     message = ensure_kernel_modules_compatibility_instance.messages[0]
     assert STATUS_CODE["WARNING"] == message.level
     assert "ALLOW_UNAVAILABLE_KERNEL_MODULES" == message.id
-    assert "Skipping the ensure kernel modules compatibility check" == message.title
+    assert "Did not perform the ensure kernel modules compatibility check" == message.title
     assert "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable." in message.description
     assert "We will continue the conversion with the following kernel modules unavailable in RHEL:" in message.diagnosis
 

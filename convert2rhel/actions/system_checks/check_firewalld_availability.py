@@ -116,4 +116,4 @@ class CheckFirewalldAvailability(actions.Action):
                     ),
                 )
         else:
-            logger.info("Skipping the check as it is relevant only for Oracle Linux 8.8 and above.")
+            logger.info("Did not perform the check as it is relevant only for Oracle Linux 8.8 and above.")

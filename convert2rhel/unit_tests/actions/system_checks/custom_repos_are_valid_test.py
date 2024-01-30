@@ -67,4 +67,7 @@ def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch,
 
     custom_repos_are_valid_action.run()
 
-    assert "Skipping the check of repositories due to the use of RHSM for the conversion." in caplog.records[-1].message
+    assert (
+        "Did not perform the check of repositories due to the use of RHSM for the conversion."
+        in caplog.records[-1].message
+    )

@@ -37,16 +37,16 @@ class PackageUpdates(actions.Action):
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(
-                "Skipping the check because there are no publicly available %s %d.%d repositories available."
+                "Did not perform the check because there were no publicly available %s %d.%d repositories available."
                 % (system_info.name, system_info.version.major, system_info.version.minor)
             )
             self.add_message(
                 level="INFO",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
-                title="Skipping the package updates check",
+                title="Did not perform the package updates check",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=(
-                    "Skipping the check because there are no publicly available %s %d.%d repositories available."
+                    "Did not perform the check because there were no publicly available %s %d.%d repositories available."
                     % (system_info.name, system_info.version.major, system_info.version.minor)
                 ),
             )
@@ -55,12 +55,12 @@ class PackageUpdates(actions.Action):
         reposdir = get_hardcoded_repofiles_dir()
 
         if reposdir and not system_info.has_internet_access:
-            logger.warning("Skipping the check as no internet connection has been detected.")
+            logger.warning("Did not perform the check as no internet connection has been detected.")
             self.add_message(
                 level="WARNING",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
-                title="Skipping the package updates check",
-                description="Skipping the check as no internet connection has been detected.",
+                title="Did not perform the package updates check",
+                description="Did not perform the check as no internet connection has been detected.",
             )
             return
 
