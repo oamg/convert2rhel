@@ -21,10 +21,11 @@ import logging
 import os
 import sys
 
-from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub
+from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
+from convert2rhel.bootloader import bootloader, grub
 
 
 loggerinst = logging.getLogger(__name__)
@@ -317,7 +318,7 @@ def post_ponr_conversion():
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
     loggerinst.task("Convert: Configure the bootloader")
-    grub.post_ponr_set_efi_configuration()
+    bootloader.post_ponr_set_efi_configuration()
     loggerinst.task("Convert: Patch yum configuration file")
     redhatrelease.YumConf().patch()
     loggerinst.task("Convert: Lock releasever in RHEL repositories")

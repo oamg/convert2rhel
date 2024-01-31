@@ -29,10 +29,11 @@ from convert2rhel import backup
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, checks, exceptions, grub
+from convert2rhel import actions, applock, backup, checks, exceptions
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report
+from convert2rhel.bootloader import bootloader, grub
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import (
@@ -193,7 +194,7 @@ def test_post_ponr_conversion(monkeypatch):
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
     monkeypatch.setattr(pkgmanager, "create_transaction_handler", create_transaction_handler_mock)
     monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
-    monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
+    monkeypatch.setattr(bootloader, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
     main.post_ponr_conversion()

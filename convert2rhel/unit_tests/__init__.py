@@ -25,19 +25,9 @@ import sys
 import pytest
 import six
 
-from convert2rhel import (
-    backup,
-    breadcrumbs,
-    exceptions,
-    grub,
-    main,
-    pkghandler,
-    subscription,
-    systeminfo,
-    toolopts,
-    utils,
-)
+from convert2rhel import backup, breadcrumbs, exceptions, main, pkghandler, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import STATUS_CODE, report
+from convert2rhel.bootloader import bootloader, grub
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
 
@@ -780,13 +770,13 @@ class EFIBootInfoMocked:
     def set_default_efi_entries(self):
         if not self.entries:
             self.entries = {
-                "0001": grub.EFIBootLoader(
+                "0001": bootloader.EFIBootLoader(
                     boot_number="0001",
                     label="Centos Linux",
                     active=True,
                     efi_bin_source=r"HD(1,GPT,28c77f6b-3cd0-4b22-985f-c99903835d79,0x800,0x12c000)/File(\EFI\centos\shimx64.efi)",
                 ),
-                "0002": grub.EFIBootLoader(
+                "0002": bootloader.EFIBootLoader(
                     boot_number="0002",
                     label="Foo label",
                     active=True,

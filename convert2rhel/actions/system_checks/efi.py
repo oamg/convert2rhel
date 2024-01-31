@@ -18,7 +18,8 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import actions, grub
+from convert2rhel import actions
+from convert2rhel.bootloader import bootloader, grub
 from convert2rhel.systeminfo import system_info
 
 
@@ -33,7 +34,7 @@ class Efi(actions.Action):
         super(Efi, self).run()
 
         logger.task("Prepare: Check the firmware interface type (BIOS/UEFI)")
-        if not grub.is_efi():
+        if not bootloader.is_efi():
             logger.info("BIOS detected.")
             return
         logger.info("UEFI detected.")
@@ -55,7 +56,7 @@ class Efi(actions.Action):
                 remediations="Install efibootmgr to continue converting the UEFI-based system.",
             )
             return
-        if grub.is_secure_boot():
+        if bootloader.is_secure_boot():
             logger.info("Secure boot detected.")
             self.set_result(
                 level="ERROR",
@@ -70,8 +71,8 @@ class Efi(actions.Action):
         # Get information about the bootloader. Currently, the data is not used, but it's
         # good to check that we can obtain all the required data before the PONR.
         try:
-            efiboot_info = grub.EFIBootInfo()
-            grub.get_device_number(grub.get_efi_partition())
+            efiboot_info = bootloader.EFIBootInfo()
+            bootloader.get_device_number(grub.get_efi_partition())
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
