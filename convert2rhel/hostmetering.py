@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright(C) 2023 Red Hat, Inc.
+# Copyright(C) 2024 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ def is_running_on_hyperscaller(rhsm_facts):
     is_aws = rhsm_facts.get("aws_instance_id")
     is_azure = rhsm_facts.get("azure_instance_id")
     is_gcp = rhsm_facts.get("gcp_instance_id")
-    return is_aws or is_azure or is_gcp
+    return any([is_aws, is_azure, is_gcp])
 
 
 def configure_host_metering():
@@ -65,19 +65,19 @@ def configure_host_metering():
     Returns:
         bool: True if host-metering is configured successfully, False otherwise.
     """
-    env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING")
+    if "CONVERT2RHEL_CONFIGURE_HOST_METERING" not in os.environ:
+        # TODO(r0x0d): Do we want to silently return here?
+        logger.info("")
+        return
+
+    if system_info.version.major > 7:
+        logger.info("Skipping host metering configuration. Only supported for RHEL 7.")
+        return
+
     rhsm_facts = get_rhsm_facts()
-    is_rhel7 = system_info.version.major == 7
-    conditions_met = is_running_on_hyperscaller(rhsm_facts) and is_rhel7
+    conditions_met = is_running_on_hyperscaller(rhsm_facts)
 
-    if env_var == "force":
-        should_configure_metering = True
-    elif env_var == "no":
-        should_configure_metering = False
-    else:
-        should_configure_metering = conditions_met
-
-    if not should_configure_metering:
+    if not conditions_met:
         logger.info("Skipping host-metering configuration.")
         return False
 
@@ -88,6 +88,12 @@ def configure_host_metering():
         logger.warning("Failed to install host-metering rpms.")
         return False
 
+    _enable_host_metering_service()
+
+    return system_info.is_systemd_managed_service_running("host-metering.service")
+
+
+def _enable_host_metering_service():
     logger.info("Enabling host-metering service.")
     output, ret_enable = run_subprocess(["systemctl", "enable", "host-metering.service"])
     logger.debug("Output of systemctl call: %s" % output)
@@ -100,4 +106,5 @@ def configure_host_metering():
     if ret_start:
         logger.warning("Failed to start host-metering service.")
 
-    return not (ret_install or ret_enable or ret_start)
+    if not system_info.is_systemd_managed_service_running("host-metering.service"):
+        logger.critical_no_exit("host-metering unit is not active.")

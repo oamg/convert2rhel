@@ -17,6 +17,7 @@
 
 __metaclass__ = type
 
+import json
 import logging
 import os
 import re
@@ -51,6 +52,9 @@ MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
 REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 # Seconds to wait for Registration to complete over DBus. If this timeout is exceeded, we retry.
 REGISTRATION_TIMEOUT = 180
+
+# Location of the RHSM generated facts json file.
+RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
 
 class UnregisterError(Exception):
@@ -899,49 +903,27 @@ def update_rhsm_custom_facts():
         loggerinst.info("Skipping updating RHSM custom facts.")
 
 
-def _parse_rhsm_facts(facts_string):
-    """Parse the RHSM facts string into a dictionary.
-
-    Args:
-        facts_string (str): The facts string returned by subscription-manager.
-
-    Returns:
-        dict: The RHSM facts.
-    """
-    facts = {}
-    for line in facts_string.splitlines():
-        parts = line.split(":", 1)
-        if len(parts) == 2:
-            key, value = parts
-            facts[key.strip()] = value.strip()
-
-    return facts
-
-
 def get_rhsm_facts():
     """Get the RHSM facts.
 
-    Returns:
-        dict: The RHSM facts.
+    :returns dict: The RHSM facts.
     """
+    rhsm_facts = {}
     if not tool_opts.no_rhsm:
-        loggerinst.info("Getting RHSM facts.")
-        cmd = ["subscription-manager", "facts"]
-        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+        loggerinst.info("Ignoring RHSM facts collection. --no-rhsm is used.")
+        return rhsm_facts
 
-        if ret_code != 0:
-            loggerinst.warning(
-                "Failed to get the RHSM facts with return code '%s' and output '%s'.",
-                ret_code,
-                output,
-            )
-            return {}
-        else:
+    loggerinst.info("Read RHSM facts file.")
+    try:
+        with open(RHSM_FACTS_FILE, mode="r") as handler:
+            rhsm_facts = json.load(handler)
             loggerinst.info("RHSM facts collected successfully.")
-            return _parse_rhsm_facts(output)
-    else:
-        loggerinst.info("Skipping getting RHSM facts.")
-        return {}
+            return rhsm_facts
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        loggerinst.critical_no_exit(
+            "Failed to get the RHSM facts with return code '%s' and output '%s'.",
+        )
+        return rhsm_facts
 
 
 # subscription is the natural place to look for should_subscribe but it
