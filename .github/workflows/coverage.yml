@@ -20,10 +20,10 @@ jobs:
             - distro: centos
               ver: 9
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -43,7 +43,9 @@ jobs:
           podman cp pytest-container:/data/coverage.xml .
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           env_vars: OS,PYTHON
           flags: ${{ matrix.el.distro }}-linux-${{ matrix.el.ver }}
