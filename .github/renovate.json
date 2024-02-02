@@ -9,6 +9,7 @@
   ],
   "ignorePaths": [
     "**/centos7.Containerfile",
+    "**/centos7-development.Containerfile",
     "**/rpmbuild.centos7.Containerfile"
   ],
   "labels": ["no-changelog", "tests-skip"],

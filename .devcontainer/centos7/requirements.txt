@@ -1,0 +1,8 @@
+pre-commit==1.21.0
+astroid==1.6.6
+pytest==4.6.11
+pathlib2==2.3.7.post1
+mock==3.0.5
+pytest-cov==2.12.1
+coverage[toml]==5.5
+pylint==1.9.5
