@@ -20,7 +20,6 @@ __metaclass__ = type
 import errno
 import fcntl
 import getpass
-import inspect
 import json
 import logging
 import multiprocessing
@@ -279,12 +278,6 @@ def run_as_child_process(func):
         wrapper.__wrapped__ = func
 
     return wrapper
-
-
-def get_executable_name():
-    """Get name of the executable file passed to the python interpreter."""
-
-    return os.path.basename(inspect.stack()[-1][1])
 
 
 def require_root():

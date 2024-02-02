@@ -97,7 +97,7 @@ SYSTEM_PACKAGES = [
     reason="No yum module detected on the system, skipping it.",
 )
 class TestYumTransactionHandler:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def _mock_yum_api_calls(self, monkeypatch):
         """ """
         monkeypatch.setattr(pkgmanager.RepoStorage, "enableRepo", value=mock.Mock())
@@ -118,7 +118,7 @@ class TestYumTransactionHandler:
 
     @centos7
     @pytest.mark.parametrize(("enabled_rhel_repos"), ((["rhel-7-test-repo"])))
-    def test_enable_repos(self, pretend_os, enabled_rhel_repos, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_enable_repos(self, pretend_os, enabled_rhel_repos, caplog, monkeypatch):
         instance = YumTransactionHandler()
         instance._set_up_base()
 
@@ -131,7 +131,7 @@ class TestYumTransactionHandler:
 
     @centos7
     @pytest.mark.parametrize(("enabled_rhel_repos"), ((["rhel-7-test-repo"])))
-    def test_enable_repos_repo_error(self, pretend_os, enabled_rhel_repos, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_enable_repos_repo_error(self, pretend_os, enabled_rhel_repos, caplog, monkeypatch):
         instance = YumTransactionHandler()
         instance._set_up_base()
 
@@ -143,7 +143,7 @@ class TestYumTransactionHandler:
         assert pkgmanager.RepoStorage.disableRepo.called_once()
 
     @centos7
-    def test_perform_operations(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_perform_operations(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         instance = YumTransactionHandler()
 
@@ -154,7 +154,7 @@ class TestYumTransactionHandler:
         assert pkgmanager.YumBase.downgrade.call_count == 0
 
     @centos7
-    def test_perform_operations_reinstall_exception(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_perform_operations_reinstall_exception(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         instance = YumTransactionHandler()
@@ -166,7 +166,7 @@ class TestYumTransactionHandler:
         assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos7
-    def test_perform_operations_downgrade_exception(self, pretend_os, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_perform_operations_downgrade_exception(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.reinstall.side_effect = pkgmanager.Errors.ReinstallInstallError
         pkgmanager.YumBase.downgrade.side_effect = pkgmanager.Errors.ReinstallRemoveError
@@ -179,7 +179,7 @@ class TestYumTransactionHandler:
         assert "not available in RHEL repositories." in caplog.records[-1].message
 
     @centos7
-    def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, _mock_yum_api_calls, monkeypatch):
+    def test_perform_operations_no_more_mirrors_repo_exception(self, pretend_os, monkeypatch):
         monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda: SYSTEM_PACKAGES)
         pkgmanager.YumBase.update.side_effect = pkgmanager.Errors.NoMoreMirrorsRepoError
         instance = YumTransactionHandler()
@@ -198,7 +198,7 @@ class TestYumTransactionHandler:
         ),
     )
     def test_resolve_dependencies(
-        self, pretend_os, ret_code, message, validate_transaction, expected, _mock_yum_api_calls, caplog, monkeypatch
+        self, pretend_os, ret_code, message, validate_transaction, expected, caplog, monkeypatch
     ):
         monkeypatch.setattr(
             pkgmanager.YumBase,
@@ -225,7 +225,7 @@ class TestYumTransactionHandler:
         ),
     )
     @centos7
-    def test_process_transaction(self, pretend_os, validate_transaction, expected, _mock_yum_api_calls, caplog):
+    def test_process_transaction(self, pretend_os, validate_transaction, expected, caplog):
         instance = YumTransactionHandler()
         instance._set_up_base()
 
@@ -233,7 +233,7 @@ class TestYumTransactionHandler:
         assert expected in caplog.records[-1].message
 
     @centos7
-    def test_process_transaction_with_exceptions(self, pretend_os, _mock_yum_api_calls, caplog):
+    def test_process_transaction_with_exceptions(self, pretend_os, caplog):
         side_effects = pkgmanager.Errors.YumBaseError
         instance = YumTransactionHandler()
         instance._set_up_base()
@@ -252,7 +252,7 @@ class TestYumTransactionHandler:
             (False,),
         ),
     )
-    def test_run_transaction(self, pretend_os, validate_transaction, _mock_yum_api_calls, caplog, monkeypatch):
+    def test_run_transaction(self, pretend_os, validate_transaction, caplog, monkeypatch):
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
             pkgmanager.handlers.yum.YumTransactionHandler, "_resolve_dependencies", YumResolveDepsMocked(loop_until=0)
@@ -279,7 +279,7 @@ class TestYumTransactionHandler:
         ),
     )
     def test_run_transaction_resolve_dependencies_loop(
-        self, pretend_os, start_at, loop_until, expected_count, _mock_yum_api_calls, monkeypatch
+        self, pretend_os, start_at, loop_until, expected_count, monkeypatch
     ):
         monkeypatch.setattr(pkgmanager.handlers.yum.YumTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(
@@ -305,7 +305,7 @@ class TestYumTransactionHandler:
         )
 
     @centos7
-    def test_package_marked_for_update(self, pretend_os, _mock_yum_api_calls, monkeypatch):
+    def test_package_marked_for_update(self, pretend_os, monkeypatch):
         """
         Test that if a package is marked for update, we won't call reinstall or
         downgrade after that.

@@ -77,13 +77,6 @@ REPOQUERY_L_STUB_GOOD = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/c.ko.xz\n"
     "/lib/modules/5.8.0-7642-generic/kernel/lib/c.ko\n"
 )
-REPOQUERY_L_STUB_BAD = (
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/d.ko.xz\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/d.ko\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/e.ko.xz\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko.xz\n"
-    "/lib/modules/5.8.0-7642-generic/kernel/lib/f.ko\n"
-)
 
 
 @pytest.fixture

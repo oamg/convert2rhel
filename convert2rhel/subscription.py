@@ -622,22 +622,6 @@ def get_pool_id(sub_raw_attrs):
     loggerinst.critical("Cannot parse the subscription pool ID from string:\n%s" % sub_raw_attrs)
 
 
-def print_avail_subs(subs):
-    """Print the subscriptions available to the user so they can choose one."""
-    loggerinst.info("Choose one of your subscriptions that is to be used for converting this system to RHEL:")
-    for index, sub in enumerate(subs):
-        index += 1
-        loggerinst.info("\n======= Subscription number %d =======\n\n%s" % (index, sub.sub_raw))
-
-
-def get_repo(repos_raw):
-    """Generator that parses the raw string of available repositores and
-    provides the repository IDs, one at a time.
-    """
-    for repo_id in re.findall(r"Repo ID:\s+(.*?)\n", repos_raw, re.DOTALL | re.MULTILINE):
-        yield repo_id
-
-
 def verify_rhsm_installed():
     """Make sure that subscription-manager has been installed."""
     if not pkghandler.get_installed_pkg_information("subscription-manager"):

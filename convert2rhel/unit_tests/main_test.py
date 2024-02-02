@@ -20,8 +20,6 @@ __metaclass__ = type
 import os
 import sys
 
-from collections import OrderedDict
-
 import pytest
 import six
 
