@@ -357,9 +357,9 @@ class TestRestorableSystemSubscription:
         assert "subscription-manager not installed, skipping" == caplog.messages[-1]
 
 
-def test_install_rhel_subsription_manager(monkeypatch):
+def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
     mock_backup_control = mock.Mock()
-    monkeypatch.setattr(backup.backup_control, "push", mock_backup_control)
+    monkeypatch.setattr(global_backup_control, "push", mock_backup_control)
 
     subscription.install_rhel_subscription_manager(["subscription-manager", "json-c.x86_64"])
 

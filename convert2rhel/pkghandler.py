@@ -28,7 +28,8 @@ from collections import namedtuple
 import rpm
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
-from convert2rhel.backup import RestorableFile, remove_pkgs
+from convert2rhel.backup import RestorableChange, remove_pkgs
+from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -81,7 +82,6 @@ _UBI_9_REPO_CONTENT = (
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 
 _VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
-versionlock_file = RestorableFile(_VERSIONLOCK_FILE_PATH)  # pylint: disable=C0103
 
 #
 # Regular expressions used to find package names in yum output
@@ -133,7 +133,7 @@ PackageInformation = namedtuple(
 )
 
 
-class RestorablePackageSet(backup.RestorableChange):
+class RestorablePackageSet(RestorableChange):
     """Install a set of packages in a way that they can be uninstalled later.
 
     .. warn:: This functionality is incomplete (These are things that need cleanup)
@@ -1197,7 +1197,7 @@ def clear_versionlock():
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
-        versionlock_file.backup()
+        backup.backup_control.push(RestorableFile(_VERSIONLOCK_FILE_PATH))
 
         loggerinst.info("Clearing package versions locks...")
         call_yum_cmd("versionlock", args=["clear"], print_output=False)
