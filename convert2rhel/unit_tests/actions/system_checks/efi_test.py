@@ -37,14 +37,6 @@ def efi_action():
 
 
 class TestEFIChecks:
-    def _check_efi_detection_log(self, efi_detected=True):
-        if efi_detected:
-            assert "BIOS detected." not in efi.logger.info_msgs
-            assert "UEFI detected." in efi.logger.info_msgs
-        else:
-            assert "BIOS detected." in efi.logger.info_msgs
-            assert "UEFI detected." not in efi.logger.info_msgs
-
     @pytest.mark.parametrize(
         ("is_efi", "is_secure_boot", "arch", "version", "os_path_exists", "boot_info", "expected"),
         (

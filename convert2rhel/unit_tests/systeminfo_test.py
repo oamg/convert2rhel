@@ -21,8 +21,6 @@ import logging
 import os
 import time
 
-from datetime import datetime as dt
-
 import pytest
 import six
 
@@ -49,9 +47,7 @@ class TestRPMFilesDiff:
         monkeypatch.setattr(tool_opts, "no_rpm_va", mock.Mock(return_value=True))
         assert system_info.modified_rpm_files_diff() is None
 
-    def test_modified_rpm_files_diff_without_differences_after_conversion(
-        self, register_system_info_logger, monkeypatch
-    ):
+    def test_modified_rpm_files_diff_without_differences_after_conversion(self, monkeypatch):
         monkeypatch.setattr(system_info, "generate_rpm_va", mock.Mock())
         monkeypatch.setattr(utils, "get_file_content", mock.Mock(side_effect=(["rpm1", "rpm2"], ["rpm1", "rpm2"])))
 

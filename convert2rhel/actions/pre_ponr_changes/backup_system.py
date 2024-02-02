@@ -176,14 +176,3 @@ class BackupPackageFiles(actions.Action):
             path = line[2]
 
         return {"status": status, "file_type": file_type, "path": path}
-
-    @staticmethod
-    def rollback_files():
-        loggerinst.task("Rollback: Restore package files")
-        for file in backup.package_files_changes:
-            if file["status"] == "missing":
-                if os.path.exists(file["path"]):
-                    os.remove(file["path"])
-                    loggerinst.info("Removing file %s" % file["path"])
-            elif "5" in file["status"]:
-                file["backup"].restore(rollback=False)  # debug messages are enough

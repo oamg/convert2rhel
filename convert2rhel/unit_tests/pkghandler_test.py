@@ -682,10 +682,10 @@ class TestRestorablePackageSet:
 
         return pkghandler.RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
-    def smoketest_init(self):
+    def test_smoketest_init(self):
         package_set = pkghandler.RestorablePackageSet(["pkg1"])
 
-        assert package_set.pkg_set == ["pkg1"]
+        assert package_set.pkgs_to_install == ["pkg1"]
         assert package_set.enabled is False
         # We actually care that this is an empty list and not just False-y
         assert package_set.installed_pkgs == []  # pylint: disable=use-implicit-booleaness-not-comparison

@@ -172,7 +172,7 @@ class Convert2rhelLatest(actions.Action):
         else:
             running_convert2rhel_NEVRA = running_convert2rhel_NEVRA[0]
             # Run `rpm -V <convert2rhel pkg NEVRA>` to make sure the user hasn't installed a different convert2rhel version on top of a previously installed rpm package through other means than rpm (e.g. pip install from GitHub)
-            rpm_convert2rhel_verify, return_code = utils.run_subprocess(
+            _, return_code = utils.run_subprocess(
                 ["rpm", "-V", running_convert2rhel_NEVRA],
                 print_output=False,
             )

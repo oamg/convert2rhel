@@ -111,7 +111,7 @@ SYSTEM_PACKAGES = [
     reason="No dnf module detected on the system, skipping it.",
 )
 class TestDnfTransactionHandler:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def _mock_dnf_api_calls(self, monkeypatch):
         """Mocks all calls related to the dnf API transactions"""
         monkeypatch.setattr(pkgmanager.Base, "read_all_repos", value=mock.Mock())
@@ -167,7 +167,6 @@ class TestDnfTransactionHandler:
         enabled_rhel_repos,
         is_disabled,
         is_enabled,
-        _mock_dnf_api_calls,
         caplog,
         monkeypatch,
     ):
@@ -202,7 +201,6 @@ class TestDnfTransactionHandler:
         enabled_rhel_repos,
         is_disabled,
         is_enabled,
-        _mock_dnf_api_calls,
         caplog,
         monkeypatch,
     ):
@@ -216,7 +214,7 @@ class TestDnfTransactionHandler:
         assert "Failed to populate repository metadata." in caplog.records[-1].message
 
     @centos8
-    def test_perform_operations(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_perform_operations(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkg_information",
@@ -230,7 +228,7 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.downgrade.call_count == 0
 
     @centos8
-    def test_package_marked_for_update(self, pretend_os, _mock_dnf_api_calls, monkeypatch):
+    def test_package_marked_for_update(self, pretend_os, monkeypatch):
         """
         Test that if a package is marked for update, we won't call reinstall or
         downgrade after that.
@@ -248,7 +246,7 @@ class TestDnfTransactionHandler:
         assert pkgmanager.Base.downgrade.call_count == 0
 
     @centos8
-    def test_perform_operations_reinstall_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_perform_operations_reinstall_exception(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkg_information",
@@ -264,7 +262,7 @@ class TestDnfTransactionHandler:
         assert "not available in RHEL repositories" not in caplog.records[-1].message
 
     @centos8
-    def test_perform_operations_downgrade_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_perform_operations_downgrade_exception(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkg_information",
@@ -282,7 +280,7 @@ class TestDnfTransactionHandler:
         assert "not available in RHEL repositories" in caplog.records[-1].message
 
     @centos8
-    def test_resolve_dependencies(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_resolve_dependencies(self, pretend_os, caplog, monkeypatch):
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._resolve_dependencies()
@@ -292,7 +290,7 @@ class TestDnfTransactionHandler:
         assert "Resolving the dependencies of the packages in the dnf transaction set." in caplog.records[-2].message
 
     @centos8
-    def test_resolve_dependencies_resolve_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_resolve_dependencies_resolve_exception(self, pretend_os, caplog, monkeypatch):
         pkgmanager.Base.resolve.side_effect = pkgmanager.exceptions.DepsolveError
         instance = DnfTransactionHandler()
         instance._set_up_base()
@@ -304,7 +302,7 @@ class TestDnfTransactionHandler:
         assert "Failed to resolve dependencies in the transaction." in caplog.records[-1].message
 
     @centos8
-    def test_resolve_dependencies_download_pkgs_exception(self, pretend_os, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_resolve_dependencies_download_pkgs_exception(self, pretend_os, caplog, monkeypatch):
         pkgmanager.Base.download_packages.side_effect = pkgmanager.exceptions.DownloadError({"t": "test"})
         instance = DnfTransactionHandler()
         instance._set_up_base()
@@ -324,7 +322,7 @@ class TestDnfTransactionHandler:
         ),
     )
     @centos8
-    def test_process_transaction(self, pretend_os, validate_transaction, expected, _mock_dnf_api_calls, caplog):
+    def test_process_transaction(self, pretend_os, validate_transaction, expected, caplog):
         instance = DnfTransactionHandler()
         instance._set_up_base()
         instance._process_transaction(validate_transaction)
@@ -333,7 +331,7 @@ class TestDnfTransactionHandler:
         assert expected in caplog.records[-1].message
 
     @centos8
-    def test_process_transaction_exceptions(self, pretend_os, _mock_dnf_api_calls, caplog):
+    def test_process_transaction_exceptions(self, pretend_os, caplog):
         side_effects = (
             pkgmanager.exceptions.Error,
             pkgmanager.exceptions.TransactionCheckError,
@@ -353,7 +351,7 @@ class TestDnfTransactionHandler:
         ("validate_transaction"),
         ((True), (False)),
     )
-    def test_run_transaction(self, pretend_os, validate_transaction, _mock_dnf_api_calls, caplog, monkeypatch):
+    def test_run_transaction(self, pretend_os, validate_transaction, caplog, monkeypatch):
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_enable_repos", mock.Mock())
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_perform_operations", mock.Mock())
         monkeypatch.setattr(pkgmanager.handlers.dnf.DnfTransactionHandler, "_resolve_dependencies", mock.Mock())

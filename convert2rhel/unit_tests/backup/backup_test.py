@@ -1,6 +1,5 @@
 __metaclass__ = type
 
-import hashlib
 import os
 
 import pytest

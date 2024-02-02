@@ -37,40 +37,6 @@ def is_py2():
     return sys.version_info[:2] <= (2, 7)
 
 
-@pytest.fixture
-def clear_loggers():
-    """
-    Remove handlers from the loggers.
-
-    If logger handlers are created while we are using capsys or capfd, then
-    the logger handlers get created with pytest's capture.  If pytest's
-    capture feature is disabled later, the logger handlers will get errors
-    trying to write to a closed file.  This is this issue:
-
-        https://github.com/pytest-dev/pytest/issues/5502
-
-    In our unittests, there are some tests that use pexpect that have to
-    disable pytest's capture otherwise pexpect-2.3 will malfunction.  The
-    combination of these two things causes logging calls during the utils
-    tests to complain that they are trying to log to a closed file handle.
-
-    Adding this fixture to any unit test which both uses capsys/capfd and
-    creates the logger handlers (by calling
-    `convert2rhel.logger.setup_logger_handler()`) fixes the issue.  The
-    fixture works by removing the handlers that `setup_logger_handler()`
-    (actually, all of the handlers) created when the test completes.
-    """
-    # Nothing to do in setup
-    yield
-    # In teardown, we clear all the logger handlers.
-    loggers = logging.Logger.manager.loggerDict.values()
-    for logger in loggers:
-        if not hasattr(logger, "handlers"):
-            continue
-        for handler in logger.handlers[:]:
-            logger.removeHandler(handler)
-
-
 @pytest.fixture()
 def read_std(capsys, is_py2):
     """Multipython compatible, modified version of capsys.

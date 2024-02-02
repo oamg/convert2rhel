@@ -48,7 +48,6 @@ from six.moves import mock as six_mock
 
 TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
-NONEXISTING_FILE = os.path.join(TMP_DIR, "nonexisting.file")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
 _MAX_LENGTH = 80
@@ -180,20 +179,6 @@ def mock(class_or_module, orig_obj, mock_obj):
         return wrapped_fn
 
     return wrap
-
-
-def safe_repr(obj, short=False):
-    """
-    Safetly calls repr().
-    Returns a truncated string if repr message is too long.
-    """
-    try:
-        result = repr(obj)
-    except Exception:
-        result = object.__repr__(obj)
-    if not short or len(result) < _MAX_LENGTH:
-        return result
-    return result[:_MAX_LENGTH] + " [truncated]..."
 
 
 def get_pytest_marker(request, mark_name):

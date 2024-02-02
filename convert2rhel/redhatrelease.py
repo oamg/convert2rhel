@@ -31,19 +31,6 @@ loggerinst = logging.getLogger(__name__)
 OS_RELEASE_FILEPATH = "/etc/os-release"
 
 
-def get_release_pkg_name():
-    """For RHEL 7 the release package name is redhat-release-server.
-
-    For RHEL 8, the name is redhat-release.
-    """
-    release_pkg_name = "redhat-release-server"
-
-    if system_info.version.major >= 8:
-        release_pkg_name = "redhat-release"
-
-    return release_pkg_name
-
-
 def get_system_release_filepath():
     """Return path of the file containing the OS name and version."""
     release_filepath = "/etc/system-release"  # RHEL 7/8 based OSes
@@ -92,10 +79,6 @@ class YumConf:
     def _write_altered_yum_conf(self):
         with open(self._yum_conf_path, "w") as file_to_write:
             file_to_write.write(self._yum_conf_content)
-
-    @staticmethod
-    def get_yum_conf_filepath():
-        return YumConf._yum_conf_path
 
     @staticmethod
     def is_modified():
