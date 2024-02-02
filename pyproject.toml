@@ -13,3 +13,10 @@ known_third_party=[
     "click",
 ]
 known_first_party=["convert2rhel"]
+
+[tool.vulture]
+exclude = ["convert2rhel/unit_tests/actions/data"]
+ignore_decorators = ["@pytest.fixture"]
+ignore_names = ["pretend_os", "stage_actions"]
+min_confidence = 90
+paths = ["convert2rhel", "scripts/whitelist.py"]
