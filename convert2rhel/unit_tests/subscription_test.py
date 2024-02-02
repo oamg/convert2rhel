@@ -27,8 +27,8 @@ import dbus.exceptions
 import pytest
 import six
 
-from convert2rhel import backup, exceptions, pkghandler, subscription, toolopts, unit_tests, utils
-from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, Version, system_info
+from convert2rhel import exceptions, pkghandler, subscription, toolopts, unit_tests, utils
+from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
     PromptUserMocked,
     RegisterSystemMocked,

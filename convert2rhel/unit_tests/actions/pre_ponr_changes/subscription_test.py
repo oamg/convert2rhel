@@ -23,7 +23,7 @@ from functools import partial
 import pytest
 import six
 
-from convert2rhel import actions, backup, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
