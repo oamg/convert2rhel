@@ -3,4 +3,4 @@ astroid==2.11.7
 pre-commit==2.17.0
 pytest==7.0.1
 pytest-cov==3.0.0
-coverage[toml]
+coverage[toml]==7.4.1
