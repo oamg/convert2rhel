@@ -8,7 +8,8 @@
     "github-actions"
   ],
   "ignorePaths": [
-    "**/*centos7*Containerfile"
+    "**/*centos7*Containerfile",
+    ".devcontainer/centos7/**"
   ],
   "labels": ["no-changelog", "tests-skip"],
   "packageRules": [
