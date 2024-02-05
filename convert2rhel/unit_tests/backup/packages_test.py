@@ -95,18 +95,20 @@ class TestRestorablePackageSet:
         yum_repo_dir = tmpdir.join("yum-repo.d")
         ubi7_repo_path = yum_repo_dir.join("ubi_7.repo")
         ubi8_repo_path = yum_repo_dir.join("ubi_8.repo")
+        ubi9_repo_path = yum_repo_dir.join("ubi_9.repo")
 
         monkeypatch.setattr(packages, "_SUBMGR_RPMS_DIR", str(pkg_download_dir))
         monkeypatch.setattr(packages, "_RHSM_TMP_DIR", str(yum_repo_dir))
         monkeypatch.setattr(packages, "_UBI_7_REPO_PATH", str(ubi7_repo_path))
         monkeypatch.setattr(packages, "_UBI_8_REPO_PATH", str(ubi8_repo_path))
+        monkeypatch.setattr(packages, "_UBI_9_REPO_PATH", str(ubi9_repo_path))
 
         return RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
     def test_smoketest_init(self):
         package_set = RestorablePackageSet(["pkg1"])
 
-        assert package_set.pkg_set == ["pkg1"]
+        assert package_set.pkgs_to_install == ["pkg1"]
         assert package_set.enabled is False
         # We actually care that this is an empty list and not just False-y
         assert package_set.installed_pkgs == []  # pylint: disable=use-implicit-booleaness-not-comparison
@@ -116,6 +118,7 @@ class TestRestorablePackageSet:
         (
             (7, 10),
             (8, 5),
+            (9, 3),
         ),
     )
     def test_enable_need_to_install(self, rhel_major_version, package_set, global_system_info, caplog, monkeypatch):
