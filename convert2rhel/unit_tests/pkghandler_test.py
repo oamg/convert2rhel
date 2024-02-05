@@ -28,6 +28,7 @@ import rpm
 import six
 
 from convert2rhel import backup, exceptions, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.pkghandler import (
     PackageInformation,
@@ -1306,7 +1307,7 @@ class TestInstallGpgKeys:
 
         # Prevent RestorableRpmKey from actually performing any work
         enable_mock = mock.Mock()
-        monkeypatch.setattr(backup.RestorableRpmKey, "enable", enable_mock)
+        monkeypatch.setattr(RestorableRpmKey, "enable", enable_mock)
 
         pkghandler.install_gpg_keys()
 

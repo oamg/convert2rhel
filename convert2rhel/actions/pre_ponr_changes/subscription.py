@@ -18,7 +18,8 @@ __metaclass__ = type
 import logging
 import os.path
 
-from convert2rhel import actions, backup, cert, exceptions, pkghandler, repo, subscription, toolopts, utils
+from convert2rhel import actions, backup, exceptions, pkghandler, repo, subscription, toolopts, utils
+from convert2rhel.backup.certs import RestorablePEMCert
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ class InstallRedHatCertForYumRepositories(actions.Action):
         # example on CentOS Linux 7 this package is missing the cert due to intentional
         # debranding. Thus we need to ensure the cert is in place even when the pkg is installed.
         logger.task("Convert: Install cdn.redhat.com SSL CA certificate")
-        repo_cert = cert.PEMCert(_REDHAT_CDN_CACERT_SOURCE_DIR, _REDHAT_CDN_CACERT_TARGET_DIR)
+        repo_cert = RestorablePEMCert(_REDHAT_CDN_CACERT_SOURCE_DIR, _REDHAT_CDN_CACERT_TARGET_DIR)
         backup.backup_control.push(repo_cert)
 
 
@@ -120,7 +121,7 @@ class PreSubscription(actions.Action):
             subscription.verify_rhsm_installed()
 
             logger.task("Convert: Install a RHEL product certificate for RHSM")
-            product_cert = cert.PEMCert(_RHSM_PRODUCT_CERT_SOURCE_DIR, _RHSM_PRODUCT_CERT_TARGET_DIR)
+            product_cert = RestorablePEMCert(_RHSM_PRODUCT_CERT_SOURCE_DIR, _RHSM_PRODUCT_CERT_TARGET_DIR)
             backup.backup_control.push(product_cert)
 
         except SystemExit as e:

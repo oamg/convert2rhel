@@ -291,62 +291,6 @@ class RestorableChange:
         self.enabled = False
 
 
-class RestorableRpmKey(RestorableChange):
-    """Import a GPG key into rpm in a reversible fashion."""
-
-    def __init__(self, keyfile):
-        """
-        Setup a RestorableRpmKey to reflect the GPG key in a file.
-
-        :arg keyfile: Filepath for a GPG key.  The RestorableRpmKey instance will be able to import
-            this into the rpmdb when enabled and remove it when restored.
-        """
-        super(RestorableRpmKey, self).__init__()
-        self.previously_installed = None
-        self.keyfile = keyfile
-        self.keyid = utils.find_keyid(keyfile)
-
-    def enable(self):
-        """Ensure that the GPG key has been imported into the rpmdb."""
-        # For idempotence, do not back this up if we've already done so.
-        if self.enabled:
-            return
-
-        if not self.installed:
-            output, ret_code = utils.run_subprocess(["rpm", "--import", self.keyfile], print_output=False)
-            if ret_code != 0:
-                raise utils.ImportGPGKeyError("Failed to import the GPG key %s: %s" % (self.keyfile, output))
-
-            self.previously_installed = False
-
-        else:
-            self.previously_installed = True
-
-        super(RestorableRpmKey, self).enable()
-
-    @property
-    def installed(self):
-        """Whether the GPG key has been imported into the rpmdb."""
-        output, status = utils.run_subprocess(["rpm", "-q", "gpg-pubkey-%s" % self.keyid], print_output=False)
-
-        if status == 0:
-            return True
-
-        if status == 1 and "package gpg-pubkey-%s is not installed" % self.keyid in output:
-            return False
-
-        raise utils.ImportGPGKeyError(
-            "Searching the rpmdb for the gpg key %s failed: Code %s: %s" % (self.keyid, status, output)
-        )
-
-    def restore(self):
-        """Ensure the rpmdb has or does not have the GPG key according to the state before we ran."""
-        if self.enabled and self.previously_installed is False:
-            utils.run_subprocess(["rpm", "-e", "gpg-pubkey-%s" % self.keyid])
-
-        super(RestorableRpmKey, self).restore()
-
-
 # Over time we want to replace this with pkghandler.RestorablePackageSet Right
 # now, this is still used for removed packages. Installed packages are handled
 # by pkghandler.RestorablePackageSet
