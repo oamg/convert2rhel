@@ -16,6 +16,7 @@
 __metaclass__ = type
 
 
+import hashlib
 import os
 
 import pytest
@@ -279,10 +280,11 @@ class TestBackupSystem:
     ):
         # Prepare the rpm -va ouput to the PRE_RPM_VA_LOG_FILENAME file
         rpm_va_output = ""
+        rpm_va_path = str(tmpdir)
         for i, line in enumerate(rpm_va_output_lines):
             status = line.split()[0]
             # Need to insert tmpdir into the filepath
-            rpm_va_output_lines[i] = rpm_va_output_lines[i].format(path=str(tmpdir))
+            rpm_va_output_lines[i] = rpm_va_output_lines[i].format(path=rpm_va_path)
             # Write some content to the newly created path if the file is present on the system
             if status != "missing":
                 try:
@@ -295,14 +297,14 @@ class TestBackupSystem:
             # Prepared rpm -Va output with paths to tmpdir
             rpm_va_output += rpm_va_output_lines[i] + "\n"
         # Write the data to a file since data from systeminfo are being used
-        rpm_va_logfile_path = os.path.join(str(tmpdir), PRE_RPM_VA_LOG_FILENAME)
+        rpm_va_logfile_path = os.path.join(rpm_va_path, PRE_RPM_VA_LOG_FILENAME)
         with open(rpm_va_logfile_path, "w") as f:
             f.write(rpm_va_output)
 
-        backup_dir = tmpdir.mkdir("backup")
+        backup_dir = str(tmpdir.mkdir("backup"))
 
-        monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
-        monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
+        monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
+        monkeypatch.setattr(backup_system, "LOG_DIR", rpm_va_path)
 
         backup_package_files_action.run()
 
@@ -313,7 +315,9 @@ class TestBackupSystem:
 
             # Get the filename from the original path
             filename = os.path.basename(original_file_path)
-            backed_up_file_path = os.path.join(str(backup_dir), filename)
+            dirname = os.path.dirname(original_file_path)
+            hashed_directory = os.path.join(backup_dir, hashlib.md5(dirname.encode()).hexdigest())
+            backed_up_file_path = os.path.join(hashed_directory, filename)
 
             if backed_up[i]:
                 # Check if the file exists and contains right content

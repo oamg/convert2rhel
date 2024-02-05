@@ -17,6 +17,7 @@
 
 __metaclass__ = type
 
+import hashlib
 import logging
 import os
 import shutil
@@ -32,7 +33,21 @@ loggerinst = logging.getLogger(__name__)
 class RestorableFile(RestorableChange):
     def __init__(self, filepath):
         super(RestorableFile, self).__init__()
+
+        # The filepath we want to back up needs to start with at least a `/`,
+        # otherwise, let's error out and warn the developer/user that the
+        # filepath is not what we expect. This is mostly intended to be an
+        # error to catch during development, not runtime.
+        if not os.path.isabs(filepath):
+            raise TypeError("Filepath needs to be an absolute path.")
+
+        # We don't support directory globs in here *yet*, so let's prevent to
+        # pass a directory here as well.
+        if os.path.isdir(filepath):
+            raise TypeError("Path must be a file not a directory.")
+
         self.filepath = filepath
+        self._backup_path = None
 
     def enable(self):
         """Save current version of a file"""
@@ -43,8 +58,10 @@ class RestorableFile(RestorableChange):
         loggerinst.info("Backing up %s." % self.filepath)
         if os.path.isfile(self.filepath):
             try:
-                shutil.copy2(self.filepath, BACKUP_DIR)
-                loggerinst.debug("Copied %s to %s." % (self.filepath, BACKUP_DIR))
+                backup_path = self._hash_backup_path()
+                shutil.copy2(self.filepath, backup_path)
+                self._backup_path = backup_path
+                loggerinst.debug("Copied %s to %s." % (self.filepath, backup_path))
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
                 loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
@@ -66,6 +83,31 @@ class RestorableFile(RestorableChange):
         # Set the enabled value
         super(RestorableFile, self).enable()
 
+    def _hash_backup_path(self):
+        """Hash the backup path for a given file based on its directory path.
+
+        .. example::
+            Below, we can see an example of the output of this function.
+            It will return the backup path of a given file, alongside with a
+            hashed directory name based on the `py:os.path.dirname()` of the
+            given file.
+            >>> filepath = "/etc/logrotate.d/yum"
+            >>> rf = NewRestorableFile(filepath)
+            >>> hashed_directory = rf._hash_backup_path()
+            >>> print(hashed_directory) # /var/lib/convert2rhel/backup/48a9cd4be5179aee315190d2107264af
+
+        :returns str: The hashed backup path based on the `py:BACKUP_DIR`
+            constant.
+        """
+        path, filename = os.path.split(self.filepath)
+        hashed_directory = os.path.join(BACKUP_DIR, hashlib.md5(path.encode()).hexdigest())
+
+        if not os.path.exists(hashed_directory):
+            os.makedirs(hashed_directory, mode=0o755)
+
+        filepath = os.path.join(hashed_directory, filename)
+        return filepath
+
     def restore(self, rollback=True):
         """Restore a previously backed up file"""
         if rollback:
@@ -73,15 +115,13 @@ class RestorableFile(RestorableChange):
         else:
             loggerinst.info("Restoring %s from backup" % self.filepath)
 
-        backup_filepath = os.path.join(BACKUP_DIR, os.path.basename(self.filepath))
-
         # We do not have backup or not backed up by this
-        if not self.enabled or not os.path.isfile(backup_filepath):
+        if (not self.enabled) or (not os.path.isfile(self._backup_path)):
             loggerinst.info("%s hasn't been backed up." % self.filepath)
             return
 
         try:
-            shutil.copy2(backup_filepath, self.filepath)
+            shutil.copy2(self._backup_path, self.filepath)
         except (OSError, IOError) as err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.
