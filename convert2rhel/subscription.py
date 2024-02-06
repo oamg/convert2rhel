@@ -29,6 +29,7 @@ import dbus.connection
 import dbus.exceptions
 
 from convert2rhel import backup, exceptions, i18n, pkghandler, utils
+from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import _should_subscribe, tool_opts
@@ -556,7 +557,7 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     """
 
     pkgs_to_upgrade = pkgs_to_upgrade or []
-    installed_pkg_set = pkghandler.RestorablePackageSet(pkgs_to_install, pkgs_to_upgrade)
+    installed_pkg_set = RestorablePackageSet(pkgs_to_install, pkgs_to_upgrade)
     backup.backup_control.push(installed_pkg_set)
 
 
