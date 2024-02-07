@@ -28,3 +28,23 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: .rpms/*el${{ matrix.el.ver }}*
+
+  update_jira_links:
+    name: Update Jira links
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Get release
+        id: get_release
+        run: echo "releaseBody=$(gh release view ${{github.ref_name}} --json body)" >> $GITHUB_OUTPUT
+
+      - name: Add Jira links
+        id: jira_links
+        run: |
+          modifiedBody=$(fromJSON(${{ steps.get_release.outputs.releaseBody }}).body | sed -e 's/\[\(RHEL.*\)\]/[[\1](https:\/\/issues.redhat.com\/browse\/\1)]/')
+          echo $modifiedBody >> $GITHUB_OUTPUT
+
+      - name: Update release body
+        run: gh release edit ${{github.ref_name}} --notes ${{ steps.jira_links.outputs.modifiedBody }}
