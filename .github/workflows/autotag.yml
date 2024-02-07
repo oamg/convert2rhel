@@ -18,7 +18,7 @@ jobs:
         id: determine_tag
         run: |
           current_tag=$(git describe --tags --abbrev=0)
-          echo "tag=${current_tag:0:6}-$(date +%s)" >> $GITHUB_OUTPUT
+          echo "tag=${current_tag%%-*}-$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Push tag
         run: |
