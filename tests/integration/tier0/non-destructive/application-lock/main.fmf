@@ -14,9 +14,14 @@ tag+:
     summary+: |
         Simultaneous runs
     description+: |
-        Verify that convert2rhel locks out other instances while it
-        is running and notifies the user of the second instance that
-        it cannot be run.
+        Verify that running convert2rhel locks out other instances.
+        Additionally validate that the logfile did not get overwritten by the second invocation's output.
+        1/ Invoke convert2rhel, wait on data collection acknowledgement prompt.
+        2/ Invoke second instance of convert2rhel, observe warning and the utility exit.
+        3/ Exit the first run of convert2rhel.
+        4/ Validate that the logfile did not get overwritten by the second invocation's output.
+        5/ Invoke third instance of convert2rhel; with the previous instances dead, the third instance should be allowed to run.
+        6/ Exit the utility on the first prompt.
     tag+:
         - simultaneous-runs
     test: |

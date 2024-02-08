@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 
@@ -5,11 +7,13 @@ import pytest
 def test_simultaneous_runs(convert2rhel):
     """
     Verify that running convert2rhel locks out other instances.
+    Additionally validate that the logfile did not get overwritten by the second invocation's output.
     1/ Invoke convert2rhel, wait on data collection acknowledgement prompt.
     2/ Invoke second instance of convert2rhel, observe warning and the utility exit.
     3/ Exit the first run of convert2rhel.
-    4/ Invoke third instance of convert2rhel; with the previous instances dead, the third instance should be allowed to run.
-    5/ Exit the utility on the first prompt.
+    4/ Validate that the logfile did not get overwritten by the second invocation's output.
+    5/ Invoke third instance of convert2rhel; with the previous instances dead, the third instance should be allowed to run.
+    6/ Exit the utility on the first prompt.
     """
 
     def _run_second_instance():
@@ -29,6 +33,13 @@ def test_simultaneous_runs(convert2rhel):
         # Exit the first run
         c2r_one.sendline("n")
     assert c2r_one.exitstatus == 1
+
+    c2r_log = "/var/log/convert2rhel/convert2rhel.log"
+    pattern = r"DEBUG - /var/run/lock/convert2rhel\.pid PID \d+ unlocked"
+    # Verify the log file did not get replaced by the second utility invocation
+    with open(c2r_log, "r") as logfile:
+        data = logfile.read()
+        assert re.search(pattern, data)
 
     # Run for the third time to make sure, the application lock is removed
     with convert2rhel("--debug") as c2r_three:
