@@ -21,11 +21,12 @@ import logging
 import os
 
 from convert2rhel import exceptions, utils
-from convert2rhel.backup import RestorableChange, remove_pkgs
+from convert2rhel.backup import BACKUP_DIR, RestorableChange
+from convert2rhel.pkgmanager import call_yum_cmd
 
 # Fine to import call_yum_cmd for now, but we really should figure out a way to
 # split this out.
-from convert2rhel.pkghandler import call_yum_cmd
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 
 
@@ -72,6 +73,134 @@ _UBI_9_REPO_CONTENT = (
     "enabled=1\n"
 )
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
+
+# Over time we want to replace this with pkghandler.RestorablePackageSet.
+class RestorablePackage(RestorableChange):
+    """Keep control of installed/removed RPM pkgs for backup/restore."""
+
+    def __init__(self, pkg_name, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+        super(RestorablePackage, self).__init__()
+
+        self.pkg_name = pkg_name
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir
+
+        self._path = None
+
+    def enable(self):
+        """Save version of RPM package.
+
+        :param reposdir: Custom repositories directory to be used in the backup.
+        :type reposdir: str
+        """
+        # Prevent multiple backup
+        if self.enabled:
+            return
+
+        loggerinst.info("Backing up %s." % self.pkg_name)
+        if os.path.isdir(BACKUP_DIR):
+            reposdir = self.reposdir
+
+            # If we detect that the current system is an EUS release, then we
+            # proceed to use the hardcoded_repofiles, otherwise, we use the
+            # custom reposdir that comes from the method parameter. This is
+            # mainly because of CentOS Linux which we have hardcoded repofiles.
+            # If we ever put Oracle Linux repofiles to ship with convert2rhel,
+            # them the second part of this condition can be dropped.
+            if system_info.eus_system and system_info.id == "centos":
+                reposdir = get_hardcoded_repofiles_dir()
+
+            # One of the reasons we hardcode repofiles pointing to archived
+            # repositories of older system minor versions is that we need to be
+            # able to download an older package version as a backup. Because for
+            # example the default repofiles on CentOS Linux 8.4 point only to
+            # 8.latest repositories that already don't contain 8.4 packages.
+            if not system_info.has_internet_access:
+                if reposdir:
+                    loggerinst.debug(
+                        "Not using repository files stored in %s due to the absence of internet access." % reposdir
+                    )
+
+                self._path = utils.download_pkg(
+                    pkg=self.pkg_name,
+                    dest=BACKUP_DIR,
+                    set_releasever=self.set_releasever,
+                    custom_releasever=self.custom_releasever,
+                    varsdir=self.varsdir,
+                )
+            else:
+                if reposdir:
+                    loggerinst.debug("Using repository files stored in %s." % reposdir)
+
+                self._path = utils.download_pkg(
+                    pkg=self.pkg_name,
+                    dest=BACKUP_DIR,
+                    set_releasever=self.set_releasever,
+                    reposdir=reposdir,
+                    custom_releasever=self.custom_releasever,
+                    varsdir=self.varsdir,
+                )
+        else:
+            loggerinst.warning("Can't access %s" % BACKUP_DIR)
+
+        # Set the enabled value
+        super(RestorablePackage, self).enable()
+
+    def restore(self):
+        """Restore system to the original state."""
+        if not self.enabled:
+            return
+
+        utils.remove_orphan_folders()
+
+        loggerinst.task("Rollback: Install removed packages")
+        if not self._path:
+            loggerinst.warning("Couldn't find a backup for %s package." % self.pkg_name)
+            return
+
+        self._install_local_rpms(replace=True, critical=False)
+
+        super(RestorablePackage, self).restore()
+
+    def _install_local_rpms(self, replace=False, critical=True):
+        """Install packages locally available."""
+
+        if not self._path:
+            loggerinst.info("No package to install.")
+            return False
+
+        cmd = ["rpm", "-i"]
+        if replace:
+            cmd.append("--replacepkgs")
+
+        loggerinst.info("Installing package:\t%s" % self.pkg_name)
+        cmd.append(self._path)
+
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+        if ret_code != 0:
+            pkgs_as_str = utils.format_sequence_as_message([self.pkg_name])
+            loggerinst.debug(output.strip())
+            if critical:
+                loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_INSTALL_PACKAGES",
+                    title="Couldn't install packages.",
+                    description=(
+                        "While attempting to roll back changes, we encountered "
+                        "an unexpected failure while attempting to reinstall "
+                        "one or more packages that we removed as part of the "
+                        "conversion."
+                    ),
+                    diagnosis="Couldn't install %s packages. Command: %s Output: %s Status: %d"
+                    % (pkgs_as_str, cmd, output, ret_code),
+                )
+
+            loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
+            return False
+
+        return True
 
 
 class RestorablePackageSet(RestorableChange):
@@ -216,7 +345,7 @@ class RestorablePackageSet(RestorableChange):
 
         loggerinst.task("Convert: Remove installed RHSM packages")
         loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
-        remove_pkgs(self.installed_pkgs, backup=False, critical=False)
+        utils.remove_pkgs(self.installed_pkgs, critical=False)
 
         super(RestorablePackageSet, self).restore()
 

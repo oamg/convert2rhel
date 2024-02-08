@@ -22,6 +22,10 @@ import os
 import pytest
 import six
 
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
+
 from convert2rhel import exceptions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
@@ -419,6 +423,8 @@ def test_resolve_yum_problematic_dependencies(
     monkeypatch,
     caplog,
 ):
+    monkeypatch.setattr(pkgmanager.handlers.yum.backup, "backup_control", mock.Mock())
+    monkeypatch.setattr(pkgmanager.handlers.yum, "RestorablePackage", mock.Mock())
     monkeypatch.setattr(pkgmanager.handlers.yum, "remove_pkgs", RemovePkgsMocked())
     pkgmanager.handlers.yum._resolve_yum_problematic_dependencies(output)
 
@@ -426,14 +432,14 @@ def test_resolve_yum_problematic_dependencies(
         assert pkgmanager.handlers.yum.remove_pkgs.called
         backedup_reposdir = os.path.join(utils.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
         backedup_yum_varsdir = os.path.join(utils.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
-        pkgmanager.handlers.yum.remove_pkgs.assert_called_with(
-            pkgs_to_remove=expected_remove_pkgs,
-            backup=True,
-            critical=True,
+        assert pkgmanager.handlers.yum.RestorablePackage.called
+        pkgmanager.handlers.yum.RestorablePackage.assert_called_with(
+            pkg_name=expected_remove_pkgs,
             reposdir=backedup_reposdir,
             set_releasever=True,
             custom_releasever=7,
             varsdir=backedup_yum_varsdir,
         )
+        pkgmanager.handlers.yum.remove_pkgs.assert_called_with(pkgs_to_remove=expected_remove_pkgs, critical=True)
     else:
         assert "Unable to resolve dependency issues." in caplog.records[-1].message

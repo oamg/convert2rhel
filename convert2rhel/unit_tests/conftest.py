@@ -82,7 +82,7 @@ def setup_logger(tmpdir, request):
 
 
 @pytest.fixture
-def system_cert_with_target_path(monkeypatch, tmpdir, request):
+def system_cert_with_target_path(tmpdir):
     """
     Create a single RestorablePEMCert backed by a temp file.
 

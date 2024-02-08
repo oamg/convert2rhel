@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions
-from convert2rhel.pkghandler import call_yum_cmd
+from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.toolopts import tool_opts
 
 

@@ -22,9 +22,9 @@ import os
 import pytest
 import six
 
-from convert2rhel import exceptions, pkghandler, utils
+from convert2rhel import exceptions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.backup import packages
-from convert2rhel.backup.packages import RestorablePackageSet
+from convert2rhel.backup.packages import RestorablePackage, RestorablePackageSet
 from convert2rhel.systeminfo import Version
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
@@ -32,6 +32,7 @@ from convert2rhel.unit_tests import (
     GetInstalledPkgInformationMocked,
     MockFunctionObject,
     RemovePkgsMocked,
+    RunSubprocessMocked,
     StoreContentToFileMocked,
 )
 from convert2rhel.unit_tests.conftest import centos8
@@ -64,6 +65,193 @@ class DownloadPkgsMocked(MockFunctionObject):
             os.mkdir(self.destdir, 0o700)
 
         return super(DownloadPkgsMocked, self).__call__(pkgs, dest, *args, **kwargs)
+
+
+class TestRestorablePackage:
+    def test_install_local_rpms_with_empty_list(self, monkeypatch):
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp._path = "some-path/test.rpm"
+
+        assert rp._install_local_rpms()
+        assert utils.run_subprocess.call_count == 1
+        assert ["rpm", "-i", "some-path/test.rpm"] == utils.run_subprocess.cmd
+
+    def test_install_local_rpms_with_replace(self, monkeypatch):
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp._path = "some-path/test.rpm"
+
+        assert rp._install_local_rpms(replace=True)
+        assert utils.run_subprocess.call_count == 1
+        assert ["rpm", "-i", "--replacepkgs", "some-path/test.rpm"] == utils.run_subprocess.cmd
+
+    def test_install_local_rpms_without_path(self, caplog):
+        rp = RestorablePackage(pkg_name="test.rpm")
+        assert not rp._install_local_rpms()
+        assert "No package to install." in caplog.records[-1].message
+
+    def test_enable(self, monkeypatch, tmpdir, global_backup_control):
+        monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
+        pkgs = ["pkg1", "pkg2", "pkg3"]
+        for pkg in pkgs:
+            global_backup_control.push(RestorablePackage(pkg))
+
+        assert utils.download_pkg.call_count == len(pkgs)
+        assert len(global_backup_control._restorables) == len(pkgs)
+
+    def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
+        monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
+        monkeypatch.setattr(packages, "get_hardcoded_repofiles_dir", lambda: str(tmpdir))
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
+        monkeypatch.setattr(packages, "system_info", global_system_info)
+
+        packages.system_info.eus_system = True
+        packages.system_info.id = "centos"
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp._path = "test.rpm"
+        rp.enable()
+
+        assert utils.download_pkg.call_count == 1
+
+    @pytest.mark.parametrize(
+        (
+            "has_internet_access",
+            "expected",
+        ),
+        (
+            (
+                True,
+                "Using repository files stored in %s",
+            ),
+            (
+                False,
+                "Not using repository files stored in %s due to the absence of internet access.",
+            ),
+        ),
+    )
+    def test_enable_has_internet_connection(
+        self, has_internet_access, expected, monkeypatch, tmpdir, global_system_info, caplog
+    ):
+        tmpdir = str(tmpdir)
+        monkeypatch.setattr(packages, "BACKUP_DIR", tmpdir)
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
+        monkeypatch.setattr(packages, "system_info", global_system_info)
+
+        packages.system_info.has_internet_access = has_internet_access
+
+        rp = RestorablePackage(pkg_name="test.rpm", reposdir=tmpdir)
+        rp._path = "test.rpm"
+        rp.enable()
+
+        assert utils.download_pkg.call_count == 1
+        assert expected % tmpdir in caplog.records[-1].message
+
+    def test_package_already_enabled(self, monkeypatch, tmpdir):
+        monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
+        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp.enable()
+        assert utils.download_pkg.call_count == 1
+
+        rp.enable()
+        # Assert that we are still at call_count 1 meaning that we returning
+        # earlier without going through the backup.
+        assert utils.download_pkg.call_count == 1
+
+    def test_restore(self, monkeypatch):
+        monkeypatch.setattr(
+            packages.RestorablePackage,
+            "_install_local_rpms",
+            value=mock.Mock(),
+        )
+        monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp.enabled = True
+        rp._path = "test.rpm"
+        rp.restore()
+        assert utils.remove_orphan_folders.call_count == 1
+        assert rp._install_local_rpms.call_count == 1
+
+    def test_restore_pkg_without_path(self, monkeypatch, caplog):
+        monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp.enabled = True
+        rp.restore()
+        assert utils.remove_orphan_folders.call_count == 1
+        assert "Couldn't find a backup for test.rpm package." in caplog.records[-1].message
+
+    def test_restore_second_restore(self, monkeypatch):
+        monkeypatch.setattr(
+            packages.RestorablePackage,
+            "_install_local_rpms",
+            value=mock.Mock(),
+        )
+        monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
+
+        rp = RestorablePackage(pkg_name="test.rpm")
+        rp.enabled = True
+        rp._path = "test.rpm"
+        rp.restore()
+        assert utils.remove_orphan_folders.call_count == 1
+        assert rp._install_local_rpms.call_count == 1
+
+        rp.restore()
+        assert utils.remove_orphan_folders.call_count == 1
+        assert rp._install_local_rpms.call_count == 1
+
+    def test_restorable_package_backup_without_dir(self, monkeypatch, tmpdir, caplog):
+        backup_dir = str(tmpdir.join("non-existing"))
+        monkeypatch.setattr(packages, "BACKUP_DIR", backup_dir)
+        rp = RestorablePackage(pkg_name="pkg-1")
+        rp.enable()
+
+        assert "Can't access %s" % backup_dir in caplog.records[-1].message
+
+    def test_install_local_rpms_package_install_warning(self, monkeypatch, caplog):
+        pkg_name = "pkg-1"
+        run_subprocess_mock = RunSubprocessMocked(
+            side_effect=unit_tests.run_subprocess_side_effect(
+                (("rpm", "-i", pkg_name), ("test", 1)),
+            )
+        )
+        monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
+
+        rp = RestorablePackage(pkg_name=pkg_name)
+        rp._path = pkg_name
+        result = rp._install_local_rpms(replace=False, critical=False)
+
+        assert result == False
+        assert run_subprocess_mock.call_count == 1
+        assert "Couldn't install %s packages." % pkg_name in caplog.records[-1].message
+
+    def test_test_install_local_rpms_system_exit(self, monkeypatch, caplog):
+        pkg_name = "pkg-1"
+        run_subprocess_mock = RunSubprocessMocked(
+            side_effect=unit_tests.run_subprocess_side_effect(
+                (("rpm", "-i", pkg_name), ("test", 1)),
+            )
+        )
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            value=run_subprocess_mock,
+        )
+
+        rp = RestorablePackage(pkg_name=pkg_name)
+        rp._path = pkg_name
+        with pytest.raises(exceptions.CriticalError):
+            rp._install_local_rpms(replace=False, critical=True)
+
+        assert run_subprocess_mock.call_count == 1
+        assert "Error: Couldn't install %s packages." % pkg_name in caplog.records[-1].message
 
 
 class TestRestorablePackageSet:
@@ -155,7 +343,7 @@ class TestRestorablePackageSet:
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
 
         yum_cmd = CallYumCmdMocked(return_code=1)
-        monkeypatch.setattr(pkghandler, "call_yum_cmd", yum_cmd)
+        monkeypatch.setattr(pkgmanager, "call_yum_cmd", yum_cmd)
         monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
         with pytest.raises(exceptions.CriticalError):
@@ -189,14 +377,14 @@ class TestRestorablePackageSet:
 
     def test_restore(self, package_set, monkeypatch):
         mock_remove_pkgs = RemovePkgsMocked()
-        monkeypatch.setattr(packages, "remove_pkgs", mock_remove_pkgs)
+        monkeypatch.setattr(utils, "remove_pkgs", mock_remove_pkgs)
         package_set.enabled = 1
         package_set.installed_pkgs = ["one", "two"]
 
         package_set.restore()
 
         assert mock_remove_pkgs.call_count == 1
-        mock_remove_pkgs.assert_called_with(["one", "two"], backup=False, critical=False)
+        mock_remove_pkgs.assert_called_with(["one", "two"], critical=False)
 
     @pytest.mark.parametrize(
         ("install", "update", "removed"),
@@ -230,7 +418,7 @@ class TestRestorablePackageSet:
     )
     def test_restore_with_pkgs_in_updates(self, install, update, removed, package_set, monkeypatch):
         remove_pkgs_mock = RemovePkgsMocked()
-        monkeypatch.setattr(packages, "remove_pkgs", remove_pkgs_mock)
+        monkeypatch.setattr(utils, "remove_pkgs", remove_pkgs_mock)
 
         package_set.enabled = 1
         package_set.installed_pkgs = install
@@ -238,11 +426,11 @@ class TestRestorablePackageSet:
 
         package_set.restore()
 
-        remove_pkgs_mock.assert_called_with(removed, backup=False, critical=False)
+        remove_pkgs_mock.assert_called_with(removed, critical=False)
 
     def test_restore_not_enabled(self, package_set, monkeypatch):
         mock_remove_pkgs = RemovePkgsMocked()
-        monkeypatch.setattr(packages, "remove_pkgs", mock_remove_pkgs)
+        monkeypatch.setattr(utils, "remove_pkgs", mock_remove_pkgs)
 
         package_set.enabled = 1
         package_set.restore()

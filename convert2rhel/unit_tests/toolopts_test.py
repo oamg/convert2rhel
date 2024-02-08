@@ -63,9 +63,7 @@ class TestTooloptsParseFromCLI:
         assert global_tool_opts.enablerepo == ["foo"]
         assert global_tool_opts.disablerepo == ["*"]
 
-    #
     # Parsing of serverurl
-    #
 
     @pytest.mark.parametrize(
         ("serverurl", "hostname", "port", "prefix"),
@@ -141,7 +139,7 @@ class TestTooloptsParseFromCLI:
         assert message in caplog.text
 
 
-def test_keep_rhsm(monkeypatch, caplog):
+def test_keep_rhsm(monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--keep-rhsm"]))
 
     convert2rhel.toolopts.CLI()
@@ -190,7 +188,9 @@ def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatc
 )
 @mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
 @mock.patch("convert2rhel.toolopts.tool_opts.enablerepo", [])
-def test_both_disable_submgr_and_no_rhsm_options_work(argv, raise_exception, no_rhsm_value, monkeypatch, caplog):
+def test_both_disable_submgr_and_no_rhsm_options_work(
+    argv, raise_exception, no_rhsm_value, monkeypatch, caplog, global_tool_opts
+):
     monkeypatch.setattr(sys, "argv", argv)
 
     if raise_exception:
@@ -348,7 +348,7 @@ def test_multiple_auth_src_combined(argv, content, message, output, caplog, monk
         ),
     ),
 )
-def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmpdir):
+def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmpdir, global_tool_opts):
     """Test combination of password file, config file and CLI."""
     path0 = os.path.join(str(tmpdir), "convert2rhel.password")
     with open(path0, "w") as file:
@@ -381,7 +381,7 @@ def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeyp
         ),
     ),
 )
-def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch):
+def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch, global_tool_opts):
     """Test both auth methods in CLI."""
     monkeypatch.setattr(sys, "argv", argv)
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[""])

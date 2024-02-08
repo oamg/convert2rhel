@@ -23,8 +23,7 @@ import os
 import shutil
 
 from convert2rhel import exceptions
-from convert2rhel.backup import RestorableChange
-from convert2rhel.utils import BACKUP_DIR
+from convert2rhel.backup import BACKUP_DIR, RestorableChange
 
 
 loggerinst = logging.getLogger(__name__)

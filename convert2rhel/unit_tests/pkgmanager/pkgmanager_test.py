@@ -20,8 +20,11 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import pkgmanager
-from convert2rhel.unit_tests import run_subprocess_side_effect
+from convert2rhel import pkgmanager, utils
+from convert2rhel.systeminfo import Version, system_info
+from convert2rhel.toolopts import tool_opts
+from convert2rhel.unit_tests import RunSubprocessMocked, run_subprocess_side_effect
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -83,3 +86,104 @@ def test_rpm_db_lock():
         pass
 
     assert pkg_obj_mock.rpmdb is None
+
+
+class TestCallYumCmd:
+    def test_call_yum_cmd(self, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(8, 0))
+        monkeypatch.setattr(system_info, "releasever", "8")
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        pkgmanager.call_yum_cmd("install")
+
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "-y",
+            "--releasever=8",
+            "--setopt=module_platform_id=platform:el8",
+        ]
+
+    def test_call_yum_cmd_not_setting_releasever(self, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(7, 0))
+        monkeypatch.setattr(system_info, "releasever", "7Server")
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        pkgmanager.call_yum_cmd("install", set_releasever=False)
+
+        assert utils.run_subprocess.cmd == ["yum", "install", "-y"]
+
+    def test_call_yum_cmd_with_disablerepo_and_enablerepo(self, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(7, 0))
+        monkeypatch.setattr(system_info, "releasever", None)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+        monkeypatch.setattr(tool_opts, "no_rhsm", True)
+        monkeypatch.setattr(tool_opts, "disablerepo", ["*"])
+        monkeypatch.setattr(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
+
+        pkgmanager.call_yum_cmd("install")
+
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "-y",
+            "--disablerepo=*",
+            "--enablerepo=rhel-7-extras-rpm",
+        ]
+
+    def test_call_yum_cmd_with_submgr_enabled_repos(self, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(7, 0))
+        monkeypatch.setattr(system_info, "releasever", None)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+        monkeypatch.setattr(system_info, "submgr_enabled_repos", ["rhel-7-extras-rpm"])
+        monkeypatch.setattr(tool_opts, "enablerepo", ["not-to-be-used-in-the-yum-call"])
+
+        pkgmanager.call_yum_cmd("install")
+
+        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--enablerepo=rhel-7-extras-rpm"]
+
+    def test_call_yum_cmd_with_repo_overrides(self, monkeypatch):
+        monkeypatch.setattr(system_info, "version", Version(7, 0))
+        monkeypatch.setattr(system_info, "releasever", None)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+        monkeypatch.setattr(system_info, "submgr_enabled_repos", ["not-to-be-used-in-the-yum-call"])
+        monkeypatch.setattr(tool_opts, "enablerepo", ["not-to-be-used-in-the-yum-call"])
+
+        pkgmanager.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[])
+
+        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "pkg"]
+
+        pkgmanager.call_yum_cmd(
+            "install",
+            ["pkg"],
+            enable_repos=["enable-repo"],
+            disable_repos=["disable-repo"],
+        )
+
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "-y",
+            "--disablerepo=disable-repo",
+            "--enablerepo=enable-repo",
+            "pkg",
+        ]
+
+    @centos8
+    def test_call_yum_cmd_nothing_to_do(self, pretend_os, monkeypatch, caplog):
+        monkeypatch.setattr(
+            utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="Error: Nothing to do\n")
+        )
+        stdout, returncode = pkgmanager.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[])
+
+        assert returncode == 0
+        assert stdout == "Error: Nothing to do\n"
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "-y",
+            "--releasever=8.5",
+            "--setopt=module_platform_id=platform:el8",
+            "pkg",
+        ]
+        assert "Yum has nothing to do. Ignoring" in caplog.records[-1].message

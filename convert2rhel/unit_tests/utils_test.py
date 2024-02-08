@@ -38,7 +38,7 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 
 from six.moves import mock
 
-from convert2rhel import systeminfo, toolopts, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import exceptions, systeminfo, toolopts, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, is_rpm_based_os
 
@@ -1035,3 +1035,72 @@ def test_run_as_child_process_with_keyboard_interrupt(monkeypatch):
     decorated = utils.run_as_child_process(RunAsChildProcessFunctions.raise_keyboard_interrupt_exception)
     with pytest.raises(KeyboardInterrupt):
         decorated((), {})
+
+
+class TestRemovePkgs:
+    def test_remove_pkgs_without_backup(self, monkeypatch):
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+        pkgs = ["pkg1", "pkg2", "pkg3"]
+
+        utils.remove_pkgs(pkgs, False)
+
+        assert utils.run_subprocess.call_count == len(pkgs)
+
+        rpm_remove_cmd = ["rpm", "-e", "--nodeps"]
+        for cmd, pkg in zip(utils.run_subprocess.cmds, pkgs):
+            assert rpm_remove_cmd + [pkg] == cmd
+
+    @pytest.mark.parametrize(
+        ("pkgs_to_remove", "ret_code", "critical", "expected"),
+        (
+            (["pkg1"], 1, True, "Error: Couldn't remove {0}."),
+            (["pkg1"], 1, False, "Couldn't remove {0}."),
+        ),
+    )
+    def test_remove_pkgs_failed_to_remove(
+        self,
+        pkgs_to_remove,
+        ret_code,
+        critical,
+        expected,
+        monkeypatch,
+        caplog,
+    ):
+        run_subprocess_mock = RunSubprocessMocked(
+            side_effect=unit_tests.run_subprocess_side_effect(
+                (("rpm", "-e", "--nodeps", pkgs_to_remove[0]), ("test", ret_code)),
+            )
+        )
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            value=run_subprocess_mock,
+        )
+
+        if critical:
+            with pytest.raises(exceptions.CriticalError):
+                utils.remove_pkgs(
+                    pkgs_to_remove=pkgs_to_remove,
+                    critical=critical,
+                )
+        else:
+            utils.remove_pkgs(pkgs_to_remove=pkgs_to_remove, critical=critical)
+
+        assert expected.format(pkgs_to_remove[0]) in caplog.records[-1].message
+
+    def test_remove_pkgs_with_empty_list(self, caplog):
+        utils.remove_pkgs([])
+        assert "No package to remove" in caplog.messages[-1]
+
+
+@pytest.mark.parametrize(
+    ("pkg_nevra", "nvra_without_epoch"),
+    (
+        ("7:oraclelinux-release-7.9-1.0.9.el7.x86_64", "oraclelinux-release-7.9-1.0.9.el7.x86_64"),
+        ("oraclelinux-release-8:8.2-1.0.8.el8.x86_64", "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"),
+        ("1:mod_proxy_html-2.4.6-97.el7.centos.5.x86_64", "mod_proxy_html-2.4.6-97.el7.centos.5.x86_64"),
+        ("httpd-tools-2.4.6-97.el7.centos.5.x86_64", "httpd-tools-2.4.6-97.el7.centos.5.x86_64"),
+    ),
+)
+def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
+    assert utils._remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch
