@@ -1,0 +1,5 @@
+[alma_old]
+name=Old repo of Alma Linux
+baseurl=https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/
+enabled=0
+gpgcheck=0

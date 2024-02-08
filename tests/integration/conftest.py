@@ -596,3 +596,46 @@ def rcmtools_cleanup():
                 subprocess.run(f"yum remove -y {pkg}", check=True, shell=True)
 
     yield
+
+
+@pytest.fixture()
+def environment_variables(request):
+    """
+    Fixture.
+    Sets and unsets required environment variables.
+    Environment variable(s) needs to be passed as a list(s) to pytest parametrize.
+    Usage:
+    @pytest.mark.parametrize("envars", [["LIST", "OF"], ["ENVIRONMENT", "VARIABLES"]])
+    """
+
+    def _set_env_var(envars):
+        for envar in envars:
+            os.environ[envar] = "1"
+
+    yield _set_env_var
+
+    def _unset_env_var(envars):
+        for envar in envars:
+            if envar in os.environ:
+                del os.environ[envar]
+            assert envar not in os.environ
+
+    return _unset_env_var
+
+
+# TODO remove when https://issues.redhat.com/browse/RHELC-1389 resolved
+@pytest.fixture(autouse=True)
+def remediation_out_of_date_packages(shell):
+    """
+    Remediation fixture.
+    There is an open issue https://issues.redhat.com/browse/RHELC-1389
+    The python3-syspurpose package is left outdated on the system in some cases,
+    causing subsequent tests to fail.
+    Update the package at the end of each test function if needed.
+    """
+    problematic_packages = ["python3-syspurpose"]
+
+    yield
+
+    for package in problematic_packages:
+        shell(f"yum update -y {package}")

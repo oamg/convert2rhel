@@ -1,0 +1,5 @@
+[rocky_old]
+name=Old repo of Rocky Linux
+baseurl=https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/
+enabled=0
+gpgcheck=0

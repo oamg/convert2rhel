@@ -143,19 +143,15 @@ def kernel(shell):
             assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
             shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
         elif "alma-8" in SYSTEM_RELEASE_ENV:
-            if "alma-8.6" in SYSTEM_RELEASE_ENV:
-                assert shell("yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
-            else:
-                assert shell("yum install kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
+            mock_repo = "alma_old"
+            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
         elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            if "rocky-8.6" in SYSTEM_RELEASE_ENV:
-                assert shell("yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
-            else:
-                assert shell("yum install kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Green Obsidian)'")
+            mock_repo = "rocky_old"
+            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
 
         shell("tmt-reboot -t 600")
 
@@ -180,6 +176,12 @@ def kernel(shell):
 
         # Set the latest kernel as the one we want to reboot to
         shell("grub2-set-default '{}'".format(full_name.strip()))
+
+        # Remove the mocked repofile
+        if "alma-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
+        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
 
         # Reboot after clean-up
         shell("tmt-reboot -t 600")
