@@ -94,9 +94,9 @@ tag+:
         pytest -svv -m test_tainted_kernel_modules_error
 
 
-/tainted_kernel_modules_check_skip:
+/tainted_kernel_modules_check_override:
     summary+: |
-        Overridable tainted kernel modules check
+        Tainted kernel modules check is overridable
     description+: |
         In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
         is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
@@ -111,4 +111,4 @@ tag+:
     tag+:
         - tainted-kernel-modules-check-skip
     test: |
-        pytest -svv -m test_tainted_kernel_modules_check_skip
+        pytest -svv -m test_tainted_kernel_modules_check_override

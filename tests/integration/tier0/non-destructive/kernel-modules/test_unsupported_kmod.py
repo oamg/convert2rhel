@@ -157,8 +157,8 @@ def test_error_if_module_is_force_loaded(shell, convert2rhel, forced_kmods):
 
 
 @pytest.mark.parametrize("envars", [["CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP"]])
-@pytest.mark.test_tainted_kernel_modules_check_skip
-def test_tainted_kernel_modules_check_skip(shell, convert2rhel, forced_kmods, environment_variables, envars):
+@pytest.mark.test_tainted_kernel_modules_check_override
+def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods, environment_variables, envars):
     """
     In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
     is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
