@@ -19,8 +19,10 @@ import hashlib
 import logging
 import os
 
-from convert2rhel import actions, pkghandler
+from convert2rhel import actions, pkghandler, utils
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
+from convert2rhel.backup import BACKUP_DIR, backup_control
+from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR
 
@@ -65,149 +67,124 @@ class ListThirdPartyPackages(actions.Action):
         return pkg.nevra.name
 
 
-class RemoveExcludedPackages(actions.Action):
-    id = "REMOVE_EXCLUDED_PACKAGES"
+class RemoveSpecialPackages(actions.Action):
+    id = "REMOVE_SPECIAL_PACKAGES"
     dependencies = (
-        "BACKUP_REPOSITORY",
-        "BACKUP_PACKAGE_FILES",
-    )  # We use the backed up repos in remove_pkgs_unless_from_redhat()
-
-    def run(self):
-        """
-        Certain packages need to be removed before the system conversion,
-        depending on the system to be converted.
-        """
-        super(RemoveExcludedPackages, self).run()
-
-        logger.task("Convert: Remove excluded packages")
-        logger.info("Searching for the following excluded packages:\n")
-
-        pkgs_removed = []
-        # Since the MD5 checksum of original path is used in backup path to avoid
-        # conflicts in backup folder, preparing the path is needed.
-        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
-
-        try:
-            pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
-            # this call can return None, which is not ideal to use with sorted.
-            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir) or [])
-
-            # TODO: Handling SystemExit here as way to speedup exception
-            # handling and not refactor contents of the underlying function.
-        except SystemExit as e:
-            # TODO(r0x0d): Places where we raise SystemExit and need to be
-            # changed to something more specific.
-            #   - When we can't remove a package.
-            self.set_result(
-                level="ERROR",
-                id="EXCLUDED_PACKAGE_REMOVAL_FAILED",
-                title="Failed to remove excluded package",
-                description="The cause of this error is unknown, please look at the diagnosis for more information.",
-                diagnosis=str(e),
-            )
-            return
-
-        # shows which packages were not removed, if false, all packages were removed
-        pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(pkgs_to_remove)).difference(pkgs_removed))
-        if pkgs_not_removed:
-            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
-            logger.warning(message)
-            self.add_message(
-                level="WARNING",
-                id="EXCLUDED_PACKAGES_NOT_REMOVED",
-                title="Excluded packages not removed",
-                description="Excluded packages which could not be removed",
-                diagnosis=message,
-            )
-        if pkgs_removed:
-            message = "The following packages will be removed during the conversion: %s" % ", ".join(pkgs_removed)
-            logger.info(message)
-            self.add_message(
-                level="INFO",
-                id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
-                diagnosis=message,
-            )
-
-
-class RemoveRepositoryFilesPackages(actions.Action):
-    id = "REMOVE_REPOSITORY_FILES_PACKAGES"
-    dependencies = (
-        "BACKUP_REDHAT_RELEASE",
         # We use the backed up repos in remove_pkgs_unless_from_redhat()
         "BACKUP_REPOSITORY",
+        "BACKUP_PACKAGE_FILES",
+        "BACKUP_REDHAT_RELEASE",
         # The installation of sub-man pkgs needs access to the original repofiles to get the sub-man deps from there
         "PRE_SUBSCRIPTION",
-        "BACKUP_PACKAGE_FILES",
     )
 
     def run(self):
+        """Remove a set of special packages from the system.
+
+        The packages marked for exclusion here are the excluded_pkgs and
+        repofile_pkgs that comes from the system_info singleton. This class
+        substitute the old RemoveExcludedPackages and RemoveRepofilePackages as
+        both of them depends on the RestorablePackage class, in which case, the
+        RestorablePackage was designed to handle a set of packages in the
+        moment of instantiation of the class, but since both removal classes
+        executed separately, we couldn't properly reinstall some packages that
+        got excluded and backed up, as they had to be reinstalled in the system
+        in the same RPM transaction call. To not redo how the RestorablePackage
+        works, both RemoveExcludedPackages and RemoveRepofilePackages classes
+        got merged together into this one, making possible to remove and back
+        up all the packages in a single transaction.
         """
-        Remove those non-RHEL packages that contain YUM/DNF repofiles
-        (/etc/yum.repos.d/*.repo) or affect variables in the repofiles (e.g.
-        $releasever).
-
-        Red Hat cannot automatically remove these non-RHEL packages with other
-        excluded packages. While other excluded packages must be removed before
-        installing subscription-manager to prevent package conflicts, these
-        non-RHEL packages must be present on the system during
-        subscription-manager installation so that the system can access and
-        install subscription-manager dependencies. As a result, these non-RHEL
-        packages must be manually removed after subscription-manager
-        installation.
-        """
-        super(RemoveRepositoryFilesPackages, self).run()
-
-        logger.task("Convert: Remove packages containing .repo files")
-        logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
-
+        all_pkgs = []
         pkgs_removed = []
-        # Since the MD5 checksum of original path is used in backup path to avoid
-        # conflicts in backup folder, preparing the path is needed.
-        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
-
         try:
-            pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
-            # this call can return None, which is not ideal to use with sorted.
-            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir) or [])
+            logger.task("Convert: Searching for the following excluded packages")
+            excluded_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
 
-            # TODO: Handling SystemExit here as way to speedup exception
-            # handling and not refactor contents of the underlying function.
+            logger.task(
+                "Convert: Searching for packages containing .repo files or affecting variables in the .repo files"
+            )
+            repofile_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
+
+            logger.info("\n")
+
+            all_pkgs = excluded_pkgs + repofile_pkgs
+            if not all_pkgs:
+                logger.info("No packages to backup and remove.")
+                return
+
+            # We're using the backed up yum repositories to prevent the following:
+            # - the system was registered to RHSM prior to the conversion and the system didn't have the redhat.repo generated
+            #   for the lack of the RHSM product certificate
+            # - at this point convert2rhel has installed the RHSM product cert (e.g. /etc/pki/product-default/69.pem)
+            # - this function might be performing the first yum call convert2rhel does after cleaning yum metadata
+            # - the "subscription-manager" yum plugin spots that there's a new RHSM product cert and generates
+            #   /etc/yum.repos.d/redhat.repo
+            # - the suddenly enabled RHEL repos cause a package backup failure
+            # Since the MD5 checksum of original path is used in backup path to avoid
+            # conflicts in backup folder, preparing the path is needed.
+            backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+            backup_control.push(RestorablePackage(pkgs=pkghandler.get_pkg_nevras(all_pkgs), reposdir=backedup_reposdir))
+
+            logger.info("\nRemoving special packages from the system.")
+            pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs)
         except SystemExit as e:
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
             #   - When we can't remove a package.
             self.set_result(
                 level="ERROR",
-                id="REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED",
-                title="Repository file package removal failure",
+                id="SPECIAL_PACKAGE_REMOVAL_FAILED",
+                title="Failed to remove some packages necessary for the conversion.",
                 description="The cause of this error is unknown, please look at the diagnosis for more information.",
                 diagnosis=str(e),
             )
             return
 
         # shows which packages were not removed, if false, all packages were removed
-        pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(pkgs_to_remove)).difference(pkgs_removed))
+        pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(all_pkgs)).difference(pkgs_removed))
         if pkgs_not_removed:
             message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
             logger.warning(message)
             self.add_message(
                 level="WARNING",
-                id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
-                title="Repository file packages not removed",
-                description="Repository file packages which could not be removed",
+                id="SPECIAL_PACKAGES_NOT_REMOVED",
+                title="Special packages not removed",
+                description="Special packages which could not be removed",
                 diagnosis=message,
             )
+
         if pkgs_removed:
             message = "The following packages will be removed during the conversion: %s" % ", ".join(pkgs_removed)
             logger.info(message)
             self.add_message(
                 level="INFO",
-                id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
+                id="SPECIAL_PACKAGES_REMOVED",
+                title="Special packages to be removed",
+                description=(
+                    "We have identified installed packages that match a pre-defined list of packages that are"
+                    " to be removed during the conversion"
+                ),
                 diagnosis=message,
             )
+
+        super(RemoveSpecialPackages, self).run()
+
+
+def _remove_packages_unless_from_redhat(pkgs_list):
+    """Remove packages from the system that are not RHEl.
+
+    :param pkgs_list list[str]: Packages that will be removed.
+    :return list[str]: Packages removed from the system.
+    """
+    if not pkgs_list:
+        logger.info("\nNothing to do.")
+        return []
+
+    # this call can return None, which is not ideal to use with sorted.
+    logger.warning("Removing the following %s packages:\n" % len(pkgs_list))
+    pkghandler.print_pkg_info(pkgs_list)
+
+    pkgs_removed = utils.remove_pkgs(pkghandler.get_pkg_nevras(pkgs_list))
+    logger.debug("Successfully removed %s packages" % len(pkgs_list))
+
+    return pkgs_removed

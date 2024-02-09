@@ -75,7 +75,6 @@ class TestPreSubscription:
         expected_dependencies = (
             "INSTALL_RED_HAT_CERT_FOR_YUM",
             "INSTALL_RED_HAT_GPG_KEY",
-            "REMOVE_EXCLUDED_PACKAGES",
         )
 
         assert expected_dependencies == pre_subscription_instance.dependencies
@@ -206,7 +205,11 @@ class TestPreSubscription:
 
 class TestSubscribeSystem:
     def test_subscribe_system_dependency_order(self, subscribe_system_instance):
-        expected_dependencies = ("REMOVE_REPOSITORY_FILES_PACKAGES", "PRE_SUBSCRIPTION", "EUS_SYSTEM_CHECK")
+        expected_dependencies = (
+            "REMOVE_SPECIAL_PACKAGES",
+            "PRE_SUBSCRIPTION",
+            "EUS_SYSTEM_CHECK",
+        )
 
         assert expected_dependencies == subscribe_system_instance.dependencies
 

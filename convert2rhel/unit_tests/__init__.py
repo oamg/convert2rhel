@@ -514,10 +514,6 @@ class FormatPkgInfoMocked(MockFunctionObject):
     spec = pkghandler.format_pkg_info
 
 
-class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
-    spec = pkghandler.remove_pkgs_unless_from_redhat
-
-
 #
 # subscription mocks
 #

@@ -71,25 +71,25 @@ class TestRestorablePackage:
     def test_install_local_rpms_with_empty_list(self, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
-        rp._path = "some-path/test.rpm"
+        rp = RestorablePackage(pkgs=["test.rpm"])
+        rp._backedup_paths = ["test.rpm"]
 
         assert rp._install_local_rpms()
         assert utils.run_subprocess.call_count == 1
-        assert ["rpm", "-i", "some-path/test.rpm"] == utils.run_subprocess.cmd
+        assert ["rpm", "-i", "test.rpm"] == utils.run_subprocess.cmd
 
     def test_install_local_rpms_with_replace(self, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
-        rp._path = "some-path/test.rpm"
+        rp = RestorablePackage(pkgs=["test.rpm"])
+        rp._backedup_paths = ["test.rpm"]
 
         assert rp._install_local_rpms(replace=True)
         assert utils.run_subprocess.call_count == 1
-        assert ["rpm", "-i", "--replacepkgs", "some-path/test.rpm"] == utils.run_subprocess.cmd
+        assert ["rpm", "-i", "--replacepkgs", "test.rpm"] == utils.run_subprocess.cmd
 
     def test_install_local_rpms_without_path(self, caplog):
-        rp = RestorablePackage(pkg_name="test.rpm")
+        rp = RestorablePackage(pkgs=["test.rpm"])
         assert not rp._install_local_rpms()
         assert "No package to install." in caplog.records[-1].message
 
@@ -97,11 +97,12 @@ class TestRestorablePackage:
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
         pkgs = ["pkg1", "pkg2", "pkg3"]
-        for pkg in pkgs:
-            global_backup_control.push(RestorablePackage(pkg))
+        rp = RestorablePackage(pkgs=pkgs)
+        global_backup_control.push(rp)
 
         assert utils.download_pkg.call_count == len(pkgs)
-        assert len(global_backup_control._restorables) == len(pkgs)
+        assert len(global_backup_control._restorables) == 1
+        assert len(rp._backedup_paths) == len(pkgs)
 
     def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
@@ -112,8 +113,8 @@ class TestRestorablePackage:
         packages.system_info.eus_system = True
         packages.system_info.id = "centos"
 
-        rp = RestorablePackage(pkg_name="test.rpm")
-        rp._path = "test.rpm"
+        rp = RestorablePackage(pkgs=["test.rpm"])
+        rp._backedup_paths = ["test.rpm"]
         rp.enable()
 
         assert utils.download_pkg.call_count == 1
@@ -144,8 +145,8 @@ class TestRestorablePackage:
 
         packages.system_info.has_internet_access = has_internet_access
 
-        rp = RestorablePackage(pkg_name="test.rpm", reposdir=tmpdir)
-        rp._path = "test.rpm"
+        rp = RestorablePackage(pkgs=["test.rpm"], reposdir=tmpdir)
+        rp._backedup_paths = ["test.rpm"]
         rp.enable()
 
         assert utils.download_pkg.call_count == 1
@@ -155,7 +156,7 @@ class TestRestorablePackage:
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
+        rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enable()
         assert utils.download_pkg.call_count == 1
 
@@ -172,9 +173,9 @@ class TestRestorablePackage:
         )
         monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
+        rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
-        rp._path = "test.rpm"
+        rp._backedup_paths = ["test.rpm"]
         rp.restore()
         assert utils.remove_orphan_folders.call_count == 1
         assert rp._install_local_rpms.call_count == 1
@@ -182,7 +183,7 @@ class TestRestorablePackage:
     def test_restore_pkg_without_path(self, monkeypatch, caplog):
         monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
+        rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
         rp.restore()
         assert utils.remove_orphan_folders.call_count == 1
@@ -196,9 +197,9 @@ class TestRestorablePackage:
         )
         monkeypatch.setattr(utils, "remove_orphan_folders", value=mock.Mock())
 
-        rp = RestorablePackage(pkg_name="test.rpm")
+        rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
-        rp._path = "test.rpm"
+        rp._backedup_paths = ["test.rpm"]
         rp.restore()
         assert utils.remove_orphan_folders.call_count == 1
         assert rp._install_local_rpms.call_count == 1
@@ -210,7 +211,7 @@ class TestRestorablePackage:
     def test_restorable_package_backup_without_dir(self, monkeypatch, tmpdir, caplog):
         backup_dir = str(tmpdir.join("non-existing"))
         monkeypatch.setattr(packages, "BACKUP_DIR", backup_dir)
-        rp = RestorablePackage(pkg_name="pkg-1")
+        rp = RestorablePackage(pkgs=["pkg-1"])
         rp.enable()
 
         assert "Can't access %s" % backup_dir in caplog.records[-1].message
@@ -224,8 +225,8 @@ class TestRestorablePackage:
         )
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
 
-        rp = RestorablePackage(pkg_name=pkg_name)
-        rp._path = pkg_name
+        rp = RestorablePackage(pkgs=[pkg_name])
+        rp._backedup_paths = pkg_name
         result = rp._install_local_rpms(replace=False, critical=False)
 
         assert result == False
@@ -245,8 +246,8 @@ class TestRestorablePackage:
             value=run_subprocess_mock,
         )
 
-        rp = RestorablePackage(pkg_name=pkg_name)
-        rp._path = pkg_name
+        rp = RestorablePackage(pkgs=[pkg_name])
+        rp._backedup_paths = pkg_name
         with pytest.raises(exceptions.CriticalError):
             rp._install_local_rpms(replace=False, critical=True)
 

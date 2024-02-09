@@ -1153,12 +1153,12 @@ class TestInstallGpgKeys:
     ),
 )
 @centos7
-def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch):
+def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch, caplog):
     monkeypatch.setattr(
         pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=pkgs)
     )
-
     result = pkghandler.get_system_packages_for_replacement()
+
     assert expected == result
 
 
@@ -1470,24 +1470,6 @@ def test_get_packages_to_remove(monkeypatch):
     result = pkghandler.get_packages_to_remove(["installed_pkg", "not_installed_pkg"])
     assert len(result) == 1
     assert result[0].nevra.name == "installed_pkg"
-
-
-def test_remove_pkgs_with_confirm(monkeypatch, tmpdir):
-    monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
-    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
-    monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
-
-    pkghandler.remove_pkgs_unless_from_redhat(
-        [
-            create_pkg_information(
-                packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
-            )
-        ],
-        str(tmpdir),
-    )
-
-    assert len(utils.remove_pkgs.pkgs) == 1
-    assert utils.remove_pkgs.pkgs[0] == "installed_pkg-0.1-1.x86_64"
 
 
 @pytest.mark.parametrize(

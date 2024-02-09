@@ -28,10 +28,8 @@ from collections import namedtuple
 import rpm
 
 from convert2rhel import backup, pkgmanager, utils
-from convert2rhel.backup import BACKUP_DIR, backup_control
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
-from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
@@ -535,39 +533,6 @@ def list_non_red_hat_pkgs_left():
         print_pkg_info(non_red_hat_pkgs)
     else:
         loggerinst.info("All packages are now signed by Red Hat.")
-
-
-def remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir, backup=True):
-    """Remove packages with user confirmation and backup.
-
-    :param pkgs_to_remove: List of packages that will be removed
-    :type pkgs_to_remove: list[PackageInformation]
-    :param backup: If the package should be in a backup. Defaults to True
-    :type backup: bool
-    """
-    if not pkgs_to_remove:
-        loggerinst.info("\nNothing to do.")
-        return
-
-    loggerinst.warning("Removing the following %s packages:\n" % str(len(pkgs_to_remove)))
-    print_pkg_info(pkgs_to_remove)
-    loggerinst.info("\n")
-    # We're using the backed up yum repositories to prevent the following:
-    # - the system was registered to RHSM prior to the conversion and the system didn't have the redhat.repo generated
-    #   for the lack of the RHSM product certificate
-    # - at this point convert2rhel has installed the RHSM product cert (e.g. /etc/pki/product-default/69.pem)
-    # - this function might be performing the first yum call convert2rhel does after cleaning yum metadata
-    # - the "subscription-manager" yum plugin spots that there's a new RHSM product cert and generates
-    #   /etc/yum.repos.d/redhat.repo
-    # - the suddenly enabled RHEL repos cause a package backup failure
-    if backup:
-        for pkg_name in pkgs_to_remove:
-            backup_control.push(RestorablePackage(pkg_name=get_pkg_nevra(pkg_name), reposdir=backedup_reposdir))
-
-    pkgs_removed = utils.remove_pkgs(get_pkg_nevras(pkgs_to_remove))
-    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
-
-    return pkgs_removed
 
 
 def get_pkg_nevras(pkg_objects):

@@ -67,11 +67,7 @@ class InstallRedHatGpgKeyForRpm(actions.Action):
 
 class PreSubscription(actions.Action):
     id = "PRE_SUBSCRIPTION"
-    dependencies = (
-        "INSTALL_RED_HAT_CERT_FOR_YUM",
-        "INSTALL_RED_HAT_GPG_KEY",
-        "REMOVE_EXCLUDED_PACKAGES",
-    )
+    dependencies = ("INSTALL_RED_HAT_CERT_FOR_YUM", "INSTALL_RED_HAT_GPG_KEY")
 
     def run(self):
         super(PreSubscription, self).run()
@@ -159,7 +155,7 @@ class SubscribeSystem(actions.Action):
     id = "SUBSCRIBE_SYSTEM"
     dependencies = (
         # Implicit dependency for `BACKUP_REDHAT_RELEASE`
-        "REMOVE_REPOSITORY_FILES_PACKAGES",
+        "REMOVE_SPECIAL_PACKAGES",
         "PRE_SUBSCRIPTION",
         "EUS_SYSTEM_CHECK",
     )

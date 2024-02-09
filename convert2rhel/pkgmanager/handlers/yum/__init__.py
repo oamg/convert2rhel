@@ -76,7 +76,7 @@ def _resolve_yum_problematic_dependencies(output):
 
         backup.backup_control.push(
             RestorablePackage(
-                pkg_name=packages_to_remove,
+                pkgs=packages_to_remove,
                 reposdir=backedup_reposdir,
                 set_releasever=True,
                 custom_releasever=system_info.version.major,

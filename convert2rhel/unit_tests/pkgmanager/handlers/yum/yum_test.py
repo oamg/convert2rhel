@@ -434,7 +434,7 @@ def test_resolve_yum_problematic_dependencies(
         backedup_yum_varsdir = os.path.join(utils.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
         assert pkgmanager.handlers.yum.RestorablePackage.called
         pkgmanager.handlers.yum.RestorablePackage.assert_called_with(
-            pkg_name=expected_remove_pkgs,
+            pkgs=expected_remove_pkgs,
             reposdir=backedup_reposdir,
             set_releasever=True,
             custom_releasever=7,

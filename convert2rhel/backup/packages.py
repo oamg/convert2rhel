@@ -78,16 +78,16 @@ _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 class RestorablePackage(RestorableChange):
     """Keep control of installed/removed RPM pkgs for backup/restore."""
 
-    def __init__(self, pkg_name, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+    def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
         super(RestorablePackage, self).__init__()
 
-        self.pkg_name = pkg_name
+        self.pkgs = pkgs
         self.reposdir = reposdir
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
         self.varsdir = varsdir
 
-        self._path = None
+        self._backedup_paths = []
 
     def enable(self):
         """Save version of RPM package.
@@ -99,7 +99,7 @@ class RestorablePackage(RestorableChange):
         if self.enabled:
             return
 
-        loggerinst.info("Backing up %s." % self.pkg_name)
+        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
         if os.path.isdir(BACKUP_DIR):
             reposdir = self.reposdir
 
@@ -123,25 +123,30 @@ class RestorablePackage(RestorableChange):
                         "Not using repository files stored in %s due to the absence of internet access." % reposdir
                     )
 
-                self._path = utils.download_pkg(
-                    pkg=self.pkg_name,
-                    dest=BACKUP_DIR,
-                    set_releasever=self.set_releasever,
-                    custom_releasever=self.custom_releasever,
-                    varsdir=self.varsdir,
-                )
+                for pkg in self.pkgs:
+                    self._backedup_paths.append(
+                        utils.download_pkg(
+                            pkg=pkg,
+                            dest=BACKUP_DIR,
+                            set_releasever=self.set_releasever,
+                            custom_releasever=self.custom_releasever,
+                            varsdir=self.varsdir,
+                        )
+                    )
             else:
                 if reposdir:
                     loggerinst.debug("Using repository files stored in %s." % reposdir)
 
-                self._path = utils.download_pkg(
-                    pkg=self.pkg_name,
-                    dest=BACKUP_DIR,
-                    set_releasever=self.set_releasever,
-                    reposdir=reposdir,
-                    custom_releasever=self.custom_releasever,
-                    varsdir=self.varsdir,
-                )
+                for pkg in self.pkgs:
+                    self._backedup_paths.append(
+                        utils.download_pkg(
+                            pkg=pkg,
+                            dest=BACKUP_DIR,
+                            set_releasever=self.set_releasever,
+                            custom_releasever=self.custom_releasever,
+                            varsdir=self.varsdir,
+                        )
+                    )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
@@ -156,8 +161,8 @@ class RestorablePackage(RestorableChange):
         utils.remove_orphan_folders()
 
         loggerinst.task("Rollback: Install removed packages")
-        if not self._path:
-            loggerinst.warning("Couldn't find a backup for %s package." % self.pkg_name)
+        if not self._backedup_paths:
+            loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
             return
 
         self._install_local_rpms(replace=True, critical=False)
@@ -167,7 +172,7 @@ class RestorablePackage(RestorableChange):
     def _install_local_rpms(self, replace=False, critical=True):
         """Install packages locally available."""
 
-        if not self._path:
+        if not self._backedup_paths:
             loggerinst.info("No package to install.")
             return False
 
@@ -175,12 +180,13 @@ class RestorablePackage(RestorableChange):
         if replace:
             cmd.append("--replacepkgs")
 
-        loggerinst.info("Installing package:\t%s" % self.pkg_name)
-        cmd.append(self._path)
+        loggerinst.info("Installing packages:\t%s" % ", ".join(self.pkgs))
+        for pkg in self._backedup_paths:
+            cmd.append(pkg)
 
         output, ret_code = utils.run_subprocess(cmd, print_output=False)
         if ret_code != 0:
-            pkgs_as_str = utils.format_sequence_as_message([self.pkg_name])
+            pkgs_as_str = utils.format_sequence_as_message(self.pkgs)
             loggerinst.debug(output.strip())
             if critical:
                 loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
