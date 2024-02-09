@@ -1,0 +1,20 @@
+summary+: |
+    Duplicate pkgs installed on the system
+description+: |
+    Verify that the conversion does not crash when the same
+    package (of different version) is installed on the system.
+    Verify that the proper inhibitor is raised.
+
+
+/duplicate-pkgs:
+    link: https://issues.redhat.com/browse/RHELC-1070
+    adjust+:
+        - enabled: false
+          when: distro == centos-8, alma-8, rocky-8, oracle-8
+          because: |
+            The bug is reproducible only on EL7 distros.
+            On EL8 the issue is handled by the DNF itself.
+    tag+:
+        - test-duplicate-pkgs
+    test: |
+        pytest -svv -m test_duplicate_pkgs
