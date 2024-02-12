@@ -1,0 +1,21 @@
+summary+: |
+    RHSM facts update when in analysis mode
+description+: |
+    Verify that the subscription-manager facts command is called after the
+    analysis is done (either succeeding or failling).
+
+/rhsm_facts_update_in_analysis:
+    summary+: |
+        RHSM facts update after analysis
+    description+: |
+        TODO(r0x0d): ...
+
+        This test verifies, that the  TASK - [Convert: List third-party packages]
+        won't fail listing packages if previously problematic third party packages are installed.
+        Installed package(s):
+        v8-devel from the epel repository
+        nodejs from the epel repository
+    tag+:
+        - test-rhsm-facts-called-in-analysis
+    test: |
+        pytest -svv -m test_rhsm_facts_called_in_analysis

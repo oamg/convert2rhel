@@ -152,7 +152,7 @@ def main_locked():
 
     except _AnalyzeExit:
         breadcrumbs.breadcrumbs.finish_collection(success=True)
-        # Update RHSM custom facts only when thi returns False. Otherwise,
+        # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the server.
         if not subscription.should_subscribe():
             subscription.update_rhsm_custom_facts()
@@ -193,7 +193,7 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
     if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)
     elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
-        # Update RHSM custom facts only when thi returns False. Otherwise,
+        # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the server.
         if not subscription.should_subscribe():
             subscription.update_rhsm_custom_facts()
