@@ -323,16 +323,9 @@ def rollback_changes():
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
 
-    # The next section is part of a hack for 1.4 that lets us rollback some of
-    # the changes registered with backup_control, do the manual, unported
-    # portions of rollback, and then finish whatever is left in backup_control
-    # afterwards.
-    if backup.backup_control.partition not in backup.backup_control._restorables:
-        backup.backup_control.push(backup.backup_control.partition)
-
     backup_control_was_empty = False
     try:
-        backup.backup_control.pop_to_partition()
+        backup.backup_control.pop_all()
     except IndexError:
         backup_control_was_empty = True
 
