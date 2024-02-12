@@ -30,6 +30,7 @@ from convert2rhel import (
     breadcrumbs,
     exceptions,
     grub,
+    initialize,
     main,
     pkghandler,
     subscription,
@@ -355,11 +356,11 @@ class PrintDataCollectionMocked(MockFunctionObject):
 
 
 class InitializeLoggerMocked(MockFunctionObject):
-    spec = main.initialize_logger
+    spec = initialize.initialize_logger
 
 
 class InitializeFileLoggingMocked(MockFunctionObject):
-    spec = main.initialize_file_logging
+    spec = initialize.initialize_file_logging
 
 
 class MainLockedMocked(MockFunctionObject):
