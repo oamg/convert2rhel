@@ -22,7 +22,7 @@ import pytest
 def test_host_metering(shell):
     """
     Verify that host-metering is enabled and started after conversion on
-    hyperscaller.
+    hyperscaler.
     """
     # Verify that host-metering is enabled and started
     assert shell("systemctl is-enabled host-metering.service").returncode == 0

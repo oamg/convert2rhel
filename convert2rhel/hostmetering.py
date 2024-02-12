@@ -25,6 +25,7 @@ __metaclass__ = type
 import logging
 import os
 
+from convert2rhel import systeminfo
 from convert2rhel.pkghandler import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import system_info
@@ -34,16 +35,15 @@ from convert2rhel.utils import run_subprocess
 logger = logging.getLogger(__name__)
 
 
-def is_running_on_hyperscaller(rhsm_facts):
+def is_running_on_hyperscaler(rhsm_facts):
     """
-    Check if the system is running on hyperscaller. Currently supported
-    hyperscallers are aws, azure and gcp.
+    Check if the system is running on hyperscaler. Currently supported
+    hyperscalers are aws, azure and gcp.
 
-    Args:
-        rhsm_facts (dict): Facts about the system from RHSM.
-
-    Returns:
-        bool: True if the system is running on hyperscaller, False otherwise.
+    :param rhsm_facts: Facts about the system from RHSM.
+    :type rhsm_facts: dict
+    :return: True if the system is running on hyperscaler, False otherwise.
+    :rtype: bool
     """
     is_aws = rhsm_facts.get("aws_instance_id")
     is_azure = rhsm_facts.get("azure_instance_id")
@@ -53,58 +53,82 @@ def is_running_on_hyperscaller(rhsm_facts):
 
 def configure_host_metering():
     """
-    Install, enable and start host-metering on the system when it is running
-    on a hyperscaller and is RHEL 7.
+    Decide whether to install, enable and start host-metering on the system based on the
+    CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.
 
     Behavior can be controlled CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable:
-    - unset: host-metering will be configured based on the above conditions
-    - "no": host-metering will not be configured
-    - "force": forces configuration of host-metering (e.g., even if not running on a hyperscaller)
-    - any other value: behaves as unset
+    - "auto": host-metering will be configured based on the above conditions
+    - empty: host-metering will not be configured
+    - "force": forces configuration of host-metering (e.g., even if not running on a hyperscaler)
+    - any other value: behaves as empty
 
-    Returns:
-        bool: True if host-metering is configured successfully, False otherwise.
+    :return: True if host-metering is configured successfully, False otherwise.
+    :rtype: bool
     """
+    env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING", "empty")
     if "CONVERT2RHEL_CONFIGURE_HOST_METERING" not in os.environ:
-        # TODO(r0x0d): Do we want to silently return here?
-        logger.info("")
-        return
+        return False
 
-    if system_info.version.major > 7:
+    if system_info.version.major != 7 and env_var != "force":
         logger.info("Skipping host metering configuration. Only supported for RHEL 7.")
-        return
+        return False
+
+    if env_var == "force":
+        should_configure_metering = True
+        logger.warning(
+            "The `force' option has been used for the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable."
+            " Please note that this option is mainly used for testing and will configure host-metering unconditionally. "
+            " For generic usage please use the 'auto' option."
+        )
+    elif env_var == "auto":
+        should_configure_metering = True
+    else:
+        should_configure_metering = False
 
     rhsm_facts = get_rhsm_facts()
-    conditions_met = is_running_on_hyperscaller(rhsm_facts)
-
-    if not conditions_met:
+    is_hyperscaler = is_running_on_hyperscaler(rhsm_facts)
+    if (not is_hyperscaler or not should_configure_metering) and env_var != "force":
         logger.info("Skipping host-metering configuration.")
         return False
 
-    logger.info("Installing host-metering rpms.")
+    logger.info("Installing host-metering packages.")
     output, ret_install = call_yum_cmd("install", ["host-metering"])
     logger.debug("Output of yum call: %s" % output)
     if ret_install:
         logger.warning("Failed to install host-metering rpms.")
         return False
 
-    _enable_host_metering_service()
+    if not _enable_host_metering_service():
+        return False
 
-    return system_info.is_systemd_managed_service_running("host-metering.service")
+    return systeminfo.is_systemd_managed_service_running("host-metering.service")
 
 
 def _enable_host_metering_service():
+    """
+    Enables and starts the host metering service.
+
+    :return: True if host-metering is enabled and started successfully, False otherwise.
+    :rtype: bool
+    """
+
     logger.info("Enabling host-metering service.")
     output, ret_enable = run_subprocess(["systemctl", "enable", "host-metering.service"])
-    logger.debug("Output of systemctl call: %s" % output)
+    if output:
+        logger.debug("Output of systemctl call: %s" % output)
     if ret_enable:
         logger.warning("Failed to enable host-metering service.")
+        return False
 
     logger.info("Starting host-metering service.")
     output, ret_start = run_subprocess(["systemctl", "start", "host-metering.service"])
-    logger.debug("Output of systemctl call: %s" % output)
+    if output:
+        logger.debug("Output of systemctl call: %s" % output)
     if ret_start:
         logger.warning("Failed to start host-metering service.")
+        return False
 
-    if not system_info.is_systemd_managed_service_running("host-metering.service"):
-        logger.critical_no_exit("host-metering unit is not active.")
+    if not systeminfo.is_systemd_managed_service_running("host-metering.service"):
+        logger.critical_no_exit("host-metering service is not running.")
+        return False
+    return True

@@ -1,8 +1,8 @@
 summary+: |
-    Check expected state after --payg
+    Check expected state after configuring host metering
 
 description+: |
-    Test convert2rhel with --payg option.
+    Test convert2rhel with CONVERT2RHEL_CONFIGURE_HOST_METERING env var.
     Verify that:
     - host-metering service is enabled and started
 

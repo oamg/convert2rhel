@@ -904,26 +904,26 @@ def update_rhsm_custom_facts():
 
 
 def get_rhsm_facts():
-    """Get the RHSM facts.
+    """
+    Open RHSM facts file and parse the facts
 
     :returns dict: The RHSM facts.
     """
     rhsm_facts = {}
-    if not tool_opts.no_rhsm:
+    if tool_opts.no_rhsm:
         loggerinst.info("Ignoring RHSM facts collection. --no-rhsm is used.")
         return rhsm_facts
 
-    loggerinst.info("Read RHSM facts file.")
+    loggerinst.info("Reading RHSM facts file.")
     try:
         with open(RHSM_FACTS_FILE, mode="r") as handler:
             rhsm_facts = json.load(handler)
-            loggerinst.info("RHSM facts collected successfully.")
-            return rhsm_facts
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+            loggerinst.info("RHSM facts loaded.")
+    except (IOError, ValueError) as e:
         loggerinst.critical_no_exit(
-            "Failed to get the RHSM facts with return code '%s' and output '%s'.",
+            "Failed to get the RHSM facts : %s." % e,
         )
-        return rhsm_facts
+    return rhsm_facts
 
 
 # subscription is the natural place to look for should_subscribe but it

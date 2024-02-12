@@ -55,7 +55,7 @@ write_url=http://localhost:9090/api/v1/write
 def test_run_conversion_metering(shell, convert2rhel, force_hostmetering_envar):
     """
     Verify that convert2rhel automatically installs, enables and starts host-metering
-    service on hyperscallers on RHEL 7.9.
+    service on hyperscalers on RHEL 7.9.
     """
     setup_test_metering_endpoint()
     os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"

@@ -18,6 +18,7 @@
 __metaclass__ = type
 
 import errno
+import json
 
 from collections import namedtuple
 
@@ -27,7 +28,7 @@ import dbus.exceptions
 import pytest
 import six
 
-from convert2rhel import exceptions, pkghandler, subscription, toolopts, unit_tests, utils
+from convert2rhel import exceptions, pkghandler, pkgmanager, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
     PromptUserMocked,
@@ -1274,13 +1275,63 @@ cpu.cpu_socket(s): 3
     assert facts == {"cpu.cpu(s)": "8", "cpu.cpu_socket(s)": "3"}
 
 
-def test_get_rhsm_facts_no_rhsm(global_tool_opts, monkeypatch):
+def test_get_rhsm_facts_no_rhsm(monkeypatch, global_tool_opts):
     run_mock = RunSubprocessMocked(return_string="")
     monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
     global_tool_opts.no_rhsm = True
 
     facts = subscription.get_rhsm_facts()
 
+    assert isinstance(facts, dict)
+    assert len(facts) == 0
+    assert run_mock.call_count == 0
+
+
+def test_get_rhsm_facts_file_not_found(monkeypatch, global_tool_opts, caplog):
+    run_mock = RunSubprocessMocked(return_string="")
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+    monkeypatch.setattr(subscription, "RHSM_FACTS_FILE", "fake/location/file.json")
+    global_tool_opts.no_rhsm = False
+    facts = subscription.get_rhsm_facts()
+    assert caplog.records[-1].levelname == "CRITICAL"
+    assert (
+        caplog.records[-1].message
+        == "Failed to get the RHSM facts : [Errno 2] No such file or directory: 'fake/location/file.json'."
+    )
+    assert isinstance(facts, dict)
+    assert len(facts) == 0
+    assert run_mock.call_count == 0
+
+
+@centos7
+@pytest.mark.skipif(pkgmanager.TYPE == "dnf", reason="Test is only relevant for RHEL 7")
+def test_get_rhsm_facts_json_decode_error_el7(monkeypatch, global_tool_opts, caplog, tmpdir, pretend_os):
+    run_mock = RunSubprocessMocked(return_string="")
+    facts_string = "cpu.cpu(s) :8 "
+    facts_file = tmpdir.join("facts.json")
+    facts_file.write(facts_string)
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+    monkeypatch.setattr(subscription, "RHSM_FACTS_FILE", str(facts_file))
+    facts = subscription.get_rhsm_facts()
+    assert caplog.records[-1].levelname == "CRITICAL"
+    assert caplog.records[-1].message == "Failed to get the RHSM facts : No JSON object could be decoded."
+    assert isinstance(facts, dict)
+    assert len(facts) == 0
+    assert run_mock.call_count == 0
+
+
+@centos8
+@pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="Test is only relevant for RHEL 8+")
+def test_get_rhsm_facts_json_decode_error_el8(monkeypatch, global_tool_opts, caplog, tmpdir, pretend_os):
+    run_mock = RunSubprocessMocked(return_string="")
+    facts_string = "cpu.cpu(s) :8 "
+    facts_file = tmpdir.join("facts.json")
+    facts_file.write(facts_string)
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+    monkeypatch.setattr(subscription, "RHSM_FACTS_FILE", str(facts_file))
+    facts = subscription.get_rhsm_facts()
+    assert caplog.records[-1].levelname == "CRITICAL"
+    assert caplog.records[-1].message == "Failed to get the RHSM facts : Expecting value: line 1 column 1 (char 0)."
     assert isinstance(facts, dict)
     assert len(facts) == 0
     assert run_mock.call_count == 0
