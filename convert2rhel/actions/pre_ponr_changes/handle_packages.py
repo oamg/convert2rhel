@@ -15,11 +15,14 @@
 
 __metaclass__ = type
 
+import hashlib
 import logging
 import os
 
 from convert2rhel import actions, pkghandler
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import BACKUP_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -80,11 +83,14 @@ class RemoveExcludedPackages(actions.Action):
         logger.info("Searching for the following excluded packages:\n")
 
         pkgs_removed = []
+        # Since the MD5 checksum of original path is used in backup path to avoid
+        # conflicts in backup folder, preparing the path is needed.
+        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
 
         try:
             pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
             # this call can return None, which is not ideal to use with sorted.
-            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove) or [])
+            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir) or [])
 
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.
@@ -158,11 +164,14 @@ class RemoveRepositoryFilesPackages(actions.Action):
         logger.info("Searching for packages containing .repo files or affecting variables in the .repo files:\n")
 
         pkgs_removed = []
+        # Since the MD5 checksum of original path is used in backup path to avoid
+        # conflicts in backup folder, preparing the path is needed.
+        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
 
         try:
             pkgs_to_remove = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
             # this call can return None, which is not ideal to use with sorted.
-            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove) or [])
+            pkgs_removed = sorted(pkghandler.remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir) or [])
 
             # TODO: Handling SystemExit here as way to speedup exception
             # handling and not refactor contents of the underlying function.

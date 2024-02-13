@@ -599,7 +599,7 @@ def list_non_red_hat_pkgs_left():
         loggerinst.info("All packages are now signed by Red Hat.")
 
 
-def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
+def remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir, backup=True):
     """Remove packages with user confirmation and backup.
 
     :param pkgs_to_remove: List of packages that will be removed
@@ -622,7 +622,7 @@ def remove_pkgs_unless_from_redhat(pkgs_to_remove, backup=True):
     # - the "subscription-manager" yum plugin spots that there's a new RHSM product cert and generates
     #   /etc/yum.repos.d/redhat.repo
     # - the suddenly enabled RHEL repos cause a package backup failure
-    pkgs_removed = remove_pkgs(get_pkg_nevras(pkgs_to_remove), backup=backup, reposdir=utils.BACKUP_DIR)
+    pkgs_removed = remove_pkgs(get_pkg_nevras(pkgs_to_remove), backup=backup, reposdir=backedup_reposdir)
     loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
 
     return pkgs_removed
