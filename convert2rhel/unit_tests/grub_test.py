@@ -140,15 +140,15 @@ def test__get_blk_device(monkeypatch, caplog, expected_res, device, exception, s
         (None, "/dev/sda1", grub.BootloaderError, True, (BLKID_NUMBER_OUTPUT, 1)),
     ),
 )
-def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subproc_called, subproc):
+def test_get_device_number(monkeypatch, caplog, expected_res, device, exc, subproc_called, subproc):
     monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=subproc))
 
     if exc:
         # The lsblk call returns non-0 exit code
         with pytest.raises(exc):
-            grub._get_device_number(device)
+            grub.get_device_number(device)
     else:
-        assert grub._get_device_number(device) == expected_res
+        assert grub.get_device_number(device) == expected_res
 
     if subproc_called:
         utils.run_subprocess.assert_called_once_with(
@@ -157,6 +157,12 @@ def test__get_device_number(monkeypatch, caplog, expected_res, device, exc, subp
     else:
         utils.run_subprocess.assert_not_called()
         assert len(caplog.records) == 0
+
+
+def test_get_device_number_no_output(monkeypatch):
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=("", 0)))
+    with pytest.raises(grub.BootloaderError, match="The '/dev/sda1' device has no PART_ENTRY_NUMBER"):
+        grub.get_device_number("/dev/sda1")
 
 
 def test_get_boot_partition(monkeypatch):
@@ -479,7 +485,7 @@ def test__is_rhel_in_boot_entries(efi_bin_path, label, expected_ret_val):
     ),
 )
 def test__add_rhel_boot_entry(efi_file_exists, exc, exc_msg, rhel_entry_exists, subproc, log_msg, monkeypatch, caplog):
-    monkeypatch.setattr("convert2rhel.grub._get_device_number", mock.Mock(return_value=1))
+    monkeypatch.setattr("convert2rhel.grub.get_device_number", mock.Mock(return_value=1))
     monkeypatch.setattr("convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major", "minor"])(8, 5))
     monkeypatch.setattr("convert2rhel.grub.get_efi_partition", mock.Mock(return_value="/dev/sda"))
     monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))

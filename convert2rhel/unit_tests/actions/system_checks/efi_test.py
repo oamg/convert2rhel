@@ -23,6 +23,8 @@ from collections import namedtuple
 
 import pytest
 
+from six.moves import mock
+
 from convert2rhel import actions, grub, systeminfo, unit_tests
 from convert2rhel.actions.system_checks import efi
 from convert2rhel.unit_tests import EFIBootInfoMocked
@@ -152,6 +154,8 @@ class TestEFIChecks:
         monkeypatch.setattr(efi.system_info, "version", systeminfo.Version(7, 9))
         monkeypatch.setattr(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
         monkeypatch.setattr(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
+        monkeypatch.setattr(grub, "get_device_number", mock.Mock(return_value=1))
+        monkeypatch.setattr(grub, "get_efi_partition", mock.Mock(return_value="/dev/sda"))
 
         efi_action.run()
 

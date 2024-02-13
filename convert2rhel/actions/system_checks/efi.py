@@ -71,6 +71,7 @@ class Efi(actions.Action):
         # good to check that we can obtain all the required data before the PONR.
         try:
             efiboot_info = grub.EFIBootInfo()
+            grub.get_device_number(grub.get_efi_partition())
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
