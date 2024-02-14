@@ -1153,7 +1153,7 @@ class TestInstallGpgKeys:
     ),
 )
 @centos7
-def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch, caplog):
+def test_get_system_packages_for_replacement(pretend_os, pkgs, expected, monkeypatch):
     monkeypatch.setattr(
         pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=pkgs)
     )

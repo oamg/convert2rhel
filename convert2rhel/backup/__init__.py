@@ -26,7 +26,7 @@ import six
 from convert2rhel.utils import TMP_DIR
 
 
-#: Directory for temporary backing up files, packages and other relevant stuff.
+# Directory for temporary backing up files, packages and other relevant stuff.
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 loggerinst = logging.getLogger(__name__)

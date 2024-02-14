@@ -171,7 +171,7 @@ class RemoveSpecialPackages(actions.Action):
 
 
 def _remove_packages_unless_from_redhat(pkgs_list):
-    """Remove packages from the system that are not RHEl.
+    """Remove packages from the system that are not RHEL.
 
     :param pkgs_list list[str]: Packages that will be removed.
     :return list[str]: Packages removed from the system.

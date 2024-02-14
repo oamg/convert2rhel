@@ -74,11 +74,21 @@ _UBI_9_REPO_CONTENT = (
 )
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 
-# Over time we want to replace this with pkghandler.RestorablePackageSet.
+# NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
 class RestorablePackage(RestorableChange):
-    """Keep control of installed/removed RPM pkgs for backup/restore."""
-
     def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+        """Keep control of installed/removed RPM pkgs for backup/restore.
+
+        :param pkgs list[str]: List of packages to backup.
+        :param reposdir str: If a custom repository directory location needs to
+            be used, this parameter can be set with the location for it.
+        :param set_releasever bool: If there is need to set the relesever while
+            downloading the package with yumdownloader.
+        :param custom_releasever str: Custom releasever in case it need to be
+            overwritten and it differs from the `py:system_info.releasever`.
+        :param varsdir str: Location to the variables directory in case the
+            repository files needs to interpolate variables from those folders.
+        """
         super(RestorablePackage, self).__init__()
 
         self.pkgs = pkgs
@@ -87,14 +97,10 @@ class RestorablePackage(RestorableChange):
         self.custom_releasever = custom_releasever
         self.varsdir = varsdir
 
-        self._backedup_paths = []
+        self._backedup_pkgs_paths = []
 
     def enable(self):
-        """Save version of RPM package.
-
-        :param reposdir: Custom repositories directory to be used in the backup.
-        :type reposdir: str
-        """
+        """Save version of RPMs packages."""
         # Prevent multiple backup
         if self.enabled:
             return
@@ -124,7 +130,7 @@ class RestorablePackage(RestorableChange):
                     )
 
                 for pkg in self.pkgs:
-                    self._backedup_paths.append(
+                    self._backedup_pkgs_paths.append(
                         utils.download_pkg(
                             pkg=pkg,
                             dest=BACKUP_DIR,
@@ -138,7 +144,7 @@ class RestorablePackage(RestorableChange):
                     loggerinst.debug("Using repository files stored in %s." % reposdir)
 
                 for pkg in self.pkgs:
-                    self._backedup_paths.append(
+                    self._backedup_pkgs_paths.append(
                         utils.download_pkg(
                             pkg=pkg,
                             dest=BACKUP_DIR,
@@ -161,7 +167,7 @@ class RestorablePackage(RestorableChange):
         utils.remove_orphan_folders()
 
         loggerinst.task("Rollback: Install removed packages")
-        if not self._backedup_paths:
+        if not self._backedup_pkgs_paths:
             loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
             return
 
@@ -172,7 +178,7 @@ class RestorablePackage(RestorableChange):
     def _install_local_rpms(self, replace=False, critical=True):
         """Install packages locally available."""
 
-        if not self._backedup_paths:
+        if not self._backedup_pkgs_paths:
             loggerinst.info("No package to install.")
             return False
 
@@ -181,7 +187,7 @@ class RestorablePackage(RestorableChange):
             cmd.append("--replacepkgs")
 
         loggerinst.info("Installing packages:\t%s" % ", ".join(self.pkgs))
-        for pkg in self._backedup_paths:
+        for pkg in self._backedup_pkgs_paths:
             cmd.append(pkg)
 
         output, ret_code = utils.run_subprocess(cmd, print_output=False)

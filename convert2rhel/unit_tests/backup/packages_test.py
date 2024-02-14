@@ -72,7 +72,7 @@ class TestRestorablePackage:
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         rp = RestorablePackage(pkgs=["test.rpm"])
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
 
         assert rp._install_local_rpms()
         assert utils.run_subprocess.call_count == 1
@@ -82,7 +82,7 @@ class TestRestorablePackage:
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         rp = RestorablePackage(pkgs=["test.rpm"])
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
 
         assert rp._install_local_rpms(replace=True)
         assert utils.run_subprocess.call_count == 1
@@ -102,7 +102,7 @@ class TestRestorablePackage:
 
         assert utils.download_pkg.call_count == len(pkgs)
         assert len(global_backup_control._restorables) == 1
-        assert len(rp._backedup_paths) == len(pkgs)
+        assert len(rp._backedup_pkgs_paths) == len(pkgs)
 
     def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
@@ -114,7 +114,7 @@ class TestRestorablePackage:
         packages.system_info.id = "centos"
 
         rp = RestorablePackage(pkgs=["test.rpm"])
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
         rp.enable()
 
         assert utils.download_pkg.call_count == 1
@@ -146,7 +146,7 @@ class TestRestorablePackage:
         packages.system_info.has_internet_access = has_internet_access
 
         rp = RestorablePackage(pkgs=["test.rpm"], reposdir=tmpdir)
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
         rp.enable()
 
         assert utils.download_pkg.call_count == 1
@@ -175,7 +175,7 @@ class TestRestorablePackage:
 
         rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
         rp.restore()
         assert utils.remove_orphan_folders.call_count == 1
         assert rp._install_local_rpms.call_count == 1
@@ -199,7 +199,7 @@ class TestRestorablePackage:
 
         rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
-        rp._backedup_paths = ["test.rpm"]
+        rp._backedup_pkgs_paths = ["test.rpm"]
         rp.restore()
         assert utils.remove_orphan_folders.call_count == 1
         assert rp._install_local_rpms.call_count == 1
@@ -226,7 +226,7 @@ class TestRestorablePackage:
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
 
         rp = RestorablePackage(pkgs=[pkg_name])
-        rp._backedup_paths = pkg_name
+        rp._backedup_pkgs_paths = pkg_name
         result = rp._install_local_rpms(replace=False, critical=False)
 
         assert result == False
@@ -247,7 +247,7 @@ class TestRestorablePackage:
         )
 
         rp = RestorablePackage(pkgs=[pkg_name])
-        rp._backedup_paths = pkg_name
+        rp._backedup_pkgs_paths = pkg_name
         with pytest.raises(exceptions.CriticalError):
             rp._install_local_rpms(replace=False, critical=True)
 
