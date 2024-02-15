@@ -27,7 +27,7 @@ import pytest
 import rpm
 import six
 
-from convert2rhel import backup, exceptions, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import backup, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.pkghandler import (

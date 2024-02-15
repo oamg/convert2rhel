@@ -23,7 +23,6 @@ import re
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup.files import RestorableFile
-from convert2rhel.systeminfo import system_info
 
 
 loggerinst = logging.getLogger(__name__)

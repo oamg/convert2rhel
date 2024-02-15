@@ -22,22 +22,19 @@ import six
 
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import os
 
 import pytest
-import six
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 from convert2rhel import exceptions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RemovePkgsMocked, create_pkg_information, mock_decorator
 from convert2rhel.unit_tests.conftest import centos7
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 class YumResolveDepsMocked(unit_tests.MockFunctionObject):

@@ -51,7 +51,6 @@ TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
 # Dummy file for built-in open function
 DUMMY_FILE = os.path.join(os.path.dirname(__file__), "dummy_file")
-_MAX_LENGTH = 80
 
 
 def create_pkg_information(

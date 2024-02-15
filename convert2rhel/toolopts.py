@@ -689,6 +689,7 @@ def _subcommand_used(args):
     for index, argument in enumerate(args):
         if argument in ("convert", "analyze"):
             return argument
+
         if not argument in PARENT_ARGS and args[index - 1] in ARGS_WITH_VALUES:
             return None
 

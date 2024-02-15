@@ -22,9 +22,9 @@ import textwrap
 
 from convert2rhel import utils
 from convert2rhel.actions import (
-    _STATUS_HEADER,
     _STATUS_NAME_FROM_CODE,
     STATUS_CODE,
+    STATUS_HEADER,
     find_actions_of_severity,
     format_action_status_message,
     level_for_combined_action_data,
@@ -261,7 +261,7 @@ def format_report_section_heading(status_code):
     :return: The formatted heading that the caller can log.
     :rtype: str
     """
-    status_header = _STATUS_HEADER[status_code]
+    status_header = STATUS_HEADER[status_code]
     highlight = "=" * 10
 
     heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
