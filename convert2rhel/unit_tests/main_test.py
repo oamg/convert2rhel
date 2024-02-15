@@ -493,7 +493,6 @@ class TestRollbackFromMain:
         mocks = (
             (applock, "_DEFAULT_LOCK_DIR", str(tmp_path)),
             (utils, "require_root", mock.Mock()),
-            (main, "initialize_logger", mock.Mock()),
             (main, "initialize_file_logging", mock.Mock()),
             (toolopts, "CLI", mock.Mock()),
             (main, "show_eula", mock.Mock()),
@@ -519,7 +518,6 @@ class TestRollbackFromMain:
 
         assert main.main() == 0
         assert utils.require_root.call_count == 1
-        assert main.initialize_logger.call_count == 1
         assert toolopts.CLI.call_count == 1
         assert main.show_eula.call_count == 1
         assert breadcrumbs.print_data_collection.call_count == 1
