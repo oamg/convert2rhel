@@ -35,8 +35,7 @@ class DuplicatePackages(actions.Action):
         if not output:
             return
 
-        duplicate_packages = output.split("\n")
-        duplicate_packages = filter(None, duplicate_packages)
+        duplicate_packages = filter(None, output.split("\n"))
         if duplicate_packages:
             self.set_result(
                 level="ERROR",
