@@ -17,6 +17,7 @@
 
 __metaclass__ = type
 
+import hashlib
 import logging
 import os
 import re
@@ -27,6 +28,7 @@ from convert2rhel.backup import remove_pkgs
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import BACKUP_DIR, run_as_child_process
 
@@ -70,12 +72,14 @@ def _resolve_yum_problematic_dependencies(output):
             "Removing problematic packages to continue with the conversion:\n%s",
             "\n".join(packages_to_remove),
         )
+        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+
         remove_pkgs(
             pkgs_to_remove=packages_to_remove,
             backup=True,
             critical=True,
             set_releasever=True,
-            reposdir=BACKUP_DIR,
+            reposdir=backedup_reposdir,
             custom_releasever=system_info.version.major,
             varsdir=os.path.join(BACKUP_DIR, "yum", "vars"),
         )
