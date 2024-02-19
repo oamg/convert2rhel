@@ -101,8 +101,7 @@ class Breadcrumbs:
         self._set_ended()
 
         self._save_migration_results()
-        if self._inform_telemetry and "CONVERT2RHEL_DISABLE_TELEMETRY" not in os.environ:
-            self._save_rhsm_facts()
+        self._save_rhsm_facts()
 
     def _set_activity(self):
         """Set the activity that convert2rhel is going to perform"""
@@ -225,7 +224,6 @@ class Breadcrumbs:
                 "- Source OS vendor and version\n"
                 "- Target RHEL version\n"
                 "- Convert2RHEL related environment variables\n\n"
-                "To disable the data collection, use the 'CONVERT2RHEL_DISABLE_TELEMETRY=1' environment variable."
             )
 
             utils.ask_to_continue()
