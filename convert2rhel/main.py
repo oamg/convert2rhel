@@ -336,9 +336,6 @@ def rollback_changes():
     except IndexError:
         backup_control_was_empty = True
 
-    repo.restore_varsdir()
-    repo.restore_yum_repos()
-
     try:
         backup.backup_control.pop_all()
     except IndexError as e:

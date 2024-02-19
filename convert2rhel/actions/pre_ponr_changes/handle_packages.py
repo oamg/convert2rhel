@@ -20,11 +20,10 @@ import logging
 import os
 
 from convert2rhel import actions, pkghandler, utils
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.backup import BACKUP_DIR, backup_control
 from convert2rhel.backup.packages import RestorablePackage
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR
 
 
 logger = logging.getLogger(__name__)

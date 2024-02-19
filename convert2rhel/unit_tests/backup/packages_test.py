@@ -143,7 +143,7 @@ class TestRestorablePackage:
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
         monkeypatch.setattr(packages, "system_info", global_system_info)
 
-        packages.system_info.has_internet_access = has_internet_access
+        global_system_info.has_internet_access = has_internet_access
 
         rp = RestorablePackage(pkgs=["test.rpm"], reposdir=tmpdir)
         rp._backedup_pkgs_paths = ["test.rpm"]

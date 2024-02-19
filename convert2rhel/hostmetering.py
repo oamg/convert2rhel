@@ -26,7 +26,7 @@ import logging
 import os
 
 from convert2rhel import systeminfo
-from convert2rhel.pkghandler import call_yum_cmd
+from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess

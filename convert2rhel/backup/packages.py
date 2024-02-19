@@ -107,8 +107,6 @@ class RestorablePackage(RestorableChange):
 
         loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
         if os.path.isdir(BACKUP_DIR):
-            reposdir = self.reposdir
-
             # If we detect that the current system is an EUS release, then we
             # proceed to use the hardcoded_repofiles, otherwise, we use the
             # custom reposdir that comes from the method parameter. This is
@@ -116,7 +114,7 @@ class RestorablePackage(RestorableChange):
             # If we ever put Oracle Linux repofiles to ship with convert2rhel,
             # them the second part of this condition can be dropped.
             if system_info.eus_system and system_info.id == "centos":
-                reposdir = get_hardcoded_repofiles_dir()
+                self.reposdir = get_hardcoded_repofiles_dir()
 
             # One of the reasons we hardcode repofiles pointing to archived
             # repositories of older system minor versions is that we need to be
@@ -124,9 +122,9 @@ class RestorablePackage(RestorableChange):
             # example the default repofiles on CentOS Linux 8.4 point only to
             # 8.latest repositories that already don't contain 8.4 packages.
             if not system_info.has_internet_access:
-                if reposdir:
+                if self.reposdir:
                     loggerinst.debug(
-                        "Not using repository files stored in %s due to the absence of internet access." % reposdir
+                        "Not using repository files stored in %s due to the absence of internet access." % self.reposdir
                     )
 
                 for pkg in self.pkgs:
@@ -137,11 +135,12 @@ class RestorablePackage(RestorableChange):
                             set_releasever=self.set_releasever,
                             custom_releasever=self.custom_releasever,
                             varsdir=self.varsdir,
+                            reposdir=self.reposdir,
                         )
                     )
             else:
-                if reposdir:
-                    loggerinst.debug("Using repository files stored in %s." % reposdir)
+                if self.reposdir:
+                    loggerinst.debug("Using repository files stored in %s." % self.reposdir)
 
                 for pkg in self.pkgs:
                     self._backedup_pkgs_paths.append(
@@ -151,6 +150,7 @@ class RestorablePackage(RestorableChange):
                             set_releasever=self.set_releasever,
                             custom_releasever=self.custom_releasever,
                             varsdir=self.varsdir,
+                            reposdir=self.reposdir,
                         )
                     )
         else:
