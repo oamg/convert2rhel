@@ -23,8 +23,6 @@ description+: |
         /basic_conversion_methods:
 
             /activation_key_conversion:
-                environment+:
-                        CONVERT2RHEL_DISABLE_TELEMETRY: 1
                 discover+:
                     test+<:
                         - conversion-method/activation_key_conversion

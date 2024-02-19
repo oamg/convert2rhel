@@ -146,20 +146,6 @@ tag+:
         test: |
           pytest -svv -m test_data_collection_acknowledgement
 
-    /disable_data_collection:
-        summary+: |
-            Disabled data collection.
-        description+: |
-            Verify that disabling the data collection inhibits the conversion.
-            The convert2rhel.facts file is not created.
-        adjust+:
-            - environment+:
-                CONVERT2RHEL_DISABLE_TELEMETRY: 1
-        tag+:
-            - disable-data-collection
-        test: |
-          pytest -svv -m test_disable_data_collection
-
 /incomplete_rollback_in_analyze:
     summary+: |
         Incomplete rollback envar not honored in analyze

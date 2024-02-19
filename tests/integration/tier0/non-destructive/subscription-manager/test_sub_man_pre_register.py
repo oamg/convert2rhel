@@ -4,7 +4,7 @@ from envparse import env
 
 
 @pytest.mark.test_pre_registered_wont_unregister
-def test_pre_registered_wont_unregister(shell, pre_registered, disabled_telemetry, convert2rhel):
+def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system won't unregister the system.
     1. Install subscription-manager, download the SSL certificate
@@ -27,7 +27,7 @@ def test_pre_registered_wont_unregister(shell, pre_registered, disabled_telemetr
 
 
 @pytest.mark.test_pre_registered_re_register
-def test_pre_registered_re_register(shell, pre_registered, disabled_telemetry, convert2rhel):
+def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system and providing convert2rhel
     with credentials, will re-register the system.
@@ -53,7 +53,7 @@ def test_pre_registered_re_register(shell, pre_registered, disabled_telemetry, c
 
 
 @pytest.mark.test_unregistered_no_credentials
-def test_unregistered_no_credentials(shell, convert2rhel, disabled_telemetry):
+def test_unregistered_no_credentials(shell, convert2rhel):
     """
     This test verifies that conversion fails when the system is not pre-registered
     and credentials are not provided to the convert2rhel command.

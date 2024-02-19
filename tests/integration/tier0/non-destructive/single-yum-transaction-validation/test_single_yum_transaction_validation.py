@@ -152,8 +152,6 @@ def packages_with_period(shell):
     E.g. python3.11-3.11.2-2.el8.x86_64 java-1.8.0-openjdk-headless-1.8.0.372.b07-4.el8.x86_64
     """
     problematic_packages = ["python3.11", "java-1.8.0-openjdk-headless"]
-    # We don't care for the telemetry, disable the collection to skip over the acknowledgement
-    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
 
     # Install packages with in name period
     for package in problematic_packages:
@@ -164,9 +162,6 @@ def packages_with_period(shell):
     # Remove problematic packages
     for package in problematic_packages:
         shell(f"yum remove -y {package}")
-
-    # Remove the envar
-    del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
 
 @pytest.mark.test_validation_packages_with_in_name_period
@@ -189,6 +184,15 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
             env.str("RHSM_POOL"),
         )
     ) as c2r:
+        # Swallow the telemetry warning
+        assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
+        assert (
+            c2r.expect("The convert2rhel utility uploads the following data about the system conversion", timeout=300)
+            == 0
+        )
+        c2r.expect("Continue with the system conversion", timeout=300)
+        c2r.sendline("y")
+
         c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
         # Exit at PONR
         c2r.expect("Continue with the system conversion?")

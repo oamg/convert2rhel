@@ -519,22 +519,6 @@ def pre_registered(shell):
         del os.environ["C2R_TESTS_SUBMAN_CLEANUP"]
 
 
-@pytest.fixture
-def disabled_telemetry(shell):
-    """
-    Fixture exporting CONVERT2RHEL_DISABLE_TELEMETRY envar to disable data collection.
-    Removes after the test.
-    Used in scenarios where we do not care about the data collection and want to bypass
-    the data collection acknowledgement prompt.
-    """
-    os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"] = "1"
-
-    yield
-
-    if os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]:
-        del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
-
-
 @pytest.fixture()
 def hybrid_rocky_image(shell, system_release):
     """

@@ -278,9 +278,6 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     """
     # Remove facts from previous runs.
     shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
-    # Remove envar disabling telemetry just in case.
-    if os.getenv("CONVERT2RHEL_DISABLE_TELEMETRY"):
-        del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
     with convert2rhel("--debug") as c2r:
         assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
@@ -295,31 +292,6 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
         assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
 
     assert c2r.exitstatus != 0
-
-
-@pytest.mark.test_disable_data_collection
-def test_disable_data_collection(shell, convert2rhel):
-    """
-    This test verifies functionality of CONVERT2RHEL_DISABLE_TELEMETRY envar.
-    The data collection should be disabled, therefore convert2rhel.facts file should not get created.
-    The environment variable is set by tmt test metadata.
-    """
-    # Remove facts from previous runs.
-    shell(f"rm -f {CONVERT2RHEL_FACTS_FILE}")
-
-    with convert2rhel("--debug") as c2r:
-        assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
-        assert c2r.expect("Skipping, telemetry disabled.", timeout=300) == 0
-
-        c2r.sendcontrol("c")
-
-        # Verify the file is not created if CONVERT2RHEL_DISABLE_TELEMETRY is set.
-        assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
-
-    assert c2r.exitstatus != 0
-
-    # Remove envar disabling telemetry.
-    del os.environ["CONVERT2RHEL_DISABLE_TELEMETRY"]
 
 
 @pytest.fixture
