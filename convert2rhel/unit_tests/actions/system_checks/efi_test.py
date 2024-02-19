@@ -25,8 +25,9 @@ import pytest
 
 from six.moves import mock
 
-from convert2rhel import actions, grub, systeminfo, unit_tests
+from convert2rhel import actions, systeminfo, unit_tests
 from convert2rhel.actions.system_checks import efi
+from convert2rhel.bootloader import bootloader, grub
 from convert2rhel.unit_tests import EFIBootInfoMocked
 
 
@@ -48,7 +49,7 @@ class TestEFIChecks:
                 "x86_64",
                 systeminfo.Version(7, 9),
                 lambda x: not x == "/usr/sbin/efibootmgr",
-                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                EFIBootInfoMocked(exception=bootloader.BootloaderError("errmsg")),
                 ExpectedMessage(
                     id="EFIBOOTMGR_NOT_FOUND",
                     title="EFI boot manager not found",
@@ -64,7 +65,7 @@ class TestEFIChecks:
                 "aarch64",
                 systeminfo.Version(7, 9),
                 lambda x: not x == "/usr/sbin/efibootmgr",
-                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                EFIBootInfoMocked(exception=bootloader.BootloaderError("errmsg")),
                 ExpectedMessage(
                     id="NON_x86_64",
                     title="None x86_64 system detected",
@@ -80,7 +81,7 @@ class TestEFIChecks:
                 "x86_64",
                 systeminfo.Version(7, 9),
                 lambda x: x == "/usr/sbin/efibootmgr",
-                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                EFIBootInfoMocked(exception=bootloader.BootloaderError("errmsg")),
                 ExpectedMessage(
                     id="SECURE_BOOT_DETECTED",
                     title="Secure boot detected",
@@ -96,7 +97,7 @@ class TestEFIChecks:
                 "x86_64",
                 systeminfo.Version(7, 9),
                 lambda x: x == "/usr/sbin/efibootmgr",
-                EFIBootInfoMocked(exception=grub.BootloaderError("errmsg")),
+                EFIBootInfoMocked(exception=bootloader.BootloaderError("errmsg")),
                 ExpectedMessage(
                     id="BOOTLOADER_ERROR",
                     title="Bootloader error detected",
@@ -127,12 +128,12 @@ class TestEFIChecks:
         caplog,
         monkeypatch,
     ):
-        monkeypatch.setattr(grub, "is_efi", lambda: is_efi)
-        monkeypatch.setattr(grub, "is_secure_boot", lambda: is_secure_boot)
+        monkeypatch.setattr(bootloader, "is_efi", lambda: is_efi)
+        monkeypatch.setattr(bootloader, "is_secure_boot", lambda: is_secure_boot)
         monkeypatch.setattr(efi.system_info, "arch", arch)
         monkeypatch.setattr(efi.system_info, "version", version)
         monkeypatch.setattr(os.path, "exists", os_path_exists)
-        monkeypatch.setattr(grub, "EFIBootInfo", boot_info)
+        monkeypatch.setattr(bootloader, "EFIBootInfo", boot_info)
 
         efi_action.run()
 
@@ -148,13 +149,13 @@ class TestEFIChecks:
         assert expected.log_msg in caplog.text
 
     def test_check_efi_efi_detected_nofile_entry(self, efi_action, caplog, monkeypatch):
-        monkeypatch.setattr(grub, "is_efi", lambda: True)
-        monkeypatch.setattr(grub, "is_secure_boot", lambda: False)
+        monkeypatch.setattr(bootloader, "is_efi", lambda: True)
+        monkeypatch.setattr(bootloader, "is_secure_boot", lambda: False)
         monkeypatch.setattr(efi.system_info, "arch", "x86_64")
         monkeypatch.setattr(efi.system_info, "version", systeminfo.Version(7, 9))
         monkeypatch.setattr(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-        monkeypatch.setattr(grub, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
-        monkeypatch.setattr(grub, "get_device_number", mock.Mock(return_value=1))
+        monkeypatch.setattr(bootloader, "EFIBootInfo", EFIBootInfoMocked(current_bootnum="0002"))
+        monkeypatch.setattr(bootloader, "get_device_number", mock.Mock(return_value=1))
         monkeypatch.setattr(grub, "get_efi_partition", mock.Mock(return_value="/dev/sda"))
 
         efi_action.run()
@@ -187,12 +188,12 @@ class TestEFIChecks:
         assert warn_msg in caplog.text
 
     def test_check_efi_efi_detected_ok(self, efi_action, caplog, monkeypatch):
-        monkeypatch.setattr(grub, "is_efi", lambda: True)
-        monkeypatch.setattr(grub, "is_secure_boot", lambda: False)
+        monkeypatch.setattr(bootloader, "is_efi", lambda: True)
+        monkeypatch.setattr(bootloader, "is_secure_boot", lambda: False)
         monkeypatch.setattr(efi.system_info, "arch", "x86_64")
         monkeypatch.setattr(efi.system_info, "version", systeminfo.Version(7, 9))
         monkeypatch.setattr(os.path, "exists", lambda x: x == "/usr/sbin/efibootmgr")
-        monkeypatch.setattr(grub, "EFIBootInfo", EFIBootInfoMocked())
+        monkeypatch.setattr(bootloader, "EFIBootInfo", EFIBootInfoMocked())
 
         efi_action.run()
 
