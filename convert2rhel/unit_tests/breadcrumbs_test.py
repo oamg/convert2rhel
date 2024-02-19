@@ -101,8 +101,6 @@ def test_finish_collection_success(
         breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
     )
     monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
-    # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
 
     global_tool_opts.activity = activity
     breadcrumbs_instance.collect_early_data()
@@ -136,8 +134,6 @@ def test_finish_collection_failure(
         breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
     )
     monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
-    # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
 
     global_tool_opts.activity = activity
     breadcrumbs_instance.collect_early_data()
