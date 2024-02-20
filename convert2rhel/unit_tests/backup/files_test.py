@@ -208,7 +208,7 @@ class TestRestorableFile:
             messages[i] = messages[i].format(orig_path=backup_file)
 
         monkeypatch.setattr(os.path, "isfile", lambda file: isfile)
-        monkeypatch.setattr(shutil, "copy2", mock.Mock())
+        monkeypatch.setattr(shutil, "move", mock.Mock())
         monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
 
         file_backup = RestorableFile(backup_file)

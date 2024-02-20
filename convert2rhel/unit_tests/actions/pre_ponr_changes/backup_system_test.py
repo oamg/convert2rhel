@@ -361,10 +361,7 @@ class TestBackupSystem:
 
 
 class TestBackupRepository:
-    @all_systems
-    def test_backup_repository_complete(
-        self, monkeypatch, tmpdir, backup_repository_action, global_backup_control, pretend_os
-    ):
+    def test_backup_repository_complete(self, monkeypatch, tmpdir, backup_repository_action, global_backup_control):
         """Test backup, remove the originals and restore them from backup."""
         yum_repo = generate_repo(tmpdir, name="test.repo")
 
@@ -388,10 +385,7 @@ class TestBackupRepository:
         with open(yum_repo, mode="r") as f:
             assert f.read() == os.path.basename(yum_repo)
 
-    @all_systems
-    def test_backup_repository_redhat(
-        self, monkeypatch, tmpdir, backup_repository_action, global_backup_control, pretend_os, caplog
-    ):
+    def test_backup_repository_redhat(self, monkeypatch, tmpdir, backup_repository_action, caplog):
         """Test if redhat.repo is not backed up."""
         redhat_repo = generate_repo(tmpdir, "redhat.repo")
 
@@ -402,10 +396,7 @@ class TestBackupRepository:
 
         assert "No .repo files backed up." == caplog.records[-1].message
 
-    @all_systems
-    def test_backup_repository_no_repofile_presence(
-        self, tmpdir, monkeypatch, caplog, backup_repository_action, pretend_os
-    ):
+    def test_backup_repository_no_repofile_presence(self, tmpdir, monkeypatch, caplog, backup_repository_action):
         """Test empty path, nothing for backup."""
         etc = tmpdir.mkdir("etc")
 
