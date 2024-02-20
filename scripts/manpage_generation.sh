@@ -8,6 +8,7 @@ echo Generating manpages
 # Detect changes in __init__.py
 if git diff --quiet HEAD~1 -- convert2rhel/__init__.py; then
     # No changes detected, exit with 0
+    echo "No new version detected"
     exit 0
 else
     # Changes detected, generate manpages
@@ -25,9 +26,11 @@ else
     # Check if manpages are up-to-date
     if git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
         # Manpages are up-to-date, exit with 0
+        echo 'Manpages are up-to-date'
         exit 0
     else
         # Manpages are outdated, exit with 1
+        echo 'Manpages are outdated'
         exit 1
     fi
 fi
