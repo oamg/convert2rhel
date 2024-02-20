@@ -57,3 +57,10 @@ repos:
     rev: v2.11
     hooks:
       - id: vulture
+  - repo: local
+    hooks:
+      - id: generate-manpages
+        name: Generate manpages
+        entry: scripts/manpage_generation.sh
+        language: script
+        files: 'convert2rhel/__init__.py|specfile'
