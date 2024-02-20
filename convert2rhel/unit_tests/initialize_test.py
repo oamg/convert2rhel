@@ -54,32 +54,3 @@ def test_initialize_logger(monkeypatch):
 
     initialize.initialize_logger()
     setup_logger_handler_mock.assert_called_once()
-
-
-@pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
-def test_initialize_file_logging(exception_type, exception, monkeypatch, caplog):
-    add_file_handler_mock = mock.Mock()
-    archive_old_logger_files_mock = mock.Mock()
-
-    if exception:
-        archive_old_logger_files_mock.side_effect = exception_type
-
-    monkeypatch.setattr(
-        logger_module,
-        "add_file_handler",
-        value=add_file_handler_mock,
-    )
-    monkeypatch.setattr(
-        logger_module,
-        "archive_old_logger_files",
-        value=archive_old_logger_files_mock,
-    )
-
-    initialize.initialize_file_logging("convert2rhel.log", "/tmp")
-
-    if exception:
-        assert caplog.records[-1].levelname == "WARNING"
-        assert "Unable to archive previous log:" in caplog.records[-1].message
-
-    add_file_handler_mock.assert_called_once()
-    archive_old_logger_files_mock.assert_called_once()

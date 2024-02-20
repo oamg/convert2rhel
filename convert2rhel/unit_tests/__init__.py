@@ -360,7 +360,7 @@ class InitializeLoggerMocked(MockFunctionObject):
 
 
 class InitializeFileLoggingMocked(MockFunctionObject):
-    spec = initialize.initialize_file_logging
+    spec = main.initialize_file_logging
 
 
 class MainLockedMocked(MockFunctionObject):
