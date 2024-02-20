@@ -5,15 +5,29 @@ MANPAGE_DIR="man"
 
 echo Generating manpages
 
-VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
+# Detect changes in __init__.py
+if git diff --quiet HEAD~1 -- convert2rhel/__init__.py; then
+    # No changes detected, exit with 0
+    exit 0
+else
+    # Changes detected, generate manpages
+    # Generate a file with convert2rhel synopsis for argparse-manpage
+    /usr/bin/python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
 
-echo Generating for version $VER
-# Generate a file with convert2rhel synopsis for argparse-manpage
-/usr/bin/python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+    /usr/bin/python -m pip install argparse-manpage six pexpect
 
-/usr/bin/python -m pip install argparse-manpage six pexpect
+    # Extract the version of convert2rhel
+    VER=$(/usr/bin/python -c 'from convert2rhel import __version__; print(__version__)')
 
-# Generate the manpage using argparse-manpage
-PYTHONPATH=. /usr/bin/python /home/runner/.local/bin/argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+    # Generate the manpage using argparse-manpage
+    PYTHONPATH=. /usr/bin/python /home/.local/bin/argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
 
-git status
+    # Check if manpages are up-to-date
+    if git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
+        # Manpages are up-to-date, exit with 0
+        exit 0
+    else
+        # Manpages are outdated, exit with 1
+        exit 1
+    fi
+fi
