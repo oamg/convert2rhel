@@ -213,7 +213,7 @@ class IsLoadedKernelLatest(actions.Action):
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                     "1. yum install %s-%s -y\n"
-                    "2. reboot"
+                    "2. reboot\n"
                     "If you wish to ignore this message, set the environment variable "
                     "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % (package_to_check, latest_kernel)
                 ),
