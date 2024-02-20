@@ -19,7 +19,6 @@ __metaclass__ = type
 
 import logging
 import os
-import sys
 
 from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub
 from convert2rhel import logger as logger_module
@@ -42,15 +41,6 @@ class ConversionPhase:
     # Phase to exit the Analyze SubCommand early
     ANALYZE_EXIT = 3
     POST_PONR_CHANGES = 4
-
-
-def initialize_logger():
-    """
-    Entrypoint function that aggregates other calls for initialization logic
-    and setup for logger handlers that do not require root.
-    """
-
-    return logger_module.setup_logger_handler()
 
 
 def initialize_file_logging(log_name, log_dir):
@@ -86,9 +76,6 @@ def main():
     conversion process itself, then calls main_locked(), protected by
     the application lock, to do the conversion process.
     """
-
-    # initialize logging
-    initialize_logger()
 
     # handle command line arguments
     toolopts.CLI()

@@ -17,11 +17,16 @@
 
 __metaclass__ = type
 
-import os
-
 import pytest
+import six
 
-from convert2rhel import applock, initialize, main
+from convert2rhel import applock, initialize
+from convert2rhel import logger as logger_module
+from convert2rhel import main
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 @pytest.mark.parametrize(
@@ -32,6 +37,20 @@ from convert2rhel import applock, initialize, main
     ),
 )
 def test_run(monkeypatch, exit_code, tmp_path):
+    monkeypatch.setattr(logger_module, "LOG_DIR", str(tmp_path))
     monkeypatch.setattr(main, "main", value=lambda: exit_code)
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     assert initialize.run() == exit_code
+
+
+def test_initialize_logger(monkeypatch):
+    setup_logger_handler_mock = mock.Mock()
+
+    monkeypatch.setattr(
+        logger_module,
+        "setup_logger_handler",
+        value=setup_logger_handler_mock,
+    )
+
+    initialize.initialize_logger()
+    setup_logger_handler_mock.assert_called_once()

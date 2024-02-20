@@ -21,6 +21,10 @@ import logging
 import os
 
 from convert2rhel import i18n
+from convert2rhel import logger as logger_module
+
+
+loggerinst = logging.getLogger(__name__)
 
 
 def disable_root_logger():
@@ -34,6 +38,15 @@ def disable_root_logger():
     and other credentials.
     """
     logging.getLogger().addHandler(logging.NullHandler())
+
+
+def initialize_logger():
+    """
+    Entrypoint function that aggregates other calls for initialization logic
+    and setup for logger handlers that do not require root.
+    """
+
+    return logger_module.setup_logger_handler()
 
 
 def set_locale():
@@ -76,6 +89,9 @@ def run():
 
     # Initialize logging to stop duplicate messages.
     disable_root_logger()
+
+    # initialize logging
+    initialize_logger()
 
     from convert2rhel import main
 

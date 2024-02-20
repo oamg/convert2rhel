@@ -33,7 +33,6 @@ loggerinst = logging.getLogger(__name__)
 class RestorableFile(RestorableChange):
     def __init__(self, filepath):
         super(RestorableFile, self).__init__()
-
         # The filepath we want to back up needs to start with at least a `/`,
         # otherwise, let's error out and warn the developer/user that the
         # filepath is not what we expect. This is mostly intended to be an
