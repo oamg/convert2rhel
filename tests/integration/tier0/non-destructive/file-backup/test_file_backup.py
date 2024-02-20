@@ -1,3 +1,4 @@
+import filecmp
 import os.path
 
 import pytest
@@ -24,15 +25,20 @@ def config_files_modified(shell):
     and "/etc/logrotate.d/dnf" prior to running the conversion.
     After the rollback the fixture validates that the contents of the file is
     the same before and after the convert2rhel run.
-    Additionally, here was a clash happening in the way convert2rhel backups files,
+    Additionally, there was a clash happening in the way convert2rhel backups files,
     if there is a file to back up that has the same name as one directory
     or another file already created, an error will be thrown to the user.
     The fixture validates this won't happen anymore.
     """
     backup_paths = {}
 
+    # Create the backup directories
+    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+        if not os.path.exists(directory):
+            shell(f"mkdir -v {directory}")
+
     for pkg, config in PACKAGES.items():
-        file_name = config.rsplit("/", maxsplit=1)[-1]
+        file_name = os.path.basename(config)
         modified_file_path = os.path.join(MODIFIED_FILES_DIR, f"{file_name}.modified")
         bkp_file_path = os.path.join(BACKUP_DIR, file_name)
         # Install the packages if not installed already
@@ -49,8 +55,6 @@ def config_files_modified(shell):
         # The file will be created if not already
         with open(config, "a+") as cfg:
             cfg.write(MODIFIED_CONTENT)
-            cfg.seek(0)
-            # modified_file_data = cfg.read()
         # Copy the modified file for later comparison
         shell(f"cp {config} {modified_file_path}")
 
@@ -64,14 +68,9 @@ def config_files_modified(shell):
         default_config_path = paths[2]
         # Verify the config file got restored during rollback
         assert os.path.exists(default_config_path)
-        # Read the restored content
-        with open(default_config_path, "r") as cfg:
-            restored_file_data = cfg.read()
-        with open(modified_file_path, "r") as orig_cfg:
-            modified_file_data = orig_cfg.read()
 
         # Verify the content is same
-        assert modified_file_data == restored_file_data
+        assert filecmp.cmp(default_config_path, modified_file_path)
 
         # Restore the original file
         assert shell(f"mv -f -v {bkp_file_path} {default_config_path}").returncode == 0
@@ -91,8 +90,13 @@ def config_files_removed(shell):
     """
     backup_paths = {}
 
+    # Create the backup directories
+    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+        if not os.path.exists(directory):
+            shell(f"mkdir -v {directory}")
+
     for pkg, config in PACKAGES.items():
-        file_name = config.rsplit("/", maxsplit=1)[-1]
+        file_name = os.path.basename(config)
         # Install the packages if not installed already
         if "is not installed" in shell(f"rpm -q {pkg}").output:
             shell(f"yum install -y {pkg}")
@@ -141,12 +145,8 @@ def test_file_backup(convert2rhel, shell, file_action_fixture, request):
     if there is a file to back up that has the same name as one directory
     or another file already created, an error will be thrown to the user.
     For that scenario we utilize "/etc/logrotate.d/yum"
-    and "/etc/logrotate.d/yum" files.
+    and "/etc/logrotate.d/dnf" files.
     """
-    # Create the backup directories
-    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
-        if not os.path.exists(directory):
-            shell(f"mkdir -v {directory}")
     request.getfixturevalue(file_action_fixture)
     with convert2rhel("analyze -y --debug") as c2r:
         # Verify the rollback starts and analysis report is printed out
