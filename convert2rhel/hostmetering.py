@@ -58,7 +58,7 @@ def configure_host_metering():
 
     Behavior can be controlled CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable:
     - "auto": host-metering will be configured based on the above conditions
-    - empty: host-metering will not be configured
+    - env var not present: host-metering will not be configured
     - "force": forces configuration of host-metering (e.g., even if not running on a hyperscaler)
     - any other value: Will be ignored and host metering will not be configured.
 
