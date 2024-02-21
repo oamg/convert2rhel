@@ -276,8 +276,6 @@ class TestSubscribeSystem:
 
         with pytest.raises(RefreshSubscriptionManagerError):
             subscribe_system_instance.run()
-            print(subscribe_system_instance.result)
-
             unit_tests.assert_actions_result(
                 subscribe_system_instance,
                 level="ERROR",
