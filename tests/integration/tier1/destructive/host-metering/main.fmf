@@ -9,7 +9,12 @@ description+: |
 link:
     - https://issues.redhat.com/browse/RHELC-1226
 
-tag+:
-    - host-metering
+/test_host_metering_conversion:
+    tag+:
+        - test-host-metering-conversion
+    test: pytest -svv -m test_host_metering_conversion
 
-test: pytest -svv -m test_host_metering
+/check_active_host_metering:
+    tag+:
+        - check-active-host-metering
+    test: pytest -svv -m test_active_host_metering

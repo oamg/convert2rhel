@@ -26,3 +26,13 @@ def test_failed_to_parse_a_package_not_present(log_file_data):
     failed_to_parse = r"Failed to parse a package: Invalid package string - .+\.\(none\)"
     match = re.search(failed_to_parse, log_file_data)
     assert match is None, f"{failed_to_parse} is present in the log file data."
+
+
+@pytest.mark.test_traceback_not_present
+def test_traceback_not_present(log_file_data):
+    """
+    Verify that there is not a traceback raised in the log file during the conversion run.
+    """
+    traceback_str = r"traceback"
+    match = re.search(traceback_str, log_file_data, re.IGNORECASE)
+    assert match is None, "Traceback found in the log file data."

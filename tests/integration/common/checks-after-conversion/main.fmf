@@ -135,6 +135,14 @@ order: 52
             - failed-to-parse-package-not-present
         test: pytest -svv -m test_failed_to_parse_package_info_empty_arch_not_present
 
+    /traceback_not_present:
+        summary+: |
+            No traceback raised
+        description+: |
+            Verify that there is not a traceback raised in the log file during the conversion run.
+        tag+:
+            - traceback-not-present
+        test: pytest -svv -m test_traceback_not_present
 
 /yum_check:
     summary+: |

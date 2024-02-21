@@ -52,14 +52,21 @@ write_url=http://localhost:9090/api/v1/write
         )
 
 
-def test_run_conversion_metering(shell, convert2rhel, force_hostmetering_envar):
+# TODO (danmyway) We might boil this down to just a preparation of the envar and the endpoint
+# and then use whatever basic conversion method for the conversion itself
+# We do not really need to care about the output of the utility
+# (host-metering installed, enabled, started) when we verify the service
+# is running after the conversion
+
+
+@pytest.mark.test_host_metering_conversion
+def test_run_conversion_with_metering(shell, convert2rhel, force_hostmetering_envar):
     """
     Verify that convert2rhel automatically installs, enables and starts host-metering
     service on hyperscalers on RHEL 7.9.
     """
     setup_test_metering_endpoint()
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
-    os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
+
     with convert2rhel(
         "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
@@ -77,6 +84,3 @@ def test_run_conversion_metering(shell, convert2rhel, force_hostmetering_envar):
         assert c2r.expect("Conversion successful") == 0
 
     assert c2r.exitstatus == 0
-
-    # There should not be any problems in coversion
-    assert shell("grep -i 'traceback' /var/log/convert2rhel/convert2rhel.log").returncode == 1
