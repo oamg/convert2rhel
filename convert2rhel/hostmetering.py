@@ -60,13 +60,13 @@ def configure_host_metering():
     - "auto": host-metering will be configured based on the above conditions
     - empty: host-metering will not be configured
     - "force": forces configuration of host-metering (e.g., even if not running on a hyperscaler)
-    - any other value: behaves as empty
+    - any other value: Will be ignored and host metering will not be configured.
 
     :return: True if host-metering is configured successfully, False otherwise.
     :rtype: bool
     """
-    env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING", "empty")
-    if "CONVERT2RHEL_CONFIGURE_HOST_METERING" not in os.environ:
+    env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING", None)
+    if env_var not in ("force", "auto"):
         return False
 
     if system_info.version.major != 7 and env_var != "force":
