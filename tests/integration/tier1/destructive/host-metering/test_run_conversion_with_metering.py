@@ -68,19 +68,15 @@ def test_run_conversion_with_metering(shell, convert2rhel, force_hostmetering_en
     setup_test_metering_endpoint()
 
     with convert2rhel(
-        "-y --no-rpm-va --serverurl {} --username {} --password {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             env.str("RHSM_SERVER_URL"),
             env.str("RHSM_USERNAME"),
             env.str("RHSM_PASSWORD"),
         )
     ) as c2r:
-        c2r.expect(
-            [
-                "Installing host-metering rpms.",
-                "Enabling host-metering service.",
-                "Starting host-metering service.",
-            ]
-        )
+        c2r.expect("Installing host-metering packages")
+        c2r.expect("Enabling host-metering service")
+        c2r.expect("Starting host-metering service")
         assert c2r.expect("Conversion successful") == 0
 
     assert c2r.exitstatus == 0
