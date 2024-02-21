@@ -38,9 +38,7 @@ order: 52
     summary+: |
         Data collection
     description: |
-        Verify, that when the data collection is disabled with CONVERT2RHEL_DISABLE_TELEMETRY,
-        the convert2rhel.facts file is not present on the system after the conversion.
-        When data collection is enabled, verify, the convert2rhel.facts file exists.
+        Verify that after conversion the convert2rhel.facts file exists.
     test: pytest -svv -m test_check_data_collection
 
 

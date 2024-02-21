@@ -101,8 +101,6 @@ def test_finish_collection_success(
         breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
     )
     monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
-    # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
 
     global_tool_opts.activity = activity
     breadcrumbs_instance.collect_early_data()
@@ -136,8 +134,6 @@ def test_finish_collection_failure(
         breadcrumbs_instance, "_save_migration_results", finish_collection_mocks["save_migration_results"]
     )
     monkeypatch.setattr(breadcrumbs_instance, "_save_rhsm_facts", finish_collection_mocks["save_rhsm_facts"])
-    # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs_instance, "_inform_telemetry", True)
 
     global_tool_opts.activity = activity
     breadcrumbs_instance.collect_early_data()
@@ -342,51 +338,3 @@ def test_set_target_os(pretend_os):
         "name": "CentOS Linux",
         "version": "7.9",
     } == breadcrumbs.breadcrumbs.target_os
-
-
-@pytest.mark.parametrize(("telemetry_disabled", "telemetry_called"), [(True, 0), (False, 1)])
-def test_disable_telemetry(telemetry_disabled, telemetry_called, monkeypatch):
-    if telemetry_disabled:
-        monkeypatch.setenv("CONVERT2RHEL_DISABLE_TELEMETRY", "1")
-
-    _save_migration_results = mock.Mock()
-    _save_rhsm_facts = mock.Mock()
-
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_migration_results", _save_migration_results)
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_rhsm_facts", _save_rhsm_facts)
-    # Set to true, pretend that user was informed about collecting data
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_inform_telemetry", True)
-
-    breadcrumbs.breadcrumbs.finish_collection()
-
-    assert _save_migration_results.call_count == 1
-    assert _save_rhsm_facts.call_count == telemetry_called
-
-
-def test_user_not_informed_about_telemetry(monkeypatch):
-    _save_migration_results = mock.Mock()
-    _save_rhsm_facts = mock.Mock()
-
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_migration_results", _save_migration_results)
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_save_rhsm_facts", _save_rhsm_facts)
-
-    breadcrumbs.breadcrumbs.finish_collection()
-
-    _save_migration_results.assert_called_once()
-    _save_rhsm_facts.assert_not_called()
-
-
-@pytest.mark.parametrize(("telemetry_disabled", "call_count"), [(True, 0), (False, 1)])
-def test_print_data_collection(telemetry_disabled, call_count, monkeypatch, caplog):
-    if telemetry_disabled:
-        monkeypatch.setenv("CONVERT2RHEL_DISABLE_TELEMETRY", "1")
-
-    ask_to_continue = mock.Mock()
-    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue)
-
-    breadcrumbs.breadcrumbs.print_data_collection()
-
-    ask_to_continue.call_count == call_count
-
-    if telemetry_disabled:
-        assert "Skipping, telemetry disabled." in caplog.records[-1].message

@@ -72,8 +72,6 @@ class Breadcrumbs:
         self.run_id = "null"
         # The convert2rhel package object from the yum/dnf python API for further information extraction.
         self._pkg_object = None
-        # Flag to inform the user about DISABLE_TELEMETRY. If not informed, we shouldn't save rhsm_facts.
-        self._inform_telemetry = False
 
     def collect_early_data(self):
         """Set data which is accessible before the conversion"""
@@ -101,8 +99,7 @@ class Breadcrumbs:
         self._set_ended()
 
         self._save_migration_results()
-        if self._inform_telemetry and "CONVERT2RHEL_DISABLE_TELEMETRY" not in os.environ:
-            self._save_rhsm_facts()
+        self._save_rhsm_facts()
 
     def _set_activity(self):
         """Set the activity that convert2rhel is going to perform"""
@@ -213,26 +210,21 @@ class Breadcrumbs:
         utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data)
 
     def print_data_collection(self):
-        """Print information about telemetry and ask for acknowledge."""
-        if "CONVERT2RHEL_DISABLE_TELEMETRY" not in os.environ:
-            loggerinst.info(
-                "The convert2rhel utility uploads the following data about the system conversion"
-                " to Red Hat servers for the purpose of the utility usage analysis:\n"
-                "- The Convert2RHEL command as executed\n"
-                "- The Convert2RHEL RPM version and GPG signature\n"
-                "- Success or failure status of the conversion\n"
-                "- Conversion start and end timestamps\n"
-                "- Source OS vendor and version\n"
-                "- Target RHEL version\n"
-                "- Convert2RHEL related environment variables\n\n"
-                "To disable the data collection, use the 'CONVERT2RHEL_DISABLE_TELEMETRY=1' environment variable."
-            )
+        """Print information about data collection and ask for acknowledgement."""
+        loggerinst.info(
+            "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data"
+            " about the system conversion. The subscription-manager then uploads the data to the server the system is"
+            " registered to.\n"
+            "- The Convert2RHEL command as executed\n"
+            "- The Convert2RHEL RPM version and GPG signature\n"
+            "- Success or failure status of the conversion\n"
+            "- Conversion start and end timestamps\n"
+            "- Source OS vendor and version\n"
+            "- Target RHEL version\n"
+            "- Convert2RHEL related environment variables\n\n"
+        )
 
-            utils.ask_to_continue()
-            # User informed about CONVERT2RHEL_DISABLE_TELEMETRY environment variable
-            self._inform_telemetry = True
-        else:
-            loggerinst.info("Skipping, telemetry disabled.")
+        utils.ask_to_continue()
 
 
 def _write_obj_to_array_json(path, new_object, key):
