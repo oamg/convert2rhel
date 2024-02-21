@@ -71,6 +71,10 @@ class StopRhsmError(Exception):
     """Raised with problems stopping the rhsm daemon."""
 
 
+class SubscriptionAutoAttachmentError(Exception):
+    """Raised when there is a failure in auto attaching a subscription via subscription-manager."""
+
+
 class RestorableSystemSubscription(backup.RestorableChange):
     """
     Register with RHSM in a fashion that can be reverted.
@@ -589,6 +593,31 @@ def is_sca_enabled():
     if "content access mode is set to simple content access." in output.lower():
         return True
     return False
+
+
+def is_subscription_attached():
+    """
+    Check if there is a current subscription attached by executing 'subscription-manager list --consumed' and checking
+    the output.
+
+    :returns: True if there is a current subscription. False if output is 'No consumed subscription pools were found.'
+    :rtype: bool
+    """
+    output, _ = utils.run_subprocess(["subscription-manager", "list", "--consumed"], print_output=False)
+    if "no consumed subscription pools were found." in output.lower():
+        return False
+    return True
+
+
+def auto_attach_subscription():
+    """
+    Execute 'subscription-manager attach --auto' to auto attach a subscription. If it fails raise
+    SubscriptionAutoAttachmentError.
+    """
+    _, ret_code = utils.run_subprocess(["subscription-manager", "attach", "--auto"])
+
+    if ret_code != 0:
+        raise SubscriptionAutoAttachmentError("Unsuccessful auto attachment of a subscription.")
 
 
 def attach_subscription():

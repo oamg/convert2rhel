@@ -185,13 +185,19 @@ class SubscribeSystem(actions.Action):
                     return
                 raise
 
-            if subscription.is_registered() and not subscription.is_sca_enabled():
+            if not subscription.is_sca_enabled() and not subscription.is_subscription_attached():
+                logger.warning(
+                    "The system is registered with an RHSM account that has Simple Content Access (SCA) disabled but no subscription is attached. Without enabled SCA or an attached subscription the system can't access RHEL repositories. We'll try to auto-attach a subscription."
+                )
+            try:
+                subscription.auto_attach_subscription()
+            except subscription.SubscriptionAutoAttachmentError:
                 self.set_result(
                     level="ERROR",
-                    id="SYSTEM_REGISTERED_WITHOUT_SCA",
-                    title="Registered with RHSM but without SCA enabled",
-                    description="This system has been registered with Red Hat Subscription Manager but Simple Content Access is not enabled.",
-                    remediations="To resolve this error please enable Simple Content Access at https://access.redhat.com/management/ and run the conversion again.",
+                    id="NO_ACCESS_TO_RHEL_REPOS",
+                    description="The system can access RHEL repositories only with either Simple Content Access (SCA) enabled or with an attached subscription.",
+                    diagnosis="The system is registered with an RHSM account that has SCA disabled but no subscription is attached. Auto-attaching a subscription was not successful.",
+                    remediations="Either attach a subscription manually by running 'subscription-manager attach --pool <pool id>' prior to the conversion or enable Simple Content Access on your RHSM account (https://access.redhat.com/articles/simple-content-access).",
                 )
                 return
 
