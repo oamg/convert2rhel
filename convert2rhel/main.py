@@ -239,8 +239,7 @@ def perform_boilerplate():
     loggerinst.task("Prepare: Show Red Hat software EULA")
     show_eula()
 
-    # Telemetry warning
-    loggerinst.task("Prepare: Inform about telemetry")
+    loggerinst.task("Prepare: Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
 
 

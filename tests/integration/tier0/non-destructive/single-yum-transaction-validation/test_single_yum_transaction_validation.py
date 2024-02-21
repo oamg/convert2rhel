@@ -184,8 +184,8 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
             env.str("RHSM_POOL"),
         )
     ) as c2r:
-        # Swallow the telemetry warning
-        assert c2r.expect("Prepare: Inform about telemetry", timeout=300) == 0
+        # Swallow the data collection warning
+        assert c2r.expect("Prepare: Inform about data collection", timeout=300) == 0
         assert (
             c2r.expect("The convert2rhel utility uploads the following data about the system conversion", timeout=300)
             == 0

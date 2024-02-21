@@ -210,10 +210,11 @@ class Breadcrumbs:
         utils.write_json_object_to_file(path=RHSM_CUSTOM_FACTS_FILE, data=data)
 
     def print_data_collection(self):
-        """Print information about telemetry and ask for acknowledgement."""
+        """Print information about data collection and ask for acknowledgement."""
         loggerinst.info(
-            "The convert2rhel utility uploads the following data about the system conversion"
-            " to Red Hat servers for the purpose of the utility usage analysis:\n"
+            "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data"
+            " about the system conversion. The subscription-manager then uploads the data to the server the system is"
+            " registered to.\n"
             "- The Convert2RHEL command as executed\n"
             "- The Convert2RHEL RPM version and GPG signature\n"
             "- Success or failure status of the conversion\n"
