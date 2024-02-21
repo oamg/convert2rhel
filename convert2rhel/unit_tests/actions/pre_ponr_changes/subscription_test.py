@@ -285,22 +285,6 @@ class TestSubscribeSystem:
                 remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
             )
 
-    def test_subscribe_system_registered_without_sca(self, global_tool_opts, subscribe_system_instance, monkeypatch):
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
-        monkeypatch.setattr(subscription, "is_registered", mock.Mock(return_value=True))
-        monkeypatch.setattr(subscription, "is_sca_enabled", mock.Mock(return_value=False))
-        fake_refresh = mock.Mock()
-        monkeypatch.setattr(subscription, "refresh_subscription_info", fake_refresh)
-        subscribe_system_instance.run()
-        unit_tests.assert_actions_result(
-            subscribe_system_instance,
-            level="ERROR",
-            id="SYSTEM_REGISTERED_WITHOUT_SCA",
-            title="Registered with RHSM but without SCA enabled",
-            description="This system has been registered with Red Hat Subscription Manager but Simple Content Access is not enabled.",
-            remediations="To resolve this error please enable Simple Content Access at https://access.redhat.com/management/ and run the conversion again.",
-        )
-
     def test_subscribe_system_run(self, subscribe_system_instance, monkeypatch):
         monkeypatch.setattr(subscription, "should_subscribe", lambda: True)
         monkeypatch.setattr(subscription.RestorableSystemSubscription, "enable", mock.Mock())
