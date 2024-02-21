@@ -585,7 +585,6 @@ def is_sca_enabled():
     :returns: True if Simple Content Access is enabled.
     :rtype: bool
     """
-    # check if SCA is enabled
     output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
     if "content access mode is set to simple content access." in output.lower():
         return True
