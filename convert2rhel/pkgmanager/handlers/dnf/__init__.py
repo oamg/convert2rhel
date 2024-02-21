@@ -111,6 +111,26 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 diagnosis="Loading repository metadata failed with error %s." % (str(e)),
             )
 
+    def _swap_base_os_specific_packages(self):
+        """Swap base os specific packages for their RHEL counterparts in the transaction.
+
+        Some packages need to be manually injected in the transaction as a
+        "swap", since those packages are not always able to be installed
+        automatically by yum if they don't exist in the system anymore, this
+        can cause problems during the transaction as missing dependencies.
+        """
+        # Related issue: https://issues.redhat.com/browse/RHELC-1130, see comments
+        # to get more proper description of solution
+        for old_package, new_package in system_info.swap_pkgs.items():
+            loggerinst.debug("Checking if %s installed for later swap." % old_package)
+            is_installed = system_info.is_rpm_installed(old_package)
+            if is_installed:
+                loggerinst.debug("Package %s will be swapped to %s during conversion." % (old_package, new_package))
+                # Order of commands based on DNF implementation of swap, different from YUM order:
+                # https://github.com/rpm-software-management/dnf/blob/master/dnf/cli/commands/swap.py#L60
+                self._base.install(pkg_spec=new_package)
+                self._base.remove(pkg_spec=old_package)
+
     def _perform_operations(self):
         """Perform the necessary operations in the transaction.
 
@@ -145,6 +165,8 @@ class DnfTransactionHandler(TransactionHandlerBase):
                     self._base.downgrade(pkg_spec=pkg)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
+
+        self._swap_base_os_specific_packages()
 
     def _resolve_dependencies(self):
         """Resolve the dependencies for the transaction.
