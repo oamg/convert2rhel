@@ -477,13 +477,11 @@ def pre_registered(shell):
     assert (
         shell(
             "subscription-manager register --serverurl {} --username {} --password {}".format(
-                env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+                env.str("RHSM_SERVER_URL"), env.str("RHSM_SCA_USERNAME"), env.str("RHSM_SCA_PASSWORD")
             )
         ).returncode
         == 0
     )
-
-    assert shell("subscription-manager attach --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
