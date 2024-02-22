@@ -165,6 +165,7 @@ class Action:
         This should be replaced by a simple class attribute.
         It is a short string that uniquely identifies the Action.
         For instance::
+
             class Convert2rhelLatest(Action):
                 id = "C2R_LATEST"
 
@@ -174,8 +175,8 @@ class Action:
         """
 
     #: Override dependencies with a Sequence that contains other
-    #: :class:`Action`s :attr:`Action.id`s that must be run before this one.
-    #: The :attr:`Action.id`s can be specified as string literals; you don't
+    #: :class:`Action`\s :attr:`Action.id`\s that must be run before this one.
+    #: The :attr:`Action.id`\s can be specified as string literals; you do not
     #: have to import the class to reference them in the Sequence.
     dependencies = ()
 
@@ -616,6 +617,7 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
         an Action.
     :returns: Iterator of Actions sorted so that all dependent Actions are run
         before actions which depend on them.
+
     .. note::
         * The sort is stable but not predictable. The order will be the same
           as long as the Actions given has not changed but adding or
