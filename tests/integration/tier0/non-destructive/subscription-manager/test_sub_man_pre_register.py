@@ -15,6 +15,10 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
     5. Verify that convert2rhel won't unregister the system at any point and the UUID is same before and after the run.
     """
     with convert2rhel("--debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
             "WARNING - No rhsm credentials given to subscribe the system. Did not perform the subscription step",
