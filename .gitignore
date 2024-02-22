@@ -21,3 +21,5 @@ system_tests/vmdefs/centos*/.vagrant/
 TAGS
 .vscode/*
 !.vscode/extensions.json
+docs/build/*
+docs/source/_autosummary

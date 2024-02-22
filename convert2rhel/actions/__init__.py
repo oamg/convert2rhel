@@ -174,8 +174,8 @@ class Action:
         """
 
     #: Override dependencies with a Sequence that contains other
-    #: :class:`Action`s :attr:`Action.id`s that must be run before this one.
-    #: The :attr:`Action.id`s can be specified as string literals; you don't
+    #: :class:`Action`\ s :attr:`Action.id`\ s that must be run before this one.
+    #: The :attr:`Action.id`\ s can be specified as string literals; you don't
     #: have to import the class to reference them in the Sequence.
     dependencies = ()
 
