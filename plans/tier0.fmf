@@ -90,13 +90,6 @@ description+: |
 
     /single_yum_transaction:
         /packages_upgraded_after_conversion:
-            #TODO(danmyway) Enable again when RHELC-1190 gets fixed
-            adjust+:
-                - enabled: false
-                  when:
-                    distro == alma-8.8
-                  because: There is a known issue causing the shim-x64 package not being reinstalled.
-
             discover+:
                 test+<:
                     - single-yum-transaction/packages_upgraded_after_conversion
