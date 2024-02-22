@@ -282,7 +282,10 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     with convert2rhel("--debug") as c2r:
         assert c2r.expect("Prepare: Inform about data collection", timeout=300) == 0
         assert (
-            c2r.expect("The convert2rhel utility uploads the following data about the system conversion", timeout=300)
+            c2r.expect(
+                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data about the system conversion.",
+                timeout=300,
+            )
             == 0
         )
         c2r.expect("Continue with the system conversion", timeout=300)
