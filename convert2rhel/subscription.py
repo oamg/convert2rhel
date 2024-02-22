@@ -17,6 +17,7 @@
 
 __metaclass__ = type
 
+import json
 import logging
 import os
 import re
@@ -51,6 +52,9 @@ MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE = 3
 REGISTRATION_ATTEMPT_DELAYS = [5, 11, 23]
 # Seconds to wait for Registration to complete over DBus. If this timeout is exceeded, we retry.
 REGISTRATION_TIMEOUT = 180
+
+# Location of the RHSM generated facts json file.
+RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
 
 class UnregisterError(Exception):
@@ -897,6 +901,29 @@ def update_rhsm_custom_facts():
             loggerinst.info("RHSM custom facts uploaded successfully.")
     else:
         loggerinst.info("Skipping updating RHSM custom facts.")
+
+
+def get_rhsm_facts():
+    """
+    Open RHSM facts file and parse the facts
+
+    :returns dict: The RHSM facts.
+    """
+    rhsm_facts = {}
+    if tool_opts.no_rhsm:
+        loggerinst.info("Ignoring RHSM facts collection. --no-rhsm is used.")
+        return rhsm_facts
+
+    loggerinst.info("Reading RHSM facts file.")
+    try:
+        with open(RHSM_FACTS_FILE, mode="r") as handler:
+            rhsm_facts = json.load(handler)
+            loggerinst.info("RHSM facts loaded.")
+    except (IOError, ValueError) as e:
+        loggerinst.critical_no_exit(
+            "Failed to get the RHSM facts : %s." % e,
+        )
+    return rhsm_facts
 
 
 # subscription is the natural place to look for should_subscribe but it

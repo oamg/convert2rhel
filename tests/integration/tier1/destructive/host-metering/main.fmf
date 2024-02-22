@@ -1,0 +1,20 @@
+summary+: |
+    Check expected state after configuring host metering
+
+description+: |
+    Test convert2rhel with CONVERT2RHEL_CONFIGURE_HOST_METERING env var.
+    Verify that:
+    - host-metering service is enabled and started
+
+link:
+    - https://issues.redhat.com/browse/RHELC-1226
+
+/test_host_metering_conversion:
+    tag+:
+        - test-host-metering-conversion
+    test: pytest -svv -m test_host_metering_conversion
+
+/check_active_host_metering:
+    tag+:
+        - check-active-host-metering
+    test: pytest -svv -m test_active_host_metering

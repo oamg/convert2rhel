@@ -20,7 +20,7 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub
+from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
@@ -286,6 +286,9 @@ def post_ponr_changes():
 
     loggerinst.task("Final: Check kernel boot files")
     checks.check_kernel_boot_files()
+
+    loggerinst.task("Final: Configure host-metering")
+    hostmetering.configure_host_metering()
 
     breadcrumbs.breadcrumbs.finish_collection(success=True)
 

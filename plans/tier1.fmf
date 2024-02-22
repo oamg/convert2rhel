@@ -249,3 +249,15 @@ description+: |
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion
+
+    /host-metering:
+        enabled: false
+        adjust+:
+          - enabled: true
+            when: distro == centos-7, oracle-7
+            because: The host metering package is currently only in RHEL7 repositories.
+        discover+:
+            test+<:
+                - host-metering/test_host_metering_conversion
+            test+:
+                - host-metering/check_active_host_metering
