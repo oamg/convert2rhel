@@ -120,7 +120,7 @@ class RestorableFile(RestorableChange):
             return
 
         try:
-            shutil.copy2(self._backup_path, self.filepath)
+            shutil.move(self._backup_path, self.filepath)
         except (OSError, IOError) as err:
             # Do not call 'critical' which would halt the program. We are in
             # a rollback phase now and we want to rollback as much as possible.

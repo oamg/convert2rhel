@@ -16,7 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 __metaclass__ = type
 
+import hashlib
+
 import six
+
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -426,14 +430,16 @@ def test_resolve_yum_problematic_dependencies(
 
     if expected_remove_pkgs:
         assert pkgmanager.handlers.yum.remove_pkgs.called
+        backedup_reposdir = os.path.join(utils.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+        backedup_yum_varsdir = os.path.join(utils.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
         pkgmanager.handlers.yum.remove_pkgs.assert_called_with(
             pkgs_to_remove=expected_remove_pkgs,
             backup=True,
             critical=True,
-            reposdir=utils.BACKUP_DIR,
+            reposdir=backedup_reposdir,
             set_releasever=True,
             custom_releasever=7,
-            varsdir=os.path.join(utils.BACKUP_DIR, "yum/vars"),
+            varsdir=backedup_yum_varsdir,
         )
     else:
         assert "Unable to resolve dependency issues." in caplog.records[-1].message

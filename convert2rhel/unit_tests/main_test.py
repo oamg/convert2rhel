@@ -31,7 +31,7 @@ from six.moves import mock
 
 from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, repo, subscription, toolopts, unit_tests, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
@@ -56,8 +56,6 @@ class TestRollbackChanges:
     @pytest.fixture(autouse=True)
     def mock_rollback_functions(self, monkeypatch):
         monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock.Mock())
-        monkeypatch.setattr(repo, "restore_yum_repos", mock.Mock())
-        monkeypatch.setattr(repo, "restore_varsdir", mock.Mock())
 
     def test_rollback_changes(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(global_backup_control, "pop_all", mock.Mock())
@@ -65,11 +63,9 @@ class TestRollbackChanges:
         main.rollback_changes()
 
         assert backup.changed_pkgs_control.restore_pkgs.call_count == 1
-        assert repo.restore_yum_repos.call_count == 1
         # Note: when we remove the BackupController partition hack, the first
         # of these calls will go away
         assert global_backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
-        assert repo.restore_varsdir.call_count == 1
 
     # The tests below are for the 1.4 hack that splits restore of Changes
     # managed by the BackupController into two parts: one that executes before

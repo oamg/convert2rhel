@@ -1554,7 +1554,7 @@ def test_get_packages_to_remove(monkeypatch):
     assert result[0].nevra.name == "installed_pkg"
 
 
-def test_remove_pkgs_with_confirm(monkeypatch):
+def test_remove_pkgs_with_confirm(monkeypatch, tmpdir):
     monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(pkghandler, "remove_pkgs", RemovePkgsMocked())
@@ -1564,7 +1564,8 @@ def test_remove_pkgs_with_confirm(monkeypatch):
             create_pkg_information(
                 packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
             )
-        ]
+        ],
+        str(tmpdir),
     )
 
     assert len(pkghandler.remove_pkgs.pkgs) == 1

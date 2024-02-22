@@ -23,6 +23,8 @@ from convert2rhel import actions, backup, exceptions, repo
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.redhatrelease import os_release_file, system_release_file
+from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 
 
@@ -37,6 +39,7 @@ from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 RPM_VA_REGEX = re.compile(
     r"^(missing|([S\.\?][M\.\?][5\.\?][D\.\?][L\.\?][U\.\?][G\.\?][T\.\?][P\.\?]))\s+[cdlr\s+]\s+[\/\\](?:(?!\.\s+)\S)+(\.)?$"
 )
+
 
 loggerinst = logging.getLogger(__name__)
 
@@ -77,8 +80,57 @@ class BackupRepository(actions.Action):
 
         super(BackupRepository, self).run()
 
-        repo.backup_yum_repos()
-        repo.backup_varsdir()
+        self.backup_yum_repos()
+
+    def backup_yum_repos(self):
+        """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
+        loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
+
+        repo_files_backed_up = False
+
+        for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
+            if repo.endswith(".repo") and repo != "redhat.repo":
+                repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
+                restorable_file = RestorableFile(repo_path)
+                backup.backup_control.push(restorable_file)
+                repo_files_backed_up = True
+
+        if not repo_files_backed_up:
+            loggerinst.info("No .repo files backed up.")
+
+
+class BackupYumVariables(actions.Action):
+    id = "BACKUP_YUM_VARIABLES"
+
+    def run(self):
+        """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
+        loggerinst.task("Prepare: Backup variables")
+
+        super(BackupYumVariables, self).run()
+
+        loggerinst.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
+        self._backup_variables(path=DEFAULT_YUM_VARS_DIR)
+
+        if system_info.version.major >= 8:
+            loggerinst.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
+            self._backup_variables(path=DEFAULT_DNF_VARS_DIR)
+
+    def _backup_variables(self, path):
+        """Helper internal function to backup the variables.
+
+        :param path: The path for the original variable.
+        :type path: str
+        """
+        variable_files_backed_up = False
+
+        for variable in os.listdir(path):
+            variable_path = os.path.join(path, variable)
+            restorable_file = RestorableFile(variable_path)
+            backup.backup_control.push(restorable_file)
+            variable_files_backed_up = True
+
+        if not variable_files_backed_up:
+            loggerinst.info("No variables files backed up.")
 
 
 class BackupPackageFiles(actions.Action):
