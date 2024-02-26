@@ -383,6 +383,47 @@ def test_is_sca_enabled(monkeypatch, return_string, expected):
     assert subscription.is_sca_enabled() is expected
 
 
+@pytest.mark.parametrize(
+    ("return_string", "expected"),
+    (
+        ("No consumed subscription pools were found.", False),
+        ("Subscripton pools were found", True),
+    ),
+)
+def test_is_subscription_attached(monkeypatch, return_string, expected):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_string=return_string),
+    )
+    result = subscription.is_subscription_attached()
+    assert expected == result
+
+
+@pytest.mark.parametrize(
+    ("return_code", "exception"),
+    (
+        (1, True),
+        (0, False),
+    ),
+)
+def test_auto_attach_subscription(monkeypatch, return_code, exception):
+
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_code=return_code),
+    )
+    if exception:
+        with pytest.raises(subscription.SubscriptionAutoAttachmentError):
+            subscription.auto_attach_subscription()
+    else:
+        try:
+            subscription.auto_attach_subscription()
+        except subscription.SubscriptionAutoAttachmentError:
+            assert False
+
+
 @pytest.mark.usefixtures("tool_opts", scope="function")
 class TestAttachSubscription:
     def test_attach_subscription_sca_enabled(self, monkeypatch):

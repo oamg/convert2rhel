@@ -615,7 +615,6 @@ def auto_attach_subscription():
     SubscriptionAutoAttachmentError.
     """
     _, ret_code = utils.run_subprocess(["subscription-manager", "attach", "--auto"])
-
     if ret_code != 0:
         raise SubscriptionAutoAttachmentError("Unsuccessful auto attachment of a subscription.")
 
