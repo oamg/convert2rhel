@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.6.1
+Version:        1.7.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,36 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+
+* Thu Feb 22 2024 Freya Gustavsson <fgustavs@redhat.com> 1.7.0
+- Compare the release part of the c2r rpm NEVRA
+- Update remediation key to match leapp report metadata
+- Rewrite the log messages using the word "unsupported" in is_loaded_kernel_latest()
+- Update latest kernel check with OVERRIDABLE results
+- Change `ignore` to `disregard` in messages
+- Add remediation to overridable result in package updates action
+- Add OVERRIDABLE result to tainted kernel module check
+- Replace the word `skip` in report messages
+- Change OVERRIDABLE result to WARNING message in package update action
+- Port RestorableFile to BackupController
+- Port certs and restorable key to backup module
+- Port RestorablePackageSet to packages module
+- Add preconversion analysis check for device PART_ENTRY_NUMBER
+- Add diagnosis for failures in validating yum transaction
+- Duplicate package check for preconversion analysis
+- Always save conversion facts file
+- Host metering
+- Specify a full path to the called modinfo utility
+- Fix Alma Linux 8 packages being seen as third-party
+- Collect environment variables in breadcrumbs
+- Refactor logger to not require root
+- Reduce timeout for the internet connectivity check
+- Fix file clash in NewRestorableFile
+- Move logger initialization to initialize module
+- Swap base os specific packages
+- Port the repo backup to RestorableFile
+- Add shim-x64 to the exclude list for Alma 8
+
 * Wed Dec 13 2023 Preston Watson <prwatson@redhat.com> 1.6.1
 - Fix parsing yumdownloader output with a carriage return
 
