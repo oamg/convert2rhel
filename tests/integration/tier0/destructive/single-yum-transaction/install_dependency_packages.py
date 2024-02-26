@@ -32,19 +32,18 @@ def test_install_dependency_packages(shell):
     with open("/etc/system-release", "r") as file:
         system_rls = file.read()
         system_version = get_system_version(system_release_content=system_rls)
-        if system_version.major == 7:
-            dependency_pkgs = [
-                "abrt-retrace-client",  # OAMG-4447
-                "libreport-cli",  # OAMG-4447
-                "ghostscript-devel",  # Case 02855547
-                "python2-dnf",  # OAMG-4690
-                "python2-dnf-plugins-core",  # OAMG-4690
-                "redhat-lsb-trialuse",  # OAMG-4942
-                "ldb-tools",  # OAMG-4941
-                "gcc-c++",  # OAMG-6136
-                "python-requests",  # OAMG-4936
-            ]
-        elif system_version.major == 8:
+        dependency_pkgs = [
+            "abrt-retrace-client",  # OAMG-4447
+            "libreport-cli",  # OAMG-4447
+            "ghostscript-devel",  # Case 02855547
+            "python2-dnf",  # OAMG-4690
+            "python2-dnf-plugins-core",  # OAMG-4690
+            "redhat-lsb-trialuse",  # OAMG-4942
+            "ldb-tools",  # OAMG-4941
+            "gcc-c++",  # OAMG-6136
+            "python-requests",  # OAMG-4936
+        ]
+        if system_version.major == 8:
             if "oracle-8" in SYSTEM_RELEASE_ENV:
                 dependency_pkgs = [
                     "iwl7260-firmware",  # RHELC-567

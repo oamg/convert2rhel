@@ -24,7 +24,7 @@ import time
 import pytest
 import six
 
-from convert2rhel import logger, systeminfo, unit_tests, utils  # Imports unit_tests/__init__.py
+from convert2rhel import logger, systeminfo, utils
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import RunSubprocessMocked

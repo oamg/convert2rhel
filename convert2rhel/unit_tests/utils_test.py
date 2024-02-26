@@ -35,7 +35,6 @@ from convert2rhel.utils import prompt_user
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from collections import namedtuple
 
 from six.moves import mock
 

@@ -387,12 +387,6 @@ class SystemInfo:
         :return: A list of enabled repos to use during the conversion
         :rtype: list[str]
         """
-        # TODO:
-        # if not self.submgr_enabled_repos:
-        #     raise ValueError(
-        #         "system_info.get_enabled_rhel_repos is not "
-        #          "to be consumed before registering the system with RHSM."
-        #     )
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
     def _check_internet_access(self):

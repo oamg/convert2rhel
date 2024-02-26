@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions
-from convert2rhel.pkghandler import get_installed_pkg_information, get_installed_pkg_objects
+from convert2rhel.pkghandler import get_installed_pkg_information
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 

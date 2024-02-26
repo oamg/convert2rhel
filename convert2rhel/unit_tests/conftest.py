@@ -1,6 +1,5 @@
 __metaclass__ = type
 
-import logging
 import os
 import sys
 

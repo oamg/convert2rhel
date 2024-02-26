@@ -15,8 +15,6 @@
 
 __metaclass__ = type
 
-import os
-
 import pytest
 import six
 
@@ -29,7 +27,7 @@ from convert2rhel.unit_tests import (
     GetThirdPartyPkgsMocked,
     RemovePkgsUnlessFromRedhatMocked,
 )
-from convert2rhel.unit_tests.conftest import centos7, centos8
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

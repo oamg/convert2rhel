@@ -1,7 +1,5 @@
 __metaclass__ = type
 
-import os
-
 import pytest
 import six
 
