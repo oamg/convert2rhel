@@ -1,92 +1,153 @@
+import filecmp
 import os.path
 
 import pytest
 
 
+MODIFIED_CONTENT = """\n#This is just a placeholder test
+#to verify the file won't be changed
+# after the rollback"""
+PACKAGES = {
+    "cloud-init": "/etc/cloud/cloud.cfg",
+    "NetworkManager": "/etc/NetworkManager/NetworkManager.conf",
+    "yum": "/etc/logrotate.d/yum",
+    "dnf": "/etc/logrotate.d/dnf",
+}
+BACKUP_DIR = "/tmp/c2r_tests_backup/"
+MODIFIED_FILES_DIR = "/tmp/c2r_tests_backup/modified/"
+
+
 @pytest.fixture
-def config_files(shell):
+def config_files_modified(shell):
     """
-    This fixture either modifies contents or removes completely two
-    configuration files (cloud-init, NetworkManager).
-    The action is based on test-related custom envar.
+    This fixture modifies contents of configuration files: "/etc/cloud/cloud.cfg",
+    "/etc/NetworkManager/NetworkManager.conf", "/etc/logrotate.d/yum"
+    and "/etc/logrotate.d/dnf" prior to running the conversion.
+    After the rollback the fixture validates that the contents of the file is
+    the same before and after the convert2rhel run.
+    Additionally, there was a clash happening in the way convert2rhel backups files,
+    if there is a file to back up that has the same name as one directory
+    or another file already created, an error will be thrown to the user.
+    The fixture validates this won't happen anymore.
     """
+    backup_paths = {}
 
-    modified_content = """\n#This is just a placeholder test
-    #to verify the file won't be changed
-    # after the rollback"""
-    packages = {"cloud-init": "/etc/cloud/cloud.cfg", "NetworkManager": "/etc/NetworkManager/NetworkManager.conf"}
-    backup_dir = "/tmp/c2r_tests_backup/"
+    # Create the backup directories
+    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+        if not os.path.exists(directory):
+            shell(f"mkdir -v {directory}")
 
-    shell(f"mkdir {backup_dir}")
-
-    for pkg, config in packages.items():
-        # Backup the original file
-        shell(f"cp {config} {backup_dir}")
+    for pkg, config in PACKAGES.items():
+        file_name = os.path.basename(config)
+        modified_file_path = os.path.join(MODIFIED_FILES_DIR, f"{file_name}.modified")
+        bkp_file_path = os.path.join(BACKUP_DIR, file_name)
         # Install the packages if not installed already
         if "is not installed" in shell(f"rpm -q {pkg}").output:
             shell(f"yum install -y {pkg}")
-        # If we check for file modification being in place after the rollback
-        if os.environ.get("C2R_TESTS_MODIFIED_CONFIGS"):
-            # Append the modified content to the config
-            # The file will be created if not already
-            with open(config, "a+") as cfg:
-                cfg.write(modified_content)
-                cfg.seek(0)
-                modified_file_data = cfg.read()
-        else:
-            # Remove the config to validate it won't get restored
-            # during the rollback
-            shell(f"rm -f {config}")
+
+        # Create the config file, if not present already
+        if not os.path.exists(config):
+            shell(f"touch {config}")
+        # Backup the original file
+        shell(f"cp {config} {BACKUP_DIR}")
+
+        # Append the modified content to the config
+        # The file will be created if not already
+        with open(config, "a+") as cfg:
+            cfg.write(MODIFIED_CONTENT)
+        # Copy the modified file for later comparison
+        shell(f"cp {config} {modified_file_path}")
+
+        backup_paths[file_name] = [modified_file_path, bkp_file_path, config]
 
     yield
 
-    for pkg, config in packages.items():
-        # Verify the packages are still installed
-        assert shell(f"rpm -q {pkg}").returncode == 0
-        # Verify the pre-conversion and post-conversion
-        if os.environ.get("C2R_TESTS_MODIFIED_CONFIGS"):
-            # Verify the config file got restored during rollback
-            assert os.path.exists(config)
-            # Read the restored content
-            with open(config, "r") as cfg:
-                restored_file_data = cfg.read()
+    for file, paths in backup_paths.items():
+        modified_file_path = paths[0]
+        bkp_file_path = paths[1]
+        default_config_path = paths[2]
+        # Verify the config file got restored during rollback
+        assert os.path.exists(default_config_path)
 
-            # Verify the content is same
-            assert modified_file_data == restored_file_data
-        else:
-            # Verify the config did not get restored if not present
-            # prior the conversion
-            assert not os.path.exists(config)
+        # Verify the content is same
+        assert filecmp.cmp(default_config_path, modified_file_path)
 
         # Restore the original file
-        shell(f"mv -f {backup_dir}{config.rsplit('/', maxsplit=1)[-1]} {config}")
+        assert shell(f"mv -f -v {bkp_file_path} {default_config_path}").returncode == 0
+
+    shell(f"rm -rf {MODIFIED_FILES_DIR}")
 
 
 @pytest.fixture
-def mod_config_envar():
+def config_files_removed(shell):
     """
-    Fixture to set test related envar.
+    This fixture removes completely configuration files: "/etc/cloud/cloud.cfg",
+    "/etc/NetworkManager/NetworkManager.conf", "/etc/logrotate.d/yum"
+    and "/etc/logrotate.d/dnf" prior to running the conversion.
+    After the convert2rhel performs the rollback, the fixture validates,
+    that a previously absent config file is not restored at its respective
+    default filepath.
     """
-    os.environ["C2R_TESTS_MODIFIED_CONFIGS"] = "1"
+    backup_paths = {}
+
+    # Create the backup directories
+    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+        if not os.path.exists(directory):
+            shell(f"mkdir -v {directory}")
+
+    for pkg, config in PACKAGES.items():
+        file_name = os.path.basename(config)
+        # Install the packages if not installed already
+        if "is not installed" in shell(f"rpm -q {pkg}").output:
+            shell(f"yum install -y {pkg}")
+        # Create the config file, if not present already
+        if not os.path.exists(config):
+            shell(f"touch {config}")
+        # Backup the original file
+        shell(f"cp {config} {BACKUP_DIR}")
+        bkp_file_path = os.path.join(BACKUP_DIR, file_name)
+        # Remove the config to validate it won't get restored
+        # during the rollback
+        shell(f"rm -f {config}")
+
+        backup_paths[file_name] = [bkp_file_path, config]
 
     yield
 
-    del os.environ["C2R_TESTS_MODIFIED_CONFIGS"]
+    for file, paths in backup_paths.items():
+        bkp_file_path = paths[0]
+        default_config_path = paths[1]
+        # Verify the config did not get restored if not present
+        # prior the conversion
+        assert not os.path.exists(default_config_path)
+        # Restore the original file
+        assert shell(f"mv -f -v {bkp_file_path} {default_config_path}").returncode == 0
 
 
-@pytest.mark.parametrize("envar", [None, mod_config_envar])
+@pytest.mark.parametrize(
+    "file_action_fixture",
+    ["config_files_modified", "config_files_removed"],
+)
 @pytest.mark.test_file_backup
-def test_file_backup(convert2rhel, shell, envar, config_files):
+def test_file_backup(convert2rhel, shell, file_action_fixture, request):
     """
-    This test verifies correct handling backup and restore of config files.
-    Two configs (cloud-init, NetworkManager) are in scope of this test.
+    This test verifies correct handling of backup and restore of config files.
+    "/etc/cloud/cloud.cfg", "/etc/NetworkManager/NetworkManager.conf",
+    "/etc/logrotate.d/yum" and "/etc/logrotate.d/dnf" are in scope of this test.
     The following scenarios are verified:
     1/  The config files are modified with additional data
         The contents are compared pre- and post-conversion analysis task
         and should remain the same.
     2/  The config files are removed pre-conversion analysis task
         and should remain absent post-rollback.
+    Additionally, validates that a file clash does not happen during a backup.
+    There was a clash happening in the way convert2rhel backups files,
+    if there is a file to back up that has the same name as one directory
+    or another file already created, an error will be thrown to the user.
+    For that scenario we utilize "/etc/logrotate.d/yum"
+    and "/etc/logrotate.d/dnf" files.
     """
+    request.getfixturevalue(file_action_fixture)
     with convert2rhel("analyze -y --debug") as c2r:
         # Verify the rollback starts and analysis report is printed out
         c2r.expect("Abnormal exit! Performing rollback")

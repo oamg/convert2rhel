@@ -608,7 +608,7 @@ def environment_variables(request):
 
 
 # TODO remove when https://issues.redhat.com/browse/RHELC-1389 resolved
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="function")
 def remediation_out_of_date_packages(shell):
     """
     Remediation fixture.
