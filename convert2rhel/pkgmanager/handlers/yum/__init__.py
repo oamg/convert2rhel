@@ -338,7 +338,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         true, it means the transaction will not be executed, but rather verify
         everything and do an early return.
 
-        :param vaidate_transaction: Determines if the transaction needs to be
+        :param validate_transaction: Determines if the transaction needs to be
             validated or not.
         :type validate_transaction: bool
         :raises CriticalError: If we can't resolve the transaction dependencies.
