@@ -42,7 +42,27 @@ jobs:
           make tests${{ matrix.el.ver }} PYTEST_ARGS="--cov --cov-report xml --cov-report term" KEEP_TEST_CONTAINER=1 BUILD_IMAGES=0
           podman cp pytest-container:/data/coverage.xml .
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage to Codecov - First Attempt
+        id: UploadFirstAttempt
+        continue-on-error: true
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          env_vars: OS,PYTHON
+          flags: ${{ matrix.el.distro }}-linux-${{ matrix.el.ver }}
+          name: coverage-${{ matrix.el.distro }}
+          fail_ci_if_error: true
+          files: ./coverage.xml
+          verbose: true # optional (default = false)
+
+      - name: Wait before retrying
+        if: steps.UploadFirstAttempt.outcome == 'failure'
+        run: sleep 1m
+
+      - name: Upload coverage to Codecov - Second Attempt
+        id: UploadSecondAttempt
+        if: steps.UploadFirstAttempt.outcome == 'failure'
         uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
