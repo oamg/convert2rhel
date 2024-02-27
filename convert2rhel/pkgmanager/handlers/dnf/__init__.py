@@ -162,7 +162,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 self._base.reinstall(pkg_spec=pkg)
             except pkgmanager.exceptions.PackagesNotAvailableError:
                 try:
-                    self._base.downgrade(pkg_spec=pkg)
+                    self._base.downgrade_to(pkg_spec=pkg, strict=True)
                 except pkgmanager.exceptions.PackagesNotInstalledError:
                     loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
 
