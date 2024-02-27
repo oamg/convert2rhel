@@ -135,7 +135,6 @@ class RestorablePackage(RestorableChange):
                             set_releasever=self.set_releasever,
                             custom_releasever=self.custom_releasever,
                             varsdir=self.varsdir,
-                            reposdir=self.reposdir,
                         )
                     )
             else:
