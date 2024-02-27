@@ -1,0 +1,22 @@
+summary: |
+    Test that verifies that having httpd installed is not causing transaction error.
+description: |
+    The yum transaction error happened when some packages depends on each
+    other. When a package had dependency on some excluded package (like centos-logos)
+    which was removed during the conversion then the package had missing dependency.
+    If reinstall of some package happens that brings those dependencies into the transaction
+    the error was raised. The problem was mostly caused by the httpd package installed on the
+    system.
+
+tag+:
+    - httpd-package-transaction-error
+
+/httpd_package_transaction_error:
+    enabled: false
+    link: https://issues.redhat.com/browse/RHELC-1130
+    adjust+:
+        enabled: true
+        when: distro == centos-7
+        because: The bug is reproducible only on centos-7
+    test: |
+        pytest -svv -m test_httpd_package_transaction_error

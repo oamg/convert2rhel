@@ -6,10 +6,7 @@ description+: |
     tier1 is run when the PR gets merged to the main branch.
 
 
-
 /non-destructive:
-    enabled: false
-    because: No non-destructive tests assigned to tier1.
     discover+:
         filter+:
             ['tier: 1', 'tag: non-destructive']
@@ -68,7 +65,7 @@ description+: |
                 - enabled: true
                   when: distro == oracle-7, centos-7
             environment+:
-                PACKAGES: gnome-documents-libs shim-x64
+                PACKAGES: gnome-documents-libs shim-x64 libreport-plugin-mantisbt
 
 
     /one_kernel_scenario:
@@ -177,8 +174,7 @@ description+: |
         enabled: false
         adjust+:
             - enabled: true
-              when: initiator == human
-              because: There are no UEFI images available on the Testing Farm yet.
+              when: boot_method == uefi
         discover+:
             test+<:
                 - detect-bootloader-partition/detect_correct_boot_partition
