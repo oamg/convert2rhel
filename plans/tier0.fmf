@@ -131,8 +131,8 @@ description+: |
 
             /resolve_dependency:
                 adjust+:
-                    - enabled: false
-                      when: distro == alma, rocky
+                    - enabled: true
+                      when: distro == centos, oracle
                       because: We do not have any tracked packages with Rocky and Alma for this test case
                 summary+: |
                     Handle dependency packages

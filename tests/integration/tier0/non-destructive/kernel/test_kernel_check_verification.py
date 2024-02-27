@@ -191,7 +191,7 @@ def kernel(shell):
 def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     """
     System has non latest kernel installed.
-    Verify the ERROR - (ERROR) IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.
+    Verify the IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel(
@@ -203,10 +203,7 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
             )
         ) as c2r:
             c2r.expect("Check if the loaded kernel version is the most recent")
-            if c2r.expect("IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION") == 0:
-                c2r.sendcontrol("c")
-            else:
-                assert (
-                    AssertionError
-                ), "Utility did not raise: ERROR - (ERROR) IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION"
+            c2r.expect_exact("(OVERRIDABLE) IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION")
+            c2r.sendcontrol("c")
+
         assert c2r.exitstatus != 0

@@ -168,7 +168,7 @@ class IsLoadedKernelLatest(actions.Action):
                 remediations=(
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
                     "If you wish to disregard this message, set the environment variable "
-                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1."
+                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1."
                 ),
             )
             return
@@ -215,7 +215,7 @@ class IsLoadedKernelLatest(actions.Action):
                     "1. yum install %s-%s -y\n"
                     "2. reboot\n"
                     "If you wish to ignore this message, set the environment variable "
-                    "'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK' to 1." % (package_to_check, latest_kernel)
+                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1." % (package_to_check, latest_kernel)
                 ),
             )
             return
