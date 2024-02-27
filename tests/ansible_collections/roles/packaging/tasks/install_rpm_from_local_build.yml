@@ -13,11 +13,11 @@
     chdir: ../..
   when: ansible_facts['virtualization_type'] == "docker"
 
-- name: Copying rpms to kvm remote
+- name: Copying rpms to remote
   copy:
     dest: ".rpms"
     src: ../../.rpms/
-  when: ansible_facts['virtualization_type'] == "kvm"
+  when: ansible_facts['virtualization_type'] != "docker"
 
 - name: Install el8 convert2rhel package
   yum:

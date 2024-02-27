@@ -1,8 +1,8 @@
 ---
 - include_tasks: build_rpm.yml
-  when: build_rpm == true
+  when: build_rpm == "build"
 - include_tasks: install_rpm_from_local_build.yml
   when: (rpm_provider == "local") and
-        (build_rpm == true)
+        (build_rpm == "build")
 - include_tasks: install_rpm_from_url.yml
   when: (rpm_provider == "url")
