@@ -1,5 +1,5 @@
 summary+: |
-    Set of non-destructive tests
+    Set of non-destructive tests tier 1
 
 description+: |
     All tests are non-destructive, meaning there is not a full conversion being done.
