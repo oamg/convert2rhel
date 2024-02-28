@@ -316,7 +316,7 @@ class SummaryAsJsonMocked(MockFunctionObject):
 
 class RestorablePackageMocked(MockFunctionObject):
     """
-    Mock for the remove_pkgs function.
+    Mock for the RestorablePackage class.
 
     This differs from Mock in that it:
     * Makes it easy to check just the pkgs passed in to remove.

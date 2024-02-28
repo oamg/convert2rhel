@@ -106,7 +106,7 @@ class TestRestorablePackage:
 
     def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
-        monkeypatch.setattr(packages, "get_hardcoded_repofiles_dir", lambda: str(tmpdir))
+        monkeypatch.setattr(packages, "get_hardcoded_repofiles_dir", mock.Mock(return_value=str(tmpdir)))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
         monkeypatch.setattr(packages, "system_info", global_system_info)
 
@@ -117,6 +117,7 @@ class TestRestorablePackage:
         rp._backedup_pkgs_paths = ["test.rpm"]
         rp.enable()
 
+        assert packages.get_hardcoded_repofiles_dir.call_count == 1
         assert utils.download_pkg.call_count == 1
 
     @pytest.mark.parametrize(

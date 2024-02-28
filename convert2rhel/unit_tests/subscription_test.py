@@ -992,9 +992,6 @@ class TestVerifyRhsmInstalled:
         assert "The subscription-manager package is not installed correctly." in caplog.text
 
 
-# # ----
-
-
 def test_get_pool_id():
     SUBSCRIPTION_DETAILS = (
         "Subscription Name: Good subscription\n"

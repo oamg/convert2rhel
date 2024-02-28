@@ -263,12 +263,9 @@ class YumTransactionHandler(TransactionHandlerBase):
             errors are "thrown" for the user, you will need to loop until the
             point you don't have any more errors.
 
-        :param validate_transaction: Determines if the transaction needs to be
-            validated or not.
-        :type validate_transaction: bool
-
-        :return: A boolean indicating if it was successful or not.
-        :rtype: bool
+        :return: If the base.resolveDeps() method returns a message, we will
+            return that message, otherwise, return None.
+        :rtype: str | None
         """
         loggerinst.info("Resolving the dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()

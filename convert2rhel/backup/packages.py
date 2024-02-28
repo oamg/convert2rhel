@@ -77,7 +77,9 @@ _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 # NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
 class RestorablePackage(RestorableChange):
     def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
-        """Keep control of installed/removed RPM pkgs for backup/restore.
+        """
+        Keep control of systme packages before their removal to backup and
+        restore in case of rollback.
 
         :param pkgs list[str]: List of packages to backup.
         :param reposdir str: If a custom repository directory location needs to
@@ -100,27 +102,31 @@ class RestorablePackage(RestorableChange):
         self._backedup_pkgs_paths = []
 
     def enable(self):
-        """Save version of RPMs packages."""
+        """Save version of RPMs packages.
+
+        .. note::
+            If we detect that the current system is an EUS release, then we
+            proceed to use the hardcoded_repofiles, otherwise, we use the
+            custom reposdir that comes from the method parameter. This is
+            mainly because of CentOS Linux which we have hardcoded repofiles.
+            If we ever put Oracle Linux repofiles to ship with convert2rhel,
+            them the second part of this condition can be dropped.
+
+            One of the reasons we hardcode repofiles pointing to archived
+            repositories of older system minor versions is that we need to be
+            able to download an older package version as a backup.  Because for
+            example the default repofiles on CentOS Linux 8.4 point only to
+            8.latest repositories that already don't contain 8.4 packages.
+        """
         # Prevent multiple backup
         if self.enabled:
             return
 
         loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
         if os.path.isdir(BACKUP_DIR):
-            # If we detect that the current system is an EUS release, then we
-            # proceed to use the hardcoded_repofiles, otherwise, we use the
-            # custom reposdir that comes from the method parameter. This is
-            # mainly because of CentOS Linux which we have hardcoded repofiles.
-            # If we ever put Oracle Linux repofiles to ship with convert2rhel,
-            # them the second part of this condition can be dropped.
             if system_info.eus_system and system_info.id == "centos":
                 self.reposdir = get_hardcoded_repofiles_dir()
 
-            # One of the reasons we hardcode repofiles pointing to archived
-            # repositories of older system minor versions is that we need to be
-            # able to download an older package version as a backup. Because for
-            # example the default repofiles on CentOS Linux 8.4 point only to
-            # 8.latest repositories that already don't contain 8.4 packages.
             if not system_info.has_internet_access:
                 if self.reposdir:
                     loggerinst.debug(
