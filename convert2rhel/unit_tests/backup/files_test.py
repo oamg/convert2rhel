@@ -208,7 +208,8 @@ class TestRestorableFile:
             messages[i] = messages[i].format(orig_path=backup_file)
 
         monkeypatch.setattr(os.path, "isfile", lambda file: isfile)
-        monkeypatch.setattr(shutil, "move", mock.Mock())
+        monkeypatch.setattr(shutil, "copy2", mock.Mock())
+        monkeypatch.setattr(os, "remove", mock.Mock())
         monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
 
         file_backup = RestorableFile(backup_file)
@@ -220,6 +221,8 @@ class TestRestorableFile:
 
         if filename and enabled:
             assert os.path.isfile(backup_file)
+            assert shutil.copy2.call_count == 1
+            assert os.remove.call_count == 1
 
     def test_restorable_file_backup_oserror(self, tmpdir, caplog, monkeypatch):
         backup_dir = tmpdir.mkdir("backup")
