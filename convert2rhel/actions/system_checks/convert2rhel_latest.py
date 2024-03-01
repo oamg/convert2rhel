@@ -32,22 +32,19 @@ from convert2rhel.utils import files
 
 logger = logging.getLogger(__name__)
 
-# The SSL certificate of the https://cdn.redhat.com/ server
-SSL_CERT_PATH = os.path.join(utils.DATA_DIR, "redhat-uep.pem")
-CDN_URL = "https://cdn.redhat.com/content/public/convert2rhel/$releasever/$basearch/os/"
+CDN_URL_7 = "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel/server/7/7Server/x86_64/os/"
+CDN_URL_8 = "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel8/8/x86_64/os/"
 RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
 
-CONVERT2RHEL_REPO_CONTENT = """\
+CONVERT2RHEL_REPO_CONTENT = (
+    """\
 [convert2rhel]
 name=Convert2RHEL Repository
-baseurl=%s
+baseurl={}
 gpgcheck=1
 enabled=1
-sslcacert=%s
-gpgkey=file://%s""" % (
-    CDN_URL,
-    SSL_CERT_PATH,
-    RPM_GPG_KEY_PATH,
+gpgkey=file://%s"""
+    % RPM_GPG_KEY_PATH
 )
 
 
@@ -62,7 +59,8 @@ class Convert2rhelLatest(actions.Action):
 
         repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
         repo_path = os.path.join(repo_dir, "convert2rhel.repo")
-        utils.store_content_to_file(filename=repo_path, content=CONVERT2RHEL_REPO_CONTENT)
+        repo_content = CONVERT2RHEL_REPO_CONTENT.format(CDN_URL_7 if system_info.version.major == 7 else CDN_URL_8)
+        utils.store_content_to_file(filename=repo_path, content=repo_content)
 
         cmd = [
             "repoquery",

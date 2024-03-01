@@ -5,31 +5,8 @@ import pytest
 from conftest import TEST_VARS
 
 
-@pytest.fixture(scope="function")
-def convert2rhel_repo(shell):
-    assert shell("rpm -qi subscription-manager").returncode == 0
-    # The following repository requires the redhat-uep.pem certificate.
-    # convert2rhel will try accessing the repo and during the test we run the convert2rhel twice
-    # making sure that the rollback of the first run correctly reinstalled the certificate
-    # when installing subscription-manager-rhsm-certificates.
-    c2r_repo = "/etc/yum.repos.d/convert2rhel.repo"
-
-    assert (
-        shell(
-            f"curl -o {c2r_repo} https://cdn-public.redhat.com/content/public/repofiles/convert2rhel-for-rhel-8-x86_64.repo"
-        ).returncode
-        == 0
-    )
-    assert os.path.exists(c2r_repo) is True
-
-    yield
-
-    assert shell(f"rm -f {c2r_repo}")
-    assert os.path.exists(c2r_repo) is False
-
-
 @pytest.mark.test_sub_man_rollback
-def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_repo):
+def test_sub_man_rollback(convert2rhel, shell, required_packages):
     """
     Verify that convert2rhel removes and backs up the original vendor subscription-manager packages, including
     python3-syspurpose and python3-cloud-what which are also built out of the subscription-manager SRPM.
@@ -37,17 +14,14 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_r
     Not removing and backing up the python3-syspurpose and python3-cloud-what packages on CentOS Linux 8.5 was causing
     a rollback failure when an older version of these two packages was installed.
 
-    The rollback failure caused the following issues during the subsequent second run of convert2rhel:
-    1. when the rollback happened before removing the centos-linux-release package, the removed
-      subscription-manager-rhsm-certificates was not re-installed back during the rollback leading to a missing
-      /etc/rhsm/ca/redhat-uep.pem file which is necessary for accessing the official convert2rhel repo on CDN
-      (https://issues.redhat.com/browse/RHELC-744)
-    2. when the rollback happened before removing the centos-linux-release package, this package was not re-installed
+    The rollback failure caused the following issue during the subsequent second run of convert2rhel:
+      When the rollback happened before removing the centos-linux-release package, this package was not re-installed
       back during the rollback and that lead to the $releasever variable being undefined, ultimately causing a traceback
       when using the DNF python API (https://issues.redhat.com/browse/RHELC-762)
     """
     # By running convert2rhel twice we make sure that the rollback of the first run
-    # correctly reinstalled the certificate when installing subscription-manager-rhsm-certificates.
+    # correctly reinstalled centos-linux-release and subscription-manager* and the second run then does not fail
+    # due to not being able to expand the $releasever variable
     for run in range(2):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
