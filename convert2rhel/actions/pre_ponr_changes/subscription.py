@@ -47,9 +47,7 @@ class InstallRedHatCertForYumRepositories(actions.Action):
     def run(self):
         super(InstallRedHatCertForYumRepositories, self).run()
 
-        # We need to make sure the redhat-uep.pem file exists since the
-        # various Red Hat yum repositories (including the convert2rhel
-        # repo) use it.
+        # We need to make sure the redhat-uep.pem file exists since RHEL yum repositories use it.
         # The subscription-manager-rhsm-certificates package contains this cert but for
         # example on CentOS Linux 7 this package is missing the cert due to intentional
         # debranding. Thus we need to ensure the cert is in place even when the pkg is installed.

@@ -499,7 +499,8 @@ def pre_registered(shell, request, yum_conf_exclude):
         _add_client_tools_repo(shell)
 
     assert shell("yum install -y subscription-manager").returncode == 0
-    # Download the certificate using insecure connection
+    # The SSL certificate for accessing cdn.redhat.com is intentionally missing from
+    # the subscription-manager-rhsm-certificates package on CentOS Linux 7
     shell(
         "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
     )
