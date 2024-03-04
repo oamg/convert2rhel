@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.7.0
+Version:        1.7.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,10 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+
+* Mon Mar 04 2024 Freya Gustavsson <fgustavs@redhat.com> 1.7.1
+- Set downgrade to strict mode to not miss dependencies
+- Copy instead of move when restoring a file
 
 * Thu Feb 22 2024 Freya Gustavsson <fgustavs@redhat.com> 1.7.0
 - Compare the release part of the c2r rpm NEVRA
