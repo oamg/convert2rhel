@@ -40,8 +40,16 @@ jobs:
         run: gh release view ${{github.ref_name}} --json body --jq '.body' > releaseBody.txt
 
       - name: Add Jira links
+        shell: python
         run: |
-          sed -i -e 's/\[\(RHEL.*\)\]/[[\1](https:\/\/issues.redhat.com\/browse\/\1)]/' releaseBody.txt
+          import re
+
+          regex=re.compile(r"(?<!\/)(RHELC?-\d+)\b(?!\]\()", re.MULTILINE)
+          with open("releaseBody.txt", 'r+') as f:
+            data = f.read()
+            f.seek(0)
+            f.write(regex.sub(r"[\g<0>](https://issues.redhat.com/browse/\g<0>)", data))
+            f.truncate()
 
       - name: Update release body with Jira links
         run: gh release edit ${{github.ref_name}} --notes-file releaseBody.txt
