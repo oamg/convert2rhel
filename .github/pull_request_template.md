@@ -3,6 +3,7 @@
 <!-- Link to relevant Red Hat Jira issues -->
 Jira Issues:
 
+<!-- List below in format of [RHELC-](https://issues.redhat.com/browse/RHELC-) -->
 -
 
 Checklist
