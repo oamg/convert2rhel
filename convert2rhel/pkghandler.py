@@ -379,8 +379,9 @@ def format_pkg_info(pkgs):
         package_info[nevra] = {"packager": packager, "repoid": "N/A"}
 
     # Get packager length
-    packager_field_lengths = (len(package["packager"]) for package in package_info.values())
-    max_packager_length = max(max(packager_field_lengths), len("Vendor/Packager"))
+    packager_field_lengths = [len(package["packager"]) for package in package_info.values()]
+    max_packager_field_length = max(packager_field_lengths)
+    max_packager_length = max(max_packager_field_length, len("Vendor/Packager"))
 
     # Get nevra length
     max_nvra_length = max(len(nvra) for nvra in package_info)

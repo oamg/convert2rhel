@@ -9,18 +9,14 @@ repos:
         language: python
         language_version: "python3"
         additional_dependencies: [click==7.1.2, black==21.12b0]
-  - repo: local
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v3.1.0
     hooks:
       - id: pylint
-        name: pylint
-        entry: pylint
-        types: [python]
-        language: python
-        additional_dependencies: [pylint==2.15.10]
         args: [
-            "-sn", # Don't display the score
-            "--rcfile=.pylintrc", # Link to your config file
-          ]
+          "-sn", # Don't display the score
+          "--rcfile=.pylintrc", # Link to your config file
+        ]
   - repo: "https://github.com/timothycrosley/isort"
     rev: 5.13.2
     hooks:

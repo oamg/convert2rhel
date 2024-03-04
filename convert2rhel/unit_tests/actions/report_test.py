@@ -41,16 +41,16 @@ _LONG_MESSAGE = {
         (
             {
                 "CONVERT2RHEL_LATEST_VERSION": {
-                    "result": dict(level=STATUS_CODE["SUCCESS"], id="SUCCESS"),
+                    "result": {"level": STATUS_CODE["SUCCESS"], "id": "SUCCESS"},
                     "messages": [
-                        dict(
-                            level=STATUS_CODE["WARNING"],
-                            id="WARNING_ONE",
-                            title="A warning message",
-                            description="",
-                            diagnosis="",
-                            remediations="",
-                        ),
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ONE",
+                            "title": "A warning message",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                        },
                     ],
                 },
             },
@@ -59,16 +59,16 @@ _LONG_MESSAGE = {
                 "status": "WARNING",
                 "actions": {
                     "CONVERT2RHEL_LATEST_VERSION": {
-                        "result": dict(level="SUCCESS", id="SUCCESS"),
+                        "result": {"level": "SUCCESS", "id": "SUCCESS"},
                         "messages": [
-                            dict(
-                                level="WARNING",
-                                id="WARNING_ONE",
-                                title="A warning message",
-                                description="",
-                                diagnosis="",
-                                remediations="",
-                            ),
+                            {
+                                "level": "WARNING",
+                                "id": "WARNING_ONE",
+                                "title": "A warning message",
+                                "description": "",
+                                "diagnosis": "",
+                                "remediations": "",
+                            },
                         ],
                     },
                 },
@@ -77,16 +77,16 @@ _LONG_MESSAGE = {
         (
             {
                 "CONVERT2RHEL_LATEST_VERSION": {
-                    "result": dict(level=STATUS_CODE["SUCCESS"], id="SUCCESS"),
+                    "result": {"level": STATUS_CODE["SUCCESS"], "id": "SUCCESS"},
                     "messages": [
-                        dict(
-                            level=STATUS_CODE["WARNING"],
-                            id="WARNING_ONE",
-                            title="A warning message",
-                            description="A description",
-                            diagnosis="A diagnosis",
-                            remediations="A remediations",
-                        ),
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ONE",
+                            "title": "A warning message",
+                            "description": "A description",
+                            "diagnosis": "A diagnosis",
+                            "remediations": "A remediations",
+                        },
                     ],
                 },
             },
@@ -95,16 +95,16 @@ _LONG_MESSAGE = {
                 "status": "WARNING",
                 "actions": {
                     "CONVERT2RHEL_LATEST_VERSION": {
-                        "result": dict(level="SUCCESS", id="SUCCESS"),
+                        "result": {"level": "SUCCESS", "id": "SUCCESS"},
                         "messages": [
-                            dict(
-                                level="WARNING",
-                                id="WARNING_ONE",
-                                title="A warning message",
-                                description="A description",
-                                diagnosis="A diagnosis",
-                                remediations="A remediations",
-                            ),
+                            {
+                                "level": "WARNING",
+                                "id": "WARNING_ONE",
+                                "title": "A warning message",
+                                "description": "A description",
+                                "diagnosis": "A diagnosis",
+                                "remediations": "A remediations",
+                            },
                         ],
                     },
                 },
@@ -131,8 +131,8 @@ def test_summary_as_json(results, expected, tmpdir):
         # parameter.
         (
             {
-                "PreSubscription": dict(
-                    messages=[
+                "PreSubscription": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -143,7 +143,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -152,7 +152,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "",
                         "variables": {},
                     },
-                )
+                }
             },
             True,
             [
@@ -162,9 +162,9 @@ def test_summary_as_json(results, expected, tmpdir):
         ),
         (
             {
-                "PreSubscription": dict(
-                    messages=[],
-                    result={
+                "PreSubscription": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -173,9 +173,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "",
                         "variables": {},
                     },
-                ),
-                "PreSubscription2": dict(
-                    messages=[
+                },
+                "PreSubscription2": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -186,7 +186,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIPPED",
                         "title": "Skip",
@@ -195,7 +195,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             True,
             [
@@ -208,9 +208,9 @@ def test_summary_as_json(results, expected, tmpdir):
         # the logs.
         (
             {
-                "PreSubscription": dict(
-                    messages=[],
-                    result={
+                "PreSubscription": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -219,15 +219,15 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "",
                         "variables": {},
                     },
-                )
+                }
             },
             False,
             ["No problems detected during the analysis!"],
         ),
         (
             {
-                "PreSubscription": dict(
-                    messages=[
+                "PreSubscription": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -238,7 +238,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -247,7 +247,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "",
                         "variables": {},
                     },
-                )
+                }
             },
             False,
             [
@@ -256,8 +256,8 @@ def test_summary_as_json(results, expected, tmpdir):
         ),
         (
             {
-                "PreSubscription": dict(
-                    messages=[
+                "PreSubscription": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -268,7 +268,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -277,9 +277,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "",
                         "variables": {},
                     },
-                ),
-                "PreSubscription2": dict(
-                    messages=[
+                },
+                "PreSubscription2": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -290,7 +290,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIPPED",
                         "title": "Skip",
@@ -299,7 +299,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -311,8 +311,8 @@ def test_summary_as_json(results, expected, tmpdir):
         # Test all messages are displayed, SKIP and higher
         (
             {
-                "PreSubscription1": dict(
-                    messages=[
+                "PreSubscription1": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -323,7 +323,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIPPED",
                         "title": "Skip",
@@ -332,9 +332,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "PreSubscription2": dict(
-                    messages=[
+                },
+                "PreSubscription2": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -345,7 +345,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE_ID",
                         "title": "Overridable",
@@ -354,7 +354,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -366,8 +366,8 @@ def test_summary_as_json(results, expected, tmpdir):
         ),
         (
             {
-                "SkipAction": dict(
-                    messages=[
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -378,7 +378,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -387,9 +387,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[
+                },
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -400,7 +400,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -409,9 +409,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[
+                },
+                "ErrorAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -422,7 +422,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -431,9 +431,9 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "TestAction": dict(
-                    messages=[
+                },
+                "TestAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -444,7 +444,7 @@ def test_summary_as_json(results, expected, tmpdir):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "SECONDERROR",
                         "title": "Error",
@@ -453,7 +453,7 @@ def test_summary_as_json(results, expected, tmpdir):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -497,10 +497,10 @@ def test_results_summary_with_long_message(long_message, caplog):
     result.update(long_message)
     report.summary(
         {
-            "ErrorAction": dict(
-                messages=[],
-                result=result,
-            )
+            "ErrorAction": {
+                "messages": [],
+                "result": result,
+            }
         },
         disable_colors=True,
     )
@@ -541,9 +541,9 @@ def test_messages_summary_with_long_message(long_message, caplog):
     messages.update(long_message)
     report.summary(
         {
-            "ErrorAction": dict(
-                messages=[messages],
-                result={
+            "ErrorAction": {
+                "messages": [messages],
+                "result": {
                     "level": STATUS_CODE["SUCCESS"],
                     "id": "",
                     "title": "",
@@ -552,7 +552,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                     "remediations": "",
                     "variables": {},
                 },
-            )
+            }
         },
         disable_colors=True,
     )
@@ -578,9 +578,9 @@ def test_messages_summary_with_long_message(long_message, caplog):
         # Test all messages are displayed, SKIP and higher
         (
             {
-                "PreSubscription2": dict(
-                    messages=[],
-                    result={
+                "PreSubscription2": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIPPED",
                         "title": "Skipped",
@@ -589,10 +589,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "PreSubscription1": dict(
-                    messages=[],
-                    result={
+                },
+                "PreSubscription1": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "SOME_OVERRIDABLE",
                         "title": "Overridable",
@@ -601,7 +601,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -611,9 +611,9 @@ def test_messages_summary_with_long_message(long_message, caplog):
         ),
         (
             {
-                "SkipAction": dict(
-                    messages=[],
-                    result={
+                "SkipAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -622,10 +622,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[],
-                    result={
+                },
+                "OverridableAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -634,10 +634,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[],
-                    result={
+                },
+                "ErrorAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -646,7 +646,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -658,9 +658,9 @@ def test_messages_summary_with_long_message(long_message, caplog):
         # Message order with `include_all_reports` set to True.
         (
             {
-                "PreSubscription": dict(
-                    messages=[],
-                    result={
+                "PreSubscription": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -669,10 +669,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "",
                         "variables": {},
                     },
-                ),
-                "SkipAction": dict(
-                    messages=[],
-                    result={
+                },
+                "SkipAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -681,10 +681,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[],
-                    result={
+                },
+                "OverridableAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -693,10 +693,10 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[],
-                    result={
+                },
+                "ErrorAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -705,7 +705,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             True,
             [
@@ -737,8 +737,8 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
         # Test all messages are displayed, SKIP and higher
         (
             {
-                "PreSubscription2": dict(
-                    messages=[
+                "PreSubscription2": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -749,7 +749,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIPPED",
                         "title": "Skip",
@@ -758,10 +758,10 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "PreSubscription1": dict(
-                    messages=[],
-                    result={
+                },
+                "PreSubscription1": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "SOME_OVERRIDABLE",
                         "title": "Override",
@@ -770,7 +770,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -781,8 +781,8 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
         ),
         (
             {
-                "SkipAction": dict(
-                    messages=[
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -793,7 +793,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -802,9 +802,9 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[
+                },
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -815,7 +815,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -824,10 +824,10 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[],
-                    result={
+                },
+                "ErrorAction": {
+                    "messages": [],
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -836,7 +836,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             False,
             [
@@ -850,8 +850,8 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
         # Message order with `include_all_reports` set to True.
         (
             {
-                "PreSubscription": dict(
-                    messages=[
+                "PreSubscription": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -862,7 +862,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -871,9 +871,9 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "",
                         "variables": {},
                     },
-                ),
-                "SkipAction": dict(
-                    messages=[
+                },
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -884,7 +884,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -893,9 +893,9 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[
+                },
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -906,7 +906,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -915,9 +915,9 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[
+                },
+                "ErrorAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -928,7 +928,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -937,7 +937,7 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             True,
             [
@@ -973,8 +973,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
     (
         (
             {
-                "ErrorAction": dict(
-                    messages=[
+                "ErrorAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -985,7 +985,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -994,7 +994,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "remediations": "move on",
                         "variables": {},
                     },
-                )
+                }
             },
             "{begin}(ERROR) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on{end}".format(
                 begin=bcolors.FAIL, end=bcolors.ENDC
@@ -1005,8 +1005,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
         ),
         (
             {
-                "OverridableAction": dict(
-                    messages=[
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1017,7 +1017,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -1026,7 +1026,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "remediations": "move on",
                         "variables": {},
                     },
-                )
+                }
             },
             "{begin}(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action overridable\n     Diagnosis: User overridable\n     Remediations: move on{end}".format(
                 begin=bcolors.FAIL, end=bcolors.ENDC
@@ -1037,8 +1037,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
         ),
         (
             {
-                "SkipAction": dict(
-                    messages=[
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1049,7 +1049,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -1058,7 +1058,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "remediations": "move on",
                         "variables": {},
                     },
-                )
+                }
             },
             "{begin}(SKIP) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediations: move on{end}".format(
                 begin=bcolors.FAIL, end=bcolors.ENDC
@@ -1069,8 +1069,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
         ),
         (
             {
-                "SuccessfulAction": dict(
-                    messages=[
+                "SuccessfulAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1081,7 +1081,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SUCCESS"],
                         "id": "SUCCESS",
                         "title": "",
@@ -1090,7 +1090,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                         "remediations": "",
                         "variables": {},
                     },
-                )
+                }
             },
             "{begin}(SUCCESS) SuccessfulAction::SUCCESS - N/A{end}".format(begin=bcolors.OKGREEN, end=bcolors.ENDC),
             "{begin}(WARNING) SuccessfulAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{end}".format(
@@ -1110,8 +1110,8 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
     (
         (
             {
-                "SkipAction": dict(
-                    messages=[
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1122,7 +1122,7 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -1131,9 +1131,9 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[
+                },
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1144,7 +1144,7 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -1153,9 +1153,9 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[
+                },
+                "ErrorAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1166,7 +1166,7 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -1175,9 +1175,9 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "TestAction": dict(
-                    messages=[
+                },
+                "TestAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1188,7 +1188,7 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "SECONDERROR",
                         "title": "Error",
@@ -1197,7 +1197,7 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             [
                 "{begin_fail}(ERROR) ErrorAction::ERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediations: move on\n{end}",
@@ -1232,8 +1232,8 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
     (
         (
             {
-                "SkipAction": dict(
-                    messages=[
+                "SkipAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1244,7 +1244,7 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["SKIP"],
                         "id": "SKIP",
                         "title": "Skip",
@@ -1253,9 +1253,9 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "OverridableAction": dict(
-                    messages=[
+                },
+                "OverridableAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1266,7 +1266,7 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["OVERRIDABLE"],
                         "id": "OVERRIDABLE",
                         "title": "Overridable",
@@ -1275,9 +1275,9 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "ErrorAction": dict(
-                    messages=[
+                },
+                "ErrorAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1288,7 +1288,7 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "ERROR",
                         "title": "Error",
@@ -1297,9 +1297,9 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
-                "TestAction": dict(
-                    messages=[
+                },
+                "TestAction": {
+                    "messages": [
                         {
                             "level": STATUS_CODE["WARNING"],
                             "id": "WARNING_ID",
@@ -1310,7 +1310,7 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                             "variables": {},
                         }
                     ],
-                    result={
+                    "result": {
                         "level": STATUS_CODE["ERROR"],
                         "id": "SECONDERROR",
                         "title": "Error",
@@ -1319,7 +1319,7 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
                         "remediations": "move on",
                         "variables": {},
                     },
-                ),
+                },
             },
             [
                 "{begin_fail}(ERROR) ErrorAction::ERROR - Error\n Description: Action error\n Diagnosis: User error\n Remediations: move on\n{end}",
