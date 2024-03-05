@@ -74,6 +74,13 @@ _UBI_9_REPO_CONTENT = (
 )
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 
+# Map repo_path and repo_content for each major version in UBI.
+_UBI_REPO_MAPPING = {
+    7: (_UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT),
+    8: (_UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT),
+    9: (_UBI_9_REPO_PATH, _UBI_9_REPO_CONTENT),
+}
+
 # NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
 class RestorablePackage(RestorableChange):
     def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
@@ -261,11 +268,23 @@ class RestorablePackageSet(RestorableChange):
           system default if we rollback the changes.
     """
 
-    def __init__(self, pkgs_to_install, pkgs_to_update=None):
+    def __init__(
+        self,
+        pkgs_to_install,
+        pkgs_to_update=None,
+        reposdir=None,
+        set_releasever=False,
+        custom_releasever=None,
+        varsdir=None,
+    ):
         self.pkgs_to_install = pkgs_to_install
         self.pkgs_to_update = pkgs_to_update or []
         self.installed_pkgs = []
         self.updated_pkgs = []
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir
 
         super(RestorablePackageSet, self).__init__()
 
@@ -295,12 +314,8 @@ class RestorablePackageSet(RestorableChange):
         loggerinst.info("Downloading requested packages")
         all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
 
-        if system_info.version.major == 7:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
-        elif system_info.version.major == 8:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
-        elif system_info.version.major == 9:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_9_REPO_PATH, _UBI_9_REPO_CONTENT)
+        ubi_repo_path, ubi_repo_content = _UBI_REPO_MAPPING[system_info.version.major]
+        _download_rhsm_pkgs(all_pkgs_to_install, ubi_repo_path, ubi_repo_content)
 
         # installing the packages
         rpms_to_install = [os.path.join(_SUBMGR_RPMS_DIR, filename) for filename in os.listdir(_SUBMGR_RPMS_DIR)]
@@ -320,8 +335,12 @@ class RestorablePackageSet(RestorableChange):
             enable_repos=[],
             disable_repos=[],
             # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
-            set_releasever=False,
+            set_releasever=self.set_releasever,
+            custom_releasever=self.custom_releasever,
+            reposdir=self.reposdir,
+            varsdir=self.varsdir,
         )
+
         if ret_code:
             loggerinst.critical_no_exit(
                 "Failed to install subscription-manager packages. Check the yum output below for details:\n\n %s"

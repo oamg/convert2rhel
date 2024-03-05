@@ -150,6 +150,9 @@ def call_yum_cmd(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
+    reposdir=None,
+    custom_releasever=None,
+    varsdir=None,
 ):
     """Call yum command and optionally print its output.
     The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
@@ -178,8 +181,17 @@ def call_yum_cmd(
     for repo in repos_to_disable:
         cmd.append("--disablerepo=%s" % repo)
 
-    if set_releasever and system_info.releasever:
-        cmd.append("--releasever=%s" % system_info.releasever)
+    if set_releasever:
+        if not custom_releasever and not system_info.releasever:
+            raise AssertionError("custom_releasever or system_info.releasever must be set.")
+
+        if custom_releasever:
+            cmd.append("--releasever=%s" % custom_releasever)
+        else:
+            cmd.append("--releasever=%s" % system_info.releasever)
+
+    if varsdir:
+        cmd.append("--setopt=varsdir=%s" % varsdir)
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if system_info.version.major >= 8:
@@ -195,6 +207,9 @@ def call_yum_cmd(
 
     for repo in repos_to_enable:
         cmd.append("--enablerepo=%s" % repo)
+
+    if reposdir:
+        cmd.append("--setopt=reposdir=%s" % reposdir)
 
     cmd.extend(args)
 

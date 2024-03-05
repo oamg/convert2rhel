@@ -232,9 +232,8 @@ class TestGetRpmHeader:
 
 
 class TestPreserveOnlyRHELKernel:
-    def test_preserve_only_rhel_kernel(self, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(7, 0))
-        monkeypatch.setattr(system_info, "releasever", None)
+    @centos7
+    def test_preserve_only_rhel_kernel(self, pretend_os, monkeypatch):
         monkeypatch.setattr(pkghandler, "install_rhel_kernel", lambda: True)
         monkeypatch.setattr(pkghandler, "fix_invalid_grub2_entries", lambda: None)
         monkeypatch.setattr(pkghandler, "remove_non_rhel_kernels", mock.Mock(return_value=[]))
@@ -251,7 +250,7 @@ class TestPreserveOnlyRHELKernel:
 
         pkghandler.preserve_only_rhel_kernel()
 
-        assert utils.run_subprocess.cmd == ["yum", "update", "-y", "kernel"]
+        assert utils.run_subprocess.cmd == ["yum", "update", "-y", "--releasever=7Server", "kernel"]
         assert pkghandler.get_installed_pkgs_by_fingerprint.call_count == 1
 
 
@@ -272,8 +271,10 @@ class TestGetKernelAvailability:
             ),
         ),
     )
-    def test_get_kernel_availability(self, subprocess_output, expected_installed, expected_available, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(7, 0))
+    @centos7
+    def test_get_kernel_availability(
+        self, pretend_os, subprocess_output, expected_installed, expected_available, monkeypatch
+    ):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
 
         installed, available = pkghandler.get_kernel_availability()
@@ -283,17 +284,16 @@ class TestGetKernelAvailability:
 
 
 class TestHandleNoNewerRHELKernelAvailable:
-    def test_handle_older_rhel_kernel_available(self, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(7, 0))
-        monkeypatch.setattr(system_info, "releasever", None)
+    @centos7
+    def test_handle_older_rhel_kernel_available(self, pretend_os, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=YUM_KERNEL_LIST_OLDER_AVAILABLE))
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "kernel-4.7.2-201.fc24"]
+        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--releasever=7Server", "kernel-4.7.2-201.fc24"]
 
-    def test_handle_older_rhel_kernel_not_available(self, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(7, 0))
+    @centos7
+    def test_handle_older_rhel_kernel_not_available(self, pretend_os, monkeypatch):
         monkeypatch.setattr(
             utils, "run_subprocess", RunSubprocessMocked(return_string=YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE)
         )
@@ -303,9 +303,8 @@ class TestHandleNoNewerRHELKernelAvailable:
 
         assert pkghandler.replace_non_rhel_installed_kernel.call_count == 1
 
-    def test_handle_older_rhel_kernel_not_available_multiple_installed(self, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(7, 0))
-        monkeypatch.setattr(system_info, "releasever", None)
+    @centos7
+    def test_handle_older_rhel_kernel_not_available_multiple_installed(self, pretend_os, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(
             utils,
@@ -318,7 +317,7 @@ class TestHandleNoNewerRHELKernelAvailable:
 
         assert len(utils.remove_pkgs.pkgs) == 1
         assert utils.remove_pkgs.pkgs[0] == "kernel-4.7.4-200.fc24"
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "kernel-4.7.4-200.fc24"]
+        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--releasever=7Server", "kernel-4.7.4-200.fc24"]
 
 
 class TestReplaceNonRHELInstalledKernel:

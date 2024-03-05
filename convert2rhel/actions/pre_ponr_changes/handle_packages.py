@@ -73,8 +73,6 @@ class RemoveSpecialPackages(actions.Action):
         "BACKUP_REPOSITORY",
         "BACKUP_PACKAGE_FILES",
         "BACKUP_REDHAT_RELEASE",
-        # The installation of sub-man pkgs needs access to the original repofiles to get the sub-man deps from there
-        "PRE_SUBSCRIPTION",
     )
 
     def run(self):

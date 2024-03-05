@@ -20,7 +20,6 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel.backup import BACKUP_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import DATA_DIR
 

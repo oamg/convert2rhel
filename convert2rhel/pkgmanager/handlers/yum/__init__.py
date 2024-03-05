@@ -23,7 +23,6 @@ import os
 import re
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
-from convert2rhel.backup import backup_control
 from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase

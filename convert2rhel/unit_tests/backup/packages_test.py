@@ -35,7 +35,7 @@ from convert2rhel.unit_tests import (
     RunSubprocessMocked,
     StoreContentToFileMocked,
 )
-from convert2rhel.unit_tests.conftest import centos8
+from convert2rhel.unit_tests.conftest import centos7
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -295,26 +295,40 @@ class TestRestorablePackageSet:
 
         return RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
-    def test_smoketest_init(self):
-        package_set = RestorablePackageSet(["pkg1"])
+    @pytest.mark.parametrize(
+        ("pkgs_to_install", "pkgs_to_update", "reposdir"),
+        (
+            (["pkg-1"], [], None),
+            (["pkg-1"], [], "test-dir"),
+            ([], ["pkg-1"], None),
+            ([], [], "test-dir"),
+            (["pkg-1"], ["pkg-2"], None),
+        ),
+    )
+    def test_smoketest_init(self, pkgs_to_install, pkgs_to_update, reposdir):
+        package_set = RestorablePackageSet(pkgs_to_install, pkgs_to_update, reposdir)
 
-        assert package_set.pkgs_to_install == ["pkg1"]
+        assert package_set.pkgs_to_install == pkgs_to_install
+        assert package_set.pkgs_to_update == pkgs_to_update
+        assert package_set.reposdir == reposdir
+
         assert package_set.enabled is False
         # We actually care that this is an empty list and not just False-y
         assert package_set.installed_pkgs == []  # pylint: disable=use-implicit-booleaness-not-comparison
 
     @pytest.mark.parametrize(
-        ("rhel_major_version"),
+        ("major", "minor"),
         (
             (7, 10),
             (8, 5),
             (9, 3),
         ),
     )
-    def test_enable_need_to_install(self, rhel_major_version, package_set, global_system_info, caplog, monkeypatch):
-        global_system_info.version = Version(*rhel_major_version)
+    def test_enable_need_to_install(self, major, minor, package_set, global_system_info, caplog, monkeypatch, tmpdir):
+        repofile = tmpdir.join("repofile.repo")
+        global_system_info.version = Version(major, minor)
         monkeypatch.setattr(packages, "system_info", global_system_info)
-
+        monkeypatch.setattr(packages, "_UBI_REPO_MAPPING", {major: (str(repofile), "test")})
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
         monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
@@ -333,19 +347,17 @@ class TestRestorablePackageSet:
         assert "json-c" not in package_set.installed_pkgs
         assert "json-c.x86_64" not in package_set.installed_pkgs
 
-    @centos8
-    def test_enable_call_yum_cmd_fail(self, pretend_os, package_set, global_system_info, caplog, monkeypatch):
-        global_system_info.version = Version(7, 0)
-        monkeypatch.setattr(packages, "system_info", global_system_info)
+    @centos7
+    def test_enable_call_yum_cmd_fail(self, pretend_os, package_set, caplog, monkeypatch, tmpdir):
+        repofile = tmpdir.join("repofile.repo")
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkg_information",
             GetInstalledPkgInformationMocked(side_effect=(["subscription-manager"], [], [])),
         )
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
-
-        yum_cmd = CallYumCmdMocked(return_code=1)
-        monkeypatch.setattr(pkgmanager, "call_yum_cmd", yum_cmd)
+        monkeypatch.setattr(packages, "_UBI_REPO_MAPPING", {7: (str(repofile), "test")})
+        monkeypatch.setattr(pkgmanager, "call_yum_cmd", CallYumCmdMocked(return_code=1))
         monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
         with pytest.raises(exceptions.CriticalError):
