@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-import errno
 import fcntl
 import getpass
 import json
@@ -500,19 +499,6 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
 
             # Restore the real setwinsize
             self.setwinsize = real_setwinsize
-
-
-def mkdir_p(path):
-    """Create all missing directories for the path and raise no exception
-    if the path exists.
-    """
-    try:
-        os.makedirs(path)
-    except OSError as err:
-        if err.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
 
 
 def ask_to_continue():

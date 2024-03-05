@@ -27,6 +27,7 @@ from convert2rhel import __version__ as running_convert2rhel_version
 from convert2rhel import actions, utils
 from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class Convert2rhelLatest(actions.Action):
 
         # Note: This is safe because we're creating in utils.TMP_DIR which is hardcoded to
         # /var/lib/convert2rhel which does not have any world-writable directory components.
-        utils.mkdir_p(repo_dir)
+        files.mkdir_p(repo_dir)
 
         try:
             raw_output_convert2rhel_versions, return_code = utils.run_subprocess(cmd, print_output=False)

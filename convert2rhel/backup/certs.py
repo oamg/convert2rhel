@@ -24,6 +24,7 @@ import shutil
 
 from convert2rhel import exceptions, utils
 from convert2rhel.backup import RestorableChange
+from convert2rhel.utils import files
 
 
 loggerinst = logging.getLogger(__name__)
@@ -115,7 +116,7 @@ class RestorablePEMCert(RestorableChange):
             self.previously_installed = True
         else:
             try:
-                utils.mkdir_p(self._target_cert_dir)
+                files.mkdir_p(self._target_cert_dir)
                 shutil.copy2(self._source_cert_path, self._target_cert_dir)
             except OSError as err:
                 loggerinst.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))

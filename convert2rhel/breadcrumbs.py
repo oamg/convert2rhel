@@ -27,6 +27,7 @@ from datetime import datetime
 
 from convert2rhel import pkghandler, toolopts, utils
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 # Path to the migration results of the old breadcrumbs.
@@ -200,7 +201,7 @@ class Breadcrumbs:
             # is provided.
             # This is safe as the RHSM_CUSTOM_FACTS_FOLDER, /etc/rhsm/facts, and its parents
             # are only writable by root
-            utils.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
+            files.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
 
         data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
         loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
