@@ -131,7 +131,15 @@ def write_temporary_repofile(contents):
     :raises exceptions.CriticalError: In case of not being able to write the
         repository contents to a file.
     """
-    repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+    try:
+        repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+    except (OSError, IOError) as err:
+        raise exceptions.CriticalError(
+            id_="CREATE_TMP_DIR_FOR_C2R_REPO_FAILED",
+            title="Failed to create a temporary directory",
+            description="Failed to create a temporary directory for the convert2rhel repository under %s.\n"
+            "Reason: %s" % (TMP_DIR, str(err)),
+        )
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
         try:
             store_content_to_file(filename=f.name, content=contents)

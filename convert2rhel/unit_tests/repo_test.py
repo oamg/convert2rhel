@@ -162,7 +162,18 @@ def test_write_temporary_repofile(tmpdir, monkeypatch):
         assert f.read() == "test\n"
 
 
-def test_write_temporary_repofile_oserror(tmpdir, monkeypatch):
+def test_write_temporary_repofile_mkdir_failure(monkeypatch):
+    monkeypatch.setattr(repo.tempfile, "mkdtemp", mock.Mock(side_effect=OSError("unable")))
+
+    with pytest.raises(exceptions.CriticalError) as execinfo:
+        repo.write_temporary_repofile("test")
+
+    assert "CREATE_TMP_DIR_FOR_C2R_REPO_FAILED" in execinfo._excinfo[1].id
+    assert "Failed to create a temporary directory" in execinfo._excinfo[1].title
+    assert "unable" in execinfo._excinfo[1].description
+
+
+def test_write_temporary_repofile_store_failure(tmpdir, monkeypatch):
     monkeypatch.setattr(repo, "TMP_DIR", str(tmpdir))
     monkeypatch.setattr(repo, "store_content_to_file", mock.Mock(side_effect=OSError("test")))
 
