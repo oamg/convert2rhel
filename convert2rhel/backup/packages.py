@@ -28,6 +28,7 @@ from convert2rhel.pkgmanager import call_yum_cmd
 # split this out.
 from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 loggerinst = logging.getLogger(__name__)
@@ -308,8 +309,8 @@ class RestorablePackageSet(RestorableChange):
         # Note, this use of mkdir_p is secure because SUBMGR_RPMS_DIR and
         # _RHSM_TMP_DIR do not contain any path components writable by
         # a different user.
-        utils.mkdir_p(_SUBMGR_RPMS_DIR)
-        utils.mkdir_p(_RHSM_TMP_DIR)
+        files.mkdir_p(_SUBMGR_RPMS_DIR)
+        files.mkdir_p(_RHSM_TMP_DIR)
 
         loggerinst.info("Downloading requested packages")
         all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
