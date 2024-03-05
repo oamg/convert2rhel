@@ -214,7 +214,7 @@ class RestorablePackageSet(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Convert: Remove installed RHSM packages")
+        loggerinst.task("Rollback: Remove installed RHSM packages")
         loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
         remove_pkgs(self.installed_pkgs, backup=False, critical=False)
 
