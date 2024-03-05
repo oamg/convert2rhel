@@ -14,3 +14,7 @@ description+: |
         - test-rhsm-facts-called-in-analysis
     test: |
         pytest -svv -m test_rhsm_facts_called_in_analysis
+    adjust+:
+        - enabled: false
+          when: distro == oracle-7, oracle-8
+          because: RHSM package not available in oracle repos
