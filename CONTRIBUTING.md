@@ -76,12 +76,6 @@ Dev Containers: Open Folder in Container
 You are now inside a container as indicated by the bottom left box. There is an extension for tests in the left
 navigation that auto-discovers tests that you can run. This will be much faster than developing using `make tests`
 
-#### Known issues
-##### Debugging just loads and does nothing
-Versions newer than `2022.8.1` of extension `ms-python.python` will not work when debugging code. We have pinned the version but VS Code might auto-update the extension.
-
-To work around this, go to extensions tab and select Ignore Updates on the extension, thereafter select install a new version and install `2022.8.1`. It will prompt to reload the window, make sure the right version is installed after reload. Now debugging should work
-
 ### Dependencies for local development
 
 We have some required dependencies you should have installed on your system
