@@ -82,6 +82,13 @@ Versions newer than `2022.8.1` of extension `ms-python.python` will not work whe
 
 To work around this, go to extensions tab and select Ignore Updates on the extension, thereafter select install a new version and install `2022.8.1`. It will prompt to reload the window, make sure the right version is installed after reload. Now debugging should work
 
+##### Pylance couldn't create connection to server
+In different version of `ms-python.vscode-pylance` than `2023.11.10` pylance can't connect to server
+which results in missing language support. We have pinned the version but VS Code might auto-update the extension.
+
+To work around this, go to extensions tab and select Ignore Updates on the extension, thereafter select install a new version and install `2023.11.10`. It will prompt to reload the window, make sure the right version is installed after reload.
+Now language support should work.
+
 ### Dependencies for local development
 
 We have some required dependencies you should have installed on your system

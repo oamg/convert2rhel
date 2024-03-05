@@ -36,7 +36,7 @@
 				"python.languageServer": "Pylance"
 			},
 			"extensions": [
-				"ms-python.vscode-pylance",
+				"ms-python.vscode-pylance@2023.11.10",
 				"eamodio.gitlens",
 				"GitHub.vscode-pull-request-github",
 				"Cameron.vscode-pytest",
