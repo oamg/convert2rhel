@@ -20,7 +20,11 @@ import os.path
 import shutil
 import tempfile
 
+from contextlib import closing
+
 import rpm
+
+from six.moves import urllib
 
 from convert2rhel import __file__ as convert2rhel_file
 from convert2rhel import __version__ as running_convert2rhel_version
@@ -31,20 +35,10 @@ from convert2rhel.systeminfo import system_info
 
 logger = logging.getLogger(__name__)
 
-CDN_URL_7 = "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel/server/7/7Server/x86_64/os/"
-CDN_URL_8 = "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel8/8/x86_64/os/"
-RPM_GPG_KEY_PATH = os.path.join(utils.DATA_DIR, "gpg-keys", "RPM-GPG-KEY-redhat-release")
-
-CONVERT2RHEL_REPO_CONTENT = (
-    """\
-[convert2rhel]
-name=Convert2RHEL Repository
-baseurl={}
-gpgcheck=1
-enabled=1
-gpgkey=file://%s"""
-    % RPM_GPG_KEY_PATH
-)
+C2R_REPOFILE_URLS = {
+    7: "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel/server/7/7Server/x86_64/files/repofile.repo",
+    8: "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel8/8/x86_64/files/repofile.repo",
+}
 
 
 class Convert2rhelLatest(actions.Action):
@@ -67,17 +61,16 @@ class Convert2rhelLatest(actions.Action):
             )
             return
 
-        repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
-        repo_path = os.path.join(repo_dir, "convert2rhel.repo")
-        repo_content = CONVERT2RHEL_REPO_CONTENT.format(CDN_URL_7 if system_info.version.major == 7 else CDN_URL_8)
-        utils.store_content_to_file(filename=repo_path, content=repo_content)
+        repofile_dir = self._download_repofile()
+        if not repofile_dir:
+            return
 
         cmd = [
             "repoquery",
             "--disablerepo=*",
             "--enablerepo=convert2rhel",
             "--releasever=%s" % system_info.version.major,
-            "--setopt=reposdir=%s" % repo_dir,
+            "--setopt=reposdir=%s" % repofile_dir,
             "--qf",
             "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}",
             "convert2rhel",
@@ -85,12 +78,12 @@ class Convert2rhelLatest(actions.Action):
 
         # Note: This is safe because we're creating in utils.TMP_DIR which is hardcoded to
         # /var/lib/convert2rhel which does not have any world-writable directory components.
-        utils.mkdir_p(repo_dir)
+        utils.mkdir_p(repofile_dir)
 
         try:
             raw_output_convert2rhel_versions, return_code = utils.run_subprocess(cmd, print_output=False)
         finally:
-            shutil.rmtree(repo_dir)
+            shutil.rmtree(repofile_dir)
 
         if return_code != 0:
             diagnosis = (
@@ -267,6 +260,37 @@ class Convert2rhelLatest(actions.Action):
                     return
 
         logger.info("Latest available convert2rhel version is installed.")
+
+    def _download_repofile(self):
+        """Download the official repofile pointing to a convert2rhel repository.
+
+        :return: Path to a successfully downloaded repofile
+        """
+        if system_info.version.major not in C2R_REPOFILE_URLS:
+            self.set_result(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_UNEXPECTED_SYS_VERSION",
+                title="Did not perform convert2rhel latest version check",
+                description="Unexpected system version. Detected major version: %s" % system_info.version.major,
+            )
+            return
+
+        repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
+        repofile_path = os.path.join(repofile_dir, "convert2rhel.repo")
+        repofile_url = C2R_REPOFILE_URLS[system_info.version.major]
+        try:
+            with closing(urllib.request.urlopen(repofile_url, timeout=15)) as response:
+                utils.store_content_to_file(filename=repofile_path, content=response.read())
+            self.logger.info("Successfully downloaded a convert2rhel repofile from %s." % repofile_url)
+            return repofile_path
+        except urllib.error.URLError as err:
+            self.set_result(
+                level="WARNING",
+                id="CONVERT2RHEL_LATEST_CHECK_REPO_DOWNLOAD_FAILED",
+                title="Did not perform convert2rhel latest version check",
+                description="Failed to download a convert2rhel repofile from %s.\n"
+                "Reason: %s" % (repofile_url, err.reason),
+            )
 
 
 def _format_EVR(epoch, version, release):
