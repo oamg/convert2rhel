@@ -50,7 +50,7 @@ def test_check_rhel_compatible_kernel_failure(
         rhel_compatible_kernel,
         "_bad_kernel_version",
         value=mock.Mock(
-            side_effect=KernelIncompatibleError("UNEXPECTED_VERSION", "Bad kernel version", dict(fake_data="fake"))
+            side_effect=KernelIncompatibleError("UNEXPECTED_VERSION", "Bad kernel version", {"fake_data": "fake"})
         ),
     )
     monkeypatch.setattr(
@@ -154,7 +154,7 @@ def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monke
             None,
             "UNEXPECTED_VERSION",
             "Unexpected OS major version. Expected: {compatible_version}",
-            dict(compatible_version=COMPATIBLE_KERNELS_VERS.keys()),
+            {"compatible_version": COMPATIBLE_KERNELS_VERS.keys()},
         ),
         (
             "5.4.17-2102.200.13.el8uek.x86_64",
@@ -162,7 +162,7 @@ def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monke
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
             "'{compatible_version}' available in RHEL {rhel_major_version}",
-            dict(kernel_version="5.4.17", compatible_version=COMPATIBLE_KERNELS_VERS[8], rhel_major_version=8),
+            {"kernel_version": "5.4.17", "compatible_version": COMPATIBLE_KERNELS_VERS[8], "rhel_major_version": 8},
         ),
     ),
 )
@@ -199,20 +199,20 @@ def test_bad_kernel_substring_success(kernel_release, exp_return):
             "INVALID_PACKAGE_SUBSTRING",
             "The booted kernel '{kernel_release}' contains one of the disallowed "
             "substrings: {bad_kernel_release_substrings}",
-            dict(
-                kernel_release="5.4.17-2102.200.13.el8uek.x86_64",
-                bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS,
-            ),
+            {
+                "kernel_release": "5.4.17-2102.200.13.el8uek.x86_64",
+                "bad_kernel_release_substrings": BAD_KERNEL_RELEASE_SUBSTRINGS,
+            },
         ),
         (
             "3.10.0-514.2.2.rt56.424.el7.x86_64",
             "INVALID_PACKAGE_SUBSTRING",
             "The booted kernel '{kernel_release}' contains one of the disallowed "
             "substrings: {bad_kernel_release_substrings}",
-            dict(
-                kernel_release="3.10.0-514.2.2.rt56.424.el7.x86_64",
-                bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS,
-            ),
+            {
+                "kernel_release": "3.10.0-514.2.2.rt56.424.el7.x86_64",
+                "bad_kernel_release_substrings": BAD_KERNEL_RELEASE_SUBSTRINGS,
+            },
         ),
     ),
 )
@@ -285,7 +285,7 @@ def test_bad_kernel_package_signature_success(
             ),
             "INVALID_KERNEL_PACKAGE_SIGNATURE",
             "Custom kernel detected. The booted kernel needs to be signed by {os_vendor}.",
-            dict(os_vendor="CentOS"),
+            {"os_vendor": "CentOS"},
         ),
     ),
 )
@@ -323,7 +323,7 @@ def test_bad_kernel_package_signature_invalid_signature(
             "UNSIGNED_PACKAGE",
             "The booted kernel {vmlinuz_path} is not owned by any installed package."
             " It needs to be owned by a package signed by {os_vendor}.",
-            dict(vmlinuz_path="/boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64", os_vendor="CentOS"),
+            {"vmlinuz_path": "/boot/vmlinuz-4.18.0-240.22.1.el8_3.x86_64", "os_vendor": "CentOS"},
         ),
     ),
 )

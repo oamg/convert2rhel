@@ -675,7 +675,7 @@ class TestRegistrationCommand:
         def prompt_user(prompt, password=False):
             if prompt in prompt_input:
                 return prompt_input[prompt]
-            raise Exception("Should not have been called with that prompt for the input")
+            raise TypeError("Should not have been called with that prompt for the input")
 
         monkeypatch.setattr(utils, "prompt_user", PromptUserMocked(side_effect=prompt_user))
 

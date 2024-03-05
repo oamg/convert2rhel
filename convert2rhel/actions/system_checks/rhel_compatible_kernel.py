@@ -99,7 +99,7 @@ def _bad_kernel_version(kernel_release):
         raise KernelIncompatibleError(
             "UNEXPECTED_VERSION",
             "Unexpected OS major version. Expected: {compatible_version}",
-            dict(compatible_version=COMPATIBLE_KERNELS_VERS.keys()),
+            {"compatible_version": COMPATIBLE_KERNELS_VERS.keys()},
         )
 
     if incompatible_version:
@@ -107,11 +107,11 @@ def _bad_kernel_version(kernel_release):
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
             "'{compatible_version}' available in RHEL {rhel_major_version}",
-            dict(
-                kernel_version=kernel_version,
-                compatible_version=COMPATIBLE_KERNELS_VERS[system_info.version.major],
-                rhel_major_version=system_info.version.major,
-            ),
+            {
+                "kernel_version": kernel_version,
+                "compatible_version": COMPATIBLE_KERNELS_VERS[system_info.version.major],
+                "rhel_major_version": system_info.version.major,
+            },
         )
 
     logger.debug(
@@ -134,7 +134,7 @@ def _bad_kernel_package_signature(kernel_release):
             "UNSIGNED_PACKAGE",
             "The booted kernel {vmlinuz_path} is not owned by any installed package."
             " It needs to be owned by a package signed by {os_vendor}.",
-            dict(vmlinuz_path=vmlinuz_path, os_vendor=os_vendor),
+            {"vmlinuz_path": vmlinuz_path, "os_vendor": os_vendor},
         )
 
     kernel_pkg_obj = get_installed_pkg_information(pkg_name=kernel_pkg)
@@ -143,7 +143,7 @@ def _bad_kernel_package_signature(kernel_release):
         raise KernelIncompatibleError(
             "INVALID_KERNEL_PACKAGE_SIGNATURE",
             "Custom kernel detected. The booted kernel needs to be signed by {os_vendor}.",
-            dict(os_vendor=os_vendor),
+            {"os_vendor": os_vendor},
         )
 
     logger.debug("The booted kernel is signed by %s." % os_vendor)
@@ -158,6 +158,6 @@ def _bad_kernel_substring(kernel_release):
             "INVALID_PACKAGE_SUBSTRING",
             "The booted kernel '{kernel_release}' contains one of the disallowed "
             "substrings: {bad_kernel_release_substrings}",
-            dict(kernel_release=kernel_release, bad_kernel_release_substrings=BAD_KERNEL_RELEASE_SUBSTRINGS),
+            {"kernel_release": kernel_release, "bad_kernel_release_substrings": BAD_KERNEL_RELEASE_SUBSTRINGS},
         )
     return False
