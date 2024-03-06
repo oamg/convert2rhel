@@ -1,5 +1,6 @@
 __metaclass__ = type
 
+import logging
 import os
 import sys
 
@@ -73,12 +74,15 @@ def pkg_root():
 
 
 @pytest.fixture(autouse=True)
-def setup_logger(tmpdir, request):
+def setup_logger(request):
     # This makes it so we can skip this using @pytest.mark.noautofixtures
     if "noautofixtures" in request.keywords:
         return
     setup_logger_handler()
-    add_file_handler(log_name="convert2rhel", log_dir=str(tmpdir))
+    # get root logger
+    logger = logging.getLogger("convert2rhel")
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
 
 
 @pytest.fixture
