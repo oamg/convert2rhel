@@ -71,22 +71,6 @@ def katello_package(shell):
     assert shell(f"rm -f {SATELLITE_PKG_DST}").returncode == 0
 
 
-@pytest.fixture(scope="function")
-def kernel_check_envar(shell):
-    """
-    Fixture.
-    Set CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK environment variable
-    to skip the kernel currency check.
-    """
-    # Since we are moving all repos away, we need to bypass kernel check
-    os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
-
-    yield
-
-    # Remove the envar skipping the kernel check
-    del os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"]
-
-
 @pytest.mark.test_unsuccessful_satellite_registration
 def test_backup_os_release_wrong_registration(shell, convert2rhel, custom_subman):
     """
