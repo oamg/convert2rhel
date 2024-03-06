@@ -1,33 +1,25 @@
-name: Generate Manpages
+generate-manpages:
+runs-on: ubuntu-latest
 
-on:
-  pull_request:
-    branches:
-      - main
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
 
-jobs:
-  generate-manpages:
-    runs-on: ubuntu-latest
+  - name: Setup Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: 3.10.13
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  - name: Install dependencies
+    run: |
+      pip install argparse-manpage six pexpect
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.10.13
+  - name: Install python3-rpm and python3-dnf package with apt-get
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y python3-rpm python3-dnf
 
-      - name: Install dependencies
-        run: |
-          pip install argparse-manpage six pexpect
-
-      - name: Install python3-rpm and python3-dnf package with apt-get
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-rpm python3-dnf
-
-      - name: Generate Manpages
-        run: |
-          chmod +x scripts/manpage_generation.sh
-          bash scripts/manpage_generation.sh
+  - name: Generate Manpages
+    run: |
+      chmod +x scripts/manpage_generation.py
+      python3 scripts/manpage_generation.py
