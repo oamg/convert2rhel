@@ -26,12 +26,13 @@ import pytest
 from convert2rhel import logger as logger_module
 
 
+@pytest.mark.noautofixtures
 def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
     """Test if the logger handlers emits the events to the file and stdout."""
     monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
 
     # initializing the logger first
-    log_fname = "convert2rhel.log"
+    log_fname = "customlogfile.log"
     global_tool_opts.debug = True  # debug entries > stdout if True
     logger_module.setup_logger_handler()
     logger_module.add_file_handler(log_name=log_fname, log_dir=str(tmpdir))
@@ -41,15 +42,15 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
     logger.info("Test info: %s", "data")
     logger.debug("Test debug: %s", "other data")
 
-    # Test if logs were emmited to the file
-    with open(str(tmpdir.join(log_fname))) as log_f:
-        assert "Test info: data" in log_f.readline().rstrip()
-        assert "Test debug: other data" in log_f.readline().rstrip()
-
     # Test if logs were emmited to the stdout
     stdouterr_out, stdouterr_err = read_std()
     assert "Test info: data" in stdouterr_out
     assert "Test debug: other data" in stdouterr_out
+
+    # Test if logs were emmited to the file
+    with open(str(tmpdir.join(log_fname))) as log_f:
+        assert "Test info: data" in log_f.readline().rstrip()
+        assert "Test debug: other data" in log_f.readline().rstrip()
 
 
 def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
