@@ -22,6 +22,8 @@ import logging
 from contextlib import contextmanager
 
 from convert2rhel import utils
+from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 
 
 loggerinst = logging.getLogger(__name__)
@@ -139,3 +141,82 @@ def rpm_db_lock(pkg_obj):
                 pkg_obj.rpmdb.ts = None
                 pkg_obj.rpmdb.dropCachedData()
                 pkg_obj.rpmdb = None
+
+
+def call_yum_cmd(
+    command,
+    args=None,
+    print_output=True,
+    enable_repos=None,
+    disable_repos=None,
+    set_releasever=True,
+    reposdir=None,
+    custom_releasever=None,
+    varsdir=None,
+):
+    """Call yum command and optionally print its output.
+    The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
+    which is:
+    * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
+    * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
+      file for the particular system OR passed through a CLI option by the user
+    YUM/DNF typically expands the $releasever variable used in repofiles. However it fails to do so after we remove the
+    release packages (centos-release, oraclelinux-release, etc.) and before the redhat-release package is installed.
+    By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
+    release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
+    """
+    if args is None:
+        args = []
+
+    cmd = ["yum", command, "-y"]
+
+    # The --disablerepo yum option must be added before --enablerepo,
+    #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
+    repos_to_disable = []
+    if isinstance(disable_repos, list):
+        repos_to_disable = disable_repos
+    else:
+        repos_to_disable = tool_opts.disablerepo
+
+    for repo in repos_to_disable:
+        cmd.append("--disablerepo=%s" % repo)
+
+    if set_releasever:
+        if not custom_releasever and not system_info.releasever:
+            raise AssertionError("custom_releasever or system_info.releasever must be set.")
+
+        if custom_releasever:
+            cmd.append("--releasever=%s" % custom_releasever)
+        else:
+            cmd.append("--releasever=%s" % system_info.releasever)
+
+    if varsdir:
+        cmd.append("--setopt=varsdir=%s" % varsdir)
+
+    # Without the release package installed, dnf can't determine the modularity platform ID.
+    if system_info.version.major >= 8:
+        cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
+
+    repos_to_enable = []
+    if isinstance(enable_repos, list):
+        repos_to_enable = enable_repos
+    else:
+        # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
+        # through subscription-manager
+        repos_to_enable = system_info.get_enabled_rhel_repos()
+
+    for repo in repos_to_enable:
+        cmd.append("--enablerepo=%s" % repo)
+
+    if reposdir:
+        cmd.append("--setopt=reposdir=%s" % reposdir)
+
+    cmd.extend(args)
+
+    stdout, returncode = utils.run_subprocess(cmd, print_output=print_output)
+    # handle when yum returns non-zero code when there is nothing to do
+    nothing_to_do_error_exists = stdout.endswith("Error: Nothing to do\n")
+    if returncode == 1 and nothing_to_do_error_exists:
+        loggerinst.debug("Yum has nothing to do. Ignoring.")
+        returncode = 0
+    return stdout, returncode

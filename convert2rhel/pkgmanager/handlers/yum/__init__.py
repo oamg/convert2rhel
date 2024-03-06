@@ -21,16 +21,15 @@ import hashlib
 import logging
 import os
 import re
-import shutil
 
-from convert2rhel import exceptions, pkgmanager, utils
-from convert2rhel.backup import remove_pkgs
+from convert2rhel import backup, exceptions, pkgmanager, utils
+from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import BACKUP_DIR, run_as_child_process
+from convert2rhel.utils import remove_pkgs
 
 
 loggerinst = logging.getLogger(__name__)
@@ -60,6 +59,7 @@ def _resolve_yum_problematic_dependencies(output):
         loggerinst.debug("Dependency resolution failed:\n- %s" % "\n- ".join(output))
     else:
         loggerinst.debug("Dependency resolution failed with no detailed message reported by yum.")
+
     for package in output:
         resolve_error = re.findall(EXTRACT_PKG_FROM_YUM_DEPSOLVE, str(package))
         if resolve_error:
@@ -72,18 +72,19 @@ def _resolve_yum_problematic_dependencies(output):
             "Removing problematic packages to continue with the conversion:\n%s",
             "\n".join(packages_to_remove),
         )
-        backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
-        backedup_yum_varsdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
+        backedup_reposdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+        backedup_yum_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
 
-        remove_pkgs(
-            pkgs_to_remove=packages_to_remove,
-            backup=True,
-            critical=True,
-            set_releasever=True,
-            reposdir=backedup_reposdir,
-            custom_releasever=system_info.version.major,
-            varsdir=backedup_yum_varsdir,
+        backup.backup_control.push(
+            RestorablePackage(
+                pkgs=packages_to_remove,
+                reposdir=backedup_reposdir,
+                set_releasever=True,
+                custom_releasever=system_info.version.major,
+                varsdir=backedup_yum_varsdir,
+            )
         )
+        remove_pkgs(pkgs_to_remove=packages_to_remove, critical=True)
 
         loggerinst.debug("Finished backing up and removing the packages.")
     else:
@@ -197,7 +198,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         `ReinstallInstallError`.
         """
         original_os_pkgs = get_system_packages_for_replacement()
-        self._set_up_base()
         self._enable_repos()
 
         loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
@@ -237,7 +237,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                 diagnosis="Repository mirrors failed with error %s." % (str(e)),
             )
 
-    def _resolve_dependencies(self, validate_transaction):
+    def _resolve_dependencies(self):
         """Try to resolve the transaction dependencies.
 
         This method will try to resolve the dependencies of the packages that
@@ -262,35 +262,17 @@ class YumTransactionHandler(TransactionHandlerBase):
             errors are "thrown" for the user, you will need to loop until the
             point you don't have any more errors.
 
-        :param validate_transaction: Determines if the transaction needs to be
-            validated or not.
-        :type validate_transaction: bool
-
-        :return: A boolean indicating if it was successful or not.
-        :rtype: bool
+        :return: If the base.resolveDeps() method returns a message, we will
+            return that message, otherwise, return None.
+        :rtype: str | None
         """
         loggerinst.info("Resolving the dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()
 
         if ret_code == 1:
-            # For the return code 1, yum can output two kinds of error, one being
-            # that it reached the limit for depsolving, and the actual dependencies
-            # that caused an problem.
-            # If we reach the limit for depsolving, just return False.
-            if "Depsolving loop limit reached" in msg:
-                return False
-            # If the message is the not the depsolving limit, then we need to
-            # resolve the problematic dependencies.
-            else:
-                # We want to fail earlier in the process, so let's check for this
-                # only when testing the transaction.
-                if validate_transaction:
-                    _resolve_yum_problematic_dependencies(msg)
+            return msg
 
-                # Return False anyway because the depsolving failed.
-                return False
-
-        return True
+        return None
 
     def _process_transaction(self, validate_transaction):
         """Internal method to process the transaction.
@@ -345,7 +327,6 @@ class YumTransactionHandler(TransactionHandlerBase):
         else:
             loggerinst.info("System packages replaced successfully.")
 
-    @utils.run_as_child_process
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
 
@@ -353,54 +334,22 @@ class YumTransactionHandler(TransactionHandlerBase):
         true, it means the transaction will not be executed, but rather verify
         everything and do an early return.
 
-        .. important::
-            This function is being executed in a child process so we will be
-            able to raise SIGINT or any other signal that is sent to the main
-            process.
-
-            The function calls here do not affect the others subprocess
-            calls that are called after this function during the conversion,
-            but, it does affect the signal handling while the user tries to
-            send that signal while this function is executing.
-
-        ..notes::
-            The implementation of this yum transaction is different from the
-            dnf one, mainly because yum can raise some "exceptions" while
-            trying to resolve the dependencies of the transaction. Because of
-            this, we need to loop through a couple of times until we know that
-            all of the dependencies are resolved without problems.
-
-            You might wonder "why not remove the packages that caused a
-            failure and loop through the dep solving again?" Well. Since
-            we are removing the problematic packages using `rpm` and not some
-            specific method in the transaction itself, yum doesn't know that
-            something has changed (The resolveDeps() function doesn't refresh
-            if something else happens outside the transaction), in order to
-            make sure that we won't have any problems with our transaction, it
-            is easier to loop through everything again and just recreate the
-            transaction, so yum will keep track of what's changed.
-
-            This function should loop max 3 times to get to the point where our
-            transaction doesn't have any problematic packages in there, and the
-            subsequent transactions are "faster" because of some yum internal
-            cache mechanism.
-
-            This might be optimized in the future, but for now, it's somewhat
-            reliable.
-
-        :param vaidate_transaction: Determines if the transaction needs to be
+        :param validate_transaction: Determines if the transaction needs to be
             validated or not.
         :type validate_transaction: bool
-        :raises SystemExit: If we can't resolve the transaction dependencies.
+        :raises CriticalError: If we can't resolve the transaction dependencies.
         """
         resolve_deps_finished = False
         # Do not allow this to loop until eternity.
         attempts = 0
         try:
             while attempts <= MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS:
-                self._perform_operations()
-                resolved = self._resolve_dependencies(validate_transaction)
-                if not resolved:
+                self._set_up_base()
+                messages = self._run_transaction_subprocess(validate_transaction)
+                if messages:
+                    if "Depsolving loop limit reached" not in messages and validate_transaction:
+                        _resolve_yum_problematic_dependencies(messages)
+
                     loggerinst.info("Retrying to resolve dependencies %s", attempts)
                     attempts += 1
                 else:
@@ -414,7 +363,59 @@ class YumTransactionHandler(TransactionHandlerBase):
                     title="Failed to resolve dependencies.",
                     description="During package transaction yum failed to resolve the necessary dependencies needed for a package replacement.",
                 )
-
-            self._process_transaction(validate_transaction)
         finally:
             self._close_yum_base()
+
+    @utils.run_as_child_process
+    def _run_transaction_subprocess(self, validate_transaction):
+        """Run the necessary transaction operations under a subprocess.
+
+        .. important::
+            This function is being executed in a child process so we will be
+            able to raise SIGINT or any other signal that is sent to the main
+            process.
+
+            The function calls here do not affect the others subprocess calls
+            that are called after this function during the conversion, but, it
+            does affect the signal handling while the user tries to send that
+            signal while this function is executing.
+
+        ..notes::
+            The implementation of this yum transaction is different from the
+            dnf one, mainly because yum can raise some "exceptions" while
+            trying to resolve the dependencies of the transaction. Because of
+            this, we need to loop through a couple of times until we know that
+            all of the dependencies are resolved without problems.
+
+            You might wonder "why not remove the packages that caused a failure
+            and loop through the dep solving again?" Well. Since we are
+            removing the problematic packages using `rpm` and not some specific
+            method in the transaction itself, yum doesn't know that something
+            has changed (The resolveDeps() function doesn't refresh if
+            something else happens outside the transaction), in order to make
+            sure that we won't have any problems with our transaction, it is
+            easier to loop through everything again and just recreate the
+            transaction, so yum will keep track of what's changed.
+
+            This function should loop max 3 times to get to the point where our
+            transaction doesn't have any problematic packages in there, and the
+            subsequent transactions are "faster" because of some yum internal
+            cache mechanism.
+
+            This might be optimized in the future, but for now, it's somewhat
+            reliable.
+
+        :param vaidate_transaction: Determines if the transaction needs to be
+            validated or not.
+        :type validate_transaction: bool
+        :returns str | None: If any messages are raised from the dependency
+            resolve methods, we return that to the caller. Otherwise, we return
+            None.
+        """
+        self._perform_operations()
+        messages = self._resolve_dependencies()
+
+        if not messages:
+            self._process_transaction(validate_transaction)
+
+        return messages

@@ -360,11 +360,11 @@ class TestRestorableSystemSubscription:
 
 def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
     mock_backup_control = mock.Mock()
-    monkeypatch.setattr(global_backup_control, "push", mock_backup_control)
+    monkeypatch.setattr(subscription.backup.backup_control, "push", mock_backup_control)
 
     subscription.install_rhel_subscription_manager(["subscription-manager", "json-c.x86_64"])
 
-    assert mock_backup_control.push.called_once
+    assert mock_backup_control.call_count == 1
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")
@@ -992,9 +992,6 @@ class TestVerifyRhsmInstalled:
         assert "The subscription-manager package is not installed correctly." in caplog.text
 
 
-# ----
-
-
 def test_get_pool_id():
     SUBSCRIPTION_DETAILS = (
         "Subscription Name: Good subscription\n"
@@ -1045,8 +1042,17 @@ def test_get_pool_id():
 )
 @centos8
 def test_enable_repos_rhel_repoids(
-    pretend_os, rhel_repoids, subprocess, should_raise, expected, expected_message, monkeypatch, caplog
+    pretend_os,
+    rhel_repoids,
+    subprocess,
+    should_raise,
+    expected,
+    expected_message,
+    monkeypatch,
+    caplog,
+    global_system_info,
 ):
+    monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
     for repo in rhel_repoids:
         cmd_mock.append("--enable=%s" % repo)
@@ -1067,7 +1073,7 @@ def test_enable_repos_rhel_repoids(
             subscription.enable_repos(rhel_repoids=rhel_repoids)
     else:
         subscription.enable_repos(rhel_repoids=rhel_repoids)
-        assert system_info.submgr_enabled_repos == expected
+        assert subscription.system_info.submgr_enabled_repos == expected
 
     assert expected_message in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 1
@@ -1105,7 +1111,9 @@ def test_enable_repos_rhel_repoids_fallback_default_rhsm(
     expected,
     monkeypatch,
     caplog,
+    global_system_info,
 ):
+    monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
     for repo in rhel_repoids:
         cmd_mock.append("--enable=%s" % repo)
@@ -1116,14 +1124,15 @@ def test_enable_repos_rhel_repoids_fallback_default_rhsm(
         "run_subprocess",
         value=run_subprocess_mock,
     )
-    monkeypatch.setattr(system_info, "default_rhsm_repoids", value=default_rhsm_repoids)
+    monkeypatch.setattr(subscription.system_info, "default_rhsm_repoids", default_rhsm_repoids)
+    monkeypatch.setattr(subscription.system_info, "eus_rhsm_repoids", rhel_repoids)
 
     if should_raise:
         with pytest.raises(SystemExit):
             subscription.enable_repos(rhel_repoids=rhel_repoids)
     else:
         subscription.enable_repos(rhel_repoids=rhel_repoids)
-        assert system_info.submgr_enabled_repos == default_rhsm_repoids
+        assert subscription.system_info.submgr_enabled_repos == default_rhsm_repoids
 
     assert expected in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 2
@@ -1164,7 +1173,9 @@ def test_enable_repos_toolopts_enablerepo(
     tool_opts,
     monkeypatch,
     caplog,
+    global_system_info,
 ):
+    monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
     for repo in toolopts_enablerepo:
         cmd_mock.append("--enable=%s" % repo)
@@ -1180,14 +1191,13 @@ def test_enable_repos_toolopts_enablerepo(
         value=run_subprocess_mock,
     )
     tool_opts.enablerepo = toolopts_enablerepo
-    # monkeypatch.setattr(tool_opts, "enablerepo", toolopts_enablerepo)
 
     if should_raise:
         with pytest.raises(SystemExit):
             subscription.enable_repos(rhel_repoids=None)
     else:
         subscription.enable_repos(rhel_repoids=None)
-        assert system_info.submgr_enabled_repos == expected
+        assert subscription.system_info.submgr_enabled_repos == expected
 
     assert expected_message in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 1

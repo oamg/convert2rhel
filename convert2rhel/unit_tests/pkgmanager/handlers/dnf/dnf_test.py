@@ -333,7 +333,7 @@ class TestDnfTransactionHandler:
         instance._set_up_base()
         instance._process_transaction(validate_transaction)
 
-        assert pkgmanager.Base.do_transaction.called_once()
+        assert pkgmanager.Base.do_transaction.call_count == 1
         assert expected in caplog.records[-1].message
 
     @centos8
@@ -349,7 +349,7 @@ class TestDnfTransactionHandler:
         with pytest.raises(exceptions.CriticalError):
             instance._process_transaction(validate_transaction=False)
 
-        assert pkgmanager.Base.do_transaction.called_once()
+        assert pkgmanager.Base.do_transaction.call_count == 1
         assert "Failed to validate the dnf transaction." in caplog.records[-1].message
 
     @centos8

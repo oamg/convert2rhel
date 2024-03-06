@@ -21,11 +21,12 @@ import logging
 import os
 
 from convert2rhel import exceptions, utils
-from convert2rhel.backup import RestorableChange, remove_pkgs
+from convert2rhel.backup import BACKUP_DIR, RestorableChange
+from convert2rhel.pkgmanager import call_yum_cmd
 
 # Fine to import call_yum_cmd for now, but we really should figure out a way to
 # split this out.
-from convert2rhel.pkghandler import call_yum_cmd
+from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 
 
@@ -73,6 +74,158 @@ _UBI_9_REPO_CONTENT = (
 )
 _UBI_9_REPO_PATH = os.path.join(_RHSM_TMP_DIR, "ubi_9.repo")
 
+# Map repo_path and repo_content for each major version in UBI.
+_UBI_REPO_MAPPING = {
+    7: (_UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT),
+    8: (_UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT),
+    9: (_UBI_9_REPO_PATH, _UBI_9_REPO_CONTENT),
+}
+
+# NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
+class RestorablePackage(RestorableChange):
+    def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+        """
+        Keep control of systme packages before their removal to backup and
+        restore in case of rollback.
+
+        :param pkgs list[str]: List of packages to backup.
+        :param reposdir str: If a custom repository directory location needs to
+            be used, this parameter can be set with the location for it.
+        :param set_releasever bool: If there is need to set the relesever while
+            downloading the package with yumdownloader.
+        :param custom_releasever str: Custom releasever in case it need to be
+            overwritten and it differs from the `py:system_info.releasever`.
+        :param varsdir str: Location to the variables directory in case the
+            repository files needs to interpolate variables from those folders.
+        """
+        super(RestorablePackage, self).__init__()
+
+        self.pkgs = pkgs
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir
+
+        self._backedup_pkgs_paths = []
+
+    def enable(self):
+        """Save version of RPMs packages.
+
+        .. note::
+            If we detect that the current system is an EUS release, then we
+            proceed to use the hardcoded_repofiles, otherwise, we use the
+            custom reposdir that comes from the method parameter. This is
+            mainly because of CentOS Linux which we have hardcoded repofiles.
+            If we ever put Oracle Linux repofiles to ship with convert2rhel,
+            them the second part of this condition can be dropped.
+
+            One of the reasons we hardcode repofiles pointing to archived
+            repositories of older system minor versions is that we need to be
+            able to download an older package version as a backup.  Because for
+            example the default repofiles on CentOS Linux 8.4 point only to
+            8.latest repositories that already don't contain 8.4 packages.
+        """
+        # Prevent multiple backup
+        if self.enabled:
+            return
+
+        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
+        if os.path.isdir(BACKUP_DIR):
+            if system_info.eus_system and system_info.id == "centos":
+                self.reposdir = get_hardcoded_repofiles_dir()
+
+            if not system_info.has_internet_access:
+                if self.reposdir:
+                    loggerinst.debug(
+                        "Not using repository files stored in %s due to the absence of internet access." % self.reposdir
+                    )
+
+                for pkg in self.pkgs:
+                    self._backedup_pkgs_paths.append(
+                        utils.download_pkg(
+                            pkg=pkg,
+                            dest=BACKUP_DIR,
+                            set_releasever=self.set_releasever,
+                            custom_releasever=self.custom_releasever,
+                            varsdir=self.varsdir,
+                        )
+                    )
+            else:
+                if self.reposdir:
+                    loggerinst.debug("Using repository files stored in %s." % self.reposdir)
+
+                for pkg in self.pkgs:
+                    self._backedup_pkgs_paths.append(
+                        utils.download_pkg(
+                            pkg=pkg,
+                            dest=BACKUP_DIR,
+                            set_releasever=self.set_releasever,
+                            custom_releasever=self.custom_releasever,
+                            varsdir=self.varsdir,
+                            reposdir=self.reposdir,
+                        )
+                    )
+        else:
+            loggerinst.warning("Can't access %s" % BACKUP_DIR)
+
+        # Set the enabled value
+        super(RestorablePackage, self).enable()
+
+    def restore(self):
+        """Restore system to the original state."""
+        if not self.enabled:
+            return
+
+        utils.remove_orphan_folders()
+
+        loggerinst.task("Rollback: Install removed packages")
+        if not self._backedup_pkgs_paths:
+            loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
+            return
+
+        self._install_local_rpms(replace=True, critical=False)
+
+        super(RestorablePackage, self).restore()
+
+    def _install_local_rpms(self, replace=False, critical=True):
+        """Install packages locally available."""
+
+        if not self._backedup_pkgs_paths:
+            loggerinst.info("No package to install.")
+            return False
+
+        cmd = ["rpm", "-i"]
+        if replace:
+            cmd.append("--replacepkgs")
+
+        loggerinst.info("Installing packages:\t%s" % ", ".join(self.pkgs))
+        for pkg in self._backedup_pkgs_paths:
+            cmd.append(pkg)
+
+        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+        if ret_code != 0:
+            pkgs_as_str = utils.format_sequence_as_message(self.pkgs)
+            loggerinst.debug(output.strip())
+            if critical:
+                loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
+                raise exceptions.CriticalError(
+                    id_="FAILED_TO_INSTALL_PACKAGES",
+                    title="Couldn't install packages.",
+                    description=(
+                        "While attempting to roll back changes, we encountered "
+                        "an unexpected failure while attempting to reinstall "
+                        "one or more packages that we removed as part of the "
+                        "conversion."
+                    ),
+                    diagnosis="Couldn't install %s packages. Command: %s Output: %s Status: %d"
+                    % (pkgs_as_str, cmd, output, ret_code),
+                )
+
+            loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
+            return False
+
+        return True
+
 
 class RestorablePackageSet(RestorableChange):
     """Install a set of packages in a way that they can be uninstalled later.
@@ -115,11 +268,23 @@ class RestorablePackageSet(RestorableChange):
           system default if we rollback the changes.
     """
 
-    def __init__(self, pkgs_to_install, pkgs_to_update=None):
+    def __init__(
+        self,
+        pkgs_to_install,
+        pkgs_to_update=None,
+        reposdir=None,
+        set_releasever=False,
+        custom_releasever=None,
+        varsdir=None,
+    ):
         self.pkgs_to_install = pkgs_to_install
         self.pkgs_to_update = pkgs_to_update or []
         self.installed_pkgs = []
         self.updated_pkgs = []
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir
 
         super(RestorablePackageSet, self).__init__()
 
@@ -149,12 +314,8 @@ class RestorablePackageSet(RestorableChange):
         loggerinst.info("Downloading requested packages")
         all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
 
-        if system_info.version.major == 7:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_7_REPO_PATH, _UBI_7_REPO_CONTENT)
-        elif system_info.version.major == 8:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_8_REPO_PATH, _UBI_8_REPO_CONTENT)
-        elif system_info.version.major == 9:
-            _download_rhsm_pkgs(all_pkgs_to_install, _UBI_9_REPO_PATH, _UBI_9_REPO_CONTENT)
+        ubi_repo_path, ubi_repo_content = _UBI_REPO_MAPPING[system_info.version.major]
+        _download_rhsm_pkgs(all_pkgs_to_install, ubi_repo_path, ubi_repo_content)
 
         # installing the packages
         rpms_to_install = [os.path.join(_SUBMGR_RPMS_DIR, filename) for filename in os.listdir(_SUBMGR_RPMS_DIR)]
@@ -174,8 +335,12 @@ class RestorablePackageSet(RestorableChange):
             enable_repos=[],
             disable_repos=[],
             # When using the original system repos, we need YUM/DNF to expand the $releasever by itself
-            set_releasever=False,
+            set_releasever=self.set_releasever,
+            custom_releasever=self.custom_releasever,
+            reposdir=self.reposdir,
+            varsdir=self.varsdir,
         )
+
         if ret_code:
             loggerinst.critical_no_exit(
                 "Failed to install subscription-manager packages. Check the yum output below for details:\n\n %s"
@@ -216,7 +381,7 @@ class RestorablePackageSet(RestorableChange):
 
         loggerinst.task("Rollback: Remove installed RHSM packages")
         loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
-        remove_pkgs(self.installed_pkgs, backup=False, critical=False)
+        utils.remove_pkgs(self.installed_pkgs, critical=False)
 
         super(RestorablePackageSet, self).restore()
 

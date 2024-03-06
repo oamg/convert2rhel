@@ -40,7 +40,7 @@ import rpm
 
 from six import moves
 
-from convert2rhel import i18n
+from convert2rhel import exceptions, i18n
 
 
 loggerinst = logging.getLogger(__name__)
@@ -70,7 +70,6 @@ class Color:
 DATA_DIR = "/usr/share/convert2rhel/"
 # Directory for temporary data to be stored during runtime
 TMP_DIR = "/var/lib/convert2rhel/"
-BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 
 class UnableToSerialize(Exception):
@@ -700,6 +699,72 @@ def download_pkg(
     loggerinst.debug("Path of the downloaded package: %s" % path)
 
     return path
+
+
+def remove_pkgs(pkgs_to_remove, critical=True):
+    """Remove packages not heeding to their dependencies.
+
+    .. note::
+        Following the work on https://github.com/oamg/convert2rhel/pull/1041,
+        we might move this on it's own utils module.
+
+    :param pkgs_to_remove list[str]: List of packages to remove.
+    :param critical bool: If it should raise an exception in case of failure of
+        removing a package.
+    :returns list[str]: A list of packages removed. If no packages are provided
+        to remove, an empty list will be returned.
+    """
+    pkgs_removed = []
+
+    if not pkgs_to_remove:
+        loggerinst.info("No package to remove")
+        return pkgs_removed
+
+    pkgs_failed_to_remove = []
+    for nevra in pkgs_to_remove:
+        # It's necessary to remove an epoch from the NEVRA string returned by yum because the rpm command does not
+        # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
+        # epoch in NEVRA returned by dnf is handled by rpm just fine.
+        nvra = _remove_epoch_from_yum_nevra_notation(nevra)
+        loggerinst.info("Removing package: %s" % nvra)
+        _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
+        if ret_code != 0:
+            pkgs_failed_to_remove.append(nevra)
+        else:
+            pkgs_removed.append(nevra)
+
+    if pkgs_failed_to_remove:
+        pkgs_as_str = format_sequence_as_message(pkgs_failed_to_remove)
+        if critical:
+            loggerinst.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_REMOVE_PACKAGES",
+                title="Couldn't remove packages.",
+                description="While attempting to roll back changes, we encountered an unexpected failure while attempting to remove one or more of the packages we installed earlier.",
+                diagnosis="Couldn't remove %s." % pkgs_as_str,
+            )
+        else:
+            loggerinst.warning("Couldn't remove %s." % pkgs_as_str)
+
+    return pkgs_removed
+
+
+def _remove_epoch_from_yum_nevra_notation(package_nevra):
+    """Remove epoch from the NEVRA string returned by yum.
+
+    Yum prints epoch only when it's non-zero. It's printed differently by yum and dnf:
+      yum - epoch before name: "7:oraclelinux-release-7.9-1.0.9.el7.x86_64"
+      dnf - epoch before version: "oraclelinux-release-8:8.2-1.0.8.el8.x86_64"
+
+    This function removes the epoch from the yum notation only.
+    It's safe to pass the dnf notation string with an epoch. This function will return it as is.
+    """
+    epoch_match = re.search(r"^\d+:(.*)", package_nevra)
+    if epoch_match:
+        # Return NVRA without the found epoch
+        return epoch_match.group(1)
+
+    return package_nevra
 
 
 def report_on_a_download_error(output, pkg):

@@ -27,7 +27,6 @@ class ValidatePackageManagerTransaction(actions.Action):
     id = "VALIDATE_PACKAGE_MANAGER_TRANSACTION"
     dependencies = (
         "INSTALL_RED_HAT_GPG_KEY",
-        "REMOVE_EXCLUDED_PACKAGES",
         # This package can cause problems during the validation. Since no one
         # is depending on this action, it may run whenever it wants to, which
         # can cause problems.

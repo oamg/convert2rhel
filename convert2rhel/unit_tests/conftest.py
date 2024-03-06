@@ -82,7 +82,7 @@ def setup_logger(tmpdir, request):
 
 
 @pytest.fixture
-def system_cert_with_target_path(monkeypatch, tmpdir, request):
+def system_cert_with_target_path(tmpdir):
     """
     Create a single RestorablePEMCert backed by a temp file.
 
@@ -227,6 +227,7 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_check_internet_access",
         value=lambda: True,
     )
+    monkeypatch.setattr(system_info, "releasever", value=system_version_major)
 
     system_info.resolve_system_info()
 

@@ -18,20 +18,25 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, pkgmanager, unit_tests
+from convert2rhel import actions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.actions.pre_ponr_changes import handle_packages
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import (
     FormatPkgInfoMocked,
     GetPackagesToRemoveMocked,
     GetThirdPartyPkgsMocked,
-    RemovePkgsUnlessFromRedhatMocked,
+    MockFunctionObject,
+    RemovePkgsMocked,
 )
 from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
+
+class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
+    spec = handle_packages._remove_packages_unless_from_redhat
 
 
 @pytest.fixture
@@ -49,7 +54,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
 
 
 @centos8
-def test_list_third_party_packages(pretend_os, list_third_party_packages_instance, monkeypatch, caplog):
+def test_list_third_party_packages(pretend_os, list_third_party_packages_instance, monkeypatch):
     monkeypatch.setattr(pkghandler, "get_third_party_pkgs", GetThirdPartyPkgsMocked(pkg_selection="fingerprints"))
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked(return_value=["shim", "ruby", "pytest"]))
     monkeypatch.setattr(system_info, "name", "Centos7")
@@ -77,8 +82,8 @@ def test_list_third_party_packages(pretend_os, list_third_party_packages_instanc
 
 
 @pytest.fixture
-def remove_excluded_packages_instance():
-    return handle_packages.RemoveExcludedPackages()
+def remove_special_packages_instance():
+    return handle_packages.RemoveSpecialPackages()
 
 
 def get_centos_logos_pkg_object():
@@ -97,200 +102,170 @@ def get_centos_logos_pkg_object():
     )
 
 
-def test_remove_excluded_packages_all_removed(remove_excluded_packages_instance, monkeypatch):
-    pkgs_to_remove = [get_centos_logos_pkg_object()]
-    pkgs_removed = ["centos-logos-70.0.6-3.el7.centos.noarch"]
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
-                diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
-                remediations=None,
-            ),
-        )
-    )
-    monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=pkgs_to_remove))
-    monkeypatch.setattr(
-        pkghandler, "remove_pkgs_unless_from_redhat", RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed)
-    )
-
-    remove_excluded_packages_instance.run()
-    assert expected.issuperset(remove_excluded_packages_instance.messages)
-    assert expected.issubset(remove_excluded_packages_instance.messages)
-    assert pkghandler.get_packages_to_remove.call_count == 1
-    assert pkghandler.remove_pkgs_unless_from_redhat.call_count == 1
-    assert pkghandler.get_packages_to_remove.call_args == mock.call(system_info.excluded_pkgs)
-    assert remove_excluded_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
-
-
-@centos8
-def test_remove_excluded_packages_not_removed(pretend_os, remove_excluded_packages_instance, monkeypatch):
-    pkgs_removed = ["kernel-core"]
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="WARNING",
-                id="EXCLUDED_PACKAGES_NOT_REMOVED",
-                title="Excluded packages not removed",
-                description="Excluded packages which could not be removed",
-                diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
-                remediations=None,
-            ),
-            actions.ActionMessage(
-                level="INFO",
-                id="EXCLUDED_PACKAGES_REMOVED",
-                title="Excluded packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
-                diagnosis="The following packages will be removed during the conversion: kernel-core",
-                remediations=None,
-            ),
-        )
-    )
-    monkeypatch.setattr(system_info, "excluded_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="fingerprints"))
-    monkeypatch.setattr(
-        pkghandler, "remove_pkgs_unless_from_redhat", RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed)
-    )
-    monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
-    remove_excluded_packages_instance.run()
-
-    assert expected.issuperset(remove_excluded_packages_instance.messages)
-    assert expected.issubset(remove_excluded_packages_instance.messages)
-    assert pkghandler.get_packages_to_remove.call_count == 1
-    assert pkghandler.remove_pkgs_unless_from_redhat.call_count == 1
-    assert pkghandler.get_packages_to_remove.call_args == mock.call(system_info.excluded_pkgs)
-    assert remove_excluded_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
-
-
-def test_remove_excluded_packages_error(remove_excluded_packages_instance, monkeypatch):
-    pkgs_removed = ["shim", "ruby", "kernel-core"]
-    monkeypatch.setattr(system_info, "excluded_pkgs", [])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=pkgs_removed))
-    monkeypatch.setattr(
-        pkghandler,
-        "remove_pkgs_unless_from_redhat",
-        RemovePkgsUnlessFromRedhatMocked(side_effect=SystemExit("Raising SystemExit")),
-    )
-
-    remove_excluded_packages_instance.run()
-
-    unit_tests.assert_actions_result(
-        remove_excluded_packages_instance,
-        level="ERROR",
-        id="EXCLUDED_PACKAGE_REMOVAL_FAILED",
-        title="Failed to remove excluded package",
-        description="The cause of this error is unknown, please look at the diagnosis for more information.",
-        diagnosis="Raising SystemExit",
-    )
-
-
 @pytest.fixture
-def remove_repository_files_packages_instance():
-    return handle_packages.RemoveRepositoryFilesPackages()
-
-
-def test_remove_repository_files_packages_all_removed(remove_repository_files_packages_instance, monkeypatch):
-    pkgs_to_remove = [get_centos_logos_pkg_object()]
-    pkgs_removed = [u"centos-logos-70.0.6-3.el7.centos.noarch"]
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
-                diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
-                remediations=None,
+def pkgs_to_remove():
+    return [
+        pkghandler.PackageInformation(
+            packager="CentOS BuildSystem <http://bugs.centos.org>",
+            vendor="CentOS",
+            nevra=pkghandler.PackageNevra(
+                name="centos-logos",
+                epoch="0",
+                version="70.0.6",
+                release="3.el7.centos",
+                arch="noarch",
             ),
+            fingerprint="24c6a8a7f4a80eb5",
+            signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
+        ),
+        pkghandler.PackageInformation(
+            packager="CentOS BuildSystem <http://bugs.centos.org>",
+            vendor="CentOS",
+            nevra=pkghandler.PackageNevra(
+                name="test1",
+                epoch="0",
+                version="1.0.6",
+                release="3.el7.centos",
+                arch="noarch",
+            ),
+            fingerprint="24c6a8a7f4a80eb5",
+            signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
+        ),
+        pkghandler.PackageInformation(
+            packager="CentOS BuildSystem <http://bugs.centos.org>",
+            vendor="CentOS",
+            nevra=pkghandler.PackageNevra(
+                name="test2",
+                epoch="0",
+                version="1.2.6",
+                release="3.el7.centos",
+                arch="noarch",
+            ),
+            fingerprint="24c6a8a7f4a80eb5",
+            signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
+        ),
+    ]
+
+
+class TestRemoveSpecialPackages:
+    def test_dependency_order(self, remove_special_packages_instance):
+        expected_dependencies = (
+            # We use the backed up repos in remove_pkgs_unless_from_redhat()
+            "BACKUP_REPOSITORY",
+            "BACKUP_PACKAGE_FILES",
+            "BACKUP_REDHAT_RELEASE",
         )
-    )
-    monkeypatch.setattr(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=pkgs_to_remove))
-    monkeypatch.setattr(
-        pkghandler, "remove_pkgs_unless_from_redhat", RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed)
-    )
 
-    remove_repository_files_packages_instance.run()
+        assert expected_dependencies == remove_special_packages_instance.dependencies
 
-    assert expected.issuperset(remove_repository_files_packages_instance.messages)
-    assert expected.issubset(remove_repository_files_packages_instance.messages)
-    assert pkghandler.get_packages_to_remove.call_count == 1
-    assert pkghandler.remove_pkgs_unless_from_redhat.call_count == 1
-    assert pkghandler.get_packages_to_remove.call_args == mock.call(system_info.repofile_pkgs)
-    assert remove_repository_files_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
+    def test_run_no_packages_to_remove(self, monkeypatch, remove_special_packages_instance, caplog):
+        monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=[]))
+        remove_special_packages_instance.run()
+        assert "No packages to backup and remove." in caplog.records[-1].message
 
-
-@centos8
-def test_remove_repository_files_packages_not_removed(
-    pretend_os, remove_repository_files_packages_instance, monkeypatch
-):
-    pkgs_removed = ["kernel-core"]
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="WARNING",
-                id="REPOSITORY_FILE_PACKAGES_NOT_REMOVED",
-                title="Repository file packages not removed",
-                description="Repository file packages which could not be removed",
-                diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
-                remediations=None,
-            ),
-            actions.ActionMessage(
-                level="INFO",
-                id="REPOSITORY_FILE_PACKAGES_REMOVED",
-                title="Repository file packages to be removed",
-                description="We have identified installed packages that match a pre-defined list of packages that are"
-                " to be removed during the conversion",
-                diagnosis="The following packages will be removed during the conversion: kernel-core",
-                remediations=None,
-            ),
+    def test_run_all_removed(self, monkeypatch, remove_special_packages_instance):
+        pkgs_to_remove = [get_centos_logos_pkg_object()]
+        pkgs_removed = ["centos-logos-70.0.6-3.el7.centos.noarch"]
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="INFO",
+                    id="SPECIAL_PACKAGES_REMOVED",
+                    title="Special packages to be removed",
+                    description="We have identified installed packages that match a pre-defined list of packages that are"
+                    " to be removed during the conversion",
+                    diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
+                    remediations=None,
+                    variables={},
+                ),
+            )
         )
-    )
-    monkeypatch.setattr(system_info, "repofile_pkgs", ["installed_pkg", "not_installed_pkg"])
-    monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="fingerprints"))
-    monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
-    monkeypatch.setattr(
-        pkghandler, "remove_pkgs_unless_from_redhat", RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed)
-    )
+        monkeypatch.setattr(
+            pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=pkgs_to_remove)
+        )
+        monkeypatch.setattr(
+            handle_packages,
+            "_remove_packages_unless_from_redhat",
+            RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed),
+        )
 
-    remove_repository_files_packages_instance.run()
+        remove_special_packages_instance.run()
+        assert expected.issuperset(remove_special_packages_instance.messages)
+        assert expected.issubset(remove_special_packages_instance.messages)
+        assert pkghandler.get_packages_to_remove.call_count == 2
+        assert handle_packages._remove_packages_unless_from_redhat.call_count == 1
+        assert remove_special_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
 
-    assert expected.issuperset(remove_repository_files_packages_instance.messages)
-    assert expected.issubset(remove_repository_files_packages_instance.messages)
-    assert pkghandler.get_packages_to_remove.call_count == 1
-    assert pkghandler.remove_pkgs_unless_from_redhat.call_count == 1
-    assert pkghandler.get_packages_to_remove.call_args == mock.call(system_info.repofile_pkgs)
-    assert remove_repository_files_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
+    @centos8
+    def test_run_packages_not_removed(self, pretend_os, monkeypatch, remove_special_packages_instance):
+        pkgs_removed = ["kernel-core"]
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="SPECIAL_PACKAGES_NOT_REMOVED",
+                    title="Special packages not removed",
+                    description="Special packages which could not be removed",
+                    diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
+                    remediations=None,
+                    variables={},
+                ),
+                actions.ActionMessage(
+                    level="INFO",
+                    id="SPECIAL_PACKAGES_REMOVED",
+                    title="Special packages to be removed",
+                    description=(
+                        "We have identified installed packages that match a pre-defined list of packages that are"
+                        " to be removed during the conversion"
+                    ),
+                    diagnosis="The following packages will be removed during the conversion: kernel-core",
+                    remediations=None,
+                    variables={},
+                ),
+            )
+        )
+        monkeypatch.setattr(
+            pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="fingerprints")
+        )
+        monkeypatch.setattr(
+            handle_packages,
+            "_remove_packages_unless_from_redhat",
+            RemovePkgsUnlessFromRedhatMocked(return_value=pkgs_removed),
+        )
+        monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
+        remove_special_packages_instance.run()
+
+        assert expected.issuperset(remove_special_packages_instance.messages)
+        assert expected.issubset(remove_special_packages_instance.messages)
+        assert pkghandler.get_packages_to_remove.call_count == 2
+        assert handle_packages._remove_packages_unless_from_redhat.call_count == 1
+        assert remove_special_packages_instance.result.level == actions.STATUS_CODE["SUCCESS"]
+
+    def test_run_packages_error(self, monkeypatch, remove_special_packages_instance):
+        monkeypatch.setattr(
+            pkghandler, "get_packages_to_remove", mock.Mock(side_effect=SystemExit("Raising SystemExit"))
+        )
+        remove_special_packages_instance.run()
+
+        unit_tests.assert_actions_result(
+            remove_special_packages_instance,
+            level="ERROR",
+            id="SPECIAL_PACKAGE_REMOVAL_FAILED",
+            title="Failed to remove some packages necessary for the conversion.",
+            description="The cause of this error is unknown, please look at the diagnosis for more information.",
+            diagnosis="Raising SystemExit",
+        )
 
 
-def test_remove_repository_files_packages_dependency_order(remove_repository_files_packages_instance):
-    expected_dependencies = ("BACKUP_REDHAT_RELEASE", "BACKUP_REPOSITORY", "PRE_SUBSCRIPTION", "BACKUP_PACKAGE_FILES")
+def test_remove_packages_unless_from_redhat_no_pkgs(caplog):
+    assert not handle_packages._remove_packages_unless_from_redhat(pkgs_list=[])
+    assert "\nNothing to do." in caplog.records[-1].message
 
-    assert expected_dependencies == remove_repository_files_packages_instance.dependencies
 
+def test_remove_packages_unless_from_redhat(pkgs_to_remove, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+    handle_packages._remove_packages_unless_from_redhat(pkgs_list=pkgs_to_remove)
 
-def test_remove_repository_files_packages_error(remove_repository_files_packages_instance, monkeypatch):
-    monkeypatch.setattr(system_info, "repofile_pkgs", [])
-    monkeypatch.setattr(
-        pkghandler,
-        "remove_pkgs_unless_from_redhat",
-        RemovePkgsUnlessFromRedhatMocked(side_effect=SystemExit("Raising SystemExit")),
-    )
-
-    remove_repository_files_packages_instance.run()
-
-    unit_tests.assert_actions_result(
-        remove_repository_files_packages_instance,
-        level="ERROR",
-        id="REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED",
-        title="Repository file package removal failure",
-        description="The cause of this error is unknown, please look at the diagnosis for more information.",
-        diagnosis="Raising SystemExit",
-    )
+    assert "Removing the following %s packages" % len(pkgs_to_remove) in caplog.records[-3].message
+    assert "Successfully removed %s packages" % len(pkgs_to_remove) in caplog.records[-1].message

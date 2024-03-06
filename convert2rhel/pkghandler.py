@@ -28,7 +28,6 @@ from collections import namedtuple
 import rpm
 
 from convert2rhel import backup, pkgmanager, utils
-from convert2rhel.backup import remove_pkgs
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
@@ -91,70 +90,6 @@ PackageInformation = namedtuple(
         "signature",
     ),
 )
-
-
-def call_yum_cmd(
-    command,
-    args=None,
-    print_output=True,
-    enable_repos=None,
-    disable_repos=None,
-    set_releasever=True,
-):
-    """Call yum command and optionally print its output.
-    The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
-    which is:
-    * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
-    * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
-      file for the particular system OR passed through a CLI option by the user
-    YUM/DNF typically expands the $releasever variable used in repofiles. However it fails to do so after we remove the
-    release packages (centos-release, oraclelinux-release, etc.) and before the redhat-release package is installed.
-    By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
-    release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
-    """
-    if args is None:
-        args = []
-
-    cmd = ["yum", command, "-y"]
-
-    # The --disablerepo yum option must be added before --enablerepo,
-    #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
-    repos_to_disable = []
-    if isinstance(disable_repos, list):
-        repos_to_disable = disable_repos
-    else:
-        repos_to_disable = tool_opts.disablerepo
-
-    for repo in repos_to_disable:
-        cmd.append("--disablerepo=%s" % repo)
-
-    if set_releasever and system_info.releasever:
-        cmd.append("--releasever=%s" % system_info.releasever)
-
-    # Without the release package installed, dnf can't determine the modularity platform ID.
-    if system_info.version.major >= 8:
-        cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
-
-    repos_to_enable = []
-    if isinstance(enable_repos, list):
-        repos_to_enable = enable_repos
-    else:
-        # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
-        # through subscription-manager
-        repos_to_enable = system_info.get_enabled_rhel_repos()
-
-    for repo in repos_to_enable:
-        cmd.append("--enablerepo=%s" % repo)
-
-    cmd.extend(args)
-
-    stdout, returncode = utils.run_subprocess(cmd, print_output=print_output)
-    # handle when yum returns non-zero code when there is nothing to do
-    nothing_to_do_error_exists = stdout.endswith("Error: Nothing to do\n")
-    if returncode == 1 and nothing_to_do_error_exists:
-        loggerinst.debug("Yum has nothing to do. Ignoring.")
-        returncode = 0
-    return stdout, returncode
 
 
 def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
@@ -600,35 +535,6 @@ def list_non_red_hat_pkgs_left():
         loggerinst.info("All packages are now signed by Red Hat.")
 
 
-def remove_pkgs_unless_from_redhat(pkgs_to_remove, backedup_reposdir, backup=True):
-    """Remove packages with user confirmation and backup.
-
-    :param pkgs_to_remove: List of packages that will be removed
-    :type pkgs_to_remove: list[PackageInformation]
-    :param backup: If the package should be in a backup. Defaults to True
-    :type backup: bool
-    """
-    if not pkgs_to_remove:
-        loggerinst.info("\nNothing to do.")
-        return
-
-    loggerinst.warning("Removing the following %s packages:\n" % str(len(pkgs_to_remove)))
-    print_pkg_info(pkgs_to_remove)
-    loggerinst.info("\n")
-    # We're using the backed up yum repositories to prevent the following:
-    # - the system was registered to RHSM prior to the conversion and the system didn't have the redhat.repo generated
-    #   for the lack of the RHSM product certificate
-    # - at this point convert2rhel has installed the RHSM product cert (e.g. /etc/pki/product-default/69.pem)
-    # - this function might be performing the first yum call convert2rhel does after cleaning yum metadata
-    # - the "subscription-manager" yum plugin spots that there's a new RHSM product cert and generates
-    #   /etc/yum.repos.d/redhat.repo
-    # - the suddenly enabled RHEL repos cause a package backup failure
-    pkgs_removed = remove_pkgs(get_pkg_nevras(pkgs_to_remove), backup=backup, reposdir=backedup_reposdir)
-    loggerinst.debug("Successfully removed %s packages" % str(len(pkgs_to_remove)))
-
-    return pkgs_removed
-
-
 def get_pkg_nevras(pkg_objects):
     """Get a list of package NEVRA strings from a list of PackageInformation objects."""
     return [get_pkg_nevra(pkg_obj) for pkg_obj in pkg_objects]
@@ -715,7 +621,7 @@ def install_rhel_kernel():
     later on.
     """
     loggerinst.info("Installing RHEL kernel ...")
-    output, ret_code = call_yum_cmd(command="install", args=["kernel"])
+    output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
 
     if ret_code != 0:
         loggerinst.critical("Error occured while attempting to install the RHEL kernel")
@@ -756,22 +662,22 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            remove_pkgs(pkgs_to_remove=["kernel-%s" % older], backup=False)
-            call_yum_cmd(command="install", args=["kernel-%s" % older])
+            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older])
+            pkgmanager.call_yum_cmd(command="install", args=["kernel-%s" % older])
         else:
             replace_non_rhel_installed_kernel(installed[0])
 
         return
 
     # Install the latest out of the available non-clashing RHEL kernels
-    call_yum_cmd(command="install", args=["kernel-%s" % to_install[-1]])
+    pkgmanager.call_yum_cmd(command="install", args=["kernel-%s" % to_install[-1]])
 
 
 def get_kernel_availability():
     """Return a tuple - a list of installed kernel versions and a list of
     available kernel versions.
     """
-    output, _ = call_yum_cmd(command="list", args=["--showduplicates", "kernel"], print_output=False)
+    output, _ = pkgmanager.call_yum_cmd(command="list", args=["--showduplicates", "kernel"], print_output=False)
     return (list(get_kernel(data)) for data in output.split("Available Packages"))
 
 
@@ -848,9 +754,8 @@ def remove_non_rhel_kernels():
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels\n")
         print_pkg_info(non_rhel_kernels)
-        remove_pkgs(
+        utils.remove_pkgs(
             pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
-            backup=False,
         )
     else:
         loggerinst.info("None found.")
@@ -938,7 +843,7 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     for name in set(pkg_names):
         if name != "kernel":
             loggerinst.info("Installing RHEL %s" % name)
-            call_yum_cmd("install", args=[name])
+            pkgmanager.call_yum_cmd("install", args=[name])
 
 
 def update_rhel_kernel():
@@ -947,7 +852,7 @@ def update_rhel_kernel():
     latest available version.
     """
     loggerinst.info("Updating RHEL kernel.")
-    call_yum_cmd(command="update", args=["kernel"])
+    pkgmanager.call_yum_cmd(command="update", args=["kernel"])
 
 
 def clear_versionlock():
@@ -967,7 +872,7 @@ def clear_versionlock():
         backup.backup_control.push(RestorableFile(_VERSIONLOCK_FILE_PATH))
 
         loggerinst.info("Clearing package versions locks...")
-        call_yum_cmd("versionlock", args=["clear"], print_output=False)
+        pkgmanager.call_yum_cmd("versionlock", args=["clear"], print_output=False)
     else:
         loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
 

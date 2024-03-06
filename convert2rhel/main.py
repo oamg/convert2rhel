@@ -336,8 +336,6 @@ def rollback_changes():
     except IndexError:
         backup_control_was_empty = True
 
-    backup.changed_pkgs_control.restore_pkgs()
-
     try:
         backup.backup_control.pop_all()
     except IndexError as e:

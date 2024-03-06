@@ -22,6 +22,8 @@ import itertools
 import os
 import sys
 
+from typing import Any
+
 import pytest
 import six
 
@@ -33,6 +35,7 @@ from convert2rhel import (
     initialize,
     main,
     pkghandler,
+    pkgmanager,
     subscription,
     systeminfo,
     toolopts,
@@ -311,25 +314,31 @@ class SummaryAsJsonMocked(MockFunctionObject):
 #
 
 
-class RemovePkgsMocked(MockFunctionObject):
+class RestorablePackageMocked(MockFunctionObject):
     """
-    Mock for the remove_pkgs function.
+    Mock for the RestorablePackage class.
 
     This differs from Mock in that it:
     * Makes it easy to check just the pkgs passed in to remove.
     """
 
-    spec = backup.remove_pkgs
+    spec = backup.packages.RestorablePackage
 
     def __init__(self, **kwargs):
         self.pkgs = None
 
-        super(RemovePkgsMocked, self).__init__(**kwargs)
+        super(RestorablePackageMocked, self).__init__(**kwargs)
 
-    def __call__(self, pkgs_to_remove, *args, **kwargs):
-        self.pkgs = pkgs_to_remove
+    def __call__(self, pkgs, reposdir, set_releasever, custom_releasever, varsdir, *args, **kwargs):
+        self.pkgs = pkgs
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir
 
-        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+        return super(RestorablePackageMocked, self).__call__(
+            pkgs, reposdir, set_releasever, custom_releasever, vars, *args, **kwargs
+        )
 
 
 #
@@ -388,7 +397,7 @@ class CallYumCmdMocked(MockFunctionObject):
     * Has special handling to make failing a single time and then succeeding easy.
     """
 
-    spec = pkghandler.call_yum_cmd
+    spec = pkgmanager.call_yum_cmd
 
     def __init__(self, return_code=0, return_string="Test output", fail_once=False, **kwargs):
         self.command = ""
@@ -505,10 +514,6 @@ class FormatPkgInfoMocked(MockFunctionObject):
     spec = pkghandler.format_pkg_info
 
 
-class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
-    spec = pkghandler.remove_pkgs_unless_from_redhat
-
-
 #
 # subscription mocks
 #
@@ -559,6 +564,27 @@ class CLIMocked(MockFunctionObject):
 #
 # utils mocks
 #
+
+
+class RemovePkgsMocked(MockFunctionObject):
+    """
+    Mock for the remove_pkgs function.
+
+    This differs from Mock in that it:
+    * Makes it easy to check just the pkgs passed in to remove.
+    """
+
+    spec = utils.remove_pkgs
+
+    def __init__(self, **kwargs):
+        self.pkgs = None
+
+        super(RemovePkgsMocked, self).__init__(**kwargs)
+
+    def __call__(self, pkgs_to_remove, *args, **kwargs):
+        self.pkgs = pkgs_to_remove
+
+        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
 
 
 class DownloadPkgMocked(MockFunctionObject):
@@ -817,3 +843,14 @@ class ErrorOnRestoreRestorable(MinimalRestorable):
     def restore(self):
         super(ErrorOnRestoreRestorable, self).restore()
         raise self.exception
+
+
+class RestorablePackageMock(MinimalRestorable):
+    def __init__(self, pkg_name=None, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+        super(RestorablePackageMock, self).__init__()
+
+        self.pkg_name = pkg_name
+        self.reposdir = reposdir
+        self.set_releasever = set_releasever
+        self.custom_releasever = custom_releasever
+        self.varsdir = varsdir

@@ -53,16 +53,11 @@ from convert2rhel.unit_tests import (
 
 
 class TestRollbackChanges:
-    @pytest.fixture(autouse=True)
-    def mock_rollback_functions(self, monkeypatch):
-        monkeypatch.setattr(backup.changed_pkgs_control, "restore_pkgs", mock.Mock())
-
     def test_rollback_changes(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(global_backup_control, "pop_all", mock.Mock())
 
         main.rollback_changes()
 
-        assert backup.changed_pkgs_control.restore_pkgs.call_count == 1
         # Note: when we remove the BackupController partition hack, the first
         # of these calls will go away
         assert global_backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
