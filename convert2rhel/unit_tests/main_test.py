@@ -60,45 +60,7 @@ class TestRollbackChanges:
 
         # Note: when we remove the BackupController partition hack, the first
         # of these calls will go away
-        assert global_backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
-
-    # The tests below are for the 1.4 hack that splits restore of Changes
-    # managed by the BackupController into two parts: one that executes before
-    # the unported restore items and a second that executes after.  They can be
-    # removed once all the Changes are managed by BackupControl and the
-    # partition code is removed.
-    def test_backup_control_partitioning_no_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert caplog.records[-1].levelname == "INFO"
-        assert caplog.records[-1].message == "During rollback there were no backups to restore"
-
-    def test_backup_control_partitioning_with_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        restorable1 = unit_tests.MinimalRestorable()
-        restorable2 = unit_tests.MinimalRestorable()
-        backup_control_test.push(restorable1)
-        backup_control_test.push(backup_control_test.partition)
-        backup_control_test.push(restorable2)
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert "During rollback there were no backups to restore" not in caplog.text
-
-    def test_backup_control_with_changes_only_before_the_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        restorable1 = unit_tests.MinimalRestorable()
-        backup_control_test.push(backup_control_test.partition)
-        backup_control_test.push(restorable1)
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert "During rollback there were no backups to restore" not in caplog.text
+        assert global_backup_control.pop_all.call_args_list == [mock.call(), mock.call()]
 
     def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(
