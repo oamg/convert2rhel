@@ -20,6 +20,7 @@ __metaclass__ = type
 import errno
 import logging
 import os
+import stat
 import tempfile
 
 
@@ -64,6 +65,8 @@ class ApplicationLock:
         self._pid = os.getpid()
         # Path to the file that contains the process id
         self._pidfile = os.path.join(_DEFAULT_LOCK_DIR, self._name + ".pid")
+        # File object for _pidfile when the file is locked
+        self._pidfile_fp = None
 
     def __str__(self):
         if self.is_locked:
@@ -88,6 +91,7 @@ class ApplicationLock:
         # Note that NamedTemporaryFile will clean up the file it created,
         # but the lockfile we created by doing the link will stay around.
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as f:
+            os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR)
             f.write(str(self._pid) + "\n")
             f.flush()
             try:
@@ -105,19 +109,33 @@ class ApplicationLock:
         """Test whether this object was locked by this instance of
         the application."""
         pid = self._read_pidfile()
+        self._release_pidfile_flock()
         if pid is not None:
             return pid == self._pid
         return False
 
+    def _release_pidfile_flock(self):
+        """Release the advisory file lock we hold on the PID file
+        and close the open file descriptor."""
+        if self._pidfile_fp is not None:
+            if not self._pidfile_fp.closed:
+                self._pidfile_fp.close()
+            self._pidfile_fp = None
+
     def _read_pidfile(self):
         """Read and return the contents of the PID file.
+
+        If this method does not raise an exception, the
+        _release_pidfile_flock() method must be called to release the
+        advisory lock and close the file.
 
         :returns: the file contents as an integer, or None if it doesn't exist
         :raises: ApplicationLockedError if the contents are corrupt
         """
+        # pylint: disable=consider-using-with
         try:
-            with open(self._pidfile, "r") as f:
-                file_contents = f.read()
+            self._pidfile_fp = open(self._pidfile, "r")
+            file_contents = self._pidfile_fp.read()
             pid = int(file_contents.rstrip())
             return pid
         except IOError as exc:
@@ -127,6 +145,7 @@ class ApplicationLock:
                 return None
             raise
         except ValueError:
+            self._release_pidfile_flock()
             raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
 
     @staticmethod
@@ -169,15 +188,18 @@ class ApplicationLock:
         """
         if self._try_create():
             return
-        pid = self._read_pidfile()
-        if pid == self._pid:
-            return
-        if self._pid_exists(pid):
-            raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
-        # The lock file was created by a process that has exited;
-        # remove it and try again.
-        loggerinst.info("Cleaning up lock held by exited process %d." % pid)
-        self._safe_unlink()
+        try:
+            pid = self._read_pidfile()
+            if pid == self._pid:
+                return
+            if self._pid_exists(pid):
+                raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
+            # The lock file was created by a process that has exited;
+            # remove it and try again.
+            loggerinst.info("Cleaning up lock held by exited process %d." % pid)
+            self._safe_unlink()
+        finally:
+            self._release_pidfile_flock()
         if not self._try_create():
             # Between the unlink and our attempt to create the lock
             # file, another process got there first.
