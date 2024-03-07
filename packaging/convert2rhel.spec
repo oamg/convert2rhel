@@ -90,7 +90,7 @@ rm -rf %{buildroot}%{python_sitelib}/%{name}/data
 install -d %{buildroot}%{_datadir}/%{name}/
 cp -a build/lib/%{name}/data/version-independent/. \
       %{buildroot}%{_datadir}/%{name}
-cp -a build/lib/%{name}/data/%{rhel}/%{_arch}/. \
+cp -a build/lib/%{name}/data/%{rhel}/x86_64/. \
       %{buildroot}%{_datadir}/%{name}
 
 # Create a directory into which convert2rhel downloads RHSM-related packages

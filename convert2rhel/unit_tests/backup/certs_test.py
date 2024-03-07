@@ -120,7 +120,6 @@ class TestPEMCert:
     @pytest.mark.parametrize(
         ("arch", "rhel_version", "pem"),
         (
-            ("ppc64", "7", "74.pem"),
             ("x86_64", "7", "69.pem"),
             ("x86_64", "8", "479.pem"),
         ),
