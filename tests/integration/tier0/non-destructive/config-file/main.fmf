@@ -49,18 +49,6 @@ tag+:
     test: |
         pytest -svv -m test_config_cli_priority
 
-/config_password_file_priority:
-    summary+: |
-        Password file preferred
-    description+: |
-        Verify that passing the password through the password file
-        is preferred to the config file.
-    tag+:
-        - config-password-file-priority
-        - sanity
-    test: |
-        pytest -svv -m test_config_password_file_priority
-
 /config_standard_paths_priority_diff_methods:
     summary+: |
         Activation key preferred to password

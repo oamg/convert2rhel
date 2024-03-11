@@ -139,19 +139,6 @@ class TestTooloptsParseFromCLI:
         assert message in caplog.text
 
 
-def test_keep_rhsm(monkeypatch, caplog, global_tool_opts):
-    monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--keep-rhsm"]))
-
-    convert2rhel.toolopts.CLI()
-
-    assert (
-        "The --keep-rhsm option is deprecated and will be removed in"
-        " the future. Convert2rhel will now always use the"
-        " subscription-manager packages which are already installed on"
-        " the system so this option has no effect." in caplog.text
-    )
-
-
 @pytest.mark.parametrize(
     ("argv", "warn", "ask_to_continue"),
     (
@@ -303,13 +290,6 @@ def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog
     ("argv", "content", "message", "output"),
     (
         (
-            mock_cli_arguments(["--password", "pass", "-f"]),
-            "pass_file",
-            "You have passed the RHSM password through both the --password-from-file and the --password option."
-            " We're going to use the password from file.",
-            {"password": "pass_file", "activation_key": None},
-        ),
-        (
             mock_cli_arguments(["--password", "pass", "--config-file"]),
             "[subscription_manager]\nactivation_key = key_cnf_file",
             "You have passed either the RHSM password or activation key through both the command line and"
@@ -326,40 +306,6 @@ def test_multiple_auth_src_combined(argv, content, message, output, caplog, monk
     os.chmod(path, 0o600)
     # The path for file is the last argument
     argv.append(path)
-
-    monkeypatch.setattr(sys, "argv", argv)
-    monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[""])
-    convert2rhel.toolopts.CLI()
-
-    assert message in caplog.text
-    assert convert2rhel.toolopts.tool_opts.activation_key == output["activation_key"]
-    assert convert2rhel.toolopts.tool_opts.password == output["password"]
-
-
-@pytest.mark.parametrize(
-    ("argv", "content", "message", "output"),
-    (
-        (
-            mock_cli_arguments(["--password", "pass", "-f", "file", "--config-file", "file"]),
-            ("pass_file", "[subscription_manager]\nactivation_key = pass_cnf_file"),
-            "You have passed the RHSM password through both the --password-from-file and the --password option."
-            " We're going to use the password from file.",
-            {"password": "pass_file", "activation_key": None},
-        ),
-    ),
-)
-def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmpdir, global_tool_opts):
-    """Test combination of password file, config file and CLI."""
-    path0 = os.path.join(str(tmpdir), "convert2rhel.password")
-    with open(path0, "w") as file:
-        file.write(content[0])
-    path1 = os.path.join(str(tmpdir), "convert2rhel.ini")
-    with open(path1, "w") as file:
-        file.write(content[1])
-    # Set the paths
-    argv[-3] = path0
-    argv[-1] = path1
-    os.chmod(path1, 0o600)
 
     monkeypatch.setattr(sys, "argv", argv)
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[""])

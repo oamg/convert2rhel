@@ -76,28 +76,6 @@ def test_user_path_cli_priority(convert2rhel):
     remove_files(config)
 
 
-@pytest.mark.test_config_password_file_priority
-def test_user_path_pswd_file_priority(convert2rhel):
-    config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("~/password_file", "file_password"),
-    ]
-    create_files(config)
-
-    with convert2rhel('-f "~/password_file" --debug') as c2r:
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.expect("WARNING - Deprecated. Use -c | --config-file instead.")
-        c2r.expect(
-            "WARNING - You have passed the RHSM credentials both through a config file and through a password file."
-            " We're going to use the password file."
-        )
-        c2r.sendcontrol("c")
-
-    assert c2r.exitstatus != 0
-
-    remove_files(config)
-
-
 @pytest.mark.test_config_standard_paths_priority_diff_methods
 def test_std_paths_priority_diff_methods(convert2rhel):
     config = [
