@@ -8,7 +8,7 @@ def test_offline_system_conversion(convert2rhel):
     """Test converting systems not connected to the Internet but requiring sub-mgr (e.g. managed by Satellite)."""
 
     with convert2rhel(
-        "-y -k {} -o {} --keep-rhsm --debug".format(
+        "-y -k {} -o {} --debug".format(
             env.str("SATELLITE_KEY"),
             env.str("SATELLITE_ORG"),
         )

@@ -47,8 +47,6 @@ ARGS_WITH_VALUES = [
     "--username",
     "-p",
     "--password",
-    "-f",
-    "--password-from-file",
     "-k",
     "--activationkey",
     "-o",
@@ -69,7 +67,6 @@ class ToolOpts:
     def __init__(self):
         self.debug = False
         self.username = None
-        self.password_file = None
         self.config_file = None
         self.password = None
         self.no_rhsm = False
@@ -275,14 +272,6 @@ class CLI:
             " through a list of running processes.",
         )
         group.add_argument(
-            "-f",
-            "--password-from-file",
-            help="File containing"
-            " password for the subscription-manager in the plain"
-            " text form. It's an alternative to the --password"
-            " option. Deprecated, use --config-file instead.",
-        )
-        group.add_argument(
             "-k",
             "--activationkey",
             help="Activation key used"
@@ -343,12 +332,6 @@ class CLI:
             " (subscription.rhsm.redhat.com). It is not to be used to specify a Satellite server. For that, read"
             " the product documentation at https://access.redhat.com/.",
         )
-        group.add_argument(
-            "--keep-rhsm",
-            action="store_true",
-            help="Deprecated. This option has no effect. Convert2rhel will now use whatever"
-            " subscription-manager packages are present on the system.",
-        )
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
@@ -379,9 +362,9 @@ class CLI:
         tool_opts.set_opts(conf_file_opts)
         config_opts = copy.copy(tool_opts)
         tool_opts.config_file = parsed_opts.config_file
-        # corner case: password on CLI or in password file and activation-key in the config file
+        # corner case: password on CLI and activation-key in the config file
         # password from CLI has precedence and activation-key must be deleted (unused)
-        if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
+        if config_opts.activation_key and parsed_opts.password:
             tool_opts.activation_key = None
 
         if parsed_opts.no_rpm_va:
@@ -407,11 +390,6 @@ class CLI:
 
         if parsed_opts.password:
             tool_opts.password = parsed_opts.password
-
-        if parsed_opts.password_from_file:
-            loggerinst.warning("Deprecated. Use -c | --config-file instead.")
-            tool_opts.password_file = parsed_opts.password_from_file
-            tool_opts.password = utils.get_file_content(parsed_opts.password_from_file)
 
         if parsed_opts.enablerepo:
             tool_opts.enablerepo = parsed_opts.enablerepo
@@ -494,14 +472,6 @@ class CLI:
                 if url_parts.path:
                     tool_opts.rhsm_prefix = url_parts.path
 
-        if parsed_opts.keep_rhsm:
-            loggerinst.warning(
-                "The --keep-rhsm option is deprecated and will be removed in"
-                " the future. Convert2rhel will now always use the"
-                " subscription-manager packages which are already installed on"
-                " the system so this option has no effect."
-            )
-
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
 
@@ -524,12 +494,6 @@ class CLI:
                 " We're going to use the activation key."
             )
 
-        if parsed_opts.password and parsed_opts.password_from_file:
-            loggerinst.warning(
-                "You have passed the RHSM password through both the --password-from-file and the --password option."
-                " We're going to use the password from file."
-            )
-
         # Config files matches
         if config_opts.username and parsed_opts.username:
             loggerinst.warning(
@@ -547,12 +511,6 @@ class CLI:
             loggerinst.warning(
                 "You have passed either the RHSM password or activation key through both the command line and the"
                 " configuration file. We're going to use the command line values."
-            )
-
-        if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
-            loggerinst.warning(
-                "You have passed the RHSM credentials both through a config file and through a password file."
-                " We're going to use the password file."
             )
 
         if (tool_opts.org and not tool_opts.activation_key) or (not tool_opts.org and tool_opts.activation_key):
