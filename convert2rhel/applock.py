@@ -18,6 +18,7 @@
 __metaclass__ = type
 
 import errno
+import fcntl
 import logging
 import os
 import stat
@@ -51,6 +52,11 @@ class ApplicationLock:
     process is still running, it raises ApplicationLockedError. If the
     process is not running, it removes the file and tries to lock it
     again.
+
+    File locking: to avoid a race condition in which another process
+    overwrites the PID file between the time we check for the process's
+    existence and we unlink the stale lockfile, we lock the file using
+    BSD file locking.
 
     For safety, unexpected conditions, like garbage in the file or
     bad permissions, are treated as if the application is locked,
@@ -91,6 +97,8 @@ class ApplicationLock:
         # Note that NamedTemporaryFile will clean up the file it created,
         # but the lockfile we created by doing the link will stay around.
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as f:
+            # Using flock() on a group- or world-readable file poses an
+            # extreme security risk.
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR)
             f.write(str(self._pid) + "\n")
             f.flush()
@@ -118,6 +126,7 @@ class ApplicationLock:
         """Release the advisory file lock we hold on the PID file
         and close the open file descriptor."""
         if self._pidfile_fp is not None:
+            fcntl.flock(self._pidfile_fp, fcntl.LOCK_UN)
             if not self._pidfile_fp.closed:
                 self._pidfile_fp.close()
             self._pidfile_fp = None
@@ -135,6 +144,7 @@ class ApplicationLock:
         # pylint: disable=consider-using-with
         try:
             self._pidfile_fp = open(self._pidfile, "r")
+            fcntl.flock(self._pidfile_fp, fcntl.LOCK_EX)
             file_contents = self._pidfile_fp.read()
             pid = int(file_contents.rstrip())
             return pid
