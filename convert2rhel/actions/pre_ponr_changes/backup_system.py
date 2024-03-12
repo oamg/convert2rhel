@@ -19,7 +19,7 @@ import logging
 import os
 import re
 
-from convert2rhel import actions, backup, exceptions, repo
+from convert2rhel import actions, backup, exceptions, repo, subscription
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.redhatrelease import os_release_file, system_release_file
@@ -89,11 +89,12 @@ class BackupRepository(actions.Action):
         repo_files_backed_up = False
 
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
-            if repo.endswith(".repo") and repo != "redhat.repo":
-                repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
-                restorable_file = RestorableFile(repo_path)
-                backup.backup_control.push(restorable_file)
-                repo_files_backed_up = True
+            if not subscription.should_subscribe:
+                if repo.endswith(".repo") and repo != "redhat.repo":
+                    repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
+                    restorable_file = RestorableFile(repo_path)
+                    backup.backup_control.push(restorable_file)
+                    repo_files_backed_up = True
 
         if not repo_files_backed_up:
             loggerinst.info("No .repo files backed up.")
