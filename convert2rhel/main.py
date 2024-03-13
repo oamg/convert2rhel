@@ -299,6 +299,7 @@ def post_ponr_changes():
     loggerinst.task("Final: Configure host-metering")
     hostmetering.configure_host_metering()
 
+    loggerinst.task("Final: Update breadcrumbs")
     breadcrumbs.breadcrumbs.finish_collection(success=True)
 
     loggerinst.task("Final: Update RHSM custom facts")
