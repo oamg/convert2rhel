@@ -228,6 +228,9 @@ class TestGetActions:
         filesystem_detected_actions_count = 0
         for rootdir, dirnames, filenames in os.walk(os.path.dirname(actions.__file__)):
             for directory in dirnames:
+                if "%s.%s." % (actions.__name__, directory) == "convert2rhel.actions.post_ponr":
+                    continue
+
                 # Add to the actions that the production code finds here as it is non-recursive
                 computed_actions.extend(
                     actions.get_actions([os.path.join(rootdir, directory)], "%s.%s." % (actions.__name__, directory))
@@ -344,12 +347,21 @@ class TestStage:
         with pytest.raises(actions.DependencyError):
             stage.check_dependencies()
 
-    def test_check_dependencies_real_actions(self):
-        """Check the Actions we ship have no broken deps."""
+    def test_check_dependencies_real_actions_pre_ponr(self):
+        """Check the pre-ponr Actions we ship have no broken deps."""
+        # Check dependencies for pre_ponr stage
         pre_ponr_changes = actions.Stage("pre_ponr_changes", "changes")
         system_checks = actions.Stage("system_checks", "checks", pre_ponr_changes)
 
         system_checks.check_dependencies()
+
+    def test_check_dependencies_real_actions_post_ponr(self):
+        """Check the post-ponr Actions we ship have no broken deps."""
+        # Check dependencies for post_ponr stage
+        post_conversion = actions.Stage("post_conversion", "Final modifications to the system")
+        conversion = actions.Stage("conversion", "Starting Conversion", next_stage=post_conversion)
+
+        conversion.check_dependencies()
 
     #
     # Test that Stage.run() works as expected
@@ -987,14 +999,14 @@ class TestRunActions:
             ),
         ),
     )
-    def test_run_actions(self, action_results, expected, monkeypatch):
+    def test_run_pre_actions(self, action_results, expected, monkeypatch):
         check_deps_mock = mock.Mock()
         run_mock = mock.Mock(return_value=action_results)
 
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
         monkeypatch.setattr(actions.Stage, "run", run_mock)
 
-        assert actions.run_actions() == expected
+        assert actions.run_pre_actions() == expected
 
     @pytest.mark.parametrize(
         ("action_results", "expected"),
@@ -1430,14 +1442,14 @@ class TestRunActions:
             ),
         ),
     )
-    def test_run_actions_with_messages(self, action_results, expected, monkeypatch):
+    def test_run_pre_actions_with_messages(self, action_results, expected, monkeypatch):
         check_deps_mock = mock.Mock()
         run_mock = mock.Mock(return_value=action_results)
 
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
         monkeypatch.setattr(actions.Stage, "run", run_mock)
 
-        results = actions.run_actions()
+        results = actions.run_pre_actions()
         assert results == expected
 
     def test_dependency_errors(self, monkeypatch, caplog):
@@ -1445,7 +1457,7 @@ class TestRunActions:
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
 
         with pytest.raises(SystemExit):
-            actions.run_actions()
+            actions.run_pre_actions()
 
         assert (
             "Some dependencies were set on Actions but not present in convert2rhel: Failure message"

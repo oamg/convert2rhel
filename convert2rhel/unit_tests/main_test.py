@@ -172,10 +172,11 @@ def test_main(monkeypatch, tmp_path):
     print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock()
-    find_actions_of_severity_mock = mock.Mock(return_value=[])
+    run_pre_actions_mock = mock.Mock()
+    analyze_actions_results_mock = mock.Mock()
+    run_pre_actions_mock = mock.Mock()
+    run_post_actions_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
-    report_summary_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     post_ponr_conversion_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
@@ -200,9 +201,9 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
-    monkeypatch.setattr(report, "summary", report_summary_mock)
+    monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
+    monkeypatch.setattr(actions, "run_post_actions", run_post_actions_mock)
+    monkeypatch.setattr(main, "_analyze_actions_results", analyze_actions_results_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
@@ -225,10 +226,11 @@ def test_main(monkeypatch, tmp_path):
     assert resolve_system_info_mock.call_count == 1
     assert collect_early_data_mock.call_count == 1
     assert clean_yum_metadata_mock.call_count == 1
-    assert find_actions_of_severity_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
+    assert run_pre_actions_mock.call_count == 1
+    # TODO(r0x0d): Turn this to 1 after we remove the env var.
+    assert run_post_actions_mock.call_count == 0
+    assert analyze_actions_results_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
-    assert report_summary_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
@@ -317,7 +319,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
+        run_pre_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
         clear_versionlock_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
 
@@ -339,7 +341,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
         monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
@@ -356,7 +358,7 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert should_subscribe_mock.call_count == 1
@@ -380,7 +382,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         find_actions_of_severity_mock = mock.Mock()
@@ -404,7 +406,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(report, "summary", report_summary_mock)
         monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
@@ -423,7 +425,7 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert report_summary_mock.call_count == 1
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
@@ -457,7 +459,7 @@ class TestRollbackFromMain:
             (breadcrumbs, "collect_early_data", mock.Mock()),
             (pkghandler, "clear_versionlock", mock.Mock()),
             (pkgmanager, "clean_yum_metadata", mock.Mock()),
-            (actions, "run_actions", mock.Mock()),
+            (actions, "run_pre_actions", mock.Mock()),
             (report, "summary", mock.Mock()),
             (breadcrumbs, "finish_collection", mock.Mock()),
             (subscription, "should_subscribe", mock.Mock(side_effect=lambda: True)),
@@ -481,7 +483,7 @@ class TestRollbackFromMain:
         assert breadcrumbs.collect_early_data.call_count == 1
         assert pkghandler.clear_versionlock.call_count == 1
         assert pkgmanager.clean_yum_metadata.call_count == 1
-        assert actions.run_actions.call_count == 1
+        assert actions.run_pre_actions.call_count == 1
         assert report.summary.call_count == 1
         assert breadcrumbs.finish_collection.call_count == 1
         assert subscription.should_subscribe.call_count == 1
@@ -500,7 +502,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
@@ -523,7 +525,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(report, "summary", report_summary_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
@@ -543,7 +545,7 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert report_summary_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
@@ -563,7 +565,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
         find_actions_of_severity_mock = mock.Mock(return_value=[])
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
@@ -587,7 +589,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
         monkeypatch.setattr(report, "summary", report_summary_mock)
         monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
@@ -606,7 +608,7 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 1

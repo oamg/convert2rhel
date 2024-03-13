@@ -22,7 +22,7 @@ import os
 
 from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
+from convert2rhel import pkghandler, pkgmanager, redhatrelease, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
 
 
@@ -96,6 +96,7 @@ def main_locked():
     """Perform all steps for the entire conversion process."""
 
     pre_conversion_results = None
+    post_conversion_results = None
     process_phase = ConversionPhase.POST_CLI
 
     # since we now have root, we can add the FileLogging
@@ -113,25 +114,13 @@ def main_locked():
         # actions.run_actions() (either from a bug or from the user hitting
         # Ctrl-C)
         process_phase = ConversionPhase.PRE_PONR_CHANGES
-        pre_conversion_results = actions.run_actions()
+        pre_conversion_results = actions.run_pre_actions()
 
         if toolopts.tool_opts.activity == "analysis":
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
-        pre_conversion_failures = actions.find_actions_of_severity(
-            pre_conversion_results, "SKIP", level_for_raw_action_data
-        )
-        if pre_conversion_failures:
-            # The report will be handled in the error handler, after rollback.
-            loggerinst.critical("Conversion failed.")
-
-        # Print the assessment just before we ask the user whether to continue past the PONR
-        report.summary(
-            pre_conversion_results,
-            include_all_reports=False,
-            disable_colors=logger_module.should_disable_color_output(),
-        )
+        _analyze_actions_results(pre_conversion_results)
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -144,7 +133,14 @@ def main_locked():
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
-        post_ponr_changes()
+        # TODO(r0x0d): Just temporary, so we don't need to rush with migrating
+        # all the functions at once to the framework.
+        if "CONVERT2RHEL_EXPERIMENTAL_POST_PONR_ACTIONS" in os.environ:
+            post_conversion_results = actions.run_post_actions()
+            _analyze_actions_results(post_conversion_results)
+        else:
+            post_ponr_changes()
+
         loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
@@ -181,6 +177,26 @@ def main_locked():
             actions.report.summary_as_txt(pre_conversion_results)
 
     return 0
+
+
+# TODO(r0x0d): Better function name
+def _analyze_actions_results(results):
+    """Analyze the action results for failures
+
+    :param results: The action results from the framework
+    :type results: dict
+    """
+    failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
+    if failures:
+        # The report will be handled in the error handler, after rollback.
+        loggerinst.critical("Conversion failed.")
+
+    # Print the assessment just before we ask the user whether to continue past the PONR
+    report.summary(
+        results=results,
+        include_all_reports=False,
+        disable_colors=logger_module.should_disable_color_output(),
+    )
 
 
 def _handle_main_exceptions(process_phase, pre_conversion_results=None):
