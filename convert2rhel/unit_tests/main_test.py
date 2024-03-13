@@ -170,6 +170,7 @@ def test_main(monkeypatch, tmp_path):
     raise_for_skipped_failures_mock = mock.Mock()
     report_summary_mock = mock.Mock()
     run_pre_actions_mock = mock.Mock()
+    run_pre_actions_mock = mock.Mock()
     run_post_actions_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
