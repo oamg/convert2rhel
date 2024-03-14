@@ -623,3 +623,87 @@ def remediation_out_of_date_packages(shell):
 
     for package in problematic_packages:
         shell(f"yum update -y {package}")
+
+
+@pytest.fixture(scope="function")
+def kernel_check_envar():
+    """
+    Fixture.
+    Set CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK environment variable
+    to skip the kernel currency check.
+    """
+    # Since we are moving all repos away, we need to bypass kernel check
+    os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
+
+    yield
+
+    # Remove the envar skipping the kernel check
+    del os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"]
+
+
+@pytest.fixture(scope="function")
+def kernel(shell):
+    """
+    Install specific kernel version and configure
+    the system to boot to it. The kernel version is not the
+    latest one available in repositories.
+    """
+
+    if os.environ["TMT_REBOOT_COUNT"] == "0":
+        # Set default kernel
+        if "centos-7" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'")
+        elif "oracle-7" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
+        elif "centos-8" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
+            shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
+        # Test is being run only for the latest released oracle-linux
+        elif "oracle-8" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
+        elif "alma-8" in SYSTEM_RELEASE_ENV:
+            mock_repo = "alma_old"
+            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
+        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+            mock_repo = "rocky_old"
+            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+
+        shell("tmt-reboot -t 600")
+
+    yield
+
+    if os.environ["TMT_REBOOT_COUNT"] == "1":
+        # We need to get the name of the latest kernel
+        # present in the repositories
+
+        # Install 'yum-utils' required by the repoquery command
+        shell("yum install yum-utils -y")
+
+        # Get the name of the latest kernel
+        latest_kernel = shell(
+            "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
+        ).output
+
+        # Get the full name of the kernel
+        full_name = shell(
+            "grubby --info ALL | grep \"title=.*{}\" | tr -d '\"' | sed 's/title=//'".format(latest_kernel)
+        ).output
+
+        # Set the latest kernel as the one we want to reboot to
+        shell("grub2-set-default '{}'".format(full_name.strip()))
+
+        # Remove the mocked repofile
+        if "alma-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
+        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
+
+        # Reboot after clean-up
+        shell("tmt-reboot -t 600")

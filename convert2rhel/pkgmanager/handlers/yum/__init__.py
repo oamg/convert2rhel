@@ -143,6 +143,9 @@ class YumTransactionHandler(TransactionHandlerBase):
         """
         pkgmanager.misc.setup_locale(override_time=True)
         self._base = pkgmanager.YumBase()
+        # Empty out the exclude list to avoid dependency problems during the
+        # transaction validation.
+        self._base.conf.exclude = []
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):
