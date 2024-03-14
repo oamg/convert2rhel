@@ -120,7 +120,14 @@ def main_locked():
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
-        _analyze_actions_results(pre_conversion_results)
+        _raise_for_skipped_failures(pre_conversion_results)
+
+        # Print the assessment just before we ask the user whether to continue past the PONR
+        report.summary(
+            results=pre_conversion_results,
+            include_all_reports=False,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
 
         loggerinst.warning("********************************************************")
         loggerinst.warning("The tool allows rollback of any action until this point.")
@@ -137,7 +144,13 @@ def main_locked():
         # all the functions at once to the framework.
         if "CONVERT2RHEL_EXPERIMENTAL_POST_PONR_ACTIONS" in os.environ:
             post_conversion_results = actions.run_post_actions()
-            _analyze_actions_results(post_conversion_results)
+            _raise_for_skipped_failures(post_conversion_results)
+            # Print the assessment just before we ask the user whether to continue past the PONR
+            report.summary(
+                results=post_conversion_results,
+                include_all_reports=False,
+                disable_colors=logger_module.should_disable_color_output(),
+            )
         else:
             post_ponr_changes()
 
@@ -179,24 +192,18 @@ def main_locked():
     return 0
 
 
-# TODO(r0x0d): Better function name
-def _analyze_actions_results(results):
+def _raise_for_skipped_failures(results):
     """Analyze the action results for failures
 
     :param results: The action results from the framework
     :type results: dict
+    :raises SystemExit: In case we detect any actions that has level of `SKIP`
+        or above.
     """
     failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
     if failures:
         # The report will be handled in the error handler, after rollback.
         loggerinst.critical("Conversion failed.")
-
-    # Print the assessment just before we ask the user whether to continue past the PONR
-    report.summary(
-        results=results,
-        include_all_reports=False,
-        disable_colors=logger_module.should_disable_color_output(),
-    )
 
 
 def _handle_main_exceptions(process_phase, pre_conversion_results=None):

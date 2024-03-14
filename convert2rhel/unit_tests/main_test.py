@@ -23,15 +23,13 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
+from convert2rhel import actions, applock, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, unit_tests, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
@@ -172,8 +170,8 @@ def test_main(monkeypatch, tmp_path):
     print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
-    run_pre_actions_mock = mock.Mock()
-    analyze_actions_results_mock = mock.Mock()
+    raise_for_skipped_failures_mock = mock.Mock()
+    report_summary_mock = mock.Mock()
     run_pre_actions_mock = mock.Mock()
     run_post_actions_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
@@ -203,7 +201,8 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
     monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
     monkeypatch.setattr(actions, "run_post_actions", run_post_actions_mock)
-    monkeypatch.setattr(main, "_analyze_actions_results", analyze_actions_results_mock)
+    monkeypatch.setattr(main, "_raise_for_skipped_failures", raise_for_skipped_failures_mock)
+    monkeypatch.setattr(report, "summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
@@ -229,7 +228,8 @@ def test_main(monkeypatch, tmp_path):
     assert run_pre_actions_mock.call_count == 1
     # TODO(r0x0d): Turn this to 1 after we remove the env var.
     assert run_post_actions_mock.call_count == 0
-    assert analyze_actions_results_mock.call_count == 1
+    assert raise_for_skipped_failures_mock.call_count == 1
+    assert report_summary_mock.call_count == 1
     assert clear_versionlock_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
@@ -619,3 +619,45 @@ class TestRollbackFromMain:
         assert summary_as_txt_mock.call_count == 1
         assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
         assert update_rhsm_custom_facts_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("data"),
+    (
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["ERROR"],
+                        "id": "ERROR_ID",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            }
+        ),
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["SKIP"],
+                        "id": "SKIP_ID",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            }
+        ),
+    ),
+)
+def test_raise_for_skipped_failures(data):
+    with pytest.raises(SystemExit, match="Conversion failed."):
+        main._raise_for_skipped_failures(data)
