@@ -629,7 +629,7 @@ def remediation_out_of_date_packages(shell):
 def kernel_check_envar():
     """
     Fixture.
-    Set CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK environment variable
+    Set CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK environment variable
     to skip the kernel currency check.
     """
     # Since we are moving all repos away, we need to bypass kernel check
