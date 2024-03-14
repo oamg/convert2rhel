@@ -58,8 +58,6 @@ class TestRollbackChanges:
 
         main.rollback_changes()
 
-        # Note: when we remove the BackupController partition hack, the first
-        # of these calls will go away
         assert global_backup_control.pop_all.call_args_list == mock.call()
 
     def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
