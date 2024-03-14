@@ -333,19 +333,10 @@ def rollback_changes():
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
 
-    backup_control_was_empty = False
-    try:
-        backup.backup_control.pop_all()
-    except IndexError:
-        backup_control_was_empty = True
-
     try:
         backup.backup_control.pop_all()
     except IndexError as e:
         if e.args[0] == "No backups to restore":
-            # We have to check if we were able to pop some backups at the top
-            # of this function
-            if backup_control_was_empty:
-                loggerinst.info("During rollback there were no backups to restore")
+            loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
