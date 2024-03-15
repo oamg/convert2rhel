@@ -54,6 +54,8 @@ RELEASE_VER_MAPPING = {
 # Dictionary of EUS minor versions supported and their EUS period start date
 EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
+ELS_RELEASE_DATE = "2024-06-12"
+
 Version = namedtuple("Version", ["major", "minor"])
 
 
@@ -83,6 +85,8 @@ class SystemInfo:
         ]
         # Whether the system release corresponds to a rhel eus release
         self.eus_system = None
+        # Whether the system release corresponds to a rhel els release
+        self.els_system = None
         # Packages to be removed before the system conversion
         self.excluded_pkgs = []
         # Packages that need to perform a swap in the transaction
@@ -97,6 +101,8 @@ class SystemInfo:
         self.default_rhsm_repoids = None
         # IDs of the Extended Update Support (EUS) Red Hat CDN repositories that correspond to the current system
         self.eus_rhsm_repoids = None
+        # IDs of the Extended Lifecycle Support (ELS) Red Hat CDN repositories that correspond to the current system
+        self.els_rhsm_repoids = None
         # List of repositories enabled through subscription-manager
         self.submgr_enabled_repos = []
         # Value to use for substituting the $releasever variable in the url of RHEL repositories
@@ -125,6 +131,7 @@ class SystemInfo:
         self.repofile_pkgs = self._get_repofile_pkgs()
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
+        self.els_rhsm_repoids = self._get_els_rhsm_repoids()
         self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
@@ -132,6 +139,7 @@ class SystemInfo:
         self.booted_kernel = self._get_booted_kernel()
         self.dbus_running = self._is_dbus_running()
         self.eus_system = self.corresponds_to_rhel_eus_release()
+        self.els_system = self.corresponds_to_rhel_els_release()
 
     def print_system_information(self):
         """Print system related information."""
@@ -272,6 +280,9 @@ class SystemInfo:
 
     def _get_eus_rhsm_repoids(self):
         return self._get_cfg_opt("eus_rhsm_repoids").split()
+
+    def _get_els_rhsm_repoids(self):
+        return self._get_cfg_opt("els_rhsm_repoids").split()
 
     def _get_cfg_opt(self, option_name):
         """Return value of a specific configuration file option."""
@@ -438,6 +449,20 @@ class SystemInfo:
             self.logger.info("EUS argument detected, automatically evaluating system as EUS")
             return True
 
+        return False
+
+    def corresponds_to_rhel_els_release(self):
+        """Return whether the current minor version corresponds to a RHEL Extended Lifecycle Support (ELS) release.
+
+        For example if we detect CentOS Linux 7 then this is an ELS release
+
+        :return: Whether or not the current system has an ELS correspondent in RHEL.
+        :rtype: bool
+        """
+        current_version = "%s" % (self.version.major)
+        # This check will be dropped once 7 is no longer supported under ELS
+        if current_version == "7":
+            return True
         return False
 
     def _is_dbus_running(self):

@@ -1,4 +1,4 @@
-# Copyright(C) 2023 Red Hat, Inc.
+# Copyright(C) 2024 Red Hat, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,52 +20,53 @@ import datetime
 import pytest
 
 from convert2rhel import actions, pkgmanager, systeminfo
-from convert2rhel.actions.system_checks import eus
+from convert2rhel.actions.system_checks import els
 from convert2rhel.systeminfo import Version, system_info
 
 
 @pytest.fixture
-def eus_action():
-    return eus.EusSystemCheck()
+def els_action():
+    return els.ElsSystemCheck()
 
 
 class DateMock(datetime.date):
     @classmethod
     def today(cls):
-        return cls(2023, 11, 15)
+        return cls(2024, 6, 13)
 
 
 class TestEus:
     @pytest.mark.parametrize(
         ("version_string", "message_reported"),
         (
-            (Version(8, 8), True),
-            (Version(9, 2), False),  # Change to True after 9.2 is under eus
+            (Version(7, 9), True),
+            (Version(8, 8), False),
+            (Version(9, 2), False),
         ),
     )
-    @pytest.mark.skipif(pkgmanager.TYPE != "dnf", reason="el7 systems are not under eus")
-    def test_eus_warning_message(self, eus_action, monkeypatch, global_tool_opts, version_string, message_reported):
+    # @pytest.mark.skipif(pkgmanager.TYPE != "yum", reason="el8 systems are not under els")
+    def test_els_warning_message(self, els_action, monkeypatch, global_tool_opts, version_string, message_reported):
 
-        global_tool_opts.eus = False
+        global_tool_opts.els = False
         monkeypatch.setattr(system_info, "version", version_string)
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
-        monkeypatch.setattr(eus.datetime, "date", DateMock)
+        monkeypatch.setattr(els.datetime, "date", DateMock)
 
-        eus_action.run()
+        els_action.run()
         expected = set(
             (
                 actions.ActionMessage(
                     level="WARNING",
-                    id="EUS_COMMAND_LINE_OPTION_UNUSED",
-                    title="The --eus command line option is unused",
-                    description="Current system version is under Extended Update Support (EUS). You may want to consider using the --eus"
+                    id="ELS_COMMAND_LINE_OPTION_UNUSED",
+                    title="The --els command line option is unused",
+                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
                     " command line option to land on a system patched with the latest security errata.",
                 ),
             )
         )
 
         if message_reported:
-            assert expected.issuperset(eus_action.messages)
-            assert expected.issubset(eus_action.messages)
+            assert expected.issuperset(els_action.messages)
+            assert expected.issubset(els_action.messages)
         else:
-            assert eus_action.messages == []
+            assert els_action.messages == []
