@@ -151,6 +151,7 @@ class SubscribeSystem(actions.Action):
         # Implicit dependency for `BACKUP_REDHAT_RELEASE`
         "PRE_SUBSCRIPTION",
         "EUS_SYSTEM_CHECK",
+        "ELS_SYSTEM_CHECK",
     )
 
     def run(self):

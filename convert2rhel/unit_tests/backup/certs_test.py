@@ -121,6 +121,7 @@ class TestPEMCert:
         ("arch", "rhel_version", "pem"),
         (
             ("x86_64", "7", "69.pem"),
+            ("x86_64", "7", "204.pem"),
             ("x86_64", "8", "479.pem"),
         ),
     )
