@@ -10,6 +10,7 @@ import six
 from convert2rhel import exceptions
 from convert2rhel.backup import files
 from convert2rhel.backup.files import MissingFile, RestorableFile
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -168,79 +169,94 @@ class TestRestorableFile:
             assert not caplog.records
 
     @pytest.mark.parametrize(
-        ("filename", "messages", "enabled", "rollback", "isfile"),
+        ("enabled", "rollback", "messages"),
         (
             (
-                "filename",
+                True,
+                True,
                 ["Rollback: Restore {orig_path} from backup", "File {orig_path} restored."],
-                True,
-                True,
-                True,
             ),
             (
-                None,
+                False,
+                True,
                 ["Rollback: Restore {orig_path} from backup", "{orig_path} hasn't been backed up."],
-                True,
-                True,
-                False,
             ),
-            (
-                "filename",
-                ["Rollback: Restore {orig_path} from backup", "{orig_path} hasn't been backed up."],
-                False,
-                True,
-                False,
-            ),
-            ("filename", ["Restoring {orig_path} from backup", "File {orig_path} restored."], True, False, True),
+            (True, False, ["Restoring {orig_path} from backup", "File {orig_path} restored."]),
         ),
     )
-    def test_restorable_file_restore(self, tmpdir, monkeypatch, caplog, filename, messages, enabled, rollback, isfile):
+    def test_restorable_file_restore(self, tmpdir, caplog, messages, enabled, rollback):
+        # Get the path of the original file, not creating it
+        orig_file_path = str(tmpdir.join("filename"))
+
+        # Create the backup of original file
         backup_dir = tmpdir.mkdir("backup")
-        backup_file = backup_dir.join("test")
-        backup_file.write("content")
-        backup_file = str(backup_file)
+        backedup_file_path = backup_dir.join("filename")
+        backedup_file_path.write("content")
+        backedup_file_path = str(backedup_file_path)
 
-        if filename:
-            file_for_restore = tmpdir.join("backup/filename")
-            file_for_restore.write("content")
-
+        # Format the messages to containt correct filepath
         for i, _ in enumerate(messages):
-            messages[i] = messages[i].format(orig_path=backup_file)
+            messages[i] = messages[i].format(orig_path=orig_file_path)
 
-        monkeypatch.setattr(os.path, "isfile", lambda file: isfile)
-        monkeypatch.setattr(shutil, "copy2", mock.Mock())
-        monkeypatch.setattr(os, "remove", mock.Mock())
-        monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
+        assert not os.path.isfile(orig_file_path)
 
-        file_backup = RestorableFile(backup_file)
+        file_backup = RestorableFile(orig_file_path)
         file_backup.enabled = enabled
+        file_backup._backup_path = backedup_file_path
         file_backup.restore(rollback=rollback)
 
+        # Check if the correct messages printed
         for i, message in enumerate(messages):
             assert message in caplog.records[i].message
 
-        if filename and enabled:
-            assert os.path.isfile(backup_file)
-            assert shutil.copy2.call_count == 1
-            assert os.remove.call_count == 1
+        if enabled:
+            # Check if restore was successfull
+            assert os.path.isfile(orig_file_path)
+            if rollback:
+                # Check if the file is in the backup folder
+                assert not os.path.isfile(backedup_file_path)
+            else:
+                assert os.path.isfile(backedup_file_path)
+        else:
+            assert not os.path.isfile(orig_file_path)
 
-    def test_restorable_file_backup_oserror(self, tmpdir, caplog, monkeypatch):
+    @centos7
+    def test_restorable_file_missing_backup(self, tmpdir, pretend_os):
+        """Test when the backed up file is missing in the backup folder."""
+        # Get the path of the original file, not creating it
+        orig_file_path = str(tmpdir.join("filename"))
+
+        # Create the backup of original file, not creating it
         backup_dir = tmpdir.mkdir("backup")
-        backup_file = backup_dir.join("filename")
-        backup_file.write("content")
+        backedup_file_path = backup_dir.join("filename")
+        backedup_file_path = str(backedup_file_path)
 
-        monkeypatch.setattr(
-            shutil,
-            "copy2",
-            mock.Mock(side_effect=[None, OSError(2, "No such file or directory")]),
-        )
-        monkeypatch.setattr(os.path, "isfile", lambda file: True)
-        monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
-        file_backup = RestorableFile(str(backup_file))
-        file_backup.enable()
-        file_backup.restore()
+        file_backup = RestorableFile(orig_file_path)
+        file_backup.enabled = True
+        file_backup._backup_path = backedup_file_path
 
-        assert "Error(2): No such file or directory" in caplog.records[-1].message
+        # Check if the exception is raised when the file is missing in the backup folder
+        with pytest.raises(OSError):
+            file_backup.restore()
+
+    @centos8
+    def test_restorable_file_missing_backup(self, tmpdir, pretend_os):
+        """Test when the backed up file is missing in the backup folder."""
+        # Get the path of the original file, not creating it
+        orig_file_path = str(tmpdir.join("filename"))
+
+        # Create the backup of original file, not creating it
+        backup_dir = tmpdir.mkdir("backup")
+        backedup_file_path = backup_dir.join("filename")
+        backedup_file_path = str(backedup_file_path)
+
+        file_backup = RestorableFile(orig_file_path)
+        file_backup.enabled = True
+        file_backup._backup_path = backedup_file_path
+
+        # Check if the exception is raised when the file is missing in the backup folder
+        with pytest.raises(IOError):
+            file_backup.restore()
 
     @pytest.mark.parametrize(
         ("file", "filepath", "message"),
@@ -339,19 +355,6 @@ class TestMissingFile:
             assert message.format(filepath=str(path)) == caplog.records[-1].message
         else:
             assert not caplog.records
-
-    def test_created_file_restore_oserror(self, monkeypatch, tmpdir, caplog):
-        path = tmpdir.join("filename")
-        path.write("content")
-
-        remove = mock.Mock(side_effect=OSError(2, "No such file or directory"))
-        monkeypatch.setattr(os, "remove", remove)
-
-        created_file = MissingFile(str(path))
-        created_file.enabled = True
-        created_file.restore()
-
-        assert "Error(2): No such file or directory" in caplog.records[-1].message
 
     @pytest.mark.parametrize(
         ("exists", "created", "message_push", "message_pop"),

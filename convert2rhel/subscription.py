@@ -240,14 +240,29 @@ def register_system():
         registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
 
         try:
-            # The file /etc/os-release is needed for subscribing the system and is being removed with
-            # <system-name>-release package in one of the steps before
-            # RHELC-16
-            os_release_file.restore(rollback=False)
+            # Only in first attempt, in the next attempts the file is already restored from the first run
+            if attempt <= 0:
+                # The file /etc/os-release is needed for subscribing the system and is being removed with
+                # <system-name>-release package in one of the steps before
+                # RHELC-16
+                os_release_file.restore(rollback=False)
+        except (OSError, IOError) as e:
+            loggerinst.critical_no_exit(
+                "Failed to restore the /etc/os-release file needed for subscribing the system with message: %s" % str(e)
+            )
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_SUBSCRIBE_SYSTEM",
+                title="Failed to subscribe system.",
+                description="Failed to restore the /etc/os-release file needed for subscribing the system.",
+                diagnosis="The restore failed with error %s." % (str(e)),
+            )
+
+        try:
             registration_cmd()
             # Need to remove the file, if it would stay there would be leftover /etc/os-release.rpmorig
             # after conversion
             # RHELC-16
+            # Will be removed only if the registration succeed
             os_release_file.remove()
             loggerinst.info("System registration succeeded.")
         except KeyboardInterrupt:

@@ -107,26 +107,32 @@ class RestorableFile(RestorableChange):
         return filepath
 
     def restore(self, rollback=True):
-        """Restore a previously backed up file"""
+        """Restore a previously backed up file
+
+        :arg rollback: bool value to decide if there is need print the rollback messages.
+            This argument can also be used during conversion for restoring some file needed
+            for conversion and thus won't need rollback messages.
+
+            .. warning::
+                Exceptions are not handled and left for handling by the calling code.
+
+        :raises OSError: When the backed up file is missing.
+        :raises IOError: When the backed up file is missing.
+        """
         if rollback:
             loggerinst.task("Rollback: Restore %s from backup" % self.filepath)
         else:
             loggerinst.info("Restoring %s from backup" % self.filepath)
 
-        # We do not have backup or not backed up by this
-        if (not self.enabled) or (not os.path.isfile(self._backup_path)):
+        if not self.enabled:
             loggerinst.info("%s hasn't been backed up." % self.filepath)
             return
 
-        try:
-            shutil.copy2(self._backup_path, self.filepath)
+        # Possible exceptions will be handled in the BackupController
+        shutil.copy2(self._backup_path, self.filepath)
+        if rollback:
+            # Remove the backed up file only when processing rollback
             os.remove(self._backup_path)
-        except (OSError, IOError) as err:
-            # Do not call 'critical' which would halt the program. We are in
-            # a rollback phase now and we want to rollback as much as possible.
-            # IOError for py2 and OSError for py3
-            loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
-            return
 
         if rollback:
             loggerinst.info("File %s restored." % self.filepath)
@@ -171,6 +177,14 @@ class MissingFile(RestorableChange):
         super(MissingFile, self).enable()
 
     def restore(self):
+        """Remove the file if it was created during conversion.
+
+            .. warning::
+                Exceptions are not handled and left for handling by the calling code.
+
+        :raises OSError: When the removal of the file fails.
+        :raises IOError: When the removal of the file fails.
+        """
         if not self.enabled:
             return
 
@@ -179,13 +193,8 @@ class MissingFile(RestorableChange):
         if not os.path.isfile(self.filepath):
             loggerinst.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
         else:
-            try:
-                os.remove(self.filepath)
-                loggerinst.info("File {filepath} removed".format(filepath=self.filepath))
-            except OSError as err:
-                # Do not call 'critical' which would halt the program. We are in
-                # a rollback phase now and we want to rollback as much as possible.
-                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
-                return
+            # Possible exceptions will be handled in the BackupController
+            os.remove(self.filepath)
+            loggerinst.info("File {filepath} removed".format(filepath=self.filepath))
 
-        super(MissingFile, self).restore()
+            super(MissingFile, self).restore()

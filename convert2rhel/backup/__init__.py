@@ -59,6 +59,7 @@ class BackupController:
 
     def __init__(self):
         self._restorables = []
+        self._rollback_failures = []
 
     def push(self, restorable):
         """
@@ -97,18 +98,18 @@ class BackupController:
         """
         Restores all RestorableChanges known to the Controller and then returns them.
 
-        :returns: List of RestorableChange objects that were known to the Controller.
+        :returns list[RestorableChange]: List of RestorableChange objects that were processed by the Controller.
         :raises IndexError: If there are no RestorableChanges currently known to the Controller.
 
         After running, the Controller object will not know about any RestorableChanges.
         """
         # Only raise IndexError if there are no restorables registered.
-        # Partitions are ignored for this check as they aren't really Changes.
         if not self._restorables:
             raise IndexError("No backups to restore")
 
-        # Restore the Changes in the reverse order the changes were enabled.
         processed_restorables = []
+
+        # Restore the Changes in the reverse order the changes were enabled.
         while True:
             try:
                 restorable = self._restorables.pop()
@@ -121,11 +122,33 @@ class BackupController:
             # logger.critical in some places.
             except (Exception, SystemExit) as e:
                 # Don't let a failure in one restore influence the others
-                loggerinst.warning("Error while rolling back a %s: %s" % (restorable.__class__.__name__, str(e)))
+                message = "Error while rolling back a %s: %s" % (restorable.__class__.__name__, str(e))
+                loggerinst.warning(message)
+                # Add the rollback failures to the list
+                self._rollback_failures.append(message)
 
             processed_restorables.append(restorable)
 
         return processed_restorables
+
+    @property
+    def rollback_failed(self):
+        """
+        Return True when one or more restorables were unsuccessful.
+
+        :returns: bool True if the rollback failed, False if rollback succeeded.
+        """
+
+        return any(self._rollback_failures)
+
+    @property
+    def rollback_failures(self):
+        """
+        Errors from failed rollback. Used to provide more information to the user.
+
+        :returns: List of strings containing errors captured during rollback.
+        """
+        return self._rollback_failures
 
 
 @six.add_metaclass(abc.ABCMeta)

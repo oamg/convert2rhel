@@ -146,6 +146,11 @@ class RestorablePEMCert(RestorableChange):
     def _restore(self):
         """The actual code to remove the certificate.  Done in a helper method so we can handle all
         the cases where we do not want to remove and still run the base class's restore().
+
+            .. warning::
+                Exceptions are not handled and left for handling by the calling code.
+
+        :raises OSError: Can be raised when the file is not found.
         """
         # Check whether any package owns the certificate file.  It is
         # possible that a new rpm package was installed after we copied the
@@ -187,8 +192,10 @@ class RestorablePEMCert(RestorableChange):
             if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
                 loggerinst.info("No certificates found to be removed.")
-            else:
-                loggerinst.error("OSError({0}): {1}".format(err.errno, err.strerror))
+                return
+
+            # Will be handled in BackupController
+            raise
 
 
 def _get_cert(cert_dir):
