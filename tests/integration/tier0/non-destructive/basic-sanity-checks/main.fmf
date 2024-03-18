@@ -6,7 +6,6 @@ description: |
         - Only last version of Convert2RHEL supported
         - Yum cache cleaned before any other check
         - Missing RHSM certificates logged properly
-        - Deprecated --variant message displayed
 
 tier: 0
 
@@ -120,17 +119,6 @@ tag+:
         - log-rhsm-error
     test: |
       pytest -svv -m test_log_rhsm_error
-
-
-/variant_message:
-    summary+: |
-        Deprecated variant message
-    description+: |
-        Verify that the message about deprecated --variant option is printed.
-    tag+:
-        - variant-message
-    test: |
-      pytest -svv -m test_variant_message
 
 
 /data_collection:
