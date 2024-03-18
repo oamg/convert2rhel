@@ -523,7 +523,7 @@ class TestDownload_pkg:
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
-        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
+        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": "1"})
         monkeypatch.setattr(toolopts.tool_opts, "activity", "analysis")
 
         with pytest.raises(SystemExit):
@@ -533,7 +533,7 @@ class TestDownload_pkg:
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
-        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK": "1"})
+        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": "1"})
         monkeypatch.setattr(toolopts.tool_opts, "activity", "conversion")
 
         path = utils.download_pkg("kernel")
@@ -567,9 +567,9 @@ def test_get_rpm_path_from_yumdownloader_output(output):
     ("envvar", "activity", "should_raise", "message"),
     (
         (None, "conversion", True, "If you would rather disregard this check"),
-        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "conversion", False, "environment variable detected"),
+        ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "conversion", False, "environment variable detected"),
         (None, "analysis", True, "you can choose to disregard this check"),
-        ("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to disregard this check"),
+        ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to disregard this check"),
     ),
 )
 def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog):

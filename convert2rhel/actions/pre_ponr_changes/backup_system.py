@@ -183,7 +183,7 @@ class BackupPackageFiles(actions.Action):
                 output = f.read()
         # Catch the IOError due Python 2 compatibility
         except IOError as err:
-            if os.environ.get("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None):
+            if os.environ.get("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
                 loggerinst.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
                 # Return empty list results in no backup of the files
                 return data

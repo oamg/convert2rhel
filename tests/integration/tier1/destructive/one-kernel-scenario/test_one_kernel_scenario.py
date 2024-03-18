@@ -72,7 +72,7 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
             # from Testing Farm
             shell("rm /etc/yum.repos.d/copr_build-convert2rhel-1.repo")
 
-        os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+        os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
         os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
         # Unavailable kmods may be present on the system due to the kernel package
         # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
