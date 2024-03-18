@@ -27,7 +27,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, checks, exceptions, grub, hostmetering
+from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, utils
 from convert2rhel.actions import report
@@ -41,6 +41,7 @@ from convert2rhel.unit_tests import (
     InitializeFileLoggingMocked,
     MainLockedMocked,
     PrintDataCollectionMocked,
+    PrintInfoAfterRollbackMocked,
     PrintSystemInformationMocked,
     RequireRootMocked,
     ResolveSystemInfoMocked,
@@ -57,6 +58,7 @@ class TestRollbackChanges:
         main.rollback_changes()
 
         assert global_backup_control.pop_all.call_args_list == mock.call()
+        assert backup.backup_control.rollback_failed == False
 
     def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(
@@ -67,6 +69,76 @@ class TestRollbackChanges:
 
         with pytest.raises(IndexError, match="Raised because of a bug in the code"):
             main.rollback_changes()
+
+    @pytest.mark.parametrize(
+        ("pre_conversion_results", "include_all_reports", "rollback_failures", "message", "summary_call_count"),
+        (
+            (
+                "anything",
+                False,
+                ["rollback_fail_0", "rollback_fail_1", "rollback_fail_2", "rollback_fail_3"],
+                "Rollback of system wasn't completed successfully.\n"
+                "The system is left in an undetermined state that Convert2RHEL cannot fix.\n"
+                "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+                " the system from a backup.\n"
+                "Following errors were captured during rollback:\n"
+                "rollback_fail_0\n"
+                "rollback_fail_1\n"
+                "rollback_fail_2\n"
+                "rollback_fail_3",
+                0,
+            ),
+            (
+                "anything",
+                False,
+                ["rollback_fail_0"],
+                "Rollback of system wasn't completed successfully.\n"
+                "The system is left in an undetermined state that Convert2RHEL cannot fix.\n"
+                "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+                " the system from a backup.\n"
+                "Following errors were captured during rollback:\n"
+                "rollback_fail_0",
+                0,
+            ),
+            ("anything", False, False, "", 1),
+            (
+                None,
+                True,
+                [],
+                "\nConversion interrupted before analysis of system completed. Report not generated.\n",
+                0,
+            ),
+        ),
+    )
+    def test_print_info_after_rollback(
+        self,
+        monkeypatch,
+        caplog,
+        pre_conversion_results,
+        include_all_reports,
+        message,
+        global_backup_control,
+        rollback_failures,
+        summary_call_count,
+    ):
+        report_summary = mock.Mock()
+        monkeypatch.setattr(global_backup_control, "_rollback_failures", rollback_failures)
+        monkeypatch.setattr(report, "summary", report_summary)
+
+        main.print_info_after_rollback(pre_conversion_results, include_all_reports)
+
+        assert report_summary.call_count == summary_call_count
+        if summary_call_count:
+            report_summary.assert_called_with(
+                results=pre_conversion_results,
+                include_all_reports=include_all_reports,
+                disable_colors=logger_module.should_disable_color_output(),
+            )
+        try:
+            assert message == caplog.records[-1].message
+        except IndexError:
+            # Nothing printed
+            assert message == caplog.text
 
 
 @pytest.mark.parametrize(("exception_type", "exception"), ((IOError, True), (OSError, True), (None, False)))
@@ -249,8 +321,6 @@ class TestRollbackFromMain:
         initialize_file_logging_mock = mock.Mock()
         toolopts_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock(side_effect=Exception)
-
-        # Mock the rollback calls
         finish_collection_mock = mock.Mock()
 
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
@@ -288,9 +358,11 @@ class TestRollbackFromMain:
             ),
         )
 
-        # And mock rollback items
-        monkeypatch.setattr(breadcrumbs, "finish_collection", FinishCollectionMocked())
+        # Mock rollback items
         monkeypatch.setattr(main, "rollback_changes", RollbackChangesMocked())
+        monkeypatch.setattr(main, "print_info_after_rollback", PrintInfoAfterRollbackMocked())
+
+        monkeypatch.setattr(breadcrumbs, "finish_collection", FinishCollectionMocked())
         monkeypatch.setattr(report, "summary_as_json", SummaryAsJsonMocked())
 
         assert main.main() == 1
@@ -301,6 +373,9 @@ class TestRollbackFromMain:
         assert system_info.resolve_system_info.call_count == 1
         assert breadcrumbs.collect_early_data.call_count == 1
         assert pkghandler.clear_versionlock.call_count == 1
+
+        assert main.rollback_changes.call_count == 0
+        assert main.print_info_after_rollback.call_count == 0
 
         assert caplog.records[-2].levelname == "INFO"
         assert caplog.records[-2].message.strip() == "No changes were made to the system."
