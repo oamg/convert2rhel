@@ -78,7 +78,7 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
         # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
         os.environ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"] = "1"
 
-        with convert2rhel("-y --disable-submgr {} --debug".format(enable_repo_opt)) as c2r:
+        with convert2rhel("-y --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
             c2r.expect("Conversion successful!")
 
         assert c2r.exitstatus == 0

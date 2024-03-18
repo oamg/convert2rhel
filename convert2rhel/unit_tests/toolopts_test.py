@@ -124,7 +124,7 @@ class TestTooloptsParseFromCLI:
 
         convert2rhel.toolopts.CLI()
 
-        message = "Ignoring the --serverurl option. It has no effect when" " --disable-submgr or --no-rhsm is used."
+        message = "Ignoring the --serverurl option. It has no effect when --no-rhsm is used."
         assert message in caplog.text
 
     def test_serverurl_with_no_rhsm_credentials(self, caplog, monkeypatch, global_tool_opts):
@@ -167,23 +167,19 @@ def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatc
 @pytest.mark.parametrize(
     ("argv", "raise_exception", "no_rhsm_value"),
     (
-        (mock_cli_arguments(["--disable-submgr"]), True, True),
         (mock_cli_arguments(["--no-rhsm"]), True, True),
-        (mock_cli_arguments(["--disable-submgr", "--enablerepo", "test_repo"]), False, True),
-        (mock_cli_arguments(["--no-rhsm", "--disable-submgr", "--enablerepo", "test_repo"]), False, True),
+        (mock_cli_arguments(["--no-rhsm", "--enablerepo", "test_repo"]), False, True),
     ),
 )
 @mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
 @mock.patch("convert2rhel.toolopts.tool_opts.enablerepo", [])
-def test_both_disable_submgr_and_no_rhsm_options_work(
-    argv, raise_exception, no_rhsm_value, monkeypatch, caplog, global_tool_opts
-):
+def test_no_rhsm_option_work(argv, raise_exception, no_rhsm_value, monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
 
     if raise_exception:
         with pytest.raises(SystemExit):
             convert2rhel.toolopts.CLI()
-            assert "The --enablerepo option is required when --disable-submgr or --no-rhsm is used." in caplog.text
+        assert "The --enablerepo option is required when --no-rhsm is used." in caplog.text
     else:
         convert2rhel.toolopts.CLI()
 

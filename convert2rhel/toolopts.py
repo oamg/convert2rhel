@@ -236,11 +236,6 @@ class CLI:
             description="The following options are required if you do not intend on using subscription-manager.",
         )
         group.add_argument(
-            "--disable-submgr",
-            action="store_true",
-            help="Replaced by --no-rhsm. Both options have the same effect.",
-        )
-        group.add_argument(
             "--no-rhsm",
             action="store_true",
             help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
@@ -406,10 +401,10 @@ class CLI:
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 
-        if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
+        if parsed_opts.no_rhsm:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
+                loggerinst.critical("The --enablerepo option is required when --no-rhsm is used.")
 
         if parsed_opts.eus:
             tool_opts.eus = True
@@ -431,9 +426,7 @@ class CLI:
 
         if parsed_opts.serverurl:
             if tool_opts.no_rhsm:
-                loggerinst.warning(
-                    "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
-                )
+                loggerinst.warning("Ignoring the --serverurl option. It has no effect when --no-rhsm is used.")
             # WARNING: We cannot use the following helper until after no_rhsm,
             # username, password, activation_key, and organization have been set.
             elif not _should_subscribe(tool_opts):
