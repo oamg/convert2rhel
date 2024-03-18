@@ -140,31 +140,6 @@ class TestTooloptsParseFromCLI:
 
 
 @pytest.mark.parametrize(
-    ("argv", "warn", "ask_to_continue"),
-    (
-        (mock_cli_arguments(["-v", "Server"]), True, True),
-        (mock_cli_arguments(["--variant", "Client"]), True, True),
-        (mock_cli_arguments(["-v"]), True, True),
-        (mock_cli_arguments(["--variant"]), True, True),
-        (mock_cli_arguments(["--version"]), False, False),
-        (mock_cli_arguments([]), False, False),
-    ),
-)
-def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatch, caplog):
-    monkeypatch.setattr(sys, "argv", argv)
-    monkeypatch.setattr(convert2rhel.utils, "ask_to_continue", mock.Mock())
-    convert2rhel.toolopts.warn_on_unsupported_options()
-    if warn:
-        assert "variant option is not supported" in caplog.text
-    else:
-        assert "variant option is not supported" not in caplog.text
-    if ask_to_continue:
-        convert2rhel.utils.ask_to_continue.assert_called_once()
-    else:
-        convert2rhel.utils.ask_to_continue.assert_not_called()
-
-
-@pytest.mark.parametrize(
     ("argv", "raise_exception", "no_rhsm_value"),
     (
         (mock_cli_arguments(["--no-rhsm"]), True, True),

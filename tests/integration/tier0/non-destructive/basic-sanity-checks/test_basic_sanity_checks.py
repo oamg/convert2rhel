@@ -239,36 +239,6 @@ def test_rhsm_error_logged(convert2rhel):
             assert "ERROR - OSError(2): No such file or directory" not in line
 
 
-@pytest.mark.test_variant_message
-def test_check_variant_message(convert2rhel):
-    """
-    Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
-    """
-    # Run c2r with --variant option
-    with convert2rhel("--debug --variant Server") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with --variant option empty
-    with convert2rhel("--debug --variant") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with -v option
-    with convert2rhel("--debug -v Client") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with -v option empty
-    with convert2rhel("--debug -v") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-
 @pytest.mark.test_data_collection_acknowledgement
 def test_data_collection_acknowledgement(shell, convert2rhel):
     """

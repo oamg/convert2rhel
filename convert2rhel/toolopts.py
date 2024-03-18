@@ -312,15 +312,6 @@ class CLI:
             " If no pool ID is provided, the --auto option is used",
         )
         group.add_argument(
-            "-v",
-            "--variant",
-            help="This option is not supported anymore and has no effect. When"
-            " converting a system to RHEL 7 using subscription-manager,"
-            " the system is now always converted to the Server variant. In case"
-            " of using custom repositories, the system is converted to the variant"
-            " provided by these repositories.",
-        )
-        group.add_argument(
             "--serverurl",
             help="Hostname of the subscription service to be used when registering the system with"
             " subscription-manager. The default is the Customer Portal Subscription Management service"
@@ -331,8 +322,6 @@ class CLI:
     def _process_cli_options(self):
         """Process command line options used with the tool."""
         _log_command_used()
-
-        warn_on_unsupported_options()
 
         # algorithm function to properly organize all CLI args
         argv = _add_default_command(sys.argv[1:])
@@ -510,15 +499,6 @@ class CLI:
             loggerinst.critical(
                 "Either the --organization or the --activationkey option is missing. You can't use one without the other."
             )
-
-
-def warn_on_unsupported_options():
-    if any(x in sys.argv[1:] for x in ["--variant", "-v"]):
-        loggerinst.warning(
-            "The -v|--variant option is not supported anymore and has no effect.\n"
-            "See help (convert2rhel -h) for more information."
-        )
-        utils.ask_to_continue()
 
 
 def _log_command_used():
