@@ -675,7 +675,7 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
             ["--no-rpm-va"],
             False,
             False,
-            "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
+            "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
         ),
         (["--no-rpm-va"], True, True, ""),
     ),
@@ -683,7 +683,7 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
 def test_setting_no_rpm_va(argv, env_var, expected, message, monkeypatch, global_tool_opts, caplog):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
     if env_var:
-        monkeypatch.setenv("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "1")
+        monkeypatch.setenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "1")
 
     try:
         convert2rhel.toolopts.CLI()

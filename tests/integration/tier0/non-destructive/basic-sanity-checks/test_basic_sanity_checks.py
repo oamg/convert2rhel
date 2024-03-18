@@ -299,11 +299,11 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
 
 @pytest.fixture
 def analyze_incomplete_rollback_envar():
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+    os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
 
     yield
 
-    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
+    del os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"]
 
 
 @pytest.mark.test_analyze_incomplete_rollback
@@ -325,7 +325,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
+                "setting the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
                 timeout=300,
             )
             == 0
@@ -338,7 +338,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         c2r.sendline("y")
         assert (
             c2r.expect(
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
                 timeout=300,
             )
             == 0

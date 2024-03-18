@@ -231,10 +231,10 @@ class TestBackupSystem:
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
 
         if env_var:
-            os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+            os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
         else:
             # Unset the variable
-            os.environ.pop("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None)
+            os.environ.pop("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None)
 
         backup_package_file = backup_system.BackupPackageFiles()
 

@@ -185,7 +185,7 @@ class CLI:
             " stored in log files %s and %s. At the end of the conversion, these logs are compared"
             " to show you what rpm files have been affected by the conversion."
             " Cannot be used with analyze subcommand."
-            " The environment variable CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"
+            " The environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK"
             " needs to be set to 1 to use this argument." % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
         self._shared_options_parser.add_argument(
@@ -369,13 +369,13 @@ class CLI:
                     " in the analysis mode is essential for a complete rollback to the original"
                     " system state at the end of the analysis."
                 )
-            elif os.getenv("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None):
+            elif os.getenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
                 tool_opts.no_rpm_va = True
             else:
                 message = (
                     "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes"
                     " done to the system during the pre-conversion analysis. If you accept the risk of an"
-                    " incomplete rollback, set the CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1 environment"
+                    " incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment"
                     " variable. Otherwise, remove the --no-rpm-va option."
                 )
                 loggerinst.critical(message)

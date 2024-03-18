@@ -127,7 +127,7 @@ def test_backup_os_release_no_envar(
     """
     This test case removes all the repos on the system which prevents the backup of some files.
     Satellite is being used in all of test cases.
-    In this scenario there is no variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` set.
+    In this scenario there is no variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` set.
     This means the conversion is inhibited in early stage.
     """
 
@@ -139,7 +139,7 @@ def test_backup_os_release_no_envar(
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect("set the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
+        c2r.expect("set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK")
         assert c2r.exitstatus != 0
 
     assert shell("find /etc/os-release").returncode == 0
@@ -147,11 +147,11 @@ def test_backup_os_release_no_envar(
 
 @pytest.fixture(scope="function")
 def unsupported_rollback_envar(shell):
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+    os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
 
     yield
 
-    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
+    del os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"]
 
 
 @pytest.mark.test_backup_os_release_with_envar
@@ -159,7 +159,7 @@ def test_backup_os_release_with_envar(
     shell, convert2rhel, custom_subman, katello_package, repositories, unsupported_rollback_envar, kernel_check_envar
 ):
     """
-    In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.
+    In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that
     the /etc/os-release package is being backed up and restored during rollback.
     Ref ticket: OAMG-5457. Note that after the test, the $releasever
@@ -175,9 +175,7 @@ def test_backup_os_release_with_envar(
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect(
-            "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
-        )
+        c2r.expect("'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.")
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0

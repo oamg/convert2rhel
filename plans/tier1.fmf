@@ -123,9 +123,9 @@ description+: |
             environment+:
                 CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
                 # Since we are removing all the repositories other than rhel-7-server-rpms
-                # we need pass CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK due to the inability
+                # we need pass CONVERT2RHEL_INCOMPLETE_ROLLBACK due to the inability
                 # to download and backup packages
-                CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK: 1
+                CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
                 # Unavailable kmods may be present on the system due to the kernel package
                 # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
                 CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
