@@ -62,8 +62,7 @@ def test_get_rhel_repoids_el8(pretend_os, is_eus_release, expected, monkeypatch)
         (
             True,
             [
-                "rhel-7-for-x86_64-baseos-els-rpms",
-                "rhel-7-for-x86_64-appstream-els-rpms",
+                "rhel-7-server-els-rpms",
             ],
         ),
         (
