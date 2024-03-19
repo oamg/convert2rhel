@@ -470,6 +470,13 @@ def pre_registered(shell):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     """
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        # Documentation does not contain steps on how to subscribe OL systems
+        # https://issues.redhat.com/browse/RHELC-1485
+        pytest.fail(
+            "Subscription manager is not present in Oracle Linux repositories. Please refer to RHELC-1485 for more"
+        )
+
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the SSL certificate
     shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
@@ -506,8 +513,9 @@ def pre_registered(shell):
         assert original_registration_uuid == post_c2r_registration_uuid
         del os.environ["C2R_TESTS_CHECK_RHSM_UUID_MATCH"]
 
-        assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
-        assert shell("subscription-manager unregister").returncode == 0
+    # Always unregister the system
+    assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+    assert shell("subscription-manager unregister").returncode == 0
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:

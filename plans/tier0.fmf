@@ -41,7 +41,9 @@ description+: |
                 adjust+:
                   - enabled: false
                     when: distro == oracle
-                    because: There is no subscription-manager package in Oracle Linux repositories
+                    because: |
+                        There is no subscription-manager package in Oracle Linux repositories
+                        and no documentation is provided - https://issues.redhat.com/browse/RHELC-1485.
                   - environment+:
                       C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
                 discover+:

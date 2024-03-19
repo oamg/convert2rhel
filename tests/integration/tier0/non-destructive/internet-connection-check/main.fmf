@@ -20,17 +20,22 @@ tag+:
     test: |
         pytest -svv -m test_available_connection
 
-/unavailable_connection:
+/failed_internet_connection_check:
     summary+: |
-        Connection unavailable
+        Full analysis when connection check failed on pre registered system
     description+: |
-        Modify the '/etc/dnsmasq.conf' and '/etc/resolv.conf' files
-        so everything gets resolved to localhost.
-        Verify that the internet connection check fails and
-        the user is notified, that there was a problem,
-        therefore the connection seems to be unavailable.
+        Make sure that the connection check fails but the
+        whole analysis finishes without issue.
+    adjust+:
+        - environment+:
+            C2R_TESTS_SUBMAN_CLEANUP: 1
+        - enabled: false
+          when: distro == oracle
+          because: |
+            There is no subscription-manager package in Oracle Linux repositories
+            and no documentation is provided - https://issues.redhat.com/browse/RHELC-1485.
     tag+:
-        - unavailable-connection
+        - internet-check-fail
         - sanity
     test: |
-        pytest -svv -m test_unavailable_connection
+        pytest -svv -m test_failed_internet_connection_check
