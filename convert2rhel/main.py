@@ -123,7 +123,7 @@ def main_locked():
         _raise_for_skipped_failures(pre_conversion_results)
 
         # Print the assessment just before we ask the user whether to continue past the PONR
-        report.summary(
+        report.pre_conversion_report(
             results=pre_conversion_results,
             include_all_reports=False,
             disable_colors=logger_module.should_disable_color_output(),
@@ -140,25 +140,22 @@ def main_locked():
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
-        # TODO(r0x0d): Just temporary, so we don't need to rush with migrating
-        # all the functions at once to the framework.
-        if "CONVERT2RHEL_EXPERIMENTAL_POST_PONR_ACTIONS" in os.environ:
-            post_conversion_results = actions.run_post_actions()
-            _raise_for_skipped_failures(post_conversion_results)
-            # Print the assessment just before we ask the user whether to continue past the PONR
-            report.summary(
-                results=post_conversion_results,
-                include_all_reports=False,
-                disable_colors=logger_module.should_disable_color_output(),
-            )
-        else:
-            post_ponr_changes()
+        post_conversion_results = actions.run_post_actions()
+
+        # TODO(r0x0d): Remove this after migrating all functions to Actions.
+        post_ponr_changes()
+
+        _raise_for_skipped_failures(post_conversion_results)
+        report.post_conversion_report(
+            results=post_conversion_results,
+            include_all_reports=False,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
 
         loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
         utils.restart_system()
-
     except _AnalyzeExit:
         breadcrumbs.breadcrumbs.finish_collection(success=True)
         # Update RHSM custom facts only when this returns False. Otherwise,
@@ -168,26 +165,33 @@ def main_locked():
 
         rollback_changes()
 
-        report.summary(
+        report.pre_conversion_report(
             pre_conversion_results,
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
         return 0
-
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
-        return _handle_main_exceptions(process_phase, pre_conversion_results)
-
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(process_phase, results)
     except (Exception, SystemExit, KeyboardInterrupt) as err:
-        return _handle_main_exceptions(process_phase, pre_conversion_results)
-
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(process_phase, results)
     finally:
         # Write the assessment to a file as json data so that other tools can
         # parse and act upon it.
-        if pre_conversion_results:
-            actions.report.summary_as_json(pre_conversion_results)
-            actions.report.summary_as_txt(pre_conversion_results)
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        json_filepath = report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS
+        txt_filepath = report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS
+
+        if process_phase == ConversionPhase.POST_PONR_CHANGES:
+            json_filepath = report.CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS
+            txt_filepath = report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS
+
+        if results:
+            report.summary_as_json(results, json_filepath)
+            report.summary_as_txt(results, txt_filepath)
 
     return 0
 
@@ -206,7 +210,20 @@ def _raise_for_skipped_failures(results):
         loggerinst.critical("Conversion failed.")
 
 
-def _handle_main_exceptions(process_phase, pre_conversion_results=None):
+# TODO(r0x0d): Better function name
+def _pick_conversion_results(process_phase, pre_conversion, post_conversion):
+    """Utilitary function to define which action results to use
+
+    Maybe not be necessary (or even correct), but it is the best approximation
+    idea for now.
+    """
+    if process_phase == ConversionPhase.POST_PONR_CHANGES:
+        return post_conversion
+
+    return pre_conversion
+
+
+def _handle_main_exceptions(process_phase, results=None):
     """Common steps to handle graceful exit due to several different Exception types."""
     breadcrumbs.breadcrumbs.finish_collection()
 
@@ -222,12 +239,12 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
             subscription.update_rhsm_custom_facts()
 
         rollback_changes()
-        if pre_conversion_results is None:
+        if results is None:
             loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
         else:
-            report.summary(
-                pre_conversion_results,
-                include_all_reports=(toolopts.tool_opts.activity == "analysis"),
+            report.pre_conversion_report(
+                results=results,
+                include_all_reports=True,
                 disable_colors=logger_module.should_disable_color_output(),
             )
     elif process_phase == ConversionPhase.POST_PONR_CHANGES:
@@ -236,6 +253,7 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
         # system rollback without user intervention. If a proper rollback
         # solution is necessary it will need to be future implemented here
         # or with the use of other backup tools.
+        subscription.update_rhsm_custom_facts()
         loggerinst.warning(
             "The conversion process failed.\n\n"
             "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
@@ -243,7 +261,12 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
             "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
             " the system from a backup."
         )
-        subscription.update_rhsm_custom_facts()
+
+        report.post_conversion_report(
+            results=results,
+            include_all_reports=True,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
     return 1
 
 
@@ -304,7 +327,6 @@ def prepare_system():
 
 def post_ponr_changes():
     """Start the conversion itself"""
-    loggerinst.info("Starting Conversion")
     post_ponr_conversion()
 
     loggerinst.task("Final: Show RPM files modified by the conversion")
@@ -331,9 +353,6 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    transaction_handler = pkgmanager.create_transaction_handler()
-    loggerinst.task("Convert: Replace system packages")
-    transaction_handler.run_transaction()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
