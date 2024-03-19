@@ -35,8 +35,11 @@ from convert2rhel.logger import colorize
 logger = logging.getLogger(__name__)
 
 #: The filename to store the results of running preassessment
-CONVERT2RHEL_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
-CONVERT2RHEL_TXT_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
+CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
+CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
+#: The filename to store the results of the post conversion report
+CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-post-conversion.json"
+CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS = "/var/log/convert2rhel/convert2rhel-post-conversion.txt"
 
 #: Map Status codes (from convert2rhel.actions.STATUS_CODE) to color name (from
 #: convert2rhel.logger.bcolor)
@@ -57,7 +60,7 @@ _STATUS_TO_COLOR = {
 }
 
 
-def summary_as_json(results, json_file=CONVERT2RHEL_JSON_RESULTS):
+def summary_as_json(results, json_file):
     """
     Output the results as a json_file.
 
@@ -149,7 +152,37 @@ def get_combined_results_and_message(results):
     return combined_results_and_message
 
 
-def summary(results, include_all_reports=False, disable_colors=False):
+def pre_conversion_report(results, include_all_reports=False, disable_colors=False):
+    """Wrapper around summary to output pre-conversion report.
+
+    :param results: Results dictionary as returned by :func:`run_actions`
+    :type results: Mapping
+    :keyword disable_colors: Whether to color the messages according to their status
+    :type disable_colors: bool
+    :keyword include_all_reports: If all reports should be logged instead of the
+        highest ones.
+    :type include_all_reports: bool
+    """
+    logger.task("Pre-conversion analysis report")
+    _summary(results, include_all_reports, disable_colors)
+
+
+def post_conversion_report(results, include_all_reports=False, disable_colors=False):
+    """Wrapper around summary to output post-conversion report.
+
+    :param results: Results dictionary as returned by :func:`run_actions`
+    :type results: Mapping
+    :keyword disable_colors: Whether to color the messages according to their status
+    :type disable_colors: bool
+    :keyword include_all_reports: If all reports should be logged instead of the
+        highest ones.
+    :type include_all_reports: bool
+    """
+    logger.task("Post-conversion report")
+    _summary(results, include_all_reports, disable_colors)
+
+
+def _summary(results, include_all_reports, disable_colors):
     """Output a summary regarding the actions execution.
 
     This summary is intended to be used to inform the user about the results
@@ -213,7 +246,6 @@ def summary(results, include_all_reports=False, disable_colors=False):
         highest ones.
     :type include_all_reports: bool
     """
-    logger.task("Pre-conversion analysis report")
     report = []
 
     combined_results_and_message = get_combined_results_and_message(results)
@@ -247,7 +279,7 @@ def summary(results, include_all_reports=False, disable_colors=False):
     # If there is no other message sent to the user, then we just give a
     # happy message to them.
     if not combined_results_and_message:
-        report.append("No problems detected during the analysis!")
+        report.append("No problems detected!")
 
     logger.info("%s\n" % "\n".join(report))
 
@@ -291,7 +323,7 @@ def find_highest_report_level(results):
     return highest_action_level
 
 
-def summary_as_txt(results):
+def summary_as_txt(results, txt_file):
     """
     Print the report to txt file. Used mainly by Satellite.
     Accepts the data preformatted by summary function.
@@ -317,5 +349,5 @@ def summary_as_txt(results):
     txt_result = txt_result.strip()
 
     # We need info from the last run, any old results are discarded
-    with open(CONVERT2RHEL_TXT_RESULTS, "w") as file:
+    with open(txt_file, "w") as file:
         file.write(txt_result)
