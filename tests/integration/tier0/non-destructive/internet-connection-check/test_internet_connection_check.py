@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 import pytest
@@ -82,3 +83,26 @@ def test_check_if_internet_connection_is_not_reachable(convert2rhel, shell, conf
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0
+
+
+@pytest.mark.test_failed_internet_connection_check
+def test_failed_internet_connection_check(convert2rhel, shell, pre_registered):
+    """Make sure the internet connection check fails. The analysis should be able
+    to finish without any further issues."""
+
+    shell("echo '127.0.0.1 static.redhat.com' >> /etc/hosts")
+    with convert2rhel("analyze -y --debug") as c2r:
+        c2r.expect(
+            "Checking internet connectivity using address 'https://static.redhat.com/test/rhel-networkmanager.txt'"
+        )
+        c2r.expect("Pre-conversion analysis report", timeout=600)
+
+    # Check that there are no errors in the analysis report
+    with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
+        log_data = logfile.read()
+        match = re.search(r"Error \(Must fix before conversion\)", log_data, re.IGNORECASE)
+        assert match is None, "Error found in the log file data."
+
+    assert c2r.exitstatus == 0
+    # Clean up
+    shell("sed -i '/127.0.0.1 static.redhat.com/d' /etc/hosts")
