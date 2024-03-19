@@ -87,14 +87,14 @@ class BackupRepository(actions.Action):
         loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
 
         repo_files_backed_up = False
-
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
-            if not subscription.should_subscribe:
-                if repo.endswith(".repo") and repo != "redhat.repo":
-                    repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
-                    restorable_file = RestorableFile(repo_path)
-                    backup.backup_control.push(restorable_file)
-                    repo_files_backed_up = True
+            if (repo.endswith(".repo") and repo != "redhat.repo") or (
+                subscription.should_subscribe and repo == "redhat.repo"
+            ):
+                repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
+                restorable_file = RestorableFile(repo_path)
+                backup.backup_control.push(restorable_file)
+                repo_files_backed_up = True
 
         if not repo_files_backed_up:
             loggerinst.info("No .repo files backed up.")

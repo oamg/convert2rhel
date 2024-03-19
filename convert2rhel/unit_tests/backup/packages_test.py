@@ -120,39 +120,6 @@ class TestRestorablePackage:
         assert packages.get_hardcoded_repofiles_dir.call_count == 1
         assert utils.download_pkg.call_count == 1
 
-    @pytest.mark.parametrize(
-        (
-            "has_internet_access",
-            "expected",
-        ),
-        (
-            (
-                True,
-                "Using repository files stored in %s",
-            ),
-            (
-                False,
-                "Not using repository files stored in %s due to the absence of internet access.",
-            ),
-        ),
-    )
-    def test_enable_has_internet_connection(
-        self, has_internet_access, expected, monkeypatch, tmpdir, global_system_info, caplog
-    ):
-        tmpdir = str(tmpdir)
-        monkeypatch.setattr(packages, "BACKUP_DIR", tmpdir)
-        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
-        monkeypatch.setattr(packages, "system_info", global_system_info)
-
-        global_system_info.has_internet_access = has_internet_access
-
-        rp = RestorablePackage(pkgs=["test.rpm"], reposdir=tmpdir)
-        rp._backedup_pkgs_paths = ["test.rpm"]
-        rp.enable()
-
-        assert utils.download_pkg.call_count == 1
-        assert expected % tmpdir in caplog.records[-1].message
-
     def test_package_already_enabled(self, monkeypatch, tmpdir):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())

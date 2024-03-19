@@ -31,7 +31,7 @@ class DuplicatePackages(actions.Action):
         super(DuplicatePackages, self).run()
 
         logger.task("Prepare: Check if there are any duplicate installed packages on the system")
-        output, _ = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)
+        output, ret = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)
         if not output:
             return
 

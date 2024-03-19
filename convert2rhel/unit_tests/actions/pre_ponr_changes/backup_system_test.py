@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import unit_tests
+from convert2rhel import subscription, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
@@ -390,6 +390,7 @@ class TestBackupRepository:
         redhat_repo = generate_repo(tmpdir, "redhat.repo")
 
         monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(redhat_repo))
+        monkeypatch.setattr(subscription, "should_subscribe", value=False)
 
         backup_repository = backup_repository_action
         backup_repository.run()

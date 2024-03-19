@@ -61,9 +61,13 @@ def test_duplicate_packages_error(monkeypatch, output, expected, duplicate_packa
     )
 
 
-def test_duplicate_packages_success(monkeypatch, duplicate_packages_action):
+@pytest.mark.parametrize(
+    ("output"),
+    ((""),),
+)
+def test_duplicate_packages_success(monkeypatch, duplicate_packages_action, output):
 
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=("", 0)))
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=(output, 0)))
     duplicate_packages_action.run()
     unit_tests.assert_actions_result(
         duplicate_packages_action,
