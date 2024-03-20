@@ -178,7 +178,7 @@ class RestorablePackage(RestorableChange):
 
         utils.remove_orphan_folders()
 
-        loggerinst.task("Rollback: Install removed packages")
+        loggerinst.rollback("Install removed packages")
         if not self._backedup_pkgs_paths:
             loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
             return
@@ -379,7 +379,7 @@ class RestorablePackageSet(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Remove installed RHSM packages")
+        loggerinst.rollback("Remove installed RHSM packages")
         loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 

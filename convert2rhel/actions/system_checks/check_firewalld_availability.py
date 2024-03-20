@@ -85,7 +85,7 @@ class CheckFirewalldAvailability(actions.Action):
     def run(self):
         """Error out if the firewalld service is running on the system."""
         super(CheckFirewalldAvailability, self).run()
-        logger.task("Prepare: Check that firewalld is running")
+        logger.prepare("Check that firewalld is running")
 
         if system_info.id == "oracle" and system_info.version.major == 8 and system_info.version.minor >= 8:
             # If firewalld is not present on the system, we can just skip skip.

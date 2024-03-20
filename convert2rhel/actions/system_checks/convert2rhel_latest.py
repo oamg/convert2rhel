@@ -55,7 +55,7 @@ class Convert2rhelLatest(actions.Action):
 
     def run(self):
         """Make sure that we are running the latest downstream version of convert2rhel"""
-        logger.task("Prepare: Check if this is the latest version of Convert2RHEL")
+        logger.prepare("Check if this is the latest version of Convert2RHEL")
 
         super(Convert2rhelLatest, self).run()
 

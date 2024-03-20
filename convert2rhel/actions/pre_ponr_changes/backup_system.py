@@ -49,7 +49,7 @@ class BackupRedhatRelease(actions.Action):
 
     def run(self):
         """Backup redhat release file before starting conversion process"""
-        loggerinst.task("Prepare: Backup Redhat Release Files")
+        loggerinst.prepare("Backup Redhat Release Files")
 
         super(BackupRedhatRelease, self).run()
 
@@ -76,7 +76,7 @@ class BackupRepository(actions.Action):
 
     def run(self):
         """Backup repository files before starting conversion process"""
-        loggerinst.task("Prepare: Backup Repository Files")
+        loggerinst.prepare("Backup Repository Files")
 
         super(BackupRepository, self).run()
 
@@ -104,7 +104,7 @@ class BackupYumVariables(actions.Action):
 
     def run(self):
         """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
-        loggerinst.task("Prepare: Backup variables")
+        loggerinst.prepare("Backup variables")
 
         super(BackupYumVariables, self).run()
 
@@ -145,7 +145,7 @@ class BackupPackageFiles(actions.Action):
         """Backup changed package files"""
         super(BackupPackageFiles, self).run()
 
-        loggerinst.task("Prepare: Backup package files")
+        loggerinst.prepare("Backup package files")
 
         package_files_changes = self._get_changed_package_files()
 

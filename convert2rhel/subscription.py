@@ -92,7 +92,7 @@ class RestorableSystemSubscription(backup.RestorableChange):
 
     def restore(self):
         """Rollback subscription related changes"""
-        loggerinst.task("Rollback: RHSM-related actions")
+        loggerinst.rollback("RHSM-related actions")
 
         if self.enabled:
             try:

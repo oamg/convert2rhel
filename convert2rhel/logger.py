@@ -25,6 +25,10 @@ CRITICAL            (50)    Calls critical() function and sys.exit(1)
 ERROR               (40)    Prints error message using date/time
 WARNING             (30)    Prints warning message using date/time
 INFO                (20)    Prints info message (no date/time, just plain message)
+PREPARE             (15)    Prints prepare header message for pre-conversion tasks
+CONVERT             (15)    Prints convert header message for post-conversion tasks
+FINAL               (15)    Prints final header message for post-conversion tasks
+ROLLBACK            (15)    Prints rollback header message
 TASK                (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG               (10)    Prints debug message (using date/time)
 FILE                (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
@@ -53,6 +57,26 @@ class LogLevelCriticalNoExit:
 class LogLevelTask:
     level = 15
     label = "TASK"
+
+
+class LogLevelPrepare:
+    level = 15
+    label = "PREPARE"
+
+
+class LogLevelConvert:
+    level = 15
+    label = "CONVERT"
+
+
+class LogLevelFinal:
+    level = 15
+    label = "FINAL"
+
+
+class LogLevelRollback:
+    level = 15
+    label = "ROLLBACK"
 
 
 class LogLevelFile:
@@ -122,9 +146,17 @@ def setup_logger_handler():
     from your application's main start point.
     """
     # set custom labels
+    logging.addLevelName(LogLevelPrepare.level, LogLevelPrepare.label)
+    logging.addLevelName(LogLevelConvert.level, LogLevelConvert.label)
+    logging.addLevelName(LogLevelFinal.level, LogLevelFinal.label)
+    logging.addLevelName(LogLevelRollback.level, LogLevelRollback.label)
     logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
     logging.addLevelName(LogLevelCriticalNoExit.level, LogLevelCriticalNoExit.label)
+    logging.Logger.prepare = _prepare
+    logging.Logger.convert = _convert
+    logging.Logger.final = _final
+    logging.Logger.rollback = _rollback
     logging.Logger.task = _task
     logging.Logger.file = _file
     logging.Logger.debug = _debug
@@ -231,6 +263,30 @@ def archive_old_logger_files(log_name, log_dir):
     file_name, suffix = tuple(log_name.rsplit(".", 1))
     archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, formatted_time, suffix)
     shutil.move(current_log_file, archive_log_file)
+
+
+def _prepare(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelPrepare.level):
+        message = "Prepare: %s" % msg
+        self._log(LogLevelPrepare.level, message, args, **kwargs)
+
+
+def _convert(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelConvert.level):
+        message = "Convert: %s" % msg
+        self._log(LogLevelConvert.level, message, args, **kwargs)
+
+
+def _final(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelFinal.level):
+        message = "Final: %s" % msg
+        self._log(LogLevelFinal.level, message, args, **kwargs)
+
+
+def _rollback(self, msg, *args, **kwargs):
+    if self.isEnabledFor(LogLevelRollback.level):
+        message = "Rollback: %s" % msg
+        self._log(LogLevelRollback.level, message, args, **kwargs)
 
 
 def _task(self, msg, *args, **kwargs):

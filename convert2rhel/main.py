@@ -232,10 +232,10 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
 def perform_boilerplate():
     """Standard interactions with the user prior to doing any conversion work."""
     # license agreement
-    loggerinst.task("Prepare: Show Red Hat software EULA")
+    loggerinst.prepare("Show Red Hat software EULA")
     show_eula()
 
-    loggerinst.task("Prepare: Inform about data collection")
+    loggerinst.prepare("Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
 
 
@@ -259,7 +259,7 @@ def show_eula():
 def gather_system_info():
     """Retrieve information about the system to be converted"""
     # gather system information
-    loggerinst.task("Prepare: Gather system information")
+    loggerinst.prepare("Gather system information")
     systeminfo.system_info.resolve_system_info()
     systeminfo.system_info.print_system_information()
     breadcrumbs.breadcrumbs.collect_early_data()
@@ -267,10 +267,10 @@ def gather_system_info():
 
 def prepare_system():
     """Setup the environment to do the conversion within"""
-    loggerinst.task("Prepare: Clear YUM/DNF version locks")
+    loggerinst.prepare("Clear YUM/DNF version locks")
     pkghandler.clear_versionlock()
 
-    loggerinst.task("Prepare: Clean yum cache metadata")
+    loggerinst.prepare("Clean yum cache metadata")
     pkgmanager.clean_yum_metadata()
 
 
@@ -284,42 +284,42 @@ def post_ponr_changes():
     loggerinst.info("Starting Conversion")
     post_ponr_conversion()
 
-    loggerinst.task("Final: Show RPM files modified by the conversion")
+    loggerinst.final("Show RPM files modified by the conversion")
     systeminfo.system_info.modified_rpm_files_diff()
 
-    loggerinst.task("Final: Update GRUB2 configuration")
+    loggerinst.final("Update GRUB2 configuration")
     grub.update_grub_after_conversion()
 
-    loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
+    loggerinst.final("Remove temporary folder %s" % utils.TMP_DIR)
     utils.remove_tmp_dir()
 
-    loggerinst.task("Final: Check kernel boot files")
+    loggerinst.final("Check kernel boot files")
     checks.check_kernel_boot_files()
 
-    loggerinst.task("Final: Configure host-metering")
+    loggerinst.final("Configure host-metering")
     hostmetering.configure_host_metering()
 
-    loggerinst.task("Final: Update breadcrumbs")
+    loggerinst.final("Update breadcrumbs")
     breadcrumbs.breadcrumbs.finish_collection(success=True)
 
-    loggerinst.task("Final: Update RHSM custom facts")
+    loggerinst.final("Update RHSM custom facts")
     subscription.update_rhsm_custom_facts()
 
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
     transaction_handler = pkgmanager.create_transaction_handler()
-    loggerinst.task("Convert: Replace system packages")
+    loggerinst.convert("Replace system packages")
     transaction_handler.run_transaction()
-    loggerinst.task("Convert: Prepare kernel")
+    loggerinst.convert("Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
-    loggerinst.task("Convert: List remaining non-Red Hat packages")
+    loggerinst.convert("List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
-    loggerinst.task("Convert: Configure the bootloader")
+    loggerinst.convert("Configure the bootloader")
     grub.post_ponr_set_efi_configuration()
-    loggerinst.task("Convert: Patch yum configuration file")
+    loggerinst.convert("Patch yum configuration file")
     redhatrelease.YumConf().patch()
-    loggerinst.task("Convert: Lock releasever in RHEL repositories")
+    loggerinst.convert("Lock releasever in RHEL repositories")
     subscription.lock_releasever_in_rhel_repositories()
 
 

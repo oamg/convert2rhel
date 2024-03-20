@@ -33,7 +33,7 @@ class PackageUpdates(actions.Action):
     def run(self):
         """Ensure that the system packages installed are up-to-date."""
         super(PackageUpdates, self).run()
-        logger.task("Prepare: Check if the installed packages are up-to-date")
+        logger.prepare("Check if the installed packages are up-to-date")
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(

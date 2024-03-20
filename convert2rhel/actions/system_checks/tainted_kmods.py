@@ -42,7 +42,7 @@ class TaintedKmods(actions.Action):
         """
         super(TaintedKmods, self).run()
 
-        logger.task("Prepare: Check if loaded kernel modules are not tainted")
+        logger.prepare("Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         tainted_kmods_skip = os.environ.get("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP", None)
