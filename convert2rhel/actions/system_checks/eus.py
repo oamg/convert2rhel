@@ -34,7 +34,7 @@ class EusSystemCheck(actions.Action):
         super(EusSystemCheck, self).run()
 
         current_version = "%s.%s" % (system_info.version.major, system_info.version.minor)
-        eus_versions = list(EUS_MINOR_VERSIONS.keys())[1:]
+        eus_versions = list(EUS_MINOR_VERSIONS.keys())
         if current_version in eus_versions:
             eus_release_date = EUS_MINOR_VERSIONS.get(current_version, False)
             # Turn eus_release_date into a datetime object

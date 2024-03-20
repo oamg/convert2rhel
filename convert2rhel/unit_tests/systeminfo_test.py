@@ -226,14 +226,16 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
     (
         (7, 9, False),
         (8, 5, False),
-        (8, 6, True),
+        (8, 6, False),
         (8, 7, False),
-        (8, 8, False),  # Change expected to true after eus_release date
+        (8, 8, True),
         (8, 9, False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
+def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)
+    global_tool_opts.eus = True
+    monkeypatch.setattr(tool_opts, "eus", global_tool_opts)
     monkeypatch.setattr(system_info, "version", version)
 
     assert system_info.corresponds_to_rhel_eus_release() == expected
@@ -241,14 +243,7 @@ def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
 
 @pytest.mark.parametrize(
     ("major", "minor", "expected"),
-    (
-        (7, 9, False),
-        (8, 5, False),
-        (8, 6, True),
-        (8, 7, False),
-        (8, 8, True),
-        (8, 9, False),
-    ),
+    ((7, 9, False), (8, 5, False), (8, 6, False), (8, 7, False), (8, 8, True), (8, 9, False)),
 )
 def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)

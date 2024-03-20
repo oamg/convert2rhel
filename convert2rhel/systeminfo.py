@@ -55,10 +55,7 @@ RELEASE_VER_MAPPING = {
 }
 
 # Dictionary of EUS minor versions supported and their EUS period start date
-EUS_MINOR_VERSIONS = {
-    "8.6": "2022-11-09",
-    "8.8": "2023-11-14",
-}
+EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
 Version = namedtuple("Version", ["major", "minor"])
 
@@ -488,9 +485,7 @@ class SystemInfo:
         :rtype: bool
         """
         current_version = "%s.%s" % (self.version.major, self.version.minor)
-        # This check will be dropped once 8.6 is no longer supported under EUS
-        if current_version == "8.6":
-            return True
+
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
             self.logger.info("EUS argument detected, automatically evaluating system as EUS")
             return True

@@ -191,9 +191,7 @@ class CLI:
         self._shared_options_parser.add_argument(
             "--eus",
             action="store_true",
-            help="Automatically recognize the system as eus, utilizing eus repos."
-            " 8.6 systems do not require this option as they are recognized as eus automatically."
-            " This option is meant for 8.8+ systems.",
+            help="Automatically recognize the system as eus, utilizing eus repos.",
         )
         self._shared_options_parser.add_argument(
             "--enablerepo",
