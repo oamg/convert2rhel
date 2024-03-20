@@ -169,7 +169,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
         # Wait till the system is properly registered and subscribed, then
         # send the interrupt signal to the c2r process.
-        c2r.expect("Convert: Get RHEL repository IDs")
+        c2r.expect("Prepare: Get RHEL repository IDs")
         c2r.sendcontrol("c")
 
         c2r.expect("Calling command 'subscription-manager unregister'", timeout=120)
@@ -256,9 +256,5 @@ def test_terminate_registration_success(convert2rhel):
         c2r.expect("Auto-attaching compatible subscriptions to the system ...", timeout=180)
         c2r.expect("DEBUG - Calling command 'subscription-manager attach --auto'", timeout=180)
         c2r.expect("Status:       Subscribed", timeout=180)
-        # TODO [mlitwora]: If the SIGINT is sent right after the Status: Subscribed, then the system ends up in broken stat
-        # that makes another c2r unsuccessful. Waiting little bit longer fixes the problem but probably makes the
-        # test "useless".
-        # c2r.expect("Convert: Get RHEL repository IDs")
         terminate_and_assert_good_rollback(c2r)
     assert c2r.exitstatus != 0
