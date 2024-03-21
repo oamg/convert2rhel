@@ -759,8 +759,6 @@ def run_pre_actions():
 
 def run_post_actions():
     """
-    Run all of the post-ponr Actions.
-
     This function runs the Actions that occur after the Point of no Return.
     """
     # Stages are created in the opposite order that they are run in so that
@@ -768,13 +766,13 @@ def run_post_actions():
     # next_stage parameter).
     #
     # When we call check_dependencies() or run() on the first Stage
-    # (system_checks), it will operate on the first Stage and then recursively
+    # (conversion), it will operate on the first Stage and then recursively
     # call check_dependencies() or run() on the next_stage.
     post_conversion = Stage("post_conversion", "Final modifications to the system")
     conversion = Stage("conversion", "Starting Conversion", next_stage=post_conversion)
 
     try:
-        # Check dependencies are satisfied for system_checks and all subsequent
+        # Check dependencies are satisfied for conversion and all subsequent
         # Stages.
         conversion.check_dependencies()
     except DependencyError as e:
@@ -782,7 +780,7 @@ def run_post_actions():
         # way we should fail in testing before release.
         logger.critical("Some dependencies were set on Actions but not present in convert2rhel: %s" % e)
 
-    # Run the Actions in system_checks and all subsequent Stages.
+    # Run the Actions in conversion and all subsequent Stages.
     results = conversion.run()
 
     return parse_action_results(results)
