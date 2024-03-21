@@ -111,7 +111,7 @@ def main_locked():
 
         # Note: set pre_conversion_results before changing to the next phase so
         # we don't fail in case rollback is triggered during
-        # actions.run_actions() (either from a bug or from the user hitting
+        # actions.run_pre_actions() (either from a bug or from the user hitting
         # Ctrl-C)
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_pre_actions()
