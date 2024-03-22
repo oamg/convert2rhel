@@ -208,6 +208,7 @@ class TestSubscribeSystem:
         expected_dependencies = (
             "PRE_SUBSCRIPTION",
             "EUS_SYSTEM_CHECK",
+            "ELS_SYSTEM_CHECK",
         )
 
         assert expected_dependencies == subscribe_system_instance.dependencies

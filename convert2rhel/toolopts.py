@@ -84,6 +84,7 @@ class ToolOpts:
         self.arch = None
         self.no_rpm_va = False
         self.eus = False
+        self.els = False
         self.activity = None
 
     def set_opts(self, supported_opts):
@@ -122,10 +123,10 @@ class CLI:
             "\n"
             "  convert2rhel [--version] [-h]\n"
             "  convert2rhel {subcommand} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
-            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
-            "  convert2rhel {subcommand} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
+            " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
+            "  convert2rhel {subcommand} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
             "  convert2rhel {subcommand} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
-            " repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]\n"
+            " repoid] [--serverurl url] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
         ).format(subcommand=subcommand_to_print)
 
         if subcommand_not_used_on_cli:
@@ -193,7 +194,13 @@ class CLI:
             action="store_true",
             help="Automatically recognize the system as eus, utilizing eus repos."
             " 8.6 systems do not require this option as they are recognized as eus automatically."
-            " This option is meant for 8.8+ systems.",
+            " This option is meant for el8.8+ systems.",
+        )
+        self._shared_options_parser.add_argument(
+            "--els",
+            action="store_true",
+            help="Automatically recognize the system as els, utilizing els repos."
+            " This option is meant for el7 systems.",
         )
         self._shared_options_parser.add_argument(
             "--enablerepo",
@@ -408,6 +415,9 @@ class CLI:
 
         if parsed_opts.eus:
             tool_opts.eus = True
+
+        if parsed_opts.els:
+            tool_opts.els = True
 
         if not tool_opts.disablerepo:
             # Default to disable every repo except:
