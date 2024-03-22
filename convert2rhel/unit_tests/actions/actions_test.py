@@ -228,6 +228,9 @@ class TestGetActions:
         filesystem_detected_actions_count = 0
         for rootdir, dirnames, filenames in os.walk(os.path.dirname(actions.__file__)):
             for directory in dirnames:
+                if "%s.%s." % (actions.__name__, directory) == "convert2rhel.actions.post_ponr":
+                    continue
+
                 # Add to the actions that the production code finds here as it is non-recursive
                 computed_actions.extend(
                     actions.get_actions([os.path.join(rootdir, directory)], "%s.%s." % (actions.__name__, directory))
@@ -344,12 +347,21 @@ class TestStage:
         with pytest.raises(actions.DependencyError):
             stage.check_dependencies()
 
-    def test_check_dependencies_real_actions(self):
-        """Check the Actions we ship have no broken deps."""
+    def test_check_dependencies_real_actions_pre_ponr(self):
+        """Check the pre-ponr Actions we ship have no broken deps."""
+        # Check dependencies for pre_ponr stage
         pre_ponr_changes = actions.Stage("pre_ponr_changes", "changes")
         system_checks = actions.Stage("system_checks", "checks", pre_ponr_changes)
 
         system_checks.check_dependencies()
+
+    def test_check_dependencies_real_actions_post_ponr(self):
+        """Check the post-ponr Actions we ship have no broken deps."""
+        # Check dependencies for post_ponr stage
+        post_conversion = actions.Stage("post_conversion", "Final modifications to the system")
+        conversion = actions.Stage("conversion", "Starting Conversion", next_stage=post_conversion)
+
+        conversion.check_dependencies()
 
     #
     # Test that Stage.run() works as expected
@@ -987,14 +999,14 @@ class TestRunActions:
             ),
         ),
     )
-    def test_run_actions(self, action_results, expected, monkeypatch):
+    def test_run_pre_actions(self, action_results, expected, monkeypatch):
         check_deps_mock = mock.Mock()
         run_mock = mock.Mock(return_value=action_results)
 
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
         monkeypatch.setattr(actions.Stage, "run", run_mock)
 
-        assert actions.run_actions() == expected
+        assert actions.run_pre_actions() == expected
 
     @pytest.mark.parametrize(
         ("action_results", "expected"),
@@ -1430,22 +1442,746 @@ class TestRunActions:
             ),
         ),
     )
-    def test_run_actions_with_messages(self, action_results, expected, monkeypatch):
+    def test_run_pre_actions_with_messages(self, action_results, expected, monkeypatch):
         check_deps_mock = mock.Mock()
         run_mock = mock.Mock(return_value=action_results)
 
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
         monkeypatch.setattr(actions.Stage, "run", run_mock)
 
-        results = actions.run_actions()
+        results = actions.run_pre_actions()
         assert results == expected
 
-    def test_dependency_errors(self, monkeypatch, caplog):
+    def test_pre_ponr_actions_dependency_errors(self, monkeypatch, caplog):
         check_deps_mock = mock.Mock(side_effect=actions.DependencyError("Failure message"))
         monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
 
         with pytest.raises(SystemExit):
-            actions.run_actions()
+            actions.run_pre_actions()
+
+        assert (
+            "Some dependencies were set on Actions but not present in convert2rhel: Failure message"
+            == caplog.records[-1].message
+        )
+
+    @pytest.mark.parametrize(
+        ("action_results", "expected"),
+        (
+            # Only successes
+            (
+                actions.FinishedActions([], [], []),
+                {},
+            ),
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(id="One", messages=[], result=ActionResult(level="SUCCESS", id="SUCCESS")),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    }
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                            dependencies=("One",),
+                        ),
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                            dependencies=(
+                                "One",
+                                "Two",
+                            ),
+                        ),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                    "Two": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            # Single Failures
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(
+                                level="ERROR",
+                                id="SOME_ERROR",
+                                title="Error",
+                                description="Action error",
+                                diagnosis="User error",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["ERROR"],
+                            "id": "SOME_ERROR",
+                            "title": "Error",
+                            "description": "Action error",
+                            "diagnosis": "User error",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(
+                                level="OVERRIDABLE",
+                                id="SOME_ERROR",
+                                title="Overridable",
+                                description="Action overridable",
+                                diagnosis="User overridable",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["OVERRIDABLE"],
+                            "id": "SOME_ERROR",
+                            "title": "Overridable",
+                            "description": "Action overridable",
+                            "diagnosis": "User overridable",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(
+                                level="SKIP",
+                                id="SOME_ERROR",
+                                title="Skip",
+                                description="Action skip",
+                                diagnosis="User skip",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SKIP"],
+                            "id": "SOME_ERROR",
+                            "title": "Skip",
+                            "description": "Action skip",
+                            "diagnosis": "User skip",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            # Mixture of failures and successes.
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(id="Three", messages=[], result=ActionResult(level="SUCCESS", id="SUCCESS")),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[],
+                            result=ActionResult(
+                                level="ERROR",
+                                id="ERROR_ID",
+                                title="Error",
+                                description="Action error",
+                                diagnosis="User error",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[],
+                            result=ActionResult(
+                                level="SKIP",
+                                id="SKIP_ID",
+                                title="Skip",
+                                description="Action skip",
+                                diagnosis="User skip",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                ),
+                {
+                    "One": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["ERROR"],
+                            "id": "ERROR_ID",
+                            "title": "Error",
+                            "description": "Action error",
+                            "diagnosis": "User error",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                    "Two": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SKIP"],
+                            "id": "SKIP_ID",
+                            "title": "Skip",
+                            "description": "Action skip",
+                            "diagnosis": "User skip",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                    "Three": {
+                        "messages": [],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+        ),
+    )
+    def test_run_post_actions(self, action_results, expected, monkeypatch):
+        check_deps_mock = mock.Mock()
+        run_mock = mock.Mock(return_value=action_results)
+
+        monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
+        monkeypatch.setattr(actions.Stage, "run", run_mock)
+
+        assert actions.run_post_actions() == expected
+
+    @pytest.mark.parametrize(
+        ("action_results", "expected"),
+        (
+            # Only successes
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                        ),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    }
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                            dependencies=("One",),
+                        ),
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                            dependencies=(
+                                "One",
+                                "Two",
+                            ),
+                        ),
+                    ],
+                    [],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                    "Two": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            # Single Failures
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(
+                                level="ERROR",
+                                id="SOME_ERROR",
+                                title="Error",
+                                description="Action error",
+                                diagnosis="User error",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["ERROR"],
+                            "id": "SOME_ERROR",
+                            "title": "Error",
+                            "description": "Action error",
+                            "diagnosis": "User error",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(
+                                level="OVERRIDABLE",
+                                id="SOME_ERROR",
+                                title="Overridable",
+                                description="Action overridable",
+                                diagnosis="User overridable",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["OVERRIDABLE"],
+                            "id": "SOME_ERROR",
+                            "title": "Overridable",
+                            "description": "Action overridable",
+                            "diagnosis": "User overridable",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            (
+                actions.FinishedActions(
+                    [],
+                    [],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(
+                                level="SKIP",
+                                id="SOME_ERROR",
+                                title="Skip",
+                                description="Action skip",
+                                diagnosis="User skip",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SKIP"],
+                            "id": "SOME_ERROR",
+                            "title": "Skip",
+                            "description": "Action skip",
+                            "diagnosis": "User skip",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+            # Mixture of failures and successes.
+            (
+                actions.FinishedActions(
+                    [
+                        _ActionForTesting(
+                            id="Three",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(level="SUCCESS", id="SUCCESS"),
+                        ),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="One",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(
+                                level="ERROR",
+                                id="ERROR_ID",
+                                title="Error",
+                                description="Action error",
+                                diagnosis="User error",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                    [
+                        _ActionForTesting(
+                            id="Two",
+                            messages=[
+                                ActionMessage(
+                                    level="WARNING",
+                                    id="WARNING_ID",
+                                    title="Warning",
+                                    description="Action warning",
+                                    diagnosis="User warning",
+                                    remediations="move on",
+                                )
+                            ],
+                            result=ActionResult(
+                                level="SKIP",
+                                id="SKIP_ID",
+                                title="Skip",
+                                description="Action skip",
+                                diagnosis="User skip",
+                                remediations="move on",
+                            ),
+                        ),
+                    ],
+                ),
+                {
+                    "One": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["ERROR"],
+                            "id": "ERROR_ID",
+                            "title": "Error",
+                            "description": "Action error",
+                            "diagnosis": "User error",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                    "Two": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SKIP"],
+                            "id": "SKIP_ID",
+                            "title": "Skip",
+                            "description": "Action skip",
+                            "diagnosis": "User skip",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    },
+                    "Three": {
+                        "messages": [
+                            {
+                                "level": STATUS_CODE["WARNING"],
+                                "id": "WARNING_ID",
+                                "title": "Warning",
+                                "description": "Action warning",
+                                "diagnosis": "User warning",
+                                "remediations": "move on",
+                                "variables": {},
+                            }
+                        ],
+                        "result": {
+                            "level": STATUS_CODE["SUCCESS"],
+                            "id": "SUCCESS",
+                            "title": "",
+                            "description": "",
+                            "diagnosis": "",
+                            "remediations": "",
+                            "variables": {},
+                        },
+                    },
+                },
+            ),
+        ),
+    )
+    def test_run_post_actions_with_messages(self, action_results, expected, monkeypatch):
+        check_deps_mock = mock.Mock()
+        run_mock = mock.Mock(return_value=action_results)
+
+        monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
+        monkeypatch.setattr(actions.Stage, "run", run_mock)
+
+        results = actions.run_post_actions()
+        assert results == expected
+
+    def test_post_ponr_actions_dependency_errors(self, monkeypatch, caplog):
+        check_deps_mock = mock.Mock(side_effect=actions.DependencyError("Failure message"))
+        monkeypatch.setattr(actions.Stage, "check_dependencies", check_deps_mock)
+
+        with pytest.raises(SystemExit):
+            actions.run_post_actions()
 
         assert (
             "Some dependencies were set on Actions but not present in convert2rhel: Failure message"
@@ -1915,3 +2651,86 @@ class TestActionClasses:
 def test_format_action_status_message(status_code, action_id, id, result, expected):
     message = actions.format_action_status_message(status_code, action_id, id, result)
     assert message in expected
+
+
+@pytest.mark.parametrize(
+    ("results", "expected"),
+    (
+        (
+            actions.FinishedActions(
+                [
+                    _ActionForTesting(id="Three", messages=[], result=ActionResult(level="SUCCESS", id="SUCCESS")),
+                ],
+                [
+                    _ActionForTesting(
+                        id="One",
+                        messages=[],
+                        result=ActionResult(
+                            level="ERROR",
+                            id="ERROR_ID",
+                            title="Error",
+                            description="Action error",
+                            diagnosis="User error",
+                            remediations="move on",
+                        ),
+                    ),
+                ],
+                [
+                    _ActionForTesting(
+                        id="Two",
+                        messages=[],
+                        result=ActionResult(
+                            level="SKIP",
+                            id="SKIP_ID",
+                            title="Skip",
+                            description="Action skip",
+                            diagnosis="User skip",
+                            remediations="move on",
+                        ),
+                    ),
+                ],
+            ),
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "ERROR_ID",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "Two": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["SKIP"],
+                        "id": "SKIP_ID",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "Three": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                },
+            },
+        ),
+        ({}, {}),
+    ),
+)
+def test_parse_action_results(results, expected):
+    assert actions.parse_action_results(results) == expected
