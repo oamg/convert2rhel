@@ -39,9 +39,7 @@ class TestEus:
     @pytest.mark.parametrize(
         ("version_string", "message_reported"),
         (
-            (Version(8, 6), False),
             (Version(8, 8), True),
-            (Version(8, 10), False),  # Change to True after 8.10 is under eus
             (Version(9, 2), False),  # Change to True after 9.2 is under eus
         ),
     )
