@@ -331,9 +331,6 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    transaction_handler = pkgmanager.create_transaction_handler()
-    loggerinst.task("Convert: Replace system packages")
-    transaction_handler.run_transaction()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
