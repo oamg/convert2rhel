@@ -35,7 +35,9 @@ tag+:
     adjust+:
         - enabled: true
           when: distro == centos, alma, rocky
-          because: The subscription-manager is not present in Oracle Linux repositories.
+          because: |
+            There is no subscription-manager package in Oracle Linux repositories
+            and no documentation is provided - https://issues.redhat.com/browse/RHELC-1485.
     tag+:
         - sub-man-registration
     /pre_registered_system_wont_unregister:
