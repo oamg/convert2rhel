@@ -174,7 +174,7 @@ class MissingFile(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: remove file created during conversion {filepath}".format(filepath=self.filepath))
+        loggerinst.task("Rollback: Remove file created during conversion {filepath}".format(filepath=self.filepath))
 
         if not os.path.isfile(self.filepath):
             loggerinst.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
