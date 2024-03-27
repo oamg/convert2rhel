@@ -182,10 +182,5 @@ class MissingFile(RestorableChange):
             try:
                 os.remove(self.filepath)
                 loggerinst.info("File {filepath} removed".format(filepath=self.filepath))
-            except OSError as err:
-                # Do not call 'critical' which would halt the program. We are in
-                # a rollback phase now and we want to rollback as much as possible.
-                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
-                return
-
-        super(MissingFile, self).restore()
+            finally:
+                super(MissingFile, self).restore()

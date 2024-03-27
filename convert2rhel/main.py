@@ -167,12 +167,11 @@ def main_locked():
             subscription.update_rhsm_custom_facts()
 
         rollback_changes()
+        print_info_after_rollback(pre_conversion_results, True)
 
-        report.summary(
-            pre_conversion_results,
-            include_all_reports=True,
-            disable_colors=logger_module.should_disable_color_output(),
-        )
+        if backup.backup_control.rollback_failed:
+            return 1
+
         return 0
 
     except exceptions.CriticalError as err:
@@ -185,7 +184,7 @@ def main_locked():
     finally:
         # Write the assessment to a file as json data so that other tools can
         # parse and act upon it.
-        if pre_conversion_results:
+        if pre_conversion_results and not backup.backup_control.rollback_failed:
             actions.report.summary_as_json(pre_conversion_results)
             actions.report.summary_as_txt(pre_conversion_results)
 
@@ -222,14 +221,7 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
             subscription.update_rhsm_custom_facts()
 
         rollback_changes()
-        if pre_conversion_results is None:
-            loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
-        else:
-            report.summary(
-                pre_conversion_results,
-                include_all_reports=(toolopts.tool_opts.activity == "analysis"),
-                disable_colors=logger_module.should_disable_color_output(),
-            )
+        print_info_after_rollback(pre_conversion_results, (toolopts.tool_opts.activity == "analysis"))
     elif process_phase == ConversionPhase.POST_PONR_CHANGES:
         # After the process of subscription is done and the mass update of
         # packages is started convert2rhel will not be able to guarantee a
@@ -363,3 +355,31 @@ def rollback_changes():
             loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
+
+    return
+
+
+def print_info_after_rollback(pre_conversion_results, include_all_reports):
+    """Print after-rollback messages. Also determine if there is a report to print or
+    report should't be printed after failure in rollback."""
+    if backup.backup_control.rollback_failed:
+        loggerinst.critical_no_exit(
+            "Rollback of system wasn't completed successfully.\n"
+            "The system is left in an undetermined state that Convert2RHEL cannot fix.\n"
+            "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+            " the system from a backup.\n"
+            "Following errors were captured during rollback:\n"
+            "%s" % "\n".join(backup.backup_control.rollback_failures)
+        )
+
+        return
+
+    elif not pre_conversion_results:
+        loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
+
+    else:
+        report.summary(
+            results=pre_conversion_results,
+            include_all_reports=include_all_reports,
+            disable_colors=logger_module.should_disable_color_output(),
+        )

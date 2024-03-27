@@ -8,7 +8,7 @@ import pytest
 import six
 
 from convert2rhel import exceptions
-from convert2rhel.backup import files
+from convert2rhel.backup import RestorableChange, files
 from convert2rhel.backup.files import MissingFile, RestorableFile
 
 
@@ -343,15 +343,19 @@ class TestMissingFile:
     def test_created_file_restore_oserror(self, monkeypatch, tmpdir, caplog):
         path = tmpdir.join("filename")
         path.write("content")
+        super_restore = mock.Mock()
 
         remove = mock.Mock(side_effect=OSError(2, "No such file or directory"))
         monkeypatch.setattr(os, "remove", remove)
+        monkeypatch.setattr(RestorableChange, "restore", super_restore)
 
         created_file = MissingFile(str(path))
         created_file.enabled = True
-        created_file.restore()
 
-        assert "Error(2): No such file or directory" in caplog.records[-1].message
+        with pytest.raises(OSError):
+            created_file.restore()
+
+        assert super_restore.call_count == 1
 
     @pytest.mark.parametrize(
         ("exists", "created", "message_push", "message_pop"),
