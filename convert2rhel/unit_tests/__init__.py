@@ -539,6 +539,26 @@ class UnregisterSystemMocked(MockFunctionObject):
     spec = subscription.unregister_system
 
 
+class AutoAttachSubscriptionMocked(MockFunctionObject):
+    """
+    Mock of the auto_attach_subscription() function.
+
+    It just adds a spec for the function on top of all the standard mock functionality.
+    """
+
+    spec = subscription.auto_attach_subscription
+
+
+class RefreshSubscriptionManagerMocked(MockFunctionObject):
+    """
+    Mock of the refresh_subscription_info() function.
+
+    It just adds a spec for the function on top of all the standard mock functionality.
+    """
+
+    spec = subscription.refresh_subscription_info
+
+
 #
 # systeminfo mocks
 #
