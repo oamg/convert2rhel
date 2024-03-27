@@ -471,7 +471,8 @@ def pre_registered(shell):
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     """
     assert shell("yum install -y subscription-manager").returncode == 0
-    # Download the SSL certificate
+    # The SSL certificate for accessing cdn.redhat.com is intentionally missing from
+    # the subscription-manager-rhsm-certificates package on CentOS Linux 7
     shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
     # Register the system
     assert (
