@@ -68,6 +68,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - centos
@@ -141,6 +144,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - oracle-7
@@ -214,6 +220,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - oracle-8
@@ -287,6 +296,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - alma-86
@@ -360,6 +372,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - alma-88
@@ -425,6 +440,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - alma-8
@@ -498,6 +516,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - rocky-86
@@ -571,6 +592,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - rocky-88
@@ -644,6 +668,9 @@ jobs:
             provisioning:
               tags:
                 BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
     labels:
       - tier0
       - rocky-8
