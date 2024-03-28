@@ -34,3 +34,18 @@ tag+:
         - sanity
     test: |
         pytest -svv -m test_unavailable_connection
+
+/failed_internet_connection_check:
+    summary+: |
+        Full analysis when connection check failed
+    description+: |
+        Make sure that the connection check fails but the
+        whole analysis finishes without issue.
+    adjust+:
+        - environment+:
+            C2R_TESTS_SUBMAN_CLEANUP: 1
+    tag+:
+        - internet-check-fail
+        - sanity
+    test: |
+        pytest -svv -m test_failed_internet_connection_check
