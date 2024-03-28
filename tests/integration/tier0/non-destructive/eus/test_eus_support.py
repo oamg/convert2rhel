@@ -2,7 +2,7 @@ import os.path
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture
@@ -88,7 +88,7 @@ def test_eus_support(
     eus_mapping_update(modified_mapping)
     with convert2rhel(
         "analyze -y --debug --serverurl {} -u {} -p {} {}".format(
-            env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD"), additional_option
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"], additional_option
         )
     ) as c2r:
         c2r.expect(repoid_message, timeout=120)

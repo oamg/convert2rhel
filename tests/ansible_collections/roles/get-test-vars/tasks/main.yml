@@ -1,0 +1,2 @@
+---
+- include_tasks: get-test-vars.yml

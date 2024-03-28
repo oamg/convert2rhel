@@ -3,8 +3,7 @@ import os
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -128,10 +127,10 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     if os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
             )
         ) as c2r:
             c2r.expect("Check if the loaded kernel version is the most recent")

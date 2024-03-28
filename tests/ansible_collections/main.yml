@@ -18,4 +18,6 @@
 
     - role: install-testing-deps
 
+    - role: get-test-vars
+
     - role: update-ca-trust

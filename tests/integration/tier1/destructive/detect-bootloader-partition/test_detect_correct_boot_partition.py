@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 EFI_BOOT_MOUNTPOINT = "/boot/efi"
@@ -55,10 +55,10 @@ def test_detect_correct_boot_partition(convert2rhel):
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         assert c2r.expect("Calling command '/usr/sbin/blkid -p -s PART_ENTRY_NUMBER %s'" % boot_device) == 0

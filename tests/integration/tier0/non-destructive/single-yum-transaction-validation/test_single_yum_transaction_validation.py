@@ -3,8 +3,7 @@ import re
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
@@ -98,10 +97,10 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
@@ -140,10 +139,10 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect(
@@ -202,10 +201,10 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
 
     with convert2rhel(
         "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         # Swallow the data collection warning
@@ -243,10 +242,10 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, kernel_check_
     """
     with convert2rhel(
         "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion", timeout=300)

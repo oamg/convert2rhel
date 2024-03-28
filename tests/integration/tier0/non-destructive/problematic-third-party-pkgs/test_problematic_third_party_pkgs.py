@@ -1,6 +1,6 @@
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture
@@ -37,9 +37,9 @@ def test_list_third_party_pkgs_error(convert2rhel, problematic_third_party_packa
     """
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         )
     ) as c2r:
         # Verify that the analysis report is printed

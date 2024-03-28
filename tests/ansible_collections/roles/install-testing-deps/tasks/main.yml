@@ -22,7 +22,7 @@
     name:
       - "pytest"
       - "pytest-cov"
-      - "envparse"
+      - "python-dotenv"
       - "click"
       - "pexpect"
       - "dataclasses"

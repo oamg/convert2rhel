@@ -4,8 +4,7 @@ import re
 import jsonschema
 import pytest
 
-from conftest import _load_json_schema
-from envparse import env
+from conftest import TEST_VARS, _load_json_schema
 from pexpect import EOF
 
 
@@ -51,7 +50,7 @@ def test_failures_and_skips_in_report(convert2rhel):
     """
     with convert2rhel(
         "analyze --serverurl {} --username test --password test --pool a_pool --debug".format(
-            env.str("RHSM_SERVER_URL"),
+            TEST_VARS["RHSM_SERVER_URL"],
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -99,10 +98,10 @@ def test_successful_report(convert2rhel):
     """
     with convert2rhel(
         "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -141,10 +140,10 @@ def test_convert_successful_report(convert2rhel):
     """
     with convert2rhel(
         "convert --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.

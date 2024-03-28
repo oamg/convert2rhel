@@ -3,8 +3,7 @@ import re
 
 import pytest
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -111,8 +110,8 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
     """
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         )
     ) as c2r:
         c2r.expect("Unable to find the /etc/system-release file containing the OS name and version")
@@ -134,8 +133,8 @@ def test_backup_os_release_no_envar(
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         ),
         unregister=True,
     ) as c2r:
@@ -170,8 +169,8 @@ def test_backup_os_release_with_envar(
 
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         ),
         unregister=True,
     ) as c2r:

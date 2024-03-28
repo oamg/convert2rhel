@@ -1,6 +1,6 @@
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -62,10 +62,10 @@ def test_httpd_package_transaction_error(shell, convert2rhel, handle_packages):
     # run c2r analyze to verify the yum transaction
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         index = c2r.expect_exact(
