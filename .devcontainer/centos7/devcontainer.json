@@ -41,7 +41,7 @@
 				"GitHub.vscode-pull-request-github",
 				"Cameron.vscode-pytest",
 				"njpwerner.autodocstring",
-				"ms-python.python@2022.8.1"
+				"ms-python.python"
 			]
 		}
 	}
