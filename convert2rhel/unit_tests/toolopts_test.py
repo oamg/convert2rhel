@@ -513,11 +513,11 @@ def test_log_command_used(caplog, monkeypatch):
         (mock_cli_arguments(["-o", "org", "-k", "key"]), "-o ***** -k *****"),
         (
             mock_cli_arguments(["-o", "org"]),
-            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+            "Either the --org or the --activationkey option is missing. You can't use one without the other.",
         ),
         (
             mock_cli_arguments(["-k", "key"]),
-            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+            "Either the --org or the --activationkey option is missing. You can't use one without the other.",
         ),
     ),
 )
