@@ -1,0 +1,8 @@
+summary: |
+    Conversion when the system is connected to the internet through forward proxy server.
+
+tag+:
+    - proxy-conversion
+
+/proxy_conversion:
+    test: pytest -svv -m test_proxy_conversion
