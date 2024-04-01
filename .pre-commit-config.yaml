@@ -35,7 +35,7 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.31.0"
+    rev: "1.32.1"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
