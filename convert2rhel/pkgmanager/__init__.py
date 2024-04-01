@@ -153,6 +153,7 @@ def call_yum_cmd(
     reposdir=None,
     custom_releasever=None,
     varsdir=None,
+    setopts=None,
 ):
     """Call yum command and optionally print its output.
     The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
@@ -165,8 +166,14 @@ def call_yum_cmd(
     By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
     release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
     """
-    if args is None:
+    if isinstance(reposdir, str):
+        raise TypeError("reposdir must be a list, not str.")
+
+    if not args:
         args = []
+
+    if not setopts:
+        setopts = []
 
     cmd = ["yum", command, "-y"]
 
@@ -209,7 +216,14 @@ def call_yum_cmd(
         cmd.append("--enablerepo=%s" % repo)
 
     if reposdir:
+        reposdir = ",".join(reposdir)
         cmd.append("--setopt=reposdir=%s" % reposdir)
+
+    # Special option to override yum configuration without the need of
+    # modifying the /etc/yum.conf.
+    if setopts:
+        opts = ["--setopt=%s" % opt for opt in setopts]
+        cmd.extend(opts)
 
     cmd.extend(args)
 

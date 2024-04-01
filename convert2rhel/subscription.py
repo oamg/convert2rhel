@@ -630,19 +630,48 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
 
     ..seealso:: :func:`_relevant_subscription_manager_pkgs` for the list of packages that we install.
     """
-
     pkgs_to_upgrade = pkgs_to_upgrade or []
     backedup_reposdir = backup.get_backedup_system_repos()
     varsdir = DEFAULT_YUM_VARS_DIR if system_info.version.major == 7 else DEFAULT_DNF_VARS_DIR
     backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 
+    repo_path = _CLIENT_TOOLS_REPO_PATH_MAPPING[system_info.version.major]
+    releasever = str(system_info.version.major)
+
+    # For CentOS 8.5, we have to define the releasever as being 8.5, not just 8
+    # as it will be pointing to latest 8.X version available. Since CentOS
+    # Linux latest release was 8.5, we are setting 8.5 as being the latest in
+    # the custom releasever.
+    if system_info.id == "centos" and system_info.version.major == 8:
+        releasever = "8.5"
+
+    setopts = None
+    # Oracle Linux 7 needs to set the obsoletes option to avoid installing the
+    # rhc-client-tools package instead of subscription-manager, as it is marked
+    # as obsolete in the subscription-manager specfile for OL7. This option in
+    # yum will make sure to ignore the obsoletes request and install the
+    # correct packages we are requesting.
+    # WARNING: This obsoletes will be applicable to all packages in the
+    # transaction.
+    if system_info.id == "oracle" and system_info.version.major == 7:
+        setopts = ["obsoletes=0"]
+
+    repo_content = _CLIENT_TOOLS_REPO_CONTENT_MAPPING[releasever]
+    # To install subscription-manager correctly from client-tools repository,
+    # we have to specify the path of the client-tools repofile first, and
+    # later, the backed up repositories to install the dependencies required by
+    # the subscription-manager packages.
+    reposdir = [os.path.dirname(repo_path), backedup_reposdir]
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
         pkgs_to_upgrade,
-        reposdir=backedup_reposdir,
+        repo_path=repo_path,
+        repo_content=repo_content,
+        reposdir=reposdir,
         custom_releasever=system_info.version.major,
         set_releasever=True,
         varsdir=backedup_varsdir,
+        setopts=setopts,
     )
     backup.backup_control.push(installed_pkg_set)
 
@@ -679,6 +708,8 @@ def attach_subscription():
     subscription ID has been provided through command line, let the user
     interactively choose one.
     """
+    # TODO: Support attaching multiple pool IDs.
+
     # check if SCA is enabled
     if is_sca_enabled():
         loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
@@ -875,7 +906,7 @@ def needed_subscription_manager_pkgs():
     return to_install_pkgs
 
 
-def _dependencies_to_update(pkg_list):
+def dependencies_to_update(pkg_list):
     """
     We are trying to get convert2rhel to only install the subset of subscription-manager packages
     which it requires.  However, when we do have to install packages, we are getting them from the

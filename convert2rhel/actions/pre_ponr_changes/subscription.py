@@ -104,7 +104,7 @@ class PreSubscription(actions.Action):
                 # (Note: the function is marked private because this is a hack
                 # that should be replaced when we aren't under a release
                 # deadline.
-                update_pkgs = subscription._dependencies_to_update(subscription_manager_pkgs)
+                update_pkgs = subscription.dependencies_to_update(subscription_manager_pkgs)
                 subscription.install_rhel_subscription_manager(subscription_manager_pkgs, update_pkgs)
 
             logger.task("Prepare: Subscription Manager - Verify installation")

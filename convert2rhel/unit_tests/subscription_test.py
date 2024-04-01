@@ -43,7 +43,7 @@ from convert2rhel.unit_tests import (
     get_pytest_marker,
     run_subprocess_side_effect,
 )
-from convert2rhel.unit_tests.conftest import centos7, centos8
+from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -183,7 +183,7 @@ class TestNeededSubscriptionManagerPkgs:
                 ]
             ),
         )
-        assert upgrade_deps == set(subscription._dependencies_to_update(pkg_list))
+        assert upgrade_deps == set(subscription.dependencies_to_update(pkg_list))
 
     def test__dependencies_to_update_no_pkgs(self, monkeypatch, global_system_info):
         global_system_info.version = Version(8, 5)
@@ -202,7 +202,7 @@ class TestNeededSubscriptionManagerPkgs:
                 ]
             ),
         )
-        assert [] == subscription._dependencies_to_update([])
+        assert [] == subscription.dependencies_to_update([])
 
     @pytest.mark.parametrize(
         (
@@ -361,7 +361,7 @@ class TestRestorableSystemSubscription:
         assert "subscription-manager not installed, skipping" == caplog.messages[-1]
 
 
-@centos7
+@all_systems
 def test_install_rhel_subsription_manager(pretend_os, monkeypatch):
     mock_backup_control = mock.Mock()
     monkeypatch.setattr(subscription.backup.backup_control, "push", mock_backup_control)

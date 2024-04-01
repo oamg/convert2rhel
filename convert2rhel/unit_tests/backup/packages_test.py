@@ -246,32 +246,22 @@ class TestRestorablePackageSet:
 
     @pytest.fixture
     def package_set(self, monkeypatch, tmpdir):
-        pkg_download_dir = tmpdir.join("pkg-download-dir")
-        yum_repo_dir = tmpdir.join("yum-repo.d")
-        ubi7_repo_path = yum_repo_dir.join("ubi_7.repo")
-        ubi8_repo_path = yum_repo_dir.join("ubi_8.repo")
-        ubi9_repo_path = yum_repo_dir.join("ubi_9.repo")
-
-        monkeypatch.setattr(packages, "_SUBMGR_RPMS_DIR", str(pkg_download_dir))
-        monkeypatch.setattr(packages, "_RHSM_TMP_DIR", str(yum_repo_dir))
-        monkeypatch.setattr(packages, "_UBI_7_REPO_PATH", str(ubi7_repo_path))
-        monkeypatch.setattr(packages, "_UBI_8_REPO_PATH", str(ubi8_repo_path))
-        monkeypatch.setattr(packages, "_UBI_9_REPO_PATH", str(ubi9_repo_path))
-
         return RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
     @pytest.mark.parametrize(
         ("pkgs_to_install", "pkgs_to_update", "reposdir"),
         (
             (["pkg-1"], [], None),
-            (["pkg-1"], [], "test-dir"),
+            (["pkg-1"], [], ["test-dir"]),
             ([], ["pkg-1"], None),
-            ([], [], "test-dir"),
+            ([], [], ["test-dir"]),
             (["pkg-1"], ["pkg-2"], None),
         ),
     )
     def test_smoketest_init(self, pkgs_to_install, pkgs_to_update, reposdir):
-        package_set = RestorablePackageSet(pkgs_to_install, pkgs_to_update, reposdir)
+        package_set = RestorablePackageSet(
+            pkgs_to_install=pkgs_to_install, pkgs_to_update=pkgs_to_update, reposdir=reposdir
+        )
 
         assert package_set.pkgs_to_install == pkgs_to_install
         assert package_set.pkgs_to_update == pkgs_to_update
@@ -289,14 +279,10 @@ class TestRestorablePackageSet:
             (9, 3),
         ),
     )
-    def test_enable_need_to_install(self, major, minor, package_set, global_system_info, caplog, monkeypatch, tmpdir):
-        repofile = tmpdir.join("repofile.repo")
+    def test_enable_need_to_install(self, major, minor, package_set, global_system_info, caplog, monkeypatch):
         global_system_info.version = Version(major, minor)
         monkeypatch.setattr(packages, "system_info", global_system_info)
-        monkeypatch.setattr(packages, "_UBI_REPO_MAPPING", {major: (str(repofile), "test")})
-        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
-        monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
         package_set.pkgs_to_update = ["json-c.x86_64"]
 
@@ -313,17 +299,32 @@ class TestRestorablePackageSet:
         assert "json-c.x86_64" not in package_set.installed_pkgs
 
     @centos7
-    def test_enable_call_yum_cmd_fail(self, pretend_os, package_set, caplog, monkeypatch, tmpdir):
-        repofile = tmpdir.join("repofile.repo")
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkg_information",
-            GetInstalledPkgInformationMocked(side_effect=(["subscription-manager"], [], [])),
+    def test_enable_set_custom_repository(self, pretend_os, caplog, monkeypatch, tmpdir):
+        repofile = tmpdir.join("test.repofile")
+        repofile = str(repofile)
+        monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
+
+        package_set = RestorablePackageSet(
+            ["subscription-manager", "python-syspurpose"], repo_path=repofile, repo_content="test"
         )
-        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked(side_effect=self.fake_download_pkg))
-        monkeypatch.setattr(packages, "_UBI_REPO_MAPPING", {7: (str(repofile), "test")})
+
+        package_set.pkgs_to_update = ["json-c.x86_64"]
+
+        package_set.enable()
+
+        assert package_set.enabled is True
+        assert frozenset(("python-syspurpose", "subscription-manager")) == frozenset(package_set.installed_pkgs)
+
+        assert "\nPackages we installed or updated:\n" in caplog.records[-1].message
+        assert "python-syspurpose" in caplog.records[-1].message
+        assert "subscription-manager" in caplog.records[-1].message
+        assert "json-c" in caplog.records[-1].message
+        assert "json-c" not in package_set.installed_pkgs
+        assert "json-c.x86_64" not in package_set.installed_pkgs
+
+    @centos7
+    def test_enable_call_yum_cmd_fail(self, pretend_os, package_set, caplog, monkeypatch):
         monkeypatch.setattr(pkgmanager, "call_yum_cmd", CallYumCmdMocked(return_code=1))
-        monkeypatch.setattr(utils, "get_package_name_from_rpm", self.fake_get_pkg_name_from_rpm)
 
         with pytest.raises(exceptions.CriticalError):
             package_set.enable()
@@ -421,35 +422,19 @@ class TestRestorablePackageSet:
         assert mock_remove_pkgs.call_count == previously_called
 
 
-class TestDownloadRHSMPkgs:
-    def test_download_rhsm_pkgs(self, monkeypatch, tmpdir):
-        """Smoketest that download_rhsm_pkgs works in the happy path"""
-        download_rpms_directory = tmpdir.join("submgr-downloads")
-        monkeypatch.setattr(packages, "_SUBMGR_RPMS_DIR", str(download_rpms_directory))
+def test_set_up_repository(tmpdir):
+    repofile = tmpdir.join("test.repo")
+    repofile = str(repofile)
+    packages._set_up_repository(repofile, "test-content")
 
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(destdir=str(download_rpms_directory)))
+    assert os.path.exists(repofile)
 
-        packages._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
-
-        assert utils.store_content_to_file.call_args == mock.call("/path/to.repo", "content")
-        assert utils.download_pkgs.call_count == 1
-
-    def test_download_rhsm_pkgs_one_package_failed_to_download(self, monkeypatch):
-        """
-        Test that download_rhsm_pkgs() aborts when one of the subscription-manager packages fails to download.
-        """
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-        monkeypatch.setattr(utils, "download_pkgs", DownloadPkgsMocked(return_value=["/path/to.rpm", None]))
-
-        with pytest.raises(exceptions.CriticalError):
-            packages._download_rhsm_pkgs(["testpkg"], "/path/to.repo", "content")
+    with open(repofile) as handler:
+        assert "test-content" in handler.read()
 
 
-@pytest.mark.parametrize(
-    ("rpm_paths", "expected"),
-    ((["pkg1", "pkg2"], ["pkg1", "pkg2"]),),
-)
-def test_get_pkg_names_from_rpm_paths(rpm_paths, expected, monkeypatch):
-    monkeypatch.setattr(utils, "get_package_name_from_rpm", lambda x: x)
-    assert packages._get_pkg_names_from_rpm_paths(rpm_paths) == expected
+def test_set_up_repository_oserror(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "store_content_to_file", mock.Mock(side_effect=OSError(1, "test")))
+    packages._set_up_repository("non-existing", "test-content")
+
+    assert caplog.records[-1].message == "OSError(1): test"
