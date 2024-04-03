@@ -46,6 +46,8 @@ jobs:
   ### Definitions of the tier0 tests (non-destructive and destructive separately)
   - &tests-tier0-non-destructive-centos
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -73,14 +75,6 @@ jobs:
       - centos
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-centos
     <<: *tests-tier0-non-destructive-centos
     identifier: "tier0-destructive-centos"
@@ -89,14 +83,6 @@ jobs:
       - tier0
       - centos
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-centos
     <<: *tests-tier0-non-destructive-centos
@@ -107,17 +93,10 @@ jobs:
       - centos
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-oraclelinux-7
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -146,14 +125,6 @@ jobs:
       - oracle-7
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-oraclelinux-7
     <<: *tests-tier0-non-destructive-oraclelinux-7
     identifier: "tier0-destructive-ol7"
@@ -162,14 +133,6 @@ jobs:
       - tier0
       - oracle-7
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-oraclelinux-7
     <<: *tests-tier0-non-destructive-oraclelinux-7
@@ -180,17 +143,10 @@ jobs:
       - oracle-7
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-oraclelinux-8
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -219,14 +175,6 @@ jobs:
       - oracle-8
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-oraclelinux-8
     <<: *tests-tier0-non-destructive-oraclelinux-8
     identifier: "tier0-destructive-ol8"
@@ -235,14 +183,6 @@ jobs:
       - tier0
       - oracle-8
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-oraclelinux-8
     <<: *tests-tier0-non-destructive-oraclelinux-8
@@ -253,17 +193,10 @@ jobs:
       - oracle-8
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-almalinux-86
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -292,14 +225,6 @@ jobs:
       - alma-86
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-almalinux-86
     <<: *tests-tier0-non-destructive-almalinux-86
     identifier: "tier0-destructive-al86"
@@ -308,14 +233,6 @@ jobs:
       - tier0
       - alma-86
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-almalinux-86
     <<: *tests-tier0-non-destructive-almalinux-86
@@ -326,17 +243,10 @@ jobs:
       - alma-86
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-almalinux-88
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -365,14 +275,6 @@ jobs:
       - alma-88
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-almalinux-88
     <<: *tests-tier0-non-destructive-almalinux-88
     identifier: "tier0-destructive-al88"
@@ -391,17 +293,10 @@ jobs:
       - alma-88
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-almalinux-8
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -430,14 +325,6 @@ jobs:
       - alma-8
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-almalinux-8
     <<: *tests-tier0-non-destructive-almalinux-8
     identifier: "tier0-destructive-al8"
@@ -446,14 +333,6 @@ jobs:
       - tier0
       - alma-8
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-almalinux-8
     <<: *tests-tier0-non-destructive-almalinux-8
@@ -464,17 +343,10 @@ jobs:
       - alma-8
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-rockylinux-86
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -503,14 +375,6 @@ jobs:
       - rocky-86
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-rockylinux-86
     <<: *tests-tier0-non-destructive-rockylinux-86
     identifier: "tier0-destructive-rl86"
@@ -519,14 +383,6 @@ jobs:
       - tier0
       - rocky-86
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-rockylinux-86
     <<: *tests-tier0-non-destructive-rockylinux-86
@@ -537,17 +393,10 @@ jobs:
       - rocky-86
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-rockylinux-88
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -576,14 +425,6 @@ jobs:
       - rocky-88
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-rockylinux-88
     <<: *tests-tier0-non-destructive-rockylinux-88
     identifier: "tier0-destructive-rl88"
@@ -592,14 +433,6 @@ jobs:
       - tier0
       - rocky-88
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-rockylinux-88
     <<: *tests-tier0-non-destructive-rockylinux-88
@@ -610,17 +443,10 @@ jobs:
       - rocky-88
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-non-destructive-rockylinux-8
     job: tests
+    # Run tests on-demand
+    manual_trigger: true
     # Do not merge the PR into the target branch, in case the merge is broken
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
@@ -649,14 +475,6 @@ jobs:
       - rocky-8
       - non-destructive
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier0-destructive-rockylinux-8
     <<: *tests-tier0-non-destructive-rockylinux-8
     identifier: "tier0-destructive-rl8"
@@ -665,15 +483,6 @@ jobs:
       - tier0
       - rocky-8
       - destructive
-
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-sanity-rockylinux-8
     <<: *tests-tier0-non-destructive-rockylinux-8
@@ -684,15 +493,6 @@ jobs:
       - rocky-8
       - sanity
 
-    require:
-        label:
-          present:
-            - tests-run-tier0
-            - tests-run-sanity
-            - tests-run-all
-          absent:
-            - tests-skip
-
   ### Definitions of the tier1 tests
   - &tests-tier1-manual-centos
     <<: *tests-tier0-non-destructive-centos
@@ -702,14 +502,6 @@ jobs:
       - tier1
       - centos
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier1-manual-oraclelinux-7
     <<: *tests-tier0-non-destructive-oraclelinux-7
     identifier: "tier1-ol7"
@@ -718,14 +510,6 @@ jobs:
       - tier1
       - oracle-7
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier1-manual-oraclelinux-8
     <<: *tests-tier0-non-destructive-oraclelinux-8
     identifier: "tier1-ol8"
@@ -733,14 +517,6 @@ jobs:
     labels:
       - tier1
       - oracle-8
-
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
 
 
   - &tests-tier1-manual-almalinux-86
@@ -751,14 +527,6 @@ jobs:
       - tier1
       - alma-86
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier1-manual-almalinux-88
     <<: *tests-tier0-non-destructive-almalinux-88
     identifier: "tier1-al88"
@@ -766,14 +534,6 @@ jobs:
     labels:
       - tier1
       - alma-88
-
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-tier1-manual-almalinux-8
     <<: *tests-tier0-non-destructive-almalinux-8
@@ -783,14 +543,6 @@ jobs:
       - tier1
       - alma-8
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier1-manual-rockylinux-86
     <<: *tests-tier0-non-destructive-rockylinux-86
     identifier: "tier1-rl86"
@@ -798,14 +550,6 @@ jobs:
     labels:
       - tier1
       - rocky-86
-
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
 
   - &tests-tier1-manual-rockylinux-88
     <<: *tests-tier0-non-destructive-rockylinux-88
@@ -815,14 +559,6 @@ jobs:
       - tier1
       - rocky-88
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   - &tests-tier1-manual-rockylinux-8
     <<: *tests-tier0-non-destructive-rockylinux-8
     identifier: "tier1-rl8"
@@ -831,17 +567,11 @@ jobs:
       - tier1
       - rocky-8
 
-    require:
-        label:
-          present:
-            - tests-run-tier1
-            - tests-run-all
-          absent:
-            - tests-skip
-
   ## Tests on merge to main stage. Tests are run automatically
   - &tests-main-tier1-centos
     <<: *tests-tier0-non-destructive-centos
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-centos"
     tmt_plan: "tier1"
     trigger: commit
@@ -849,6 +579,8 @@ jobs:
 
   - &tests-main-tier1-oraclelinux-7
     <<: *tests-tier0-non-destructive-oraclelinux-7
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-ol7"
     tmt_plan: "tier1"
     trigger: commit
@@ -856,6 +588,8 @@ jobs:
 
   - &tests-main-tier1-oraclelinux-8
     <<: *tests-tier0-non-destructive-oraclelinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-ol8"
     tmt_plan: "tier1"
     trigger: commit
@@ -863,6 +597,8 @@ jobs:
 
   - &tests-main-tier1-almalinux-86
     <<: *tests-tier0-non-destructive-almalinux-86
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-al86"
     tmt_plan: "tier1"
     trigger: commit
@@ -870,6 +606,8 @@ jobs:
 
   - &tests-main-tier1-almalinux-88
     <<: *tests-tier0-non-destructive-almalinux-88
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-al88"
     tmt_plan: "tier1"
     trigger: commit
@@ -877,6 +615,8 @@ jobs:
 
   - &tests-main-tier1-almalinux-8
     <<: *tests-tier0-non-destructive-almalinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-al8"
     tmt_plan: "tier1"
     trigger: commit
@@ -884,6 +624,8 @@ jobs:
 
   - &tests-main-tier1-rockylinux-86
     <<: *tests-tier0-non-destructive-rockylinux-86
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-rl86"
     tmt_plan: "tier1"
     trigger: commit
@@ -891,6 +633,8 @@ jobs:
 
   - &tests-main-tier1-rockylinux-88
     <<: *tests-tier0-non-destructive-rockylinux-88
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-rl88"
     tmt_plan: "tier1"
     trigger: commit
@@ -898,6 +642,8 @@ jobs:
 
   - &tests-main-tier1-rockylinux-8
     <<: *tests-tier0-non-destructive-rockylinux-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
     identifier: "tier1-rl8"
     tmt_plan: "tier1"
     trigger: commit
