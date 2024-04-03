@@ -44,7 +44,7 @@ jobs:
   # TEST JOBS
   ## Tests on pull request stage. Tests are run on demand
   ### Definitions of the tier0 tests (non-destructive and destructive separately)
-  - &tests-tier0-non-destructive-centos
+  - &tests-tier0-centos
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -57,8 +57,8 @@ jobs:
       epel-8-x86_64:
         distros: [centos-8-latest]
     trigger: pull_request
-    identifier: "tier0-non-destructive-centos"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-centos"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -76,19 +76,9 @@ jobs:
     labels:
       - tier0
       - centos
-      - non-destructive
-
-  - &tests-tier0-destructive-centos
-    <<: *tests-tier0-non-destructive-centos
-    identifier: "tier0-destructive-centos"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - centos
-      - destructive
 
   - &tests-sanity-centos
-    <<: *tests-tier0-non-destructive-centos
+    <<: *tests-tier0-centos
     identifier: "sanity-centos"
     tmt_plan: "tier0/sanity"
     labels:
@@ -96,7 +86,7 @@ jobs:
       - centos
       - sanity
 
-  - &tests-tier0-non-destructive-oraclelinux-7
+  - &tests-tier0-oraclelinux-7
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -104,8 +94,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-ol7"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-ol7"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -129,19 +119,9 @@ jobs:
     labels:
       - tier0
       - oracle-7
-      - non-destructive
-
-  - &tests-tier0-destructive-oraclelinux-7
-    <<: *tests-tier0-non-destructive-oraclelinux-7
-    identifier: "tier0-destructive-ol7"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - oracle-7
-      - destructive
 
   - &tests-sanity-oraclelinux-7
-    <<: *tests-tier0-non-destructive-oraclelinux-7
+    <<: *tests-tier0-oraclelinux-7
     identifier: "sanity-ol7"
     tmt_plan: "tier0/sanity"
     labels:
@@ -149,7 +129,7 @@ jobs:
       - oracle-7
       - sanity
 
-  - &tests-tier0-non-destructive-oraclelinux-8
+  - &tests-tier0-oraclelinux-8
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -157,8 +137,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-ol8"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-ol8"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -182,19 +162,9 @@ jobs:
     labels:
       - tier0
       - oracle-8
-      - non-destructive
-
-  - &tests-tier0-destructive-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
-    identifier: "tier0-destructive-ol8"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - oracle-8
-      - destructive
 
   - &tests-sanity-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
+    <<: *tests-tier0-oraclelinux-8
     identifier: "sanity-ol8"
     tmt_plan: "tier0/sanity"
     labels:
@@ -202,7 +172,7 @@ jobs:
       - oracle-8
       - sanity
 
-  - &tests-tier0-non-destructive-almalinux-86
+  - &tests-tier0-almalinux-86
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -210,8 +180,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-al86"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-al86"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -235,19 +205,9 @@ jobs:
     labels:
       - tier0
       - alma-86
-      - non-destructive
-
-  - &tests-tier0-destructive-almalinux-86
-    <<: *tests-tier0-non-destructive-almalinux-86
-    identifier: "tier0-destructive-al86"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - alma-86
-      - destructive
 
   - &tests-sanity-almalinux-86
-    <<: *tests-tier0-non-destructive-almalinux-86
+    <<: *tests-tier0-almalinux-86
     identifier: "sanity-al86"
     tmt_plan: "tier0/sanity"
     labels:
@@ -255,7 +215,7 @@ jobs:
       - alma-86
       - sanity
 
-  - &tests-tier0-non-destructive-almalinux-88
+  - &tests-tier0-almalinux-88
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -263,8 +223,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-al88"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-al88"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -288,19 +248,9 @@ jobs:
     labels:
       - tier0
       - alma-88
-      - non-destructive
-
-  - &tests-tier0-destructive-almalinux-88
-    <<: *tests-tier0-non-destructive-almalinux-88
-    identifier: "tier0-destructive-al88"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - alma-88
-      - destructive
 
   - &tests-sanity-almalinux-88
-    <<: *tests-tier0-non-destructive-almalinux-88
+    <<: *tests-tier0-almalinux-88
     identifier: "sanity-al88"
     tmt_plan: "tier0/sanity"
     labels:
@@ -308,7 +258,7 @@ jobs:
       - alma-88
       - sanity
 
-  - &tests-tier0-non-destructive-almalinux-8
+  - &tests-tier0-almalinux-8
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -316,8 +266,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-al8"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-al8"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -341,19 +291,9 @@ jobs:
     labels:
       - tier0
       - alma-8
-      - non-destructive
-
-  - &tests-tier0-destructive-almalinux-8
-    <<: *tests-tier0-non-destructive-almalinux-8
-    identifier: "tier0-destructive-al8"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - alma-8
-      - destructive
 
   - &tests-sanity-almalinux-8
-    <<: *tests-tier0-non-destructive-almalinux-8
+    <<: *tests-tier0-almalinux-8
     identifier: "sanity-al8"
     tmt_plan: "tier0/sanity"
     labels:
@@ -361,7 +301,7 @@ jobs:
       - alma-8
       - sanity
 
-  - &tests-tier0-non-destructive-rockylinux-86
+  - &tests-tier0-rockylinux-86
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -369,8 +309,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-rl86"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-rl86"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -394,19 +334,9 @@ jobs:
     labels:
       - tier0
       - rocky-86
-      - non-destructive
-
-  - &tests-tier0-destructive-rockylinux-86
-    <<: *tests-tier0-non-destructive-rockylinux-86
-    identifier: "tier0-destructive-rl86"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - rocky-86
-      - destructive
 
   - &tests-sanity-rockylinux-86
-    <<: *tests-tier0-non-destructive-rockylinux-86
+    <<: *tests-tier0-rockylinux-86
     identifier: "sanity-rl86"
     tmt_plan: "tier0/sanity"
     labels:
@@ -414,7 +344,7 @@ jobs:
       - rocky-86
       - sanity
 
-  - &tests-tier0-non-destructive-rockylinux-88
+  - &tests-tier0-rockylinux-88
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -422,8 +352,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-rl88"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-rl88"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -447,19 +377,9 @@ jobs:
     labels:
       - tier0
       - rocky-88
-      - non-destructive
-
-  - &tests-tier0-destructive-rockylinux-88
-    <<: *tests-tier0-non-destructive-rockylinux-88
-    identifier: "tier0-destructive-rl88"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - rocky-88
-      - destructive
 
   - &tests-sanity-rockylinux-88
-    <<: *tests-tier0-non-destructive-rockylinux-88
+    <<: *tests-tier0-rockylinux-88
     identifier: "sanity-rl88"
     tmt_plan: "tier0/sanity"
     labels:
@@ -467,7 +387,7 @@ jobs:
       - rocky-88
       - sanity
 
-  - &tests-tier0-non-destructive-rockylinux-8
+  - &tests-tier0-rockylinux-8
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -475,8 +395,8 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     trigger: pull_request
-    identifier: "tier0-non-destructive-rl8"
-    tmt_plan: "tier0/non-destructive"
+    identifier: "tier0-rl8"
+    tmt_plan: "tier0/non-destructive|tier0/destructive"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -500,19 +420,9 @@ jobs:
     labels:
       - tier0
       - rocky-8
-      - non-destructive
-
-  - &tests-tier0-destructive-rockylinux-8
-    <<: *tests-tier0-non-destructive-rockylinux-8
-    identifier: "tier0-destructive-rl8"
-    tmt_plan: "tier0/destructive"
-    labels:
-      - tier0
-      - rocky-8
-      - destructive
 
   - &tests-sanity-rockylinux-8
-    <<: *tests-tier0-non-destructive-rockylinux-8
+    <<: *tests-tier0-rockylinux-8
     identifier: "sanity-rl8"
     tmt_plan: "tier0/sanity"
     labels:
@@ -522,7 +432,7 @@ jobs:
 
   ### Definitions of the tier1 tests
   - &tests-tier1-manual-centos
-    <<: *tests-tier0-non-destructive-centos
+    <<: *tests-tier0-centos
     identifier: "tier1-centos"
     tmt_plan: "tier1"
     labels:
@@ -530,7 +440,7 @@ jobs:
       - centos
 
   - &tests-tier1-manual-oraclelinux-7
-    <<: *tests-tier0-non-destructive-oraclelinux-7
+    <<: *tests-tier0-oraclelinux-7
     identifier: "tier1-ol7"
     tmt_plan: "tier1"
     labels:
@@ -538,7 +448,7 @@ jobs:
       - oracle-7
 
   - &tests-tier1-manual-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
+    <<: *tests-tier0-oraclelinux-8
     identifier: "tier1-ol8"
     tmt_plan: "tier1"
     labels:
@@ -547,7 +457,7 @@ jobs:
 
 
   - &tests-tier1-manual-almalinux-86
-    <<: *tests-tier0-non-destructive-almalinux-86
+    <<: *tests-tier0-almalinux-86
     identifier: "tier1-al86"
     tmt_plan: "tier1"
     labels:
@@ -555,7 +465,7 @@ jobs:
       - alma-86
 
   - &tests-tier1-manual-almalinux-88
-    <<: *tests-tier0-non-destructive-almalinux-88
+    <<: *tests-tier0-almalinux-88
     identifier: "tier1-al88"
     tmt_plan: "tier1"
     labels:
@@ -563,7 +473,7 @@ jobs:
       - alma-88
 
   - &tests-tier1-manual-almalinux-8
-    <<: *tests-tier0-non-destructive-almalinux-8
+    <<: *tests-tier0-almalinux-8
     identifier: "tier1-al8"
     tmt_plan: "tier1"
     labels:
@@ -571,7 +481,7 @@ jobs:
       - alma-8
 
   - &tests-tier1-manual-rockylinux-86
-    <<: *tests-tier0-non-destructive-rockylinux-86
+    <<: *tests-tier0-rockylinux-86
     identifier: "tier1-rl86"
     tmt_plan: "tier1"
     labels:
@@ -579,7 +489,7 @@ jobs:
       - rocky-86
 
   - &tests-tier1-manual-rockylinux-88
-    <<: *tests-tier0-non-destructive-rockylinux-88
+    <<: *tests-tier0-rockylinux-88
     identifier: "tier1-rl88"
     tmt_plan: "tier1"
     labels:
@@ -587,7 +497,7 @@ jobs:
       - rocky-88
 
   - &tests-tier1-manual-rockylinux-8
-    <<: *tests-tier0-non-destructive-rockylinux-8
+    <<: *tests-tier0-rockylinux-8
     identifier: "tier1-rl8"
     tmt_plan: "tier1"
     labels:
@@ -596,7 +506,7 @@ jobs:
 
   ## Tests on merge to main stage. Tests are run automatically
   - &tests-main-tier1-centos
-    <<: *tests-tier0-non-destructive-centos
+    <<: *tests-tier0-centos
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-centos"
@@ -605,7 +515,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-oraclelinux-7
-    <<: *tests-tier0-non-destructive-oraclelinux-7
+    <<: *tests-tier0-oraclelinux-7
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-ol7"
@@ -614,7 +524,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-oraclelinux-8
-    <<: *tests-tier0-non-destructive-oraclelinux-8
+    <<: *tests-tier0-oraclelinux-8
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-ol8"
@@ -623,7 +533,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-almalinux-86
-    <<: *tests-tier0-non-destructive-almalinux-86
+    <<: *tests-tier0-almalinux-86
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al86"
@@ -632,7 +542,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-almalinux-88
-    <<: *tests-tier0-non-destructive-almalinux-88
+    <<: *tests-tier0-almalinux-88
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al88"
@@ -641,7 +551,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-almalinux-8
-    <<: *tests-tier0-non-destructive-almalinux-8
+    <<: *tests-tier0-almalinux-8
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al8"
@@ -650,7 +560,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-rockylinux-86
-    <<: *tests-tier0-non-destructive-rockylinux-86
+    <<: *tests-tier0-rockylinux-86
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-rl86"
@@ -659,7 +569,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-rockylinux-88
-    <<: *tests-tier0-non-destructive-rockylinux-88
+    <<: *tests-tier0-rockylinux-88
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-rl88"
@@ -668,7 +578,7 @@ jobs:
     branch: main
 
   - &tests-main-tier1-rockylinux-8
-    <<: *tests-tier0-non-destructive-rockylinux-8
+    <<: *tests-tier0-rockylinux-8
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-rl8"
