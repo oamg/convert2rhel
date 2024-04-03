@@ -172,7 +172,7 @@ def get_device_number(device):
         raise BootloaderError("Unable to get information about the '%s' device" % device)
     # We are spliting the partition entry number, and we are just taking that
     # output as our desired partition number
-    if not output:
+    if not output or output == "\n":
         raise BootloaderError("The '%s' device has no PART_ENTRY_NUMBER" % device)
     partition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
     return int(partition_number)

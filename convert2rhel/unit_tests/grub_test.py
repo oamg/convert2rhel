@@ -159,8 +159,15 @@ def test_get_device_number(monkeypatch, caplog, expected_res, device, exc, subpr
         assert len(caplog.records) == 0
 
 
-def test_get_device_number_no_output(monkeypatch):
-    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=("", 0)))
+@pytest.mark.parametrize(
+    ("output"),
+    (
+        (""),
+        ("\n"),
+    ),
+)
+def test_get_device_number_no_output(monkeypatch, output):
+    monkeypatch.setattr("convert2rhel.utils.run_subprocess", RunSubprocessMocked(return_value=(output, 0)))
     with pytest.raises(grub.BootloaderError, match="The '/dev/sda1' device has no PART_ENTRY_NUMBER"):
         grub.get_device_number("/dev/sda1")
 
