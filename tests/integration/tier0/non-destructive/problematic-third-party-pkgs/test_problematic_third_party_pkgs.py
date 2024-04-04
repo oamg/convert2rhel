@@ -6,7 +6,7 @@ from envparse import env
 @pytest.fixture
 def problematic_third_party_package(shell):
     """
-    Install problematic package which previously caused the TASK - [Convert: List third-party packages]
+    Install problematic package which previously caused the TASK - [Prepare: List third-party packages]
     to fail.
     Installed package(s):
     v8-devel from the epel repository
@@ -29,7 +29,7 @@ def problematic_third_party_package(shell):
 @pytest.mark.test_list_third_party_pkgs_error
 def test_list_third_party_pkgs_error(convert2rhel, problematic_third_party_package):
     """
-    This test verifies, that the  TASK - [Convert: List third-party packages]
+    This test verifies, that the  TASK - [Prepare: List third-party packages]
     won't fail listing packages if previously problematic third party packages are installed.
     Installed package(s):
     v8-devel from the epel repository

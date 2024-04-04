@@ -39,7 +39,7 @@ class ListThirdPartyPackages(actions.Action):
         """
         super(ListThirdPartyPackages, self).run()
 
-        logger.task("Convert: List third-party packages")
+        logger.task("Prepare: List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
         if third_party_pkgs:
             pkg_list = pkghandler.format_pkg_info(sorted(third_party_pkgs, key=self.extract_packages))
@@ -94,11 +94,11 @@ class RemoveSpecialPackages(actions.Action):
         all_pkgs = []
         pkgs_removed = []
         try:
-            logger.task("Convert: Searching for the following excluded packages")
+            logger.task("Prepare: Searching for the following excluded packages")
             excluded_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
 
             logger.task(
-                "Convert: Searching for packages containing .repo files or affecting variables in the .repo files"
+                "Prepare: Searching for packages containing .repo files or affecting variables in the .repo files"
             )
             repofile_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
 
