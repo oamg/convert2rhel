@@ -548,40 +548,6 @@ def tmt_reboot_count_reset(shell):
     shell("export TMT_REBOOT_COUNT=0 && export REBOOTCOUNT=0 && export RSTRNT_REBOOTCOUNT=0")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def rcmtools_cleanup():
-    """
-    Fixture to clean up rcmtools packages and repository from the host.
-    These are an artifact of Testing Farm installation, which have no usage for our testing
-    and can negatively impact the test results in some scenarios.
-    """
-    reponame = "rcmtools"
-
-    conflicting_pkgs = ["libcomps"]
-
-    # Get list of packages installed from the rcmtools repository
-    yum_command = f"yum list installed --disablerepo=* --enablerepo={reponame} | awk '$3==\"@{reponame}\" {{print $1}}'"
-
-    installed_packages = subprocess.run(
-        f"{yum_command} | wc -l",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        check=True,
-        universal_newlines=True,
-    )
-
-    result = subprocess.run(yum_command, stdout=subprocess.PIPE, shell=True, check=True, universal_newlines=True)
-
-    # Remove the packages installed from the rcmtools repo
-    if "oracle-7" in SYSTEM_RELEASE_ENV and installed_packages.stdout.splitlines()[-1].strip() != "0":
-        for pkg in conflicting_pkgs:
-            if pkg in result.stdout:
-                subprocess.run(f"yum remove -y {pkg}", check=True, shell=True)
-
-    yield
-
-
 @pytest.fixture()
 def environment_variables(request):
     """

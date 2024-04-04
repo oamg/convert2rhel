@@ -9,6 +9,8 @@
         and (ansible_facts['distribution'] == "AlmaLinux"
         or ansible_facts['distribution'] == "Rocky")
 
+    - role: remove-tf-artifact-leftovers
+
     - role: update-system
 
     - role: oracle-linux-specific
