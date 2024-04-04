@@ -598,7 +598,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
-        assert main.main() == 1
+        assert main.main() == 2
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
         assert toolopts_cli_mock.call_count == 1
@@ -622,7 +622,7 @@ class TestRollbackFromMain:
 
 
 @pytest.mark.parametrize(
-    ("data"),
+    ("data", "exception", "match", "activity"),
     (
         (
             {
@@ -638,7 +638,10 @@ class TestRollbackFromMain:
                         "variables": {},
                     },
                 },
-            }
+            },
+            SystemExit,
+            "Conversion failed.",
+            "analisys",
         ),
         (
             {
@@ -654,10 +657,34 @@ class TestRollbackFromMain:
                         "variables": {},
                     },
                 },
-            }
+            },
+            SystemExit,
+            "Conversion failed.",
+            "analisys",
+        ),
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["SKIP"],
+                        "id": "SKIP_ID",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            },
+            main._AnalyzeInhibitorFound,
+            "",
+            "conversion",
         ),
     ),
 )
-def test_raise_for_skipped_failures(data):
-    with pytest.raises(SystemExit, match="Conversion failed."):
-        main._raise_for_skipped_failures(data)
+def test_raise_for_skipped_failures(data, exception, match, activity, global_tool_opts, monkeypatch):
+    monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
+    global_tool_opts.activity = activity
+    with pytest.raises(exception, match=match):
+        main._raise_for_skipped_failures(main.ConversionPhase.PRE_PONR_CHANGES, data)
