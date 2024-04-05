@@ -2,6 +2,8 @@
 name: Build release RPMs & Handle release
 
 on:
+  push:
+    tags: "*"
   release:
     types: [published]
 
@@ -31,6 +33,7 @@ jobs:
 
   update_jira_links:
     name: Update Jira links
+    if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
