@@ -17,7 +17,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel import actions, pkghandler, utils
+from convert2rhel import actions, pkghandler, repo, utils
 from convert2rhel.backup import backup_control, get_backedup_system_repos
 from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.systeminfo import system_info
@@ -39,7 +39,12 @@ class ListThirdPartyPackages(actions.Action):
         logger.task("Prepare: List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
         if third_party_pkgs:
-            pkg_list = pkghandler.format_pkg_info(sorted(third_party_pkgs, key=self.extract_packages))
+            # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
+            # There is needed for avoid reaching out RHEL repositories while requesting info about pkgs.
+            disable_repos = repo.get_rhel_repos_to_disable()
+            pkg_list = pkghandler.format_pkg_info(
+                sorted(third_party_pkgs, key=self.extract_packages), disable_repos=disable_repos
+            )
             warning_message = (
                 "Only packages signed by %s are to be"
                 " replaced. Red Hat support won't be provided"
@@ -120,7 +125,11 @@ class RemoveSpecialPackages(actions.Action):
             backup_control.push(RestorablePackage(pkgs=pkghandler.get_pkg_nevras(all_pkgs), reposdir=backedup_reposdir))
 
             logger.info("\nRemoving special packages from the system.")
-            pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs)
+
+            # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
+            # There is needed for avoid reaching out RHEL repositories while requesting info about pkgs.
+            disable_repos = repo.get_rhel_repos_to_disable()
+            pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs, disable_repos=disable_repos)
         except SystemExit as e:
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
@@ -164,10 +173,12 @@ class RemoveSpecialPackages(actions.Action):
         super(RemoveSpecialPackages, self).run()
 
 
-def _remove_packages_unless_from_redhat(pkgs_list):
+def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
     """Remove packages from the system that are not RHEL.
 
     :param pkgs_list list[str]: Packages that will be removed.
+    :param disable_repos: List of repo IDs to be disabled when retrieving repository information from packages.
+    :type disable_repos: List[str]
     :return list[str]: Packages removed from the system.
     """
     if not pkgs_list:
@@ -176,7 +187,7 @@ def _remove_packages_unless_from_redhat(pkgs_list):
 
     # this call can return None, which is not ideal to use with sorted.
     logger.warning("Removing the following %s packages:\n" % len(pkgs_list))
-    pkghandler.print_pkg_info(pkgs_list)
+    pkghandler.print_pkg_info(pkgs_list, disable_repos)
 
     pkgs_removed = utils.remove_pkgs(pkghandler.get_pkg_nevras(pkgs_list))
     logger.debug("Successfully removed %s packages" % len(pkgs_list))

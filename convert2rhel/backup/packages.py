@@ -20,7 +20,7 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel import exceptions, utils
+from convert2rhel import exceptions, repo, utils
 from convert2rhel.backup import BACKUP_DIR, RestorableChange
 from convert2rhel.pkgmanager import call_yum_cmd
 
@@ -83,7 +83,9 @@ _UBI_REPO_MAPPING = {
 
 # NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
 class RestorablePackage(RestorableChange):
-    def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+    def __init__(
+        self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None, disable_repos=None
+    ):
         """
         Keep control of system packages before their removal to backup and
         restore in case of rollback.
@@ -105,6 +107,9 @@ class RestorablePackage(RestorableChange):
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
         self.varsdir = varsdir
+
+        # RHELC-884 disable the RHEL repos to avoid downloading pkg from them.
+        self.disable_repos = disable_repos or repo.get_rhel_repos_to_disable()
 
         self._backedup_pkgs_paths = []
 
@@ -149,6 +154,7 @@ class RestorablePackage(RestorableChange):
                 utils.download_pkg(
                     pkg=pkg,
                     dest=BACKUP_DIR,
+                    disable_repos=self.disable_repos,
                     set_releasever=self.set_releasever,
                     custom_releasever=self.custom_releasever,
                     varsdir=self.varsdir,

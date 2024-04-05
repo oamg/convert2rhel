@@ -18,7 +18,7 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel import actions
+from convert2rhel import actions, repo
 from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
@@ -44,10 +44,14 @@ class IsLoadedKernelLatest(actions.Action):
             )
             return
 
+        # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
+        disable_repo_command = repo.get_rhel_disable_repos_command(repo.get_rhel_repos_to_disable())
+
         cmd = [
             "repoquery",
             "--setopt=exclude=",
             "--quiet",
+            disable_repo_command,
             "--qf",
             "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
         ]

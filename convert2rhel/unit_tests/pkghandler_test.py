@@ -898,13 +898,13 @@ def test_get_total_packages_to_update(
         monkeypatch.setattr(
             pkghandler,
             "_get_packages_to_update_%s" % package_manager_type,
-            value=lambda: packages,
+            value=lambda disable_repos: packages,
         )
     else:
         monkeypatch.setattr(
             pkghandler,
             "_get_packages_to_update_%s" % package_manager_type,
-            value=lambda: packages,
+            value=lambda disable_repos: packages,
         )
     assert get_total_packages_to_update() == expected
 
@@ -966,6 +966,110 @@ def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
     monkeypatch.setattr(pkgmanager.Base, "transaction", value=transaction_pkgs)
 
     assert _get_packages_to_update_dnf() == packages
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "dnf",
+    reason="No dnf module detected on the system, skipping it.",
+)
+def test_get_packages_to_update_dnf_rhel_repos(monkeypatch):
+    # Mock the uneccesary calls for testing
+    monkeypatch.setattr(pkgmanager.Base, "fill_sack", value=mock.Mock())
+    monkeypatch.setattr(pkgmanager.Base, "upgrade_all", value=mock.Mock())
+    monkeypatch.setattr(pkgmanager.Base, "resolve", value=mock.Mock())
+    monkeypatch.setattr(pkgmanager.Base, "transaction", value=[])
+
+    rhel_repo_id = "rhel-8-for-x86_64-baseos-rpms"
+
+    # Create DNF Base object
+    base = pkgmanager.Base()
+
+    # Add RHEL repo to the DNF Base
+    base.repos.add_new_repo(rhel_repo_id, base.conf, baseurl="https://random.testing.url/")
+
+    # Get all enabled repos in the current system
+    base.read_all_repos()
+    enabled_repos = [repo.id for repo in base.repos.iter_enabled()]
+
+    # Check if the list is not empty and the RHEL repo is enabled
+    assert enabled_repos
+    assert rhel_repo_id in enabled_repos
+
+    # Choose one of the enabled repos on the system
+    # Avoid getting the rhel_repo_id if on 0 index, then get the repo id from 1.
+    # By this is checked if disabling one of the user provided repos is working. We need
+    # repo which is present on the system and is different from the rhel one.
+    # This allows us to simulate the situation. One of the system repos that is different from the rhel
+    # one is used.
+    repo_for_disable = [enabled_repos[0]] if enabled_repos[0] != rhel_repo_id else [enabled_repos[1]]
+
+    # Add the rhel* to the repo for disable
+    repo_for_disable += ["rhel*"]
+
+    # Patch the original Dnf Base to ours to have access to it and contain the added repo
+    monkeypatch.setattr(pkgmanager, "Base", mock.Mock(return_value=base))
+
+    _get_packages_to_update_dnf(disable_repos=repo_for_disable)
+
+    # Get enabled repos after the _get_packages_to_update_dnf where the RHEL repos are disabled
+    enabled_repos = [repo.id for repo in base.repos.iter_enabled()]
+
+    assert rhel_repo_id not in enabled_repos
+    assert repo_for_disable not in enabled_repos
+
+
+@pytest.mark.skipif(
+    pkgmanager.TYPE != "yum",
+    reason="No yum module detected on the system, skipping it.",
+)
+def test_get_packages_to_update_yum_rhel_repos(monkeypatch):
+    class MockPkgList:
+        """Class for mocking the doPackageList and having the needed attributes."""
+
+        def __init__(self, pkgnarrow):
+            self.updates = []
+            assert pkgnarrow == "updates"
+
+    # Mock unnecessary calls for testing
+    monkeypatch.setattr(pkgmanager.YumBase, "doPackageLists", value=MockPkgList)
+
+    # Create YUM Base object to have access to it
+    base = pkgmanager.YumBase()
+
+    # Add RHEL repo to the YUM Base
+    rhel_repo_id = "rhel-7-server-rpms"
+    base.repos.add(pkgmanager.repos.Repository(rhel_repo_id))
+    base.repos.enableRepo(rhel_repo_id)
+
+    # Get all enabled repos in the current system
+    enabled_repos = [repo.id for repo in base.repos.listEnabled()]
+
+    # Check if the list is not empty and the RHEL repo is enabled
+    assert enabled_repos
+    assert rhel_repo_id in enabled_repos
+
+    # Choose one of the enabled repos on the system
+    # Avoid getting the rhel_repo_id if on 0 index, then get the repo id from 1.
+    # By this is checked if disabling one of the user provided repos is working. We need
+    # repo which is present on the system and is different from the rhel one.
+    # This allows us to simulate the situation. One of the system repos that is different from the rhel
+    # one is used.
+    repo_for_disable = [enabled_repos[0]] if enabled_repos[0] != rhel_repo_id else [enabled_repos[1]]
+
+    # Add the rhel* to the repo for disable
+    repo_for_disable += ["rhel*"]
+
+    # Patch the original YUM Base to ours to have access to it and contain the added repo
+    monkeypatch.setattr(pkgmanager, "YumBase", mock.Mock(return_value=base))
+
+    # Call the function to be tested
+    _get_packages_to_update_yum(disable_repos=repo_for_disable)
+
+    # Get enabled repos after the call where the RHEL repos are disabled
+    enabled_repos = [repo.id for repo in base.repos.listEnabled()]
+
+    assert rhel_repo_id not in enabled_repos
+    assert repo_for_disable not in enabled_repos
 
 
 class TestInstallGpgKeys:
