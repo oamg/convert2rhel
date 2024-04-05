@@ -607,6 +607,26 @@ def kernel_check_envar():
     del os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"]
 
 
+def _create_old_repo(shell, distro: str, repo_name: str):
+    """
+    Create a repo on system with content that is older then the latest released version.
+    The intended use is for Rocky-8 and Alma-8.
+    """
+    baseurl = None
+    if distro == "alma":
+        baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
+    elif distro == "rocky":
+        baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
+    else:
+        pytest.fail(f"Unsupported distro ({distro}) provided.")
+    with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
+        f.write(f"[{repo_name}]\n")
+        f.write(f"name={repo_name}\n")
+        f.write(f"baseurl={baseurl}\n")
+        f.write("enabled=0\n")
+        f.write("gpgcheck=0\n")
+
+
 @pytest.fixture(scope="function")
 def kernel(shell):
     """
@@ -614,6 +634,13 @@ def kernel(shell):
     the system to boot to it. The kernel version is not the
     latest one available in repositories.
     """
+
+    # If the fixture gets executed after second `tmt-reboot` (after cleanup of a test) then
+    # do not trigger test again by yielding.
+    # Note that we cannot just run `return` command as this fixture require to have
+    # `yield` call in every situation. That's why calling `pytest.skip`.
+    if int(os.environ["TMT_REBOOT_COUNT"]) > 1:
+        pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         # Set default kernel
@@ -631,14 +658,14 @@ def kernel(shell):
             assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
             shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
         elif "alma-8" in SYSTEM_RELEASE_ENV:
-            mock_repo = "alma_old"
-            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            repo_name = "alma_old"
+            _create_old_repo(shell, distro="alma", repo_name=repo_name)
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
             shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
         elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            mock_repo = "rocky_old"
-            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
+            repo_name = "rocky_old"
+            _create_old_repo(shell, distro="rocky", repo_name=repo_name)
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
             shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
 
         shell("tmt-reboot -t 600")
@@ -657,9 +684,11 @@ def kernel(shell):
             "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
         ).output
 
-        # Get the full name of the kernel
+        # Get the full name of the kernel (ignore rescue kernels)
         full_name = shell(
-            "grubby --info ALL | grep \"title=.*{}\" | tr -d '\"' | sed 's/title=//'".format(latest_kernel)
+            'grubby --info ALL | grep "title=.*{}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''.format(
+                latest_kernel
+            )
         ).output
 
         # Set the latest kernel as the one we want to reboot to
