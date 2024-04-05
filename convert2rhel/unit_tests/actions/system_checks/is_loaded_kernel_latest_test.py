@@ -24,7 +24,7 @@ from collections import namedtuple
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager, unit_tests
+from convert2rhel import actions, pkgmanager, repo, unit_tests
 from convert2rhel.actions.system_checks import is_loaded_kernel_latest
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8, oracle8
@@ -87,6 +87,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         package_name,
@@ -175,6 +176,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         package_name,
@@ -269,6 +271,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         package_name,
@@ -315,6 +318,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         "kernel-core",
@@ -390,6 +394,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         "kernel-core",
@@ -481,6 +486,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         "kernel-core",
@@ -564,6 +570,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         package_name,
@@ -681,6 +688,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         package_name,
@@ -726,6 +734,7 @@ class TestIsLoadedKernelLatest:
                         "repoquery",
                         "--setopt=exclude=",
                         "--quiet",
+                        "--disablerepo=rhel*",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                         "kernel-core",
@@ -753,4 +762,40 @@ class TestIsLoadedKernelLatest:
             description="The loaded kernel version mismatch the latest one available in system repositories",
             diagnosis="The version of the loaded kernel is different from the latest version in system repositories.",
             remediations="To proceed with the conversion, update the kernel version by executing the following step:",
+        )
+
+    @centos7
+    @pytest.mark.parametrize(
+        ("enablerepos", "disable_repo_cmd"),
+        (
+            ([], "--disablerepo=rhel*"),
+            (["test-repo"], "--disablerepo=rhel* --disablerepo=test-repo"),
+        ),
+    )
+    def test_is_loaded_kernel_latest_disable_repos(
+        self, monkeypatch, enablerepos, is_loaded_kernel_latest_action, pretend_os, disable_repo_cmd
+    ):
+        """Test if the --disablerepo part of the command is built propertly."""
+        run_subprocess = mock.Mock(return_value=[None, None])
+        monkeypatch.setattr(
+            is_loaded_kernel_latest,
+            "run_subprocess",
+            run_subprocess,
+        )
+
+        monkeypatch.setattr(repo.tool_opts, "enablerepo", enablerepos)
+
+        is_loaded_kernel_latest_action.run()
+
+        run_subprocess.assert_called_with(
+            [
+                "repoquery",
+                "--setopt=exclude=",
+                "--quiet",
+                disable_repo_cmd,
+                "--qf",
+                "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                "kernel",
+            ],
+            print_output=False,
         )

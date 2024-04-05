@@ -19,7 +19,7 @@ __metaclass__ = type
 
 import logging
 
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import system_info, tool_opts
 
 
 DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
@@ -47,3 +47,34 @@ def get_rhel_repoids():
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
     return repos_needed
+
+
+def get_rhel_repos_to_disable():
+    """Get the list of repositories which should be disabled when performing pre-conversion checks. Avoid downloading
+    backup and up-to-date checks from them. The output list can looks like:
+    ['rhel*', 'user-provided', 'user-provided1']
+
+    :return: List of repositories to disable when performing checks.
+    :rtype: List[str]
+    """
+    # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
+    # Also disable repositories enabled by the user for the conversion.
+    return ["rhel*"] + tool_opts.enablerepo
+
+
+def get_rhel_disable_repos_command(disable_repos):
+    """Build command containing all the repos for disable. The result looks like
+    '--disablerepo repo --disablerepo repo1 --disablerepo repo2'
+    If provided list is empty, empty string is returned.
+
+    :param disable_repos: List of repo IDs to disable
+    :type disable_repos: List[str]
+    :return: String for disabling the rhel and user provided repositories while performing checks.
+    :rtype: str
+    """
+    if not disable_repos:
+        return ""
+
+    disable_repo_command = " ".join("--disablerepo=" + repo for repo in disable_repos)
+
+    return disable_repo_command

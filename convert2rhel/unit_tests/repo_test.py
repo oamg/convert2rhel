@@ -78,3 +78,26 @@ def test_get_rhel_repoids_el7(pretend_os, is_els_release, expected, monkeypatch)
     monkeypatch.setattr(repo.system_info, "els_system", value=is_els_release)
     repos = repo.get_rhel_repoids()
     assert repos == expected
+
+
+@pytest.mark.parametrize(("enablerepo", "disablerepos"), (([], ["rhel*"]), (["test-repo"], ["rhel*", "test-repo"])))
+def test_get_rhel_repos_to_disable(monkeypatch, enablerepo, disablerepos):
+    monkeypatch.setattr(repo.tool_opts, "enablerepo", enablerepo)
+
+    repos = repo.get_rhel_repos_to_disable()
+
+    assert repos == disablerepos
+
+
+@pytest.mark.parametrize(
+    ("disable_repos", "command"),
+    (
+        ([], ""),
+        (["test-repo"], "--disablerepo=test-repo"),
+        (["rhel*", "test-repo"], "--disablerepo=rhel* --disablerepo=test-repo"),
+    ),
+)
+def test_get_rhel_disable_repos_command(disable_repos, command):
+    output = repo.get_rhel_disable_repos_command(disable_repos)
+
+    assert output == command

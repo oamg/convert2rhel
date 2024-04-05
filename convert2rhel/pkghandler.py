@@ -27,7 +27,7 @@ from collections import namedtuple
 
 import rpm
 
-from convert2rhel import backup, pkgmanager, utils
+from convert2rhel import backup, pkgmanager, repo, utils
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.systeminfo import system_info
@@ -299,11 +299,13 @@ def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
 
 
 @utils.run_as_child_process
-def format_pkg_info(pkgs):
+def format_pkg_info(pkgs, disable_repos=None):
     """Format package information.
 
     :param pkgs: List of packages to be formatted
     :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
+    :param disable_repos: List of repo IDs to be disabled when retrieving repository information from packages.
+    :type disable_repos: List[str]
     """
     package_info = {}
     for pkg in pkgs:
@@ -344,7 +346,7 @@ def format_pkg_info(pkgs):
         + "\n"
     )
 
-    packages_with_repos = _get_package_repositories(list(package_info))
+    packages_with_repos = _get_package_repositories(list(package_info), disable_repos)
     # Update package_info reference with repoid
     for nevra, repoid in packages_with_repos.items():
         package_info[nevra]["repoid"] = repoid
@@ -368,22 +370,26 @@ def format_pkg_info(pkgs):
     return pkg_table
 
 
-def print_pkg_info(pkgs):
+def print_pkg_info(pkgs, disable_repos=None):
     """
     Print the results of format_pkg_info
 
     :param pkgs: List of packages to be printed
     :type pkgs: list[PackageInformation] | list[RPMInstalledPackage]
+    :param disable_repos: List of repo IDs to be disabled when retrieving repository information from packages.
+    :type disable_repos: List[str]
     """
 
-    loggerinst.info(format_pkg_info(pkgs))
+    loggerinst.info(format_pkg_info(pkgs, disable_repos))
 
 
-def _get_package_repositories(pkgs):
+def _get_package_repositories(pkgs, disable_repos=None):
     """Retrieve repository information from packages.
 
     :param pkgs: List of packages to get their associated repositories
     :type pkgs: list[PackageInformation]
+    :param disable_repos: List of repo IDs to be disabled when retrieving repository information from packages.
+    :type disable_repos: List[str]
     :return: Mapping of packages with their repositories names
     :rtype: dict[str, dict[str, str]
     """
@@ -393,8 +399,13 @@ def _get_package_repositories(pkgs):
     if system_info.version.major >= 8:
         query_format = "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}&%{REPOID}\n"
 
+    # If needed, disable some repos for the repoquery
+    disable_repo_command = repo.get_rhel_disable_repos_command(disable_repos)
+
+    cmd = ["repoquery", "--quiet", "-q", disable_repo_command] + pkgs + ["--qf", query_format]
+
     output, retcode = utils.run_subprocess(
-        ["repoquery", "--quiet", "-q"] + pkgs + ["--qf", query_format],
+        cmd,
         print_cmd=True,
         print_output=False,
     )
@@ -899,22 +910,36 @@ def get_total_packages_to_update():
     """
     packages = []
 
+    # RHEL repositories needs to be disabled when checking if the packages are up to date.
+    # When user specifies rhel repos to use during conversion, disabling them is also needed.
+    # Note: Do not depend on the --no-rhsm option, enable repos can be specified without it.
+    disable_repos = repo.get_rhel_repos_to_disable()
+
     if pkgmanager.TYPE == "yum":
-        packages = _get_packages_to_update_yum()
+        packages = _get_packages_to_update_yum(disable_repos=disable_repos)
     elif pkgmanager.TYPE == "dnf":
-        packages = _get_packages_to_update_dnf()
+        packages = _get_packages_to_update_dnf(disable_repos=disable_repos)
 
     return set(packages)
 
 
-def _get_packages_to_update_yum():
+def _get_packages_to_update_yum(disable_repos=None):
     """Use yum to get all the installed packages that have an update available.
 
+    :param disable_repos: Repositories to disable during command execution. Defaults to None.
+    :type disable_repos: list[str]
     :return: Return a list of packages that needs to be updated.
     :rtype: list[str] | list
     """
+    disable_repos = disable_repos or []
     all_packages = []
+
     base = pkgmanager.YumBase()
+
+    # Disable rhel repos during checks if system is up-to-date
+    for repo in disable_repos:
+        base.repos.disableRepo(repo)
+
     packages = base.doPackageLists(pkgnarrow="updates")
     for package in packages.updates:
         all_packages.append(package.name)
@@ -924,11 +949,15 @@ def _get_packages_to_update_yum():
     return all_packages
 
 
-def _get_packages_to_update_dnf():
+def _get_packages_to_update_dnf(disable_repos=None):
+    """Query all the packages with dnf that has an update pending on the
+    system.
+    :param disable_repos: Repositories to disable during command execution. Defaults to None.
+    :type disable_repos: list[str]
     """
-    Query all the packages with dnf that has an update pending on the system.
-    """
+    disable_repos = disable_repos or []
     packages = []
+
     base = pkgmanager.Base()
 
     # Set DNF to read from the proper config files, at this moment, DNF can't
@@ -941,6 +970,11 @@ def _get_packages_to_update_dnf():
     base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
     base.read_all_repos()
     base.fill_sack()
+
+    # Disable rhel repos during checks if system is up-to-date
+    for disable_repo in disable_repos:
+        repos_for_disable = base.repos.get_matching(disable_repo)
+        repos_for_disable.disable()
 
     # Get a list of all packages to upgrade in the system
     base.upgrade_all()
