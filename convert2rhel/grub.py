@@ -167,12 +167,13 @@ def get_device_number(device):
     output, ecode = utils.run_subprocess(
         ["/usr/sbin/blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False
     )
+    output = output.strip()
     if ecode:
         logger.debug("blkid output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
     # We are spliting the partition entry number, and we are just taking that
     # output as our desired partition number
-    if not output or output == "\n":
+    if not output:
         raise BootloaderError("The '%s' device has no PART_ENTRY_NUMBER" % device)
     partition_number = output.split("PART_ENTRY_NUMBER=")[-1].replace('"', "")
     return int(partition_number)
