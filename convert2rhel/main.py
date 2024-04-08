@@ -36,7 +36,7 @@ class _AnalyzeExit(Exception):
 
 class _AnalyzeInhibitorFound(Exception):
     # Exception just to exit when running conversion mode and there is an
-    # inhibitor detected rugin analysis.
+    # inhibitor detected during analysis.
     pass
 
 
@@ -67,11 +67,11 @@ _REPORT_MAPPING = {
 # Track the exit codes for different scenarios during the conversion.
 class ConversionExitCodes:
     # No errors detected during the conversion
-    CLEAN = 0
+    SUCCESSFUL = 0
     # Some inhibitors appeared during the pre conversion analysis
-    INHIBITOR = 1
+    ANALYSIS = 1
     # Inhibitors that are part of the conversion process
-    CONVERSION_INHIBITOR = 2
+    CONVERSION = 2
 
 
 def initialize_file_logging(log_name, log_dir):
@@ -120,7 +120,7 @@ def main():
     except applock.ApplicationLockedError:
         loggerinst.warning("Another copy of convert2rhel is running.\n")
         loggerinst.warning("\nNo changes were made to the system.\n")
-        return ConversionExitCodes.INHIBITOR
+        return ConversionExitCodes.ANALYSIS
 
 
 def main_locked():
@@ -201,23 +201,16 @@ def main_locked():
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
-        return ConversionExitCodes.CLEAN
+        return ConversionExitCodes.SUCCESSFUL
 
     except _AnalyzeInhibitorFound as err:
-        rollback_changes()
-        loggerinst.warning(
-            "One or more inhibitors were found in the analysis during the conversion.\n\n"
-            "We cannot proceed with the system conversion until the inhibitors presented in the report are fixed.\n\n"
-            "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
-            " the system from a backup."
+        loggerinst.critical_no_exit(
+            "The conversion process failed.\n\n"
+            "A problem was encountered during analysis and a rollback will be "
+            "initiated to restore the system as the previous state."
         )
-        report.summary(
-            pre_conversion_results,
-            include_all_reports=True,
-            disable_colors=logger_module.should_disable_color_output(),
-        )
-
-        return ConversionExitCodes.CONVERSION_INHIBITOR
+        _handle_main_exceptions(process_phase, pre_conversion_results)
+        return ConversionExitCodes.CONVERSION
 
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
@@ -237,7 +230,7 @@ def main_locked():
             report.summary_as_json(results, json_report)
             report.summary_as_txt(results, txt_report)
 
-    return ConversionExitCodes.CLEAN
+    return ConversionExitCodes.SUCCESSFUL
 
 
 def _raise_for_skipped_failures(process_phase, results):
@@ -254,7 +247,8 @@ def _raise_for_skipped_failures(process_phase, results):
             raise _AnalyzeInhibitorFound
 
         # The report will be handled in the error handler, after rollback.
-        loggerinst.critical("Conversion failed.")
+        method = "Conversion" if toolopts.tool_opts.activity == "conversion" else "Analysis"
+        loggerinst.critical("%s failed." % method)
 
 
 # TODO(r0x0d): Better function name
@@ -316,9 +310,8 @@ def _handle_main_exceptions(process_phase, results=None):
         )
 
         subscription.update_rhsm_custom_facts()
-        return ConversionExitCodes.CONVERSION_INHIBITOR
 
-    return ConversionExitCodes.INHIBITOR
+    return ConversionExitCodes.ANALYSIS
 
 
 #
