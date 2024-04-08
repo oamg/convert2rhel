@@ -688,3 +688,14 @@ def test_raise_for_skipped_failures(data, exception, match, activity, global_too
     global_tool_opts.activity = activity
     with pytest.raises(exception, match=match):
         main._raise_for_skipped_failures(main.ConversionPhase.PRE_PONR_CHANGES, data)
+
+
+def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):
+    monkeypatch.setattr(toolopts, "CLI", mock.Mock())
+    monkeypatch.setattr(utils, "require_root", mock.Mock())
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmpdir))
+    monkeypatch.setattr(main, "main_locked", mock.Mock(side_effect=applock.ApplicationLockedError("failed")))
+
+    assert main.main() == 1
+    assert "Another copy of convert2rhel is running.\n" in caplog.records[-2].message
+    assert "\nNo changes were made to the system.\n" in caplog.records[-1].message
