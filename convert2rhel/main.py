@@ -166,7 +166,7 @@ def main_locked():
         rollback_changes()
 
         report.pre_conversion_report(
-            pre_conversion_results,
+            results=pre_conversion_results,
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
