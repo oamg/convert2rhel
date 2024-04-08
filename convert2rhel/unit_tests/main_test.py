@@ -432,8 +432,8 @@ class TestRollbackFromMain:
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert caplog.records[-4].message == "Conversion failed."
-        assert caplog.records[-4].levelname == "CRITICAL"
+        assert caplog.records[-3].message == "Analysis failed."
+        assert caplog.records[-3].levelname == "CRITICAL"
 
     def test_main_rollback_analyze_exit_phase_without_subman(self, global_tool_opts, monkeypatch, tmp_path):
         """
@@ -598,7 +598,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
-        assert main.main() == 2
+        assert main.main() == 1
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
         assert toolopts_cli_mock.call_count == 1
@@ -640,7 +640,7 @@ class TestRollbackFromMain:
                 },
             },
             SystemExit,
-            "Conversion failed.",
+            "Analysis failed.",
             "analisys",
         ),
         (
@@ -659,7 +659,7 @@ class TestRollbackFromMain:
                 },
             },
             SystemExit,
-            "Conversion failed.",
+            "Analysis failed.",
             "analisys",
         ),
         (
