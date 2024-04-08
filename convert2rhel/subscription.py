@@ -583,8 +583,6 @@ def attach_subscription():
     subscription ID has been provided through command line, let the user
     interactively choose one.
     """
-    # TODO: Support attaching multiple pool IDs.
-
     # check if SCA is enabled
     output, _ = utils.run_subprocess(["subscription-manager", "status"], print_output=False)
     if "content access mode is set to simple content access." in output.lower():
