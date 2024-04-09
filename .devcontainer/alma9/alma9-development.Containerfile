@@ -12,6 +12,7 @@ ENV APP_MAIN_DEPS \
     python3-six \
     python3-dbus \
     python3-pexpect \
+    python3-dnf \
     git \
     man \
     make
