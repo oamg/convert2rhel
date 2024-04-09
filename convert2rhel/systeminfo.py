@@ -168,7 +168,7 @@ class SystemInfo:
 
         content = self.system_release_file_content if not system_release_content else system_release_content
 
-        match = re.match(
+        matched = re.match(
             # We assume that the /etc/system-release content follows the pattern:
             # "<name> release <full_version> <Beta> (<dist_id>)"
             # Here
@@ -197,16 +197,16 @@ class SystemInfo:
             content,
         )
 
-        if not match:
+        if not matched:
             self.logger.critical_no_exit("Couldn't parse the system release content string: %s" % content)
             return {}
 
-        name = match.group("name")
+        name = matched.group("name")
         system_id = name.split()[0].lower()
 
-        distribution_id = match.group("dist_id")
+        distribution_id = matched.group("dist_id")
 
-        full_version = match.group("full_version")
+        full_version = matched.group("full_version")
         version_numbers = full_version.split(".")
         major = int(version_numbers[0])
 
