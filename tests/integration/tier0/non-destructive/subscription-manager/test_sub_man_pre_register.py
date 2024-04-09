@@ -89,14 +89,17 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
         c2r.sendline("y")
 
         c2r.expect("We'll try to auto-attach a subscription")
+        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
     assert c2r.exitstatus != 0
 
+    assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
+
 
 @pytest.mark.parametrize(
-    "pre_registered", [(env.str("RHSM_NOSUB_USERNAME"), env.str("RHSM_NOSUB_PASSWORD"))], indirect=True
+    "pre_registered", [(TEST_VARS["RHSM_NOSUB_USERNAME"], TEST_VARS["RHSM_NOSUB_PASSWORD"])], indirect=True
 )
 @pytest.mark.test_no_sca_subscription_attachment_error
 def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):

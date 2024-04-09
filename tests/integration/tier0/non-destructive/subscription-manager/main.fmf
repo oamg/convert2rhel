@@ -92,7 +92,7 @@ tag+:
             - unregistered-no-credentials
     /no_sca_not_subscribed:
         summary+: |
-            The subscription is auto-attached on a pre-registered system
+            convert2rhel auto-attaches subscription on a pre-registered system
         description+: |
             This test verifies that running conversion on pre-registered system
             without an attached subscription will try auto attaching the subscription.
@@ -100,7 +100,7 @@ tag+:
             - environment+:
                 C2R_TESTS_NOSUB: 1
         test: |
-            pytest -svv -m test_no_sca_not_subscribed
+            pytest --setup-show -svv -m test_no_sca_not_subscribed
         tag+:
             - no-sca-not-subscribed
     /no_sca_subscription_attachment_error:
@@ -115,6 +115,6 @@ tag+:
             - environment+:
                 C2R_TESTS_NOSUB: 1
         test: |
-            pytest -svv -m test_no_sca_subscription_attachment_error
+            pytest --setup-show -svv -m test_no_sca_subscription_attachment_error
         tag+:
             - no-sca-subscription-attachment-error

@@ -189,18 +189,18 @@ class SubscribeSystem(actions.Action):
                 logger.warning(
                     "The system is registered with an RHSM account that has Simple Content Access (SCA) disabled but no subscription is attached. Without enabled SCA or an attached subscription the system can't access RHEL repositories. We'll try to auto-attach a subscription."
                 )
-            try:
-                subscription.auto_attach_subscription()
-            except subscription.SubscriptionAutoAttachmentError:
-                self.set_result(
-                    level="ERROR",
-                    id="NO_ACCESS_TO_RHEL_REPOS",
-                    title="No access to RHEL repositories",
-                    description="The system can access RHEL repositories only with either Simple Content Access (SCA) enabled or with an attached subscription.",
-                    diagnosis="The system is registered with an RHSM account that has SCA disabled but no subscription is attached. Auto-attaching a subscription was not successful.",
-                    remediations="Either attach a subscription manually by running 'subscription-manager attach --pool <pool id>' prior to the conversion or enable Simple Content Access on your RHSM account (https://access.redhat.com/articles/simple-content-access).",
-                )
-                return
+                try:
+                    subscription.auto_attach_subscription()
+                except subscription.SubscriptionAutoAttachmentError:
+                    self.set_result(
+                        level="ERROR",
+                        id="NO_ACCESS_TO_RHEL_REPOS",
+                        title="No access to RHEL repositories",
+                        description="The system can access RHEL repositories only with either Simple Content Access (SCA) enabled or with an attached subscription.",
+                        diagnosis="The system is registered with an RHSM account that has SCA disabled but no subscription is attached. Auto-attaching a subscription was not successful.",
+                        remediations="Either attach a subscription manually by running 'subscription-manager attach --pool <pool id>' prior to the conversion or enable Simple Content Access on your RHSM account (https://access.redhat.com/articles/simple-content-access).",
+                    )
+                    return
 
         try:
             # In the future, refactor this to be an else on the previous
