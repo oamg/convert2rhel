@@ -90,3 +90,31 @@ tag+:
             pytest --setup-show -svv -m test_unregistered_no_credentials
         tag+:
             - unregistered-no-credentials
+    /no_sca_not_subscribed:
+        summary+: |
+            The subscription is auto-attached on a pre-registered system
+        description+: |
+            This test verifies that running conversion on pre-registered system
+            without an attached subscription will try auto attaching the subscription.
+        adjust+:
+            - environment+:
+                C2R_TESTS_NOSUB: 1
+        test: |
+            pytest -svv -m test_no_sca_not_subscribed
+        tag+:
+            - no-sca-not-subscribed
+    /no_sca_subscription_attachment_error:
+        summary+: |
+            The subscription auto-attach fails
+        description+: |
+            This test verifies that running conversion on pre-registered system
+            without an attached subscription will try auto attaching the subscription.
+            When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
+            error is raised.
+        adjust+:
+            - environment+:
+                C2R_TESTS_NOSUB: 1
+        test: |
+            pytest -svv -m test_no_sca_subscription_attachment_error
+        tag+:
+            - no-sca-subscription-attachment-error
