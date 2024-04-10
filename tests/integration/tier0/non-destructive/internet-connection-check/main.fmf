@@ -18,7 +18,7 @@ tag+:
     tag+:
         - available-connection
     test: |
-        pytest -svv -m test_available_connection
+        pytest --setup-show -svv -m test_available_connection
 
 /unavailable_connection:
     summary+: |
@@ -33,4 +33,4 @@ tag+:
         - unavailable-connection
         - sanity
     test: |
-        pytest -svv -m test_unavailable_connection
+        pytest --setup-show -svv -m test_unavailable_connection

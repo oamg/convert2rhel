@@ -14,4 +14,4 @@ tag+:
     - kernel
 
 /latest_kernel_check_skip:
-    test: pytest -svv -m test_latest_kernel_check_skip
+    test: pytest --setup-show -svv -m test_latest_kernel_check_skip

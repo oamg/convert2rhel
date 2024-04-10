@@ -142,22 +142,9 @@ def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture
-def older_version_envar():
-    """
-    Fixture to set and remove CONVERT2RHEL_ALLOW_OLDER_VERSION environment variable.
-    """
-    # Set the environment variable
-    os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
-
-    yield
-    # Delete the environment variable
-    del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
-
-
 @pytest.mark.test_version_older_with_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
-def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version, older_version_envar):
+def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version):
     """
     Verify that running older version of Convert2RHEL with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
@@ -267,17 +254,8 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture
-def analyze_incomplete_rollback_envar():
-    os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
-
-    yield
-
-    del os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"]
-
-
 @pytest.mark.test_analyze_incomplete_rollback
-def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incomplete_rollback_envar):
+def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     """
     This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
     is not honored when running with the analyze switch.
@@ -319,7 +297,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
 
 
 @pytest.mark.test_analyze_no_rpm_va_option
-def test_analyze_no_rpm_va_option(convert2rhel, analyze_incomplete_rollback_envar):
+def test_analyze_no_rpm_va_option(convert2rhel):
     """
     This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
     The user should be warned that the --no-rpm-va option will be ignored and the command

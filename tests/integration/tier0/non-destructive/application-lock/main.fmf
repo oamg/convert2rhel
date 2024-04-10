@@ -25,4 +25,4 @@ tag+:
     tag+:
         - simultaneous-runs
     test: |
-        pytest -svv -m test_simultaneous_runs
+        pytest --setup-show -svv -m test_simultaneous_runs

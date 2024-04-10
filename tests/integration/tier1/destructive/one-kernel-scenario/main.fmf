@@ -23,4 +23,4 @@ adjust+:
         distro == centos-7, oracle-7
 
 /one_kernel_scenario:
-    test: pytest -svv -m test_one_kernel_scenario
+    test: pytest --setup-show -svv -m test_one_kernel_scenario

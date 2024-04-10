@@ -16,7 +16,7 @@ link:
 
 
 /single_yum_transaction:
-    test: pytest -svv -m test_single_yum_transaction
+    test: pytest --setup-show -svv -m test_single_yum_transaction
 
 /packages_upgraded_after_conversion:
-    test: pytest -svv -m test_packages_upgraded_after_conversion
+    test: pytest --setup-show -svv -m test_packages_upgraded_after_conversion

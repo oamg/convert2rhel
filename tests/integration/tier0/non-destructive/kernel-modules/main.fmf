@@ -30,7 +30,7 @@ tag+:
             - custom-module-loaded
             - sanity
         test: |
-            pytest -svv -m test_custom_module_loaded
+            pytest --setup-show -svv -m test_custom_module_loaded
 
     /custom_module_not_loaded:
         summary+: |
@@ -45,7 +45,7 @@ tag+:
         tag+:
             - custom-module-not-loaded
         test: |
-            pytest -svv -m test_custom_module_not_loaded
+            pytest --setup-show -svv -m test_custom_module_not_loaded
 
     /unsupported_kmod_with_envar:
         summary+: |
@@ -57,7 +57,7 @@ tag+:
         tag+:
             - unsupported-kmod-with-envar
         test: |
-            pytest -svv -m test_unsupported_kmod_with_envar
+            pytest --setup-show -svv -m test_unsupported_kmod_with_envar
         link:
             verifies: https://issues.redhat.com/browse/RHELC-244
 
@@ -78,7 +78,7 @@ tag+:
     tag+:
         - force-loaded-kmod
     test: |
-        pytest -svv -m test_force_loaded_kmod
+        pytest --setup-show -svv -m test_force_loaded_kmod
 
 
 /tainted_kernel_modules_error:
@@ -91,7 +91,7 @@ tag+:
     tag+:
         - tainted-kernel-modules-error
     test: |
-        pytest -svv -m test_tainted_kernel_modules_error
+        pytest --setup-show -svv -m test_tainted_kernel_modules_error
 
 
 /tainted_kernel_modules_check_override:
@@ -111,4 +111,4 @@ tag+:
     tag+:
         - tainted-kernel-modules-check-skip
     test: |
-        pytest -svv -m test_tainted_kernel_modules_check_override
+        pytest --setup-show -svv -m test_tainted_kernel_modules_check_override

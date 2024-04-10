@@ -17,8 +17,6 @@ def test_flag_system_as_converted(shell):
     Verify, that the breadcrumbs file was created and corresponds to the JSON schema after the conversion.
     """
 
-    # We need to skip check for collected rhsm custom facts after the conversion
-    # due to disabled submgr, thus adding envar
     submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
     query = shell(f"set | grep {submgr_disabled_var}").output
 
@@ -31,6 +29,8 @@ def test_flag_system_as_converted(shell):
         print(data_json)
         raise
 
+    # We need to validate the schema just in case the SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS
+    # envar is not set (we might set the envar for example due to disabled submgr)
     if submgr_disabled_var not in query:
         data_json = _load_json_schema(C2R_RHSM_CUSTOM_FACTS)
 

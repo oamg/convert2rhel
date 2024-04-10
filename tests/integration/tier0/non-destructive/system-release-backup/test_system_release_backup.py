@@ -1,4 +1,3 @@
-import os
 import re
 
 import pytest
@@ -121,9 +120,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
 
 
 @pytest.mark.test_backup_os_release_no_envar
-def test_backup_os_release_no_envar(
-    shell, convert2rhel, custom_subman, katello_package, repositories, kernel_check_envar
-):
+def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
     """
     This test case removes all the repos on the system which prevents the backup of some files.
     Satellite is being used in all of test cases.
@@ -145,19 +142,8 @@ def test_backup_os_release_no_envar(
     assert shell("find /etc/os-release").returncode == 0
 
 
-@pytest.fixture(scope="function")
-def unsupported_rollback_envar(shell):
-    os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
-
-    yield
-
-    del os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"]
-
-
 @pytest.mark.test_backup_os_release_with_envar
-def test_backup_os_release_with_envar(
-    shell, convert2rhel, custom_subman, katello_package, repositories, unsupported_rollback_envar, kernel_check_envar
-):
+def test_backup_os_release_with_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
     """
     In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that

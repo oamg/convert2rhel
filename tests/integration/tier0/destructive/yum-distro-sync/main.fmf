@@ -8,7 +8,7 @@ link:
     - verifies: https://issues.redhat.com/browse/RHELC-150
 
 /yum_distro_sync:
-    test: pytest -svv -m test_yum_distro_sync
+    test: pytest --setup-show -svv -m test_yum_distro_sync
 
 
 #TODO(danmyway) merge with single-yum-transaction

@@ -7,4 +7,4 @@ description+: |
   The test uses RHSM as a conversion method.
 
 test: |
-  pytest -svv
+  pytest --setup-show -svv
