@@ -48,7 +48,8 @@ tag+:
     adjust+:
         - enabled: true
           when: >
-            distro == oracle-8, centos-8
+            distro == oracle-8, centos-8, alma-8, rocky-8
+          because: The bug was reported on EL8 https://issues.redhat.com/browse/RHELC-1060
     summary+: |
         Unhandled exception for packages with in name period
     description+: |
@@ -66,11 +67,6 @@ tag+:
         pytest -svv -m test_validation_packages_with_in_name_period
 
 /override_exclude_list_in_yum_config:
-    enabled: false
-    adjust+:
-        - enabled: true
-          when: >
-            distro == oracle-7, centos-7
     summary+: |
         Override exclude in yum config to avoid dependency problems
     description+: |
@@ -87,7 +83,7 @@ tag+:
         3/ Boot into an older kernel
         4/ Run the analysis and check that the transaction was successful.
     tag+:
-        - validation-packages-with-in-name-period
+        - override-exclude-list-in-yum-config
         - sanity
     test: |
-        pytest -svv -m test_validation_packages_with_in_name_period
+        pytest -svv -m test_override_exclude_list_in_yum_config

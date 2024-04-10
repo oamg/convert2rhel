@@ -26,7 +26,7 @@ if "8" in SYSTEM_RELEASE_ENV:
 YUM_CONF_PATH = "/etc/yum.conf"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def override_yum_conf(shell):
     """
     Override yum conf to add exclude option and ignore redhat-release-server
@@ -222,7 +222,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
 
         c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 0
 
 
 @pytest.mark.test_override_exclude_list_in_yum_config
@@ -241,17 +241,15 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, kernel_check_
         3/ Boot into an older kernel
         4/ Run the analysis and check that the transaction was successful.
     """
-    with convert2rhel(
-        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
-        )
-    ) as c2r:
-        c2r.expect("Continue with the system conversion", timeout=300)
-        c2r.sendline("y")
+    if os.environ["TMT_REBOOT_COUNT"] == "1":
+        with convert2rhel(
+            "analyze --serverurl {} --username {} --password {} --pool {} --debug -y".format(
+                env.str("RHSM_SERVER_URL"),
+                env.str("RHSM_USERNAME"),
+                env.str("RHSM_PASSWORD"),
+                env.str("RHSM_POOL"),
+            )
+        ) as c2r:
+            c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
 
-        c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
-
-    assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 0

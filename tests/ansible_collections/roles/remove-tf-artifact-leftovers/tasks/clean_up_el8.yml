@@ -1,0 +1,34 @@
+---
+- name: Remove rcmtools packages installed on the system
+  ansible.builtin.shell: dnf list --installed | grep @rcmtools | awk '{print $1}' | xargs dnf remove -y
+  ignore_errors: true
+- name: Remove rcmtools repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/rcmtools.repo"
+    state: absent
+
+- name: Remove qa-tools packages installed on the system
+  ansible.builtin.shell: dnf list --installed | grep @.*qa-tools$ | awk '{print $1}' | xargs dnf remove -y
+  ignore_errors: true
+- name: Remove qa-tools repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/qa-tools.repo"
+    state: absent
+
+- name: Remove beaker packages installed on the system
+  ansible.builtin.shell: dnf list --installed | grep @beaker | awk '{print $1}' | xargs dnf remove -y
+  ignore_errors: true
+- name: Remove beaker repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/{{ item }}"
+    state: absent
+  with_items:
+    - beaker-client.repo
+    - beaker-client-testing.repo
+    - beaker-harness.repo
+    - beaker-tasks.repo
+    - beakerlib-libraries.repo
+    - rhel-CRB-latest.repo
+
+- name: Clean yum metadata
+  ansible.builtin.shell: yum clean metadata
