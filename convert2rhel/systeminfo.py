@@ -194,7 +194,7 @@ class SystemInfo:
             #   CentOS Linux release 8.1.1911      Beta       (Core     )
             #   <    name  > <      ><full_version><    ><  <dist_id>>
             r"^(?P<name>.+?)\s(?:release\s)?(?P<full_version>[.\d]+)(?:\sBeta)?(\s\((?P<dist_id>.+)\))?$",
-            content,
+            content,  # type: ignore
         )
 
         if not matched:
