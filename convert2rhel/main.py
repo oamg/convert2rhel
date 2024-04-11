@@ -140,19 +140,18 @@ def main_locked():
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
-        # TODO(r0x0d): Just temporary, so we don't need to rush with migrating
-        # all the functions at once to the framework.
-        if "CONVERT2RHEL_EXPERIMENTAL_POST_PONR_ACTIONS" in os.environ:
-            post_conversion_results = actions.run_post_actions()
-            _raise_for_skipped_failures(post_conversion_results)
-            # Print the assessment just before we ask the user whether to continue past the PONR
-            report.summary(
-                results=post_conversion_results,
-                include_all_reports=False,
-                disable_colors=logger_module.should_disable_color_output(),
-            )
-        else:
-            post_ponr_changes()
+        post_conversion_results = actions.run_post_actions()
+
+        # TODO(r0x0d): Remove this after migrating all functions to Actions.
+        post_ponr_changes()
+
+        _raise_for_skipped_failures(post_conversion_results)
+        # Print the assessment just before we ask the user whether to continue past the PONR
+        report.summary(
+            results=post_conversion_results,
+            include_all_reports=False,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
 
         loggerinst.info("\nConversion successful!\n")
 
