@@ -46,7 +46,6 @@ class TestIsLoadedKernelLatest:
         self, pretend_os, caplog, is_loaded_kernel_latest_action, monkeypatch
     ):
         monkeypatch.setattr(is_loaded_kernel_latest.system_info, "eus_system", value=True)
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", value=True)
 
         message = "Did not perform the check because there were no publicly available Oracle Linux Server 8.6 repositories available."
         is_loaded_kernel_latest_action.run()
@@ -84,11 +83,9 @@ class TestIsLoadedKernelLatest:
         fake_reposdir_path = str(tmpdir)
         monkeypatch.setattr(
             is_loaded_kernel_latest,
-            "get_hardcoded_repofiles_dir",
+            "get_backedup_system_repos",
             value=lambda: fake_reposdir_path,
         )
-
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -181,8 +178,6 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
-
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -276,7 +271,6 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -329,11 +323,9 @@ class TestIsLoadedKernelLatest:
         fake_reposdir_path = str(tmpdir)
         monkeypatch.setattr(
             is_loaded_kernel_latest,
-            "get_hardcoded_repofiles_dir",
+            "get_backedup_system_repos",
             value=lambda: fake_reposdir_path,
         )
-
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", True)
 
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -364,30 +356,6 @@ class TestIsLoadedKernelLatest:
 
         is_loaded_kernel_latest_action.run()
         assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
-
-    @centos8
-    def test_is_loaded_kernel_latest_eus_system_no_connection(
-        self, pretend_os, monkeypatch, tmpdir, caplog, is_loaded_kernel_latest_action
-    ):
-        monkeypatch.setattr(is_loaded_kernel_latest, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-        monkeypatch.setattr(is_loaded_kernel_latest.system_info, "has_internet_access", False)
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="WARNING",
-                    id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
-                    title="Did not perform the is loaded kernel latest check",
-                    description="Did not perform the check as no internet connection has been detected.",
-                    diagnosis=None,
-                    remediations=None,
-                ),
-            )
-        )
-
-        is_loaded_kernel_latest_action.run()
-        assert "Did not perform the check as no internet connection has been detected." in caplog.records[-1].message
-        assert expected.issuperset(is_loaded_kernel_latest_action.messages)
-        assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
     @pytest.mark.parametrize(
@@ -755,15 +723,15 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action.run()
         assert expected_message in caplog.records[-1].message
 
-    def test_is_loaded_kernel_latest_system_exit(self, monkeypatch, caplog, is_loaded_kernel_latest_action):
+    def test_is_loaded_kernel_latest_system_exit(self, monkeypatch, is_loaded_kernel_latest_action, tmpdir):
         repoquery_version = "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos"
         uname_version = "3.10.0-1160.42.2.el7.x86_64"
 
-        # Using the minor version as 99, so the tests should never fail because of a
-        # constraint in the code, since we don't mind the minor version number (for
-        # now), and require only that the major version to be in the range of 6 to
-        # 8, we can set the minor version to 99 to avoid hardcoded checks in the
-        # code.
+        # Using the minor version as 99, so the tests should never fail because
+        # of a constraint in the code, since we don't mind the minor version
+        # number (for now), and require only that the major version to be in
+        # the range of 6 to 8, we can set the minor version to 99 to avoid
+        # hardcoded checks in the code.
         Version = namedtuple("Version", ("major", "minor"))
         monkeypatch.setattr(
             is_loaded_kernel_latest.system_info,
@@ -796,6 +764,8 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
+        reposdir = tmpdir.join("backup")
+        monkeypatch.setattr(is_loaded_kernel_latest, "get_backedup_system_repos", lambda: str(reposdir))
 
         is_loaded_kernel_latest_action.run()
         unit_tests.assert_actions_result(
@@ -803,7 +773,9 @@ class TestIsLoadedKernelLatest:
             level="OVERRIDABLE",
             id="INVALID_KERNEL_VERSION",
             title="Invalid kernel version detected",
-            description="The loaded kernel version mismatch the latest one available in the enabled system repositories",
-            diagnosis="The version of the loaded kernel is different from the latest version in the enabled system repositories.",
+            description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
+            % reposdir,
+            diagnosis="The version of the loaded kernel is different from the latest version in repositories defined in the %s folder."
+            % reposdir,
             remediations="To proceed with the conversion, update the kernel version by executing the following step:",
         )

@@ -43,28 +43,3 @@ def get_rhel_repoids():
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
     return repos_needed
-
-
-def get_hardcoded_repofiles_dir():
-    """Get the path to the hardcoded repofiles for CentOS/Oracle Linux.
-
-    We use hardcoded original vendor repofiles to be able to check whether the system is updated before the conversion.
-    To be able to download backup of packages before we remove them, we can't rely on the repofiles available on
-    the system.
-
-    :return: The return can be either the path to the eus repos, or None, meaning we don't have any hardcoded repo files.
-    :rtype: str | None
-    """
-    hardcoded_repofiles = os.path.join(
-        DATA_DIR,
-        "repos/%s-%s.%s"
-        % (
-            system_info.id,
-            system_info.version.major,
-            system_info.version.minor,
-        ),
-    )
-    if os.path.exists(hardcoded_repofiles):
-        return hardcoded_repofiles
-
-    return None

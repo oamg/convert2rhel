@@ -32,7 +32,7 @@ from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock, urllib
+from six.moves import mock
 
 
 @pytest.fixture(autouse=True)
@@ -127,24 +127,6 @@ def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monke
 def test_get_release_ver(pretend_os):
     """Test if all pretended OSes presented in theh RELEASE_VER_MAPPING."""
     assert system_info.releasever in RELEASE_VER_MAPPING.values()
-
-
-@pytest.mark.parametrize(
-    ("side_effect", "expected", "message"),
-    (
-        (urllib.error.URLError(reason="fail"), False, "Failed to retrieve data from host"),
-        (None, True, "internet connection seems to be available"),
-    ),
-)
-def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):
-    monkeypatch.setattr(
-        systeminfo.urllib.request,
-        "urlopen",
-        mock.Mock(side_effect=side_effect),
-    )
-
-    assert system_info._check_internet_access() == expected
-    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(

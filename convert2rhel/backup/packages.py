@@ -26,7 +26,6 @@ from convert2rhel.pkgmanager import call_yum_cmd
 
 # Fine to import call_yum_cmd for now, but we really should figure out a way to
 # split this out.
-from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import files
 
@@ -130,28 +129,27 @@ class RestorablePackage(RestorableChange):
         if self.enabled:
             return
 
-        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
-        if os.path.isdir(BACKUP_DIR):
-            if system_info.eus_system and system_info.id == "centos":
-                self.reposdir = get_hardcoded_repofiles_dir()
-
-            if self.reposdir:
-                loggerinst.debug("Using repository files stored in %s." % self.reposdir)
-
-            for pkg in self.pkgs:
-                self._backedup_pkgs_paths.append(
-                    utils.download_pkg(
-                        pkg=pkg,
-                        dest=BACKUP_DIR,
-                        set_releasever=self.set_releasever,
-                        custom_releasever=self.custom_releasever,
-                        varsdir=self.varsdir,
-                        reposdir=self.reposdir,
-                    )
-                )
-        else:
+        if not os.path.isdir(BACKUP_DIR):
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
+            return
 
+        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
+        loggerinst.debug("Using repository files stored in %s." % self.reposdir)
+
+        for pkg in self.pkgs:
+            self._backedup_pkgs_paths.append(
+                utils.download_pkg(
+                    pkg=pkg,
+                    dest=BACKUP_DIR,
+                    set_releasever=self.set_releasever,
+                    custom_releasever=self.custom_releasever,
+                    varsdir=self.varsdir,
+                    reposdir=self.reposdir,
+                )
+            )
+
+        # TODO(r0x0d): Maybe we want to set the enabled value only when we
+        # backup something?
         # Set the enabled value
         super(RestorablePackage, self).enable()
 
