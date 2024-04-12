@@ -165,6 +165,8 @@ def test_get_device_number(monkeypatch, caplog, expected_res, device, exc, subpr
         (""),
         (" "),
         ("\n"),
+        (" \n \r"),
+        ("\r"),
     ),
 )
 def test_get_device_number_no_output(monkeypatch, output):
