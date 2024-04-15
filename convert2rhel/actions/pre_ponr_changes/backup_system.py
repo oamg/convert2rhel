@@ -19,7 +19,7 @@ import logging
 import os
 import re
 
-from convert2rhel import actions, backup, exceptions, repo, subscription
+from convert2rhel import actions, backup, exceptions, subscription
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.redhatrelease import os_release_file, system_release_file
@@ -88,6 +88,7 @@ class BackupRepository(actions.Action):
 
         repo_files_backed_up = False
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
+            # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
             if (repo.endswith(".repo") and repo != "redhat.repo") or (
                 subscription.should_subscribe and repo == "redhat.repo"
             ):
