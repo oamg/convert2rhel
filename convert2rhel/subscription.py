@@ -58,9 +58,15 @@ REGISTRATION_TIMEOUT = 180
 # Location of the RHSM generated facts json file.
 RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
+#
+
 
 class UnregisterError(Exception):
     """Raised with problems unregistering a system."""
+
+
+class SubscriptionRemovalError(Exception):
+    """Raised when there is a failure in removing auto attached subscriptions"""
 
 
 class RefreshSubscriptionManagerError(Exception):
@@ -107,6 +113,17 @@ class RestorableSystemSubscription(backup.RestorableChange):
                 loggerinst.warning("subscription-manager not installed, skipping")
 
         super(RestorableSystemSubscription, self).restore()
+
+
+def remove_subscription():
+    """Remove all subscriptions added from auto attachment"""
+    loggerinst.info("Removing auto attached subscriptions.")
+    subscription_removal_cmd = ["subscription-manager", "remove", "--all"]
+    output, ret_code = utils.run_subprocess(subscription_removal_cmd, print_output=False)
+    if ret_code != 0:
+        raise SubscriptionRemovalError("Subscription removal result\n%s" % output)
+    else:
+        loggerinst.info("Subscription removal successful.")
 
 
 def unregister_system():
