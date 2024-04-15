@@ -167,6 +167,7 @@ def get_device_number(device):
     output, ecode = utils.run_subprocess(
         ["/usr/sbin/blkid", "-p", "-s", "PART_ENTRY_NUMBER", device], print_output=False
     )
+    output = output.strip()
     if ecode:
         logger.debug("blkid output:\n-----\n%s\n-----" % output)
         raise BootloaderError("Unable to get information about the '%s' device" % device)
