@@ -89,13 +89,17 @@ class BackupRepository(actions.Action):
         repo_files_backed_up = False
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
-            if (repo.endswith(".repo") and repo != "redhat.repo") or (
-                subscription.should_subscribe and repo == "redhat.repo"
-            ):
-                repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
-                restorable_file = RestorableFile(repo_path)
-                backup.backup_control.push(restorable_file)
-                repo_files_backed_up = True
+
+            if not repo.endswith(".repo"):
+                return
+
+            if not subscription.should_subscribe and repo == "redhat.repo":
+                return
+
+            repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
+            restorable_file = RestorableFile(repo_path)
+            backup.backup_control.push(restorable_file)
+            repo_files_backed_up = True
 
         if not repo_files_backed_up:
             loggerinst.info("No .repo files backed up.")
