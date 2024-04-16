@@ -645,7 +645,7 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     if system_info.id == "centos" and system_info.version.major == 8:
         releasever = "8.5"
 
-    setopts = None
+    setopts = []
     # Oracle Linux 7 needs to set the obsoletes option to avoid installing the
     # rhc-client-tools package instead of subscription-manager, as it is marked
     # as obsolete in the subscription-manager specfile for OL7. This option in
@@ -654,7 +654,7 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     # WARNING: This obsoletes will be applicable to all packages in the
     # transaction.
     if system_info.id == "oracle" and system_info.version.major == 7:
-        setopts = ["obsoletes=0"]
+        setopts.append("obsoletes=0")
 
     repo_content = _CLIENT_TOOLS_REPO_CONTENT_MAPPING[releasever]
     # To install subscription-manager correctly from client-tools repository,
@@ -662,15 +662,16 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     # later, the backed up repositories to install the dependencies required by
     # the subscription-manager packages.
     reposdir = [os.path.dirname(repo_path), backedup_reposdir]
+
+    setopts.append("reposdir=%s" % reposdir)
+    setopts.append("varsdir=%s" % backedup_varsdir)
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
         pkgs_to_upgrade,
         repo_path=repo_path,
         repo_content=repo_content,
-        reposdir=reposdir,
         custom_releasever=system_info.version.major,
         set_releasever=True,
-        varsdir=backedup_varsdir,
         setopts=setopts,
     )
     backup.backup_control.push(installed_pkg_set)
@@ -708,8 +709,6 @@ def attach_subscription():
     subscription ID has been provided through command line, let the user
     interactively choose one.
     """
-    # TODO: Support attaching multiple pool IDs.
-
     # check if SCA is enabled
     if is_sca_enabled():
         loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")

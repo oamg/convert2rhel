@@ -193,52 +193,6 @@ class TestCallYumCmd:
         assert "Yum has nothing to do. Ignoring" in caplog.records[-1].message
 
     @centos8
-    def test_call_yum_cmd_reposdir_set(self, pretend_os, monkeypatch, caplog, tmpdir):
-        reposdir = str(tmpdir)
-        monkeypatch.setattr(
-            utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="Error: Nothing to do\n")
-        )
-        stdout, returncode = pkgmanager.call_yum_cmd(
-            "install", ["pkg"], enable_repos=[], disable_repos=[], reposdir=[reposdir]
-        )
-
-        assert returncode == 0
-        assert stdout == "Error: Nothing to do\n"
-        assert utils.run_subprocess.cmd == [
-            "yum",
-            "install",
-            "-y",
-            "--releasever=8.5",
-            "--setopt=module_platform_id=platform:el8",
-            "--setopt=reposdir=%s" % reposdir,
-            "pkg",
-        ]
-        assert "Yum has nothing to do. Ignoring" in caplog.records[-1].message
-
-    @centos8
-    def test_call_yum_cmd_varsdir_set(self, pretend_os, monkeypatch, caplog, tmpdir):
-        varsdir = str(tmpdir)
-        monkeypatch.setattr(
-            utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="Error: Nothing to do\n")
-        )
-        stdout, returncode = pkgmanager.call_yum_cmd(
-            "install", ["pkg"], enable_repos=[], disable_repos=[], varsdir=varsdir
-        )
-
-        assert returncode == 0
-        assert stdout == "Error: Nothing to do\n"
-        assert utils.run_subprocess.cmd == [
-            "yum",
-            "install",
-            "-y",
-            "--releasever=8.5",
-            "--setopt=varsdir=%s" % varsdir,
-            "--setopt=module_platform_id=platform:el8",
-            "pkg",
-        ]
-        assert "Yum has nothing to do. Ignoring" in caplog.records[-1].message
-
-    @centos8
     def test_call_yum_cmd_custom_release_set(self, pretend_os, monkeypatch, caplog):
         monkeypatch.setattr(
             utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="Error: Nothing to do\n")
@@ -270,25 +224,34 @@ class TestCallYumCmd:
         with pytest.raises(AssertionError, match="custom_releasever or system_info.releasever must be set."):
             pkgmanager.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[], custom_releasever=None)
 
-    def test_call_yum_cmd_reposdir_as_str(self):
-        with pytest.raises(TypeError, match="reposdir must be a list, not str."):
-            pkgmanager.call_yum_cmd("test", reposdir="failure")
-
+    @pytest.mark.parametrize(
+        ("setopts",),
+        (
+            (["obsoletes=0"],),
+            (["varsdir=test"],),
+            (["reposdir=test"],),
+            (["reposdir=test", "obsoletes=1"],),
+        ),
+    )
     @centos8
-    def test_call_yum_cmd_setopts_override(self, pretend_os, monkeypatch, caplog):
+    def test_call_yum_cmd_setopts_override(self, setopts, pretend_os, monkeypatch, caplog):
         monkeypatch.setattr(
             utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="Error: Nothing to do\n")
         )
-        stdout, returncode = pkgmanager.call_yum_cmd("install", ["pkg"], set_releasever=False, setopts=["obsoletes=0"])
+        stdout, returncode = pkgmanager.call_yum_cmd("install", ["pkg"], set_releasever=False, setopts=setopts)
 
         assert returncode == 0
         assert stdout == "Error: Nothing to do\n"
-        assert utils.run_subprocess.cmd == [
+        expected_cmd = [
             "yum",
             "install",
             "-y",
             "--setopt=module_platform_id=platform:el8",
-            "--setopt=obsoletes=0",
-            "pkg",
         ]
+
+        for setopt in setopts:
+            expected_cmd.append("--setopt=%s" % setopt)
+
+        expected_cmd.append("pkg")
+        assert utils.run_subprocess.cmd == expected_cmd
         assert "Yum has nothing to do. Ignoring" in caplog.records[-1].message

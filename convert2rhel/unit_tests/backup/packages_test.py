@@ -29,11 +29,9 @@ from convert2rhel.systeminfo import Version
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
     DownloadPkgMocked,
-    GetInstalledPkgInformationMocked,
     MockFunctionObject,
     RemovePkgsMocked,
     RunSubprocessMocked,
-    StoreContentToFileMocked,
 )
 from convert2rhel.unit_tests.conftest import centos7
 
@@ -245,27 +243,27 @@ class TestRestorablePackageSet:
         return path.rsplit("-", 2)[0]
 
     @pytest.fixture
-    def package_set(self, monkeypatch, tmpdir):
+    def package_set(self):
         return RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
     @pytest.mark.parametrize(
-        ("pkgs_to_install", "pkgs_to_update", "reposdir"),
+        ("pkgs_to_install", "pkgs_to_update", "setopts"),
         (
-            (["pkg-1"], [], None),
-            (["pkg-1"], [], ["test-dir"]),
-            ([], ["pkg-1"], None),
-            ([], [], ["test-dir"]),
-            (["pkg-1"], ["pkg-2"], None),
+            (["pkg-1"], [], []),
+            (["pkg-1"], [], ["varsdir=test-dir"]),
+            ([], ["pkg-1"], []),
+            ([], [], ["reposdir=test-dir"]),
+            (["pkg-1"], ["pkg-2"], []),
         ),
     )
-    def test_smoketest_init(self, pkgs_to_install, pkgs_to_update, reposdir):
+    def test_smoketest_init(self, pkgs_to_install, pkgs_to_update, setopts):
         package_set = RestorablePackageSet(
-            pkgs_to_install=pkgs_to_install, pkgs_to_update=pkgs_to_update, reposdir=reposdir
+            pkgs_to_install=pkgs_to_install, pkgs_to_update=pkgs_to_update, setopts=setopts
         )
 
         assert package_set.pkgs_to_install == pkgs_to_install
         assert package_set.pkgs_to_update == pkgs_to_update
-        assert package_set.reposdir == reposdir
+        assert package_set.setopts == setopts
 
         assert package_set.enabled is False
         # We actually care that this is an empty list and not just False-y

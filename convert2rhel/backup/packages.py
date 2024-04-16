@@ -224,10 +224,8 @@ class RestorablePackageSet(RestorableChange):
         repo_content=None,
         enable_repos=None,
         disable_repos=None,
-        reposdir=None,
         set_releasever=False,
         custom_releasever=None,
-        varsdir=None,
         setopts=None,
     ):
         self.pkgs_to_install = pkgs_to_install
@@ -242,10 +240,8 @@ class RestorablePackageSet(RestorableChange):
         self.disable_repos = disable_repos or []
         self.setopts = setopts or []
 
-        self.reposdir = reposdir
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
-        self.varsdir = varsdir
 
         super(RestorablePackageSet, self).__init__()
 
@@ -285,8 +281,6 @@ class RestorablePackageSet(RestorableChange):
             disable_repos=self.disable_repos,
             set_releasever=self.set_releasever,
             custom_releasever=self.custom_releasever,
-            reposdir=self.reposdir,
-            varsdir=self.varsdir,
             setopts=self.setopts,
         )
 

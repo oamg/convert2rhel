@@ -150,30 +150,66 @@ def call_yum_cmd(
     enable_repos=None,
     disable_repos=None,
     set_releasever=True,
-    reposdir=None,
     custom_releasever=None,
-    varsdir=None,
     setopts=None,
 ):
     """Call yum command and optionally print its output.
-    The enable_repos and disable_repos function parameters accept lists and they override the default use of repos,
-    which is:
-    * --disablerepo yum option = "*" by default OR passed through a CLI option by the user
-    * --enablerepo yum option = is the repo enabled through subscription-manager based on a convert2rhel configuration
-      file for the particular system OR passed through a CLI option by the user
-    YUM/DNF typically expands the $releasever variable used in repofiles. However it fails to do so after we remove the
-    release packages (centos-release, oraclelinux-release, etc.) and before the redhat-release package is installed.
-    By default, for the above reason, we provide the --releasever option to each yum call. However before we remove the
-    release package, we need YUM/DNF to expand the variable by itself (for that, use set_releasever=False).
+
+    .. note::
+
+        The enable_repos and disable_repos function parameters accept lists and
+        they override the default use of repos, which is:
+
+            * --disablerepo yum option = "*" by default OR passed through a CLI
+            option by the user
+
+            * --enablerepo yum option = is the repo enabled through
+            subscription-manager or based on a convert2rhel configuration file
+            for the particular system OR passed through a CLI option by the
+            user
+
+    .. note::
+
+        YUM/DNF typically expands the $releasever variable used in repofiles.
+        However it fails to do so after we remove the release packages
+        (centos-release, oraclelinux-release, etc.) and before the
+        redhat-release package is installed.
+
+        By default, for the above reason, we provide the --releasever option to
+        each yum call. However before we remove the release package, we need
+        YUM/DNF to expand the variable by itself (for that, use
+        set_releasever=False).
+
+    :params command: The command to be executed, eg: install, update,
+        distro-sync...
+    :type command: str
+    :params args: The arguments that will be passed down to the command.
+    :type args: list[str]
+    :params print_output: Flag to control if the output should be displayed.
+    :type print_output: bool
+    :params enable_repos: List of repositories to enable during the command
+        execution
+    :type enable_repos: list[str]
+    :params disable_repos: List of repositories to disable during the ocmmand
+        execution
+    :type disable_repos: list[str]
+    :params set_releasever: Flag to indicate if the releasever should be set.
+    :type set_releasever: bool
+    :params custom_releasever: Custom releasever to be set for the repofiles
+    :type custom_releasever: str
+    :params setopts: List of setopts to override during command execution. This
+        can override any configuration defined in /etc/yum.conf. Equivalent as
+        --setopt=varsdir=/tmp.
+    :type setopts: list[str]
+
+    :raises AssertionError: Raised when custom_releasever is set but
+        set_releasever is not.
+
+    :returns tuple[str, int]: Output of the command executed and the return
+        code.
     """
-    if isinstance(reposdir, str):
-        raise TypeError("reposdir must be a list, not str.")
-
-    if not args:
-        args = []
-
-    if not setopts:
-        setopts = []
+    args = args or []
+    setopts = setopts or []
 
     cmd = ["yum", command, "-y"]
 
@@ -197,9 +233,6 @@ def call_yum_cmd(
         else:
             cmd.append("--releasever=%s" % system_info.releasever)
 
-    if varsdir:
-        cmd.append("--setopt=varsdir=%s" % varsdir)
-
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if system_info.version.major >= 8:
         cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
@@ -215,12 +248,6 @@ def call_yum_cmd(
     for repo in repos_to_enable:
         cmd.append("--enablerepo=%s" % repo)
 
-    if reposdir:
-        reposdir = ",".join(reposdir)
-        cmd.append("--setopt=reposdir=%s" % reposdir)
-
-    # Special option to override yum configuration without the need of
-    # modifying the /etc/yum.conf.
     if setopts:
         opts = ["--setopt=%s" % opt for opt in setopts]
         cmd.extend(opts)
