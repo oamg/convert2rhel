@@ -29,7 +29,7 @@ import dbus.exceptions
 import pytest
 import six
 
-from convert2rhel import exceptions, pkghandler, pkgmanager, subscription, toolopts, unit_tests, utils
+from convert2rhel import exceptions, pkghandler, pkgmanager, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.backup import files
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
@@ -364,6 +364,11 @@ class TestRestorableSystemSubscription:
 @all_systems
 def test_install_rhel_subsription_manager(pretend_os, monkeypatch):
     mock_backup_control = mock.Mock()
+    mock_write_temporary_repofile = mock.Mock(return_value="/test")
+    mock_download_repofile = mock.Mock(return_value="/test")
+
+    monkeypatch.setattr(repo, "write_temporary_repofile", mock_write_temporary_repofile)
+    monkeypatch.setattr(repo, "download_repofile", mock_download_repofile)
     monkeypatch.setattr(subscription.backup.backup_control, "push", mock_backup_control)
 
     subscription.install_rhel_subscription_manager(["subscription-manager", "json-c.x86_64"])

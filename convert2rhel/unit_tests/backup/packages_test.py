@@ -302,9 +302,7 @@ class TestRestorablePackageSet:
         repofile = str(repofile)
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
 
-        package_set = RestorablePackageSet(
-            ["subscription-manager", "python-syspurpose"], repo_path=repofile, repo_content="test"
-        )
+        package_set = RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
         package_set.pkgs_to_update = ["json-c.x86_64"]
 
@@ -418,21 +416,3 @@ class TestRestorablePackageSet:
 
         assert previously_called >= 1
         assert mock_remove_pkgs.call_count == previously_called
-
-
-def test_set_up_repository(tmpdir):
-    repofile = tmpdir.join("test.repo")
-    repofile = str(repofile)
-    packages._set_up_repository(repofile, "test-content")
-
-    assert os.path.exists(repofile)
-
-    with open(repofile) as handler:
-        assert "test-content" in handler.read()
-
-
-def test_set_up_repository_oserror(monkeypatch, caplog):
-    monkeypatch.setattr(utils, "store_content_to_file", mock.Mock(side_effect=OSError(1, "test")))
-    packages._set_up_repository("non-existing", "test-content")
-
-    assert caplog.records[-1].message == "OSError(1): test"

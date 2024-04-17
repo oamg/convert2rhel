@@ -18,11 +18,18 @@
 __metaclass__ = type
 
 import logging
+import tempfile
 
-from convert2rhel.systeminfo import system_info, tool_opts
+from contextlib import closing
+
+from six.moves import urllib
+
+from convert2rhel import exceptions
+from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
+from convert2rhel.utils import TMP_DIR, store_content_to_file
 
 
-DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
 DEFAULT_YUM_VARS_DIR = "/etc/yum/vars"
 DEFAULT_DNF_VARS_DIR = "/etc/dnf/vars"
 
@@ -78,3 +85,37 @@ def get_rhel_disable_repos_command(disable_repos):
     disable_repo_command = " ".join("--disablerepo=" + repo for repo in disable_repos)
 
     return disable_repo_command
+
+
+def download_repofile(repofile_url):
+    """Download the official repofile pointing to a convert2rhel repository.
+
+    :raises exceptions.CriticalError: ...
+    :returns str: Path to a successfully downloaded repofile
+    """
+    try:
+        with closing(urllib.request.urlopen(repofile_url, timeout=15)) as response:
+            filepath = write_temporary_repofile(contents=response.read())
+            if filepath:
+                loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
+
+            return filepath
+    except urllib.error.URLError as err:
+        raise exceptions.CriticalError(
+            id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
+            title="Failed to download repository file",
+            description="Failed to download the requested repository file from %s.\n"
+            "Reason: %s" % (repofile_url, err.reason),
+        )
+
+
+def write_temporary_repofile(contents):
+    """ """
+    repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
+        try:
+            store_content_to_file(filename=f.name, content=contents)
+            return f.name
+        except (OSError, IOError) as err:
+            loggerinst.warning("OSError({0}): {1}".format(err.errno, err.strerror))

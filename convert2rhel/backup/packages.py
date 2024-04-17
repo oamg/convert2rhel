@@ -220,8 +220,6 @@ class RestorablePackageSet(RestorableChange):
         self,
         pkgs_to_install,
         pkgs_to_update=None,
-        repo_path=None,
-        repo_content=None,
         enable_repos=None,
         disable_repos=None,
         set_releasever=False,
@@ -232,9 +230,6 @@ class RestorablePackageSet(RestorableChange):
         self.pkgs_to_update = pkgs_to_update or []
         self.installed_pkgs = []
         self.updated_pkgs = []
-
-        self.repo_path = repo_path
-        self.repo_content = repo_content
 
         self.enable_repos = enable_repos or []
         self.disable_repos = disable_repos or []
@@ -264,9 +259,6 @@ class RestorablePackageSet(RestorableChange):
 
         loggerinst.info("Downloading requested packages")
         all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
-
-        if self.repo_path:
-            _set_up_repository(self.repo_path, self.repo_content)
 
         loggerinst.debug("RPMs scheduled for installation: %s" % utils.format_sequence_as_message(all_pkgs_to_install))
 
@@ -325,10 +317,3 @@ class RestorablePackageSet(RestorableChange):
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 
         super(RestorablePackageSet, self).restore()
-
-
-def _set_up_repository(repo_path, repo_content):
-    try:
-        utils.store_content_to_file(filename=repo_path, content=repo_content)
-    except (OSError, IOError) as err:
-        loggerinst.warning("OSError({0}): {1}".format(err.errno, err.strerror))

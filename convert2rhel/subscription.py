@@ -30,7 +30,7 @@ import dbus
 import dbus.connection
 import dbus.exceptions
 
-from convert2rhel import backup, exceptions, i18n, pkghandler, utils
+from convert2rhel import backup, exceptions, i18n, pkghandler, repo, utils
 from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
@@ -58,7 +58,22 @@ REGISTRATION_TIMEOUT = 180
 # Location of the RHSM generated facts json file.
 RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
-#
+_CLIENT_TOOLS_REPOFILE_MAPPING = {
+    7: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo",
+    8: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo",
+    9: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo",
+}
+
+# Special case for RHEL 8.5 as we have to manually set the releasever to 8.5.
+_CLIENT_TOOLS_RHEL_8_5_REPO = """\
+[client-tools-for-rhel-8-rpms]
+name=Red Hat Client Tools for RHEL 8
+baseurl=https://cdn-public.redhat.com/content/public/addon/dist/client-tools8/8.5/$basearch/os/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+\n
+"""
 
 
 class UnregisterError(Exception):
@@ -635,16 +650,6 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     varsdir = DEFAULT_YUM_VARS_DIR if system_info.version.major == 7 else DEFAULT_DNF_VARS_DIR
     backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 
-    repo_path = _CLIENT_TOOLS_REPO_PATH_MAPPING[system_info.version.major]
-    releasever = str(system_info.version.major)
-
-    # For CentOS 8.5, we have to define the releasever as being 8.5, not just 8
-    # as it will be pointing to latest 8.X version available. Since CentOS
-    # Linux latest release was 8.5, we are setting 8.5 as being the latest in
-    # the custom releasever.
-    if system_info.id == "centos" and system_info.version.major == 8:
-        releasever = "8.5"
-
     setopts = []
     # Oracle Linux 7 needs to set the obsoletes option to avoid installing the
     # rhc-client-tools package instead of subscription-manager, as it is marked
@@ -656,20 +661,19 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     if system_info.id == "oracle" and system_info.version.major == 7:
         setopts.append("obsoletes=0")
 
-    repo_content = _CLIENT_TOOLS_REPO_CONTENT_MAPPING[releasever]
-    # To install subscription-manager correctly from client-tools repository,
-    # we have to specify the path of the client-tools repofile first, and
-    # later, the backed up repositories to install the dependencies required by
-    # the subscription-manager packages.
-    reposdir = [os.path.dirname(repo_path), backedup_reposdir]
+    client_tools_repofile = None
+    if system_info.id == "centos" and system_info.version.major == 8:
+        client_tools_repofile = repo.write_temporary_repofile(_CLIENT_TOOLS_RHEL_8_5_REPO)
+    else:
+        repofile_url = _CLIENT_TOOLS_REPOFILE_MAPPING[system_info.version.major]
+        client_tools_repofile = repo.download_repofile(repofile_url)
 
-    setopts.append("reposdir=%s" % reposdir)
+    reposdir = [os.path.dirname(client_tools_repofile), backedup_reposdir]
+    setopts.append("reposdir=%s" % ",".join(reposdir))
     setopts.append("varsdir=%s" % backedup_varsdir)
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
         pkgs_to_upgrade,
-        repo_path=repo_path,
-        repo_content=repo_content,
         custom_releasever=system_info.version.major,
         set_releasever=True,
         setopts=setopts,

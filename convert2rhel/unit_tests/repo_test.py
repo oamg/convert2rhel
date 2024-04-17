@@ -22,12 +22,12 @@ import os
 import pytest
 import six
 
-from convert2rhel import repo
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel import exceptions, repo
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+from six.moves import mock, urllib
 
 
 @pytest.mark.parametrize(
@@ -101,3 +101,58 @@ def test_get_rhel_disable_repos_command(disable_repos, command):
     output = repo.get_rhel_disable_repos_command(disable_repos)
 
     assert output == command
+
+
+class URLOpenMock:
+    def __init__(self, url, timeout, contents):
+        self.url = url
+        self.timeout = timeout
+        self.contents = contents
+
+    def __call__(self, *args, **kwds):
+        return self
+
+    def read(self):
+        return self.contents
+
+    def close(self):
+        pass
+
+
+def test_download_repofile(monkeypatch, tmpdir, caplog):
+    monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents="test_file"))
+    tmp_dir = str(tmpdir)
+    monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
+
+    filepath = repo.download_repofile("https://test")
+    assert os.path.exists(filepath)
+    with open(filepath) as f:
+        assert f.read() == "test_file\n"
+    assert "Successfully downloaded the requested repofile from https://test" in caplog.records[-1].message
+
+
+def test_download_repofile_urlerror(monkeypatch):
+    monkeypatch.setattr(repo.urllib.request, "urlopen", mock.Mock(side_effect=urllib.error.URLError(reason="test")))
+
+    with pytest.raises(exceptions.CriticalError):
+        repo.download_repofile("https://test")
+
+
+def test_write_temporary_repofile(tmpdir, monkeypatch):
+    tmp_dir = str(tmpdir)
+    monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
+    filepath = repo.write_temporary_repofile("test")
+
+    assert os.path.exists(filepath)
+    with open(filepath) as f:
+        assert f.read() == "test\n"
+
+
+def test_write_temporary_repofile_oserror(tmpdir, monkeypatch, caplog):
+    monkeypatch.setattr(repo, "TMP_DIR", str(tmpdir))
+    monkeypatch.setattr(repo, "store_content_to_file", mock.Mock(side_effect=OSError("test")))
+
+    filepath = repo.write_temporary_repofile("test")
+
+    assert not filepath
+    assert "OSError(None): None" in caplog.records[-1].message
