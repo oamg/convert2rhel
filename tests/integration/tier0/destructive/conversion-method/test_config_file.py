@@ -4,7 +4,7 @@ from collections import namedtuple
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 Config = namedtuple("Config", "path content")
@@ -29,12 +29,12 @@ def test_conversion_with_config_file(convert2rhel):
     Use config file to feed the credentials for the registration and verify a successful conversion.
     """
     activation_key = "[subscription_manager]\nactivation_key = {}\norg = {}".format(
-        env.str("RHSM_KEY"), env.str("RHSM_ORG")
+        TEST_VARS["RHSM_KEY"], TEST_VARS["RHSM_ORG"]
     )
     config = [Config("~/.convert2rhel.ini", activation_key)]
     create_files(config)
 
-    with convert2rhel("-y --serverurl {} --debug".format(env.str("RHSM_SERVER_URL"))) as c2r:
+    with convert2rhel("-y --serverurl {} --debug".format(TEST_VARS["RHSM_SERVER_URL"])) as c2r:
         c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
         c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
         c2r.expect("Conversion successful!")

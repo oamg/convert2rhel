@@ -16,7 +16,7 @@ import click
 import pexpect
 import pytest
 
-from envparse import env
+from dotenv import dotenv_values
 
 
 try:
@@ -24,8 +24,11 @@ try:
 except ImportError:
     from pathlib2 import Path
 
-logging.basicConfig(level="DEBUG" if env.str("DEBUG") else "INFO", stream=sys.stderr)
+
+logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
+
+TEST_VARS = dotenv_values("/var/tmp/.env")
 
 SATELLITE_URL = "satellite.sat.engineering.redhat.com"
 SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
@@ -79,10 +82,10 @@ def convert2rhel(shell):
     >>>         "--password {} --pool {} "
     >>>         "--debug"
     >>>     ).format(
-    >>>         env.str("RHSM_SERVER_URL"),
-    >>>         env.str("RHSM_USERNAME"),
-    >>>         env.str("RHSM_PASSWORD"),
-    >>>         env.str("RHSM_POOL"),
+    >>>         TEST_VARS["RHSM_SERVER_URL"],
+    >>>         TEST_VARS["RHSM_USERNAME"],
+    >>>         TEST_VARS["RHSM_PASSWORD"],
+    >>>         TEST_VARS["RHSM_POOL"],
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
@@ -477,13 +480,13 @@ def pre_registered(shell):
     assert (
         shell(
             "subscription-manager register --serverurl {} --username {} --password {}".format(
-                env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
+                TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
             )
         ).returncode
         == 0
     )
 
-    assert shell("subscription-manager attach --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+    assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -505,7 +508,7 @@ def pre_registered(shell):
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
 
-        assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+        assert shell("subscription-manager remove --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
         assert shell("subscription-manager unregister").returncode == 0
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)

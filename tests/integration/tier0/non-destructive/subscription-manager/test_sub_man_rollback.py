@@ -2,7 +2,7 @@ import os.path
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -46,10 +46,10 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_r
     for run in range(2):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
             )
         ) as c2r:
             assert c2r.expect("Validate the dnf transaction") == 0

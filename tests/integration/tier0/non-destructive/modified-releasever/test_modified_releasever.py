@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -33,10 +33,10 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
     with c2r_config.replace_line(pattern="releasever=.*", repl="releasever=333"):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
             ),
             unregister=True,
         ) as c2r:
@@ -73,10 +73,10 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
     ):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
             ),
             unregister=True,
         ) as c2r:

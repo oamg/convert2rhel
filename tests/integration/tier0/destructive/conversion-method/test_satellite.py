@@ -1,7 +1,6 @@
 import pytest
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL
-from envparse import env
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, TEST_VARS
 
 
 @pytest.mark.test_satellite_conversion
@@ -25,8 +24,8 @@ def test_satellite_conversion(shell, convert2rhel):
 
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         )
     ) as c2r:
         pass
