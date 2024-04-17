@@ -25,7 +25,7 @@ tag+:
     tag+:
         - failed-report
     test: |
-        pytest -svv -m test_failures_and_skips_in_report
+        pytest --setup-show -svv -m test_failures_and_skips_in_report
 
 /successful_report:
     summary+: |
@@ -37,7 +37,7 @@ tag+:
         - success-report
         - sanity
     test: |
-        pytest -svv -m test_successful_report
+        pytest --setup-show -svv -m test_successful_report
 
 /convert_successful_report:
     summary+: |
@@ -51,4 +51,4 @@ tag+:
     tag+:
         - convert-success-report
     test: |
-        pytest -svv -m test_convert_successful_report
+        pytest --setup-show -svv -m test_convert_successful_report

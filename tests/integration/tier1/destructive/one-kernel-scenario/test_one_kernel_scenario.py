@@ -42,10 +42,6 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
     """TODO(r0x0d) better description and function name"""
 
     if os.environ["TMT_REBOOT_COUNT"] == "2":
-        # We need to skip check for collected rhsm custom facts after the conversion
-        # due to disabled submgr, thus adding envar
-        submgr_disabled_var = "SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS=1"
-        shell(f"echo '{submgr_disabled_var}' >> /etc/profile")
 
         # The nfnetlink kmod is causing issues on OracleLinux 7
         if "oracle-7" in SYSTEM_RELEASE_ENV:
@@ -71,12 +67,6 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
             # This internal repo breaks the conversion on the instances we are getting
             # from Testing Farm
             shell("rm /etc/yum.repos.d/copr_build-convert2rhel-1.repo")
-
-        os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
-        os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
-        # Unavailable kmods may be present on the system due to the kernel package
-        # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
-        os.environ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"] = "1"
 
         with convert2rhel("-y --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
             c2r.expect("Conversion successful!")

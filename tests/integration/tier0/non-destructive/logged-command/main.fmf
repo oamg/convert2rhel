@@ -13,4 +13,4 @@ tag+:
         - logfile-starts-with-command
         - sanity
     test: |
-        pytest -svv -m test_logfile_starts_with_command
+        pytest --setup-show -svv -m test_logfile_starts_with_command

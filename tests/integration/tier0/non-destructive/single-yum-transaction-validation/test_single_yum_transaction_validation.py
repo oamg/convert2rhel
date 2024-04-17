@@ -226,7 +226,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
 
 
 @pytest.mark.test_override_exclude_list_in_yum_config
-def test_override_exclude_list_in_yum_config(convert2rhel, kernel, kernel_check_envar, override_yum_conf):
+def test_override_exclude_list_in_yum_config(convert2rhel, kernel, override_yum_conf):
     """
     This test verifies that packages that are defined in the exclude
     section in the /etc/yum.conf file are ignored during the analysis and

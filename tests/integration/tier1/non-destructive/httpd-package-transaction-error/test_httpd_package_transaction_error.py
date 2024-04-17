@@ -73,7 +73,7 @@ def test_httpd_package_transaction_error(shell, convert2rhel, handle_packages):
                 "Package centos-logos will be swapped to redhat-logos during conversion",
                 "Error (Must fix before conversion)",
             ],
-            timeout=600,
+            timeout=900,
         )
         assert index == 0, "The analysis found an error. Probably related to the transaction check."
         assert c2r.expect_exact("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded") == 0

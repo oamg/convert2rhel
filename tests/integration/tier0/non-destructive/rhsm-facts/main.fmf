@@ -13,7 +13,7 @@ description+: |
     tag+:
         - test-rhsm-facts-called-in-analysis
     test: |
-        pytest -svv -m test_rhsm_facts_called_in_analysis
+        pytest --setup-show -svv -m test_rhsm_facts_called_in_analysis
     adjust+:
         - enabled: false
           when: distro == oracle-7, oracle-8

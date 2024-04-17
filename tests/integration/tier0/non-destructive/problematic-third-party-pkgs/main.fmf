@@ -17,4 +17,4 @@ description+: |
     tag+:
         - test-list-third-party-pkgs-error
     test: |
-        pytest -svv -m test_list_third_party_pkgs_error
+        pytest --setup-show -svv -m test_list_third_party_pkgs_error

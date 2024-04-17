@@ -26,7 +26,7 @@ tag+:
             TEST_REQUIRES: subscription-manager
 
     test: |
-        pytest -svv -m test_sub_man_rollback
+        pytest --setup-show -svv -m test_sub_man_rollback
 
     tag+:
         - sub-man-rollback
@@ -55,7 +55,7 @@ tag+:
             - environment+:
                 C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
-            pytest -svv -m test_pre_registered_wont_unregister
+            pytest --setup-show -svv -m test_pre_registered_wont_unregister
         tag+:
             - pre-registered-wont-unregister
             - sanity
@@ -76,7 +76,7 @@ tag+:
             - environment+:
                 C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
-            pytest -svv -m test_pre_registered_re_register
+            pytest --setup-show -svv -m test_pre_registered_re_register
         tag+:
             - pre-registered-re-register
     /unregistered_system_no_credentials:
@@ -87,6 +87,6 @@ tag+:
             and credentials are not provided to the convert2rhel command.
             Expected ERROR: SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM
         test: |
-            pytest -svv -m test_unregistered_no_credentials
+            pytest --setup-show -svv -m test_unregistered_no_credentials
         tag+:
             - unregistered-no-credentials

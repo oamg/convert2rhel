@@ -396,7 +396,7 @@ def required_packages(shell):
 
 
 @pytest.fixture(scope="function")
-def repositories(shell):
+def remove_repositories(shell):
     """
     Fixture.
     Move all repositories to another location, do the same for EUS if applicable.
@@ -504,7 +504,6 @@ def pre_registered(shell):
 
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
-        del os.environ["C2R_TESTS_CHECK_RHSM_UUID_MATCH"]
 
         assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
         assert shell("subscription-manager unregister").returncode == 0
@@ -515,8 +514,6 @@ def pre_registered(shell):
         # Remove the redhat-uep.pem certificate, as it won't get removed with the sub-man package on CentOS 7
         if "centos-7" in SYSTEM_RELEASE_ENV:
             shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
-
-        del os.environ["C2R_TESTS_SUBMAN_CLEANUP"]
 
 
 @pytest.fixture()
@@ -534,18 +531,6 @@ def hybrid_rocky_image(shell, system_release):
 
             os.remove(grubenv_file)
             shutil.copy2(target_grubenv_file, grubenv_file)
-
-
-@pytest.fixture(autouse=True, scope="function")
-def tmt_reboot_count_reset(shell):
-    """
-    Fixture to reset reboot counters.
-    We need this to be able to perform reboot using the tmt-reboot.
-    After each reboot the TMT_REBOOT_COUNT += 1, meaning we would need to
-    reflect the test order to be able to perform the reboot.
-    The fixture will reset the counter for each function, so we always start with "0".
-    """
-    shell("export TMT_REBOOT_COUNT=0 && export REBOOTCOUNT=0 && export RSTRNT_REBOOTCOUNT=0")
 
 
 @pytest.fixture()
@@ -591,23 +576,7 @@ def remediation_out_of_date_packages(shell):
         shell(f"yum update -y {package}")
 
 
-@pytest.fixture(scope="function")
-def kernel_check_envar():
-    """
-    Fixture.
-    Set CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK environment variable
-    to skip the kernel currency check.
-    """
-    # Since we are moving all repos away, we need to bypass kernel check
-    os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
-
-    yield
-
-    # Remove the envar skipping the kernel check
-    del os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"]
-
-
-def _create_old_repo(shell, distro: str, repo_name: str):
+def _create_old_repo(distro: str, repo_name: str):
     """
     Create a repo on system with content that is older then the latest released version.
     The intended use is for Rocky-8 and Alma-8.
@@ -659,12 +628,12 @@ def kernel(shell):
             shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
         elif "alma-8" in SYSTEM_RELEASE_ENV:
             repo_name = "alma_old"
-            _create_old_repo(shell, distro="alma", repo_name=repo_name)
+            _create_old_repo(distro="alma", repo_name=repo_name)
             assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
             shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
         elif "rocky-8" in SYSTEM_RELEASE_ENV:
             repo_name = "rocky_old"
-            _create_old_repo(shell, distro="rocky", repo_name=repo_name)
+            _create_old_repo(distro="rocky", repo_name=repo_name)
             assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
             shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
 

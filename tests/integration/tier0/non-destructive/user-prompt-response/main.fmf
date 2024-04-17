@@ -21,4 +21,4 @@ tag+:
     tag+:
         - empty-username-and-password
     test: |
-      pytest -svv -m test_empty_username_and_password
+      pytest --setup-show -svv -m test_empty_username_and_password

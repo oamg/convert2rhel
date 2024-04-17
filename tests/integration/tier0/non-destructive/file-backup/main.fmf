@@ -23,4 +23,4 @@ tag+:
     - sanity
 
 test: |
-    pytest -svv -m test_file_backup
+    pytest --setup-show -svv -m test_file_backup

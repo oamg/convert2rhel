@@ -30,7 +30,7 @@ tag+:
     tag+:
         - transaction-validation-error
     test: |
-        pytest -svv -m test_transaction_validation_error
+        pytest --setup-show -svv -m test_transaction_validation_error
 
 /package_download_error:
     summary+: |
@@ -40,7 +40,7 @@ tag+:
     tag+:
         - package-download-error
     test: |
-        pytest -svv -m test_package_download_error
+        pytest --setup-show -svv -m test_package_download_error
 
 
 /validating_packages_with_in_name_period:
@@ -64,9 +64,11 @@ tag+:
         - validation-packages-with-in-name-period
         - sanity
     test: |
-        pytest -svv -m test_validation_packages_with_in_name_period
+        pytest --setup-show -svv -m test_validation_packages_with_in_name_period
 
 /override_exclude_list_in_yum_config:
+    environment+:
+        CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
     summary+: |
         Override exclude in yum config to avoid dependency problems
     description+: |
@@ -86,4 +88,4 @@ tag+:
         - override-exclude-list-in-yum-config
         - sanity
     test: |
-        pytest -svv -m test_override_exclude_list_in_yum_config
+        pytest --setup-show -svv -m test_override_exclude_list_in_yum_config
