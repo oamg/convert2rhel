@@ -172,49 +172,6 @@ jobs:
       - oracle-8
       - sanity
 
-  - &tests-tier0-almalinux-86
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    trigger: pull_request
-    identifier: "tier0-al86"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-    targets:
-      epel-8-x86_64:
-        distros: ["AlmaLinux OS 8.6.20220901 x86_64"]
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              distro: "alma-8.6"
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - tier0
-      - alma-86
-
-  - &tests-sanity-almalinux-86
-    <<: *tests-tier0-almalinux-86
-    identifier: "sanity-al86"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - tier0
-      - alma-86
-      - sanity
-
   - &tests-tier0-almalinux-88
     job: tests
     # Run tests on-demand
@@ -299,49 +256,6 @@ jobs:
     labels:
       - tier0
       - alma-8
-      - sanity
-
-  - &tests-tier0-rockylinux-86
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    trigger: pull_request
-    identifier: "tier0-rl86"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-    targets:
-      epel-8-x86_64:
-        distros: ["Rocky-8-ec2-8.6-20220515.0.x86_64"]
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              distro: "rocky-8.6"
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - tier0
-      - rocky-86
-
-  - &tests-sanity-rockylinux-86
-    <<: *tests-tier0-rockylinux-86
-    identifier: "sanity-rl86"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - tier0
-      - rocky-86
       - sanity
 
   - &tests-tier0-rockylinux-88
@@ -455,15 +369,6 @@ jobs:
       - tier1
       - oracle-8
 
-
-  - &tests-tier1-manual-almalinux-86
-    <<: *tests-tier0-almalinux-86
-    identifier: "tier1-al86"
-    tmt_plan: "tier1"
-    labels:
-      - tier1
-      - alma-86
-
   - &tests-tier1-manual-almalinux-88
     <<: *tests-tier0-almalinux-88
     identifier: "tier1-al88"
@@ -479,14 +384,6 @@ jobs:
     labels:
       - tier1
       - alma-8
-
-  - &tests-tier1-manual-rockylinux-86
-    <<: *tests-tier0-rockylinux-86
-    identifier: "tier1-rl86"
-    tmt_plan: "tier1"
-    labels:
-      - tier1
-      - rocky-86
 
   - &tests-tier1-manual-rockylinux-88
     <<: *tests-tier0-rockylinux-88
@@ -532,15 +429,6 @@ jobs:
     trigger: commit
     branch: main
 
-  - &tests-main-tier1-almalinux-86
-    <<: *tests-tier0-almalinux-86
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-al86"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
-
   - &tests-main-tier1-almalinux-88
     <<: *tests-tier0-almalinux-88
     # Run test automatically with merge commit to main branch
@@ -555,15 +443,6 @@ jobs:
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al8"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
-
-  - &tests-main-tier1-rockylinux-86
-    <<: *tests-tier0-rockylinux-86
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-rl86"
     tmt_plan: "tier1"
     trigger: commit
     branch: main
