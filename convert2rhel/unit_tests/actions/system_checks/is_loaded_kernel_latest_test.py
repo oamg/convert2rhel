@@ -97,7 +97,6 @@ class TestIsLoadedKernelLatest:
                         "--quiet",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                        "--setopt=reposdir=%s" % fake_reposdir_path,
                         package_name,
                     ),
                     (
@@ -121,10 +120,8 @@ class TestIsLoadedKernelLatest:
             id="INVALID_KERNEL_VERSION",
             level="OVERRIDABLE",
             title="Invalid kernel version detected",
-            description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
-            % fake_reposdir_path,
-            diagnosis="The version of the loaded kernel is different from the latest version in repositories defined in the %s folder"
-            % fake_reposdir_path,
+            description="The loaded kernel version mismatch the latest one available in system repositories",
+            diagnosis="The version of the loaded kernel is different from the latest version in system repositories.",
             remediations="To proceed with the conversion, update the kernel version by executing the following step:\n\n",
         )
 
@@ -337,7 +334,6 @@ class TestIsLoadedKernelLatest:
                         "--quiet",
                         "--qf",
                         "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                        "--setopt=reposdir=%s" % fake_reposdir_path,
                         "kernel-core",
                     ),
                     (
@@ -773,9 +769,7 @@ class TestIsLoadedKernelLatest:
             level="OVERRIDABLE",
             id="INVALID_KERNEL_VERSION",
             title="Invalid kernel version detected",
-            description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
-            % reposdir,
-            diagnosis="The version of the loaded kernel is different from the latest version in repositories defined in the %s folder."
-            % reposdir,
+            description="The loaded kernel version mismatch the latest one available in system repositories",
+            diagnosis="The version of the loaded kernel is different from the latest version in system repositories.",
             remediations="To proceed with the conversion, update the kernel version by executing the following step:",
         )

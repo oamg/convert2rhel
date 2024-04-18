@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class IsLoadedKernelLatest(actions.Action):
     id = "IS_LOADED_KERNEL_LATEST"
+
     # disabling here as some of the return statements would be raised as exceptions in normal code
     # but we don't do that in an Action class
     def run(self):  # pylint: disable= too-many-return-statements
@@ -51,14 +52,6 @@ class IsLoadedKernelLatest(actions.Action):
             "--qf",
             "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
         ]
-
-        reposdir = get_backedup_system_repos()
-
-        # If the reposdir variable is not empty, meaning that it detected the
-        # hardcoded repofiles, we should use that
-        # instead of the system repositories located under /etc/yum.repos.d
-        if reposdir:
-            cmd.append("--setopt=reposdir=%s" % reposdir)
 
         # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
         # we check for `kernel-core`. But 7 releases, the correct way to check is
@@ -176,12 +169,11 @@ class IsLoadedKernelLatest(actions.Action):
                 level="OVERRIDABLE",
                 id="INVALID_KERNEL_VERSION",
                 title="Invalid kernel version detected",
-                description="The loaded kernel version mismatch the latest one available in repositories defined in the %s folder"
-                % reposdir,
+                description="The loaded kernel version mismatch the latest one available in system repositories",
                 diagnosis=(
-                    "The version of the loaded kernel is different from the latest version in repositories defined in the %s folder. \n"
+                    "The version of the loaded kernel is different from the latest version in system repositories. \n"
                     " Latest kernel version available in %s: %s\n"
-                    " Loaded kernel version: %s" % (reposdir, repoid, latest_kernel, loaded_kernel)
+                    " Loaded kernel version: %s" % (repoid, latest_kernel, loaded_kernel)
                 ),
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
