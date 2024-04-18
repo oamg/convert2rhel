@@ -43,6 +43,22 @@ class ConversionPhase:
     POST_PONR_CHANGES = 4
 
 
+_REPORT_MAPPING = {
+    ConversionPhase.ANALYZE_EXIT: (
+        report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
+    ),
+    ConversionPhase.PRE_PONR_CHANGES: (
+        report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
+    ),
+    ConversionPhase.POST_PONR_CHANGES: (
+        report.CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS,
+    ),
+}
+
+
 def initialize_file_logging(log_name, log_dir):
     """
     Archive existing file logs and setup all logging handlers that require
@@ -182,16 +198,12 @@ def main_locked():
         # Write the assessment to a file as json data so that other tools can
         # parse and act upon it.
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
-        json_filepath = report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS
-        txt_filepath = report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS
 
-        if process_phase == ConversionPhase.POST_PONR_CHANGES:
-            json_filepath = report.CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS
-            txt_filepath = report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS
+        if results and process_phase in _REPORT_MAPPING:
+            json_report, txt_report = _REPORT_MAPPING[process_phase]
 
-        if results:
-            report.summary_as_json(results, json_filepath)
-            report.summary_as_txt(results, txt_filepath)
+            report.summary_as_json(results, json_report)
+            report.summary_as_txt(results, txt_report)
 
     return 0
 
