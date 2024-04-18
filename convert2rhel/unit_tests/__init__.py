@@ -549,6 +549,16 @@ class AutoAttachSubscriptionMocked(MockFunctionObject):
     spec = subscription.auto_attach_subscription
 
 
+class RemoveAutoAttachSubscriptionMocked(MockFunctionObject):
+    """
+    Mock of the remove_subscription() function.
+
+    It just adds a spec for the function on top of all the standard mock functionality.
+    """
+
+    spec = subscription.remove_subscription
+
+
 class RefreshSubscriptionManagerMocked(MockFunctionObject):
     """
     Mock of the refresh_subscription_info() function.

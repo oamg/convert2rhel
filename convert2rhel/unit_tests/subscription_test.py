@@ -31,8 +31,10 @@ import six
 from convert2rhel import exceptions, pkghandler, pkgmanager, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
+    AutoAttachSubscriptionMocked,
     PromptUserMocked,
     RegisterSystemMocked,
+    RemoveAutoAttachSubscriptionMocked,
     RunSubprocessMocked,
     UnregisterSystemMocked,
     create_pkg_information,
@@ -319,7 +321,6 @@ class TestRestorableSystemSubscription:
         system_subscription.enable()
 
         system_subscription.restore()
-
         assert subscription.unregister_system.call_count == 1
 
     def test_restore_not_enabled(self, monkeypatch, caplog, system_subscription):
@@ -358,7 +359,7 @@ class TestRestorableSystemSubscription:
         assert "subscription-manager not installed, skipping" == caplog.messages[-1]
 
 
-def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
+def test_install_rhel_subscription_manager(monkeypatch, global_backup_control):
     mock_backup_control = mock.Mock()
     monkeypatch.setattr(subscription.backup.backup_control, "push", mock_backup_control)
 
@@ -400,28 +401,72 @@ def test_is_subscription_attached(monkeypatch, return_string, expected):
     assert expected == result
 
 
-@pytest.mark.parametrize(
-    ("return_code", "exception"),
-    (
-        (1, True),
-        (0, False),
-    ),
-)
-def test_auto_attach_subscription(monkeypatch, return_code, exception):
+class TestRestorableAutoAttachmentSubscription:
+    @pytest.fixture
+    def auto_attach_subscription(self):
+        return subscription.RestorableAutoAttachmentSubscription()
 
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        RunSubprocessMocked(return_code=return_code),
+    def test_enable_auto_attach(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "auto_attach_subscription", AutoAttachSubscriptionMocked())
+        auto_attach_subscription.enable()
+        assert subscription.auto_attach_subscription.call_count == 1
+
+    def test_restore_auto_attach(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
+        monkeypatch.setattr(subscription, "auto_attach_subscription", mock.Mock(return_value=True))
+        auto_attach_subscription.enable()
+        auto_attach_subscription.restore()
+        assert subscription.remove_subscription.call_count == 1
+
+    def test_restore_auto_attach_not_enabled(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
+        auto_attach_subscription.restore()
+        assert subscription.remove_subscription.call_count == 0
+
+    @pytest.mark.parametrize(
+        ("return_code", "exception"),
+        (
+            (1, True),
+            (0, False),
+        ),
     )
-    if exception:
-        with pytest.raises(subscription.SubscriptionAutoAttachmentError):
-            subscription.auto_attach_subscription()
-    else:
-        try:
-            subscription.auto_attach_subscription()
-        except subscription.SubscriptionAutoAttachmentError:
-            assert False
+    def test_auto_attach_subscription(self, auto_attach_subscription, monkeypatch, return_code, exception):
+
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            RunSubprocessMocked(return_code=return_code),
+        )
+        if exception:
+            with pytest.raises(subscription.SubscriptionAutoAttachmentError):
+                subscription.auto_attach_subscription()
+        else:
+            try:
+                subscription.auto_attach_subscription()
+            except subscription.SubscriptionAutoAttachmentError:
+                assert False
+
+    @pytest.mark.parametrize(
+        ("return_code", "exception"),
+        (
+            (1, True),
+            (0, False),
+        ),
+    )
+    def test_remove_subscription(self, monkeypatch, return_code, exception):
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            RunSubprocessMocked(return_code=return_code),
+        )
+        if exception:
+            with pytest.raises(subscription.SubscriptionRemovalError):
+                subscription.remove_subscription()
+        else:
+            try:
+                subscription.remove_subscription()
+            except subscription.SubscriptionRemovalError:
+                assert False
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")

@@ -190,7 +190,7 @@ class SubscribeSystem(actions.Action):
                     "The system is registered with an RHSM account that has Simple Content Access (SCA) disabled but no subscription is attached. Without enabled SCA or an attached subscription the system can't access RHEL repositories. We'll try to auto-attach a subscription."
                 )
                 try:
-                    subscription.auto_attach_subscription()
+                    backup.backup_control.push(subscription.RestorableAutoAttachmentSubscription())
                 except subscription.SubscriptionAutoAttachmentError:
                     self.set_result(
                         level="ERROR",

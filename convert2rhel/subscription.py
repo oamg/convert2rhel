@@ -115,6 +115,25 @@ class RestorableSystemSubscription(backup.RestorableChange):
         super(RestorableSystemSubscription, self).restore()
 
 
+class RestorableAutoAttachmentSubscription(backup.RestorableChange):
+    """
+    Auto attach subscriptions with RHSM in a fashion that can be reverted.
+    """
+
+    def __init__(self):
+        super(RestorableAutoAttachmentSubscription, self).__init__()
+        self._is_attached = False
+
+    def enable(self):
+        self._is_attached = auto_attach_subscription()
+        super(RestorableAutoAttachmentSubscription, self).enable()
+
+    def restore(self):
+        if self._is_attached:
+            remove_subscription()
+            super(RestorableAutoAttachmentSubscription, self).restore()
+
+
 def remove_subscription():
     """Remove all subscriptions added from auto attachment"""
     loggerinst.info("Removing auto attached subscriptions.")
@@ -124,6 +143,20 @@ def remove_subscription():
         raise SubscriptionRemovalError("Subscription removal result\n%s" % output)
     else:
         loggerinst.info("Subscription removal successful.")
+
+
+def auto_attach_subscription():
+    """
+    Execute 'subscription-manager attach --auto' to auto attach a subscription. If it fails raise
+    SubscriptionAutoAttachmentError.
+    """
+    _, ret_code = utils.run_subprocess(["subscription-manager", "attach", "--auto"])
+    if ret_code != 0:
+        raise SubscriptionAutoAttachmentError("Unsuccessful auto attachment of a subscription.")
+    else:
+        loggerinst.info("Subscription attachment successful.")
+
+    return True
 
 
 def unregister_system():
@@ -624,16 +657,6 @@ def is_subscription_attached():
     if "no consumed subscription pools were found." in output.lower():
         return False
     return True
-
-
-def auto_attach_subscription():
-    """
-    Execute 'subscription-manager attach --auto' to auto attach a subscription. If it fails raise
-    SubscriptionAutoAttachmentError.
-    """
-    _, ret_code = utils.run_subprocess(["subscription-manager", "attach", "--auto"])
-    if ret_code != 0:
-        raise SubscriptionAutoAttachmentError("Unsuccessful auto attachment of a subscription.")
 
 
 def attach_subscription():

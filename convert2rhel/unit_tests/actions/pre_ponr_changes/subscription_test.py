@@ -305,12 +305,17 @@ class TestSubscribeSystem:
 
     def test_subscribe_no_access_to_rhel_repos(self, subscribe_system_instance, monkeypatch):
         monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
+        monkeypatch.setattr(repo.system_info, "eus_system", value=False)
+        monkeypatch.setattr(subscription, "is_sca_enabled", lambda: False)
+        monkeypatch.setattr(subscription, "is_subscription_attached", lambda: False)
+        monkeypatch.setattr(repo.system_info, "default_rhsm_repoids", value=["id1", "id2"])
+
         mocked_auto_attach = AutoAttachSubscriptionMocked(side_effect=SubscriptionAutoAttachmentError)
         monkeypatch.setattr(subscription, "auto_attach_subscription", mocked_auto_attach)
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         subscribe_system_instance.run()
-
+        print(subscribe_system_instance.result)
         unit_tests.assert_actions_result(
             subscribe_system_instance,
             level="ERROR",
