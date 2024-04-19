@@ -413,7 +413,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
-        assert main.main() == 1
+        assert main.main() == 2
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
         assert toolopts_cli_mock.call_count == 1
@@ -432,7 +432,7 @@ class TestRollbackFromMain:
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert caplog.records[-3].message == "Analysis failed."
+        assert "The analysis process failed." in caplog.records[-3].message
         assert caplog.records[-3].levelname == "CRITICAL"
 
     def test_main_rollback_analyze_exit_phase_without_subman(self, global_tool_opts, monkeypatch, tmp_path):
@@ -639,8 +639,12 @@ class TestRollbackFromMain:
                     },
                 },
             },
-            SystemExit,
-            "Analysis failed.",
+            main._InhibitorsFound,
+            (
+                "The analysis process failed.\n\n"
+                "A problem was encountered during analysis and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
             "analisys",
         ),
         (
@@ -658,8 +662,12 @@ class TestRollbackFromMain:
                     },
                 },
             },
-            SystemExit,
-            "Analysis failed.",
+            main._InhibitorsFound,
+            (
+                "The analysis process failed.\n\n"
+                "A problem was encountered during analysis and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
             "analisys",
         ),
         (
@@ -677,8 +685,12 @@ class TestRollbackFromMain:
                     },
                 },
             },
-            main._AnalyzeInhibitorFound,
-            "",
+            main._InhibitorsFound,
+            (
+                "The conversion process failed.\n\n"
+                "A problem was encountered during conversion and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
             "conversion",
         ),
     ),
@@ -687,7 +699,7 @@ def test_raise_for_skipped_failures(data, exception, match, activity, global_too
     monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
     global_tool_opts.activity = activity
     with pytest.raises(exception, match=match):
-        main._raise_for_skipped_failures(main.ConversionPhase.PRE_PONR_CHANGES, data)
+        main._raise_for_skipped_failures(data)
 
 
 def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):

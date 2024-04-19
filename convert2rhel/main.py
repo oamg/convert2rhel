@@ -34,9 +34,9 @@ class _AnalyzeExit(Exception):
     pass
 
 
-class _AnalyzeInhibitorFound(Exception):
-    # Exception just to exit when running conversion mode and there is an
-    # inhibitor detected during analysis.
+class _InhibitorsFound(Exception):
+    # Exception for when there is an inhibitor detected either in
+    # pre-conversion or post-conversion actions.
     pass
 
 
@@ -69,9 +69,9 @@ class ConversionExitCodes:
     # No errors detected during the conversion
     SUCCESSFUL = 0
     # Some inhibitors appeared during the pre conversion analysis
-    ANALYSIS = 1
+    FAILURE = 1
     # Inhibitors that are part of the conversion process
-    CONVERSION = 2
+    INHIBITORS_FOUND = 2
 
 
 def initialize_file_logging(log_name, log_dir):
@@ -120,7 +120,7 @@ def main():
     except applock.ApplicationLockedError:
         loggerinst.warning("Another copy of convert2rhel is running.\n")
         loggerinst.warning("\nNo changes were made to the system.\n")
-        return ConversionExitCodes.ANALYSIS
+        return ConversionExitCodes.FAILURE
 
 
 def main_locked():
@@ -151,7 +151,7 @@ def main_locked():
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
-        _raise_for_skipped_failures(process_phase, pre_conversion_results)
+        _raise_for_skipped_failures(pre_conversion_results)
 
         # Print the assessment just before we ask the user whether to continue past the PONR
         report.pre_conversion_report(
@@ -203,15 +203,10 @@ def main_locked():
         )
         return ConversionExitCodes.SUCCESSFUL
 
-    except _AnalyzeInhibitorFound as err:
-        loggerinst.critical_no_exit(
-            "The conversion process failed.\n\n"
-            "A problem was encountered during analysis and a rollback will be "
-            "initiated to restore the system as the previous state."
-        )
+    except _InhibitorsFound as err:
+        loggerinst.critical_no_exit(str(err))
         _handle_main_exceptions(process_phase, pre_conversion_results)
-        return ConversionExitCodes.CONVERSION
-
+        return ConversionExitCodes.INHIBITORS_FOUND
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
@@ -233,7 +228,7 @@ def main_locked():
     return ConversionExitCodes.SUCCESSFUL
 
 
-def _raise_for_skipped_failures(process_phase, results):
+def _raise_for_skipped_failures(results):
     """Analyze the action results for failures
 
     :param results: The action results from the framework
@@ -243,12 +238,14 @@ def _raise_for_skipped_failures(process_phase, results):
     """
     failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
     if failures:
-        if toolopts.tool_opts.activity == "conversion" and process_phase == ConversionPhase.PRE_PONR_CHANGES:
-            raise _AnalyzeInhibitorFound
-
         # The report will be handled in the error handler, after rollback.
-        method = "Conversion" if toolopts.tool_opts.activity == "conversion" else "Analysis"
-        loggerinst.critical("%s failed." % method)
+        method = "conversion" if toolopts.tool_opts.activity == "conversion" else "analysis"
+        message = (
+            "The {method} process failed.\n\n"
+            "A problem was encountered during {method} and a rollback will be "
+            "initiated to restore the system as the previous state."
+        ).format(method=method)
+        raise _InhibitorsFound(message)
 
 
 # TODO(r0x0d): Better function name
@@ -273,6 +270,7 @@ def _handle_main_exceptions(process_phase, results=None):
 
     if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)
+        return ConversionExitCodes.FAILURE
     elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
         # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the RHSM server.
@@ -311,7 +309,7 @@ def _handle_main_exceptions(process_phase, results=None):
 
         subscription.update_rhsm_custom_facts()
 
-    return ConversionExitCodes.ANALYSIS
+    return ConversionExitCodes.FAILURE
 
 
 #
