@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
@@ -46,16 +48,24 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
-    cmd = "yum check-update --quiet %s"
+    package = ""
+    options = " --quiet"
+
     # We need to point the releasever to 8.5 with CentOS latest
     # otherwise the yum check-update looks at releasever 8
     # discovering package versions not available for 8.5
     # Doing that, we also need to disable the epel-modular repo
     # as it raises an 404 error
     if "centos-8-latest" in SYSTEM_RELEASE_ENV:
-        cmd = "yum check-update --quiet --releasever=8.5 --disablerepo epel-modular %s"
+        options = "--releasever=8.5 --disablerepo epel-modular"
+
+    # Similarly we need to specify releasever for whatever is older than latest,
+    # due to the releasever not having the minor reflected.
+    match = re.search(r"((\d+)\.(\d+))", SYSTEM_RELEASE_ENV)
+    if match:
+        options = f"--releasever={match.group()}"
     for package in packages_to_verify:
         # If tha package lands on latest version after conversion
         # `yum check-update` will return 0
         # If it is possible to update the package, the yum returncode yields 100
-        assert shell(cmd % package).returncode == 0
+        assert shell(f"yum check-update {package} {options}").returncode == 0

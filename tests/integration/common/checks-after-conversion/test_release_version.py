@@ -20,10 +20,6 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "null", "name": "Oracle Linux Server", "version": "7.9"},
     ),
     "Red Hat Enterprise Linux release 8.5 (Ootpa)": ({"id": "null", "name": "CentOS Linux", "version": "8.5"},),
-    "Red Hat Enterprise Linux release 8.6 (Ootpa)": (
-        {"id": "Sky Tiger", "name": "AlmaLinux", "version": "8.6"},
-        {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.6"},
-    ),
     "Red Hat Enterprise Linux release 8.8 (Ootpa)": (
         {"id": "Sapphire Caracal", "name": "AlmaLinux", "version": "8.8"},
         {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.8"},

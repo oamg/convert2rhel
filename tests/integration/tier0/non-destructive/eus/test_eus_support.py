@@ -19,7 +19,7 @@ def eus_mapping_update(shell):
         shell(f"mkdir {backup_dir}")
     assert shell(f"cp {eus_mapping_file} {backup_file}").returncode == 0
 
-    original_mapping_value = '"8.8": "2023-11-14",'
+    original_mapping_value = '"8.8": "2023-11-14"'
 
     def _update_eus_mapping(modified_mapping):
         shell(f"sed -i 's/{original_mapping_value}/{modified_mapping}/' {eus_mapping_file}")
