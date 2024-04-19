@@ -136,6 +136,13 @@ class RestorablePackage(RestorableChange):
         loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
         loggerinst.debug("Using repository files stored in %s." % self.reposdir)
 
+        if self.reposdir:
+            # If nothing is inside the directory, or it does not exist, let's
+            # just not use it to download the packages.
+            if len(os.listdir(self.reposdir)) == 0 or not os.path.exists(self.reposdir):
+                loggerinst.info("The repository directory %s seems to be empty or non-existent.")
+                self.reposdir = None
+
         for pkg in self.pkgs:
             self._backedup_pkgs_paths.append(
                 utils.download_pkg(
