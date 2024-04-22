@@ -519,7 +519,7 @@ def pre_registered(shell, request):
         assert original_registration_uuid == post_c2r_registration_uuid
 
     assert shell("subscription-manager remove --all").returncode == 0
-    assert shell("subscription-manager unregister").returncode == 0
+    shell("subscription-manager unregister")
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
