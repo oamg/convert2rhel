@@ -226,6 +226,12 @@ adjust+:
                     - kernel-boot-files/missing_kernel_boot_files
 
         /corrupted_initramfs_file:
+            adjust+:
+              - enabled: false
+                when: distro == alma-8-latest, alma-9-latest, rocky-8.8
+                because: |
+                  An unhandled UnicodeDecodeError breaks the conversion.
+                  Reference https://issues.redhat.com/browse/RHELC-1711
             discover+:
                 test+<:
                     - kernel-boot-files/corrupted_initramfs_file

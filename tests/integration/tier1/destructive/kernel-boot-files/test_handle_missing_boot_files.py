@@ -53,11 +53,10 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
         kernel_name = "kernel-core"
 
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Prepare: Final modifications to the system")

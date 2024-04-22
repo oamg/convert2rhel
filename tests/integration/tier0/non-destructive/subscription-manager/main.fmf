@@ -95,8 +95,6 @@ tag+:
         description+: |
             This test verifies that running conversion on pre-registered system
             without an attached subscription will try auto attaching the subscription.
-        environment+:
-            C2R_TESTS_NOSUB: 1
         test: |
             pytest -m test_no_sca_not_subscribed
         tag+:
@@ -110,8 +108,6 @@ tag+:
             without an attached subscription will try auto attaching the subscription.
             When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
             error is raised.
-        environment+:
-            C2R_TESTS_NOSUB: 1
         test: |
             pytest -m test_no_sca_subscription_attachment_error
         tag+:

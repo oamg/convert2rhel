@@ -54,8 +54,8 @@ def test_duplicate_packages_installed(convert2rhel, install_duplicate_pkg):
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         # The error about duplicate packages should be included at the end of the pre-conversion analysis report

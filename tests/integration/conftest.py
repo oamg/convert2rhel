@@ -221,13 +221,12 @@ def convert2rhel(shell):
     >>>     (
     >>>         "-y "
     >>>         "--serverurl {} --username {} "
-    >>>         "--password {} --pool {} "
+    >>>         "--password {} "
     >>>         "--debug"
     >>>     ).format(
     >>>         TEST_VARS["RHSM_SERVER_URL"],
     >>>         TEST_VARS["RHSM_USERNAME"],
     >>>         TEST_VARS["RHSM_PASSWORD"],
-    >>>         TEST_VARS["RHSM_POOL"],
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
@@ -607,14 +606,14 @@ def pre_registered(shell, request):
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
     The rhn-client-tools package obsoletes the subscription-manager, so we remove the package on Oracle Linux.
-    By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
+    By default, the RHSM_SCA_USERNAME and RHSM_SCA_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
     subman = SubscriptionManager()
 
-    username = TEST_VARS["RHSM_USERNAME"]
-    password = TEST_VARS["RHSM_PASSWORD"]
+    username = TEST_VARS["RHSM_SCA_USERNAME"]
+    password = TEST_VARS["RHSM_SCA_PASSWORD"]
     # Use custom keys when the fixture is parametrized
     if hasattr(request, "param"):
         username_key, password_key = request.param
@@ -634,9 +633,6 @@ def pre_registered(shell, request):
         ).returncode
         == 0
     )
-
-    if "C2R_TESTS_NOSUB" not in os.environ:
-        assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 

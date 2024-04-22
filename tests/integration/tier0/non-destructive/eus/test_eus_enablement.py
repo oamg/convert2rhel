@@ -89,7 +89,10 @@ def test_eus_enablement(
     eus_mapping_update(modified_mapping)
     with convert2rhel(
         "analyze -y --debug --serverurl {} -u {} -p {} {}".format(
-            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"], additional_option
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
+            additional_option,
         )
     ) as c2r:
         c2r.expect(repoid_message, timeout=120)

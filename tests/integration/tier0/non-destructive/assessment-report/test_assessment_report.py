@@ -94,11 +94,10 @@ def test_successful_report(convert2rhel):
     And does not contain: Error header, Skip header.
     """
     with convert2rhel(
-        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "analyze --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -137,11 +136,10 @@ def test_convert_method_successful_report(convert2rhel):
     Success header, Error header, Skip header.
     """
     with convert2rhel(
-        "convert --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "convert --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.

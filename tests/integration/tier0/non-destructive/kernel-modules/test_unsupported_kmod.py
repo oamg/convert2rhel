@@ -36,11 +36,10 @@ def test_inhibitor_with_unavailable_kmod_loaded(kmod_in_different_directory, con
     ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
     """
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -60,12 +59,11 @@ def test_override_inhibitor_with_unavailable_kmod_loaded(
     """
     environment_variables(envars)
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
-        )
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
+        ),
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -123,8 +121,8 @@ def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods,
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -178,11 +176,10 @@ def test_inhibitor_with_custom_built_tainted_kmod(custom_kmod, convert2rhel):
     """
 
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:

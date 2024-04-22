@@ -25,7 +25,7 @@ def test_firewalld_inhibitor(shell, convert2rhel):
 
     with convert2rhel(
         "-y --debug --serverurl {} --username {} --password {}".format(
-            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_SCA_USERNAME"], TEST_VARS["RHSM_SCA_PASSWORD"]
         ),
         unregister=True,
     ) as c2r:
