@@ -44,7 +44,7 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     with convert2rhel(
         "--debug --serverurl {} --username {} --password {}".format(
-            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_SCA_USERNAME"], TEST_VARS["RHSM_SCA_PASSWORD"]
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.

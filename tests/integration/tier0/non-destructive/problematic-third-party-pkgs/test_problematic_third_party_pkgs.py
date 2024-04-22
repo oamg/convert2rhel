@@ -38,8 +38,8 @@ def test_list_third_party_pkgs_error(convert2rhel, problematic_third_party_packa
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         # Verify that the analysis report is printed

@@ -156,11 +156,10 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
@@ -223,8 +222,8 @@ def test_terminate_registration_start(convert2rhel):
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -244,8 +243,8 @@ def test_terminate_registration_success(convert2rhel):
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
