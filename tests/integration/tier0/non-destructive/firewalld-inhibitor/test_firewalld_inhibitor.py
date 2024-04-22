@@ -36,6 +36,6 @@ def test_firewalld_inhibitor(shell, convert2rhel):
             timeout=600,
         )
 
-    assert c2r.exitstatus == 1
+    assert c2r.exitstatus == 2
 
     shell(f"sed -i 's/CleanupModulesOnExit=yes/CleanupModulesOnExit=no/g' {FIREWALLD_CONFIG_FILE}")
