@@ -76,17 +76,9 @@ class TestIsLoadedKernelLatest:
         uname_version,
         return_code,
         package_name,
-        tmpdir,
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-        fake_reposdir_path = str(tmpdir)
-        monkeypatch.setattr(
-            is_loaded_kernel_latest,
-            "get_backedup_system_repos",
-            value=lambda: fake_reposdir_path,
-        )
-
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -314,16 +306,7 @@ class TestIsLoadedKernelLatest:
         assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
-    def test_is_loaded_kernel_latest_eus_system(
-        self, pretend_os, tmpdir, monkeypatch, caplog, is_loaded_kernel_latest_action
-    ):
-        fake_reposdir_path = str(tmpdir)
-        monkeypatch.setattr(
-            is_loaded_kernel_latest,
-            "get_backedup_system_repos",
-            value=lambda: fake_reposdir_path,
-        )
-
+    def test_is_loaded_kernel_latest_eus_system(self, pretend_os, monkeypatch, caplog, is_loaded_kernel_latest_action):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -760,8 +743,6 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
-        reposdir = tmpdir.join("backup")
-        monkeypatch.setattr(is_loaded_kernel_latest, "get_backedup_system_repos", lambda: str(reposdir))
 
         is_loaded_kernel_latest_action.run()
         unit_tests.assert_actions_result(

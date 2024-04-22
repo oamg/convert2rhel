@@ -19,7 +19,6 @@ import logging
 import os
 
 from convert2rhel import actions
-from convert2rhel.backup import get_backedup_system_repos
 from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
