@@ -11,4 +11,4 @@ tag+:
     - excluded-packages
 
 /excluded_packages_removed:
-    test: pytest --setup-show -svv -m test_excluded_packages_removed
+    test: pytest -m test_excluded_packages_removed

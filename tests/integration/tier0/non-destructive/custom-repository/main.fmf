@@ -17,7 +17,7 @@ tag+:
     tag+:
         - custom-valid-repo-provided
     test: |
-        pytest --setup-show -svv -m test_custom_valid_repo_provided
+        pytest -m test_custom_valid_repo_provided
 
 /custom_invalid_repo_provided:
     summary+: |
@@ -28,4 +28,4 @@ tag+:
     tag+:
         - custom-invalid-repo-provided
     test: |
-        pytest --setup-show -svv -m test_custom_invalid_repo_provided
+        pytest -m test_custom_invalid_repo_provided

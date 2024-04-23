@@ -21,7 +21,7 @@ tag+:
         - root-privileges
         - sanity
     test: |
-      pytest --setup-show -svv -m test_root_privileges
+      pytest -m test_root_privileges
 
 
 /manpage:
@@ -32,7 +32,7 @@ tag+:
     tag+:
         - manpage
     test: |
-      pytest --setup-show -svv -m test_manpage
+      pytest -m test_manpage
 
 
 /smoke:
@@ -45,7 +45,7 @@ tag+:
         - smoke
         - sanity
     test: |
-      pytest --setup-show -svv -m test_smoke
+      pytest -m test_smoke
 
 
 /log_file_exists:
@@ -57,7 +57,7 @@ tag+:
         - log-file
         - sanity
     test: |
-      pytest --setup-show -svv -m test_log_file_exists
+      pytest -m test_log_file_exists
 
 
 /convert2rhel_version:
@@ -73,7 +73,7 @@ tag+:
             - version-latest-or-newer
             - sanity
         test: |
-          pytest --setup-show -svv -m test_version_latest_or_newer
+          pytest -m test_version_latest_or_newer
 
     /c2r_version_older_no_envar:
         summary+: |
@@ -84,7 +84,7 @@ tag+:
         tag+:
             - version-older-no-envar
         test: |
-          pytest --setup-show -svv -m test_version_older_no_envar
+          pytest -m test_version_older_no_envar
 
     /c2r_version_older_with_envar:
         summary+: |
@@ -98,7 +98,7 @@ tag+:
         tag+:
             - version-older-with-envar
         test: |
-          pytest --setup-show -svv -m test_version_older_with_envar
+          pytest -m test_version_older_with_envar
 
 
 /clean_cache:
@@ -109,7 +109,7 @@ tag+:
     tag+:
         - clean-cache
     test: |
-      pytest --setup-show -svv -m test_clean_cache
+      pytest -m test_clean_cache
 
 
 /log_rhsm_error:
@@ -121,7 +121,7 @@ tag+:
     tag+:
         - log-rhsm-error
     test: |
-      pytest --setup-show -svv -m test_log_rhsm_error
+      pytest -m test_log_rhsm_error
 
 
 /data_collection:
@@ -135,7 +135,7 @@ tag+:
         tag+:
             - data-collection-acknowledgement
         test: |
-          pytest --setup-show -svv -m test_data_collection_acknowledgement
+          pytest -m test_data_collection_acknowledgement
 
 /incomplete_rollback_in_analyze:
     summary+: |
@@ -156,7 +156,7 @@ tag+:
     tag+:
         - incomplete-rollback-in-analyze
     test: |
-        pytest --setup-show -svv -m test_analyze_incomplete_rollback
+        pytest -m test_analyze_incomplete_rollback
 
 /analyze_no_rpm_va_option:
     summary+: |
@@ -172,4 +172,4 @@ tag+:
         - analyze-no-rpm-va-option
         - sanity
     test: |
-        pytest --setup-show -svv -m test_analyze_no_rpm_va_option
+        pytest -m test_analyze_no_rpm_va_option

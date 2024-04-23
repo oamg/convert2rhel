@@ -15,4 +15,4 @@ link:
         - yum
         - yum-patch
 
-    test: pytest --setup-show -svv -m test_yum_conf_patch
+    test: pytest -m test_yum_conf_patch

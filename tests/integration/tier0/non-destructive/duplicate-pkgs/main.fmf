@@ -17,4 +17,4 @@ description+: |
     tag+:
         - test-duplicate-pkgs
     test: |
-        pytest --setup-show -svv -m test_duplicate_pkgs
+        pytest -m test_duplicate_pkgs

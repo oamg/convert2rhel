@@ -17,7 +17,7 @@ tag+:
         Verify a successful conversion.
     tag+:
         - grub-change-valid
-    test: pytest --setup-show -svv -m test_valid_changes_to_grub_file
+    test: pytest -m test_valid_changes_to_grub_file
 
 /invalid_changes_to_grub_file:
     summary+: |
@@ -27,4 +27,4 @@ tag+:
         Verify a successful conversion.
     tag+:
         - grub-change-invalid
-    test: pytest --setup-show -svv -m test_invalid_changes_to_grub_file
+    test: pytest -m test_invalid_changes_to_grub_file

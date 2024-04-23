@@ -24,7 +24,7 @@ tag+:
     tag+:
         - config-custom-path-custom-filename
     test: |
-        pytest --setup-show -svv -m test_config_custom_path_custom_filename
+        pytest -m test_config_custom_path_custom_filename
 
 /config_custom_path_standard_filename:
     summary+: |
@@ -35,7 +35,7 @@ tag+:
     tag+:
         - config-custom-path-standard-filename
     test: |
-        pytest --setup-show -svv -m test_config_custom_path_standard_filename
+        pytest -m test_config_custom_path_standard_filename
 
 /config_cli_priority:
     summary+: |
@@ -47,7 +47,7 @@ tag+:
         - config-cli-priority
         - sanity
     test: |
-        pytest --setup-show -svv -m test_config_cli_priority
+        pytest -m test_config_cli_priority
 
 /config_standard_paths_priority_diff_methods:
     summary+: |
@@ -58,7 +58,7 @@ tag+:
     tag+:
         - config-standard-paths-priority-diff-methods
     test: |
-        pytest --setup-show -svv -m test_config_standard_paths_priority_diff_methods
+        pytest -m test_config_standard_paths_priority_diff_methods
 
 /config_standard_paths_priority:
     summary+: |
@@ -69,4 +69,4 @@ tag+:
     tag+:
         - config-standard-paths-priority
     test: |
-        pytest --setup-show -svv -m test_config_standard_paths_priority
+        pytest -m test_config_standard_paths_priority
