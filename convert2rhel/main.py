@@ -239,12 +239,11 @@ def _raise_for_skipped_failures(results):
     failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
     if failures:
         # The report will be handled in the error handler, after rollback.
-        method = "conversion" if toolopts.tool_opts.activity == "conversion" else "analysis"
         message = (
             "The {method} process failed.\n\n"
             "A problem was encountered during {method} and a rollback will be "
             "initiated to restore the system as the previous state."
-        ).format(method=method)
+        ).format(method=toolopts.tool_opts.activity)
         raise _InhibitorsFound(message)
 
 

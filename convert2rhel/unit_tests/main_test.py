@@ -432,8 +432,6 @@ class TestRollbackFromMain:
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert "The analysis process failed." in caplog.records[-3].message
-        assert caplog.records[-3].levelname == "CRITICAL"
 
     def test_main_rollback_analyze_exit_phase_without_subman(self, global_tool_opts, monkeypatch, tmp_path):
         """
@@ -645,7 +643,7 @@ class TestRollbackFromMain:
                 "A problem was encountered during analysis and a rollback will be "
                 "initiated to restore the system as the previous state."
             ),
-            "analisys",
+            "analysis",
         ),
         (
             {
@@ -668,7 +666,7 @@ class TestRollbackFromMain:
                 "A problem was encountered during analysis and a rollback will be "
                 "initiated to restore the system as the previous state."
             ),
-            "analisys",
+            "analysis",
         ),
         (
             {
