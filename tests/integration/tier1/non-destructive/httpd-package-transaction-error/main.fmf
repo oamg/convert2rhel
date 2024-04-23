@@ -19,4 +19,4 @@ tag+:
         when: distro == centos-7
         because: The bug is reproducible only on centos-7
     test: |
-        pytest --setup-show -svv -m test_httpd_package_transaction_error
+        pytest -m test_httpd_package_transaction_error

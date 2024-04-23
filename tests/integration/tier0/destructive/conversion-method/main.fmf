@@ -15,7 +15,7 @@ order: 49
         Basic conversion method using the RHSM activation key and organization for registration.
     tag+:
         - activation-key-conversion
-    test: pytest --setup-show -svv -m test_activation_key_conversion
+    test: pytest -m test_activation_key_conversion
 
 
 /config_file_conversion:
@@ -29,7 +29,7 @@ order: 49
     link:
         - verifies: https://issues.redhat.com/browse/RHELC-411
         - verifies: https://issues.redhat.com/browse/RHELC-413
-    test: pytest --setup-show -svv -m test_conversion_with_config_file
+    test: pytest -m test_conversion_with_config_file
 
 
 /custom_repos_conversion:
@@ -43,7 +43,7 @@ order: 49
         {rhel7: [server rpms, extras rpms, optional rpms], rhel8: [[eus-]?baseos], [eus-]?appstream}.
     tag+:
         - custom-repos-conversion
-    test: pytest --setup-show -svv -m test_custom_repos_conversion
+    test: pytest -m test_custom_repos_conversion
 
 /rhsm_conversion:
     summary: |
@@ -52,7 +52,7 @@ order: 49
         Basic conversion method using the RHSM to register with username, password and pool credentials.
     tag+:
         - rhsm-conversion
-    test: pytest --setup-show -svv -m test_rhsm_conversion
+    test: pytest -m test_rhsm_conversion
 
 /rhsm_non_eus_account_conversion:
     summary: |
@@ -62,7 +62,7 @@ order: 49
         Verify, that the conversion finishes and suitable repositories are enabled after the conversion.
     tag+:
         - rhsm-non-eus-account-conversion
-    test: pytest --setup-show -svv -m test_rhsm_non_eus_account_conversion
+    test: pytest -m test_rhsm_non_eus_account_conversion
 
 /satellite_conversion:
     summary: |
@@ -73,7 +73,7 @@ order: 49
         The katello-ca-consumer package is installed from the Satellite server.
     tag+:
         - satellite-conversion
-    test: pytest --setup-show -svv -m test_satellite_conversion
+    test: pytest -m test_satellite_conversion
 
 /pre_registered_system_conversion:
     summary: |
@@ -85,4 +85,4 @@ order: 49
         registration is accepted.
     tag+:
         - pre-registered-system-conversion
-    test: pytest --setup-show -svv -m test_pre_registered_conversion
+    test: pytest -m test_pre_registered_conversion

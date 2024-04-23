@@ -24,14 +24,14 @@ order: 52
             RHEL present in /etc/os-release
         description: |
             Sanity check to verify, that Red Hat Enterprise Linux is present in /etc/os-release
-        test: pytest --setup-show -svv -m test_conversion_sanity_rhel_in_os_release
+        test: pytest -m test_conversion_sanity_rhel_in_os_release
 
     /correct_distro:
         summary+: |
             Correct distro
         description+: |
             Verify, that the conversion successfully converted to the correct target system.
-        test: pytest --setup-show -svv -m test_correct_distro
+        test: pytest -m test_correct_distro
 
 
 /data_collection:
@@ -39,7 +39,7 @@ order: 52
         Data collection
     description: |
         Verify that after conversion the convert2rhel.facts file exists.
-    test: pytest --setup-show -svv -m test_check_data_collection
+    test: pytest -m test_check_data_collection
 
 
 /deleted_temporary_folder:
@@ -47,7 +47,7 @@ order: 52
         Temporary folder deleted
     description: |
         Verify, that the temporary folder `/var/lib/convert2rhel/` was successfully removed after the conversion.
-    test: pytest --setup-show -svv -m test_deleted_temporary_folder
+    test: pytest -m test_deleted_temporary_folder
 
 
 /enabled_repositories:
@@ -60,7 +60,7 @@ order: 52
         verify that the non-EUS repositories are enabled after conversion.
         When running the conversion on an EUS machine with an EUS RHSM account
         verify that the EUS repositories are enabled after the conversion.
-    test: pytest --setup-show -svv -m test_enabled_repositories
+    test: pytest -m test_enabled_repositories
 
 
 /flag_system_as_converted:
@@ -68,7 +68,7 @@ order: 52
         Flag system as converted
     description: |
         Verify, that the breadcrumbs file was created and corresponds to the JSON schema after the conversion.
-    test: pytest --setup-show -svv -m test_flag_system_as_converted
+    test: pytest -m test_flag_system_as_converted
 
 
 /log_lines_not_duplicated:
@@ -79,7 +79,7 @@ order: 52
         Iterate over the log file and check that the lines are unique and not duplicated.
     tag+:
         - log-file
-    test: pytest --setup-show -svv -m test_verify_logging_is_not_duplicated
+    test: pytest -m test_verify_logging_is_not_duplicated
 
 
 /rhel_kernel:
@@ -89,7 +89,7 @@ order: 52
         Verify, that each of installed kernels on the system is signed by Red Hat.
     tag+:
         - rhel-kernel
-    test: pytest --setup-show -svv -m test_rhel_kernel
+    test: pytest -m test_rhel_kernel
 
 
 /rhel_subman:
@@ -101,7 +101,7 @@ order: 52
         either replaced or installed by convert2rhel.
     tag+:
         - rhel-subman
-    test: pytest --setup-show -svv -m test_rhel_subscription_manager
+    test: pytest -m test_rhel_subscription_manager
 
 /verify_string_in_log:
     summary+: |
@@ -123,7 +123,7 @@ order: 52
             and validating that the initramfs file is not corrupted.
         tag+:
             - initramfs-and-vmlinuz-present
-        test: pytest --setup-show -svv -m test_initramfs_and_vmlinuz_present
+        test: pytest -m test_initramfs_and_vmlinuz_present
 
     /failed_to_parse_package_not_present:
         summary+: |
@@ -133,7 +133,7 @@ order: 52
             the message Failed to parse a package does not appear during the conversion run.
         tag+:
             - failed-to-parse-package-not-present
-        test: pytest --setup-show -svv -m test_failed_to_parse_package_info_empty_arch_not_present
+        test: pytest -m test_failed_to_parse_package_info_empty_arch_not_present
 
     /traceback_not_present:
         summary+: |
@@ -142,18 +142,18 @@ order: 52
             Verify that there is not a traceback raised in the log file during the conversion run.
         tag+:
             - traceback-not-present
-        test: pytest --setup-show -svv -m test_traceback_not_present
+        test: pytest -m test_traceback_not_present
 
 /yum_check:
     summary+: |
         Run yum check
     description+: |
         After conversion check verifying yum check is able to finis without any issues.
-    test: pytest --setup-show -svv -m test_yum_check
+    test: pytest -m test_yum_check
 
 /check_firewalld_errors:
     summary+: |
         Firewalld issues after the conversion
     description+: |
         Verify that firewalld is not reporting any issues in the logs.
-    test: pytest --setup-show -svv -m check_firewalld_errors
+    test: pytest -m check_firewalld_errors

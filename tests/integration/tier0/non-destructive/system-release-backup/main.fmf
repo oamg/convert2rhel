@@ -32,7 +32,7 @@ tag+:
                 - no-envar
                 - sanity
             test: |
-                pytest --setup-show -svv -m test_backup_os_release_no_envar
+                pytest -m test_backup_os_release_no_envar
 
         /backup_os_release_with_envar:
             summary+: |
@@ -49,7 +49,7 @@ tag+:
             tag+:
                 - with-envar
             test: |
-                pytest --setup-show -svv -m test_backup_os_release_with_envar
+                pytest -m test_backup_os_release_with_envar
             link:
                 - verifies: https://issues.redhat.com/browse/OAMG-5457
 
@@ -61,7 +61,7 @@ tag+:
         tag+:
             - unsuccessful-satellite-registration
         test: |
-            pytest --setup-show -svv -m test_unsuccessful_satellite_registration
+            pytest -m test_unsuccessful_satellite_registration
         link:
             - verifies: https://issues.redhat.com/browse/RHELC-51
 
@@ -74,4 +74,4 @@ tag+:
     tag+:
         - missing-system-release
     test: |
-        pytest --setup-show -svv -m test_missing_system_release
+        pytest -m test_missing_system_release

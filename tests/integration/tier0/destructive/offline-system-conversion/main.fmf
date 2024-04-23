@@ -11,4 +11,4 @@ tag+:
     - satellite
 
 /offline_system_conversion:
-    test: pytest --setup-show -svv -m test_offline_system_conversion
+    test: pytest -m test_offline_system_conversion

@@ -15,9 +15,9 @@ link:
             CONVERT2RHEL_CONFIGURE_HOST_METERING: force
     tag+:
         - test-host-metering-conversion
-    test: pytest --setup-show -svv -m test_host_metering_conversion
+    test: pytest -m test_host_metering_conversion
 
 /check_active_host_metering:
     tag+:
         - check-active-host-metering
-    test: pytest --setup-show -svv -m test_active_host_metering
+    test: pytest -m test_active_host_metering

@@ -13,4 +13,4 @@ link:
     - verifies: https://issues.redhat.com/browse/RHELC-733
 
 /detect_correct_boot_partition:
-    test: pytest --setup-show -svv -m test_detect_correct_boot_partition
+    test: pytest -m test_detect_correct_boot_partition

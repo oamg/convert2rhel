@@ -23,7 +23,7 @@ tag+:
         a disk space in the /boot partition, the kernel scriptlet will fail to copy
         the uncompressed initramfs file to /boot/initramfs-*.img, thus, leaving the
         file in a partial state and corrupted.
-    test: pytest --setup-show -svv -m test_handle_corrupted_initramfs_file
+    test: pytest -m test_handle_corrupted_initramfs_file
 
 /missing_kernel_boot_files:
     summary+: |
@@ -40,4 +40,4 @@ tag+:
         isn't sufficient disk space available in there. This test has the intention
         to verify that the warning with the correct steps are provided to the
         user in order to overcome this case and fix it for them.
-    test: pytest --setup-show -svv -m test_missing_kernel_boot_files
+    test: pytest -m test_missing_kernel_boot_files
