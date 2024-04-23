@@ -70,7 +70,7 @@ description+: |
             adjust+:
                 - enabled: true
                   when: >
-                    distro == alma-8.6, rocky-8.6, alma-8.8, rocky-8.8
+                    distro == alma-8.8, rocky-8.8
             discover+:
                 test+<:
                     - conversion-method/rhsm_non_eus_account_conversion

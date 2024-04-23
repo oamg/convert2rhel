@@ -23,7 +23,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     # Move all the repos away except the rhel7.repo
     shell("find /etc/yum.repos.d/ -type f -name '*.repo' ! -name 'rhel7.repo' -exec mv {} /tmp/repobckp \\;")
     # EUS version use hardcoded repos from c2r as well
-    if re.match(r"^(alma|rocky)-8\.[68]$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(alma|rocky)-8\.8$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell(f"mkdir {eus_backup_dir}").returncode == 0
         assert shell(f"mv /usr/share/convert2rhel/repos/* {eus_backup_dir}").returncode == 0
 

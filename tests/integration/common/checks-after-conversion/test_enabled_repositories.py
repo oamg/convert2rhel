@@ -33,7 +33,7 @@ def test_enabled_repositories(shell, system_release):
     try:
         # Using system_release fixture here, to read live data from /etc/os-release or /etc/system-release.
         # Usage of hardcoded environment variable SYSTEM_RELEASE_ENV is not feasible.
-        if re.match(r"redhat-8\.[68]", system_release):
+        if re.match(r"redhat-8\.8", system_release):
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories
             if os.path.exists("/non_eus_repos_used"):

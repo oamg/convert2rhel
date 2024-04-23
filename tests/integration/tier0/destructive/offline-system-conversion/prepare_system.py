@@ -60,12 +60,8 @@ def test_prepare_system(shell):
         satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE7"]
     elif "oracle-8" in SYSTEM_RELEASE_ENV:
         satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE8"]
-    elif "alma-8.6" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA86"]
     elif "alma-8.8" in SYSTEM_RELEASE_ENV:
         satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA88"]
-    elif "rocky-8.6" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY86"]
     elif "rocky-8.8" in SYSTEM_RELEASE_ENV:
         satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY88"]
     elif "alma-8-latest" in SYSTEM_RELEASE_ENV:
