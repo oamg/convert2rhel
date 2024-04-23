@@ -65,7 +65,7 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
     if match:
         options = f"--releasever={match.group()}"
     for package in packages_to_verify:
-        # If tha package lands on latest version after conversion
+        # If the package lands on latest version after conversion
         # `yum check-update` will return 0
         # If it is possible to update the package, the yum returncode yields 100
         assert shell(f"yum check-update {package} {options}").returncode == 0
