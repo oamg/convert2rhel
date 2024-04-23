@@ -56,7 +56,7 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
     if "centos-8-latest" in SYSTEM_RELEASE_ENV:
         cmd = "yum check-update --quiet --releasever=8.5 --disablerepo epel-modular %s"
     for package in packages_to_verify:
-        # If tha package lands on latest version after conversion
+        # If the package lands on latest version after conversion
         # `yum check-update` will return 0
         # If it is possible to update the package, the yum returncode yields 100
         assert shell(cmd % package).returncode == 0
