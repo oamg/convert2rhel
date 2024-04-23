@@ -75,34 +75,27 @@ class BackupRepository(actions.Action):
     id = "BACKUP_REPOSITORY"
 
     def run(self):
-        """Backup repository files before starting conversion process"""
+        """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
         loggerinst.task("Prepare: Backup Repository Files")
 
         super(BackupRepository, self).run()
 
-        self.backup_yum_repos()
-
-    def backup_yum_repos(self):
-        """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
         loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
 
-        repo_files_backed_up = False
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
             if not repo.endswith(".repo"):
+                loggerinst.info("No .repo files backed up.")
                 return
 
             if not subscription.should_subscribe and repo == "redhat.repo":
-                return
+                loggerinst.info("No .repo files backed up.")
 
+                return
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
             restorable_file = RestorableFile(repo_path)
             backup.backup_control.push(restorable_file)
-            repo_files_backed_up = True
-
-        if not repo_files_backed_up:
-            loggerinst.info("No .repo files backed up.")
 
 
 class BackupYumVariables(actions.Action):
