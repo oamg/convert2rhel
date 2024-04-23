@@ -394,7 +394,16 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
         backup_repository.run()
 
-        assert "No .repo files backed up." == caplog.records[-1].message
+        assert "Skipping backup of redhat.repo as it is not needed." == caplog.records[-1].message
+
+    def test_backup_repository_other_files(self, monkeypatch, tmpdir, backup_repository_action, caplog):
+        """Test if redhat.repo is not backed up."""
+        non_repo_file = generate_repo(tmpdir, "redhat.nonrepo")
+
+        monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(non_repo_file))
+        backup_repository = backup_repository_action
+        backup_repository.run()
+        assert "Skipping backup as file is not a repository file." == caplog.records[-1].message
 
     def test_backup_repository_no_repofile_presence(self, tmpdir, monkeypatch, caplog, backup_repository_action):
         """Test empty path, nothing for backup."""
@@ -405,7 +414,7 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
 
         backup_repository.run()
-        assert "No .repo files to back up." in caplog.text
+        assert ("Repository folder %s seems to be empty." % etc) in caplog.text
 
 
 class TestBackupVariables:
