@@ -240,7 +240,7 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
         assert c2r.expect("Prepare: Inform about data collection", timeout=300) == 0
         assert (
             c2r.expect(
-                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data about the system conversion.",
+                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.facts file that contains the below data about the system conversion.",
                 timeout=300,
             )
             == 0
