@@ -82,6 +82,9 @@ class BackupRepository(actions.Action):
 
         loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
 
+        if os.listdir(DEFAULT_YUM_REPOFILE_DIR) == []:
+            loggerinst.info("No .repo files to back up.")
+
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 

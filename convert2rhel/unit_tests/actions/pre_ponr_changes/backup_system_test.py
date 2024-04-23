@@ -405,7 +405,7 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
 
         backup_repository.run()
-        assert "No .repo files backed up." in caplog.text
+        assert "No .repo files to back up." in caplog.text
 
 
 class TestBackupVariables:
