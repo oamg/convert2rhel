@@ -19,12 +19,10 @@ __metaclass__ = type
 import hashlib
 import os
 
-from functools import partial
-
 import pytest
 import six
 
-from convert2rhel import subscription, toolopts, unit_tests
+from convert2rhel import subscription, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
@@ -387,19 +385,16 @@ class TestBackupRepository:
         with open(yum_repo, mode="r") as f:
             assert f.read() == os.path.basename(yum_repo)
 
-    def test_backup_repository_redhat(self, monkeypatch, tmpdir, backup_repository_action, global_tool_opts, caplog):
+    def test_backup_repository_redhat(self, monkeypatch, tmpdir, backup_repository_action, caplog):
         """Test if redhat.repo is not backed up."""
         redhat_repo = generate_repo(tmpdir, "redhat.repo")
 
-        global_tool_opts.no_rhsm = True
-
         monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(redhat_repo))
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
-
+        monkeypatch.setattr(subscription, "should_subscribe", mock.Mock(side_effect=lambda: False))
         backup_repository = backup_repository_action
         backup_repository.run()
 
-        assert "No .repo files backed upp." == caplog.records[-1].message
+        assert "No .repo files backed up." == caplog.records[-1].message
 
     def test_backup_repository_no_repofile_presence(self, tmpdir, monkeypatch, caplog, backup_repository_action):
         """Test empty path, nothing for backup."""

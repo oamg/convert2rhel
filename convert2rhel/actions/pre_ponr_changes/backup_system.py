@@ -89,10 +89,10 @@ class BackupRepository(actions.Action):
                 loggerinst.info("No .repo files backed up.")
                 return
 
-            if not subscription.should_subscribe and repo == "redhat.repo":
+            if not subscription.should_subscribe() and repo == "redhat.repo":
                 loggerinst.info("No .repo files backed up.")
-
                 return
+
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
             restorable_file = RestorableFile(repo_path)
             backup.backup_control.push(restorable_file)
