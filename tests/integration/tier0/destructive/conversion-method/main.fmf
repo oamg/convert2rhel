@@ -70,7 +70,7 @@ order: 49
     description: |
         Conversion method using the Satellite credentials for registration.
         The subscription-manager package is removed for this conversion method.
-        The katello-ca-consumer package is installed from the Satellite server.
+        Subscribe to the Satellite server using the curl command.
     tag+:
         - satellite-conversion
     test: pytest -m test_satellite_conversion

@@ -1,17 +1,20 @@
+import os
 import re
 import socket
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SATELLITE_URL, SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, satellite_registration_command
 
 
-# Replace urls in rhsm.conf file to the satellite server
-# Without doing this we get obsolete dogfood server as source of repositories
 def replace_urls_rhsm():
+    """
+    Replace urls in rhsm.conf file to the satellite server
+    Without doing this we get obsolete dogfood server as source of repositories
+    """
     with open("/etc/rhsm/rhsm.conf", "r+") as f:
         file = f.read()
         # Replacing the urls
-        file = re.sub("hostname = .*", "hostname = {}".format(SATELLITE_URL), file)
-        file = re.sub("baseurl = .*", "baseurl = https://{}/pulp/repos".format(SATELLITE_URL), file)
+        file = re.sub("hostname = .*", "hostname = {}".format(TEST_VARS["SATELLITE_URL"]), file)
+        file = re.sub("baseurl = .*", "baseurl = https://{}/pulp/repos".format(TEST_VARS["SATELLITE_URL"]), file)
 
         # Setting the position to the top of the page to insert data
         f.seek(0)
@@ -19,13 +22,15 @@ def replace_urls_rhsm():
         f.truncate()
 
 
-# Configure and limit connection to the satellite server only
 def configure_connection():
-    satellite_ip = socket.gethostbyname(SATELLITE_URL)
+    """
+    Configure and limit connection to the satellite server only
+    """
+    satellite_ip = socket.gethostbyname(TEST_VARS["SATELLITE_URL"])
 
     with open("/etc/dnsmasq.conf", "a") as f:
         # Satellite url
-        f.write("address=/{}/{}\n".format(SATELLITE_URL, satellite_ip))
+        f.write("address=/{}/{}\n".format(TEST_VARS["SATELLITE_URL"], satellite_ip))
 
         # Everything else is resolved to localhost
         f.write("address=/#/127.0.0.1")
@@ -35,47 +40,27 @@ def configure_connection():
 
 
 def test_prepare_system(shell):
-    assert shell("yum install dnsmasq wget -y").returncode == 0
+    """
+    Perform all the steps to make the system appear to be offline.
+    Register to the Satellite server.
+    Remove all the repositories before the Satellite subscription,
+    so there is only the redhat.repo created by subscription-manager.
+    """
+    assert shell("yum install dnsmasq -y").returncode == 0
+    sat_reg_command = satellite_registration_command()
 
-    # Install katello package
-    assert (
-        shell(
-            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
-        ).returncode
-        == 0
-    )
-    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
+    # Register system to the satellite server
+    assert shell(sat_reg_command).returncode == 0
+
+    repos_dir = "/etc/yum.repos.d"
+    # Remove all repofiles except the redhat.repo
+    for file in os.listdir(repos_dir):
+        if not file.endswith("redhat.repo"):
+            os.remove(os.path.join(repos_dir, file))
+
+    assert os.path.isfile("/etc/yum.repos.d/redhat.repo")
 
     replace_urls_rhsm()
-    shell("rm -rf /etc/yum.repos.d/*")
-
-    satellite_key = None
-
-    # Subscribe system
-    if "centos-7" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_CENTOS7"]
-    elif "centos-8" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_CENTOS8"]
-    elif "oracle-7" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE7"]
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ORACLE8"]
-    elif "alma-8.8" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA88"]
-    elif "rocky-8.8" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY88"]
-    elif "alma-8-latest" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ALMA8"]
-    elif "rocky-8-latest" in SYSTEM_RELEASE_ENV:
-        satellite_key = TEST_VARS["SATELLITE_OFFLINE_KEY_ROCKY8"]
-    assert (
-        shell(
-            ("subscription-manager register --org={} --activationkey={}").format(
-                TEST_VARS["SATELLITE_ORG"], satellite_key
-            )
-        ).returncode
-        == 0
-    )
 
     configure_connection()
 

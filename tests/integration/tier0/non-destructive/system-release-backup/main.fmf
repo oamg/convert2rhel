@@ -14,7 +14,7 @@ tag+:
         Restore the os-release file during rollback
     /related_environment_variable:
         description+: |
-            Install subscription-manager and katello package from the Satellite.
+            Subscribe to the Satellite server using the curl command.
             Remove all repositories from the system.
             Set the "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
             Verify that the /etc/os-release file is restored after the rollback.

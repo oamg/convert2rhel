@@ -5,3 +5,10 @@
     validate_certs: false
     dest: /var/tmp/.env
     mode: '0444'
+
+- name: Download the Satellite file
+  get_url:
+    url: https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env_sat_reg
+    validate_certs: false
+    dest: /var/tmp/.env_sat_reg
+    mode: '0444'

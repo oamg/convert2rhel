@@ -29,10 +29,33 @@ logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
 TEST_VARS = dotenv_values("/var/tmp/.env")
+SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
 
-SATELLITE_URL = "satellite.sat.engineering.redhat.com"
-SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-SATELLITE_PKG_DST = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+
+def satellite_registration_command():
+    """
+    Get the Satellite registration command for the respective system.
+    """
+    sat_reg_command = None
+    if SYSTEM_RELEASE_ENV == "alma-8-latest":
+        sat_reg_command = SAT_REG_FILE["ALMA8_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "alma-8.8":
+        sat_reg_command = SAT_REG_FILE["ALMA88_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "rocky-8-latest":
+        sat_reg_command = SAT_REG_FILE["ROCKY8_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "rocky-8.8":
+        sat_reg_command = SAT_REG_FILE["ROCKY88_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "oracle-8-latest":
+        sat_reg_command = SAT_REG_FILE["ORACLE8_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "centos-8-latest":
+        sat_reg_command = SAT_REG_FILE["CENTOS8_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "oracle-7":
+        sat_reg_command = SAT_REG_FILE["ORACLE7_SAT_REG"]
+    elif SYSTEM_RELEASE_ENV == "centos-7":
+        sat_reg_command = SAT_REG_FILE["CENTOS7_SAT_REG"]
+
+    return sat_reg_command
+
 
 SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 

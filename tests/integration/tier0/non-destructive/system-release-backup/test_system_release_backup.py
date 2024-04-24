@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, satellite_registration_command
 
 
 @pytest.fixture(scope="function")
@@ -48,25 +48,22 @@ def custom_subman(shell, repository=None):
     shell("yum update -y")
 
 
-@pytest.fixture(scope="function")
-def katello_package(shell):
-    """ """
-    # OL distros may not have wget installed
-    assert shell("yum install wget -y").returncode == 0
-    # Install katello package for satellite
-    assert (
-        shell(
-            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
-        ).returncode
-        == 0
-    )
-    assert shell("rpm -i {}".format(SATELLITE_PKG_DST)).returncode == 0
+@pytest.fixture
+def satellite_registration(shell):
+    """
+    Register the system to the Satellite server
+    """
+    # Get the registration command for the respective system
+    # from the conftest function
+    sat_reg_command = satellite_registration_command()
+
+    # Register the system to the Satellite server
+    assert shell(sat_reg_command).returncode == 0
 
     yield
 
-    # Remove the katello packages
-    assert shell("yum remove -y katello-*").returncode == 0
-    assert shell(f"rm -f {SATELLITE_PKG_DST}").returncode == 0
+    # Remove the subman packages installed by the registration script
+    assert shell("yum remove -y subscription-manager")
 
 
 @pytest.mark.test_unsuccessful_satellite_registration
@@ -119,7 +116,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
 
 
 @pytest.mark.test_backup_os_release_no_envar
-def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
+def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, satellite_registration, remove_repositories):
     """
     This test case removes all the repos on the system which prevents the backup of some files.
     Satellite is being used in all of test cases.
@@ -142,7 +139,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, katello_
 
 
 @pytest.mark.test_backup_os_release_with_envar
-def test_backup_os_release_with_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
+def test_backup_os_release_with_envar(shell, convert2rhel, custom_subman, satellite_registration, remove_repositories):
     """
     In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that
