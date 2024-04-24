@@ -18,15 +18,18 @@ __metaclass__ = type
 import os.path
 import shutil
 
+from collections import namedtuple
 from functools import partial
 
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests
+from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
+from convert2rhel.subscription import RefreshSubscriptionManagerError, SubscriptionAutoAttachmentError
+from convert2rhel.unit_tests import AutoAttachSubscriptionMocked, RefreshSubscriptionManagerMocked, RunSubprocessMocked
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -134,6 +137,12 @@ class TestPreSubscription:
         monkeypatch.setattr(appc_subscription, "_REDHAT_CDN_CACERT_SOURCE_DIR", red_hat_ca_dir)
         monkeypatch.setattr(appc_subscription, "_RHSM_PRODUCT_CERT_SOURCE_DIR", product_cert_dir)
         monkeypatch.setattr(global_backup_control, "push", mock.Mock())
+        Version = namedtuple("Version", ("major", "minor"))
+        monkeypatch.setattr(
+            subscription.system_info,
+            "version",
+            value=Version(major=8, minor=0),
+        )
 
         pre_subscription_instance.run()
 
@@ -222,6 +231,7 @@ class TestSubscribeSystem:
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
         monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
         monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         fake_refresh = mock.Mock()
         monkeypatch.setattr(subscription, "refresh_subscription_info", fake_refresh)
@@ -259,6 +269,25 @@ class TestSubscribeSystem:
         assert expected.issuperset(subscribe_system_instance.messages)
         assert expected.issubset(subscribe_system_instance.messages)
 
+    def test_subscribe_system_not_registered(self, global_tool_opts, subscribe_system_instance, monkeypatch):
+        monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
+        mocked_refresh_subscription = RefreshSubscriptionManagerMocked(
+            side_effect=RefreshSubscriptionManagerError("not yet registered")
+        )
+        monkeypatch.setattr(subscription, "refresh_subscription_info", mocked_refresh_subscription)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        subscribe_system_instance.run()
+
+        unit_tests.assert_actions_result(
+            subscribe_system_instance,
+            level="ERROR",
+            id="SYSTEM_NOT_REGISTERED",
+            title="Not registered with RHSM",
+            description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
+            remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
+        )
+
     def test_subscribe_system_run(self, subscribe_system_instance, monkeypatch):
         monkeypatch.setattr(subscription, "should_subscribe", lambda: True)
         monkeypatch.setattr(subscription.RestorableSystemSubscription, "enable", mock.Mock())
@@ -273,6 +302,29 @@ class TestSubscribeSystem:
         assert repo.get_rhel_repoids.call_count == 1
         assert subscription.disable_repos.call_count == 1
         assert subscription.enable_repos.call_count == 1
+
+    def test_subscribe_no_access_to_rhel_repos(self, subscribe_system_instance, monkeypatch):
+        monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
+        monkeypatch.setattr(repo.system_info, "eus_system", value=False)
+        monkeypatch.setattr(subscription, "is_sca_enabled", lambda: False)
+        monkeypatch.setattr(subscription, "is_subscription_attached", lambda: False)
+        monkeypatch.setattr(repo.system_info, "default_rhsm_repoids", value=["id1", "id2"])
+
+        mocked_auto_attach = AutoAttachSubscriptionMocked(side_effect=SubscriptionAutoAttachmentError)
+        monkeypatch.setattr(subscription, "auto_attach_subscription", mocked_auto_attach)
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+
+        subscribe_system_instance.run()
+        print(subscribe_system_instance.result)
+        unit_tests.assert_actions_result(
+            subscribe_system_instance,
+            level="ERROR",
+            id="NO_ACCESS_TO_RHEL_REPOS",
+            title="No access to RHEL repositories",
+            description="The system can access RHEL repositories only with either Simple Content Access (SCA) enabled or with an attached subscription.",
+            diagnosis="The system is registered with an RHSM account that has SCA disabled but no subscription is attached. Auto-attaching a subscription was not successful.",
+            remediations="Either attach a subscription manually by running 'subscription-manager attach --pool <pool id>' prior to the conversion or enable Simple Content Access on your RHSM account (https://access.redhat.com/articles/simple-content-access).",
+        )
 
     @pytest.mark.parametrize(
         ("exception", "expected_level"),

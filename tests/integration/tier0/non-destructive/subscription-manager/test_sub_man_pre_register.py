@@ -21,8 +21,8 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
 
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
-            "WARNING - No rhsm credentials given to subscribe the system. Did not perform the subscription step",
-            timeout=300,
+            "SUBSCRIBE_SYSTEM has succeeded",
+            timeout=600,
         )
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
@@ -73,5 +73,48 @@ def test_unregistered_no_credentials(shell, convert2rhel):
         c2r.sendline("y")
 
         c2r.expect("SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM", timeout=300)
+
+    assert c2r.exitstatus != 0
+
+
+@pytest.mark.test_no_sca_not_subscribed
+def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
+    """
+    This test verifies that running conversion on pre-registered system
+    without an attached subscription will try auto attaching the subscription.
+    """
+    with convert2rhel("--debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
+        c2r.expect("We'll try to auto-attach a subscription")
+        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
+
+    assert c2r.exitstatus != 0
+
+    assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
+
+
+@pytest.mark.parametrize(
+    "pre_registered", [(TEST_VARS["RHSM_NOSUB_USERNAME"], TEST_VARS["RHSM_NOSUB_PASSWORD"])], indirect=True
+)
+@pytest.mark.test_no_sca_subscription_attachment_error
+def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):
+    """
+    This test verifies that running conversion on pre-registered system
+    without an attached subscription will try auto attaching the subscription.
+    When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
+    error is raised.
+    """
+    with convert2rhel("--debug") as c2r:
+        # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
+        c2r.expect("We'll try to auto-attach a subscription")
+        c2r.expect_exact("(ERROR) SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS - No access to RHEL repositories")
 
     assert c2r.exitstatus != 0

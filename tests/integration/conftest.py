@@ -41,18 +41,20 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 def shell(tmp_path):
     """Live shell."""
 
-    def factory(command):
-        click.echo(
-            "\nExecuting a command:\n{}\n\n".format(command),
-            color="green",
-        )
+    def factory(command, silent=False):
+        if not silent:
+            click.echo(
+                "\nExecuting a command:\n{}\n\n".format(command),
+                color="green",
+            )
         # pylint: disable=consider-using-with
         # Popen is a context-manager in python-3.2+
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = ""
         for line in iter(process.stdout.readline, b""):
             output += line.decode()
-            click.echo(line.decode().rstrip("\n"))
+            if not silent:
+                click.echo(line.decode().rstrip("\n"))
         returncode = process.wait()
         return namedtuple("Result", ["returncode", "output"])(returncode, output)
 
@@ -469,10 +471,16 @@ def _load_json_schema(path):
 
 
 @pytest.fixture
-def pre_registered(shell):
+def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     """
+    username = TEST_VARS["RHSM_USERNAME"]
+    password = TEST_VARS["RHSM_PASSWORD"]
+    # Use custom parameters when the fixture is parametrized
+    if hasattr(request, "param"):
+        username, password = request.param
+
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the SSL certificate
     shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
@@ -480,13 +488,15 @@ def pre_registered(shell):
     assert (
         shell(
             "subscription-manager register --serverurl {} --username {} --password {}".format(
-                TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
-            )
+                TEST_VARS["RHSM_SERVER_URL"], username, password
+            ),
+            silent=True,
         ).returncode
         == 0
     )
 
-    assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
+    if "C2R_TESTS_NOSUB" not in os.environ:
+        assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -508,8 +518,8 @@ def pre_registered(shell):
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
 
-        assert shell("subscription-manager remove --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
-        assert shell("subscription-manager unregister").returncode == 0
+    assert shell("subscription-manager remove --all").returncode == 0
+    shell("subscription-manager unregister")
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:

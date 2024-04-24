@@ -31,8 +31,10 @@ import six
 from convert2rhel import exceptions, pkghandler, pkgmanager, subscription, toolopts, unit_tests, utils
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
+    AutoAttachSubscriptionMocked,
     PromptUserMocked,
     RegisterSystemMocked,
+    RemoveAutoAttachSubscriptionMocked,
     RunSubprocessMocked,
     UnregisterSystemMocked,
     create_pkg_information,
@@ -319,7 +321,6 @@ class TestRestorableSystemSubscription:
         system_subscription.enable()
 
         system_subscription.restore()
-
         assert subscription.unregister_system.call_count == 1
 
     def test_restore_not_enabled(self, monkeypatch, caplog, system_subscription):
@@ -358,7 +359,7 @@ class TestRestorableSystemSubscription:
         assert "subscription-manager not installed, skipping" == caplog.messages[-1]
 
 
-def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
+def test_install_rhel_subscription_manager(monkeypatch, global_backup_control):
     mock_backup_control = mock.Mock()
     monkeypatch.setattr(subscription.backup.backup_control, "push", mock_backup_control)
 
@@ -367,14 +368,111 @@ def test_install_rhel_subsription_manager(monkeypatch, global_backup_control):
     assert mock_backup_control.call_count == 1
 
 
-@pytest.mark.usefixtures("tool_opts", scope="function")
-class TestAttachSubscription:
-    def test_attach_subscription_sca_enabled(self, monkeypatch):
+@pytest.mark.parametrize(
+    ("return_string", "expected"),
+    (
+        ("Content Access Mode is set to Simple Content Access.", True),
+        ("String stating no Simple Content Access", False),
+    ),
+)
+def test_is_sca_enabled(monkeypatch, return_string, expected):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_string=return_string),
+    )
+    assert subscription.is_sca_enabled() is expected
+
+
+@pytest.mark.parametrize(
+    ("return_string", "expected"),
+    (
+        ("No consumed subscription pools were found.", False),
+        ("Subscripton pools were found", True),
+    ),
+)
+def test_is_subscription_attached(monkeypatch, return_string, expected):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_string=return_string),
+    )
+    result = subscription.is_subscription_attached()
+    assert expected == result
+
+
+class TestRestorableAutoAttachmentSubscription:
+    @pytest.fixture
+    def auto_attach_subscription(self):
+        return subscription.RestorableAutoAttachmentSubscription()
+
+    def test_enable_auto_attach(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "auto_attach_subscription", AutoAttachSubscriptionMocked())
+        auto_attach_subscription.enable()
+        assert subscription.auto_attach_subscription.call_count == 1
+
+    def test_restore_auto_attach(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
+        monkeypatch.setattr(subscription, "auto_attach_subscription", mock.Mock(return_value=True))
+        auto_attach_subscription.enable()
+        auto_attach_subscription.restore()
+        assert subscription.remove_subscription.call_count == 1
+
+    def test_restore_auto_attach_not_enabled(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
+        auto_attach_subscription.restore()
+        assert subscription.remove_subscription.call_count == 0
+
+    @pytest.mark.parametrize(
+        ("return_code", "exception"),
+        (
+            (1, True),
+            (0, False),
+        ),
+    )
+    def test_auto_attach_subscription(self, auto_attach_subscription, monkeypatch, return_code, exception):
+
         monkeypatch.setattr(
             utils,
             "run_subprocess",
-            RunSubprocessMocked(return_string="Content Access Mode is set to Simple Content Access"),
+            RunSubprocessMocked(return_code=return_code),
         )
+        if exception:
+            with pytest.raises(subscription.SubscriptionAutoAttachmentError):
+                subscription.auto_attach_subscription()
+        else:
+            try:
+                subscription.auto_attach_subscription()
+            except subscription.SubscriptionAutoAttachmentError:
+                assert False
+
+    @pytest.mark.parametrize(
+        ("return_code", "exception"),
+        (
+            (1, True),
+            (0, False),
+        ),
+    )
+    def test_remove_subscription(self, monkeypatch, return_code, exception):
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            RunSubprocessMocked(return_code=return_code),
+        )
+        if exception:
+            with pytest.raises(subscription.SubscriptionRemovalError):
+                subscription.remove_subscription()
+        else:
+            try:
+                subscription.remove_subscription()
+            except subscription.SubscriptionRemovalError:
+                assert False
+
+
+@pytest.mark.usefixtures("tool_opts", scope="function")
+class TestAttachSubscription:
+    def test_attach_subscription_sca_enabled(self, monkeypatch):
+        monkeypatch.setattr(subscription, "is_sca_enabled", mock.Mock(return_value=True))
         assert subscription.attach_subscription() is True
 
     def test_attach_subscription(self, monkeypatch):
