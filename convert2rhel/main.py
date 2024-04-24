@@ -306,8 +306,6 @@ def _handle_main_exceptions(process_phase, results=None):
             disable_colors=logger_module.should_disable_color_output(),
         )
 
-        subscription.update_rhsm_custom_facts()
-
     return ConversionExitCodes.FAILURE
 
 
