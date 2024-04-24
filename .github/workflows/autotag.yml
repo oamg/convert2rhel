@@ -6,6 +6,7 @@ on:
 
 jobs:
   tag:
+    if: always() && github.repository == 'oamg/convert2rhel'
     runs-on: ubuntu-latest
 
     steps:

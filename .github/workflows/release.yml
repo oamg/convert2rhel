@@ -10,6 +10,7 @@ on:
 jobs:
   build_rpms:
     name: Build EL${{ matrix.el.ver }} RPM
+    if: always() && github.repository == 'oamg/convert2rhel'
     strategy:
       fail-fast: false
       matrix:

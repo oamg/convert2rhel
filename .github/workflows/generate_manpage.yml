@@ -8,6 +8,7 @@ on:
 jobs:
   generate-manpages:
     runs-on: ubuntu-latest
+    if: always() && github.repository == 'oamg/convert2rhel'
 
     steps:
       - name: Checkout code
