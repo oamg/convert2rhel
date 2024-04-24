@@ -403,7 +403,7 @@ class TestBackupRepository:
         monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(non_repo_file))
         backup_repository = backup_repository_action
         backup_repository.run()
-        assert "Skipping backup as file is not a repository file." == caplog.records[-1].message
+        assert "Skipping backup as redhat.nonrepo is not a repository file." == caplog.records[-1].message
 
     def test_backup_repository_no_repofile_presence(self, tmpdir, monkeypatch, caplog, backup_repository_action):
         """Test empty path, nothing for backup."""

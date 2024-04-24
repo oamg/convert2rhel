@@ -89,12 +89,12 @@ class BackupRepository(actions.Action):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
             if not repo.endswith(".repo"):
-                loggerinst.info("Skipping backup as file is not a repository file.")
-                return
+                loggerinst.info("Skipping backup as %s is not a repository file." % repo)
+                continue
 
             if not subscription.should_subscribe() and repo == "redhat.repo":
                 loggerinst.info("Skipping backup of redhat.repo as it is not needed.")
-                return
+                continue
 
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
             restorable_file = RestorableFile(repo_path)
