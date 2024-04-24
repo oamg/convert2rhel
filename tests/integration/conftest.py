@@ -296,54 +296,31 @@ def c2r_config(os_release):
     return ConfigUtils(config_path)
 
 
-@pytest.fixture
-def system_release(shell):
+class SystemInformationRelease:
     """
-    This fixture returns a string of ID and VERSION_ID from /etc/os-release.
-    If /etc/os-release is not available, /etc/system-release is read instead.
-    These could be in generally used for OS specific conditioning.
-    To be used whenever we need live information about system release.
-    E.g. after conversion system release check.
-    Otherwise, use hardcoded SYSTEM_RELEASE_ENV envar from /plans/main.fmf
-    Mapping of OS to ID:
-        {
-            "Centos Linux": "centos",\n
-            "Oracle Linux": "oracle",\n
-            "Alma Linux": "almalinux",\n
-            "Rocky Linux": "rocky"
-        }
+    Helper class.
+    Assign a namedtuple with major and minor elements, both of an int type
+    Assign a distribution (e.g. centos, oracle, rocky, alma)
+    Assign a system release (e.g. redhat-8.8)
+
     Examples:
-        Centos Linux 7.9 => centos-7.9\n
-        Oracle Linux 8.6 => oracle-8.6\n
-        Alma Linux 8.7 => almalinux-8.7\n
-        Rocky Linux 8.5 => rocky-8.5
+    Oracle Linux Server release 7.8
+    CentOS Linux release 7.6.1810 (Core)
+    CentOS Linux release 8.1.1911 (Core)
     """
-    path = Path("/etc/system-release")
 
-    if not path.exists():
-        path = Path("/etc/os-release")
-        with open(path) as osrelease:
-            os_release = {}
-            for line in osrelease:
-                if not re.match(line, "\n"):
-                    key, value = line.rstrip().split("=")
-                    os_release[key] = value
-            system_name = os_release.get("ID").strip('"')
-            system_version = os_release.get("VERSION_ID").strip('"')
-
-    else:
-        with open(path) as sysrelease:
-            sysrelease_as_list = sysrelease.readline().rstrip().split(" ")
-            system_name = sysrelease_as_list[0].lower()
-            for i in sysrelease_as_list:
-                if re.match(r"\d", i):
-                    system_version = i
-
-    if system_name == "ol":
-        system_name = "oracle"
-    system_release = f"{system_name}-{system_version}"
-
-    return system_release
+    with open("/etc/system-release", "r") as file:
+        system_release_content = file.read()
+        match_version = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
+        if not match_version:
+            print("not match")
+        version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), int(match_version.group(2)))
+        distribution = system_release_content.split()[0].lower()
+        if distribution == "ol":
+            distribution = "oracle"
+        elif distribution == "red":
+            distribution = "redhat"
+        system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
 
 
 @pytest.fixture()
@@ -473,7 +450,9 @@ def pre_registered(shell, request):
 
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the SSL certificate
-    shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
+    shell(
+        "curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
+    )
     # Register the system
     assert (
         shell(
@@ -508,8 +487,11 @@ def pre_registered(shell, request):
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
 
-    assert shell("subscription-manager remove --all").returncode == 0
-    shell("subscription-manager unregister")
+    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
+    # so the check "enabled repositories" after the conversion can be executed.
+    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
+        assert shell("subscription-manager remove --all").returncode == 0
+        shell("subscription-manager unregister")
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
@@ -520,7 +502,7 @@ def pre_registered(shell, request):
 
 
 @pytest.fixture()
-def hybrid_rocky_image(shell, system_release):
+def hybrid_rocky_image():
     """
     Fixture to detect a hybrid Rocky Linux cloud image.
     Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
@@ -528,7 +510,7 @@ def hybrid_rocky_image(shell, system_release):
     kernel than the last selected.
     """
     grubenv_file = "/boot/grub2/grubenv"
-    if "rocky" in system_release:
+    if "rocky" in SystemInformationRelease.distribution:
         if os.path.islink(grubenv_file):
             target_grubenv_file = os.path.realpath(grubenv_file)
 

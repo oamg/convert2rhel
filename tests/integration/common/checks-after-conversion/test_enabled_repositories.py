@@ -3,47 +3,44 @@ import re
 
 import pytest
 
+from conftest import SystemInformationRelease
 
-def _check_enabled_repos_rhel8(enabled_repos):
+
+def _check_enabled_repos_rhel8(enabled_repos: str = "", eus: bool = False):
     """Helper function to assert RHEL repositories."""
-    baseos_repo = "rhel-8-for-x86_64-baseos-rpms"
-    appstream_repo = "rhel-8-for-x86_64-appstream-rpms"
-
-    assert baseos_repo in enabled_repos
-    assert appstream_repo in enabled_repos
-
-
-def _check_eus_enabled_repos_rhel8(enabled_repos):
-    """Helper function to assert EUS repositories."""
-    baseos_repo = "rhel-8-for-x86_64-baseos-eus-rpms"
-    appstream_repo = "rhel-8-for-x86_64-appstream-eus-rpms"
+    baseos_repo = ""
+    appstream_repo = ""
+    if eus:
+        baseos_repo = "rhel-8-for-x86_64-baseos-eus-rpms"
+        appstream_repo = "rhel-8-for-x86_64-appstream-eus-rpms"
+    else:
+        baseos_repo = "rhel-8-for-x86_64-baseos-rpms"
+        appstream_repo = "rhel-8-for-x86_64-appstream-rpms"
 
     assert baseos_repo in enabled_repos
     assert appstream_repo in enabled_repos
 
 
 @pytest.mark.test_enabled_repositories
-def test_enabled_repositories(shell, system_release):
+def test_enabled_repositories(shell):
     """
     Verify that the correct repositories (including EUS if applies) are enabled after the conversion.
     """
 
-    enabled_repos = shell("yum repolist").output
-
     try:
-        # Using system_release fixture here, to read live data from /etc/os-release or /etc/system-release.
-        # Usage of hardcoded environment variable SYSTEM_RELEASE_ENV is not feasible.
-        if re.match(r"redhat-8\.8", system_release):
+        enabled_repos = shell("yum repolist").output
+        system_release = SystemInformationRelease()
+        assert "redhat" in system_release.distribution
+
+        if system_release.version.major == 7 and system_release.version.minor == 9:
+            assert "rhel-7-server-rpms/7Server/x86_64" in enabled_repos
+        elif system_release.version.major == 8:
             # Handle the special test case scenario where we do not use the
             # premium account with EUS repositories
-            if os.path.exists("/non_eus_repos_used"):
-                _check_enabled_repos_rhel8(enabled_repos)
+            if os.path.exists("/eus_repos_used"):
+                _check_enabled_repos_rhel8(enabled_repos, eus=True)
             else:
-                _check_eus_enabled_repos_rhel8(enabled_repos)
-        elif "redhat-8.5" in system_release:
-            _check_enabled_repos_rhel8(enabled_repos)
-        elif "redhat-7.9" in system_release:
-            assert "rhel-7-server-rpms/7Server/x86_64" in enabled_repos
+                _check_enabled_repos_rhel8(enabled_repos)
     finally:
         # We need to unregister the system after the conversion
         shell("subscription-manager unregister")

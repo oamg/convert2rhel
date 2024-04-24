@@ -1,25 +1,4 @@
-import re
-
-from collections import namedtuple
-
-from conftest import SYSTEM_RELEASE_ENV
-
-
-def get_system_version(system_release_content=None):
-    """
-    Return a namedtuple with major and minor elements, both of an int type.
-
-    Examples:
-    Oracle Linux Server release 7.8
-    CentOS Linux release 7.6.1810 (Core)
-    CentOS Linux release 8.1.1911 (Core)
-    """
-    match = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
-    if not match:
-        return "not match"
-    version = namedtuple("Version", ["major", "minor"])(int(match.group(1)), int(match.group(2)))
-
-    return version
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease
 
 
 def test_install_dependency_packages(shell):
@@ -30,8 +9,6 @@ def test_install_dependency_packages(shell):
     """
 
     with open("/etc/system-release", "r") as file:
-        system_rls = file.read()
-        system_version = get_system_version(system_release_content=system_rls)
         dependency_pkgs = [
             "abrt-retrace-client",  # OAMG-4447
             "libreport-cli",  # OAMG-4447
@@ -43,7 +20,7 @@ def test_install_dependency_packages(shell):
             "gcc-c++",  # OAMG-6136
             "python-requests",  # OAMG-4936
         ]
-        if system_version.major == 8:
+        if SystemInformationRelease.version.major == 8:
             if "oracle-8" in SYSTEM_RELEASE_ENV:
                 dependency_pkgs = [
                     "iwl7260-firmware",  # RHELC-567

@@ -1,32 +1,6 @@
-import re
-
-from collections import namedtuple
-
 import pytest
 
-
-# TODO(danmyway) move to conftest
-class GetSystemInformation:
-    """
-    Helper class.
-    Assign a namedtuple with major and minor elements, both of an int type.
-    Assign a distribution (e.g. centos, oracle, rocky, alma)
-    Assign a system release.
-
-    Examples:
-    Oracle Linux Server release 7.8
-    CentOS Linux release 7.6.1810 (Core)
-    CentOS Linux release 8.1.1911 (Core)
-    """
-
-    with open("/etc/system-release", "r") as file:
-        system_release_content = file.read()
-        match_version = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
-        if not match_version:
-            print("not match")
-        version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), int(match_version.group(2)))
-        distribution = system_release_content.split()[0].lower()
-        system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
+from conftest import SystemInformationRelease
 
 
 class AssignRepositoryVariables:
@@ -47,20 +21,18 @@ class AssignRepositoryVariables:
         "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
     )
 
-    with open("/etc/system-release", "r") as file:
-        system_release = file.read()
-        system_version = GetSystemInformation.version
+    system_version = SystemInformationRelease.version
 
-        if system_version.major == 7:
-            repofile = repofile_epel7
-            enable_repo_opt = enable_repo_opt_epel7
-        elif system_version.major == 8:
-            if system_version.minor == 8:
-                repofile = repofile_epel8_eus
-                enable_repo_opt = enable_repo_opt_epel8_eus
-            else:
-                repofile = repofile_epel8
-                enable_repo_opt = enable_repo_opt_epel8
+    if system_version.major == 7:
+        repofile = repofile_epel7
+        enable_repo_opt = enable_repo_opt_epel7
+    elif system_version.major == 8:
+        if system_version.minor == 8:
+            repofile = repofile_epel8_eus
+            enable_repo_opt = enable_repo_opt_epel8_eus
+        else:
+            repofile = repofile_epel8
+            enable_repo_opt = enable_repo_opt_epel8
 
 
 @pytest.fixture(scope="function")
