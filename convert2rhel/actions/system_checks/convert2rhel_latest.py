@@ -272,8 +272,8 @@ def _extract_convert2rhel_versions(raw_versions):
     # relevant repoquery information to our check, otherwise, we just log the
     # information as debug and do nothing with it.
     for raw_version in precise_raw_version:
-        if "C2R" in raw_version:
-            parsed_versions.append(raw_version.lstrip("C2R "))
+        if raw_version.startswith("C2R "):
+            parsed_versions.append(raw_version[4:])
         else:
             # Mainly for debugging purposes to see what is happening if we got
             # anything else that does not have the C2R identifier at the start
