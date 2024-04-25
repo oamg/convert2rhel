@@ -22,30 +22,6 @@ elif "rocky" in SYSTEM_RELEASE_ENV:
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
 
-YUM_CONF_PATH = "/etc/yum.conf"
-
-
-@pytest.fixture(scope="function")
-def override_yum_conf(shell):
-    """
-    Override yum conf to add exclude option and ignore redhat-release-server
-    package.
-    """
-    content = "exclude=redhat-release-server"
-    with open(YUM_CONF_PATH, mode="a") as handler:
-        handler.write("exclude=redhat-release-server")
-
-    assert shell("grep -Fxq %s %s" % (content, YUM_CONF_PATH)).returncode == 0
-    yield
-
-    # Remove last line added
-    with open(YUM_CONF_PATH, mode="w") as handler:
-        lines = handler.readlines()
-        lines = lines[:-1]
-        handler.writelines(lines)
-
-    assert shell("grep -Fxq %s %s" % (content, YUM_CONF_PATH)).returncode == 1
-
 
 @pytest.fixture()
 def yum_cache(shell):
@@ -224,8 +200,9 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
     assert c2r.exitstatus == 0
 
 
+@pytest.mark.parametrize("exclude", [["redhat-release-server"]])
 @pytest.mark.test_override_exclude_list_in_yum_config
-def test_override_exclude_list_in_yum_config(convert2rhel, kernel, override_yum_conf):
+def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_exclude, exclude):
     """
     This test verifies that packages that are defined in the exclude
     section in the /etc/yum.conf file are ignored during the analysis and

@@ -10,4 +10,4 @@ tag+:
     - non-destructive
 
 environment+:
-    INT_TESTS_NONDESTRUCTIVE: 1
+    C2R_TESTS_NONDESTRUCTIVE: 1

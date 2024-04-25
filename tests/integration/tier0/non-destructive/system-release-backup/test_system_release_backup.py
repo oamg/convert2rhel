@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, satellite_registration_command
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -31,39 +31,8 @@ def custom_subman(shell, repository=None):
     assert shell(f"yum remove -y --disablerepo=* --enablerepo={repository} subscription-manager*").returncode == 0
     assert shell(f"rm -f /etc/yum.repos.d/{repository}.repo").returncode == 0
 
-    # Install back previously removed client tools
-    if "oracle-7" in SYSTEM_RELEASE_ENV:
-        shell("yum install -y rhn-client-tools")
-        shell("yum remove -y python-syspurpose")
-    # The termination of the conversion does not happen fast enough, so same packages can get removed
-    # Install the package back to avoid leaving the system in tainted state
-    elif "centos-8" in SYSTEM_RELEASE_ENV:
-        shell("yum install -y centos-gpg-keys centos-logos")
-    elif "oracle-8" in SYSTEM_RELEASE_ENV:
-        shell("yum install -y oraclelinux-release-el8-* oraclelinux-release-8* redhat-release-8*")
-    elif "alma-8" in SYSTEM_RELEASE_ENV:
-        shell("yum install -y --enablerepo=baseos --releasever=8 almalinux-release-8*")
-
     # Some packages might get downgraded during the setup; update just to be sure the system is fine
     shell("yum update -y")
-
-
-@pytest.fixture
-def satellite_registration(shell):
-    """
-    Register the system to the Satellite server
-    """
-    # Get the registration command for the respective system
-    # from the conftest function
-    sat_reg_command = satellite_registration_command()
-
-    # Register the system to the Satellite server
-    assert shell(sat_reg_command).returncode == 0
-
-    yield
-
-    # Remove the subman packages installed by the registration script
-    assert shell("yum remove -y subscription-manager")
 
 
 @pytest.mark.test_unsuccessful_satellite_registration
@@ -139,7 +108,13 @@ def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, satellit
 
 
 @pytest.mark.test_backup_os_release_with_envar
-def test_backup_os_release_with_envar(shell, convert2rhel, custom_subman, satellite_registration, remove_repositories):
+def test_backup_os_release_with_envar(
+    shell,
+    convert2rhel,
+    custom_subman,
+    satellite_registration,
+    remove_repositories,
+):
     """
     In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that

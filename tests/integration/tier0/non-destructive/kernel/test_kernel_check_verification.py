@@ -1,4 +1,3 @@
-import configparser
 import os
 
 import pytest
@@ -50,63 +49,16 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture(scope="function")
-def yum_conf_exclude_kernel(shell):
-    """
-    Fixture.
-    Define `exclude=kernel kernel-core` in /etc/yum.conf.
-    """
-    yum_config = "/etc/yum.conf"
-    backup_dir = "/tmp/config-backup"
-    config = configparser.ConfigParser()
-    config.read(yum_config)
-    exclude_option = "kernel kernel-core"
-
-    assert shell(f"mkdir {backup_dir}").returncode == 0
-
-    assert shell(f"cp {yum_config} {backup_dir}").returncode == 0
-    # If there is already an `exclude` section, append to the existing value
-    if config.has_option("main", "exclude"):
-        pre_existing_value = config.get("main", "exclude")
-        config.set("main", "exclude", f"{pre_existing_value} {exclude_option}")
-    else:
-        config.set("main", "exclude", exclude_option)
-
-    with open(yum_config, "w") as configfile:
-        config.write(configfile, space_around_delimiters=False)
-
-    assert config.has_option("main", "exclude")
-    assert exclude_option in config.get("main", "exclude")
-
-    yield
-
-    # Clean up
-    assert shell(f"mv {backup_dir}/yum.conf {yum_config}").returncode == 0
-    assert shell(f"rm -r {backup_dir}").returncode == 0
-
-    verify_config = configparser.ConfigParser()
-    verify_config.read(yum_config)
-    if verify_config.has_option("main", "exclude"):
-        assert exclude_option not in verify_config.get("main", "exclude")
-
-    # Double-check the exclude option is not in any config
-    find_exclude = shell("grep -rE '^exclude' --include='yum.conf' --include='dnf.conf' /etc/").output
-    # If the exclude option is present remove it
-    if exclude_option in find_exclude:
-        for item in find_exclude.split("\n"):
-            if item:
-                file = item.split(":")[0]
-                shell(f"sed -i '/^exclude/d' {file}")
-
-
+@pytest.mark.parametrize("exclude", [["kernel", "kernel-core"]])
 @pytest.mark.test_yum_exclude_kernel
-def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude_kernel):
+def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude, exclude):
     """
     Verify, the conversion does not raise:
     'Could not find any kernel from repositories to compare against the loaded kernel.'
     When `exclude=kernel kernel-core` is defined in yum.conf
     Verify IS_LOADED_KERNEL_LATEST has succeeded is raised and terminate the utility.
     """
+    yum_conf_exclude(exclude)
     # Run the conversion and verify that it proceeds past the latest kernel check
     # if so, interrupt the conversion
     with convert2rhel("-y --debug") as c2r:

@@ -2,7 +2,7 @@ import os
 import re
 import socket
 
-from conftest import TEST_VARS, satellite_registration_command
+from conftest import TEST_VARS
 
 
 def replace_urls_rhsm():
@@ -39,7 +39,7 @@ def configure_connection():
         f.write("nameserver 127.0.0.1")
 
 
-def test_prepare_system(shell):
+def test_prepare_system(shell, satellite_registration):
     """
     Perform all the steps to make the system appear to be offline.
     Register to the Satellite server.
@@ -47,10 +47,6 @@ def test_prepare_system(shell):
     so there is only the redhat.repo created by subscription-manager.
     """
     assert shell("yum install dnsmasq -y").returncode == 0
-    sat_reg_command = satellite_registration_command()
-
-    # Register system to the satellite server
-    assert shell(sat_reg_command).returncode == 0
 
     repos_dir = "/etc/yum.repos.d"
     # Remove all repofiles except the redhat.repo

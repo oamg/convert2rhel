@@ -2,7 +2,7 @@ summary+: |
     RHSM facts update when in analysis mode
 description+: |
     Verify that the subscription-manager facts command is called after the
-    analysis is done (either succeeding or failling).
+    analysis is done (either succeeding or failing).
 
 /rhsm_facts_update_in_analysis:
     summary+: |
@@ -14,7 +14,3 @@ description+: |
         - test-rhsm-facts-called-in-analysis
     test: |
         pytest -m test_rhsm_facts_called_in_analysis
-    adjust+:
-        - enabled: false
-          when: distro == oracle-7, oracle-8
-          because: RHSM package not available in oracle repos
