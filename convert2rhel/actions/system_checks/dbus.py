@@ -34,12 +34,6 @@ class DbusIsRunning(actions.Action):
 
         if not subscription.should_subscribe():
             logger.info("Did not perform the check because we have been asked not to subscribe this system to RHSM.")
-            self.add_message(
-                level="INFO",
-                id="DBUS_IS_RUNNING_CHECK_SKIP",
-                title="Did not perform the dbus is running check",
-                description="Did not perform the check because we have been asked not to subscribe this system to RHSM.",
-            )
             return
 
         if system_info.dbus_running:

@@ -62,24 +62,3 @@ def test_check_dbus_is_running_not_running(monkeypatch, global_system_info, dbus
         diagnosis="Could not find a running DBus Daemon which is needed to register with subscription manager.",
         remediations="Please start dbus using `systemctl start dbus`",
     )
-
-
-def test_check_dbus_is_running_info_message(monkeypatch, dbus_is_running_action):
-    monkeypatch.setattr(subscription, "should_subscribe", lambda: False)
-
-    dbus_is_running_action.run()
-
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="DBUS_IS_RUNNING_CHECK_SKIP",
-                title="Did not perform the dbus is running check",
-                description="Did not perform the check because we have been asked not to subscribe this system to RHSM.",
-                diagnosis=None,
-                remediations=None,
-            ),
-        )
-    )
-    assert expected.issuperset(dbus_is_running_action.messages)
-    assert expected.issubset(dbus_is_running_action.messages)
