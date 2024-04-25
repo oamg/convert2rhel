@@ -29,7 +29,7 @@ PYLINT_ARGS ?=
 VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
 SHOW_CAPTURE ?= no
-PYTEST_ARGS ?= -p no:cacheprovider
+PYTEST_ARGS ?= --override-ini=addopts= -p no:cacheprovider
 BUILD_IMAGES ?= 1
 
 ifdef KEEP_TEST_CONTAINER
