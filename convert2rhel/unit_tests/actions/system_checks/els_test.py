@@ -44,7 +44,6 @@ class TestEus:
             (Version(9, 2), False),
         ),
     )
-    # @pytest.mark.skipif(pkgmanager.TYPE != "yum", reason="el8 systems are not under els")
     def test_els_warning_message(self, els_action, monkeypatch, global_tool_opts, version_string, message_reported):
 
         global_tool_opts.els = False

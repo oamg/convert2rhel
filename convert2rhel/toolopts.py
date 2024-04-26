@@ -199,7 +199,7 @@ class CLI:
         self._shared_options_parser.add_argument(
             "--els",
             action="store_true",
-            help="Automatically recognize the system as els, utilizing els repos."
+            help="Explicitly recognize the system as els, utilizing els repos."
             " This option is meant for el7 systems.",
         )
         self._shared_options_parser.add_argument(
