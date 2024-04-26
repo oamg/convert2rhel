@@ -86,7 +86,7 @@ _UBI_REPO_MAPPING = {
 class RestorablePackage(RestorableChange):
     def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
         """
-        Keep control of systme packages before their removal to backup and
+        Keep control of system packages before their removal to backup and
         restore in case of rollback.
 
         :param pkgs list[str]: List of packages to backup.
@@ -135,37 +135,20 @@ class RestorablePackage(RestorableChange):
             if system_info.eus_system and system_info.id == "centos":
                 self.reposdir = get_hardcoded_repofiles_dir()
 
-            if not system_info.has_internet_access:
-                if self.reposdir:
-                    loggerinst.debug(
-                        "Not using repository files stored in %s due to the absence of internet access." % self.reposdir
-                    )
+            if self.reposdir:
+                loggerinst.debug("Using repository files stored in %s." % self.reposdir)
 
-                for pkg in self.pkgs:
-                    self._backedup_pkgs_paths.append(
-                        utils.download_pkg(
-                            pkg=pkg,
-                            dest=BACKUP_DIR,
-                            set_releasever=self.set_releasever,
-                            custom_releasever=self.custom_releasever,
-                            varsdir=self.varsdir,
-                        )
+            for pkg in self.pkgs:
+                self._backedup_pkgs_paths.append(
+                    utils.download_pkg(
+                        pkg=pkg,
+                        dest=BACKUP_DIR,
+                        set_releasever=self.set_releasever,
+                        custom_releasever=self.custom_releasever,
+                        varsdir=self.varsdir,
+                        reposdir=self.reposdir,
                     )
-            else:
-                if self.reposdir:
-                    loggerinst.debug("Using repository files stored in %s." % self.reposdir)
-
-                for pkg in self.pkgs:
-                    self._backedup_pkgs_paths.append(
-                        utils.download_pkg(
-                            pkg=pkg,
-                            dest=BACKUP_DIR,
-                            set_releasever=self.set_releasever,
-                            custom_releasever=self.custom_releasever,
-                            varsdir=self.varsdir,
-                            reposdir=self.reposdir,
-                        )
-                    )
+                )
         else:
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
 
