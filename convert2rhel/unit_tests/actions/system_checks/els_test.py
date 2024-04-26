@@ -19,7 +19,7 @@ import datetime
 
 import pytest
 
-from convert2rhel import actions, pkgmanager, systeminfo
+from convert2rhel import actions, systeminfo
 from convert2rhel.actions.system_checks import els
 from convert2rhel.systeminfo import Version, system_info
 

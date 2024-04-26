@@ -33,8 +33,7 @@ class ElsSystemCheck(actions.Action):
         """Warn the user if their system is under ELS and past the ELS release date without using the --els cli option."""
         super(ElsSystemCheck, self).run()
 
-        current_version = "%s" % (system_info.version.major)
-        if current_version == "7":
+        if system_info.version.major == 7:
             current_datetime = datetime.date.today()
             # Turn ELS_RELEASE_DATE into a datetime object
             els_release_date = datetime.datetime.strptime(ELS_RELEASE_DATE, "%Y-%m-%d").date()

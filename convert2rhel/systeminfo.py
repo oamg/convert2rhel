@@ -459,9 +459,8 @@ class SystemInfo:
         :return: Whether or not the current system has an ELS correspondent in RHEL.
         :rtype: bool
         """
-        current_version = "%s" % (self.version.major)
         # This check will be dropped once 7 is no longer supported under ELS
-        if current_version == "7":
+        if self.version.major == 7:
             return True
         return False
 
