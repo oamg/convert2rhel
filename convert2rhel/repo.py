@@ -95,7 +95,8 @@ def download_repofile(repofile_url):
     """
     try:
         with closing(urllib.request.urlopen(repofile_url, timeout=15)) as response:
-            filepath = write_temporary_repofile(contents=response.read())
+            contents = response.read()
+            filepath = write_temporary_repofile(contents=contents.decode())
             if filepath:
                 loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
 
@@ -110,12 +111,20 @@ def download_repofile(repofile_url):
 
 
 def write_temporary_repofile(contents):
-    """ """
-    repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+    """Write a temporary repository file inside the :py:TMP_DIR folder.
 
+    :param contents: The contents to write to the file
+    :type contents: str
+    :returns: The path to the temporary repofile. If failed to write the
+        repofile, it will return None.
+    """
+    repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+    repofile_name = None
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
         try:
             store_content_to_file(filename=f.name, content=contents)
-            return f.name
+            repofile_name = f.name
         except (OSError, IOError) as err:
             loggerinst.warning("OSError({0}): {1}".format(err.errno, err.strerror))
+
+    return repofile_name

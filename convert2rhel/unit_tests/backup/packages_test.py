@@ -297,15 +297,11 @@ class TestRestorablePackageSet:
         assert "json-c.x86_64" not in package_set.installed_pkgs
 
     @centos7
-    def test_enable_set_custom_repository(self, pretend_os, caplog, monkeypatch, tmpdir):
-        repofile = tmpdir.join("test.repofile")
-        repofile = str(repofile)
+    def test_enable_set_custom_repository(self, pretend_os, caplog, monkeypatch):
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
 
         package_set = RestorablePackageSet(["subscription-manager", "python-syspurpose"])
-
         package_set.pkgs_to_update = ["json-c.x86_64"]
-
         package_set.enable()
 
         assert package_set.enabled is True

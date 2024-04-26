@@ -120,7 +120,7 @@ class URLOpenMock:
 
 
 def test_download_repofile(monkeypatch, tmpdir, caplog):
-    monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents="test_file"))
+    monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents=b"test_file"))
     tmp_dir = str(tmpdir)
     monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
 
