@@ -18,10 +18,8 @@
 __metaclass__ = type
 
 import logging
-import os
 
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import DATA_DIR
 
 
 DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
