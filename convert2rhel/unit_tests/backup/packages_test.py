@@ -190,9 +190,9 @@ class TestRestorablePackage:
             )
         )
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
-
-        rp = RestorablePackage(pkgs=[pkg_name])
-        rp._backedup_pkgs_paths = pkg_name
+        pkgs = [pkg_name]
+        rp = RestorablePackage(pkgs=pkgs)
+        rp._backedup_pkgs_paths = pkgs
         result = rp._install_local_rpms(replace=False, critical=False)
 
         assert result == False
@@ -200,10 +200,10 @@ class TestRestorablePackage:
         assert "Couldn't install %s packages." % pkg_name in caplog.records[-1].message
 
     def test_test_install_local_rpms_system_exit(self, monkeypatch, caplog):
-        pkg_name = "pkg-1"
+        pkg_name = ["pkg-1"]
         run_subprocess_mock = RunSubprocessMocked(
             side_effect=unit_tests.run_subprocess_side_effect(
-                (("rpm", "-i", pkg_name), ("test", 1)),
+                (("rpm", "-i", " ".join(pkg_name)), ("test", 1)),
             )
         )
         monkeypatch.setattr(
@@ -212,13 +212,13 @@ class TestRestorablePackage:
             value=run_subprocess_mock,
         )
 
-        rp = RestorablePackage(pkgs=[pkg_name])
+        rp = RestorablePackage(pkgs=pkg_name)
         rp._backedup_pkgs_paths = pkg_name
         with pytest.raises(exceptions.CriticalError):
             rp._install_local_rpms(replace=False, critical=True)
 
         assert run_subprocess_mock.call_count == 1
-        assert "Error: Couldn't install %s packages." % pkg_name in caplog.records[-1].message
+        assert "Error: Couldn't install %s packages." % "".join(pkg_name) in caplog.records[-1].message
 
 
 class TestRestorablePackageSet:
