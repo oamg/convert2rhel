@@ -20,7 +20,6 @@ import os
 
 from convert2rhel import actions
 from convert2rhel.pkghandler import compare_package_versions
-from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
@@ -30,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class IsLoadedKernelLatest(actions.Action):
     id = "IS_LOADED_KERNEL_LATEST"
+
     # disabling here as some of the return statements would be raised as exceptions in normal code
     # but we don't do that in an Action class
     def run(self):  # pylint: disable= too-many-return-statements
@@ -51,23 +51,6 @@ class IsLoadedKernelLatest(actions.Action):
             "--qf",
             "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
         ]
-
-        reposdir = get_hardcoded_repofiles_dir()
-        if reposdir and not system_info.has_internet_access:
-            logger.warning("Did not perform the check as no internet connection has been detected.")
-            self.add_message(
-                level="WARNING",
-                id="IS_LOADED_KERNEL_LATEST_CHECK_SKIP",
-                title="Did not perform the is loaded kernel latest check",
-                description="Did not perform the check as no internet connection has been detected.",
-            )
-            return
-
-        # If the reposdir variable is not empty, meaning that it detected the
-        # hardcoded repofiles, we should use that
-        # instead of the system repositories located under /etc/yum.repos.d
-        if reposdir:
-            cmd.append("--setopt=reposdir=%s" % reposdir)
 
         # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
         # we check for `kernel-core`. But 7 releases, the correct way to check is
@@ -181,20 +164,15 @@ class IsLoadedKernelLatest(actions.Action):
             return
 
         if match != 0:
-            repos_message = (
-                "in the enabled system repositories"
-                if not reposdir
-                else "in repositories defined in the %s folder" % reposdir
-            )
             self.set_result(
                 level="OVERRIDABLE",
                 id="INVALID_KERNEL_VERSION",
                 title="Invalid kernel version detected",
-                description="The loaded kernel version mismatch the latest one available %s" % repos_message,
+                description="The loaded kernel version mismatch the latest one available in system repositories",
                 diagnosis=(
-                    "The version of the loaded kernel is different from the latest version %s.\n"
+                    "The version of the loaded kernel is different from the latest version in system repositories. \n"
                     " Latest kernel version available in %s: %s\n"
-                    " Loaded kernel version: %s" % (repos_message, repoid, latest_kernel, loaded_kernel)
+                    " Loaded kernel version: %s" % (repoid, latest_kernel, loaded_kernel)
                 ),
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"

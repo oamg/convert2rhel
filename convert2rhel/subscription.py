@@ -33,7 +33,7 @@ import dbus.exceptions
 from convert2rhel import backup, exceptions, i18n, pkghandler, utils
 from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.redhatrelease import os_release_file
-from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
+from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import _should_subscribe, tool_opts
 
@@ -617,7 +617,7 @@ def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
     """
 
     pkgs_to_upgrade = pkgs_to_upgrade or []
-    backedup_reposdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+    backedup_reposdir = backup.get_backedup_system_repos()
     varsdir = DEFAULT_YUM_VARS_DIR if system_info.version.major == 7 else DEFAULT_DNF_VARS_DIR
     backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 

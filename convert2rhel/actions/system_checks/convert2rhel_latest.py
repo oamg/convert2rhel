@@ -60,17 +60,6 @@ class Convert2rhelLatest(actions.Action):
 
         super(Convert2rhelLatest, self).run()
 
-        if not system_info.has_internet_access:
-            description = "Did not perform the check because no internet connection has been detected."
-            logger.warning(description)
-            self.add_message(
-                level="WARNING",
-                id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
-                title="Did not perform convert2rhel latest version check",
-                description=description,
-            )
-            return
-
         repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
         repo_path = os.path.join(repo_dir, "convert2rhel.repo")
         utils.store_content_to_file(filename=repo_path, content=CONVERT2RHEL_REPO_CONTENT)

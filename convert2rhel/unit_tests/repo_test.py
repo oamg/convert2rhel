@@ -54,26 +54,3 @@ def test_get_rhel_repoids(pretend_os, is_eus_release, expected, monkeypatch):
     monkeypatch.setattr(repo.system_info, "eus_system", value=is_eus_release)
     repos = repo.get_rhel_repoids()
     assert repos == expected
-
-
-@pytest.mark.parametrize(
-    ("path_exists", "expected"),
-    (
-        (
-            True,
-            "/usr/share/convert2rhel/repos/centos-8.5",
-        ),
-        (
-            False,
-            None,
-        ),
-        (
-            False,
-            None,
-        ),
-    ),
-)
-@centos8
-def test_get_hardcoded_repofiles_dir(pretend_os, path_exists, expected, monkeypatch):
-    monkeypatch.setattr(os.path, "exists", value=lambda _: path_exists)
-    assert repo.get_hardcoded_repofiles_dir() == expected

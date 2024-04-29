@@ -19,8 +19,8 @@ import logging
 import os
 
 from convert2rhel import actions, pkgmanager, utils
+from convert2rhel.backup import get_backedup_system_repos
 from convert2rhel.pkghandler import get_total_packages_to_update
-from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
 
 
@@ -52,17 +52,7 @@ class PackageUpdates(actions.Action):
             )
             return
 
-        reposdir = get_hardcoded_repofiles_dir()
-
-        if reposdir and not system_info.has_internet_access:
-            logger.warning("Did not perform the check as no internet connection has been detected.")
-            self.add_message(
-                level="WARNING",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
-                title="Did not perform the package updates check",
-                description="Did not perform the check as no internet connection has been detected.",
-            )
-            return
+        reposdir = get_backedup_system_repos()
 
         try:
             packages_to_update = sorted(get_total_packages_to_update(reposdir=reposdir))
@@ -91,11 +81,7 @@ class PackageUpdates(actions.Action):
             return
 
         if len(packages_to_update) > 0:
-            repos_message = (
-                "on the enabled system repositories"
-                if not reposdir
-                else "on repositories defined in the %s folder" % reposdir
-            )
+            repos_message = "on repositories defined in the %s folder" % reposdir
             package_not_up_to_date_skip = os.environ.get("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP", None)
             package_not_up_to_date_error_message = (
                 "The system has %s package(s) not updated based %s.\n"

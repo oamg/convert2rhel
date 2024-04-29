@@ -15,14 +15,11 @@
 
 __metaclass__ = type
 
-import hashlib
 import logging
-import os
 
 from convert2rhel import actions, pkghandler, utils
-from convert2rhel.backup import BACKUP_DIR, backup_control
+from convert2rhel.backup import backup_control, get_backedup_system_repos
 from convert2rhel.backup.packages import RestorablePackage
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 
 
@@ -119,7 +116,7 @@ class RemoveSpecialPackages(actions.Action):
             # - the suddenly enabled RHEL repos cause a package backup failure
             # Since the MD5 checksum of original path is used in backup path to avoid
             # conflicts in backup folder, preparing the path is needed.
-            backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+            backedup_reposdir = get_backedup_system_repos()
             backup_control.push(RestorablePackage(pkgs=pkghandler.get_pkg_nevras(all_pkgs), reposdir=backedup_reposdir))
 
             logger.info("\nRemoving special packages from the system.")

@@ -25,7 +25,7 @@ import time
 
 from collections import namedtuple
 
-from six.moves import configparser, urllib
+from six.moves import configparser
 
 from convert2rhel import logger, utils
 from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME, tool_opts
@@ -34,9 +34,6 @@ from convert2rhel.utils import run_subprocess
 
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
-
-# The address that will be used to check if there is a internet connection.
-CHECK_INTERNET_CONNECTION_ADDRESS = "https://static.redhat.com/test/rhel-networkmanager.txt"
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -84,8 +81,6 @@ class SystemInfo:
             # RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e",
         ]
-        # Whether the system has internet access
-        self.has_internet_access = None
         # Whether the system release corresponds to a rhel eus release
         self.eus_system = None
         # Packages to be removed before the system conversion
@@ -135,7 +130,6 @@ class SystemInfo:
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
-        self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
         self.eus_system = self.corresponds_to_rhel_eus_release()
 
@@ -428,52 +422,6 @@ class SystemInfo:
         :rtype: list[str]
         """
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
-
-    def _check_internet_access(self):
-        """Check whether or not the machine is connected to the internet.
-
-        This method will try to retrieve a web page on the Red Hat network that
-        we know to exist (http://static.redhat.com/test/rhel-networkmanager.txt).
-        If we can successfully access that page, then we decide we are connected
-        to the internet.
-
-        We check a web page because we will need working https to retrieve
-        packages from Red Hat infrastructure during the conversion.
-
-        .. warnings::
-            We might have some problems with this if the host machine is using
-            a NAT gateway to route the outbound requests to any other service.
-
-            DNS could also be used to redirect the URL we test to another address.
-
-        :return: Return boolean indicating whether or not we have internet
-            access.
-        :rtype: bool
-        """
-        self.logger.info(
-            "Checking internet connectivity using address '%s'.",
-            CHECK_INTERNET_CONNECTION_ADDRESS,
-        )
-        try:
-            # urlopen as a context manager is only available in Python-3.0+
-            # pylint: disable=consider-using-with
-            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS, timeout=15)
-            response.close()
-            # pylint: enable=consider-using-with
-            self.logger.info(
-                "Successfully connected to address '%s', internet connection seems to be available."
-                % CHECK_INTERNET_CONNECTION_ADDRESS
-            )
-            return True
-        except urllib.error.URLError as err:
-            self.logger.warning(
-                "There was a problem while trying to connect to '%s' to check internet connectivity. "
-                "This could be due to the host being offline, or the network blocking access to the endpoint... "
-                "Some checks and actions will be skipped.",
-                CHECK_INTERNET_CONNECTION_ADDRESS,
-            )
-            self.logger.debug("Failed to retrieve data from host, reason: %s", err.reason)
-            return False
 
     def corresponds_to_rhel_eus_release(self):
         """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.

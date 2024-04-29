@@ -73,15 +73,18 @@ def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_
 
 
 @centos8
-def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog):
+def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog, tmpdir):
     packages = ["package-2", "package-1"]
+    reposdir = str(tmpdir.join("backup"))
     diagnosis = (
-        "The system has 2 package(s) not updated based on the enabled system repositories.\n"
+        "The system has 2 package(s) not updated based on repositories defined in the %s folder.\n"
         "List of packages to update: package-1 package-2.\n\n"
         "Not updating the packages may cause the conversion to fail.\n"
         "Consider updating the packages before proceeding with the conversion."
-    )
+    ) % reposdir
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
+    monkeypatch.setattr(package_updates, "get_backedup_system_repos", lambda: reposdir)
+
     package_updates_action.run()
     unit_tests.assert_actions_result(
         package_updates_action,
@@ -90,28 +93,33 @@ def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_u
         title="Outdated packages detected",
         description="Please refer to the diagnosis for further information",
         diagnosis=diagnosis,
-        remediations="If you wish to ignore this message, set the environment variable "
-        "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1.",
+        remediations=(
+            "If you wish to ignore this message, set the environment variable "
+            "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1."
+        ),
     )
 
     assert diagnosis in caplog.records[-1].message
 
 
 @centos8
-def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action, caplog):
+def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action, tmpdir):
     packages = ["package-2", "package-1"]
+    reposdir = str(tmpdir.join("backup"))
     diagnosis = (
-        "The system has 2 package(s) not updated based on the enabled system repositories.\n"
+        "The system has 2 package(s) not updated based on repositories defined in the %s folder.\n"
         "List of packages to update: package-1 package-2.\n\n"
         "Not updating the packages may cause the conversion to fail.\n"
         "Consider updating the packages before proceeding with the conversion."
-    )
+    ) % reposdir
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
     monkeypatch.setattr(
         os,
         "environ",
         {"CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP": 1},
     )
+    monkeypatch.setattr(package_updates, "get_backedup_system_repos", lambda: reposdir)
+
     expected = set(
         (
             actions.ActionMessage(
@@ -165,29 +173,5 @@ def test_check_package_updates_with_repoerror_warning(pretend_os, monkeypatch, c
     package_updates_action.run()
 
     assert diagnosis in caplog.records[-1].message
-    assert expected.issuperset(package_updates_action.messages)
-    assert expected.issubset(package_updates_action.messages)
-
-
-@centos8
-def test_check_package_updates_without_internet(pretend_os, tmpdir, monkeypatch, caplog, package_updates_action):
-    monkeypatch.setattr(package_updates, "get_hardcoded_repofiles_dir", value=lambda: str(tmpdir))
-    monkeypatch.setattr(system_info, "has_internet_access", False)
-    description = "Did not perform the check as no internet connection has been detected."
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="WARNING",
-                id="PACKAGE_UPDATES_CHECK_SKIP_NO_INTERNET",
-                title="Did not perform the package updates check",
-                description=description,
-                diagnosis=None,
-                remediations=None,
-            ),
-        )
-    )
-    package_updates_action.run()
-
-    assert description in caplog.records[-1].message
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)

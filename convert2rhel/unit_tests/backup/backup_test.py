@@ -105,3 +105,11 @@ class TestBackupController:
         assert len(popped_restorables) == 3
         assert popped_restorables == [restorable3, restorable2, restorable1]
         assert caplog.records[-1].message == "Error while rolling back a ErrorOnRestoreRestorable: Restorable2 failed"
+
+
+def test_get_backedup_system_repos(monkeypatch):
+    # Just so we can generate the same hash all the time.
+    monkeypatch.setattr(backup, "DEFAULT_YUM_REPOFILE_DIR", value="test")
+
+    result = backup.get_backedup_system_repos()
+    assert result == "/var/lib/convert2rhel/backup/098f6bcd4621d373cade4e832627b4f6"

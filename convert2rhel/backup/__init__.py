@@ -18,11 +18,13 @@
 __metaclass__ = type
 
 import abc
+import hashlib
 import logging
 import os
 
 import six
 
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.utils import TMP_DIR
 
 
@@ -30,6 +32,15 @@ from convert2rhel.utils import TMP_DIR
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 loggerinst = logging.getLogger(__name__)
+
+
+def get_backedup_system_repos():
+    """Get the backedup system repos path inside our backup structure.
+
+    :returns str: A formatted backedup path for system repositories
+    """
+    backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+    return backedup_reposdir
 
 
 class BackupController:
