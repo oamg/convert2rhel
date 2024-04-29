@@ -30,6 +30,7 @@ from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import TMP_DIR, store_content_to_file
 
 
+DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
 DEFAULT_YUM_VARS_DIR = "/etc/yum/vars"
 DEFAULT_DNF_VARS_DIR = "/etc/dnf/vars"
 
@@ -90,7 +91,7 @@ def get_rhel_disable_repos_command(disable_repos):
 def download_repofile(repofile_url):
     """Download the official repofile pointing to a convert2rhel repository.
 
-    :raises exceptions.CriticalError: ...
+    :raises exceptions.CriticalError: When the repository file can't be accessed.
     :returns str: Path to a successfully downloaded repofile
     """
     try:

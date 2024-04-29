@@ -176,44 +176,35 @@ class RestorablePackage(RestorableChange):
 class RestorablePackageSet(RestorableChange):
     """Install a set of packages in a way that they can be uninstalled later.
 
-    .. warn:: This functionality is incomplete (These are things that need cleanup)
-        Installing and restoring packagesets are very complex. This class needs work before it is
-        generic for any set of packages.
+    .. warn::
+        This functionality is incomplete (These are things that need cleanup)
+        Installing and restoring packagesets are very complex. This class needs
+        work before it is generic for any set of packages. To make this
+        generic, some pieces of that will need to move into this class:
 
-        To make this generic, some pieces of that will need to move into this
-        class:
-
-        * Parameter to install pkgs from "symbolic name" (vendor, pre-rhel,
-          rhel, enablerepos)? which we map to specific repo configurations?
-        * Backup and restore the vendor versions of packages which are in
-          update_pkgs.
         * This class is useful for package installation but not package
-          removal. To replace backup.ChangedRPMPackagesController and
-          back.RestorablePackage, we need to implement removal as well.  Should
-          we do that here or in a second class?
-        * Note: ChangedRPMPackagesController might still have code that deals
-          with package replacement.  AFAIK, that can be removed entirely.  As
-          of 1.4, there's never a time where we replace rpms and can restore
-          them. (Installing might upgrade dependencies from the vendor to other
-          vendor packages).
-        * Do we need to deal with dependency version issues?  With this code,
-          if an installed dependency is an older version than the
-          subscription-manager package we're installing needs to upgrade and
-          the upgraded version is not present in the vendor's repo, then we
-          will fail.
-        * Do we want to filter already installed packages from the package_list
-          in this function or leave it to the caller? If we leave it to the
-          caller, then we need to backup vendor supplied previous files here
-          and restore them on rollback. (Currently the caller handles this via
-          subscription.needed_subscription_manager_pkgs().  This could cause
-          problems if we need to do extra handling in enable/restore for
-          packages which already exist on the system.)
-        * Why is system_info.is_rpm_installed() implemented in syste_info?
-          Evaluate if it should be moved here.
+        removal. To replace backup.ChangedRPMPackagesController and
+        back.RestorablePackage, we need to implement removal as well.  Should
+        we do that here or in a second class?
 
-    .. warn:: Some things that are not handled by this class:
-        * Packages installed as a dependency on packages listed here will not be rolled back to the
-          system default if we rollback the changes.
+        * Do we need to deal with dependency version issues?  With this code,
+        if an installed dependency is an older version than the
+        subscription-manager package we're installing needs to upgrade and the
+        upgraded version is not present in the vendor's repo, then we will
+        fail.
+
+        * Do we want to filter already installed packages from the package_list
+        in this function or leave it to the caller? If we leave it to the
+        caller, then we need to backup vendor supplied previous files here and
+        restore them on rollback. (Currently the caller handles this via
+        subscription.needed_subscription_manager_pkgs().  This could cause
+        problems if we need to do extra handling in enable/restore for packages
+        which already exist on the system.)
+
+    .. warn::
+        Some things that are not handled by this class:
+        * Packages installed as a dependency on packages listed here will not
+        be rolled back to the system default if we rollback the changes.
     """
 
     def __init__(

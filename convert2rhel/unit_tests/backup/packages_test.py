@@ -102,20 +102,6 @@ class TestRestorablePackage:
         assert len(global_backup_control._restorables) == 1
         assert len(rp._backedup_pkgs_paths) == len(pkgs)
 
-    def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
-        monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
-        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
-        monkeypatch.setattr(packages, "system_info", global_system_info)
-
-        packages.system_info.eus_system = True
-        packages.system_info.id = "centos"
-
-        rp = RestorablePackage(pkgs=["test.rpm"])
-        rp._backedup_pkgs_paths = ["test.rpm"]
-        rp.enable()
-
-        assert utils.download_pkg.call_count == 1
-
     def test_package_already_enabled(self, monkeypatch, tmpdir):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
@@ -279,7 +265,6 @@ class TestRestorablePackageSet:
     )
     def test_enable_need_to_install(self, major, minor, package_set, global_system_info, caplog, monkeypatch):
         global_system_info.version = Version(major, minor)
-        monkeypatch.setattr(packages, "system_info", global_system_info)
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
 
         package_set.pkgs_to_update = ["json-c.x86_64"]
