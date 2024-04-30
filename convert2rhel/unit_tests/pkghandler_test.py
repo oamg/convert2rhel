@@ -816,7 +816,7 @@ def test_validate_parsed_fields_valid(package):
 
 
 @pytest.mark.parametrize(
-    ("package_manager_type", "packages", "expected", "reposdir"),
+    ("package_manager_type", "packages", "expected"),
     (
         (
             "yum",
@@ -830,7 +830,6 @@ def test_validate_parsed_fields_valid(package):
                     "convert2rhel.src-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
                 )
             ),
-            None,
         ),
         (
             "yum",
@@ -839,7 +838,6 @@ def test_validate_parsed_fields_valid(package):
                 "convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",
             ],
             frozenset(("convert2rhel.noarch-0.24-1.20211111151554764702.pr356.28.ge9ed160.el8",)),
-            None,
         ),
         (
             "dnf",
@@ -855,7 +853,6 @@ def test_validate_parsed_fields_valid(package):
                     "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
                 )
             ),
-            None,
         ),
         (
             "dnf",
@@ -871,7 +868,6 @@ def test_validate_parsed_fields_valid(package):
                     "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
                 )
             ),
-            "test/reposdir",
         ),
         (
             "dnf",
@@ -886,7 +882,6 @@ def test_validate_parsed_fields_valid(package):
                     "java-11-openjdk-headless-1:11.0.13.0.8-2.fc35.x86_64",
                 )
             ),
-            "test/reposdir",
         ),
     ),
 )
@@ -895,7 +890,6 @@ def test_get_total_packages_to_update(
     package_manager_type,
     packages,
     expected,
-    reposdir,
     pretend_os,
     monkeypatch,
 ):
@@ -904,7 +898,7 @@ def test_get_total_packages_to_update(
         monkeypatch.setattr(
             pkghandler,
             "_get_packages_to_update_%s" % package_manager_type,
-            value=lambda reposdir: packages,
+            value=lambda: packages,
         )
     else:
         monkeypatch.setattr(
@@ -912,7 +906,7 @@ def test_get_total_packages_to_update(
             "_get_packages_to_update_%s" % package_manager_type,
             value=lambda: packages,
         )
-    assert get_total_packages_to_update(reposdir=reposdir) == expected
+    assert get_total_packages_to_update() == expected
 
 
 @pytest.mark.skipif(
@@ -953,20 +947,14 @@ def test_get_packages_to_update_yum_no_more_mirrors(monkeypatch, caplog):
     reason="No dnf module detected on the system, skipping it.",
 )
 @pytest.mark.parametrize(
-    ("packages", "reposdir"),
+    ("packages",),
     (
-        (
-            ["package-1", "package-2", "package-i3"],
-            None,
-        ),
-        (
-            ["package-1"],
-            "test/reposdir",
-        ),
+        (["package-1", "package-2", "package-i3"],),
+        (["package-1"],),
     ),
 )
 @all_systems
-def test_get_packages_to_update_dnf(packages, reposdir, pretend_os, monkeypatch):
+def test_get_packages_to_update_dnf(packages, pretend_os, monkeypatch):
     dummy_mock = mock.Mock()
     PkgName = namedtuple("PkgNames", ["name"])
     transaction_pkgs = [PkgName(package) for package in packages]
@@ -977,7 +965,7 @@ def test_get_packages_to_update_dnf(packages, reposdir, pretend_os, monkeypatch)
     monkeypatch.setattr(pkgmanager.Base, "resolve", value=dummy_mock)
     monkeypatch.setattr(pkgmanager.Base, "transaction", value=transaction_pkgs)
 
-    assert _get_packages_to_update_dnf(reposdir=reposdir) == packages
+    assert _get_packages_to_update_dnf() == packages
 
 
 class TestInstallGpgKeys:
