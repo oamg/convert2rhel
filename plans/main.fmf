@@ -20,17 +20,11 @@ adjust+:
         SYSTEM_RELEASE_ENV: oracle-8-latest
       when: distro == oracle-8-latest
     - environment+:
-        SYSTEM_RELEASE_ENV: alma-8.6
-      when: distro == alma-8.6
-    - environment+:
         SYSTEM_RELEASE_ENV: alma-8.8
       when: distro == alma-8.8
     - environment+:
         SYSTEM_RELEASE_ENV: alma-8-latest
       when: distro == alma-8-latest
-    - environment+:
-        SYSTEM_RELEASE_ENV: rocky-8.6
-      when: distro == rocky-8.6
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8.8
       when: distro == rocky-8.8
@@ -58,7 +52,3 @@ prepare+:
     - name: remove all copr repositories
       how: shell
       script: grep -l "copr:copr.fedorainfracloud.org:group_oamg:convert2rhel" /etc/yum.repos.d/* | xargs rm
-
-# Commenting this out in favour of using a github actions with tft
-environment-file:
-    - https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env

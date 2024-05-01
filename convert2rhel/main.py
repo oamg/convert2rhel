@@ -22,7 +22,7 @@ import os
 
 from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, redhatrelease, repo, subscription, systeminfo, toolopts, utils
+from convert2rhel import pkghandler, pkgmanager, redhatrelease, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
 
 
@@ -41,6 +41,22 @@ class ConversionPhase:
     # Phase to exit the Analyze SubCommand early
     ANALYZE_EXIT = 3
     POST_PONR_CHANGES = 4
+
+
+_REPORT_MAPPING = {
+    ConversionPhase.ANALYZE_EXIT: (
+        report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
+    ),
+    ConversionPhase.PRE_PONR_CHANGES: (
+        report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
+    ),
+    ConversionPhase.POST_PONR_CHANGES: (
+        report.CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS,
+        report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS,
+    ),
+}
 
 
 def initialize_file_logging(log_name, log_dir):
@@ -96,6 +112,7 @@ def main_locked():
     """Perform all steps for the entire conversion process."""
 
     pre_conversion_results = None
+    post_conversion_results = None
     process_phase = ConversionPhase.POST_CLI
 
     # since we now have root, we can add the FileLogging
@@ -110,25 +127,20 @@ def main_locked():
 
         # Note: set pre_conversion_results before changing to the next phase so
         # we don't fail in case rollback is triggered during
-        # actions.run_actions() (either from a bug or from the user hitting
+        # actions.run_pre_actions() (either from a bug or from the user hitting
         # Ctrl-C)
         process_phase = ConversionPhase.PRE_PONR_CHANGES
-        pre_conversion_results = actions.run_actions()
+        pre_conversion_results = actions.run_pre_actions()
 
         if toolopts.tool_opts.activity == "analysis":
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
-        pre_conversion_failures = actions.find_actions_of_severity(
-            pre_conversion_results, "SKIP", level_for_raw_action_data
-        )
-        if pre_conversion_failures:
-            # The report will be handled in the error handler, after rollback.
-            loggerinst.critical("Conversion failed.")
+        _raise_for_skipped_failures(pre_conversion_results)
 
         # Print the assessment just before we ask the user whether to continue past the PONR
-        report.summary(
-            pre_conversion_results,
+        report.pre_conversion_report(
+            results=pre_conversion_results,
             include_all_reports=False,
             disable_colors=logger_module.should_disable_color_output(),
         )
@@ -144,42 +156,86 @@ def main_locked():
         utils.ask_to_continue()
 
         process_phase = ConversionPhase.POST_PONR_CHANGES
+        post_conversion_results = actions.run_post_actions()
+
+        # TODO(r0x0d): Remove this after migrating all functions to Actions.
         post_ponr_changes()
+
+        _raise_for_skipped_failures(post_conversion_results)
+        report.post_conversion_report(
+            results=post_conversion_results,
+            include_all_reports=False,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
+
         loggerinst.info("\nConversion successful!\n")
 
         # restart system if required
         utils.restart_system()
-
     except _AnalyzeExit:
         breadcrumbs.breadcrumbs.finish_collection(success=True)
+        # Update RHSM custom facts only when this returns False. Otherwise,
+        # sub-man get uninstalled and the data is removed from the RHSM server.
+        if not subscription.should_subscribe():
+            subscription.update_rhsm_custom_facts()
 
         rollback_changes()
 
-        report.summary(
-            pre_conversion_results,
+        report.pre_conversion_report(
+            results=pre_conversion_results,
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
         return 0
-
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
-        return _handle_main_exceptions(process_phase, pre_conversion_results)
-
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(process_phase, results)
     except (Exception, SystemExit, KeyboardInterrupt) as err:
-        return _handle_main_exceptions(process_phase, pre_conversion_results)
-
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(process_phase, results)
     finally:
         # Write the assessment to a file as json data so that other tools can
         # parse and act upon it.
-        if pre_conversion_results:
-            actions.report.summary_as_json(pre_conversion_results)
-            actions.report.summary_as_txt(pre_conversion_results)
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+
+        if results and process_phase in _REPORT_MAPPING:
+            json_report, txt_report = _REPORT_MAPPING[process_phase]
+
+            report.summary_as_json(results, json_report)
+            report.summary_as_txt(results, txt_report)
 
     return 0
 
 
-def _handle_main_exceptions(process_phase, pre_conversion_results=None):
+def _raise_for_skipped_failures(results):
+    """Analyze the action results for failures
+
+    :param results: The action results from the framework
+    :type results: dict
+    :raises SystemExit: In case we detect any actions that has level of `SKIP`
+        or above.
+    """
+    failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
+    if failures:
+        # The report will be handled in the error handler, after rollback.
+        loggerinst.critical("Conversion failed.")
+
+
+# TODO(r0x0d): Better function name
+def _pick_conversion_results(process_phase, pre_conversion, post_conversion):
+    """Utilitary function to define which action results to use
+
+    Maybe not be necessary (or even correct), but it is the best approximation
+    idea for now.
+    """
+    if process_phase == ConversionPhase.POST_PONR_CHANGES:
+        return post_conversion
+
+    return pre_conversion
+
+
+def _handle_main_exceptions(process_phase, results=None):
     """Common steps to handle graceful exit due to several different Exception types."""
     breadcrumbs.breadcrumbs.finish_collection()
 
@@ -189,13 +245,18 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
     if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)
     elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
+        # Update RHSM custom facts only when this returns False. Otherwise,
+        # sub-man get uninstalled and the data is removed from the RHSM server.
+        if not subscription.should_subscribe():
+            subscription.update_rhsm_custom_facts()
+
         rollback_changes()
-        if pre_conversion_results is None:
+        if results is None:
             loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
         else:
-            report.summary(
-                pre_conversion_results,
-                include_all_reports=(toolopts.tool_opts.activity == "analysis"),
+            report.pre_conversion_report(
+                results=results,
+                include_all_reports=True,
                 disable_colors=logger_module.should_disable_color_output(),
             )
     elif process_phase == ConversionPhase.POST_PONR_CHANGES:
@@ -204,6 +265,7 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
         # system rollback without user intervention. If a proper rollback
         # solution is necessary it will need to be future implemented here
         # or with the use of other backup tools.
+        subscription.update_rhsm_custom_facts()
         loggerinst.warning(
             "The conversion process failed.\n\n"
             "The system is left in an undetermined state that Convert2RHEL cannot fix. The system might not be"
@@ -211,7 +273,12 @@ def _handle_main_exceptions(process_phase, pre_conversion_results=None):
             "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
             " the system from a backup."
         )
-        subscription.update_rhsm_custom_facts()
+
+        report.post_conversion_report(
+            results=results,
+            include_all_reports=True,
+            disable_colors=logger_module.should_disable_color_output(),
+        )
     return 1
 
 
@@ -272,7 +339,6 @@ def prepare_system():
 
 def post_ponr_changes():
     """Start the conversion itself"""
-    loggerinst.info("Starting Conversion")
     post_ponr_conversion()
 
     loggerinst.task("Final: Show RPM files modified by the conversion")
@@ -290,6 +356,7 @@ def post_ponr_changes():
     loggerinst.task("Final: Configure host-metering")
     hostmetering.configure_host_metering()
 
+    loggerinst.task("Final: Update breadcrumbs")
     breadcrumbs.breadcrumbs.finish_collection(success=True)
 
     loggerinst.task("Final: Update RHSM custom facts")
@@ -298,9 +365,6 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    transaction_handler = pkgmanager.create_transaction_handler()
-    loggerinst.task("Convert: Replace system packages")
-    transaction_handler.run_transaction()
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
@@ -323,26 +387,10 @@ def rollback_changes():
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
 
-    # The next section is part of a hack for 1.4 that lets us rollback some of
-    # the changes registered with backup_control, do the manual, unported
-    # portions of rollback, and then finish whatever is left in backup_control
-    # afterwards.
-    if backup.backup_control.partition not in backup.backup_control._restorables:
-        backup.backup_control.push(backup.backup_control.partition)
-
-    backup_control_was_empty = False
-    try:
-        backup.backup_control.pop_to_partition()
-    except IndexError:
-        backup_control_was_empty = True
-
     try:
         backup.backup_control.pop_all()
     except IndexError as e:
         if e.args[0] == "No backups to restore":
-            # We have to check if we were able to pop some backups at the top
-            # of this function
-            if backup_control_was_empty:
-                loggerinst.info("During rollback there were no backups to restore")
+            loggerinst.info("During rollback there were no backups to restore")
         else:
             raise

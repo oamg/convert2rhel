@@ -6,7 +6,6 @@ description: |
         - Only last version of Convert2RHEL supported
         - Yum cache cleaned before any other check
         - Missing RHSM certificates logged properly
-        - Deprecated --variant message displayed
 
 tier: 0
 
@@ -22,7 +21,7 @@ tag+:
         - root-privileges
         - sanity
     test: |
-      pytest -svv -m test_root_privileges
+      pytest -m test_root_privileges
 
 
 /manpage:
@@ -33,7 +32,7 @@ tag+:
     tag+:
         - manpage
     test: |
-      pytest -svv -m test_manpage
+      pytest -m test_manpage
 
 
 /smoke:
@@ -46,7 +45,7 @@ tag+:
         - smoke
         - sanity
     test: |
-      pytest -svv -m test_smoke
+      pytest -m test_smoke
 
 
 /log_file_exists:
@@ -58,7 +57,7 @@ tag+:
         - log-file
         - sanity
     test: |
-      pytest -svv -m test_log_file_exists
+      pytest -m test_log_file_exists
 
 
 /convert2rhel_version:
@@ -74,7 +73,7 @@ tag+:
             - version-latest-or-newer
             - sanity
         test: |
-          pytest -svv -m test_version_latest_or_newer
+          pytest -m test_version_latest_or_newer
 
     /c2r_version_older_no_envar:
         summary+: |
@@ -85,7 +84,7 @@ tag+:
         tag+:
             - version-older-no-envar
         test: |
-          pytest -svv -m test_version_older_no_envar
+          pytest -m test_version_older_no_envar
 
     /c2r_version_older_with_envar:
         summary+: |
@@ -93,10 +92,13 @@ tag+:
         description+: |
             Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
             environment variable in place, does not raise CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE.
+        adjust+:
+            environment+:
+                CONVERT2RHEL_ALLOW_OLDER_VERSION: 1
         tag+:
             - version-older-with-envar
         test: |
-          pytest -svv -m test_version_older_with_envar
+          pytest -m test_version_older_with_envar
 
 
 /clean_cache:
@@ -107,7 +109,7 @@ tag+:
     tag+:
         - clean-cache
     test: |
-      pytest -svv -m test_clean_cache
+      pytest -m test_clean_cache
 
 
 /log_rhsm_error:
@@ -119,18 +121,7 @@ tag+:
     tag+:
         - log-rhsm-error
     test: |
-      pytest -svv -m test_log_rhsm_error
-
-
-/variant_message:
-    summary+: |
-        Deprecated variant message
-    description+: |
-        Verify that the message about deprecated --variant option is printed.
-    tag+:
-        - variant-message
-    test: |
-      pytest -svv -m test_variant_message
+      pytest -m test_log_rhsm_error
 
 
 /data_collection:
@@ -144,7 +135,7 @@ tag+:
         tag+:
             - data-collection-acknowledgement
         test: |
-          pytest -svv -m test_data_collection_acknowledgement
+          pytest -m test_data_collection_acknowledgement
 
 /incomplete_rollback_in_analyze:
     summary+: |
@@ -159,10 +150,13 @@ tag+:
            honored and the conversion should end
         2/ convert2rhel is run in conversion mode, the envar should be
            accepted and conversion continues
+    adjust+:
+        environment+:
+            CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
     tag+:
         - incomplete-rollback-in-analyze
     test: |
-        pytest -svv -m test_analyze_incomplete_rollback
+        pytest -m test_analyze_incomplete_rollback
 
 /analyze_no_rpm_va_option:
     summary+: |
@@ -171,8 +165,11 @@ tag+:
         This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
         The user should be warned that the --no-rpm-va option will be ignored and the command
         will be called.
+    adjust+:
+        environment+:
+            CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
     tag+:
         - analyze-no-rpm-va-option
         - sanity
     test: |
-        pytest -svv -m test_analyze_no_rpm_va_option
+        pytest -m test_analyze_no_rpm_va_option

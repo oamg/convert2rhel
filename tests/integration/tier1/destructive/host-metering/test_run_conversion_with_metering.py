@@ -15,20 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 import pytest
 
-from envparse import env
-
-
-@pytest.fixture
-def force_hostmetering_envar():
-    os.environ["CONVERT2RHEL_CONFIGURE_HOST_METERING"] = "force"
-
-    yield
-
-    del os.environ["CONVERT2RHEL_CONFIGURE_HOST_METERING"]
+from conftest import TEST_VARS
 
 
 def setup_test_metering_endpoint():
@@ -60,7 +49,7 @@ write_url=http://localhost:9090/api/v1/write
 
 
 @pytest.mark.test_host_metering_conversion
-def test_run_conversion_with_metering(shell, convert2rhel, force_hostmetering_envar):
+def test_run_conversion_with_metering(shell, convert2rhel):
     """
     Verify that convert2rhel automatically installs, enables and starts host-metering
     service on hyperscalers on RHEL 7.9.
@@ -69,9 +58,9 @@ def test_run_conversion_with_metering(shell, convert2rhel, force_hostmetering_en
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Installing host-metering packages")

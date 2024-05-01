@@ -27,7 +27,7 @@ tag+:
     tag+:
         - polluted-yumdownloader-output-by-yum-plugin-local
     test: |
-        pytest -svv -m test_polluted_yumdownloader_output_by_yum_plugin_local
+        pytest -m test_polluted_yumdownloader_output_by_yum_plugin_local
 
 /rhsm_cleanup:
     summary+: |
@@ -43,7 +43,7 @@ tag+:
     tag+:
         - rhsm-cleanup
     test: |
-        pytest -svv -m test_rhsm_cleanup
+        pytest -m test_rhsm_cleanup
 
 /packages_untracked_graceful_rollback:
     summary+: |
@@ -54,7 +54,7 @@ tag+:
     tag+:
         - packages-untracked-graceful-rollback
     test: |
-        pytest -svv -m test_packages_untracked_graceful_rollback
+        pytest -m test_packages_untracked_graceful_rollback
 
 /test_missing_credentials_rollback:
     summary+: |
@@ -66,7 +66,7 @@ tag+:
     tag+:
         - missing-credentials-rollback
     test: |
-        pytest -svv -m test_missing_credentials_rollback
+        pytest -m test_missing_credentials_rollback
 
 /terminate_on_registration:
     summary+: |
@@ -82,7 +82,7 @@ tag+:
         tag+:
             - terminate-on-registration-start
         test: |
-            pytest -svv -m test_terminate_on_registration_start
+            pytest -m test_terminate_on_registration_start
     /registration_success:
         summary+: |
             Terminate after successful registration
@@ -93,4 +93,4 @@ tag+:
         tag+:
             - terminate-on-registration-success
         test: |
-            pytest -svv -m test_terminate_on_registration_success
+            pytest -m test_terminate_on_registration_success

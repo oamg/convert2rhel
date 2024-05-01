@@ -3,8 +3,7 @@ import re
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
@@ -22,6 +21,30 @@ elif "rocky" in SYSTEM_RELEASE_ENV:
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"
+
+YUM_CONF_PATH = "/etc/yum.conf"
+
+
+@pytest.fixture(scope="function")
+def override_yum_conf(shell):
+    """
+    Override yum conf to add exclude option and ignore redhat-release-server
+    package.
+    """
+    content = "exclude=redhat-release-server"
+    with open(YUM_CONF_PATH, mode="a") as handler:
+        handler.write("exclude=redhat-release-server")
+
+    assert shell("grep -Fxq %s %s" % (content, YUM_CONF_PATH)).returncode == 0
+    yield
+
+    # Remove last line added
+    with open(YUM_CONF_PATH, mode="w") as handler:
+        lines = handler.readlines()
+        lines = lines[:-1]
+        handler.writelines(lines)
+
+    assert shell("grep -Fxq %s %s" % (content, YUM_CONF_PATH)).returncode == 1
 
 
 @pytest.fixture()
@@ -74,10 +97,10 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
@@ -116,10 +139,10 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect(
@@ -177,18 +200,18 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
     """
 
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         # Swallow the data collection warning
         assert c2r.expect("Prepare: Inform about data collection", timeout=300) == 0
         assert (
             c2r.expect(
-                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data about the system conversion.",
+                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.facts file that contains the below data about the system conversion.",
                 timeout=300,
             )
             == 0
@@ -197,8 +220,35 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
         c2r.sendline("y")
 
         c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
-        # Exit at PONR
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 0
+
+
+@pytest.mark.test_override_exclude_list_in_yum_config
+def test_override_exclude_list_in_yum_config(convert2rhel, kernel, override_yum_conf):
+    """
+    This test verifies that packages that are defined in the exclude
+    section in the /etc/yum.conf file are ignored during the analysis and
+    conversion.
+    The reason for us to ignore those packages, is that a user could
+    specify something like 'redhat-release-server' in the exclude list, and
+    that would cause dependency problems in the transaction.
+
+        1/ Add the exclude section to /etc/yum.conf with the
+            redhat-release-server package specified
+        2/ Set the environment variable to skip kernel check
+        3/ Boot into an older kernel
+        4/ Run the analysis and check that the transaction was successful.
+    """
+    if os.environ["TMT_REBOOT_COUNT"] == "1":
+        with convert2rhel(
+            "analyze --serverurl {} --username {} --password {} --pool {} --debug -y".format(
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
+            )
+        ) as c2r:
+            c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
+
+        assert c2r.exitstatus == 0

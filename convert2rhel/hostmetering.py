@@ -67,6 +67,7 @@ def configure_host_metering():
     """
     env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING", None)
     if env_var not in ("force", "auto"):
+        logger.debug("Value for environment variable not recognized: %s" % env_var)
         return False
 
     if system_info.version.major != 7 and env_var != "force":
@@ -82,6 +83,7 @@ def configure_host_metering():
         )
     elif env_var == "auto":
         should_configure_metering = True
+        logger.debug("Automatic detection of host hyperscaler and configuration.")
     else:
         should_configure_metering = False
 

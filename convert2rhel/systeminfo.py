@@ -25,7 +25,7 @@ import time
 
 from collections import namedtuple
 
-from six.moves import configparser, urllib
+from six.moves import configparser
 
 from convert2rhel import logger, utils
 from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME, tool_opts
@@ -34,9 +34,6 @@ from convert2rhel.utils import run_subprocess
 
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
-
-# The address that will be used to check if there is a internet connection.
-CHECK_INTERNET_CONNECTION_ADDRESS = "https://static.redhat.com/test/rhel-networkmanager.txt"
 
 # Allowed conversion paths to RHEL. We want to prevent a conversion and minor
 # version update at the same time.
@@ -55,10 +52,7 @@ RELEASE_VER_MAPPING = {
 }
 
 # Dictionary of EUS minor versions supported and their EUS period start date
-EUS_MINOR_VERSIONS = {
-    "8.6": "2022-11-09",
-    "8.8": "2023-11-14",
-}
+EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
 Version = namedtuple("Version", ["major", "minor"])
 
@@ -87,8 +81,6 @@ class SystemInfo:
             # RPM-GPG-KEY-redhat-legacy-former
             "219180cddb42a60e",
         ]
-        # Whether the system has internet access
-        self.has_internet_access = None
         # Whether the system release corresponds to a rhel eus release
         self.eus_system = None
         # Packages to be removed before the system conversion
@@ -117,10 +109,13 @@ class SystemInfo:
     def resolve_system_info(self):
         self.logger = logging.getLogger(__name__)
         self.system_release_file_content = self.get_system_release_file_content()
-        self.name = self._get_system_name()
-        self.id = self.name.split()[0].lower()
-        self.distribution_id = self._get_system_distribution_id()
-        self.version = self._get_system_version()
+
+        system_release_data = self.parse_system_release_content()
+        self.name = system_release_data["name"]
+        self.id = system_release_data["id"]
+        self.distribution_id = system_release_data["distribution_id"]
+        self.version = system_release_data["version"]
+
         self.arch = self._get_architecture()
 
         self.cfg_filename = self._get_cfg_filename()
@@ -135,7 +130,6 @@ class SystemInfo:
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
         self.booted_kernel = self._get_booted_kernel()
-        self.has_internet_access = self._check_internet_access()
         self.dbus_running = self._is_dbus_running()
         self.eus_system = self.corresponds_to_rhel_eus_release()
 
@@ -152,49 +146,89 @@ class SystemInfo:
 
         return redhatrelease.get_system_release_content()
 
-    def _get_system_name(self, system_release_content=None):
-        content = self.system_release_file_content if not system_release_content else system_release_content
-        name = re.search(r"(.+?)\s?(?:release\s?)?\d", content).group(1)
-        return name
+    def parse_system_release_content(self, system_release_content=None):
+        """Parse the content of the system release string
 
-    def _get_system_version(self, system_release_content=None):
-        """Return a namedtuple with major and minor elements, both of an int type.
+        If system_release_content is not provided we use the content from the self.system_release_file_content.
 
-        Examples:
-        Oracle Linux Server release 7.8
-        CentOS Linux release 7.6.1810 (Core)
-        CentOS Linux release 8.1.1911 (Core)
+        :param system_release_content: The contents of the system_release file if needed.
+        :type system_release_content: str
+        :returns: A dictionary containing the system release information
+        :rtype: dict[str, str]
         """
+
         content = self.system_release_file_content if not system_release_content else system_release_content
-        match = re.search(r".+?(\d+)\.(\d+)\D?", content)
-        if not match:
-            self.logger.critical("Couldn't get system version from the content string: %s" % content)
-        version = Version(int(match.group(1)), int(match.group(2)))
 
-        return version
+        matched = re.match(
+            # We assume that the /etc/system-release content follows the pattern:
+            # "<name> release <full_version> <Beta> (<dist_id>)"
+            # Here
+            # - <name>, parsed as a named group '(?P<name>.+?)',
+            #   is a non-empty string of arbitrary symbols.
+            # - "release ", parsed as (?:release\s)?,
+            #   is a literal string. It is optional, and it is dropped when parsed, so this group doesn't have a name.
+            # - <full_version>, parsed as a named group '(?P<full_version>[.\d]+)',
+            #   is a string of arbitrary length containing numbers and dots, for example 8.1.1911 or 7.9.
+            #   (For now we do not have examples with version strings containing letters or other symbols)
+            # - <Beta>, just the word Beta which may appear in some cases, parsed as '(?:\sBeta)?'.
+            # - <dist_id>, parsed as a named group (?P<dist_id>.+), is optional and when it is present, it must appear
+            #   in brackets. Thus, the named group is nested under an unnamed group which starts from a space and then
+            #   has brackets '(\s\( ...here goes the nested group... \))?'
+            #
+            # Example:
+            #
+            #   CentOS Stream release 8
+            #   <    name   > <      ><full_version>
+            #
+            #   CentOS Linux release 8.1.1911        (Core     )
+            #   <    name  > <      ><full_version><  <dist_id>>
+            #   CentOS Linux release 8.1.1911      Beta       (Core     )
+            #   <    name  > <      ><full_version><    ><  <dist_id>>
+            r"^(?P<name>.+?)\s(?:release\s)?(?P<full_version>[.\d]+)(?:\sBeta)?(\s\((?P<dist_id>.+)\))?$",
+            content,  # type: ignore
+        )
 
-    def _get_system_distribution_id(self, system_release_content=None):
-        """Return the distribution id from the system release file.
+        if not matched:
+            self.logger.critical_no_exit("Couldn't parse the system release content string: %s" % content)
+            return {}
 
-            .. note::
-                This distribution id differs from the property `id` we have in the SystemInfo class
-                as this id is the last thing that appears on the system-release file as noted by
-                the example below.
+        name = matched.group("name")
+        system_id = name.split()[0].lower()
 
-        Examples:
-        Oracle Linux Server release 7.8      <- None
-        CentOS Linux release 7.6.1810 (Core) <- Core
-        CentOS Linux release 8.1.1911 (Core) <- Core
+        distribution_id = matched.group("dist_id")
 
-        :returns: The distribution id from the system release file if any.
-        :rtype: str | None
-        """
-        content = self.system_release_file_content if not system_release_content else system_release_content
-        match = re.search(r"(?<=\()[^)]*(?=\))", content)
-        if not match:
-            return None
+        full_version = matched.group("full_version")
+        version_numbers = full_version.split(".")
+        major = int(version_numbers[0])
 
-        return match.group()
+        # We assume that distributions separate major and minor versions with a dot. If the full_version split by a dot
+        # has at least two items - we have a major and minor versions.
+
+        if len(version_numbers) > 1:
+            minor = int(version_numbers[1])
+        else:
+            # In case there are no minor versions specified in the release string, we assume that we are using CentOS
+            # Stream or a similar distribution, which is continuosly going slightly ahead of the latest released minor
+            # version of RHEL up until the end of its lifecycle. Thus its "ephemeral" minor version is always higher
+            # than RHEL X.0-X.9.
+
+            # The Stream lifecycle stops with the RHEL X.10 minor release, when the Stream goes EOL and RHEL catches
+            # up with it. After that the Stream-like system can be converted to RHEL X.10 without a downgrade.
+
+            # Therefore to enable the simplest conversion from CentOS Stream at its EOL date, we hardcode the
+            # CentOS Stream minor version to 10.
+
+            minor = 10
+
+        version = Version(major, minor)
+
+        return {
+            "name": name,
+            "id": system_id,
+            "version": version,
+            "distribution_id": distribution_id,
+            "full_version": full_version,
+        }
 
     def _get_architecture(self):
         arch, _ = utils.run_subprocess(["uname", "-i"], print_output=False)
@@ -389,52 +423,6 @@ class SystemInfo:
         """
         return self.submgr_enabled_repos if not tool_opts.no_rhsm else tool_opts.enablerepo
 
-    def _check_internet_access(self):
-        """Check whether or not the machine is connected to the internet.
-
-        This method will try to retrieve a web page on the Red Hat network that
-        we know to exist (http://static.redhat.com/test/rhel-networkmanager.txt).
-        If we can successfully access that page, then we decide we are connected
-        to the internet.
-
-        We check a web page because we will need working https to retrieve
-        packages from Red Hat infrastructure during the conversion.
-
-        .. warnings::
-            We might have some problems with this if the host machine is using
-            a NAT gateway to route the outbound requests to any other service.
-
-            DNS could also be used to redirect the URL we test to another address.
-
-        :return: Return boolean indicating whether or not we have internet
-            access.
-        :rtype: bool
-        """
-        self.logger.info(
-            "Checking internet connectivity using address '%s'.",
-            CHECK_INTERNET_CONNECTION_ADDRESS,
-        )
-        try:
-            # urlopen as a context manager is only available in Python-3.0+
-            # pylint: disable=consider-using-with
-            response = urllib.request.urlopen(CHECK_INTERNET_CONNECTION_ADDRESS, timeout=15)
-            response.close()
-            # pylint: enable=consider-using-with
-            self.logger.info(
-                "Successfully connected to address '%s', internet connection seems to be available."
-                % CHECK_INTERNET_CONNECTION_ADDRESS
-            )
-            return True
-        except urllib.error.URLError as err:
-            self.logger.warning(
-                "There was a problem while trying to connect to '%s' to check internet connectivity. "
-                "This could be due to the host being offline, or the network blocking access to the endpoint... "
-                "Some checks and actions will be skipped.",
-                CHECK_INTERNET_CONNECTION_ADDRESS,
-            )
-            self.logger.debug("Failed to retrieve data from host, reason: %s", err.reason)
-            return False
-
     def corresponds_to_rhel_eus_release(self):
         """Return whether the current minor version corresponds to a RHEL Extended Update Support (EUS) release.
 
@@ -445,9 +433,7 @@ class SystemInfo:
         :rtype: bool
         """
         current_version = "%s.%s" % (self.version.major, self.version.minor)
-        # This check will be dropped once 8.6 is no longer supported under EUS
-        if current_version == "8.6":
-            return True
+
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
             self.logger.info("EUS argument detected, automatically evaluating system as EUS")
             return True
@@ -494,14 +480,13 @@ class SystemInfo:
         :returns: A dictionary containing the system release information
         :rtype: dict[str, str]
         """
-        distribution_id = self._get_system_distribution_id(system_release_content)
-        distribution_name = self._get_system_name(system_release_content)
-        distribution_version = self._get_system_version(system_release_content)
+
+        system_release_data = self.parse_system_release_content(system_release_content)
 
         release_info = {
-            "id": distribution_id,
-            "name": distribution_name,
-            "version": "%s.%s" % (distribution_version.major, distribution_version.minor),
+            "id": system_release_data["distribution_id"],
+            "name": system_release_data["name"],
+            "version": "%s.%s" % (system_release_data["version"].major, system_release_data["version"].minor),
         }
 
         return release_info

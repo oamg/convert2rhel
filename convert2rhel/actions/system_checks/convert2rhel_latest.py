@@ -27,6 +27,7 @@ from convert2rhel import __version__ as running_convert2rhel_version
 from convert2rhel import actions, utils
 from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 logger = logging.getLogger(__name__)
@@ -59,17 +60,6 @@ class Convert2rhelLatest(actions.Action):
 
         super(Convert2rhelLatest, self).run()
 
-        if not system_info.has_internet_access:
-            description = "Did not perform the check because no internet connection has been detected."
-            logger.warning(description)
-            self.add_message(
-                level="WARNING",
-                id="CONVERT2RHEL_LATEST_CHECK_SKIP_NO_INTERNET",
-                title="Did not perform convert2rhel latest version check",
-                description=description,
-            )
-            return
-
         repo_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=utils.TMP_DIR)
         repo_path = os.path.join(repo_dir, "convert2rhel.repo")
         utils.store_content_to_file(filename=repo_path, content=CONVERT2RHEL_REPO_CONTENT)
@@ -87,7 +77,7 @@ class Convert2rhelLatest(actions.Action):
 
         # Note: This is safe because we're creating in utils.TMP_DIR which is hardcoded to
         # /var/lib/convert2rhel which does not have any world-writable directory components.
-        utils.mkdir_p(repo_dir)
+        files.mkdir_p(repo_dir)
 
         try:
             raw_output_convert2rhel_versions, return_code = utils.run_subprocess(cmd, print_output=False)
@@ -203,24 +193,7 @@ class Convert2rhelLatest(actions.Action):
         formatted_available_version = _format_EVR(*precise_available_version)
 
         if ver_compare < 0:
-            # Current and deprecated env var names
-            allow_older_envvar_names = ("CONVERT2RHEL_ALLOW_OLDER_VERSION", "CONVERT2RHEL_UNSUPPORTED_VERSION")
-            if any(envvar in os.environ for envvar in allow_older_envvar_names):
-                if "CONVERT2RHEL_ALLOW_OLDER_VERSION" not in os.environ:
-                    logger.warning(
-                        "You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'"
-                        " environment variable.  Please switch to 'CONVERT2RHEL_ALLOW_OLDER_VERSION'"
-                        " instead."
-                    )
-                    self.add_message(
-                        level="WARNING",
-                        id="DEPRECATED_ENVIRONMENT_VARIABLE",
-                        title="Deprecated environment variable",
-                        description="A deprecated environment variable has been detected",
-                        diagnosis="You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_VERSION'",
-                        remediations="Please switch to the 'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable instead",
-                    )
-
+            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
                 diagnosis = (
                     "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
@@ -288,8 +261,8 @@ def _extract_convert2rhel_versions(raw_versions):
     # relevant repoquery information to our check, otherwise, we just log the
     # information as debug and do nothing with it.
     for raw_version in precise_raw_version:
-        if "C2R" in raw_version:
-            parsed_versions.append(raw_version.lstrip("C2R "))
+        if raw_version.startswith("C2R "):
+            parsed_versions.append(raw_version[4:])
         else:
             # Mainly for debugging purposes to see what is happening if we got
             # anything else that does not have the C2R identifier at the start

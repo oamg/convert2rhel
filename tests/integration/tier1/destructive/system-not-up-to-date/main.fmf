@@ -7,4 +7,4 @@ description: |
     Verify that CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP overrides the out of date pkg check.
 
 /system_not_updated:
-    test: pytest -svv -m test_system_not_updated
+    test: pytest -m test_system_not_updated

@@ -53,7 +53,7 @@ before and after the conversion with the output stored in log files rpm_va.log
 and rpm_va_after_conversion.log. At the end of the conversion, these logs are
 compared to show you what rpm files have been affected by the conversion.
 Cannot be used with analyze subcommand. The environment variable
-CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
+CONVERT2RHEL_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
 argument.
 
 .TP
@@ -142,13 +142,6 @@ obtain by running 'subscription\-manager list \-\-available'. If no pool ID is
 provided, the \-\-auto option is used
 
 .TP
-\fB\-v\fR \fI\,VARIANT\/\fR, \fB\-\-variant\fR \fI\,VARIANT\/\fR
-This option is not supported anymore and has no effect. When converting a
-system to RHEL 7 using subscription\-manager, the system is now always
-converted to the Server variant. In case of using custom repositories, the
-system is converted to the variant provided by these repositories.
-
-.TP
 \fB\-\-serverurl\fR \fI\,SERVERURL\/\fR
 Hostname of the subscription service to be used when registering the system
 with subscription\-manager. The default is the Customer Portal Subscription
@@ -199,7 +192,7 @@ before and after the conversion with the output stored in log files rpm_va.log
 and rpm_va_after_conversion.log. At the end of the conversion, these logs are
 compared to show you what rpm files have been affected by the conversion.
 Cannot be used with analyze subcommand. The environment variable
-CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
+CONVERT2RHEL_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
 argument.
 
 .TP
@@ -286,13 +279,6 @@ Automatically attach compatible subscriptions to the system.
 Subscription pool ID. A list of the available subscriptions is possible to
 obtain by running 'subscription\-manager list \-\-available'. If no pool ID is
 provided, the \-\-auto option is used
-
-.TP
-\fB\-v\fR \fI\,VARIANT\/\fR, \fB\-\-variant\fR \fI\,VARIANT\/\fR
-This option is not supported anymore and has no effect. When converting a
-system to RHEL 7 using subscription\-manager, the system is now always
-converted to the Server variant. In case of using custom repositories, the
-system is converted to the variant provided by these repositories.
 
 .TP
 \fB\-\-serverurl\fR \fI\,SERVERURL\/\fR

@@ -159,7 +159,7 @@ def get_installed_pkg_information(pkg_name="*"):
                 # Special case for `gpg-pubkeys` package that does not contain
                 # an arch set.
                 if name.endswith(".(none)"):
-                    name = name.rstrip(".(none)")
+                    name = name[:-7]
 
                 name, epoch, version, release, arch = tuple(parse_pkg_string(name))
 

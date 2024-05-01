@@ -73,6 +73,17 @@ description+: |
         adjust+:
             - enabled: true
               when: distro == centos-7, oracle-7
+        environment+:
+            CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+            CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
+
+            # Unavailable kmods may be present on the system due to the kernel package
+            # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
+            CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+
+            # We need to skip check for collected rhsm custom facts after the conversion
+            # due to disabled submgr, thus adding envar
+            SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
         prepare+:
             - name: Add custom repositories
               how: ansible
@@ -93,7 +104,7 @@ description+: |
         prepare+:
             - name: Set non english locale
               how: shell
-              script: pytest -svv tests/integration/*/destructive/set-locale/use_non_english_language.py
+              script: pytest --setup-show -svv tests/integration/*/destructive/set-locale/use_non_english_language.py
         discover+:
             test+<:
                 - conversion-method/activation_key_conversion
@@ -103,7 +114,7 @@ description+: |
         prepare+:
             - name: Remove the /etc/os-release file
               how: shell
-              script: pytest -svv tests/integration/*/destructive/os-release-removal/remove_os_release.py
+              script: pytest --setup-show -svv tests/integration/*/destructive/os-release-removal/remove_os_release.py
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion
@@ -121,18 +132,27 @@ description+: |
                 - enabled: true
                   when: distro == centos-7, oracle-7
             environment+:
-                CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK: 1
+                # Bypass the kernel check, since the installed kernel is an older version
+                CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
+
+                # We need to set envar to override the out of date packages check
+                # to perform the full conversion
+                # The packages are outdated because the repoquery check is done
+                # against the rhel-7-server-rpms repository, not CentOS'.
+                CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP: 1
+
                 # Since we are removing all the repositories other than rhel-7-server-rpms
-                # we need pass CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK due to the inability
+                # we need pass CONVERT2RHEL_INCOMPLETE_ROLLBACK due to the inability
                 # to download and backup packages
-                CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK: 1
+                CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+
                 # Unavailable kmods may be present on the system due to the kernel package
                 # not being updated. Mitigate the issues by exporting CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS.
                 CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
             prepare+:
                 - name: Prepare non latest kernel
                   how: shell
-                  script: pytest -svv tests/integration/*/destructive/kernel-check-skip/install_older_kernel.py
+                  script: pytest --setup-show -svv tests/integration/*/destructive/kernel-check-skip/install_older_kernel.py
                 - name: Add custom repos
                   how: ansible
                   playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
@@ -208,7 +228,7 @@ description+: |
         prepare+:
             - name: Make sure the 'kernel-core' is the only installed kernel package
               how: shell
-              script: pytest -svv tests/integration/*/destructive/kernel-core-only/remove_kernel_pkg.py
+              script: pytest --setup-show -svv tests/integration/*/destructive/kernel-core-only/remove_kernel_pkg.py
             - name: Reboot after kernel package removal leaving only kernel-core on the system
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -241,7 +261,7 @@ description+: |
         prepare+:
             - name: Verify multiple NIC are present
               how: shell
-              script: pytest -svv tests/integration/*/destructive/multiple-nic/multiple_nic.py
+              script: pytest --setup-show -svv tests/integration/*/destructive/multiple-nic/multiple_nic.py
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion

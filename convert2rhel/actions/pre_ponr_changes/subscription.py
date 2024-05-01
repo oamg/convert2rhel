@@ -48,7 +48,7 @@ class InstallRedHatCertForYumRepositories(actions.Action):
         # The subscription-manager-rhsm-certificates package contains this cert but for
         # example on CentOS Linux 7 this package is missing the cert due to intentional
         # debranding. Thus we need to ensure the cert is in place even when the pkg is installed.
-        logger.task("Convert: Install cdn.redhat.com SSL CA certificate")
+        logger.task("Prepare: Install cdn.redhat.com SSL CA certificate")
         repo_cert = RestorablePEMCert(_REDHAT_CDN_CACERT_SOURCE_DIR, _REDHAT_CDN_CACERT_TARGET_DIR)
         backup.backup_control.push(repo_cert)
 
@@ -61,7 +61,7 @@ class InstallRedHatGpgKeyForRpm(actions.Action):
 
         # Import the Red Hat GPG Keys for installing Subscription-manager
         # and for later.
-        logger.task("Convert: Import Red Hat GPG keys")
+        logger.task("Prepare: Import Red Hat GPG keys")
         pkghandler.install_gpg_keys()
 
 
@@ -93,34 +93,24 @@ class PreSubscription(actions.Action):
             return
 
         try:
-            logger.task("Convert: Subscription Manager - Check for installed packages")
+            logger.task("Prepare: Subscription Manager - Check for installed packages")
             subscription_manager_pkgs = subscription.needed_subscription_manager_pkgs()
             if not subscription_manager_pkgs:
                 logger.info("Subscription Manager is already present")
             else:
-                logger.task("Convert: Subscription Manager - Install packages")
+                logger.task("Prepare: Subscription Manager - Install packages")
                 # Hack for 1.4: if we install subscription-manager from the UBI repo, it
                 # may require newer versions of packages than provided by the vendor.
                 # (Note: the function is marked private because this is a hack
                 # that should be replaced when we aren't under a release
                 # deadline.
                 update_pkgs = subscription._dependencies_to_update(subscription_manager_pkgs)
-
-                # Part of another hack for 1.4 that allows us to rollback part
-                # of the backup control, then do old rollback items that
-                # haven't been ported into the backup framework yet, and then
-                # do the rest.
-                # We need to do this here so that subscription-manager packages
-                # that we install are uninstalled before other packages which
-                # we may install during rollback.
-                backup.backup_control.push(backup.backup_control.partition)
-
                 subscription.install_rhel_subscription_manager(subscription_manager_pkgs, update_pkgs)
 
-            logger.task("Convert: Subscription Manager - Verify installation")
+            logger.task("Prepare: Subscription Manager - Verify installation")
             subscription.verify_rhsm_installed()
 
-            logger.task("Convert: Install a RHEL product certificate for RHSM")
+            logger.task("Prepare: Install a RHEL product certificate for RHSM")
             product_cert = RestorablePEMCert(_RHSM_PRODUCT_CERT_SOURCE_DIR, _RHSM_PRODUCT_CERT_TARGET_DIR)
             backup.backup_control.push(product_cert)
 
@@ -177,7 +167,7 @@ class SubscribeSystem(actions.Action):
                 )
                 return
 
-            logger.task("Convert: Subscription Manager - Reload configuration")
+            logger.task("Prepare: Subscription Manager - Reload configuration")
             # We will use subscription-manager later to enable the RHEL repos so we need to make
             # sure subscription-manager knows about the product certificate. Refreshing
             # subscription info will do that.
@@ -195,26 +185,41 @@ class SubscribeSystem(actions.Action):
                     return
                 raise
 
-            logger.warning("No rhsm credentials given to subscribe the system. Did not perform the subscription step.")
+            if not subscription.is_sca_enabled() and not subscription.is_subscription_attached():
+                logger.warning(
+                    "The system is registered with an RHSM account that has Simple Content Access (SCA) disabled but no subscription is attached. Without enabled SCA or an attached subscription the system can't access RHEL repositories. We'll try to auto-attach a subscription."
+                )
+                try:
+                    backup.backup_control.push(subscription.RestorableAutoAttachmentSubscription())
+                except subscription.SubscriptionAutoAttachmentError:
+                    self.set_result(
+                        level="ERROR",
+                        id="NO_ACCESS_TO_RHEL_REPOS",
+                        title="No access to RHEL repositories",
+                        description="The system can access RHEL repositories only with either Simple Content Access (SCA) enabled or with an attached subscription.",
+                        diagnosis="The system is registered with an RHSM account that has SCA disabled but no subscription is attached. Auto-attaching a subscription was not successful.",
+                        remediations="Either attach a subscription manually by running 'subscription-manager attach --pool <pool id>' prior to the conversion or enable Simple Content Access on your RHSM account (https://access.redhat.com/articles/simple-content-access).",
+                    )
+                    return
 
         try:
             # In the future, refactor this to be an else on the previous
             # condition or a separate Action.  Not doing it now because we
             # have to disentangle the exception handling when we do that.
             if subscription.should_subscribe():
-                logger.task("Convert: Subscription Manager - Subscribe system")
+                logger.task("Prepare: Subscription Manager - Subscribe system")
                 restorable_subscription = subscription.RestorableSystemSubscription()
                 backup.backup_control.push(restorable_subscription)
 
-            logger.task("Convert: Get RHEL repository IDs")
+            logger.task("Prepare: Get RHEL repository IDs")
             rhel_repoids = repo.get_rhel_repoids()
 
-            logger.task("Convert: Subscription Manager - Disable all repositories")
+            logger.task("Prepare: Subscription Manager - Disable all repositories")
             subscription.disable_repos()
 
             # we need to enable repos after removing repofile pkgs, otherwise
             # we don't get backups to restore from on a rollback
-            logger.task("Convert: Subscription Manager - Enable RHEL repositories")
+            logger.task("Prepare: Subscription Manager - Enable RHEL repositories")
             subscription.enable_repos(rhel_repoids)
         except OSError as e:
             # This should not occur anymore as all the relevant OSError has been changed to a CriticalError

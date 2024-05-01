@@ -29,6 +29,7 @@ from convert2rhel.backup import certs
 from convert2rhel.backup.certs import RestorablePEMCert, RestorableRpmKey
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
+from convert2rhel.utils import files
 
 
 # Directory with all the tool data
@@ -70,7 +71,7 @@ def cert_dir(monkeypatch, request):
 
         # Create temporary directory that has no certificate
         cert_dir = os.path.join(rhel_cert_dir, request.param["arch"])
-        utils.mkdir_p(cert_dir)
+        files.mkdir_p(cert_dir)
 
     monkeypatch.setattr(utils, "DATA_DIR", data_dir)
     monkeypatch.setattr(system_info, "arch", request.param["arch"])
@@ -120,7 +121,6 @@ class TestPEMCert:
     @pytest.mark.parametrize(
         ("arch", "rhel_version", "pem"),
         (
-            ("ppc64", "7", "74.pem"),
             ("x86_64", "7", "69.pem"),
             ("x86_64", "8", "479.pem"),
         ),
@@ -205,7 +205,7 @@ class TestPEMCert:
 
     def test_enable_certificate_error(self, caplog, monkeypatch, system_cert_with_target_path):
         fake_mkdir_p = mock.Mock(side_effect=OSError(13, "Permission denied"))
-        monkeypatch.setattr(utils, "mkdir_p", fake_mkdir_p)
+        monkeypatch.setattr(files, "mkdir_p", fake_mkdir_p)
 
         with pytest.raises(exceptions.CriticalError):
             system_cert_with_target_path.enable()

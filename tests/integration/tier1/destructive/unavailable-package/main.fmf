@@ -11,4 +11,4 @@ description: |
 
 
 /package_removed_from_centos_85:
-    test: pytest -svv -m test_package_removed_from_centos_85
+    test: pytest -m test_package_removed_from_centos_85

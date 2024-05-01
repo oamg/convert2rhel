@@ -16,4 +16,4 @@ adjust+:
     tag+:
         - firewalld-inhibitor
     test: |
-        pytest -svv -m test_firewalld_inhibitor
+        pytest -m test_firewalld_inhibitor

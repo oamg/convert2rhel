@@ -26,8 +26,8 @@ from convert2rhel.pkgmanager import call_yum_cmd
 
 # Fine to import call_yum_cmd for now, but we really should figure out a way to
 # split this out.
-from convert2rhel.repo import get_hardcoded_repofiles_dir
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 loggerinst = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ _UBI_REPO_MAPPING = {
 class RestorablePackage(RestorableChange):
     def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
         """
-        Keep control of systme packages before their removal to backup and
+        Keep control of system packages before their removal to backup and
         restore in case of rollback.
 
         :param pkgs list[str]: List of packages to backup.
@@ -129,45 +129,34 @@ class RestorablePackage(RestorableChange):
         if self.enabled:
             return
 
-        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
-        if os.path.isdir(BACKUP_DIR):
-            if system_info.eus_system and system_info.id == "centos":
-                self.reposdir = get_hardcoded_repofiles_dir()
-
-            if not system_info.has_internet_access:
-                if self.reposdir:
-                    loggerinst.debug(
-                        "Not using repository files stored in %s due to the absence of internet access." % self.reposdir
-                    )
-
-                for pkg in self.pkgs:
-                    self._backedup_pkgs_paths.append(
-                        utils.download_pkg(
-                            pkg=pkg,
-                            dest=BACKUP_DIR,
-                            set_releasever=self.set_releasever,
-                            custom_releasever=self.custom_releasever,
-                            varsdir=self.varsdir,
-                        )
-                    )
-            else:
-                if self.reposdir:
-                    loggerinst.debug("Using repository files stored in %s." % self.reposdir)
-
-                for pkg in self.pkgs:
-                    self._backedup_pkgs_paths.append(
-                        utils.download_pkg(
-                            pkg=pkg,
-                            dest=BACKUP_DIR,
-                            set_releasever=self.set_releasever,
-                            custom_releasever=self.custom_releasever,
-                            varsdir=self.varsdir,
-                            reposdir=self.reposdir,
-                        )
-                    )
-        else:
+        if not os.path.isdir(BACKUP_DIR):
             loggerinst.warning("Can't access %s" % BACKUP_DIR)
+            return
 
+        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
+        loggerinst.debug("Using repository files stored in %s." % self.reposdir)
+
+        if self.reposdir:
+            # If nothing is inside the directory, or it does not exist, let's
+            # just not use it to download the packages.
+            if len(os.listdir(self.reposdir)) == 0 or not os.path.exists(self.reposdir):
+                loggerinst.info("The repository directory %s seems to be empty or non-existent.")
+                self.reposdir = None
+
+        for pkg in self.pkgs:
+            self._backedup_pkgs_paths.append(
+                utils.download_pkg(
+                    pkg=pkg,
+                    dest=BACKUP_DIR,
+                    set_releasever=self.set_releasever,
+                    custom_releasever=self.custom_releasever,
+                    varsdir=self.varsdir,
+                    reposdir=self.reposdir,
+                )
+            )
+
+        # TODO(r0x0d): Maybe we want to set the enabled value only when we
+        # backup something?
         # Set the enabled value
         super(RestorablePackage, self).enable()
 
@@ -308,8 +297,8 @@ class RestorablePackageSet(RestorableChange):
         # Note, this use of mkdir_p is secure because SUBMGR_RPMS_DIR and
         # _RHSM_TMP_DIR do not contain any path components writable by
         # a different user.
-        utils.mkdir_p(_SUBMGR_RPMS_DIR)
-        utils.mkdir_p(_RHSM_TMP_DIR)
+        files.mkdir_p(_SUBMGR_RPMS_DIR)
+        files.mkdir_p(_RHSM_TMP_DIR)
 
         loggerinst.info("Downloading requested packages")
         all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update

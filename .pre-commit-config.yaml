@@ -23,7 +23,7 @@ repos:
       - id: isort
         additional_dependencies: [toml]
   - repo: "https://github.com/pre-commit/pre-commit-hooks"
-    rev: "v4.5.0"
+    rev: "v4.6.0"
     hooks:
       - id: "end-of-file-fixer"
       - id: "trailing-whitespace"
@@ -35,7 +35,7 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.31.0"
+    rev: "1.32.2"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
@@ -53,6 +53,6 @@ repos:
       - id: gitleaks
         stages: [manual, push]
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.10
+    rev: v2.11
     hooks:
       - id: vulture

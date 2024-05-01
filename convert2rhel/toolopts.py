@@ -47,8 +47,6 @@ ARGS_WITH_VALUES = [
     "--username",
     "-p",
     "--password",
-    "-f",
-    "--password-from-file",
     "-k",
     "--activationkey",
     "-o",
@@ -69,7 +67,6 @@ class ToolOpts:
     def __init__(self):
         self.debug = False
         self.username = None
-        self.password_file = None
         self.config_file = None
         self.password = None
         self.no_rhsm = False
@@ -188,15 +185,13 @@ class CLI:
             " stored in log files %s and %s. At the end of the conversion, these logs are compared"
             " to show you what rpm files have been affected by the conversion."
             " Cannot be used with analyze subcommand."
-            " The environment variable CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"
+            " The environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK"
             " needs to be set to 1 to use this argument." % (PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME),
         )
         self._shared_options_parser.add_argument(
             "--eus",
             action="store_true",
-            help="Automatically recognize the system as eus, utilizing eus repos."
-            " 8.6 systems do not require this option as they are recognized as eus automatically."
-            " This option is meant for 8.8+ systems.",
+            help="Automatically recognize the system as eus, utilizing eus repos.",
         )
         self._shared_options_parser.add_argument(
             "--enablerepo",
@@ -239,11 +234,6 @@ class CLI:
             description="The following options are required if you do not intend on using subscription-manager.",
         )
         group.add_argument(
-            "--disable-submgr",
-            action="store_true",
-            help="Replaced by --no-rhsm. Both options have the same effect.",
-        )
-        group.add_argument(
             "--no-rhsm",
             action="store_true",
             help="Do not use the subscription-manager, use custom repositories instead. See --enablerepo/--disablerepo"
@@ -273,14 +263,6 @@ class CLI:
             " used, the user is asked to enter the password."
             " We recommend using the --config-file option instead to prevent leaking the password"
             " through a list of running processes.",
-        )
-        group.add_argument(
-            "-f",
-            "--password-from-file",
-            help="File containing"
-            " password for the subscription-manager in the plain"
-            " text form. It's an alternative to the --password"
-            " option. Deprecated, use --config-file instead.",
         )
         group.add_argument(
             "-k",
@@ -328,33 +310,16 @@ class CLI:
             " If no pool ID is provided, the --auto option is used",
         )
         group.add_argument(
-            "-v",
-            "--variant",
-            help="This option is not supported anymore and has no effect. When"
-            " converting a system to RHEL 7 using subscription-manager,"
-            " the system is now always converted to the Server variant. In case"
-            " of using custom repositories, the system is converted to the variant"
-            " provided by these repositories.",
-        )
-        group.add_argument(
             "--serverurl",
             help="Hostname of the subscription service to be used when registering the system with"
             " subscription-manager. The default is the Customer Portal Subscription Management service"
             " (subscription.rhsm.redhat.com). It is not to be used to specify a Satellite server. For that, read"
             " the product documentation at https://access.redhat.com/.",
         )
-        group.add_argument(
-            "--keep-rhsm",
-            action="store_true",
-            help="Deprecated. This option has no effect. Convert2rhel will now use whatever"
-            " subscription-manager packages are present on the system.",
-        )
 
     def _process_cli_options(self):
         """Process command line options used with the tool."""
         _log_command_used()
-
-        warn_on_unsupported_options()
 
         # algorithm function to properly organize all CLI args
         argv = _add_default_command(sys.argv[1:])
@@ -379,9 +344,9 @@ class CLI:
         tool_opts.set_opts(conf_file_opts)
         config_opts = copy.copy(tool_opts)
         tool_opts.config_file = parsed_opts.config_file
-        # corner case: password on CLI or in password file and activation-key in the config file
+        # corner case: password on CLI and activation-key in the config file
         # password from CLI has precedence and activation-key must be deleted (unused)
-        if config_opts.activation_key and (parsed_opts.password or parsed_opts.password_from_file):
+        if config_opts.activation_key and parsed_opts.password:
             tool_opts.activation_key = None
 
         if parsed_opts.no_rpm_va:
@@ -391,13 +356,13 @@ class CLI:
                     " in the analysis mode is essential for a complete rollback to the original"
                     " system state at the end of the analysis."
                 )
-            elif os.getenv("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None):
+            elif os.getenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
                 tool_opts.no_rpm_va = True
             else:
                 message = (
                     "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes"
                     " done to the system during the pre-conversion analysis. If you accept the risk of an"
-                    " incomplete rollback, set the CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1 environment"
+                    " incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment"
                     " variable. Otherwise, remove the --no-rpm-va option."
                 )
                 loggerinst.critical(message)
@@ -407,11 +372,6 @@ class CLI:
 
         if parsed_opts.password:
             tool_opts.password = parsed_opts.password
-
-        if parsed_opts.password_from_file:
-            loggerinst.warning("Deprecated. Use -c | --config-file instead.")
-            tool_opts.password_file = parsed_opts.password_from_file
-            tool_opts.password = utils.get_file_content(parsed_opts.password_from_file)
 
         if parsed_opts.enablerepo:
             tool_opts.enablerepo = parsed_opts.enablerepo
@@ -428,10 +388,10 @@ class CLI:
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 
-        if parsed_opts.no_rhsm or parsed_opts.disable_submgr:
+        if parsed_opts.no_rhsm:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("The --enablerepo option is required when --disable-submgr or --no-rhsm is used.")
+                loggerinst.critical("The --enablerepo option is required when --no-rhsm is used.")
 
         if parsed_opts.eus:
             tool_opts.eus = True
@@ -453,9 +413,7 @@ class CLI:
 
         if parsed_opts.serverurl:
             if tool_opts.no_rhsm:
-                loggerinst.warning(
-                    "Ignoring the --serverurl option. It has no effect when --disable-submgr or --no-rhsm is used."
-                )
+                loggerinst.warning("Ignoring the --serverurl option. It has no effect when --no-rhsm is used.")
             # WARNING: We cannot use the following helper until after no_rhsm,
             # username, password, activation_key, and organization have been set.
             elif not _should_subscribe(tool_opts):
@@ -494,14 +452,6 @@ class CLI:
                 if url_parts.path:
                     tool_opts.rhsm_prefix = url_parts.path
 
-        if parsed_opts.keep_rhsm:
-            loggerinst.warning(
-                "The --keep-rhsm option is deprecated and will be removed in"
-                " the future. Convert2rhel will now always use the"
-                " subscription-manager packages which are already installed on"
-                " the system so this option has no effect."
-            )
-
         tool_opts.autoaccept = parsed_opts.y
         tool_opts.auto_attach = parsed_opts.auto_attach
 
@@ -524,12 +474,6 @@ class CLI:
                 " We're going to use the activation key."
             )
 
-        if parsed_opts.password and parsed_opts.password_from_file:
-            loggerinst.warning(
-                "You have passed the RHSM password through both the --password-from-file and the --password option."
-                " We're going to use the password from file."
-            )
-
         # Config files matches
         if config_opts.username and parsed_opts.username:
             loggerinst.warning(
@@ -549,25 +493,10 @@ class CLI:
                 " configuration file. We're going to use the command line values."
             )
 
-        if (config_opts.activation_key or config_opts.password) and parsed_opts.password_from_file:
-            loggerinst.warning(
-                "You have passed the RHSM credentials both through a config file and through a password file."
-                " We're going to use the password file."
-            )
-
         if (tool_opts.org and not tool_opts.activation_key) or (not tool_opts.org and tool_opts.activation_key):
             loggerinst.critical(
-                "Either the --organization or the --activationkey option is missing. You can't use one without the other."
+                "Either the --org or the --activationkey option is missing. You can't use one without the other."
             )
-
-
-def warn_on_unsupported_options():
-    if any(x in sys.argv[1:] for x in ["--variant", "-v"]):
-        loggerinst.warning(
-            "The -v|--variant option is not supported anymore and has no effect.\n"
-            "See help (convert2rhel -h) for more information."
-        )
-        utils.ask_to_continue()
 
 
 def _log_command_used():

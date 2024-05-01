@@ -10,4 +10,4 @@ tag+:
     - firewalld-disabled
 
 test: |
-    pytest -svv -m test_firewalld_disabled
+    pytest -m test_firewalld_disabled

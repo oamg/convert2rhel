@@ -20,9 +20,14 @@ import os.path
 import re
 
 import pytest
+import six
 
 from convert2rhel.actions import STATUS_CODE, report
 from convert2rhel.logger import bcolors
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 #: _LONG_MESSAGE since we do line wrapping
@@ -160,6 +165,38 @@ def test_summary_as_json(results, expected, tmpdir):
                 "(SUCCESS) PreSubscription::SUCCESS - N/A",
             ],
         ),
+        # Post conversion
+        (
+            {
+                "PreSubscription": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                }
+            },
+            True,
+            [
+                "(WARNING) PreSubscription::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(SUCCESS) PreSubscription::SUCCESS - N/A",
+            ],
+        ),
         (
             {
                 "PreSubscription": {
@@ -222,7 +259,7 @@ def test_summary_as_json(results, expected, tmpdir):
                 }
             },
             False,
-            ["No problems detected during the analysis!"],
+            ["No problems detected!"],
         ),
         (
             {
@@ -470,7 +507,7 @@ def test_summary_as_json(results, expected, tmpdir):
     ),
 )
 def test_summary(results, expected_results, include_all_reports, caplog):
-    report.summary(results, include_all_reports, disable_colors=True)
+    report._summary(results, include_all_reports, disable_colors=True)
 
     for expected in expected_results:
         assert expected in caplog.records[-1].message
@@ -495,13 +532,14 @@ def test_results_summary_with_long_message(long_message, caplog):
     """Test a long message because we word wrap those."""
     result = {"level": STATUS_CODE["ERROR"], "id": "ERROR"}
     result.update(long_message)
-    report.summary(
+    report._summary(
         {
             "ErrorAction": {
                 "messages": [],
                 "result": result,
             }
         },
+        include_all_reports=False,
         disable_colors=True,
     )
 
@@ -539,7 +577,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
     """Test a long message because we word wrap those."""
     messages = {"level": STATUS_CODE["WARNING"], "id": "WARNING_ID"}
     messages.update(long_message)
-    report.summary(
+    report._summary(
         {
             "ErrorAction": {
                 "messages": [messages],
@@ -554,6 +592,7 @@ def test_messages_summary_with_long_message(long_message, caplog):
                 },
             }
         },
+        include_all_reports=False,
         disable_colors=True,
     )
 
@@ -715,10 +754,70 @@ def test_messages_summary_with_long_message(long_message, caplog):
                 r"\(ERROR\) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on",
             ],
         ),
+        # Post conversion
+        (
+            {
+                "PreSubscription": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                },
+                "SkipAction": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["SKIP"],
+                        "id": "SKIP",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "OverridableAction": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["OVERRIDABLE"],
+                        "id": "OVERRIDABLE",
+                        "title": "Overridable",
+                        "description": "Action override",
+                        "diagnosis": "User override",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "ErrorAction": {
+                    "messages": [],
+                    "result": {
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "ERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            },
+            True,
+            [
+                r"\(SUCCESS\) PreSubscription::SUCCESS - N/A",
+                r"\(SKIP\) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediations: move on",
+                r"\(OVERRIDABLE\) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action override\n     Diagnosis: User override\n     Remediations: move on",
+                r"\(ERROR\) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on",
+            ],
+        ),
     ),
 )
 def test_results_summary_ordering(results, include_all_reports, expected_results, caplog):
-    report.summary(results, include_all_reports, disable_colors=True)
+    report._summary(results, include_all_reports, disable_colors=True)
 
     # Prove that all the messages occurred and in the right order.
     message = caplog.records[-1].message
@@ -951,14 +1050,118 @@ def test_results_summary_ordering(results, include_all_reports, expected_results
                 "(SUCCESS) PreSubscription::SUCCESS - N/A",
             ],
         ),
+        # Post conversion
+        (
+            {
+                "PreSubscription": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                },
+                "SkipAction": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["SKIP"],
+                        "id": "SKIP",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "OverridableAction": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["OVERRIDABLE"],
+                        "id": "OVERRIDABLE",
+                        "title": "Overridable",
+                        "description": "Action overridable",
+                        "diagnosis": "User overridable",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+                "ErrorAction": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        }
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["ERROR"],
+                        "id": "ERROR",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            },
+            True,
+            [
+                "(ERROR) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on",
+                "(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action overridable\n     Diagnosis: User overridable\n     Remediations: move on",
+                "(SKIP) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediations: move on",
+                "(WARNING) PreSubscription::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(WARNING) SkipAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(WARNING) OverridableAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(WARNING) ErrorAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(SUCCESS) PreSubscription::SUCCESS - N/A",
+            ],
+        ),
     ),
 )
 def test_messages_summary_ordering(results, include_all_reports, expected_results, caplog):
-    report.summary(results, include_all_reports, disable_colors=True)
+    report._summary(results, include_all_reports=include_all_reports, disable_colors=True)
 
     # Filter informational messages and empty strings out of message.splitlines
     caplog_messages = []
-    for message in caplog.records[1].message.splitlines():
+    for message in caplog.records[0].message.splitlines():
         if not message.startswith("==========") and not message == "":
             caplog_messages.append(message)
 
@@ -1100,7 +1303,7 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
     ),
 )
 def test_summary_colors(results, expected_result, expected_message, caplog):
-    report.summary(results, include_all_reports=True, disable_colors=False)
+    report._summary(results, include_all_reports=True, disable_colors=False)
     assert expected_result in caplog.records[-1].message
     assert expected_message in caplog.records[-1].message
 
@@ -1212,12 +1415,9 @@ def test_summary_colors(results, expected_result, expected_message, caplog):
         ),
     ),
 )
-def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
+def test_summary_as_txt(results, text_lines, tmpdir):
     convert2rhel_txt_results = tmpdir.join("convert2rhel-pre-conversion.txt")
-
-    monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
-
-    report.summary_as_txt(results)
+    report.summary_as_txt(results, str(convert2rhel_txt_results))
 
     for expected in text_lines:
         assert (
@@ -1334,13 +1534,10 @@ def test_summary_as_txt(results, text_lines, tmpdir, monkeypatch):
         ),
     ),
 )
-def test_summary_as_txt_file_exists(results, text_lines, tmpdir, monkeypatch):
+def test_summary_as_txt_file_exists(results, text_lines, tmpdir):
     convert2rhel_txt_results = tmpdir.join("convert2rhel-pre-conversion.txt")
     convert2rhel_txt_results.write("test")
-
-    monkeypatch.setattr(report, "CONVERT2RHEL_TXT_RESULTS", str(convert2rhel_txt_results))
-
-    report.summary_as_txt(results)
+    report.summary_as_txt(results, str(convert2rhel_txt_results))
 
     for expected in text_lines:
         assert (
@@ -1574,3 +1771,15 @@ def test_find_highest_report_level_unknown_status():
     }
     result = report.find_highest_report_level(action_results_test)
     assert result == expected_output
+
+
+def test_pre_conversion_report(monkeypatch, caplog):
+    monkeypatch.setattr(report, "_summary", mock.Mock())
+    report.pre_conversion_report({})
+    assert "Pre-conversion analysis report" in caplog.records[-1].message
+
+
+def test_post_conversion_report(monkeypatch, caplog):
+    monkeypatch.setattr(report, "_summary", mock.Mock())
+    report.post_conversion_report({})
+    assert "Post-conversion report" in caplog.records[-1].message

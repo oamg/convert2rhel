@@ -18,11 +18,13 @@
 __metaclass__ = type
 
 import abc
+import hashlib
 import logging
 import os
 
 import six
 
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.utils import TMP_DIR
 
 
@@ -30,6 +32,15 @@ from convert2rhel.utils import TMP_DIR
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
 loggerinst = logging.getLogger(__name__)
+
+
+def get_backedup_system_repos():
+    """Get the backedup system repos path inside our backup structure.
+
+    :returns str: A formatted backedup path for system repositories
+    """
+    backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+    return backedup_reposdir
 
 
 class BackupController:
@@ -46,13 +57,6 @@ class BackupController:
     added.  Changes cannot be retrieved and restored out of order.
     """
 
-    # Sentinel value.  If this is pushed onto the BackupController, then when
-    # pop_to_partition() is called, it will only pop until it reaches
-    # a partition in the list.
-    # Only one pop_to_partition() will make use of the partitions. All other
-    # methods will discard them.
-    partition = object()
-
     def __init__(self):
         self._restorables = []
 
@@ -62,13 +66,6 @@ class BackupController:
 
         :arg restorable: RestorableChange object that can be restored later.
         """
-        # This is part of a hack for 1.4 that allows us to only pop some of
-        # the registered changes.  Remove it when all of the rollback items have
-        # been ported into the backup controller.
-        if restorable is self.partition:
-            self._restorables.append(restorable)
-            return
-
         if not isinstance(restorable, RestorableChange):
             raise TypeError("`%s` is not a RestorableChange object" % restorable)
 
@@ -92,15 +89,11 @@ class BackupController:
             e.args = tuple(args)
             raise e
 
-        # Ignore the 1.4 partition hack
-        if restorable is self.partition:
-            return self.pop()
-
         restorable.restore()
 
         return restorable
 
-    def pop_all(self, _honor_partitions=False):
+    def pop_all(self):
         """
         Restores all RestorableChanges known to the Controller and then returns them.
 
@@ -108,18 +101,10 @@ class BackupController:
         :raises IndexError: If there are no RestorableChanges currently known to the Controller.
 
         After running, the Controller object will not know about any RestorableChanges.
-
-        .. note:: _honor_partitions is part of a hack for 1.4 to let us split restoring changes into
-            two parts.  During rollback, the part before the partition is restored before the legacy
-            backups.  Then the remainder of the changes managed by BackupController are restored.
-            This can go away once we merge all of the legacy backups into RestorableChanges managed
-            by BackupController.
-
-            .. seealso:: Jira ticket to track porting to BackupController: https://issues.redhat.com/browse/RHELC-1153
         """
         # Only raise IndexError if there are no restorables registered.
         # Partitions are ignored for this check as they aren't really Changes.
-        if not self._restorables or all(r == self.partition for r in self._restorables):
+        if not self._restorables:
             raise IndexError("No backups to restore")
 
         # Restore the Changes in the reverse order the changes were enabled.
@@ -129,16 +114,6 @@ class BackupController:
                 restorable = self._restorables.pop()
             except IndexError:
                 break
-
-            if restorable is self.partition:
-                if _honor_partitions:
-                    # Stop once a partition is reached (this is how
-                    # pop_to_partition() is implemented.
-                    return []
-                else:
-                    # This code ignores partitions.  Only pop_to_partition() honors
-                    # them.
-                    continue
 
             try:
                 restorable.restore()
@@ -151,21 +126,6 @@ class BackupController:
             processed_restorables.append(restorable)
 
         return processed_restorables
-
-    def pop_to_partition(self):
-        """
-        This is part of a hack to get 1.4 out the door.  It should be removed once all rollback
-        items are ported into the backup controller framework.
-
-        Calling this method will pop and restore changes until a partition is reached.  When that
-        happens, it will return.  To restore everything, first call this method and then call pop_all().
-
-        .. warning::
-            * For the hack to 1.4, you need to make sure that at least one partition has been pushed
-                onto the stack.
-            * Unlike pop() and pop_all(), this method doesn't return anything.
-        """
-        self.pop_all(_honor_partitions=True)
 
 
 @six.add_metaclass(abc.ABCMeta)

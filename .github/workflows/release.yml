@@ -2,6 +2,8 @@
 name: Build release RPMs & Handle release
 
 on:
+  push:
+    tags: "*"
   release:
     types: [published]
 
@@ -31,6 +33,7 @@ jobs:
 
   update_jira_links:
     name: Update Jira links
+    if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,8 +43,26 @@ jobs:
         run: gh release view ${{github.ref_name}} --json body --jq '.body' > releaseBody.txt
 
       - name: Add Jira links
+        shell: python
         run: |
-          sed -i -e 's/\[\(RHEL.*\)\]/[[\1](https:\/\/issues.redhat.com\/browse\/\1)]/' releaseBody.txt
+          import re
+
+          #  RegEx explained
+          # (?<!\/) Negative lookbehind of / to avoid grabbing URLs
+          # (RHELC?-\d+) Get RHEL or RHELC keys, add to a group
+          # \b Word boundary to indicate this should be the end of the match
+          # (?!\]\() Negative lookahead of ]( to prevent Jira keys in markdown links
+          regex=re.compile(r"(?<!\/)(RHELC?-\d+)\b(?!\]\()", re.MULTILINE)
+          with open("releaseBody.txt", 'r+') as f:
+            data = f.read()
+            f.seek(0)
+            # RegEx explained
+            # Replace the grabbed Jira key with a Markdown link [key](i.r.c/browse/key)
+            # [\g<0>] Add the Jira key group 0, equivalent of \1
+            # (https://issues.redhat.com/browse/\g<0>) Add the Jira key group 0, equivalent of \1, to end of URL
+            body = regex.sub(r"[\g<0>](https://issues.redhat.com/browse/\g<0>)", data)
+            f.write(body)
+            f.truncate()
 
       - name: Update release body with Jira links
         run: gh release edit ${{github.ref_name}} --notes-file releaseBody.txt

@@ -1,6 +1,6 @@
 import pytest
 
-from envparse import env
+from conftest import TEST_VARS
 
 
 @pytest.mark.test_package_removed_from_centos_85
@@ -17,10 +17,10 @@ def test_removed_pkg_from_centos_85(convert2rhel, shell):
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Conversion successful!")

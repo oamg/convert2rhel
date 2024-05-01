@@ -1,0 +1,8 @@
+---
+# After the artifact installation phase (which is done by the TF) there are
+# some third-party packages and repos left on the system.
+# Remove those packages and corresponding repositories.
+- include_tasks: clean_up_el7.yml
+  when: ansible_facts['distribution_major_version'] == "7"
+- include_tasks: clean_up_el8.yml
+  when: ansible_facts['distribution_major_version'] == "8"

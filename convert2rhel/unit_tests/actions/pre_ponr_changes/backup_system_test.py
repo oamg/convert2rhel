@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import unit_tests
+from convert2rhel import subscription, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
@@ -231,10 +231,10 @@ class TestBackupSystem:
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
 
         if env_var:
-            os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
+            os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
         else:
             # Unset the variable
-            os.environ.pop("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None)
+            os.environ.pop("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None)
 
         backup_package_file = backup_system.BackupPackageFiles()
 
@@ -390,11 +390,20 @@ class TestBackupRepository:
         redhat_repo = generate_repo(tmpdir, "redhat.repo")
 
         monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(redhat_repo))
-
+        monkeypatch.setattr(subscription, "should_subscribe", mock.Mock(side_effect=lambda: False))
         backup_repository = backup_repository_action
         backup_repository.run()
 
-        assert "No .repo files backed up." == caplog.records[-1].message
+        assert "Skipping backup of redhat.repo as it is not needed." == caplog.records[-1].message
+
+    def test_backup_repository_other_files(self, monkeypatch, tmpdir, backup_repository_action, caplog):
+        """Test if redhat.repo is not backed up."""
+        non_repo_file = generate_repo(tmpdir, "redhat.nonrepo")
+
+        monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(non_repo_file))
+        backup_repository = backup_repository_action
+        backup_repository.run()
+        assert "Skipping backup as redhat.nonrepo is not a repository file." == caplog.records[-1].message
 
     def test_backup_repository_no_repofile_presence(self, tmpdir, monkeypatch, caplog, backup_repository_action):
         """Test empty path, nothing for backup."""
@@ -405,8 +414,7 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
 
         backup_repository.run()
-
-        assert "No .repo files backed up." in caplog.text
+        assert ("Repository folder %s seems to be empty." % etc) in caplog.text
 
 
 class TestBackupVariables:

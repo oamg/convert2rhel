@@ -17,7 +17,7 @@ tag+:
     tag+:
         - custom-kernel
     test: |
-        pytest -svv -m test_custom_kernel
+        pytest -m test_custom_kernel
 
 
 /failed_repoquery:
@@ -30,7 +30,7 @@ tag+:
     tag+:
         - failed-repoquery
     test: |
-        pytest -svv -m test_failed_repoquery
+        pytest -m test_failed_repoquery
 
 
 /yum_exclude_kernel:
@@ -44,7 +44,7 @@ tag+:
     tag+:
         - yum-exclude-kernel
     test: |
-        pytest -svv -m test_yum_exclude_kernel
+        pytest -m test_yum_exclude_kernel
 
 
 /non_latest_kernel_error:
@@ -56,7 +56,7 @@ tag+:
     tag+:
         - non-latest-kernel-error
     test: |
-        pytest -svv -m test_non_latest_kernel_error
+        pytest -m test_non_latest_kernel_error
 
 
 /unsupported_unbreakable_enterprise_kernel:
@@ -73,4 +73,4 @@ tag+:
     tag+:
         - unsupported-unbreakable-enterprise-kernel
     test: |
-        pytest -svv -m test_unsupported_unbreakable_enterprise_kernel
+        pytest -m test_unsupported_unbreakable_enterprise_kernel

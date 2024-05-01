@@ -124,7 +124,7 @@ class TestTooloptsParseFromCLI:
 
         convert2rhel.toolopts.CLI()
 
-        message = "Ignoring the --serverurl option. It has no effect when" " --disable-submgr or --no-rhsm is used."
+        message = "Ignoring the --serverurl option. It has no effect when --no-rhsm is used."
         assert message in caplog.text
 
     def test_serverurl_with_no_rhsm_credentials(self, caplog, monkeypatch, global_tool_opts):
@@ -139,64 +139,22 @@ class TestTooloptsParseFromCLI:
         assert message in caplog.text
 
 
-def test_keep_rhsm(monkeypatch, caplog, global_tool_opts):
-    monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--keep-rhsm"]))
-
-    convert2rhel.toolopts.CLI()
-
-    assert (
-        "The --keep-rhsm option is deprecated and will be removed in"
-        " the future. Convert2rhel will now always use the"
-        " subscription-manager packages which are already installed on"
-        " the system so this option has no effect." in caplog.text
-    )
-
-
-@pytest.mark.parametrize(
-    ("argv", "warn", "ask_to_continue"),
-    (
-        (mock_cli_arguments(["-v", "Server"]), True, True),
-        (mock_cli_arguments(["--variant", "Client"]), True, True),
-        (mock_cli_arguments(["-v"]), True, True),
-        (mock_cli_arguments(["--variant"]), True, True),
-        (mock_cli_arguments(["--version"]), False, False),
-        (mock_cli_arguments([]), False, False),
-    ),
-)
-def test_cmdline_obsolete_variant_option(argv, warn, ask_to_continue, monkeypatch, caplog):
-    monkeypatch.setattr(sys, "argv", argv)
-    monkeypatch.setattr(convert2rhel.utils, "ask_to_continue", mock.Mock())
-    convert2rhel.toolopts.warn_on_unsupported_options()
-    if warn:
-        assert "variant option is not supported" in caplog.text
-    else:
-        assert "variant option is not supported" not in caplog.text
-    if ask_to_continue:
-        convert2rhel.utils.ask_to_continue.assert_called_once()
-    else:
-        convert2rhel.utils.ask_to_continue.assert_not_called()
-
-
 @pytest.mark.parametrize(
     ("argv", "raise_exception", "no_rhsm_value"),
     (
-        (mock_cli_arguments(["--disable-submgr"]), True, True),
         (mock_cli_arguments(["--no-rhsm"]), True, True),
-        (mock_cli_arguments(["--disable-submgr", "--enablerepo", "test_repo"]), False, True),
-        (mock_cli_arguments(["--no-rhsm", "--disable-submgr", "--enablerepo", "test_repo"]), False, True),
+        (mock_cli_arguments(["--no-rhsm", "--enablerepo", "test_repo"]), False, True),
     ),
 )
 @mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
 @mock.patch("convert2rhel.toolopts.tool_opts.enablerepo", [])
-def test_both_disable_submgr_and_no_rhsm_options_work(
-    argv, raise_exception, no_rhsm_value, monkeypatch, caplog, global_tool_opts
-):
+def test_no_rhsm_option_work(argv, raise_exception, no_rhsm_value, monkeypatch, caplog, global_tool_opts):
     monkeypatch.setattr(sys, "argv", argv)
 
     if raise_exception:
         with pytest.raises(SystemExit):
             convert2rhel.toolopts.CLI()
-            assert "The --enablerepo option is required when --disable-submgr or --no-rhsm is used." in caplog.text
+        assert "The --enablerepo option is required when --no-rhsm is used." in caplog.text
     else:
         convert2rhel.toolopts.CLI()
 
@@ -303,13 +261,6 @@ def test_config_file(argv, content, output, message, monkeypatch, tmpdir, caplog
     ("argv", "content", "message", "output"),
     (
         (
-            mock_cli_arguments(["--password", "pass", "-f"]),
-            "pass_file",
-            "You have passed the RHSM password through both the --password-from-file and the --password option."
-            " We're going to use the password from file.",
-            {"password": "pass_file", "activation_key": None},
-        ),
-        (
             mock_cli_arguments(["--password", "pass", "--config-file"]),
             "[subscription_manager]\nactivation_key = key_cnf_file",
             "You have passed either the RHSM password or activation key through both the command line and"
@@ -326,40 +277,6 @@ def test_multiple_auth_src_combined(argv, content, message, output, caplog, monk
     os.chmod(path, 0o600)
     # The path for file is the last argument
     argv.append(path)
-
-    monkeypatch.setattr(sys, "argv", argv)
-    monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[""])
-    convert2rhel.toolopts.CLI()
-
-    assert message in caplog.text
-    assert convert2rhel.toolopts.tool_opts.activation_key == output["activation_key"]
-    assert convert2rhel.toolopts.tool_opts.password == output["password"]
-
-
-@pytest.mark.parametrize(
-    ("argv", "content", "message", "output"),
-    (
-        (
-            mock_cli_arguments(["--password", "pass", "-f", "file", "--config-file", "file"]),
-            ("pass_file", "[subscription_manager]\nactivation_key = pass_cnf_file"),
-            "You have passed the RHSM password through both the --password-from-file and the --password option."
-            " We're going to use the password from file.",
-            {"password": "pass_file", "activation_key": None},
-        ),
-    ),
-)
-def test_multiple_auth_src_files(argv, content, message, output, caplog, monkeypatch, tmpdir, global_tool_opts):
-    """Test combination of password file, config file and CLI."""
-    path0 = os.path.join(str(tmpdir), "convert2rhel.password")
-    with open(path0, "w") as file:
-        file.write(content[0])
-    path1 = os.path.join(str(tmpdir), "convert2rhel.ini")
-    with open(path1, "w") as file:
-        file.write(content[1])
-    # Set the paths
-    argv[-3] = path0
-    argv[-1] = path1
-    os.chmod(path1, 0o600)
 
     monkeypatch.setattr(sys, "argv", argv)
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=[""])
@@ -596,11 +513,11 @@ def test_log_command_used(caplog, monkeypatch):
         (mock_cli_arguments(["-o", "org", "-k", "key"]), "-o ***** -k *****"),
         (
             mock_cli_arguments(["-o", "org"]),
-            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+            "Either the --org or the --activationkey option is missing. You can't use one without the other.",
         ),
         (
             mock_cli_arguments(["-k", "key"]),
-            "Either the --organization or the --activationkey option is missing. You can't use one without the other.",
+            "Either the --org or the --activationkey option is missing. You can't use one without the other.",
         ),
     ),
 )
@@ -733,7 +650,7 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
             ["--no-rpm-va"],
             False,
             False,
-            "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
+            "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
         ),
         (["--no-rpm-va"], True, True, ""),
     ),
@@ -741,7 +658,7 @@ def test_should_subscribe(username, password, organization, activation_key, no_r
 def test_setting_no_rpm_va(argv, env_var, expected, message, monkeypatch, global_tool_opts, caplog):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
     if env_var:
-        monkeypatch.setenv("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", "1")
+        monkeypatch.setenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "1")
 
     try:
         convert2rhel.toolopts.CLI()

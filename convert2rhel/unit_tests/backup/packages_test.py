@@ -106,7 +106,6 @@ class TestRestorablePackage:
 
     def test_enable_eus_systems(self, monkeypatch, tmpdir, global_system_info):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
-        monkeypatch.setattr(packages, "get_hardcoded_repofiles_dir", mock.Mock(return_value=str(tmpdir)))
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
         monkeypatch.setattr(packages, "system_info", global_system_info)
 
@@ -117,41 +116,7 @@ class TestRestorablePackage:
         rp._backedup_pkgs_paths = ["test.rpm"]
         rp.enable()
 
-        assert packages.get_hardcoded_repofiles_dir.call_count == 1
         assert utils.download_pkg.call_count == 1
-
-    @pytest.mark.parametrize(
-        (
-            "has_internet_access",
-            "expected",
-        ),
-        (
-            (
-                True,
-                "Using repository files stored in %s",
-            ),
-            (
-                False,
-                "Not using repository files stored in %s due to the absence of internet access.",
-            ),
-        ),
-    )
-    def test_enable_has_internet_connection(
-        self, has_internet_access, expected, monkeypatch, tmpdir, global_system_info, caplog
-    ):
-        tmpdir = str(tmpdir)
-        monkeypatch.setattr(packages, "BACKUP_DIR", tmpdir)
-        monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
-        monkeypatch.setattr(packages, "system_info", global_system_info)
-
-        global_system_info.has_internet_access = has_internet_access
-
-        rp = RestorablePackage(pkgs=["test.rpm"], reposdir=tmpdir)
-        rp._backedup_pkgs_paths = ["test.rpm"]
-        rp.enable()
-
-        assert utils.download_pkg.call_count == 1
-        assert expected % tmpdir in caplog.records[-1].message
 
     def test_package_already_enabled(self, monkeypatch, tmpdir):
         monkeypatch.setattr(packages, "BACKUP_DIR", str(tmpdir))
@@ -225,9 +190,9 @@ class TestRestorablePackage:
             )
         )
         monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess_mock)
-
-        rp = RestorablePackage(pkgs=[pkg_name])
-        rp._backedup_pkgs_paths = pkg_name
+        pkgs = [pkg_name]
+        rp = RestorablePackage(pkgs=pkgs)
+        rp._backedup_pkgs_paths = pkgs
         result = rp._install_local_rpms(replace=False, critical=False)
 
         assert result == False
@@ -235,10 +200,10 @@ class TestRestorablePackage:
         assert "Couldn't install %s packages." % pkg_name in caplog.records[-1].message
 
     def test_test_install_local_rpms_system_exit(self, monkeypatch, caplog):
-        pkg_name = "pkg-1"
+        pkg_name = ["pkg-1"]
         run_subprocess_mock = RunSubprocessMocked(
             side_effect=unit_tests.run_subprocess_side_effect(
-                (("rpm", "-i", pkg_name), ("test", 1)),
+                (("rpm", "-i", " ".join(pkg_name)), ("test", 1)),
             )
         )
         monkeypatch.setattr(
@@ -247,13 +212,13 @@ class TestRestorablePackage:
             value=run_subprocess_mock,
         )
 
-        rp = RestorablePackage(pkgs=[pkg_name])
+        rp = RestorablePackage(pkgs=pkg_name)
         rp._backedup_pkgs_paths = pkg_name
         with pytest.raises(exceptions.CriticalError):
             rp._install_local_rpms(replace=False, critical=True)
 
         assert run_subprocess_mock.call_count == 1
-        assert "Error: Couldn't install %s packages." % pkg_name in caplog.records[-1].message
+        assert "Error: Couldn't install %s packages." % "".join(pkg_name) in caplog.records[-1].message
 
 
 class TestRestorablePackageSet:

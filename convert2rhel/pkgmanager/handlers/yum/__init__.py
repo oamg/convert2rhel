@@ -27,7 +27,7 @@ from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
+from convert2rhel.repo import DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import remove_pkgs
 
@@ -72,7 +72,7 @@ def _resolve_yum_problematic_dependencies(output):
             "Removing problematic packages to continue with the conversion:\n%s",
             "\n".join(packages_to_remove),
         )
-        backedup_reposdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+        backedup_reposdir = backup.get_backedup_system_repos()
         backedup_yum_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
 
         backup.backup_control.push(
@@ -143,6 +143,9 @@ class YumTransactionHandler(TransactionHandlerBase):
         """
         pkgmanager.misc.setup_locale(override_time=True)
         self._base = pkgmanager.YumBase()
+        # Empty out the exclude list to avoid dependency problems during the
+        # transaction validation.
+        self._base.conf.exclude = []
         self._base.conf.yumvar["releasever"] = system_info.releasever
 
     def _enable_repos(self):

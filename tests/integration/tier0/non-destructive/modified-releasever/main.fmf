@@ -18,7 +18,7 @@ tag+:
     tag+:
         - modified-releasever-in-configs
     test: |
-      pytest -svv -m test_modified_config
+      pytest -m test_modified_config
 
 /modified_releasever_to_unknown_release:
     summary+: |
@@ -29,4 +29,4 @@ tag+:
     tag+:
         - releasever-unknown-release
     test: |
-      pytest -svv -m test_unknown_release
+      pytest -m test_unknown_release

@@ -30,7 +30,7 @@ tag+:
     tag+:
         - transaction-validation-error
     test: |
-        pytest -svv -m test_transaction_validation_error
+        pytest -m test_transaction_validation_error
 
 /package_download_error:
     summary+: |
@@ -40,7 +40,7 @@ tag+:
     tag+:
         - package-download-error
     test: |
-        pytest -svv -m test_package_download_error
+        pytest -m test_package_download_error
 
 
 /validating_packages_with_in_name_period:
@@ -48,7 +48,8 @@ tag+:
     adjust+:
         - enabled: true
           when: >
-            distro == oracle-8, centos-8
+            distro == oracle-8, centos-8, alma-8, rocky-8
+          because: The bug was reported on EL8 https://issues.redhat.com/browse/RHELC-1060
     summary+: |
         Unhandled exception for packages with in name period
     description+: |
@@ -63,4 +64,28 @@ tag+:
         - validation-packages-with-in-name-period
         - sanity
     test: |
-        pytest -svv -m test_validation_packages_with_in_name_period
+        pytest -m test_validation_packages_with_in_name_period
+
+/override_exclude_list_in_yum_config:
+    environment+:
+        CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
+    summary+: |
+        Override exclude in yum config to avoid dependency problems
+    description+: |
+        This test verifies that packages that are defined in the exclude
+        section in the /etc/yum.conf file are ignored during the analysis and
+        conversion.
+        The reason for us to ignore those packages, is that a user could
+        specify something like 'redhat-release-server' in the exclude list, and
+        that would cause dependency problems in the transaction.
+
+        1/ Add the exclude section to /etc/yum.conf with the
+            redhat-release-server package specified
+        2/ Set the environment variable to skip kernel check
+        3/ Boot into an older kernel
+        4/ Run the analysis and check that the transaction was successful.
+    tag+:
+        - override-exclude-list-in-yum-config
+        - sanity
+    test: |
+        pytest -m test_override_exclude_list_in_yum_config

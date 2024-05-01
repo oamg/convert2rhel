@@ -3,8 +3,7 @@ import re
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.mark.test_latest_kernel_check_skip
@@ -13,7 +12,7 @@ def test_skip_kernel_check(shell, convert2rhel):
     Verify that it's possible to run the full conversion with older kernel,
     than available in the RHEL repositories.
         1/ Install older kernel on the system
-        2/ Make sure the `CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK` is in place
+        2/ Make sure the `CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK` is in place
             * doing that we also verify, the deprecated envar is still allowed
         3/ Enable *just* the rhel-7-server-rpms repository prior to conversion
         4/ Run conversion verifying the conversion is not inhibited and completes successfully
@@ -24,22 +23,12 @@ def test_skip_kernel_check(shell, convert2rhel):
     # Move all the repos away except the rhel7.repo
     shell("find /etc/yum.repos.d/ -type f -name '*.repo' ! -name 'rhel7.repo' -exec mv {} /tmp/repobckp \\;")
     # EUS version use hardcoded repos from c2r as well
-    if re.match(r"^(alma|rocky)-8\.[68]$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+    if re.match(r"^(alma|rocky)-8\.8$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell(f"mkdir {eus_backup_dir}").returncode == 0
         assert shell(f"mv /usr/share/convert2rhel/repos/* {eus_backup_dir}").returncode == 0
 
-    # Verify the environment variable to bypass the check is in place
-    # Intentionally use the deprecated variable to verify its compatibility
-    assert os.environ["CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK"] == "1"
-
-    # We need to set envar to override the out of date packages check
-    # to perform the full conversion
-    # The packages are outdated because the repoquery check is done
-    # against the rhel-7-server-rpms repository, not CentOS'.
-    os.environ["CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP"] = "1"
-
     # Resolve the $releasever for CentOS 7 latest manually as it gets resolved to `7` instead of required `7Server`
-    if "centos-7" in SYSTEM_RELEASE_ENV:
+    if SYSTEM_RELEASE_ENV in ["centos-7", "oracle-7"]:
         shell("sed -i 's/\$releasever/7Server/g' /etc/yum.repos.d/rhel7.repo")
 
     # Disable all repositories
@@ -49,14 +38,12 @@ def test_skip_kernel_check(shell, convert2rhel):
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
-        # Verify that using the deprecated environment variable is still allowed and continues the conversion
-        assert c2r.expect("You are using the deprecated 'CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK'") == 0
         # Make sure the kernel comparison is skipped
         c2r_expect_index = c2r.expect(
             [

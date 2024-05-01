@@ -1,5 +1,6 @@
 __metaclass__ = type
 
+import logging
 import os
 import sys
 
@@ -73,12 +74,15 @@ def pkg_root():
 
 
 @pytest.fixture(autouse=True)
-def setup_logger(tmpdir, request):
+def setup_logger(request):
     # This makes it so we can skip this using @pytest.mark.noautofixtures
     if "noautofixtures" in request.keywords:
         return
     setup_logger_handler()
-    add_file_handler(log_name="convert2rhel", log_dir=str(tmpdir))
+    # get root logger
+    logger = logging.getLogger("convert2rhel")
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
 
 
 @pytest.fixture
@@ -205,11 +209,6 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_get_architecture",
         value=lambda: "x86_64",
     )
-    monkeypatch.setattr(
-        system_info,
-        "_check_internet_access",
-        value=lambda: True,
-    )
     tool_opts.no_rpm_va = True
 
     # We can't depend on a test environment (containers) having an init system so we have to
@@ -220,13 +219,6 @@ def pretend_os(request, pkg_root, monkeypatch):
         value=lambda: True,
     )
 
-    # We won't depend on a test environment having an internet connection, so we
-    # need to mock _check_internet_access() for all tests
-    monkeypatch.setattr(
-        system_info,
-        "_check_internet_access",
-        value=lambda: True,
-    )
     monkeypatch.setattr(system_info, "releasever", value=system_version_major)
 
     system_info.resolve_system_info()

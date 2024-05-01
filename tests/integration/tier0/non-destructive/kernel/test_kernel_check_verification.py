@@ -3,8 +3,7 @@ import os
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -119,74 +118,6 @@ def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_e
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture(scope="function")
-def kernel(shell):
-    """
-    Install specific kernel version and configure
-    the system to boot to it. The kernel version is not the
-    latest one available in repositories.
-    """
-
-    if os.environ["TMT_REBOOT_COUNT"] == "0":
-        # Set default kernel
-        if "centos-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'")
-        elif "oracle-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
-        elif "centos-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
-        # Test is being run only for the latest released oracle-linux
-        elif "oracle-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
-        elif "alma-8" in SYSTEM_RELEASE_ENV:
-            mock_repo = "alma_old"
-            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
-            shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            mock_repo = "rocky_old"
-            shell(f"cp files/{mock_repo}.repo /etc/yum.repos.d/")
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {mock_repo}")
-            shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
-
-        shell("tmt-reboot -t 600")
-
-    yield
-
-    if os.environ["TMT_REBOOT_COUNT"] == "1":
-        # We need to get the name of the latest kernel
-        # present in the repositories
-
-        # Install 'yum-utils' required by the repoquery command
-        shell("yum install yum-utils -y")
-
-        # Get the name of the latest kernel
-        latest_kernel = shell(
-            "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
-        ).output
-
-        # Get the full name of the kernel
-        full_name = shell(
-            "grubby --info ALL | grep \"title=.*{}\" | tr -d '\"' | sed 's/title=//'".format(latest_kernel)
-        ).output
-
-        # Set the latest kernel as the one we want to reboot to
-        shell("grub2-set-default '{}'".format(full_name.strip()))
-
-        # Remove the mocked repofile
-        if "alma-8" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
-
-        # Reboot after clean-up
-        shell("tmt-reboot -t 600")
-
-
 @pytest.mark.test_non_latest_kernel_error
 def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     """
@@ -196,10 +127,10 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     if os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                env.str("RHSM_SERVER_URL"),
-                env.str("RHSM_USERNAME"),
-                env.str("RHSM_PASSWORD"),
-                env.str("RHSM_POOL"),
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_USERNAME"],
+                TEST_VARS["RHSM_PASSWORD"],
+                TEST_VARS["RHSM_POOL"],
             )
         ) as c2r:
             c2r.expect("Check if the loaded kernel version is the most recent")

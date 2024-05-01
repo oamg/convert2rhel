@@ -19,7 +19,7 @@ import logging
 import os
 import re
 
-from convert2rhel import actions, backup, exceptions, repo
+from convert2rhel import actions, backup, exceptions, subscription
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.redhatrelease import os_release_file, system_release_file
@@ -75,28 +75,30 @@ class BackupRepository(actions.Action):
     id = "BACKUP_REPOSITORY"
 
     def run(self):
-        """Backup repository files before starting conversion process"""
+        """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
         loggerinst.task("Prepare: Backup Repository Files")
 
         super(BackupRepository, self).run()
 
-        self.backup_yum_repos()
-
-    def backup_yum_repos(self):
-        """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
         loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
 
-        repo_files_backed_up = False
+        if not os.listdir(DEFAULT_YUM_REPOFILE_DIR):
+            loggerinst.info("Repository folder %s seems to be empty.", DEFAULT_YUM_REPOFILE_DIR)
 
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
-            if repo.endswith(".repo") and repo != "redhat.repo":
-                repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
-                restorable_file = RestorableFile(repo_path)
-                backup.backup_control.push(restorable_file)
-                repo_files_backed_up = True
+            # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
-        if not repo_files_backed_up:
-            loggerinst.info("No .repo files backed up.")
+            if not repo.endswith(".repo"):
+                loggerinst.info("Skipping backup as %s is not a repository file." % repo)
+                continue
+
+            if not subscription.should_subscribe() and repo == "redhat.repo":
+                loggerinst.info("Skipping backup of redhat.repo as it is not needed.")
+                continue
+
+            repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
+            restorable_file = RestorableFile(repo_path)
+            backup.backup_control.push(restorable_file)
 
 
 class BackupYumVariables(actions.Action):
@@ -183,7 +185,7 @@ class BackupPackageFiles(actions.Action):
                 output = f.read()
         # Catch the IOError due Python 2 compatibility
         except IOError as err:
-            if os.environ.get("CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK", None):
+            if os.environ.get("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
                 loggerinst.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
                 # Return empty list results in no backup of the files
                 return data

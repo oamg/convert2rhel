@@ -16,7 +16,7 @@ import click
 import pexpect
 import pytest
 
-from envparse import env
+from dotenv import dotenv_values
 
 
 try:
@@ -24,8 +24,11 @@ try:
 except ImportError:
     from pathlib2 import Path
 
-logging.basicConfig(level="DEBUG" if env.str("DEBUG") else "INFO", stream=sys.stderr)
+
+logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
+
+TEST_VARS = dotenv_values("/var/tmp/.env")
 
 SATELLITE_URL = "satellite.sat.engineering.redhat.com"
 SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
@@ -38,18 +41,20 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 def shell(tmp_path):
     """Live shell."""
 
-    def factory(command):
-        click.echo(
-            "\nExecuting a command:\n{}\n\n".format(command),
-            color="green",
-        )
+    def factory(command, silent=False):
+        if not silent:
+            click.echo(
+                "\nExecuting a command:\n{}\n\n".format(command),
+                color="green",
+            )
         # pylint: disable=consider-using-with
         # Popen is a context-manager in python-3.2+
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = ""
         for line in iter(process.stdout.readline, b""):
             output += line.decode()
-            click.echo(line.decode().rstrip("\n"))
+            if not silent:
+                click.echo(line.decode().rstrip("\n"))
         returncode = process.wait()
         return namedtuple("Result", ["returncode", "output"])(returncode, output)
 
@@ -79,10 +84,10 @@ def convert2rhel(shell):
     >>>         "--password {} --pool {} "
     >>>         "--debug"
     >>>     ).format(
-    >>>         env.str("RHSM_SERVER_URL"),
-    >>>         env.str("RHSM_USERNAME"),
-    >>>         env.str("RHSM_PASSWORD"),
-    >>>         env.str("RHSM_POOL"),
+    >>>         TEST_VARS["RHSM_SERVER_URL"],
+    >>>         TEST_VARS["RHSM_USERNAME"],
+    >>>         TEST_VARS["RHSM_PASSWORD"],
+    >>>         TEST_VARS["RHSM_POOL"],
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
@@ -396,32 +401,22 @@ def required_packages(shell):
 
 
 @pytest.fixture(scope="function")
-def repositories(shell):
+def remove_repositories(shell):
     """
     Fixture.
-    Move all repositories to another location, do the same for EUS if applicable.
+    Move all repositories to another location.
     """
     backup_dir = "/tmp/test-backup-release_backup"
-    backup_dir_eus = "%s_eus" % backup_dir
 
     # Move all repos to other location, so it is not being used
     shell(f"mkdir {backup_dir}")
     assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
-
-    # EUS version use hardcoded repos from c2r as well
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        shell(f"mkdir {backup_dir_eus}")
-        assert shell(f"mv /usr/share/convert2rhel/repos/* {backup_dir_eus}").returncode == 0
 
     yield
 
     # Return repositories to their original location
     assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
     assert shell(f"rm -rf {backup_dir}")
-    # Return EUS repositories to their original location
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell(f"mv {backup_dir_eus}/* /usr/share/convert2rhel/repos/").returncode == 0
-        assert shell(f"rm -rf {backup_dir_eus}")
 
 
 @pytest.fixture(autouse=True)
@@ -466,10 +461,16 @@ def _load_json_schema(path):
 
 
 @pytest.fixture
-def pre_registered(shell):
+def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     """
+    username = TEST_VARS["RHSM_USERNAME"]
+    password = TEST_VARS["RHSM_PASSWORD"]
+    # Use custom parameters when the fixture is parametrized
+    if hasattr(request, "param"):
+        username, password = request.param
+
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the SSL certificate
     shell("curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem")
@@ -477,13 +478,15 @@ def pre_registered(shell):
     assert (
         shell(
             "subscription-manager register --serverurl {} --username {} --password {}".format(
-                env.str("RHSM_SERVER_URL"), env.str("RHSM_USERNAME"), env.str("RHSM_PASSWORD")
-            )
+                TEST_VARS["RHSM_SERVER_URL"], username, password
+            ),
+            silent=True,
         ).returncode
         == 0
     )
 
-    assert shell("subscription-manager attach --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
+    if "C2R_TESTS_NOSUB" not in os.environ:
+        assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -504,10 +507,9 @@ def pre_registered(shell):
 
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
-        del os.environ["C2R_TESTS_CHECK_RHSM_UUID_MATCH"]
 
-        assert shell("subscription-manager remove --pool {}".format(env.str("RHSM_POOL"))).returncode == 0
-        assert shell("subscription-manager unregister").returncode == 0
+    assert shell("subscription-manager remove --all").returncode == 0
+    shell("subscription-manager unregister")
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
@@ -515,8 +517,6 @@ def pre_registered(shell):
         # Remove the redhat-uep.pem certificate, as it won't get removed with the sub-man package on CentOS 7
         if "centos-7" in SYSTEM_RELEASE_ENV:
             shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
-
-        del os.environ["C2R_TESTS_SUBMAN_CLEANUP"]
 
 
 @pytest.fixture()
@@ -534,52 +534,6 @@ def hybrid_rocky_image(shell, system_release):
 
             os.remove(grubenv_file)
             shutil.copy2(target_grubenv_file, grubenv_file)
-
-
-@pytest.fixture(autouse=True, scope="function")
-def tmt_reboot_count_reset(shell):
-    """
-    Fixture to reset reboot counters.
-    We need this to be able to perform reboot using the tmt-reboot.
-    After each reboot the TMT_REBOOT_COUNT += 1, meaning we would need to
-    reflect the test order to be able to perform the reboot.
-    The fixture will reset the counter for each function, so we always start with "0".
-    """
-    shell("export TMT_REBOOT_COUNT=0 && export REBOOTCOUNT=0 && export RSTRNT_REBOOTCOUNT=0")
-
-
-@pytest.fixture(scope="session", autouse=True)
-def rcmtools_cleanup():
-    """
-    Fixture to clean up rcmtools packages and repository from the host.
-    These are an artifact of Testing Farm installation, which have no usage for our testing
-    and can negatively impact the test results in some scenarios.
-    """
-    reponame = "rcmtools"
-
-    conflicting_pkgs = ["libcomps"]
-
-    # Get list of packages installed from the rcmtools repository
-    yum_command = f"yum list installed --disablerepo=* --enablerepo={reponame} | awk '$3==\"@{reponame}\" {{print $1}}'"
-
-    installed_packages = subprocess.run(
-        f"{yum_command} | wc -l",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        check=True,
-        universal_newlines=True,
-    )
-
-    result = subprocess.run(yum_command, stdout=subprocess.PIPE, shell=True, check=True, universal_newlines=True)
-
-    # Remove the packages installed from the rcmtools repo
-    if "oracle-7" in SYSTEM_RELEASE_ENV and installed_packages.stdout.splitlines()[-1].strip() != "0":
-        for pkg in conflicting_pkgs:
-            if pkg in result.stdout:
-                subprocess.run(f"yum remove -y {pkg}", check=True, shell=True)
-
-    yield
 
 
 @pytest.fixture()
@@ -623,3 +577,100 @@ def remediation_out_of_date_packages(shell):
 
     for package in problematic_packages:
         shell(f"yum update -y {package}")
+
+
+def _create_old_repo(distro: str, repo_name: str):
+    """
+    Create a repo on system with content that is older then the latest released version.
+    The intended use is for Rocky-8 and Alma-8.
+    """
+    baseurl = None
+    if distro == "alma":
+        baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
+    elif distro == "rocky":
+        baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
+    else:
+        pytest.fail(f"Unsupported distro ({distro}) provided.")
+    with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
+        f.write(f"[{repo_name}]\n")
+        f.write(f"name={repo_name}\n")
+        f.write(f"baseurl={baseurl}\n")
+        f.write("enabled=0\n")
+        f.write("gpgcheck=0\n")
+
+
+@pytest.fixture(scope="function")
+def kernel(shell):
+    """
+    Install specific kernel version and configure
+    the system to boot to it. The kernel version is not the
+    latest one available in repositories.
+    """
+
+    # If the fixture gets executed after second `tmt-reboot` (after cleanup of a test) then
+    # do not trigger test again by yielding.
+    # Note that we cannot just run `return` command as this fixture require to have
+    # `yield` call in every situation. That's why calling `pytest.skip`.
+    if int(os.environ["TMT_REBOOT_COUNT"]) > 1:
+        pytest.skip("The `kernel` fixture has already run.")
+
+    if os.environ["TMT_REBOOT_COUNT"] == "0":
+        # Set default kernel
+        if "centos-7" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'")
+        elif "oracle-7" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
+        elif "centos-8" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
+            shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
+        # Test is being run only for the latest released oracle-linux
+        elif "oracle-8" in SYSTEM_RELEASE_ENV:
+            assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
+            shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
+        elif "alma-8" in SYSTEM_RELEASE_ENV:
+            repo_name = "alma_old"
+            _create_old_repo(distro="alma", repo_name=repo_name)
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
+            shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
+        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+            repo_name = "rocky_old"
+            _create_old_repo(distro="rocky", repo_name=repo_name)
+            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
+            shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+
+        shell("tmt-reboot -t 600")
+
+    yield
+
+    if os.environ["TMT_REBOOT_COUNT"] == "1":
+        # We need to get the name of the latest kernel
+        # present in the repositories
+
+        # Install 'yum-utils' required by the repoquery command
+        shell("yum install yum-utils -y")
+
+        # Get the name of the latest kernel
+        latest_kernel = shell(
+            "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
+        ).output
+
+        # Get the full name of the kernel (ignore rescue kernels)
+        full_name = shell(
+            'grubby --info ALL | grep "title=.*{}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''.format(
+                latest_kernel
+            )
+        ).output
+
+        # Set the latest kernel as the one we want to reboot to
+        shell("grub2-set-default '{}'".format(full_name.strip()))
+
+        # Remove the mocked repofile
+        if "alma-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
+        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
+
+        # Reboot after clean-up
+        shell("tmt-reboot -t 600")

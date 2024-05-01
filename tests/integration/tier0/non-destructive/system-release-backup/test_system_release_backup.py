@@ -1,10 +1,8 @@
-import os
 import re
 
 import pytest
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -71,22 +69,6 @@ def katello_package(shell):
     assert shell(f"rm -f {SATELLITE_PKG_DST}").returncode == 0
 
 
-@pytest.fixture(scope="function")
-def kernel_check_envar(shell):
-    """
-    Fixture.
-    Set CONVERT2RHEL_UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK environment variable
-    to skip the kernel currency check.
-    """
-    # Since we are moving all repos away, we need to bypass kernel check
-    os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"] = "1"
-
-    yield
-
-    # Remove the envar skipping the kernel check
-    del os.environ["CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"]
-
-
 @pytest.mark.test_unsuccessful_satellite_registration
 def test_backup_os_release_wrong_registration(shell, convert2rhel, custom_subman):
     """
@@ -95,7 +77,7 @@ def test_backup_os_release_wrong_registration(shell, convert2rhel, custom_subman
     """
     assert shell("find /etc/os-release").returncode == 0
 
-    with convert2rhel("-y -k wrong_key -o rUbBiSh_pWd --debug --keep-rhsm") as c2r:
+    with convert2rhel("-y -k wrong_key -o rUbBiSh_pWd --debug") as c2r:
         c2r.expect("Unable to register the system through subscription-manager.")
         c2r.expect("Restore /etc/os-release from backup")
 
@@ -127,8 +109,8 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
     """
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         )
     ) as c2r:
         c2r.expect("Unable to find the /etc/system-release file containing the OS name and version")
@@ -137,45 +119,32 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
 
 
 @pytest.mark.test_backup_os_release_no_envar
-def test_backup_os_release_no_envar(
-    shell, convert2rhel, custom_subman, katello_package, repositories, kernel_check_envar
-):
+def test_backup_os_release_no_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
     """
     This test case removes all the repos on the system which prevents the backup of some files.
     Satellite is being used in all of test cases.
-    In this scenario there is no variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` set.
+    In this scenario there is no variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` set.
     This means the conversion is inhibited in early stage.
     """
 
     assert shell("find /etc/os-release").returncode == 0
     with convert2rhel(
-        "-y -k {} -o {} --debug --keep-rhsm".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+        "-y -k {} -o {} --debug".format(
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect("set the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK")
+        c2r.expect("set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK")
         assert c2r.exitstatus != 0
 
     assert shell("find /etc/os-release").returncode == 0
 
 
-@pytest.fixture(scope="function")
-def unsupported_rollback_envar(shell):
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
-
-    yield
-
-    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
-
-
 @pytest.mark.test_backup_os_release_with_envar
-def test_backup_os_release_with_envar(
-    shell, convert2rhel, custom_subman, katello_package, repositories, unsupported_rollback_envar, kernel_check_envar
-):
+def test_backup_os_release_with_envar(shell, convert2rhel, custom_subman, katello_package, remove_repositories):
     """
-    In this scenario the variable `CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK` is set.
+    In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
     This test case removes all the repos on the system and validates that
     the /etc/os-release package is being backed up and restored during rollback.
     Ref ticket: OAMG-5457. Note that after the test, the $releasever
@@ -185,15 +154,13 @@ def test_backup_os_release_with_envar(
     assert shell("find /etc/os-release").returncode == 0
 
     with convert2rhel(
-        "-y -k {} -o {} --debug --keep-rhsm".format(
-            env.str("SATELLITE_KEY"),
-            env.str("SATELLITE_ORG"),
+        "-y -k {} -o {} --debug".format(
+            TEST_VARS["SATELLITE_KEY"],
+            TEST_VARS["SATELLITE_ORG"],
         ),
         unregister=True,
     ) as c2r:
-        c2r.expect(
-            "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion."
-        )
+        c2r.expect("'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.")
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus != 0

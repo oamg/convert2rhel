@@ -1,0 +1,38 @@
+---
+- name: Remove rcmtools packages installed on the system
+  # We cannot use yum remove as it also removes dependency packages (like even c2r) that we need to keep installed.
+  # Use `rpm -e --nodeps` instead.
+  ansible.builtin.shell: yum list installed | grep @rcmtools | awk '{print $1}' | xargs rpm -e --nodeps
+  ignore_errors: true
+- name: Remove rcmtools repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/rcmtools.repo"
+    state: absent
+
+- name: Remove qa-tools packages installed on the system
+  ansible.builtin.shell: yum list installed | grep @.*qa-tools$ | awk '{print $1}' | xargs rpm -e --nodeps
+  ignore_errors: true
+- name: Remove qa-tools repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/qa-tools.repo"
+    state: absent
+
+# lshw.x86_64 package somehow breaks the listing of all the beaker packages.
+# To workaround this simply just remove the package first.
+- name: Remove lshw.x86_64 beaker package
+  ansible.builtin.shell: rpm -e --nodeps lshw.x86_64
+  ignore_errors: true
+- name: Remove beaker packages installed on the system
+  ansible.builtin.shell: yum list installed | grep @beaker | awk '{print $1}' | xargs rpm -e --nodeps
+  ignore_errors: true
+- name: Remove beaker repo from the system
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/{{ item }}"
+    state: absent
+  with_items:
+    - beaker-client.repo
+    - beaker-harness.repo
+    - beaker-tasks.repo
+
+- name: Clean yum metadata
+  ansible.builtin.shell: yum clean metadata

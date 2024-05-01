@@ -4,10 +4,11 @@
 
     - role: hardcode-eus-version-repos
       when: >
-        (ansible_facts['distribution_version'] ==  "8.6"
-        or ansible_facts['distribution_version'] ==  "8.8")
+        ansible_facts['distribution_version'] ==  "8.8"
         and (ansible_facts['distribution'] == "AlmaLinux"
         or ansible_facts['distribution'] == "Rocky")
+
+    - role: remove-tf-artifact-leftovers
 
     - role: update-system
 
@@ -17,5 +18,7 @@
     - role: packaging
 
     - role: install-testing-deps
+
+    - role: get-test-vars
 
     - role: update-ca-trust

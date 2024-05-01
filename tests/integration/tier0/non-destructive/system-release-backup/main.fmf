@@ -20,29 +20,36 @@ tag+:
             Verify that the /etc/os-release file is restored after the rollback.
         /backup_os_release_no_envar:
             summary+: |
-                Restore os-release without CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
+                Restore os-release without CONVERT2RHEL_INCOMPLETE_ROLLBACK
             description+: |
                 This case runs the conversion with no repositories available.
                 Verify that this condition disables the package backup,
                 convert2rhel warns the user and inhibits the conversion.
+            adjust+:
+                environment+:
+                    CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
             tag+:
                 - no-envar
                 - sanity
             test: |
-                pytest -svv -m test_backup_os_release_no_envar
+                pytest -m test_backup_os_release_no_envar
 
         /backup_os_release_with_envar:
             summary+: |
-                Restore os-release with CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK
+                Restore os-release with CONVERT2RHEL_INCOMPLETE_ROLLBACK
             description+: |
                 This case runs the conversion with no repositories available
-                and "CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK" envar set.
+                and "CONVERT2RHEL_INCOMPLETE_ROLLBACK" envar set.
                 Verify that this condition disables the package backup,
                 convert2rhel warns the user, but continues the conversion.
+            adjust+:
+                environment+:
+                    CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+                    CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
             tag+:
                 - with-envar
             test: |
-                pytest -svv -m test_backup_os_release_with_envar
+                pytest -m test_backup_os_release_with_envar
             link:
                 - verifies: https://issues.redhat.com/browse/OAMG-5457
 
@@ -54,7 +61,7 @@ tag+:
         tag+:
             - unsuccessful-satellite-registration
         test: |
-            pytest -svv -m test_unsuccessful_satellite_registration
+            pytest -m test_unsuccessful_satellite_registration
         link:
             - verifies: https://issues.redhat.com/browse/RHELC-51
 
@@ -67,4 +74,4 @@ tag+:
     tag+:
         - missing-system-release
     test: |
-        pytest -svv -m test_missing_system_release
+        pytest -m test_missing_system_release

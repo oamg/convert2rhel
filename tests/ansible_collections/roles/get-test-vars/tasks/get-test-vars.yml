@@ -1,0 +1,7 @@
+---
+- name: Download the test vars file
+  get_url:
+    url: https://gitlab.cee.redhat.com/oamg/convert2rhel/convert2rhel-secrets/-/raw/main/.env
+    validate_certs: false
+    dest: /var/tmp/.env
+    mode: '0444'

@@ -106,50 +106,10 @@ class TestBackupController:
         assert popped_restorables == [restorable3, restorable2, restorable1]
         assert caplog.records[-1].message == "Error while rolling back a ErrorOnRestoreRestorable: Restorable2 failed"
 
-    # The following tests are for the 1.4 kludge to split restoration via
-    # backup_controller into two parts.  They can be removed once we have
-    # all rollback items ported to use the BackupController and the partition
-    # code is removed.
 
-    def test_pop_with_partition(self, backup_controller):
-        restorable1 = MinimalRestorable()
+def test_get_backedup_system_repos(monkeypatch):
+    # Just so we can generate the same hash all the time.
+    monkeypatch.setattr(backup, "DEFAULT_YUM_REPOFILE_DIR", value="test")
 
-        backup_controller.push(restorable1)
-        backup_controller.push(backup_controller.partition)
-
-        restorable = backup_controller.pop()
-
-        assert restorable == restorable1
-        assert backup_controller._restorables == []
-
-    def test_pop_all_with_partition(self, backup_controller):
-        restorable1 = MinimalRestorable()
-        restorable2 = MinimalRestorable()
-
-        backup_controller.push(restorable1)
-        backup_controller.push(backup_controller.partition)
-        backup_controller.push(restorable2)
-
-        restorables = backup_controller.pop_all()
-
-        assert restorables == [restorable2, restorable1]
-
-    def test_pop_to_partition(self, backup_controller):
-        restorable1 = MinimalRestorable()
-        restorable2 = MinimalRestorable()
-
-        backup_controller.push(restorable1)
-        backup_controller.push(backup_controller.partition)
-        backup_controller.push(restorable2)
-
-        assert backup_controller._restorables == [restorable1, backup_controller.partition, restorable2]
-
-        backup_controller.pop_to_partition()
-
-        assert backup_controller._restorables == [restorable1]
-
-        backup_controller.pop_to_partition()
-
-        assert backup_controller._restorables == []
-
-    # End of tests that are for the 1.4 partition hack.
+    result = backup.get_backedup_system_repos()
+    assert result == "/var/lib/convert2rhel/backup/098f6bcd4621d373cade4e832627b4f6"

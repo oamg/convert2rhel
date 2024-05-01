@@ -36,12 +36,14 @@
 				"python.languageServer": "Pylance"
 			},
 			"extensions": [
-				"ms-python.vscode-pylance",
+				// The lock is needed for having linting, syntax highlight and
+				// unit testing module. Without the locks there are dependency problems.
+				"ms-python.vscode-pylance@2023.11.10",
+				"ms-python.python@2022.8.1",
 				"eamodio.gitlens",
 				"GitHub.vscode-pull-request-github",
 				"Cameron.vscode-pytest",
-				"njpwerner.autodocstring",
-				"ms-python.python@2022.8.1"
+				"njpwerner.autodocstring"
 			]
 		}
 	}

@@ -23,15 +23,13 @@ import sys
 import pytest
 import six
 
-from convert2rhel import backup
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
+from convert2rhel import actions, applock, checks, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, unit_tests, utils
+from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
@@ -58,53 +56,13 @@ class TestRollbackChanges:
 
         main.rollback_changes()
 
-        # Note: when we remove the BackupController partition hack, the first
-        # of these calls will go away
-        assert global_backup_control.pop_all.call_args_list == [mock.call(_honor_partitions=True), mock.call()]
-
-    # The tests below are for the 1.4 hack that splits restore of Changes
-    # managed by the BackupController into two parts: one that executes before
-    # the unported restore items and a second that executes after.  They can be
-    # removed once all the Changes are managed by BackupControl and the
-    # partition code is removed.
-    def test_backup_control_partitioning_no_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert caplog.records[-1].levelname == "INFO"
-        assert caplog.records[-1].message == "During rollback there were no backups to restore"
-
-    def test_backup_control_partitioning_with_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        restorable1 = unit_tests.MinimalRestorable()
-        restorable2 = unit_tests.MinimalRestorable()
-        backup_control_test.push(restorable1)
-        backup_control_test.push(backup_control_test.partition)
-        backup_control_test.push(restorable2)
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert "During rollback there were no backups to restore" not in caplog.text
-
-    def test_backup_control_with_changes_only_before_the_partition(self, caplog, monkeypatch):
-        backup_control_test = backup.BackupController()
-        restorable1 = unit_tests.MinimalRestorable()
-        backup_control_test.push(backup_control_test.partition)
-        backup_control_test.push(restorable1)
-        monkeypatch.setattr(backup, "backup_control", backup_control_test)
-
-        main.rollback_changes()
-
-        assert "During rollback there were no backups to restore" not in caplog.text
+        assert global_backup_control.pop_all.call_args_list == mock.call()
 
     def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(
             global_backup_control,
             "pop_all",
-            mock.Mock(side_effect=([], IndexError("Raised because of a bug in the code"))),
+            mock.Mock(side_effect=IndexError("Raised because of a bug in the code")),
         )
 
         with pytest.raises(IndexError, match="Raised because of a bug in the code"):
@@ -161,22 +119,20 @@ class TestShowEula:
 
 def test_post_ponr_conversion(monkeypatch):
     perserve_only_rhel_kernel_mock = mock.Mock()
-    create_transaction_handler_mock = mock.Mock()
     list_non_red_hat_pkgs_left_mock = mock.Mock()
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
 
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
-    monkeypatch.setattr(pkgmanager, "create_transaction_handler", create_transaction_handler_mock)
     monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
+
     main.post_ponr_conversion()
 
     assert perserve_only_rhel_kernel_mock.call_count == 1
-    assert create_transaction_handler_mock.call_count == 1
     assert list_non_red_hat_pkgs_left_mock.call_count == 1
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
@@ -212,10 +168,11 @@ def test_main(monkeypatch, tmp_path):
     print_system_information_mock = mock.Mock()
     collect_early_data_mock = mock.Mock()
     clean_yum_metadata_mock = mock.Mock()
-    run_actions_mock = mock.Mock()
-    find_actions_of_severity_mock = mock.Mock(return_value=[])
-    clear_versionlock_mock = mock.Mock()
+    raise_for_skipped_failures_mock = mock.Mock()
     report_summary_mock = mock.Mock()
+    run_pre_actions_mock = mock.Mock()
+    run_post_actions_mock = mock.Mock()
+    clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     post_ponr_conversion_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
@@ -240,9 +197,10 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
     monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
     monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-    monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-    monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
-    monkeypatch.setattr(report, "summary", report_summary_mock)
+    monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
+    monkeypatch.setattr(actions, "run_post_actions", run_post_actions_mock)
+    monkeypatch.setattr(main, "_raise_for_skipped_failures", raise_for_skipped_failures_mock)
+    monkeypatch.setattr(report, "_summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
@@ -265,10 +223,11 @@ def test_main(monkeypatch, tmp_path):
     assert resolve_system_info_mock.call_count == 1
     assert collect_early_data_mock.call_count == 1
     assert clean_yum_metadata_mock.call_count == 1
-    assert find_actions_of_severity_mock.call_count == 1
-    assert run_actions_mock.call_count == 1
+    assert run_pre_actions_mock.call_count == 1
+    assert run_post_actions_mock.call_count == 1
+    assert raise_for_skipped_failures_mock.call_count == 2
+    assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
-    assert report_summary_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
@@ -357,12 +316,14 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
+        run_pre_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
         clear_versionlock_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
+        should_subscribe_mock = mock.Mock(side_effect=lambda: False)
+        update_rhsm_custom_facts_mock = mock.Mock()
         rollback_changes_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
 
@@ -377,8 +338,10 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
+        monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
@@ -392,9 +355,11 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
+        assert should_subscribe_mock.call_count == 1
+        assert update_rhsm_custom_facts_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 0
         assert summary_as_txt_mock.call_count == 0
@@ -414,7 +379,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         find_actions_of_severity_mock = mock.Mock()
@@ -422,6 +387,8 @@ class TestRollbackFromMain:
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
+        should_subscribe_mock = mock.Mock(side_effect=lambda: False)
+        update_rhsm_custom_facts_mock = mock.Mock()
         rollback_changes_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
 
@@ -436,10 +403,12 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
+        monkeypatch.setattr(report, "_summary", report_summary_mock)
         monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
+        monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
@@ -453,16 +422,72 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert report_summary_mock.call_count == 1
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
+        assert should_subscribe_mock.call_count == 1
+        assert update_rhsm_custom_facts_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert caplog.records[-3].message == "Conversion failed."
-        assert caplog.records[-3].levelname == "CRITICAL"
+        assert caplog.records[-4].message == "Conversion failed."
+        assert caplog.records[-4].levelname == "CRITICAL"
+
+    def test_main_rollback_analyze_exit_phase_without_subman(self, global_tool_opts, monkeypatch, tmp_path):
+        """
+        This test is the opposite of
+        `py:test_main_rollback_analyze_exit_phase`, where we are checking the
+        case that the system needs to be registered during the analyze.
+
+        If that's the case, we don't want to call the update_rhsm_custom_facts
+        as the system will be unregistered in the end.
+        """
+        mocks = (
+            (applock, "_DEFAULT_LOCK_DIR", str(tmp_path)),
+            (utils, "require_root", mock.Mock()),
+            (main, "initialize_file_logging", mock.Mock()),
+            (toolopts, "CLI", mock.Mock()),
+            (main, "show_eula", mock.Mock()),
+            (breadcrumbs, "print_data_collection", mock.Mock()),
+            (system_info, "resolve_system_info", mock.Mock()),
+            (system_info, "print_system_information", mock.Mock()),
+            (breadcrumbs, "collect_early_data", mock.Mock()),
+            (pkghandler, "clear_versionlock", mock.Mock()),
+            (pkgmanager, "clean_yum_metadata", mock.Mock()),
+            (actions, "run_pre_actions", mock.Mock()),
+            (report, "_summary", mock.Mock()),
+            (breadcrumbs, "finish_collection", mock.Mock()),
+            (subscription, "should_subscribe", mock.Mock(side_effect=lambda: True)),
+            (subscription, "update_rhsm_custom_facts", mock.Mock()),
+            (main, "rollback_changes", mock.Mock()),
+            (os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1}),
+            (report, "summary_as_json", mock.Mock()),
+            (report, "summary_as_txt", mock.Mock()),
+        )
+        global_tool_opts.activity = "analysis"
+        for module, function, value in mocks:
+            monkeypatch.setattr(module, function, value)
+
+        assert main.main() == 0
+        assert utils.require_root.call_count == 1
+        assert toolopts.CLI.call_count == 1
+        assert main.show_eula.call_count == 1
+        assert breadcrumbs.print_data_collection.call_count == 1
+        assert system_info.resolve_system_info.call_count == 1
+        assert system_info.print_system_information.call_count == 1
+        assert breadcrumbs.collect_early_data.call_count == 1
+        assert pkghandler.clear_versionlock.call_count == 1
+        assert pkgmanager.clean_yum_metadata.call_count == 1
+        assert actions.run_pre_actions.call_count == 1
+        assert report._summary.call_count == 1
+        assert breadcrumbs.finish_collection.call_count == 1
+        assert subscription.should_subscribe.call_count == 1
+        assert subscription.update_rhsm_custom_facts.call_count == 0
+        assert main.rollback_changes.call_count == 1
+        assert report.summary_as_json.call_count == 1
+        assert report.summary_as_txt.call_count == 1
 
     def test_main_rollback_analyze_exit_phase(self, global_tool_opts, monkeypatch, tmp_path):
         require_root_mock = mock.Mock()
@@ -474,7 +499,7 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
@@ -482,6 +507,8 @@ class TestRollbackFromMain:
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
+        should_subscribe_mock = mock.Mock(side_effect=lambda: False)
+        update_rhsm_custom_facts_mock = mock.Mock()
         rollback_changes_mock = mock.Mock()
 
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
@@ -495,9 +522,11 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
-        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
+        monkeypatch.setattr(report, "_summary", report_summary_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
+        monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
+        monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
@@ -513,10 +542,12 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert report_summary_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
+        assert should_subscribe_mock.call_count == 1
+        assert update_rhsm_custom_facts_mock.call_count == 1
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
@@ -531,7 +562,8 @@ class TestRollbackFromMain:
         print_system_information_mock = mock.Mock()
         collect_early_data_mock = mock.Mock()
         clean_yum_metadata_mock = mock.Mock()
-        run_actions_mock = mock.Mock()
+        run_pre_actions_mock = mock.Mock()
+        run_post_actions_mock = mock.Mock()
         find_actions_of_severity_mock = mock.Mock(return_value=[])
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
@@ -555,9 +587,10 @@ class TestRollbackFromMain:
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
-        monkeypatch.setattr(actions, "run_actions", run_actions_mock)
+        monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
+        monkeypatch.setattr(actions, "run_post_actions", run_post_actions_mock)
         monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
-        monkeypatch.setattr(report, "summary", report_summary_mock)
+        monkeypatch.setattr(report, "_summary", report_summary_mock)
         monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
         monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
@@ -574,14 +607,57 @@ class TestRollbackFromMain:
         assert resolve_system_info_mock.call_count == 1
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
-        assert run_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
+        assert run_pre_actions_mock.call_count == 1
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
-        assert report_summary_mock.call_count == 1
+        assert report_summary_mock.call_count == 2
         assert ask_to_continue_mock.call_count == 1
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-2].message
+        assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-3].message
         assert update_rhsm_custom_facts_mock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("data"),
+    (
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["ERROR"],
+                        "id": "ERROR_ID",
+                        "title": "Error",
+                        "description": "Action error",
+                        "diagnosis": "User error",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            }
+        ),
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["SKIP"],
+                        "id": "SKIP_ID",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            }
+        ),
+    ),
+)
+def test_raise_for_skipped_failures(data):
+    with pytest.raises(SystemExit, match="Conversion failed."):
+        main._raise_for_skipped_failures(data)

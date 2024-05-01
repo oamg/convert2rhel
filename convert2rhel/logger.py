@@ -74,8 +74,6 @@ class LogfileBufferHandler(BufferingHandler):
     which will keep a buffer of the logs and flush it to the FileHandler
     """
 
-    name = "logfile_buffer_handler"
-
     def __init__(self, capacity, handler_name="file_handler"):
         """
         Initialize the handler with the buffer size.
@@ -86,6 +84,7 @@ class LogfileBufferHandler(BufferingHandler):
         super(LogfileBufferHandler, self).__init__(capacity)
         # the FileLogger handler that we are logging to
         self._handler_name = handler_name
+        self.set_name("logfile_buffer_handler")
 
     @property
     def target(self):
@@ -97,7 +96,7 @@ class LogfileBufferHandler(BufferingHandler):
         :return logging.Handler: Either the found FileHandler setup or temporary NullHandler
         """
         for handler in logger.handlers:
-            if handler.name == self._handler_name:
+            if hasattr(handler, "name") and handler.name == self._handler_name:
                 return handler
         return logging.NullHandler()
 
@@ -175,8 +174,8 @@ def add_file_handler(log_name, log_dir):
     # We now have a FileHandler added, but we still need the logs from before
     # this point. Luckily we have the memory buffer that we can flush logs from
     for handler in logger.handlers:
-        if handler.name == "logfile_buffer_handler":
-            handler.flush()
+        if hasattr(handler, "name") and handler.name == "logfile_buffer_handler":
+            handler.close()
             # after we've flushed to the file we don't need the handler anymore
             logger.removeHandler(handler)
             break

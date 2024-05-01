@@ -1,7 +1,6 @@
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
-from envparse import env
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.fixture(autouse=True)
@@ -158,10 +157,10 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
-            env.str("RHSM_POOL"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
@@ -169,7 +168,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
 
         # Wait till the system is properly registered and subscribed, then
         # send the interrupt signal to the c2r process.
-        c2r.expect("Convert: Get RHEL repository IDs")
+        c2r.expect("Prepare: Get RHEL repository IDs")
         c2r.sendcontrol("c")
 
         c2r.expect("Calling command 'subscription-manager unregister'", timeout=120)
@@ -223,9 +222,9 @@ def test_terminate_registration_start(convert2rhel):
     """
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -244,9 +243,9 @@ def test_terminate_registration_success(convert2rhel):
     """
     with convert2rhel(
         "--debug -y --serverurl {} --username {} --password {}".format(
-            env.str("RHSM_SERVER_URL"),
-            env.str("RHSM_USERNAME"),
-            env.str("RHSM_PASSWORD"),
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -256,9 +255,5 @@ def test_terminate_registration_success(convert2rhel):
         c2r.expect("Auto-attaching compatible subscriptions to the system ...", timeout=180)
         c2r.expect("DEBUG - Calling command 'subscription-manager attach --auto'", timeout=180)
         c2r.expect("Status:       Subscribed", timeout=180)
-        # TODO [mlitwora]: If the SIGINT is sent right after the Status: Subscribed, then the system ends up in broken stat
-        # that makes another c2r unsuccessful. Waiting little bit longer fixes the problem but probably makes the
-        # test "useless".
-        # c2r.expect("Convert: Get RHEL repository IDs")
         terminate_and_assert_good_rollback(c2r)
     assert c2r.exitstatus != 0

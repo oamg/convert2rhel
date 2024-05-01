@@ -9,7 +9,7 @@ description+: |
     summary+: |
         List third party packages check
     description+: |
-        This test verifies, that the  TASK - [Convert: List third-party packages]
+        This test verifies, that the  TASK - [Prepare: List third-party packages]
         won't fail listing packages if previously problematic third party packages are installed.
         Installed package(s):
         v8-devel from the epel repository
@@ -17,4 +17,4 @@ description+: |
     tag+:
         - test-list-third-party-pkgs-error
     test: |
-        pytest -svv -m test_list_third_party_pkgs_error
+        pytest -m test_list_third_party_pkgs_error

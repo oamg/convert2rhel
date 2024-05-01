@@ -27,6 +27,7 @@ from datetime import datetime
 
 from convert2rhel import pkghandler, toolopts, utils
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import files
 
 
 # Path to the migration results of the old breadcrumbs.
@@ -200,7 +201,7 @@ class Breadcrumbs:
             # is provided.
             # This is safe as the RHSM_CUSTOM_FACTS_FOLDER, /etc/rhsm/facts, and its parents
             # are only writable by root
-            utils.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
+            files.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
 
         data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
         loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
@@ -212,16 +213,16 @@ class Breadcrumbs:
     def print_data_collection(self):
         """Print information about data collection and ask for acknowledgement."""
         loggerinst.info(
-            "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data"
-            " about the system conversion. The subscription-manager then uploads the data to the server the system is"
-            " registered to.\n"
+            "The convert2rhel utility generates a %s file that contains the below data about the system conversion."
+            " The subscription-manager then uploads the data to the server the system is registered to.\n"
             "- The Convert2RHEL command as executed\n"
             "- The Convert2RHEL RPM version and GPG signature\n"
             "- Success or failure status of the conversion\n"
             "- Conversion start and end timestamps\n"
             "- Source OS vendor and version\n"
             "- Target RHEL version\n"
-            "- Convert2RHEL related environment variables\n\n"
+            "- Convert2RHEL related environment variables\n\n",
+            RHSM_CUSTOM_FACTS_FILE,
         )
 
         utils.ask_to_continue()

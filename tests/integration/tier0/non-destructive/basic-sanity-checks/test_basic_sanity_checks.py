@@ -142,22 +142,9 @@ def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture
-def older_version_envar():
-    """
-    Fixture to set and remove CONVERT2RHEL_ALLOW_OLDER_VERSION environment variable.
-    """
-    # Set the environment variable
-    os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"] = "1"
-
-    yield
-    # Delete the environment variable
-    del os.environ["CONVERT2RHEL_ALLOW_OLDER_VERSION"]
-
-
 @pytest.mark.test_version_older_with_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
-def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version, older_version_envar):
+def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version):
     """
     Verify that running older version of Convert2RHEL with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
@@ -239,36 +226,6 @@ def test_rhsm_error_logged(convert2rhel):
             assert "ERROR - OSError(2): No such file or directory" not in line
 
 
-@pytest.mark.test_variant_message
-def test_check_variant_message(convert2rhel):
-    """
-    Run Convert2RHEL with deprecated -v/--variant option and verify that the warning message is shown.
-    """
-    # Run c2r with --variant option
-    with convert2rhel("--debug --variant Server") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with --variant option empty
-    with convert2rhel("--debug --variant") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with -v option
-    with convert2rhel("--debug -v Client") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-    # Run c2r with -v option empty
-    with convert2rhel("--debug -v") as c2r:
-        c2r.expect("WARNING - The -v|--variant option is not supported anymore and has no effect")
-        c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
-
-
 @pytest.mark.test_data_collection_acknowledgement
 def test_data_collection_acknowledgement(shell, convert2rhel):
     """
@@ -283,7 +240,7 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
         assert c2r.expect("Prepare: Inform about data collection", timeout=300) == 0
         assert (
             c2r.expect(
-                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.fact file that contains the below data about the system conversion.",
+                "The convert2rhel utility generates a /etc/rhsm/facts/convert2rhel.facts file that contains the below data about the system conversion.",
                 timeout=300,
             )
             == 0
@@ -297,17 +254,8 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-@pytest.fixture
-def analyze_incomplete_rollback_envar():
-    os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"] = "1"
-
-    yield
-
-    del os.environ["CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK"]
-
-
 @pytest.mark.test_analyze_incomplete_rollback
-def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incomplete_rollback_envar):
+def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     """
     This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
     is not honored when running with the analyze switch.
@@ -325,7 +273,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
+                "setting the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
                 timeout=300,
             )
             == 0
@@ -338,7 +286,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
         c2r.sendline("y")
         assert (
             c2r.expect(
-                "'CONVERT2RHEL_UNSUPPORTED_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
                 timeout=300,
             )
             == 0
@@ -349,7 +297,7 @@ def test_analyze_incomplete_rollback(repositories, convert2rhel, analyze_incompl
 
 
 @pytest.mark.test_analyze_no_rpm_va_option
-def test_analyze_no_rpm_va_option(convert2rhel, analyze_incomplete_rollback_envar):
+def test_analyze_no_rpm_va_option(convert2rhel):
     """
     This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
     The user should be warned that the --no-rpm-va option will be ignored and the command

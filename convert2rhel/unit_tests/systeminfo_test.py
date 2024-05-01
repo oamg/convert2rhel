@@ -32,7 +32,7 @@ from convert2rhel.unit_tests.conftest import all_systems, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock, urllib
+from six.moves import mock
 
 
 @pytest.fixture(autouse=True)
@@ -109,37 +109,6 @@ class TestGenerateRPMVA:
 
 
 @pytest.mark.parametrize(
-    ("version_string", "expected_version"),
-    (
-        (
-            "Oracle Linux Server release 7.8",
-            Version(7, 8),
-        ),
-        (
-            "CentOS Linux release 7.6.1810 (Core)",
-            Version(7, 6),
-        ),
-        (
-            "CentOS Linux release 8.1.1911 (Core)",
-            Version(8, 1),
-        ),
-    ),
-)
-def test_get_system_version(version_string, expected_version, monkeypatch):
-    monkeypatch.setattr(system_info, "system_release_file_content", version_string)
-
-    version = system_info._get_system_version()
-
-    assert version == expected_version
-
-
-def test_get_system_version_failed(monkeypatch):
-    monkeypatch.setattr(system_info, "system_release_file_content", "not containing the release")
-    with pytest.raises(SystemExit):
-        system_info._get_system_version()
-
-
-@pytest.mark.parametrize(
     ("pkg_name", "present_on_system", "expected_return"),
     [
         ("package A", True, True),
@@ -158,80 +127,6 @@ def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monke
 def test_get_release_ver(pretend_os):
     """Test if all pretended OSes presented in theh RELEASE_VER_MAPPING."""
     assert system_info.releasever in RELEASE_VER_MAPPING.values()
-
-
-@pytest.mark.parametrize(
-    (
-        "releasever_val",
-        "self_name",
-        "self_version",
-        "has_internet",
-        "exception",
-    ),
-    (
-        # good cases
-        # if releasever set in config - it takes precedence
-        ("not_existing_release_ver_set_in_config", None, None, True, None),
-        # Good cases which matches supported pathes
-        ("", "CentOS Linux", systeminfo.Version(8, 4), True, None),
-        ("", "Oracle Linux Server", systeminfo.Version(8, 4), True, None),
-        # bad cases
-        ("", "NextCool Linux", systeminfo.Version(8, 4), False, SystemExit),
-        ("", "CentOS Linux", systeminfo.Version(8, 10000), False, SystemExit),
-    ),
-)
-# need to pretend centos8 in order to system info were resolved at module init
-@centos8
-def test_get_release_ver_other(
-    pretend_os, monkeypatch, releasever_val, self_name, self_version, has_internet, exception
-):
-    monkeypatch.setattr(systeminfo.SystemInfo, "_get_cfg_opt", mock.Mock(return_value=releasever_val))
-    monkeypatch.setattr(systeminfo.SystemInfo, "_check_internet_access", mock.Mock(return_value=has_internet))
-    monkeypatch.setattr(
-        systeminfo.SystemInfo,
-        "_get_cfg_opt",
-        mock.Mock(return_value=releasever_val),
-    )
-    if self_name:
-        monkeypatch.setattr(
-            systeminfo.SystemInfo,
-            "_get_system_name",
-            mock.Mock(return_value=self_name),
-        )
-    if self_version:
-        monkeypatch.setattr(
-            systeminfo.SystemInfo,
-            "_get_system_version",
-            mock.Mock(return_value=self_version),
-        )
-    # calling resolve_system_info one more time to enable our monkeypatches
-    if exception:
-        with pytest.raises(exception):
-            system_info.resolve_system_info()
-    else:
-        system_info.resolve_system_info()
-    if releasever_val:
-        assert system_info.releasever == releasever_val
-    if has_internet:
-        assert system_info.has_internet_access == has_internet
-
-
-@pytest.mark.parametrize(
-    ("side_effect", "expected", "message"),
-    (
-        (urllib.error.URLError(reason="fail"), False, "Failed to retrieve data from host"),
-        (None, True, "internet connection seems to be available"),
-    ),
-)
-def test_check_internet_access(side_effect, expected, message, monkeypatch, caplog):
-    monkeypatch.setattr(
-        systeminfo.urllib.request,
-        "urlopen",
-        mock.Mock(side_effect=side_effect),
-    )
-
-    assert system_info._check_internet_access() == expected
-    assert message in caplog.records[-1].message
 
 
 @pytest.mark.parametrize(
@@ -313,14 +208,16 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
     (
         (7, 9, False),
         (8, 5, False),
-        (8, 6, True),
+        (8, 6, False),
         (8, 7, False),
-        (8, 8, False),  # Change expected to true after eus_release date
+        (8, 8, True),
         (8, 9, False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
+def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)
+    global_tool_opts.eus = True
+    monkeypatch.setattr(tool_opts, "eus", global_tool_opts)
     monkeypatch.setattr(system_info, "version", version)
 
     assert system_info.corresponds_to_rhel_eus_release() == expected
@@ -328,14 +225,7 @@ def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch):
 
 @pytest.mark.parametrize(
     ("major", "minor", "expected"),
-    (
-        (7, 9, False),
-        (8, 5, False),
-        (8, 6, True),
-        (8, 7, False),
-        (8, 8, True),
-        (8, 9, False),
-    ),
+    ((7, 9, False), (8, 5, False), (8, 6, False), (8, 7, False), (8, 8, True), (8, 9, False)),
 )
 def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)
@@ -346,19 +236,26 @@ def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, mo
 
 
 @pytest.mark.parametrize(
-    ("system_release_content", "expected"),
+    ("system_release_content", "key", "value"),
     (
-        ("CentOS Linux release 8.1.1911 (Core)", "Core"),
-        ("Oracle Linux Server release 7.8", None),
+        ("CentOS Linux release 8.1.1911 (Core)", "distribution_id", "Core"),
+        ("Oracle Linux Server release 7.8", "name", "Oracle Linux Server"),
+        ("Oracle Linux Server release 7.8", "distribution_id", None),
+        ("CentOS Stream release 8", "id", "centos"),
+        ("CentOS Linux release 8.1.1911 (Core)", "version", Version(8, 1)),
+        ("CentOS Stream release 8", "version", Version(8, 10)),
+        ("Red Hat Enterprise Linux release 8.10 Beta (Ootpa)", "version", Version(8, 10)),
     ),
 )
-def test_get_system_distribution_id(system_release_content, expected):
-    assert system_info._get_system_distribution_id(system_release_content) == expected
+def test_parse_system_release_content_from_string(system_release_content, key, value):
+    parsed = system_info.parse_system_release_content(system_release_content)
+    assert parsed[key] == value
 
 
-@centos8
-def test_get_system_distribution_id_default_system_release_content(pretend_os):
-    assert system_info._get_system_distribution_id() is None
+def test_fail_to_parse_system_release_content_from_string():
+    system_release_content = "Non-matching string"
+    parsed = system_info.parse_system_release_content(system_release_content)
+    assert not parsed
 
 
 @pytest.mark.parametrize(

@@ -15,14 +15,11 @@
 
 __metaclass__ = type
 
-import hashlib
 import logging
-import os
 
 from convert2rhel import actions, pkghandler, utils
-from convert2rhel.backup import BACKUP_DIR, backup_control
+from convert2rhel.backup import backup_control, get_backedup_system_repos
 from convert2rhel.backup.packages import RestorablePackage
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 
 
@@ -39,7 +36,7 @@ class ListThirdPartyPackages(actions.Action):
         """
         super(ListThirdPartyPackages, self).run()
 
-        logger.task("Convert: List third-party packages")
+        logger.task("Prepare: List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
         if third_party_pkgs:
             pkg_list = pkghandler.format_pkg_info(sorted(third_party_pkgs, key=self.extract_packages))
@@ -94,11 +91,11 @@ class RemoveSpecialPackages(actions.Action):
         all_pkgs = []
         pkgs_removed = []
         try:
-            logger.task("Convert: Searching for the following excluded packages")
+            logger.task("Prepare: Searching for the following excluded packages")
             excluded_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
 
             logger.task(
-                "Convert: Searching for packages containing .repo files or affecting variables in the .repo files"
+                "Prepare: Searching for packages containing .repo files or affecting variables in the .repo files"
             )
             repofile_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
 
@@ -119,7 +116,7 @@ class RemoveSpecialPackages(actions.Action):
             # - the suddenly enabled RHEL repos cause a package backup failure
             # Since the MD5 checksum of original path is used in backup path to avoid
             # conflicts in backup folder, preparing the path is needed.
-            backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
+            backedup_reposdir = get_backedup_system_repos()
             backup_control.push(RestorablePackage(pkgs=pkghandler.get_pkg_nevras(all_pkgs), reposdir=backedup_reposdir))
 
             logger.info("\nRemoving special packages from the system.")
