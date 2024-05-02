@@ -19,7 +19,6 @@ import logging
 import os
 
 from convert2rhel import actions, pkgmanager, utils
-from convert2rhel.backup import get_backedup_system_repos
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
 
@@ -52,10 +51,8 @@ class PackageUpdates(actions.Action):
             )
             return
 
-        reposdir = get_backedup_system_repos()
-
         try:
-            packages_to_update = sorted(get_total_packages_to_update(reposdir=reposdir))
+            packages_to_update = sorted(get_total_packages_to_update())
         except (utils.UnableToSerialize, pkgmanager.RepoError) as e:
             # As both yum and dnf have the same error class (RepoError), to
             # identify any problems when interacting with the repositories, we
@@ -81,14 +78,13 @@ class PackageUpdates(actions.Action):
             return
 
         if len(packages_to_update) > 0:
-            repos_message = "on repositories defined in the %s folder" % reposdir
             package_not_up_to_date_skip = os.environ.get("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP", None)
             package_not_up_to_date_error_message = (
-                "The system has %s package(s) not updated based %s.\n"
+                "The system has %s package(s) not updated based on repositories defined in the system repositories.\n"
                 "List of packages to update: %s.\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
                 "Consider updating the packages before proceeding with the conversion."
-                % (len(packages_to_update), repos_message, " ".join(packages_to_update))
+                % (len(packages_to_update), " ".join(packages_to_update))
             )
             if not package_not_up_to_date_skip:
                 logger.warning(package_not_up_to_date_error_message)

@@ -66,24 +66,22 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
 
 @centos8
 def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_action):
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: [])
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: [])
 
     package_updates_action.run()
     assert "System is up-to-date." in caplog.records[-1].message
 
 
 @centos8
-def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog, tmpdir):
+def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog):
     packages = ["package-2", "package-1"]
-    reposdir = str(tmpdir.join("backup"))
     diagnosis = (
-        "The system has 2 package(s) not updated based on repositories defined in the %s folder.\n"
+        "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"
         "List of packages to update: package-1 package-2.\n\n"
         "Not updating the packages may cause the conversion to fail.\n"
         "Consider updating the packages before proceeding with the conversion."
-    ) % reposdir
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
-    monkeypatch.setattr(package_updates, "get_backedup_system_repos", lambda: reposdir)
+    )
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: packages)
 
     package_updates_action.run()
     unit_tests.assert_actions_result(
@@ -103,22 +101,20 @@ def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_u
 
 
 @centos8
-def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action, tmpdir):
+def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action):
     packages = ["package-2", "package-1"]
-    reposdir = str(tmpdir.join("backup"))
     diagnosis = (
-        "The system has 2 package(s) not updated based on repositories defined in the %s folder.\n"
+        "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"
         "List of packages to update: package-1 package-2.\n\n"
         "Not updating the packages may cause the conversion to fail.\n"
         "Consider updating the packages before proceeding with the conversion."
-    ) % reposdir
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda reposdir: packages)
+    )
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: packages)
     monkeypatch.setattr(
         os,
         "environ",
         {"CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP": 1},
     )
-    monkeypatch.setattr(package_updates, "get_backedup_system_repos", lambda: reposdir)
 
     expected = set(
         (
