@@ -412,6 +412,7 @@ def remove_repositories(shell):
     # Move all repos to other location, so it is not being used
     shell(f"mkdir {backup_dir}")
     assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
+    assert len(os.listdir("/etc/yum.repos.d/")) == 0
 
     yield
 
@@ -451,6 +452,10 @@ def missing_os_release_package_workaround(shell):
         rpm_output = shell(f"rpm -qa {system_release_pkg}").output
         if "not installed" in rpm_output:
             shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
+
+        # Since we try to mitigate any damage caused by the incomplete rollback
+        # try to update the system, in case anything got downgraded
+        shell("yum update -y", silent=True)
 
 
 def _load_json_schema(path):
@@ -767,16 +772,19 @@ def _remove_client_tools_repo_oracle(shell):
 
 
 @pytest.fixture
-def satellite_registration(shell, yum_conf_exclude):
+def satellite_registration(shell, yum_conf_exclude, request):
     """
     Register the system to the Satellite server
     """
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        yum_conf_exclude(exclude=["rhn-client*"])
-    _add_client_tools_repo_oracle(shell)
     # Get the registration command for the respective system
     # from the conftest function
     sat_reg_command = satellite_registration_command()
+    # If the fixture is parametrized, use the parameter as the registration command
+    if hasattr(request, "param"):
+        sat_reg_command = request.param
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        yum_conf_exclude(exclude=["rhn-client*"])
+    _add_client_tools_repo_oracle(shell)
 
     # Register the system to the Satellite server
     assert shell(sat_reg_command).returncode == 0
@@ -787,4 +795,8 @@ def satellite_registration(shell, yum_conf_exclude):
 
     # Remove the subman packages installed by the registration script
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Remove potential leftover subscription
+        shell("subscription-manager remove --all")
+        # Remove potential leftover registration
+        shell("subscription-manager unregister")
         assert shell("yum remove -y subscription-manager*")

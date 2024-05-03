@@ -14,22 +14,22 @@ tag+:
         Restore the os-release file during rollback
     /related_environment_variable:
         description+: |
-            Subscribe to the Satellite server using the curl command.
-            Remove all repositories from the system.
+            We remove all the system repositories from the usual location.
+            Since the host is registered through Satellite having access only to the RHEL repositories,
+            convert2rhel is unable to perform back-up of some packages.
             Set the "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
             Verify that the /etc/os-release file is restored after the rollback.
         /backup_os_release_no_envar:
             summary+: |
                 Restore os-release without CONVERT2RHEL_INCOMPLETE_ROLLBACK
             description+: |
-                This case runs the conversion with no repositories available.
-                Verify that this condition disables the package backup,
-                convert2rhel warns the user and inhibits the conversion.
+                In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is not set, therefore
+                using analyze we expect convert2rhel to raise an error and return code 1.
             adjust+:
                 environment+:
                     CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
             tag+:
-                - no-envar
+                - backup-os-release-no-envar
                 - sanity
             test: |
                 pytest -m test_backup_os_release_no_envar
@@ -38,32 +38,21 @@ tag+:
             summary+: |
                 Restore os-release with CONVERT2RHEL_INCOMPLETE_ROLLBACK
             description+: |
-                This case runs the conversion with no repositories available
-                and "CONVERT2RHEL_INCOMPLETE_ROLLBACK" envar set.
-                Verify that this condition disables the package backup,
-                convert2rhel warns the user, but continues the conversion.
+                In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
+                Ref ticket: OAMG-5457.
+                Note that after the test, the $releasever variable is unset.
+                That is due to the incomplete rollback not being able to back up/restore the *-linux-release
+                package, the issue gets resolved by the (autoused) missing_os_release_package_workaround fixture.
             adjust+:
                 environment+:
                     CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
                     CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
             tag+:
-                - with-envar
+                - backup-os-release-with-envar
             test: |
                 pytest -m test_backup_os_release_with_envar
             link:
                 - verifies: https://issues.redhat.com/browse/OAMG-5457
-
-    /unsuccessful_satellite_registration:
-        summary+: |
-            Rollback caused by failed registration
-        description+: |
-            Verify that the os-release is restored, when the registration to the Satellite servers fails.
-        tag+:
-            - unsuccessful-satellite-registration
-        test: |
-            pytest -m test_unsuccessful_satellite_registration
-        link:
-            - verifies: https://issues.redhat.com/browse/RHELC-51
 
 
 /missing_system_release:

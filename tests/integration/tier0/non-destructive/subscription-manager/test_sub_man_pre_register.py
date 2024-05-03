@@ -3,11 +3,8 @@ import pytest
 from conftest import TEST_VARS
 
 
-# We need to exclude the rhn-client* packages, since we want to install the subman package
-# on the Oracle Linux systems
-@pytest.mark.parametrize("exclude", [["rhn-client*"]])
 @pytest.mark.test_pre_registered_wont_unregister
-def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel, yum_conf_exclude, exclude):
+def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel, yum_conf_exclude):
     """
     This test verifies that running conversion on pre-registered system won't unregister the system.
     1. Install subscription-manager, download the SSL certificate
@@ -33,11 +30,8 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel, yum
     assert c2r.exitstatus != 0
 
 
-# We need to exclude the rhn-client* packages, since we want to install the subman package
-# on the Oracle Linux systems
-@pytest.mark.parametrize("exclude", [["rhn-client*"]])
 @pytest.mark.test_pre_registered_re_register
-def test_pre_registered_re_register(shell, pre_registered, convert2rhel, yum_conf_exclude, exclude):
+def test_pre_registered_re_register(shell, pre_registered, convert2rhel, yum_conf_exclude):
     """
     This test verifies that running conversion on pre-registered system and providing convert2rhel
     with credentials, will re-register the system.
@@ -83,11 +77,8 @@ def test_unregistered_no_credentials(shell, convert2rhel):
     assert c2r.exitstatus != 0
 
 
-# We need to exclude the rhn-client* packages, since we want to install the subman package
-# on the Oracle Linux systems
-@pytest.mark.parametrize("exclude", [["rhn-client*"]])
 @pytest.mark.test_no_sca_not_subscribed
-def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel, yum_conf_exclude, exclude):
+def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel, yum_conf_exclude):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
@@ -107,14 +98,11 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel, yum_conf_excl
     assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
 
 
-# We need to exclude the rhn-client* packages, since we want to install the subman package
-# on the Oracle Linux systems
-@pytest.mark.parametrize("exclude", [["rhn-client*"]])
 @pytest.mark.parametrize(
     "pre_registered", [(TEST_VARS["RHSM_NOSUB_USERNAME"], TEST_VARS["RHSM_NOSUB_PASSWORD"])], indirect=True
 )
 @pytest.mark.test_no_sca_subscription_attachment_error
-def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered, yum_conf_exclude, exclude):
+def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered, yum_conf_exclude):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
