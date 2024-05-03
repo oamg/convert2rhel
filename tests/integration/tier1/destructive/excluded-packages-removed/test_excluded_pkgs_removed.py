@@ -34,4 +34,4 @@ def test_excluded_packages_removed(shell, convert2rhel):
     assert c2r.exitstatus == 0
 
     # Verify, the excluded packages were really removed
-    assert shell(f"rpm -qi {packages}").returncode != 0
+    assert shell(f"rpm -qi {packages}").returncode == 1

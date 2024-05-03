@@ -176,7 +176,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
         c2r.expect("Calling command 'subscription-manager unregister'", timeout=120)
         c2r.expect("System unregistered successfully.", timeout=120)
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -194,7 +194,7 @@ def test_missing_credentials_rollback(convert2rhel, shell):
     with convert2rhel("--debug -y") as c2r:
         c2r.expect_exact("ERROR - (ERROR) SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -210,7 +210,8 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     password = "bar"
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
     with convert2rhel(f"--debug -y --username {username} --password {password}") as c2r:
-        assert c2r.exitstatus != 0
+        pass
+    assert c2r.exitstatus == 2
 
     is_installed_post_rollback(shell, assign_packages())
     remove_packages(shell, packages_to_remove_at_cleanup)
@@ -232,7 +233,7 @@ def test_terminate_registration_start(convert2rhel):
     ) as c2r:
         c2r.expect("Registering the system using subscription-manager")
         terminate_and_assert_good_rollback(c2r)
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.skip(reason="SIGINT is sent too soon which breaks the rollback")
@@ -258,4 +259,4 @@ def test_terminate_registration_success(convert2rhel):
         c2r.expect("DEBUG - Calling command 'subscription-manager attach --auto'", timeout=180)
         c2r.expect("Status:       Subscribed", timeout=180)
         terminate_and_assert_good_rollback(c2r)
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1

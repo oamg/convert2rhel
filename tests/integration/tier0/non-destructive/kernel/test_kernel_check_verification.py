@@ -46,7 +46,7 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
         )
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.parametrize("yum_conf_exclude", [["kernel", "kernel-core"]], indirect=True)
@@ -66,7 +66,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_e
         else:
             assert AssertionError, "Utility did not raise IS_LOADED_KERNEL_LATEST has succeeded"
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_non_latest_kernel_error
@@ -88,4 +88,4 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
             c2r.expect_exact("(OVERRIDABLE) IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION")
             c2r.sendcontrol("c")
 
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 1

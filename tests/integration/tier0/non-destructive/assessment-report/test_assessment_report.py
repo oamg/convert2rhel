@@ -125,6 +125,8 @@ def test_successful_report(convert2rhel):
             assert AssertionError("Error header in the analysis report.")
         elif c2r_report_header_index == 2:
             assert AssertionError("Skip header in the analysis report.")
+        else:
+            assert AssertionError("Some unexpected string found in the report")
 
     assert c2r.exitstatus == 0
 
@@ -173,8 +175,9 @@ def test_convert_successful_report(convert2rhel):
             assert AssertionError("Error header in the analysis report.")
         elif c2r_report_header_index == 3:
             assert AssertionError("Skip header in the analysis report.")
-
+        else:
+            assert AssertionError("No header found.")
     # Exitstatus is 1 due to user cancelling the conversion
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     _validate_report()

@@ -70,4 +70,4 @@ def test_verify_logfile_starts_with_command(convert2rhel):
             assert username not in command
             assert organization not in command
 
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 1

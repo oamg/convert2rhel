@@ -117,4 +117,4 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel, hybrid_rocky_image):
 
             c2r.sendcontrol("c")
 
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 1

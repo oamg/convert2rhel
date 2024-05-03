@@ -42,7 +42,7 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
         ) as c2r:
             c2r.expect("--releasever=333")
             c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.fixture(scope="function")
@@ -83,4 +83,4 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
             c2r.expect(
                 f"CRITICAL - {os_release.name} of version {os_release.version[0]}.1 is not allowed for conversion."
             )
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 1

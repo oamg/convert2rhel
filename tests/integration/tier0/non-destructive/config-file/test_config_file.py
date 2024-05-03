@@ -28,9 +28,8 @@ def test_user_path_custom_filename(convert2rhel):
 
     with convert2rhel('--debug -c "~/.convert2rhel_custom.ini"') as c2r:
         c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini")
-        c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     remove_files(config)
 
@@ -42,9 +41,10 @@ def test_user_path_std_filename(convert2rhel):
 
     with convert2rhel("--debug") as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.sendcontrol("c")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     remove_files(config)
 
@@ -61,17 +61,19 @@ def test_user_path_cli_priority(convert2rhel):
 
     with convert2rhel("--password password --debug") as c2r:
         # Found options in config file
-        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini", timeout=120)
         c2r.expect(
             "WARNING - You have passed either the RHSM password or activation key through both the command line and"
-            " the configuration file. We're going to use the command line values."
+            " the configuration file. We're going to use the command line values.",
+            timeout=120,
         )
-        c2r.sendcontrol("c")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     remove_files(config)
 
@@ -97,9 +99,8 @@ def test_std_paths_priority_diff_methods(convert2rhel):
             "WARNING - Either a password or an activation key can be used for system registration."
             " We're going to use the activation key."
         )
-        c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     remove_files(config)
 
@@ -114,8 +115,9 @@ def test_std_paths_priority(convert2rhel):
 
     with convert2rhel("--debug") as c2r:
         c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.sendcontrol("c")
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     remove_files(config)

@@ -27,7 +27,7 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_pre_registered_re_register
@@ -56,7 +56,7 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
         c2r.sendline("n")
         c2r.expect("System unregistered successfully.", timeout=120)
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
     assert "This system is not yet registered" in shell("subscription-manager identity").output
 
 
@@ -74,7 +74,7 @@ def test_unregistered_no_credentials(shell, convert2rhel):
 
         c2r.expect("SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM", timeout=300)
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2
 
 
 @pytest.mark.test_no_sca_not_subscribed
@@ -93,7 +93,7 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
 
@@ -115,4 +115,4 @@ def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registere
         c2r.expect("We'll try to auto-attach a subscription")
         c2r.expect_exact("(ERROR) SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS - No access to RHEL repositories")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2

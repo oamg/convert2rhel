@@ -61,7 +61,7 @@ def test_good_conversion_without_rhsm(shell, convert2rhel, custom_repository):
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_custom_invalid_repo_provided
@@ -75,6 +75,6 @@ def test_bad_conversion_without_rhsm(shell, convert2rhel, custom_repository):
     with convert2rhel("-y --no-rhsm --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True) as c2r:
         c2r.expect("CUSTOM_REPOSITORIES_ARE_VALID::UNABLE_TO_ACCESS_REPOSITORIES")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2
 
     assert shell("rpm -qi kernel").returncode == 0

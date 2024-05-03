@@ -40,4 +40,4 @@ def test_check_user_response_user_and_password(convert2rhel):
                 continue
 
         c2r.sendcontrol("c")
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
