@@ -460,7 +460,7 @@ class SystemInfo:
         :rtype: bool
         """
         # This check will be dropped once 7 is no longer supported under ELS
-        if self.version.major == 7:
+        if tool_opts.els and self.version.major == 7:
             return True
         return False
 
