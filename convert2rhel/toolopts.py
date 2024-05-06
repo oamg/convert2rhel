@@ -353,9 +353,10 @@ class CLI:
         config_opts = copy.copy(tool_opts)
         tool_opts.config_file = parsed_opts.config_file
         # corner case: password on CLI and activation-key in the config file
-        # password from CLI has precedence and activation-key must be deleted (unused)
+        # password from CLI has precedence and activation_key and org must be deleted (unused)
         if config_opts.activation_key and parsed_opts.password:
             tool_opts.activation_key = None
+            tool_opts.org = None
 
         if parsed_opts.no_rpm_va:
             if tool_opts.activity == "analysis":
