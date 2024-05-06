@@ -694,3 +694,23 @@ def test_cli_userpass_specified(argv, message, monkeypatch, caplog, global_tool_
         # Don't care about the exception, focus on output message
         pass
     assert message in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("activation_key", "organization", "argv"),
+    (
+        ("activation_key", "org", []),
+        ("activation_key", "org", ["analyze", "-u name", "-p pass"]),
+        (None, None, ["analyze", "-u name", "-p pass"]),
+    ),
+)
+def test_cli_args_config_file_cornercase(activation_key, organization, argv, monkeypatch):
+    monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
+    t_opts = convert2rhel.toolopts.ToolOpts()
+    t_opts.org = organization
+    t_opts.activation_key = activation_key
+    t_opts.no_rhsm = True
+    monkeypatch.setattr(convert2rhel.toolopts, "tool_opts", t_opts)
+
+    # Make sure it doesn't raise an exception
+    convert2rhel.toolopts.CLI()
