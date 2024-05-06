@@ -668,3 +668,29 @@ def test_setting_no_rpm_va(argv, env_var, expected, message, monkeypatch, global
     assert global_tool_opts.no_rpm_va == expected
     if message:
         assert caplog.records[-1].message == message
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    (
+        # The message is a log of used command
+        (mock_cli_arguments(["-u", "user", "-p", "pass"]), "-u ***** -p *****"),
+        (
+            mock_cli_arguments(["-p", "pass"]),
+            "You have passed the RHSM password without an associated username. Please provide a username together with the password",
+        ),
+        (
+            mock_cli_arguments(["-u", "user"]),
+            "You have passed the RHSM username without an associated password. Please provide a password together with the username",
+        ),
+    ),
+)
+def test_cli_userpass_specified(argv, message, monkeypatch, caplog, global_tool_opts):
+    monkeypatch.setattr(sys, "argv", argv)
+
+    try:
+        convert2rhel.toolopts.CLI()
+    except SystemExit:
+        # Don't care about the exception, focus on output message
+        pass
+    assert message in caplog.text

@@ -498,6 +498,18 @@ class CLI:
                 "Either the --org or the --activationkey option is missing. You can't use one without the other."
             )
 
+        if (parsed_opts.password or config_opts.password) and not (parsed_opts.username or config_opts.username):
+            loggerinst.warning(
+                "You have passed the RHSM password without an associated username. Please provide a username together"
+                " with the password."
+            )
+
+        if (parsed_opts.username or config_opts.username) and not (parsed_opts.password or config_opts.password):
+            loggerinst.warning(
+                "You have passed the RHSM username without an associated password. Please provide a password together"
+                " with the username."
+            )
+
 
 def _log_command_used():
     """We want to log the command used for convert2rhel to make it easier to know what command was used
