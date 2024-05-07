@@ -9,7 +9,7 @@ import six
 
 from convert2rhel import backup, pkgmanager, redhatrelease, systeminfo, toolopts, utils
 from convert2rhel.backup.certs import RestorablePEMCert
-from convert2rhel.logger import add_file_handler, setup_logger_handler
+from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import MinimalRestorable

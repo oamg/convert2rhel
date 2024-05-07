@@ -878,7 +878,7 @@ def clear_versionlock():
 
 
 @utils.run_as_child_process
-def get_total_packages_to_update(reposdir):
+def get_total_packages_to_update():
     """
     Return the total number of packages to update in the system. It uses both
     yum/dnf depending on whether they are installed on the system, In case of
@@ -894,8 +894,6 @@ def get_total_packages_to_update(reposdir):
         We need to know about the signals to act on them, for example to
         execute a rollback when the user presses Ctrl + C.
 
-    :param reposdir: The path to the hardcoded repositories for EUS (If any).
-    :type reposdir: str | None
     :return: The packages that need to be updated.
     :rtype: list[str]
     """
@@ -904,9 +902,7 @@ def get_total_packages_to_update(reposdir):
     if pkgmanager.TYPE == "yum":
         packages = _get_packages_to_update_yum()
     elif pkgmanager.TYPE == "dnf":
-        # We're using the reposdir with dnf only because we currently hardcode
-        # the repofiles for RHEL 8 derivatives only.
-        packages = _get_packages_to_update_dnf(reposdir=reposdir)
+        packages = _get_packages_to_update_dnf()
 
     return set(packages)
 
@@ -928,20 +924,12 @@ def _get_packages_to_update_yum():
     return all_packages
 
 
-def _get_packages_to_update_dnf(reposdir):
-    """Query all the packages with dnf that has an update pending on the
-    system.
-    :param reposdir: The path to the hardcoded repositories for EUS (If any).
-    :type reposdir: str | None
+def _get_packages_to_update_dnf():
+    """
+    Query all the packages with dnf that has an update pending on the system.
     """
     packages = []
     base = pkgmanager.Base()
-
-    # If we have a reposdir, that means we are trying to check the packages
-    # under CentOS Linux 8.4 or 8.5 and Oracle Linux 8.4. That means we need to
-    # use our hardcoded repository files instead of the system ones.
-    if reposdir:
-        base.conf.reposdir = reposdir
 
     # Set DNF to read from the proper config files, at this moment, DNF can't
     # automatically read and load the config files so we have to specify it to

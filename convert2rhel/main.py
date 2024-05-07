@@ -34,6 +34,12 @@ class _AnalyzeExit(Exception):
     pass
 
 
+class _InhibitorsFound(Exception):
+    # Exception for when there is an inhibitor detected either in
+    # pre-conversion or post-conversion actions.
+    pass
+
+
 class ConversionPhase:
     POST_CLI = 1
     # PONR means Point Of No Return
@@ -57,6 +63,15 @@ _REPORT_MAPPING = {
         report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS,
     ),
 }
+
+# Track the exit codes for different scenarios during the conversion.
+class ConversionExitCodes:
+    # No errors detected during the conversion
+    SUCCESSFUL = 0
+    # Some inhibitors appeared during the pre conversion analysis
+    FAILURE = 1
+    # Inhibitors that are part of the conversion process
+    INHIBITORS_FOUND = 2
 
 
 def initialize_file_logging(log_name, log_dir):
@@ -105,7 +120,7 @@ def main():
     except applock.ApplicationLockedError:
         loggerinst.warning("Another copy of convert2rhel is running.\n")
         loggerinst.warning("\nNo changes were made to the system.\n")
-        return 1
+        return ConversionExitCodes.FAILURE
 
 
 def main_locked():
@@ -186,7 +201,12 @@ def main_locked():
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
-        return 0
+        return ConversionExitCodes.SUCCESSFUL
+
+    except _InhibitorsFound as err:
+        loggerinst.critical_no_exit(str(err))
+        _handle_main_exceptions(process_phase, pre_conversion_results)
+        return ConversionExitCodes.INHIBITORS_FOUND
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
@@ -205,7 +225,7 @@ def main_locked():
             report.summary_as_json(results, json_report)
             report.summary_as_txt(results, txt_report)
 
-    return 0
+    return ConversionExitCodes.SUCCESSFUL
 
 
 def _raise_for_skipped_failures(results):
@@ -219,7 +239,12 @@ def _raise_for_skipped_failures(results):
     failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
     if failures:
         # The report will be handled in the error handler, after rollback.
-        loggerinst.critical("Conversion failed.")
+        message = (
+            "The {method} process failed.\n\n"
+            "A problem was encountered during {method} and a rollback will be "
+            "initiated to restore the system as the previous state."
+        ).format(method=toolopts.tool_opts.activity)
+        raise _InhibitorsFound(message)
 
 
 # TODO(r0x0d): Better function name
@@ -244,6 +269,7 @@ def _handle_main_exceptions(process_phase, results=None):
 
     if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)
+        return ConversionExitCodes.FAILURE
     elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
         # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the RHSM server.
@@ -279,7 +305,8 @@ def _handle_main_exceptions(process_phase, results=None):
             include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
-    return 1
+
+    return ConversionExitCodes.FAILURE
 
 
 #

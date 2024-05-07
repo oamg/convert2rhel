@@ -413,7 +413,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
 
-        assert main.main() == 1
+        assert main.main() == 2
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
         assert toolopts_cli_mock.call_count == 1
@@ -432,8 +432,6 @@ class TestRollbackFromMain:
         assert rollback_changes_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
-        assert caplog.records[-4].message == "Conversion failed."
-        assert caplog.records[-4].levelname == "CRITICAL"
 
     def test_main_rollback_analyze_exit_phase_without_subman(self, global_tool_opts, monkeypatch, tmp_path):
         """
@@ -622,7 +620,7 @@ class TestRollbackFromMain:
 
 
 @pytest.mark.parametrize(
-    ("data"),
+    ("data", "exception", "match", "activity"),
     (
         (
             {
@@ -638,7 +636,14 @@ class TestRollbackFromMain:
                         "variables": {},
                     },
                 },
-            }
+            },
+            main._InhibitorsFound,
+            (
+                "The analysis process failed.\n\n"
+                "A problem was encountered during analysis and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
+            "analysis",
         ),
         (
             {
@@ -654,10 +659,53 @@ class TestRollbackFromMain:
                         "variables": {},
                     },
                 },
-            }
+            },
+            main._InhibitorsFound,
+            (
+                "The analysis process failed.\n\n"
+                "A problem was encountered during analysis and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
+            "analysis",
+        ),
+        (
+            {
+                "One": {
+                    "messages": [],
+                    "result": {
+                        "level": actions.STATUS_CODE["SKIP"],
+                        "id": "SKIP_ID",
+                        "title": "Skip",
+                        "description": "Action skip",
+                        "diagnosis": "User skip",
+                        "remediations": "move on",
+                        "variables": {},
+                    },
+                },
+            },
+            main._InhibitorsFound,
+            (
+                "The conversion process failed.\n\n"
+                "A problem was encountered during conversion and a rollback will be "
+                "initiated to restore the system as the previous state."
+            ),
+            "conversion",
         ),
     ),
 )
-def test_raise_for_skipped_failures(data):
-    with pytest.raises(SystemExit, match="Conversion failed."):
+def test_raise_for_skipped_failures(data, exception, match, activity, global_tool_opts, monkeypatch):
+    monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
+    global_tool_opts.activity = activity
+    with pytest.raises(exception, match=match):
         main._raise_for_skipped_failures(data)
+
+
+def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):
+    monkeypatch.setattr(toolopts, "CLI", mock.Mock())
+    monkeypatch.setattr(utils, "require_root", mock.Mock())
+    monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmpdir))
+    monkeypatch.setattr(main, "main_locked", mock.Mock(side_effect=applock.ApplicationLockedError("failed")))
+
+    assert main.main() == 1
+    assert "Another copy of convert2rhel is running.\n" in caplog.records[-2].message
+    assert "\nNo changes were made to the system.\n" in caplog.records[-1].message
