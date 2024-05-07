@@ -1,5 +1,5 @@
 pylint==3.1.0
-astroid==3.1.0
+astroid==3.2.0
 pre-commit==3.7.0
 pytest==8.2.0
 pytest-cov==5.0.0
