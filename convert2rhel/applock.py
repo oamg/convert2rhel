@@ -118,14 +118,14 @@ class ApplicationLock:
         the application."""
         pid = self._read_pidfile()
         self._release_pidfile_flock()
-        if pid is not None:
+        if pid:
             return pid == self._pid
         return False
 
     def _release_pidfile_flock(self):
         """Release the advisory file lock we hold on the PID file
         and close the open file descriptor."""
-        if self._pidfile_fp is not None:
+        if self._pidfile_fp:
             fcntl.flock(self._pidfile_fp, fcntl.LOCK_UN)
             if not self._pidfile_fp.closed:
                 self._pidfile_fp.close()
