@@ -231,6 +231,7 @@ all_systems = pytest.mark.parametrize(
         ("7.9.1111", "Oracle Linux Server"),
         ("8.5.1111", "CentOS Linux"),
         ("8.6.1111", "Oracle Linux Server"),
+        ("9.3.1111", "Oracle Linux Server"),
     ),
     indirect=True,
 )
@@ -252,6 +253,11 @@ oracle7 = pytest.mark.parametrize(
 oracle8 = pytest.mark.parametrize(
     "pretend_os",
     (("8.6.1111", "Oracle Linux Server"),),
+    indirect=True,
+)
+oracle9 = pytest.mark.parametrize(
+    "pretend_os",
+    (("9.3.1111", "Oracle Linux Server"),),
     indirect=True,
 )
 
