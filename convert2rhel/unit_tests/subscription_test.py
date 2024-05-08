@@ -32,9 +32,7 @@ from convert2rhel import exceptions, pkghandler, pkgmanager, repo, subscription,
 from convert2rhel.backup import files
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
-    AutoAttachSubscriptionMocked,
     PromptUserMocked,
-    RemoveAutoAttachSubscriptionMocked,
     RunSubprocessMocked,
     UnregisterSystemMocked,
     create_pkg_information,
@@ -1280,3 +1278,78 @@ def test_get_rhsm_facts_json_decode_error_el8(monkeypatch, global_tool_opts, cap
     assert isinstance(facts, dict)
     assert len(facts) == 0
     assert run_mock.call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("return_code", "exception"),
+    (
+        (1, True),
+        (0, False),
+    ),
+)
+def test_auto_attach_subscription(monkeypatch, return_code, exception):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_code=return_code),
+    )
+    if exception:
+        with pytest.raises(subscription.SubscriptionAutoAttachmentError):
+            subscription.auto_attach_subscription()
+    else:
+        try:
+            subscription.auto_attach_subscription()
+        except subscription.SubscriptionAutoAttachmentError:
+            assert False
+
+
+@pytest.mark.parametrize(
+    ("return_code", "exception"),
+    (
+        (1, True),
+        (0, False),
+    ),
+)
+def test_remove_subscription(monkeypatch, return_code, exception):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_code=return_code),
+    )
+    if exception:
+        with pytest.raises(subscription.SubscriptionRemovalError):
+            subscription.remove_subscription()
+    else:
+        try:
+            subscription.remove_subscription()
+        except subscription.SubscriptionRemovalError:
+            assert False
+
+
+@pytest.mark.parametrize(
+    (
+        "toolopts_disablerepo",
+        "expected_cmd",
+    ),
+    (
+        (["test", "repo"], ["subscription-manager", "repos", "--disable=test", "--disable=repo"]),
+        (None, ["subscription-manager", "repos", "--disable=*"]),
+    ),
+)
+def test_disable_repos(toolopts_disablerepo, expected_cmd, global_tool_opts, monkeypatch, caplog):
+    global_tool_opts.disablerepo = toolopts_disablerepo
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=0))
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+
+    subscription.disable_repos()
+    assert utils.run_subprocess.cmd == expected_cmd
+    assert "Repositories disabled" in caplog.records[-1].message
+
+
+def test_disable_repos_critical_error(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="error"))
+    with pytest.raises(exceptions.CriticalError):
+        subscription.disable_repos()
+        assert "Could not disable subscription-manager repositories:\nerror" in caplog.records[-1].message
+
+    assert utils.run_subprocess.cmd == ["subscription-manager", "repos", "--disable=*"]

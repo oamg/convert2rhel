@@ -144,50 +144,6 @@ class TestRestorableAutoAttachmentSubscription:
         auto_attach_subscription.restore()
         assert subscription.remove_subscription.call_count == 0
 
-    @pytest.mark.parametrize(
-        ("return_code", "exception"),
-        (
-            (1, True),
-            (0, False),
-        ),
-    )
-    def test_auto_attach_subscription(self, monkeypatch, return_code, exception):
-        monkeypatch.setattr(
-            utils,
-            "run_subprocess",
-            RunSubprocessMocked(return_code=return_code),
-        )
-        if exception:
-            with pytest.raises(subscription.SubscriptionAutoAttachmentError):
-                subscription.auto_attach_subscription()
-        else:
-            try:
-                subscription.auto_attach_subscription()
-            except subscription.SubscriptionAutoAttachmentError:
-                assert False
-
-    @pytest.mark.parametrize(
-        ("return_code", "exception"),
-        (
-            (1, True),
-            (0, False),
-        ),
-    )
-    def test_remove_subscription(self, monkeypatch, return_code, exception):
-        monkeypatch.setattr(
-            utils,
-            "run_subprocess",
-            RunSubprocessMocked(return_code=return_code),
-        )
-        if exception:
-            with pytest.raises(subscription.SubscriptionRemovalError):
-                subscription.remove_subscription()
-        else:
-            try:
-                subscription.remove_subscription()
-            except subscription.SubscriptionRemovalError:
-                assert False
-
 
 class TestRestorableDisableRepositories:
     @pytest.mark.parametrize(

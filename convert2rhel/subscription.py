@@ -760,8 +760,8 @@ def disable_repos():
             description="As part of the conversion process, convert2rhel disables all current subscription-manager repositories and enables only repositories required for the conversion. convert2rhel was unable to disable these repositories, and the conversion is unable to proceed.",
             diagnosis="Failed to disable repositories: %s." % (output),
         )
+
     loggerinst.info("Repositories disabled.")
-    return
 
 
 def enable_repos(rhel_repoids):
