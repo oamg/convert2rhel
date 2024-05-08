@@ -26,7 +26,7 @@ class CriticalError(Exception):
     Exception with the information to construct the results of an Action.
 
     :meth:`convert2rhel.action.Action.run` needs to set a result which will report whether the
-    Action suceeded or failed and if it failed, then giving various diagnostic messages to help the
+    Action succeeded or failed and if it failed, then giving various diagnostic messages to help the
     user fix the problem. In many places, we are currently using `sys.exit()` from deep inside of the
     callstack of functions which run() calls. Those sites can be ported to use this function instead
     so that enough information is returned to make a good diagnostic message.

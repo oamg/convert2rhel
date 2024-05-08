@@ -318,11 +318,12 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumGPGCheckError
             loggerinst.debug("Got the following exception message: %s", e)
             loggerinst.critical_no_exit("Failed to validate the yum transaction.")
+            formatted_exec = e.value
             raise exceptions.CriticalError(
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate yum transaction.",
                 description="During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction.",
-                diagnosis="Transaction processing failed with error %s." % (" ".join(e)),
+                diagnosis="Transaction processing failed with error: %s" % (" ".join(formatted_exec)),
             )
 
         if validate_transaction:

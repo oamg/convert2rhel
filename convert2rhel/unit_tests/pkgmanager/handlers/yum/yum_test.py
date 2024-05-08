@@ -235,16 +235,30 @@ class TestYumTransactionHandler:
         assert expected in caplog.records[-1].message
 
     @centos7
-    def test_process_transaction_with_exceptions(self, pretend_os, caplog):
-        side_effects = pkgmanager.Errors.YumBaseError
+    def test_process_transaction_with_exceptions(self, pretend_os, caplog, monkeypatch):
+        side_effects = pkgmanager.Errors.YumBaseError(
+            [
+                "Errors were encountered while downloading packages.",
+                "pam-1.1.8-23.el7.x86_64: [Errno 256] No more mirrors to try.",
+            ]
+        )
         instance = YumTransactionHandler()
         instance._set_up_base()
         pkgmanager.YumBase.processTransaction.side_effect = side_effects
 
-        with pytest.raises(exceptions.CriticalError):
+        with pytest.raises(exceptions.CriticalError) as execinfo:
             instance._process_transaction(validate_transaction=False)
-
         assert "Failed to validate the yum transaction." in caplog.records[-1].message
+        assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
+        assert "Failed to validate yum transaction." in execinfo._excinfo[1].title
+        assert (
+            "During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction."
+            in execinfo._excinfo[1].description
+        )
+        assert (
+            "Transaction processing failed with error: Errors were encountered while downloading packages. pam-1.1.8-23.el7.x86_64: [Errno 256] No more mirrors to try."
+            in execinfo._excinfo[1].diagnosis
+        )
 
     @centos7
     def test_package_marked_for_update(self, pretend_os, monkeypatch):
