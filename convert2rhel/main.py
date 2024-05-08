@@ -198,7 +198,7 @@ def main_locked():
         provide_status_after_rollback(pre_conversion_results, include_all_reports=True)
 
         if backup.backup_control.rollback_failed:
-            return 1
+            return ConversionExitCodes.FAILURE
 
         report.pre_conversion_report(
             results=pre_conversion_results,
