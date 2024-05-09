@@ -39,7 +39,7 @@ from convert2rhel.unit_tests import (
     get_pytest_marker,
     run_subprocess_side_effect,
 )
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
