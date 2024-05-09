@@ -13,12 +13,11 @@ PACKAGES = {
     "yum": "/etc/logrotate.d/yum",
     "dnf": "/etc/logrotate.d/dnf",
 }
-BACKUP_DIR = "/tmp/c2r_tests_backup/"
-MODIFIED_FILES_DIR = "/tmp/c2r_tests_backup/modified/"
 
 
 @pytest.fixture
-def config_files_modified(shell):
+@pytest.mark.config_files_modified
+def config_files_modified(shell, backup_directory):
     """
     This fixture modifies contents of configuration files: "/etc/cloud/cloud.cfg",
     "/etc/NetworkManager/NetworkManager.conf", "/etc/logrotate.d/yum"
@@ -32,15 +31,17 @@ def config_files_modified(shell):
     """
     backup_paths = {}
 
+    backup_dir = backup_directory
+    modified_files_dir = os.path.join(backup_dir, "modified")
     # Create the backup directories
-    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+    for directory in backup_dir, modified_files_dir:
         if not os.path.exists(directory):
             shell(f"mkdir -v {directory}")
 
     for pkg, config in PACKAGES.items():
         file_name = os.path.basename(config)
-        modified_file_path = os.path.join(MODIFIED_FILES_DIR, f"{file_name}.modified")
-        bkp_file_path = os.path.join(BACKUP_DIR, file_name)
+        modified_file_path = os.path.join(modified_files_dir, f"{file_name}.modified")
+        bkp_file_path = os.path.join(backup_dir, file_name)
         # Install the packages if not installed already
         if "is not installed" in shell(f"rpm -q {pkg}").output:
             shell(f"yum install -y {pkg}")
@@ -49,7 +50,7 @@ def config_files_modified(shell):
         if not os.path.exists(config):
             shell(f"touch {config}")
         # Backup the original file
-        shell(f"cp {config} {BACKUP_DIR}")
+        shell(f"cp {config} {backup_dir}")
 
         # Append the modified content to the config
         # The file will be created if not already
@@ -75,11 +76,12 @@ def config_files_modified(shell):
         # Restore the original file
         assert shell(f"mv -f -v {bkp_file_path} {default_config_path}").returncode == 0
 
-    shell(f"rm -rf {MODIFIED_FILES_DIR}")
+    shell(f"rm -rf {modified_files_dir}")
 
 
 @pytest.fixture
-def config_files_removed(shell):
+@pytest.mark.config_files_removed
+def config_files_removed(shell, backup_directory):
     """
     This fixture removes completely configuration files: "/etc/cloud/cloud.cfg",
     "/etc/NetworkManager/NetworkManager.conf", "/etc/logrotate.d/yum"
@@ -90,8 +92,10 @@ def config_files_removed(shell):
     """
     backup_paths = {}
 
+    backup_dir = backup_directory
+    modified_files_dir = os.path.join(backup_dir, "modified")
     # Create the backup directories
-    for directory in BACKUP_DIR, MODIFIED_FILES_DIR:
+    for directory in backup_dir, modified_files_dir:
         if not os.path.exists(directory):
             shell(f"mkdir -v {directory}")
 
@@ -104,8 +108,8 @@ def config_files_removed(shell):
         if not os.path.exists(config):
             shell(f"touch {config}")
         # Backup the original file
-        shell(f"cp {config} {BACKUP_DIR}")
-        bkp_file_path = os.path.join(BACKUP_DIR, file_name)
+        shell(f"cp {config} {backup_dir}")
+        bkp_file_path = os.path.join(backup_dir, file_name)
         # Remove the config to validate it won't get restored
         # during the rollback
         shell(f"rm -f {config}")

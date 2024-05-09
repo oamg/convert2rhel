@@ -1,3 +1,5 @@
+import os.path
+
 from pathlib import Path
 
 import pytest
@@ -6,7 +8,8 @@ from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
-def c2r_config_releasever(shell):
+@pytest.mark.c2r_config_releasever
+def c2r_config_releasever(shell, backup_directory):
     """
     Fixture.
     Modify the releasever inside the convert2rhel configs.
@@ -15,14 +18,13 @@ def c2r_config_releasever(shell):
 
     # Backup configs
     path_to_configs = "/usr/share/convert2rhel/configs/"
-    backup_dir = "/tmp/c2rconfigs_backup/"
-    assert shell(f"mkdir {backup_dir} && cp -r {path_to_configs} {backup_dir}").returncode == 0
+    backup_dir = backup_directory
+    assert shell(f"cp -r {path_to_configs} {backup_dir}").returncode == 0
 
     yield
 
     # Restore configs
     assert shell(f"mv -f {backup_dir}* {path_to_configs}").returncode == 0
-    assert shell(f"rm -rf {backup_dir}").returncode == 0
 
 
 @pytest.mark.test_modified_config
@@ -46,14 +48,16 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
 
 
 @pytest.fixture(scope="function")
-def system_release_backup(shell):
+@pytest.mark.system_release_backup
+def system_release_backup(shell, backup_directory):
     """
     Fixture.
     Backup /etc/system-release before the test makes modifications to it.
     Restore the file after the test
     """
     # Backup /etc/system-release
-    backup_file = "/tmp/system-release.bkp"
+    backup_dir = backup_directory
+    backup_file = os.path.join(backup_dir, "system-release.bkp")
     assert shell(f"cp /etc/system-release {backup_file}").returncode == 0
 
     yield

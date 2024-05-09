@@ -2,24 +2,26 @@ import os
 import re
 import socket
 
+import pytest
+
 from conftest import TEST_VARS
 
 
-def replace_urls_rhsm():
-    """
-    Replace urls in rhsm.conf file to the satellite server
-    Without doing this we get obsolete dogfood server as source of repositories
-    """
-    with open("/etc/rhsm/rhsm.conf", "r+") as f:
-        file = f.read()
-        # Replacing the urls
-        file = re.sub("hostname = .*", "hostname = {}".format(TEST_VARS["SATELLITE_URL"]), file)
-        file = re.sub("baseurl = .*", "baseurl = https://{}/pulp/repos".format(TEST_VARS["SATELLITE_URL"]), file)
-
-        # Setting the position to the top of the page to insert data
-        f.seek(0)
-        f.write(file)
-        f.truncate()
+# def replace_urls_rhsm():
+#     """
+#     Replace urls in rhsm.conf file to the satellite server
+#     Without doing this we get obsolete dogfood server as source of repositories
+#     """
+#     with open("/etc/rhsm/rhsm.conf", "r+") as f:
+#         file = f.read()
+#         # Replacing the urls
+#         file = re.sub("hostname = .*", "hostname = {}".format(TEST_VARS["SATELLITE_URL"]), file)
+#         file = re.sub("baseurl = .*", "baseurl = https://{}/pulp/repos".format(TEST_VARS["SATELLITE_URL"]), file)
+#
+#         # Setting the position to the top of the page to insert data
+#         f.seek(0)
+#         f.write(file)
+#         f.truncate()
 
 
 def configure_connection():
@@ -39,6 +41,7 @@ def configure_connection():
         f.write("nameserver 127.0.0.1")
 
 
+@pytest.mark.prepare_offline_system
 def test_prepare_system(shell, satellite_registration):
     """
     Perform all the steps to make the system appear to be offline.
@@ -56,7 +59,7 @@ def test_prepare_system(shell, satellite_registration):
 
     assert os.path.isfile("/etc/yum.repos.d/redhat.repo")
 
-    replace_urls_rhsm()
+    # replace_urls_rhsm()
 
     configure_connection()
 

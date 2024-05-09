@@ -8,7 +8,8 @@ def test_satellite_conversion(shell, convert2rhel, satellite_registration):
     """
     Conversion method using the Satellite credentials for registration.
     The subscription-manager package is removed for this conversion method.
-    Subscribe to the Satellite server using the curl command.
+    Use the provided curl command to download the registration script to a file,
+    then run the registration script file.
     """
     with convert2rhel(
         "-y -k {} -o {} --debug".format(

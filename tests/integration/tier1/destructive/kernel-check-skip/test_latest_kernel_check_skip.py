@@ -1,3 +1,4 @@
+import os
 import re
 
 import pytest
@@ -6,7 +7,7 @@ from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
 @pytest.mark.test_latest_kernel_check_skip
-def test_skip_kernel_check(shell, convert2rhel):
+def test_skip_kernel_check(shell, convert2rhel, backup_directory):
     """
     Verify that it's possible to run the full conversion with older kernel,
     than available in the RHEL repositories.
@@ -16,11 +17,17 @@ def test_skip_kernel_check(shell, convert2rhel):
         3/ Enable *just* the rhel-7-server-rpms repository prior to conversion
         4/ Run conversion verifying the conversion is not inhibited and completes successfully
     """
-    backup_dir = "/tmp/repobckp"
-    eus_backup_dir = "/tmp/eus_repobckp"
-    shell(f"mkdir {backup_dir}")
+    backup_dir = backup_directory
+    eus_backup_dir = os.path.join(backup_dir, "eus")
+    repodir = "/etc/yum.repos.d/"
+
     # Move all the repos away except the rhel7.repo
-    shell("find /etc/yum.repos.d/ -type f -name '*.repo' ! -name 'rhel7.repo' -exec mv {} /tmp/repobckp \\;")
+    for file in os.listdir(repodir):
+        old_filepath = os.path.join(repodir, file)
+        new_filepath = os.path.join(backup_dir, file)
+        if file != "rhel7.repo":
+            os.rename(old_filepath, new_filepath)
+
     # EUS version use hardcoded repos from c2r as well
     if re.match(r"^(alma|rocky)-8\.8$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
         assert shell(f"mkdir {eus_backup_dir}").returncode == 0
