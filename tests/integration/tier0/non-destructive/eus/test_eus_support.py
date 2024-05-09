@@ -106,3 +106,24 @@ def test_eus_support(
                 )
             c2r.expect("Repositories enabled through subscription-manager", timeout=120)
             c2r.sendcontrol("c")
+
+
+@pytest.mark.test_rhsm_non_eus_account
+def test_rhsm_non_eus_account(convert2rhel):
+    """
+    Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions
+    (the account does not have the EUS SKU available) to RHEL EUS minor versions (8.6, ...)
+    and the --eus option is provided. The regular repositories should be enabled as a fallback option.
+    """
+
+    with convert2rhel(
+        "analyze -y --serverurl {} --username {} --password {} --debug --eus".format(
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_NON_EUS_USERNAME"],
+            TEST_VARS["RHSM_NON_EUS_PASSWORD"],
+        )
+    ) as c2r:
+        c2r.expect_exact("Error: 'rhel-8-for-x86_64-baseos-eus-rpms' does not match a valid repository ID.")
+        c2r.expect_exact("Error: 'rhel-8-for-x86_64-appstream-eus-rpms' does not match a valid repository ID.")
+        c2r.expect_exact("The RHEL EUS repositories are not possible to enable.")
+    assert c2r.exitstatus == 0

@@ -54,15 +54,15 @@ order: 49
         - rhsm-conversion
     test: pytest -m test_rhsm_conversion
 
-/rhsm_non_eus_account_conversion:
+/rhsm_eus_account_conversion:
     summary: |
-        RHSM non-EUS conversion method
+        RHSM EUS conversion method
     description: |
-        Conversion of EUS system using an RHSM account without available EUS repositories.
+        Conversion of EUS system using an RHSM account with available EUS repositories.
         Verify, that the conversion finishes and suitable repositories are enabled after the conversion.
     tag+:
-        - rhsm-non-eus-account-conversion
-    test: pytest -m test_rhsm_non_eus_account_conversion
+        - rhsm-eus-account-conversion
+    test: pytest -m test_rhsm_eus_account_conversion
 
 /satellite_conversion:
     summary: |

@@ -1,32 +1,44 @@
 summary: |
     Verify the EUS releases are treated correctly
-description: |
-    Test verifying correct behavior when converting EUS candidates.
-    EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
-    Verified scenarios (handled by pytest parametrization):
-    1/ The system is considered as a non-EUS. This is done by removing the 8.8 version from the mapping file
-        (note that this workaround works only on 8.8 systems).
-        The --eus option is used in the command. Only regular (non-eus) repoids should be enabled.
-    2/ The start date of the EUS phase is set far to the future to simulate the EUS phase
-        did not start yet.
-        The --eus option *is not used* and regular repoids enablement is expected.
-    3/ The start date of the EUS phase is set far to the future to simulate the EUS phase
-        did not start yet.
-        The --eus option *is used* and EUS repoids enablement is expected.
-    4/ The start date of the EUS phase is set far to the past to simulate the EUS phase began.
-        The --eus option *is used*.
-        The report is expected to print out a WARNING and advise to use the --eus option.
 
 tag+:
     - eus
 
+enabled: false
+
+adjust+:
+    enabled: true
+    when: distro == alma-8.8, rocky-8.8
+    because: The only consistently relevant EUS releases are Alma and Rocky.
+
 /eus_support:
-    enabled: false
-    adjust+:
-        enabled: true
-        when: distro == alma-8.8, rocky-8.8
-        because: The only consistently relevant EUS releases are Alma and Rocky.
+    description: |
+        Test verifying correct behavior when converting EUS candidates.
+        EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+        Verified scenarios (handled by pytest parametrization):
+        1/ The system is considered as a non-EUS. This is done by removing the 8.8 version from the mapping file
+            (note that this workaround works only on 8.8 systems).
+            The --eus option is used in the command. Only regular (non-eus) repoids should be enabled.
+        2/ The start date of the EUS phase is set far to the future to simulate the EUS phase
+            did not start yet.
+            The --eus option *is not used* and regular repoids enablement is expected.
+        3/ The start date of the EUS phase is set far to the future to simulate the EUS phase
+            did not start yet.
+            The --eus option *is used* and EUS repoids enablement is expected.
+        4/ The start date of the EUS phase is set far to the past to simulate the EUS phase began.
+            The --eus option *is used*.
+            The report is expected to print out a WARNING and advise to use the --eus option.
     tag+:
         - test-eus-support
     test: |
       pytest -m test_eus_support
+
+/non_eus_account:
+    description: |
+        Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions
+        to RHEL EUS minor versions (8.6, ...) and the --eus option is provided. The regular repositories
+        should be enabled.
+    tag+:
+        - test-rhsm-non-eus-account
+    test: |
+      pytest -m test_rhsm_non_eus_account

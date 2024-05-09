@@ -44,6 +44,7 @@ description+: |
                     because: There is no subscription-manager package in Oracle Linux repositories
                   - environment+:
                       C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                      C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
                 discover+:
                     test+<:
                         - conversion-method/pre_registered_system_conversion
@@ -65,7 +66,7 @@ description+: |
 
     /basic_conversion_methods:
 
-        /rhsm_non_eus_conversion:
+        /rhsm_eus_conversion:
             enabled: false
             adjust+:
                 - enabled: true
@@ -73,7 +74,7 @@ description+: |
                     distro == alma-8.8, rocky-8.8
             discover+:
                 test+<:
-                    - conversion-method/rhsm_non_eus_account_conversion
+                    - conversion-method/rhsm_eus_account_conversion
 
         /custom_repositories_conversion:
             environment+:

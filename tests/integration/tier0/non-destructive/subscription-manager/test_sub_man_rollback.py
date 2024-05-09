@@ -14,7 +14,12 @@ def convert2rhel_repo(shell):
     # when installing subscription-manager-rhsm-certificates.
     c2r_repo = "/etc/yum.repos.d/convert2rhel.repo"
 
-    assert shell(f"curl -o {c2r_repo} https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo").returncode == 0
+    assert (
+        shell(
+            f"curl -o {c2r_repo} https://cdn-public.redhat.com/content/public/repofiles/convert2rhel-for-rhel-8-x86_64.repo"
+        ).returncode
+        == 0
+    )
     assert os.path.exists(c2r_repo) is True
 
     yield
