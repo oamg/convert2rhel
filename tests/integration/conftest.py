@@ -447,6 +447,12 @@ def pre_registered(shell, request):
     # Use custom parameters when the fixture is parametrized
     if hasattr(request, "param"):
         username, password = request.param
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        # Documentation does not contain steps on how to subscribe OL systems
+        # https://issues.redhat.com/browse/RHELC-1485
+        pytest.fail(
+            "Subscription manager is not present in Oracle Linux repositories. Please refer to RHELC-1485 for more"
+        )
 
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the SSL certificate

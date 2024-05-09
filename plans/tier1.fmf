@@ -277,3 +277,7 @@ description+: |
                 - host-metering/test_host_metering_conversion
             test+:
                 - host-metering/check_active_host_metering
+    /proxy-server:
+        discover+:
+            test+<:
+                - proxy-conversion/proxy_conversion

@@ -1,0 +1,14 @@
+summary+: |
+    Conversion using a proxy server
+
+description+: |
+    Restrict the system internet connection only to a forward proxy server.
+    This is done by setting up a firewall setting on the machine.
+    Also for conversion to work it is necessary to enabled connection to specific
+    URLs directly from the machine.
+    Verify that the conversion is successful.
+tag+:
+    - proxy-conversion
+
+/proxy_conversion:
+    test: pytest -svv -m test_proxy_conversion
