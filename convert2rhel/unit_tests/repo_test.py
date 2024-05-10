@@ -17,11 +17,17 @@
 
 __metaclass__ = type
 
+import os
 
 import pytest
+import six
 
 from convert2rhel import repo
-from convert2rhel.unit_tests.conftest import centos8
+from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+
+
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
 
 
 @pytest.mark.parametrize(
@@ -44,7 +50,31 @@ from convert2rhel.unit_tests.conftest import centos8
     ),
 )
 @centos8
-def test_get_rhel_repoids(pretend_os, is_eus_release, expected, monkeypatch):
+def test_get_rhel_repoids_el8(pretend_os, is_eus_release, expected, monkeypatch):
     monkeypatch.setattr(repo.system_info, "eus_system", value=is_eus_release)
+    repos = repo.get_rhel_repoids()
+    assert repos == expected
+
+
+@pytest.mark.parametrize(
+    ("is_els_release", "expected"),
+    (
+        (
+            True,
+            [
+                "rhel-7-server-els-rpms",
+            ],
+        ),
+        (
+            False,
+            [
+                "rhel-7-server-rpms",
+            ],
+        ),
+    ),
+)
+@centos7
+def test_get_rhel_repoids_el7(pretend_os, is_els_release, expected, monkeypatch):
+    monkeypatch.setattr(repo.system_info, "els_system", value=is_els_release)
     repos = repo.get_rhel_repoids()
     assert repos == expected

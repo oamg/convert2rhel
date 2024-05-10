@@ -32,11 +32,17 @@ loggerinst = logging.getLogger(__name__)
 def get_rhel_repoids():
     """Get IDs of the Red Hat CDN repositories that correspond to the current system.
 
-    In case the to-be-converted-OS minor version corresponds to RHEL Extended Update Support (EUS) release,
-    we preferably enable the RHEL EUS repoids as those provide security updates over two years, in comparison to 6 months
-    in case of the standard non-EUS repoids.
+    In case the to-be-converted-OS minor version corresponds to RHEL Extended Update Support (EUS) or
+    RHEL Extended Lifecycle Support (ELS) release,  we preferably enable the RHEL EUS or ELS repoids respectively as
+    those provide security updates over two years, in comparison to 6 months in case of the standard
+    non-EUS/non-ELS repoids.
     """
-    repos_needed = system_info.eus_rhsm_repoids if system_info.eus_system else system_info.default_rhsm_repoids
+    if system_info.eus_system:
+        repos_needed = system_info.eus_rhsm_repoids
+    elif system_info.els_system:
+        repos_needed = system_info.els_rhsm_repoids
+    else:
+        repos_needed = system_info.default_rhsm_repoids
 
     loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 

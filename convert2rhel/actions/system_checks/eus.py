@@ -47,7 +47,7 @@ class EusSystemCheck(actions.Action):
                     level="WARNING",
                     id="EUS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --eus command line option is unused",
-                    description="Current system version is under Extended Lifecycle Support (EUS). You may want to consider using the --eus"
+                    description="Current system version is under Extended Update Support (EUS). You may want to consider using the --eus"
                     " command line option to land on a system patched with the latest security errata.",
                 )
         return
