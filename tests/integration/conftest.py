@@ -65,8 +65,12 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 def shell(tmp_path):
     """Live shell."""
 
-    def factory(command, silent=False):
-        if not silent:
+    def factory(command, silent=False, hide_command=False):
+        if silent:
+            click.echo("The fixture is set to silent=True, therefore no output will be printed.")
+        if hide_command:
+            click.echo("The fixture is set to hide_command=False, so it won't show the called command.")
+        if not silent and not hide_command:
             click.echo(
                 "\nExecuting a command:\n{}\n\n".format(command),
                 color="green",
@@ -722,7 +726,7 @@ def yum_conf_exclude(shell, backup_directory, request):
     """
     yum_config = "/etc/yum.conf"
     backup_dir = os.path.join(backup_directory, "yum")
-    shell(f"mkdir {backup_dir}")
+    shell(f"mkdir -v {backup_dir}")
     config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
     config = configparser.ConfigParser()
     config.read(yum_config)
