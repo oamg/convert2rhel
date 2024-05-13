@@ -49,16 +49,15 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.parametrize("exclude", [["kernel", "kernel-core"]])
+@pytest.mark.parametrize("yum_conf_exclude", [["kernel", "kernel-core"]], indirect=True)
 @pytest.mark.test_yum_exclude_kernel
-def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude, exclude):
+def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude):
     """
     Verify, the conversion does not raise:
     'Could not find any kernel from repositories to compare against the loaded kernel.'
     When `exclude=kernel kernel-core` is defined in yum.conf
     Verify IS_LOADED_KERNEL_LATEST has succeeded is raised and terminate the utility.
     """
-    yum_conf_exclude(exclude)
     # Run the conversion and verify that it proceeds past the latest kernel check
     # if so, interrupt the conversion
     with convert2rhel("-y --debug") as c2r:

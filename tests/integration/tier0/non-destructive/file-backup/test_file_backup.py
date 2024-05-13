@@ -31,17 +31,15 @@ def config_files_modified(shell, backup_directory):
     """
     backup_paths = {}
 
-    backup_dir = backup_directory
-    modified_files_dir = os.path.join(backup_dir, "modified")
+    modified_files_dir = os.path.join(backup_directory, "modified")
     # Create the backup directories
-    for directory in backup_dir, modified_files_dir:
-        if not os.path.exists(directory):
-            shell(f"mkdir -v {directory}")
+    if not os.path.exists(modified_files_dir):
+        shell(f"mkdir -v {modified_files_dir}")
 
     for pkg, config in PACKAGES.items():
         file_name = os.path.basename(config)
         modified_file_path = os.path.join(modified_files_dir, f"{file_name}.modified")
-        bkp_file_path = os.path.join(backup_dir, file_name)
+        bkp_file_path = os.path.join(backup_directory, file_name)
         # Install the packages if not installed already
         if shell(f"rpm -q {pkg}").returncode == 1:
             shell(f"yum install -y {pkg}")
@@ -50,7 +48,7 @@ def config_files_modified(shell, backup_directory):
         if not os.path.exists(config):
             shell(f"touch {config}")
         # Backup the original file
-        shell(f"cp {config} {backup_dir}")
+        shell(f"cp {config} {backup_directory}")
 
         # Append the modified content to the config
         # The file will be created if not already
@@ -92,13 +90,6 @@ def config_files_removed(shell, backup_directory):
     """
     backup_paths = {}
 
-    backup_dir = backup_directory
-    modified_files_dir = os.path.join(backup_dir, "modified")
-    # Create the backup directories
-    for directory in backup_dir, modified_files_dir:
-        if not os.path.exists(directory):
-            shell(f"mkdir -v {directory}")
-
     for pkg, config in PACKAGES.items():
         file_name = os.path.basename(config)
         # Install the packages if not installed already
@@ -108,8 +99,8 @@ def config_files_removed(shell, backup_directory):
         if not os.path.exists(config):
             shell(f"touch {config}")
         # Backup the original file
-        shell(f"cp {config} {backup_dir}")
-        bkp_file_path = os.path.join(backup_dir, file_name)
+        shell(f"cp {config} {backup_directory}")
+        bkp_file_path = os.path.join(backup_directory, file_name)
         # Remove the config to validate it won't get restored
         # during the rollback
         shell(f"rm -f {config}")

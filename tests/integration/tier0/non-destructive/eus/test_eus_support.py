@@ -13,8 +13,7 @@ def eus_mapping_update(shell, backup_directory):
     Restores the original version after the test is done.
     """
     eus_mapping_file = shell("find /usr -path '*/convert2rhel/systeminfo.py'").output.strip()
-    backup_dir = backup_directory
-    backup_file = os.path.join(backup_dir, "systeminfo.py.bkp")
+    backup_file = os.path.join(backup_directory, "systeminfo.py.bkp")
     assert shell(f"cp {eus_mapping_file} {backup_file}").returncode == 0
 
     original_mapping_value = '"8.8": "2023-11-14"'

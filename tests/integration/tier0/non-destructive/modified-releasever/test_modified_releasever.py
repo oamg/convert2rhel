@@ -18,13 +18,12 @@ def c2r_config_releasever(shell, backup_directory):
 
     # Backup configs
     path_to_configs = "/usr/share/convert2rhel/configs/"
-    backup_dir = backup_directory
-    assert shell(f"cp -r {path_to_configs} {backup_dir}").returncode == 0
+    assert shell(f"cp -r {path_to_configs} {backup_directory}").returncode == 0
 
     yield
 
     # Restore configs
-    assert shell(f"mv -f {backup_dir}* {path_to_configs}").returncode == 0
+    assert shell(f"mv -f {backup_directory}/* {path_to_configs}").returncode == 0
 
 
 @pytest.mark.test_modified_config
@@ -56,8 +55,7 @@ def system_release_backup(shell, backup_directory):
     Restore the file after the test
     """
     # Backup /etc/system-release
-    backup_dir = backup_directory
-    backup_file = os.path.join(backup_dir, "system-release.bkp")
+    backup_file = os.path.join(backup_directory, "system-release.bkp")
     assert shell(f"cp /etc/system-release {backup_file}").returncode == 0
 
     yield

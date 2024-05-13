@@ -67,9 +67,9 @@ def shell(tmp_path):
 
     def factory(command, silent=False, hide_command=False):
         if silent:
-            click.echo("The fixture is set to silent=True, therefore no output will be printed.")
+            click.echo("This shell call is set to silent=True, therefore no output will be printed.")
         if hide_command:
-            click.echo("The fixture is set to hide_command=False, so it won't show the called command.")
+            click.echo("This shell call is set to hide_command=True, so it won't show the called command.")
         if not silent and not hide_command:
             click.echo(
                 "\nExecuting a command:\n{}\n\n".format(command),
@@ -411,8 +411,8 @@ def remove_repositories(shell, backup_directory):
     Fixture.
     Move all repositories to another location.
     """
-    backup_dir = backup_directory
-
+    backup_dir = os.path.join(backup_directory, "repos")
+    shell(f"mkdir {backup_dir}")
     # Move all repos to other location, so it is not being used
     assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
     assert len(os.listdir("/etc/yum.repos.d/")) == 0
@@ -489,10 +489,8 @@ def pre_registered(shell, request, yum_conf_exclude):
         # Remove the rhn-client-tools package to make way for subscription-manager installation
         # given subman is obsoleted by the rhn-client-tools on Oracle
         shell("yum remove -y rhn-client-tools")
-        # Exclude the rhn-client* packages in the yum.conf
-        yum_conf_exclude(exclude=["rhn-client*"])
         # Add the client-tools repository for Oracle linux to install subscription-manager from
-        _add_client_tools_repo_oracle(shell)
+        _add_client_tools_repo(shell)
 
     assert shell("yum install -y subscription-manager").returncode == 0
     # Download the certificate using insecure connection
@@ -505,6 +503,7 @@ def pre_registered(shell, request, yum_conf_exclude):
             "subscription-manager register --serverurl {} --username {} --password {}".format(
                 TEST_VARS["RHSM_SERVER_URL"], username, password
             ),
+            hide_command=True,
         ).returncode
         == 0
     )
@@ -523,7 +522,7 @@ def pre_registered(shell, request, yum_conf_exclude):
     yield
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        _remove_client_tools_repo_oracle(shell)
+        _remove_client_tools_repo(shell)
 
     # For some scenarios we do not pre-register the system, therefore we do not have the original UUID
     # and do not need to verify it stays the same
@@ -713,19 +712,22 @@ def yum_conf_exclude(shell, backup_directory, request):
     Fixture.
     Define `exclude=kernel kernel-core` in /etc/yum.conf.
     Using pytest.mark.parametrize pass the packages to exclude in a single scenario as a list.
-    Call the fixture directly in the test function.
+    The fixture is called indirectly in the test function.
     Example:
         # one testcase
-        @pytest.mark.parametrize("exclude", [["this", "that", "also_this"]])
+        @pytest.mark.parametrize("yum_conf_exclude", [["this", "that", "also_this"]])
 
         # more testcases
-        @pytest.mark.parametrize("exclude", [["this", "that"], ["then_this"]])
+        @pytest.mark.parametrize("yum_conf_exclude", [["this", "that"], ["then_this"]])
 
-        def test_function(yum_conf_exclude, exclude):
-            yum_conf_exclude(exclude)
+        def test_function(yum_conf_exclude):
     """
+    exclude = ["rhn-client*"]
+    if hasattr(request, "param"):
+        exclude = request.param
+        print(">>> Using parametrized packages requested in the fixture.")
     yum_config = "/etc/yum.conf"
-    backup_dir = os.path.join(backup_directory, "yum")
+    backup_dir = os.path.join(backup_directory, "yumconf")
     shell(f"mkdir -v {backup_dir}")
     config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
     config = configparser.ConfigParser()
@@ -733,28 +735,27 @@ def yum_conf_exclude(shell, backup_directory, request):
 
     assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
-    def _exclude_packages(exclude):
-        for pkg in exclude:
-            # If there is already an `exclude` section, append to the existing value
-            if config.has_option("main", "exclude"):
-                pre_existing_value = config.get("main", "exclude")
-                config.set("main", "exclude", f"{pre_existing_value} {pkg}")
-            else:
-                config.set("main", "exclude", pkg)
+    for pkg in exclude:
+        # If there is already an `exclude` section, append to the existing value
+        if config.has_option("main", "exclude"):
+            pre_existing_value = config.get("main", "exclude")
+            config.set("main", "exclude", f"{pre_existing_value} {pkg}")
+        else:
+            config.set("main", "exclude", pkg)
 
-        with open(yum_config, "w") as configfile:
-            config.write(configfile, space_around_delimiters=False)
+    with open(yum_config, "w") as configfile:
+        config.write(configfile, space_around_delimiters=False)
 
-        assert config.has_option("main", "exclude")
-        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+    assert config.has_option("main", "exclude")
+    assert all(pkg in config.get("main", "exclude") for pkg in exclude)
 
-    yield _exclude_packages
+    yield
 
     # Clean up
     assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
-def _add_client_tools_repo_oracle(shell):
+def _add_client_tools_repo(shell):
     """
     Helper function.
     Runs only on Oracle Linux system
@@ -769,7 +770,7 @@ def _add_client_tools_repo_oracle(shell):
     shell("curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt")
 
 
-def _remove_client_tools_repo_oracle(shell):
+def _remove_client_tools_repo(shell):
     """
     Helper function.
     Remove the client tools repositories and the redhat-release GPG key
@@ -797,20 +798,19 @@ def satellite_registration(shell, yum_conf_exclude, request):
         sat_curl_command = request.param
         print(">>> Using parametrized curl command requested in the fixture.")
     if "oracle" in SYSTEM_RELEASE_ENV:
-        yum_conf_exclude(exclude=["rhn-client*"])
-        _add_client_tools_repo_oracle(shell)
+        _add_client_tools_repo(shell)
 
     # Make sure it returned some value, otherwise it will fail.
     assert sat_curl_command, "The registration command is empty."
 
-    # Curl the Satellite registration script
-    assert shell(f"{sat_curl_command} -o {sat_script}").returncode == 0
+    # Curl the Satellite registration script silently
+    assert shell(f"{sat_curl_command} -o {sat_script}", silent=True).returncode == 0
 
-    # Run the registration
-    assert shell(f". {sat_script}").returncode == 0
+    # Make the script executable and run the registration
+    assert shell(f"chmod +x {sat_script} && /bin/bash {sat_script}").returncode == 0
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        _remove_client_tools_repo_oracle(shell)
+        _remove_client_tools_repo(shell)
 
     yield
 
@@ -829,6 +829,8 @@ def backup_directory(shell, request):
     Fixture.
     Creates a backup directory for needed file back up.
     Directory at /var/tmp/custom_pytest_marker
+    We're using the /var/tmp instead of /tmp
+    for the directory to survive a system reboot
     """
     backup_path_base = "/var/tmp"
     backup_dir_name = None

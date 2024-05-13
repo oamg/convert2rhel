@@ -17,14 +17,13 @@ def test_skip_kernel_check(shell, convert2rhel, backup_directory):
         3/ Enable *just* the rhel-7-server-rpms repository prior to conversion
         4/ Run conversion verifying the conversion is not inhibited and completes successfully
     """
-    backup_dir = backup_directory
-    eus_backup_dir = os.path.join(backup_dir, "eus")
+    eus_backup_dir = os.path.join(backup_directory, "eus")
     repodir = "/etc/yum.repos.d/"
 
     # Move all the repos away except the rhel7.repo
     for file in os.listdir(repodir):
         old_filepath = os.path.join(repodir, file)
-        new_filepath = os.path.join(backup_dir, file)
+        new_filepath = os.path.join(backup_directory, file)
         if file != "rhel7.repo":
             os.rename(old_filepath, new_filepath)
 

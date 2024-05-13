@@ -17,6 +17,7 @@ def configure_connection():
 
     with open("/etc/dnsmasq.conf", "a") as f:
         # Satellite url
+        f.write("address=/{}/{}\n".format(TEST_VARS["SATELLITE_URL"], satellite_ip))
         f.write("address=/{}/{}\n".format(satellite_fqdn, satellite_ip))
 
         # Everything else is resolved to localhost
@@ -33,6 +34,7 @@ def test_prepare_system(shell, satellite_registration):
     Register to the Satellite server.
     Remove all the repositories before the Satellite subscription,
     so there is only the redhat.repo created by subscription-manager.
+    The original system repositories are then used from the synced Satellite server.
     """
     assert shell("yum install dnsmasq -y").returncode == 0
 

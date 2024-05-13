@@ -14,13 +14,12 @@ def system_release_missing(shell, backup_directory):
     Restore in the teardown phase.
     """
     # Make backup copy of the file
-    backup_dir = backup_directory
-    assert shell(f"mv -v /etc/system-release {backup_dir}").returncode == 0
+    assert shell(f"mv -v /etc/system-release {backup_directory}").returncode == 0
 
     yield
 
     # Restore the system
-    assert shell(f"mv -v {os.path.join(backup_dir, 'system_release')} /etc/").returncode == 0
+    assert shell(f"mv -v {os.path.join(backup_directory, 'system_release')} /etc/").returncode == 0
 
 
 @pytest.mark.test_missing_system_release
@@ -54,10 +53,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration,
     """
     assert shell("find /etc/os-release").returncode == 0
 
-    with convert2rhel(
-        "--debug",
-        unregister=True,
-    ) as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
@@ -91,10 +87,7 @@ def test_backup_os_release_with_envar(
     """
     assert shell("find /etc/os-release").returncode == 0
 
-    with convert2rhel(
-        "--debug",
-        unregister=True,
-    ) as c2r:
+    with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")

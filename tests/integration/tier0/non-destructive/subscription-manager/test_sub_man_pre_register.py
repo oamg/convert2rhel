@@ -4,7 +4,7 @@ from conftest import TEST_VARS
 
 
 @pytest.mark.test_pre_registered_wont_unregister
-def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel, yum_conf_exclude):
+def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system won't unregister the system.
     1. Install subscription-manager, download the SSL certificate
@@ -31,7 +31,7 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel, yum
 
 
 @pytest.mark.test_pre_registered_re_register
-def test_pre_registered_re_register(shell, pre_registered, convert2rhel, yum_conf_exclude):
+def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system and providing convert2rhel
     with credentials, will re-register the system.
@@ -78,7 +78,7 @@ def test_unregistered_no_credentials(shell, convert2rhel):
 
 
 @pytest.mark.test_no_sca_not_subscribed
-def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel, yum_conf_exclude):
+def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
@@ -102,7 +102,7 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel, yum_conf_excl
     "pre_registered", [(TEST_VARS["RHSM_NOSUB_USERNAME"], TEST_VARS["RHSM_NOSUB_PASSWORD"])], indirect=True
 )
 @pytest.mark.test_no_sca_subscription_attachment_error
-def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered, yum_conf_exclude):
+def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
