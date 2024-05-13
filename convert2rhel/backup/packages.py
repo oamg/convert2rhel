@@ -137,9 +137,10 @@ class RestorablePackage(RestorableChange):
         loggerinst.debug("Using repository files stored in %s." % self.reposdir)
 
         if self.reposdir:
-            # If nothing is inside the directory, or it does not exist, let's
-            # just not use it to download the packages.
-            if len(os.listdir(self.reposdir)) == 0 or not os.path.exists(self.reposdir):
+            # Check if the reposdir exists and if the directory is empty
+            if (os.path.exists(self.reposdir) and len(os.listdir(self.reposdir)) == 0) or not os.path.exists(
+                self.reposdir
+            ):
                 loggerinst.info("The repository directory %s seems to be empty or non-existent.")
                 self.reposdir = None
 
