@@ -43,7 +43,7 @@ def config_files_modified(shell, backup_directory):
         modified_file_path = os.path.join(modified_files_dir, f"{file_name}.modified")
         bkp_file_path = os.path.join(backup_dir, file_name)
         # Install the packages if not installed already
-        if "is not installed" in shell(f"rpm -q {pkg}").output:
+        if shell(f"rpm -q {pkg}").returncode == 1:
             shell(f"yum install -y {pkg}")
 
         # Create the config file, if not present already
@@ -102,7 +102,7 @@ def config_files_removed(shell, backup_directory):
     for pkg, config in PACKAGES.items():
         file_name = os.path.basename(config)
         # Install the packages if not installed already
-        if "is not installed" in shell(f"rpm -q {pkg}").output:
+        if shell(f"rpm -q {pkg}").returncode == 1:
             shell(f"yum install -y {pkg}")
         # Create the config file, if not present already
         if not os.path.exists(config):

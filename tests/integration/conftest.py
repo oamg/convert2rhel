@@ -430,12 +430,12 @@ def missing_os_release_package_workaround(shell):
     yield
 
     os_to_pkg_mapping = {
-        "oracle-7": ("oraclelinux-release-el7", "oraclelinux-release"),
-        "oracle-8": ("oraclelinux-release-el8", "oraclelinux-release"),
-        "centos-7": ("centos-release",),
-        "centos-8": ("centos-linux-release",),
-        "alma-8": ("almalinux-release",),
-        "rocky-8": ("rocky-release",),
+        "oracle-7": ["oraclelinux-release-el7", "oraclelinux-release"],
+        "oracle-8": ["oraclelinux-release-el8", "oraclelinux-release"],
+        "centos-7": ["centos-release"],
+        "centos-8": ["centos-linux-release"],
+        "alma-8": ["almalinux-release"],
+        "rocky-8": ["rocky-release"],
     }
 
     # Run only for non-destructive tests.
@@ -448,8 +448,8 @@ def missing_os_release_package_workaround(shell):
         system_release_pkgs = os_to_pkg_mapping.get(os_key)
 
         for pkg in system_release_pkgs:
-            rpm_output = shell(f"rpm -q {pkg}").output
-            if "not installed" in rpm_output:
+            installed = shell(f"rpm -q {pkg}").returncode
+            if installed == 1:
                 shell(f"yum install -y --releasever={os_ver} {pkg}")
 
         # Since we try to mitigate any damage caused by the incomplete rollback
@@ -479,16 +479,19 @@ def pre_registered(shell, request, yum_conf_exclude):
     # Use custom parameters when the fixture is parametrized
     if hasattr(request, "param"):
         username, password = request.param
-        print(">>> Using username and password requested in the fixture parameter.")
+        print(">>> Using parametrized username and password requested in the fixture.")
 
-    # Add the client-tools repository for Oracle linux to install subscription-manager from
-    # Exclude the rhn-client* packages in the yum.conf
     if "oracle" in SYSTEM_RELEASE_ENV:
+        # Remove the rhn-client-tools package to make way for subscription-manager installation
+        # given subman is obsoleted by the rhn-client-tools on Oracle
+        shell("yum remove -y rhn-client-tools")
+        # Exclude the rhn-client* packages in the yum.conf
         yum_conf_exclude(exclude=["rhn-client*"])
+        # Add the client-tools repository for Oracle linux to install subscription-manager from
         _add_client_tools_repo_oracle(shell)
 
     assert shell("yum install -y subscription-manager").returncode == 0
-    # Download the SSL certificate
+    # Download the certificate using insecure connection
     shell(
         "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
     )
@@ -719,10 +722,12 @@ def yum_conf_exclude(shell, backup_directory, request):
     """
     yum_config = "/etc/yum.conf"
     backup_dir = os.path.join(backup_directory, "yum")
+    shell(f"mkdir {backup_dir}")
+    config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
     config = configparser.ConfigParser()
     config.read(yum_config)
 
-    assert shell(f"cp -v {yum_config} {backup_dir}").returncode == 0
+    assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
     def _exclude_packages(exclude):
         for pkg in exclude:
@@ -742,7 +747,7 @@ def yum_conf_exclude(shell, backup_directory, request):
     yield _exclude_packages
 
     # Clean up
-    assert shell(f"mv {backup_dir}/yum.conf {yum_config}").returncode == 0
+    assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
 def _add_client_tools_repo_oracle(shell):
@@ -751,14 +756,13 @@ def _add_client_tools_repo_oracle(shell):
     Runs only on Oracle Linux system
     Create an ubi repo for its respective major version to install subscription-manager from.
     """
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
-        if SystemInformationRelease.version.major == 7:
-            repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
+    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
+    if SystemInformationRelease.version.major == 7:
+        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
 
-        # Add the redhat-release GPG key
-        assert shell(f"curl -o /etc/yum.repos.d/client-tools-for-tests.repo {repo_url}")
-        shell("curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt")
+    # Add the redhat-release GPG key
+    assert shell(f"curl -o /etc/yum.repos.d/client-tools-for-tests.repo {repo_url}")
+    shell("curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt")
 
 
 def _remove_client_tools_repo_oracle(shell):
@@ -769,11 +773,10 @@ def _remove_client_tools_repo_oracle(shell):
     Created as a function given we need to be able to call this during
     the test execution not just the teardown phase.
     """
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        # Remove the client-tools repofile so those it's not considered during convert2rhel repoquery calls
-        shell("rm -f /etc/yum.repos.d/client-tools-for-tests.repo")
-        # Remove the redhat-release GPG key
-        shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
+    # Remove the client-tools repofile
+    shell("rm -f /etc/yum.repos.d/client-tools-for-tests.repo")
+    # Remove the redhat-release GPG key
+    shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
 
 
 @pytest.fixture
@@ -788,6 +791,7 @@ def satellite_registration(shell, yum_conf_exclude, request):
     # If the fixture is parametrized, use the parameter as the registration command
     if hasattr(request, "param"):
         sat_curl_command = request.param
+        print(">>> Using parametrized curl command requested in the fixture.")
     if "oracle" in SYSTEM_RELEASE_ENV:
         yum_conf_exclude(exclude=["rhn-client*"])
         _add_client_tools_repo_oracle(shell)
