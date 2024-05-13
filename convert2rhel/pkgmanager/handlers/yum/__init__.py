@@ -323,7 +323,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate yum transaction.",
                 description="During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction.",
-                diagnosis="Transaction processing failed with error: %s" % (" ".join(formatted_exec)),
+                diagnosis="Transaction processing failed with error: %s" % " ".join(e.value),
             )
 
         if validate_transaction:

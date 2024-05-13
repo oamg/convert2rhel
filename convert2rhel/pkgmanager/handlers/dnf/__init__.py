@@ -231,7 +231,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate dnf transaction.",
                 description="During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction.",
-                diagnosis="Transaction processing failed with error: %s" % (str(e)),
+                diagnosis="Transaction processing failed with error: %s" % str(e),
             )
 
         if validate_transaction:
