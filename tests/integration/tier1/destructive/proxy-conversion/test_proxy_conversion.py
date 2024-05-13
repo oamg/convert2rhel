@@ -80,6 +80,8 @@ def setup_rhsm(shell):
     Shortened link to doc: https://url.corp.redhat.com/6d22a76
     We don't use the pre_registered fixture on purpose, to validate
     that the procedure in official documentation works.
+    More information in the following JIRA Comment (URL Shortened)
+    https://url.corp.redhat.com/7a722af
     """
 
     assert (
