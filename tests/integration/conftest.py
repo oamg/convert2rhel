@@ -735,13 +735,13 @@ def yum_conf_exclude(shell, backup_directory, request):
 
     assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
-    for pkg in exclude:
-        # If there is already an `exclude` section, append to the existing value
-        if config.has_option("main", "exclude"):
-            pre_existing_value = config.get("main", "exclude")
-            config.set("main", "exclude", f"{pre_existing_value} {pkg}")
-        else:
-            config.set("main", "exclude", pkg)
+    pkgs_to_exclude = " ".join(exclude)
+    # If there is already an `exclude` section, append to the existing value
+    if config.has_option("main", "exclude"):
+        pre_existing_value = config.get("main", "exclude")
+        config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+    else:
+        config.set("main", "exclude", pkgs_to_exclude)
 
     with open(yum_config, "w") as configfile:
         config.write(configfile, space_around_delimiters=False)
