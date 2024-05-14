@@ -179,8 +179,8 @@ class MissingFile(RestorableChange):
     def restore(self):
         """Remove the file if it was created during conversion.
 
-            .. warning::
-                Exceptions are not handled and left for handling by the calling code.
+        .. warning::
+            Exceptions are not handled and left for handling by the calling code.
 
         :raises OSError: When the removal of the file fails.
         :raises IOError: When the removal of the file fails.
