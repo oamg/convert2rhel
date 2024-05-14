@@ -24,8 +24,6 @@ IMAGE_ORG ?= oamg
 IMAGE_PREFIX ?= convert2rhel
 PYTHON ?= python3
 PIP ?= pip3
-PYLINT ?= pylint
-PYLINT_ARGS ?=
 VENV ?= .venv3
 PRE_COMMIT ?= pre-commit
 SHOW_CAPTURE ?= no
@@ -67,9 +65,6 @@ install: .install .pre-commit
 
 tests-locally: install
 	. $(VENV)/bin/activate; pytest $(PYTEST_ARGS)
-
-lint-locally: install
-	. $(VENV)/bin/activate; $(PYLINT) --rcfile=.pylintrc $(PYLINT_ARGS) convert2rhel/
 
 clean:
 	@rm -rf build/ dist/ *.egg-info .pytest_cache/
@@ -121,9 +116,6 @@ endif
 .build-image9:
 	@$(PODMAN) build -f Containerfiles/centos9.Containerfile -t $(IMAGE)-centos9 .
 	touch $@
-
-lint: images
-	@$(PODMAN) run $(CONTAINER_RM) -v $(shell pwd):/data:Z $(IMAGE)-centos8 bash -c "$(PYLINT) --rcfile=.pylintrc $(PYLINT_ARGS) convert2rhel/"
 
 tests: tests7 tests8 tests9
 
