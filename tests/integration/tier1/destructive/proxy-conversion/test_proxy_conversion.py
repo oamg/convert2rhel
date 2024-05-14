@@ -31,6 +31,7 @@ def setup_proxy(shell):
     ]
     for url in allowed_urls:
         ip_address = socket.gethostbyname(url)
+
         assert (
             shell(
                 f"firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp -d {ip_address} --dport=443 -j ACCEPT"

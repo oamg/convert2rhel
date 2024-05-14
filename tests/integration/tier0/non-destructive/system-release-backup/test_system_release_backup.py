@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from conftest import SAT_REG_FILE, TEST_VARS
+from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
@@ -13,13 +13,15 @@ def system_release_missing(shell, backup_directory):
     Back up and remove the /etc/system-release file.
     Restore in the teardown phase.
     """
+    system_release_bak = os.path.join(backup_directory, "system-release")
+    system_release = "/etc/system-release"
     # Make backup copy of the file
-    assert shell(f"mv -v /etc/system-release {backup_directory}").returncode == 0
+    assert shell(f"mv -v {system_release} {system_release_bak}").returncode == 0
 
     yield
 
     # Restore the system
-    assert shell(f"mv -v {os.path.join(backup_directory, 'system_release')} /etc/").returncode == 0
+    assert shell(f"mv -v {system_release_bak} {system_release}").returncode == 0
 
 
 @pytest.mark.test_missing_system_release
@@ -39,7 +41,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
     assert c2r.exitstatus != 0
 
 
-@pytest.mark.parametrize("satellite_registration", [SAT_REG_FILE["RHEL_CONTENT_SAT_REG"]], indirect=True)
+@pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
 @pytest.mark.test_backup_os_release_no_envar
 def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration, remove_repositories):
     """
@@ -65,7 +67,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration,
     assert shell("find /etc/os-release").returncode == 0
 
 
-@pytest.mark.parametrize("satellite_registration", [SAT_REG_FILE["RHEL_CONTENT_SAT_REG"]], indirect=True)
+@pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
 @pytest.mark.test_backup_os_release_with_envar
 def test_backup_os_release_with_envar(
     shell,

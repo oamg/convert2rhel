@@ -477,12 +477,17 @@ def pre_registered(shell, request, yum_conf_exclude):
     to install the subscription-manager package from.
     We also exclude the rhn-client* packages for the same reason.
     On Oracle Linux subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
+    By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
+    Can be parametrized by requesting a different KEY from the TEST_VARS file.
+    @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
     username = TEST_VARS["RHSM_USERNAME"]
     password = TEST_VARS["RHSM_PASSWORD"]
-    # Use custom parameters when the fixture is parametrized
+    # Use custom keys when the fixture is parametrized
     if hasattr(request, "param"):
-        username, password = request.param
+        username_key, password_key = request.param
+        username = TEST_VARS[username_key]
+        password = TEST_VARS[password_key]
         print(">>> Using parametrized username and password requested in the fixture.")
 
     if "oracle" in SYSTEM_RELEASE_ENV:
@@ -751,8 +756,12 @@ def yum_conf_exclude(shell, backup_directory, request):
 
     yield
 
-    # Clean up
-    assert shell(f"mv {config_bak} {yum_config}").returncode == 0
+    # Clean up only for non-destrucive tests
+    # We need to keep the yum.conf in the descructive tests, since restoring the original
+    # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
+    # the system information from the then non-existent file
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
 def _add_client_tools_repo(shell):
@@ -787,15 +796,20 @@ def _remove_client_tools_repo(shell):
 @pytest.fixture
 def satellite_registration(shell, yum_conf_exclude, request):
     """
+    Fixture
     Register the system to the Satellite server
+    By default it acquires the curl command from the satellite_curl_command function
+    Can be parametrized with requesting a different key from the SAT_REG_FILE(.sat_reg_file):
+    @pytest.mark.parametrized("satellite_registration", ["DIFFERENT_KEY"], indirect=True)
     """
     # Get the curl command for the respective system
     # from the conftest function
     sat_curl_command = satellite_curl_command()
     sat_script = "/var/tmp/register_to_satellite.sh"
-    # If the fixture is parametrized, use the parameter as the registration command
+    # If the fixture is parametrized, use the parameter as the key to get the curl command
     if hasattr(request, "param"):
-        sat_curl_command = request.param
+        sat_curl_command_key = request.param
+        sat_curl_command = SAT_REG_FILE[sat_curl_command_key]
         print(">>> Using parametrized curl command requested in the fixture.")
     if "oracle" in SYSTEM_RELEASE_ENV:
         _add_client_tools_repo(shell)
