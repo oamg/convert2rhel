@@ -14,28 +14,28 @@ tier: 0
 tag+:
     - config-file
 
-/config_custom_path_custom_filename:
+/config_std_path_std_filename:
+    summary+: |
+        Config with standard name at standard path
+    description+: |
+        Verify that the standard path to the config file is accepted,
+        with the config file having standard filename.
+    tag+:
+        - config-std-path-std-filename
+    test: |
+        pytest -m test_std_path_std_filename
+
+/config_user_path_custom_filename:
     summary+: |
         Config with custom name at custom path
     description+: |
         Verify that both custom path and custom filename are accepted.
-        The config file is created at a custom path with a custom filename
-        and the path is passed to the utility command.
+        The config file is created at a custom path with a custom
+        filename and the path is passed to the utility command.
     tag+:
-        - config-custom-path-custom-filename
+        - config-user-path-custom-filename
     test: |
-        pytest -m test_config_custom_path_custom_filename
-
-/config_custom_path_standard_filename:
-    summary+: |
-        Confing with standard name at custom path
-    description+: |
-        Verify that the custom path to the config file is accepted,
-        with the config file having standard filename.
-    tag+:
-        - config-custom-path-standard-filename
-    test: |
-        pytest -m test_config_custom_path_standard_filename
+        pytest -m test_user_path_custom_filename
 
 /config_cli_priority:
     summary+: |
