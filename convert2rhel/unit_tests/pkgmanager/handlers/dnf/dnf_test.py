@@ -339,18 +339,28 @@ class TestDnfTransactionHandler:
     @centos8
     def test_process_transaction_exceptions(self, pretend_os, caplog):
         side_effects = (
-            pkgmanager.exceptions.Error,
-            pkgmanager.exceptions.TransactionCheckError,
+            pkgmanager.exceptions.Error("Errors were encountered while downloading packages."),
+            pkgmanager.exceptions.TransactionCheckError("Errors were encountered while downloading packages."),
         )
         pkgmanager.Base.do_transaction.side_effect = side_effects
         instance = DnfTransactionHandler()
         instance._set_up_base()
 
-        with pytest.raises(exceptions.CriticalError):
+        with pytest.raises(exceptions.CriticalError) as execinfo:
             instance._process_transaction(validate_transaction=False)
 
         assert pkgmanager.Base.do_transaction.call_count == 1
         assert "Failed to validate the dnf transaction." in caplog.records[-1].message
+        assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
+        assert "Failed to validate dnf transaction." in execinfo._excinfo[1].title
+        assert (
+            "During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction."
+            in execinfo._excinfo[1].description
+        )
+        assert (
+            "Transaction processing failed with error: Errors were encountered while downloading packages."
+            in execinfo._excinfo[1].diagnosis
+        )
 
     @centos8
     @pytest.mark.parametrize(
