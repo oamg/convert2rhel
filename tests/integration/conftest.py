@@ -727,41 +727,48 @@ def yum_conf_exclude(shell, backup_directory, request):
 
         def test_function(yum_conf_exclude):
     """
-    exclude = ["rhn-client*"]
-    if hasattr(request, "param"):
-        exclude = request.param
-        print(">>> Using parametrized packages requested in the fixture.")
-    yum_config = "/etc/yum.conf"
-    backup_dir = os.path.join(backup_directory, "yumconf")
-    shell(f"mkdir -v {backup_dir}")
-    config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-    config = configparser.ConfigParser()
-    config.read(yum_config)
+    # We need to do this only for Oracle Linux
+    # rhn* is one of the excluded packages in convert2rhel configs
+    # so if the package is present on the system, is excluded in yum.conf
+    # and convert2rhel tries to back it up by calling yumdownloader
+    # it fails to do so because the call conflicts with the exclude option
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        exclude = ["rhn-client*"]
+        if hasattr(request, "param"):
+            exclude = request.param
+            print(">>> Using parametrized packages requested in the fixture.")
+        yum_config = "/etc/yum.conf"
+        backup_dir = os.path.join(backup_directory, "yumconf")
+        shell(f"mkdir -v {backup_dir}")
+        config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
+        config = configparser.ConfigParser()
+        config.read(yum_config)
 
-    assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
+        assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
-    pkgs_to_exclude = " ".join(exclude)
-    # If there is already an `exclude` section, append to the existing value
-    if config.has_option("main", "exclude"):
-        pre_existing_value = config.get("main", "exclude")
-        config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
-    else:
-        config.set("main", "exclude", pkgs_to_exclude)
+        pkgs_to_exclude = " ".join(exclude)
+        # If there is already an `exclude` section, append to the existing value
+        if config.has_option("main", "exclude"):
+            pre_existing_value = config.get("main", "exclude")
+            config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+        else:
+            config.set("main", "exclude", pkgs_to_exclude)
 
-    with open(yum_config, "w") as configfile:
-        config.write(configfile, space_around_delimiters=False)
+        with open(yum_config, "w") as configfile:
+            config.write(configfile, space_around_delimiters=False)
 
-    assert config.has_option("main", "exclude")
-    assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+        assert config.has_option("main", "exclude")
+        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
 
     yield
 
-    # Clean up only for non-destrucive tests
-    # We need to keep the yum.conf in the descructive tests, since restoring the original
-    # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
-    # the system information from the then non-existent file
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        assert shell(f"mv {config_bak} {yum_config}").returncode == 0
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        # Clean up only for non-destrucive tests
+        # We need to keep the yum.conf in the descructive tests, since restoring the original
+        # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
+        # the system information from the then non-existent file
+        if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+            assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
 def _add_client_tools_repo(shell):
