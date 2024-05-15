@@ -385,17 +385,6 @@ class TestBackupRepository:
         with open(yum_repo, mode="r") as f:
             assert f.read() == os.path.basename(yum_repo)
 
-    def test_backup_repository_redhat(self, monkeypatch, tmpdir, backup_repository_action, caplog):
-        """Test if redhat.repo is not backed up."""
-        redhat_repo = generate_repo(tmpdir, "redhat.repo")
-
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_REPOFILE_DIR", os.path.dirname(redhat_repo))
-        monkeypatch.setattr(subscription, "should_subscribe", mock.Mock(side_effect=lambda: False))
-        backup_repository = backup_repository_action
-        backup_repository.run()
-
-        assert "Skipping backup of redhat.repo as it is not needed." == caplog.records[-1].message
-
     def test_backup_repository_other_files(self, monkeypatch, tmpdir, backup_repository_action, caplog):
         """Test if redhat.repo is not backed up."""
         non_repo_file = generate_repo(tmpdir, "redhat.nonrepo")

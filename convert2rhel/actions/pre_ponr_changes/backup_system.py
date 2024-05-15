@@ -92,10 +92,6 @@ class BackupRepository(actions.Action):
                 loggerinst.info("Skipping backup as %s is not a repository file." % repo)
                 continue
 
-            if not subscription.should_subscribe() and repo == "redhat.repo":
-                loggerinst.info("Skipping backup of redhat.repo as it is not needed.")
-                continue
-
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
             restorable_file = RestorableFile(repo_path)
             backup.backup_control.push(restorable_file)
