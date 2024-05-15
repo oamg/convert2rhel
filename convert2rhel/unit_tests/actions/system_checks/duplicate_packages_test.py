@@ -85,7 +85,7 @@ def test_duplicate_packages_error(
 @pytest.mark.parametrize(
     ("version_string", "output", "ret_code"),
     (
-        (Version(7, 9), "[Errno -2] Name or service not known", 0),
+        (Version(7, 9), "Name or service not known", 0),
         (Version(8, 8), "Failed to download metadata for repo", 1),
     ),
 )
@@ -96,9 +96,6 @@ def test_duplicate_packages_unsuccessful(
     monkeypatch.setattr(system_info, "version", version_string)
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     duplicate_packages_action.run()
-    print("HIiiiiiiiiiiiiiiiiiiiii")
-    print(duplicate_packages_action.messages)
-    print(duplicate_packages_action.result)
 
     expected = set(
         (
