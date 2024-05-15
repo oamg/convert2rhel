@@ -246,10 +246,6 @@ class TestPEMCert:
                 OSError(2, "No such file or directory"),
                 "No such file or directory",
             ),
-            (
-                OSError(13, "[Errno 13] Permission denied: '/tmpdir/certfile'"),
-                "OSError(13): Permission denied: '/tmpdir/certfile'",
-            ),
         ),
     )
     def test_restore_cert_error_conditions(
@@ -265,6 +261,16 @@ class TestPEMCert:
 
         for message in caplog.messages:
             assert text_not_expected_in_logs not in message
+
+    def test_restore_cert_error_raised(self, system_cert_with_target_path, monkeypatch, caplog):
+        monkeypatch.setattr(os, "remove", mock.Mock(side_effect=OSError(1, "Operation not permitted")))
+
+        system_cert_with_target_path.enable()
+
+        with pytest.raises(OSError):
+            system_cert_with_target_path.restore()
+
+        assert "No certificates found to be removed." not in caplog.text
 
     @pytest.mark.parametrize(
         ("rpm_exit_code", "rpm_stdout", "expected"),

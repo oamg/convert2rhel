@@ -379,6 +379,10 @@ class RollbackChangesMocked(MockFunctionObject):
     spec = main.rollback_changes
 
 
+class PrintInfoAfterRollbackMocked(MockFunctionObject):
+    spec = main.provide_status_after_rollback
+
+
 class ShowEulaMocked(MockFunctionObject):
     spec = main.show_eula
 

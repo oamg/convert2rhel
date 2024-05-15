@@ -195,6 +195,10 @@ def main_locked():
             subscription.update_rhsm_custom_facts()
 
         rollback_changes()
+        provide_status_after_rollback(pre_conversion_results, include_all_reports=True)
+
+        if backup.backup_control.rollback_failed:
+            return ConversionExitCodes.FAILURE
 
         report.pre_conversion_report(
             results=pre_conversion_results,
@@ -202,7 +206,6 @@ def main_locked():
             disable_colors=logger_module.should_disable_color_output(),
         )
         return ConversionExitCodes.SUCCESSFUL
-
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
         _handle_main_exceptions(process_phase, pre_conversion_results)
@@ -215,15 +218,16 @@ def main_locked():
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
         return _handle_main_exceptions(process_phase, results)
     finally:
-        # Write the assessment to a file as json data so that other tools can
-        # parse and act upon it.
-        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        if not backup.backup_control.rollback_failed:
+            # Write the assessment to a file as json data so that other tools can
+            # parse and act upon it.
+            results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
 
-        if results and process_phase in _REPORT_MAPPING:
-            json_report, txt_report = _REPORT_MAPPING[process_phase]
+            if results and process_phase in _REPORT_MAPPING:
+                json_report, txt_report = _REPORT_MAPPING[process_phase]
 
-            report.summary_as_json(results, json_report)
-            report.summary_as_txt(results, txt_report)
+                report.summary_as_json(results, json_report)
+                report.summary_as_txt(results, txt_report)
 
     return ConversionExitCodes.SUCCESSFUL
 
@@ -277,14 +281,10 @@ def _handle_main_exceptions(process_phase, results=None):
             subscription.update_rhsm_custom_facts()
 
         rollback_changes()
-        if results is None:
-            loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
-        else:
-            report.pre_conversion_report(
-                results=results,
-                include_all_reports=True,
-                disable_colors=logger_module.should_disable_color_output(),
-            )
+        provide_status_after_rollback(
+            pre_conversion_results=results,
+            include_all_reports=True,
+        )
     elif process_phase == ConversionPhase.POST_PONR_CHANGES:
         # After the process of subscription is done and the mass update of
         # packages is started convert2rhel will not be able to guarantee a
@@ -421,3 +421,32 @@ def rollback_changes():
             loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
+
+    return
+
+
+def provide_status_after_rollback(pre_conversion_results, include_all_reports):
+    """Print after-rollback messages and determine if there is a report to print or
+    if report shouldn't be printed after failure in rollback."""
+    if backup.backup_control.rollback_failed:
+        loggerinst.critical_no_exit(
+            "Rollback of system wasn't completed successfully.\n"
+            "The system is left in an undetermined state that Convert2RHEL cannot fix.\n"
+            "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
+            " the system from a backup.\n"
+            "Following errors were captured during rollback:\n"
+            "%s" % "\n".join(backup.backup_control.rollback_failures)
+        )
+
+        return
+
+    if not pre_conversion_results:
+        loggerinst.info("\nConversion interrupted before analysis of system completed. Report not generated.\n")
+
+        return
+
+    report.pre_conversion_report(
+        results=pre_conversion_results,
+        include_all_reports=include_all_reports,
+        disable_colors=logger_module.should_disable_color_output(),
+    )

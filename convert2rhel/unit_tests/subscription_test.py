@@ -19,6 +19,7 @@ __metaclass__ = type
 
 import errno
 import json
+import os
 
 from collections import namedtuple
 
@@ -29,6 +30,7 @@ import pytest
 import six
 
 from convert2rhel import exceptions, pkghandler, pkgmanager, subscription, toolopts, unit_tests, utils
+from convert2rhel.backup import files
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
     AutoAttachSubscriptionMocked,
@@ -541,10 +543,13 @@ class TestRegisterSystem:
     @pytest.mark.rhsm_returns(dbus.exceptions.DBusException("nope"))
     def test_register_system_fail_non_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
         """Check the critical severity is logged when the credentials are given on the cmdline but registration fails."""
-        monkeypatch.setattr(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 1)
+        osrelease_restore = mock.Mock()
+
+        monkeypatch.setattr(subscription, "MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE", 2)
         monkeypatch.setattr(subscription, "sleep", mock.Mock())
         monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
         monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
+        monkeypatch.setattr(subscription.os_release_file, "restore", osrelease_restore)
 
         tool_opts.username = "user"
         tool_opts.password = "pass"
@@ -553,6 +558,7 @@ class TestRegisterSystem:
             subscription.register_system()
 
         assert caplog.records[-1].levelname == "CRITICAL"
+        assert osrelease_restore.call_count == 1
 
     @pytest.mark.rhsm_returns((dbus.exceptions.DBusException("nope"), dbus.exceptions.DBusException("nope"), None))
     def test_register_system_fail_interactive(self, tool_opts, monkeypatch, caplog, mocked_rhsm_call_blocking):
@@ -588,6 +594,40 @@ class TestRegisterSystem:
 
         assert len(mocked_rhsm_call_blocking.call_args_list) == 1
         assert "CRITICAL" not in [rec.levelname for rec in caplog.records]
+
+    def test_register_system_os_release_fail(self, monkeypatch, tmpdir, caplog):
+        """Test when os release file cannot be restored."""
+        ### Prepare the os-release file
+        # Prepare the os-release file, backup path
+        os_release_name = "os-release"
+        os_release_path = tmpdir.join(os_release_name)
+        os_release_path.write("test")
+        backup_dir = tmpdir.mkdir("backup")
+
+        monkeypatch.setattr(files, "BACKUP_DIR", str(backup_dir))
+
+        # Create the restorable and backup the file
+        os_release_file = files.RestorableFile(str(os_release_path))
+        os_release_file.enable()
+
+        # Remove the file from the backup and orig path, so there will be failure during restoring the file
+        os.remove(os_release_file._backup_path)
+        os.remove(str(os_release_path))
+
+        ### Test the register system
+
+        monkeypatch.setattr(subscription, "os_release_file", os_release_file)
+        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
+        monkeypatch.setattr(subscription, "_stop_rhsm", mock.Mock())
+        monkeypatch.setattr(subscription.RegistrationCommand, "from_tool_opts", mock.Mock())
+
+        with pytest.raises(exceptions.CriticalError) as err:
+            subscription.register_system()
+            assert err.description == "Failed to restore the /etc/os-release needed fo subscribing the system."
+            assert (
+                "Failed to restore the /etc/os-release file needed for subscribing the system with message:"
+                in caplog.records[-1].message
+            )
 
     def test_stop_rhsm(self, caplog, monkeypatch, global_system_info):
         monkeypatch.setattr(subscription, "system_info", global_system_info)
