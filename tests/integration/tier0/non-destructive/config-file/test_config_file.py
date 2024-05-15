@@ -23,7 +23,15 @@ def remove_files(config):
 
 @pytest.mark.test_config_custom_path_custom_filename
 def test_user_path_custom_filename(convert2rhel):
-    config = [Config("~/.convert2rhel_custom.ini", "[subscription_manager]\nactivation_key = config_activationkey")]
+    config = [
+        Config(
+            "~/.convert2rhel_custom.ini",
+            """
+            [subscription_manager]
+            activation_key = config_activationkey
+            """,
+        )
+    ]
     create_files(config)
 
     with convert2rhel('--debug -c "~/.convert2rhel_custom.ini"') as c2r:
@@ -37,7 +45,15 @@ def test_user_path_custom_filename(convert2rhel):
 
 @pytest.mark.test_config_custom_path_standard_filename
 def test_user_path_std_filename(convert2rhel):
-    config = [Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password")]
+    config = [
+        Config(
+            "~/.convert2rhel.ini",
+            """
+            [subscription_manager]
+            password = config_password
+            """,
+        )
+    ]
     create_files(config)
 
     with convert2rhel("--debug") as c2r:
@@ -54,22 +70,34 @@ def test_user_path_cli_priority(convert2rhel):
     config = [
         Config(
             "~/.convert2rhel.ini",
-            "[subscription_manager]\nusername = config_username\npassword = config_password\nactivation_key = config_key\norg = config_org",
+            """
+            [subscription_manager]
+            username = config_username
+            password = config_password
+            activation_key = config_key
+            org = config_org
+            """,
         )
     ]
     create_files(config)
 
-    with convert2rhel("--password password --debug") as c2r:
+    with convert2rhel("--username username --password password --debug") as c2r:
         # Found options in config file
-        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
-        c2r.expect(
-            "WARNING - You have passed either the RHSM password or activation key through both the command line and"
-            " the configuration file. We're going to use the command line values."
+        c2r_expect_index = c2r.expect(
+            [
+                "DEBUG - Found username in /root/.convert2rhel.ini",
+                "DEBUG - Found password in /root/.convert2rhel.ini",
+                "DEBUG - Found activation_key in /root/.convert2rhel.ini",
+                "DEBUG - Found org in /root/.convert2rhel.ini",
+                "WARNING - You have passed either the RHSM password or activation key through both the command line and"
+                " the configuration file. We're going to use the command line values.",
+            ]
         )
-        c2r.sendcontrol("c")
+        if c2r_expect_index == 1:
+            assert AssertionError
+
+        c2r.expect_exact("Continue with the system conversion?", timeout=120)
+        c2r.sendline("n")
 
     assert c2r.exitstatus != 0
 
@@ -79,8 +107,20 @@ def test_user_path_cli_priority(convert2rhel):
 @pytest.mark.test_config_standard_paths_priority_diff_methods
 def test_std_paths_priority_diff_methods(convert2rhel):
     config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("/etc/convert2rhel.ini", "[subscription_manager]\nactivation_key = config2_activationkey"),
+        Config(
+            "~/.convert2rhel.ini",
+            """
+            [subscription_manager]
+            password = config_password
+            """,
+        ),
+        Config(
+            "/etc/convert2rhel.ini",
+            """
+            [subscription_manager]
+            activation_key = config2_activationkey
+            """,
+        ),
     ]
     create_files(config)
 
@@ -107,8 +147,19 @@ def test_std_paths_priority_diff_methods(convert2rhel):
 @pytest.mark.test_config_standard_paths_priority
 def test_std_paths_priority(convert2rhel):
     config = [
-        Config("~/.convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
-        Config("/etc/convert2rhel.ini", "[subscription_manager]\npassword = config_password"),
+        Config(
+            "~/.convert2rhel.ini",
+            """
+            [subscription_manager]
+            password = config_password
+            """,
+        ),
+        Config(
+            "/etc/convert2rhel.ini",
+            """
+            [subscription_manager]password = config_password
+            """,
+        ),
     ]
     create_files(config)
 
