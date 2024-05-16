@@ -34,4 +34,7 @@ def test_excluded_packages_removed(shell, convert2rhel):
     assert c2r.exitstatus == 0
 
     # Verify, the excluded packages were really removed
-    assert shell(f"rpm -qi {packages}").returncode == 1
+    # RPM return code depends on the number of packages that are not installed.
+    # If the query contains 3 packages and none of them is installed then the
+    # return code is 3.
+    assert shell(f"rpm -qi {packages}").returncode == len(packages.split(" "))

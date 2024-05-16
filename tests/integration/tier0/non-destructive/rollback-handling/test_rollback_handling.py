@@ -124,11 +124,30 @@ def yum_plugin_local(shell):
     assert shell("yum remove -y yum-plugin-local").returncode == 0
 
 
+@pytest.fixture
+def immutable_os_release_file(shell):
+    """
+    Fixture to set the os-release file as immutable.
+    """
+    shell("chattr +i $(realpath /etc/os-release)")
+
+    yield
+
+    # Because on CentOS7 the /etc/os-release is a symlink and
+    # after the failed rollback the symlink is not restored.
+    # Yum is not able to handle this (on dnf systems it is not an issue).
+    if "centos-7" in SYSTEM_RELEASE_ENV:
+        shell("chattr -i /usr/lib/os-release")
+        shell("rm -f /etc/os-release")
+    else:
+        shell("chattr -i $(realpath /etc/os-release)")
+
+
 @pytest.mark.test_polluted_yumdownloader_output_by_yum_plugin_local
 def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel, yum_plugin_local):
     """
     Verify that the yumdownloader output in the backup packages task is parsed correctly.
-    In this scenario the yum-plugin-local was causing that excluded packages were not detected as downlaoded during
+    In this scenario the yum-plugin-local was causing that excluded packages were not detected as downloaded during
     a backup. Then, the removed excluded packages were not installed back during a rollback (RHELC-1272).
     Verify the utility handles both - packages downloaded for the backup
     and packages already existing in the backup directory.
@@ -259,4 +278,19 @@ def test_terminate_registration_success(convert2rhel):
         c2r.expect("DEBUG - Calling command 'subscription-manager attach --auto'", timeout=180)
         c2r.expect("Status:       Subscribed", timeout=180)
         terminate_and_assert_good_rollback(c2r)
+    assert c2r.exitstatus == 1
+
+
+@pytest.mark.parametrize("c2r_mode", ["analyze", "convert"])
+@pytest.mark.test_rollback_failure
+def test_rollback_failure_analysis(shell, convert2rhel, immutable_os_release_file, c2r_mode):
+    """
+    Make os-release file immutable. This will cause the conversion rollback to fail (https://issues.redhat.com/browse/RHELC-1248).
+    Verify that the analysis and conversion ends with exit code 1 respecting the failure (https://issues.redhat.com/browse/RHELC-1275).
+    Use fake credentials to cause the inhibition.
+    """
+
+    with convert2rhel("{} --debug -y --username happy_hippo --password hippo_is_hungry".format(c2r_mode)) as c2r:
+        c2r.expect("WARNING - Error while rolling back")
+        c2r.expect("CRITICAL - Rollback of system wasn't completed successfully.")
     assert c2r.exitstatus == 1
