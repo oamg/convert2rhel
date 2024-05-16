@@ -16,7 +16,6 @@ PACKAGES = {
 
 
 @pytest.fixture
-@pytest.mark.config_files_modified
 def config_files_modified(shell, backup_directory):
     """
     This fixture modifies contents of configuration files: "/etc/cloud/cloud.cfg",
@@ -78,7 +77,6 @@ def config_files_modified(shell, backup_directory):
 
 
 @pytest.fixture
-@pytest.mark.config_files_removed
 def config_files_removed(shell, backup_directory):
     """
     This fixture removes completely configuration files: "/etc/cloud/cloud.cfg",

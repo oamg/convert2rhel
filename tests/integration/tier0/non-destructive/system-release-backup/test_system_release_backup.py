@@ -6,7 +6,6 @@ from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
-@pytest.mark.system_release_missing
 def system_release_missing(shell, backup_directory):
     """
     Fixture.

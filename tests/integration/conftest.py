@@ -711,7 +711,6 @@ def kernel(shell):
 
 
 @pytest.fixture()
-@pytest.mark.yum_conf_exclude
 def yum_conf_exclude(shell, backup_directory, request):
     """
     Fixture.

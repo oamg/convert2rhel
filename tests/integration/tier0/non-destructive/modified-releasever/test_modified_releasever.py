@@ -8,7 +8,6 @@ from conftest import TEST_VARS
 
 
 @pytest.fixture(scope="function")
-@pytest.mark.c2r_config_releasever
 def c2r_config_releasever(shell, backup_directory):
     """
     Fixture.
@@ -47,7 +46,6 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
 
 
 @pytest.fixture(scope="function")
-@pytest.mark.system_release_backup
 def system_release_backup(shell, backup_directory):
     """
     Fixture.

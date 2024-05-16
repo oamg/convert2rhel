@@ -160,10 +160,10 @@ description+: |
 
 
     /offline_system_conversion:
-        adjust:
-          enabled: false
-          when: distro == oracle-7
-          because: It will be disabled as a validation of https://issues.redhat.com/browse/RHELC-1544 fix
+        adjust+:
+          - enabled: false
+            when: distro == oracle-7
+            because: It will be enabled as a validation of https://issues.redhat.com/browse/RHELC-1544 fix
         prepare+:
             - name: Allow access to Satellite only
               how: shell
