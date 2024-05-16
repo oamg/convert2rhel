@@ -571,7 +571,7 @@ class TestRollbackFromMain:
         assert pkghandler.clear_versionlock.call_count == 1
         assert pkgmanager.clean_yum_metadata.call_count == 1
         assert actions.run_pre_actions.call_count == 1
-        assert report._summary.call_count == 2
+        assert report._summary.call_count == 1
         assert breadcrumbs.finish_collection.call_count == 1
         assert subscription.should_subscribe.call_count == 1
         assert subscription.update_rhsm_custom_facts.call_count == 0
@@ -633,7 +633,7 @@ class TestRollbackFromMain:
         assert collect_early_data_mock.call_count == 1
         assert clean_yum_metadata_mock.call_count == 1
         assert run_pre_actions_mock.call_count == 1
-        assert report_summary_mock.call_count == 2
+        assert report_summary_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert should_subscribe_mock.call_count == 1
