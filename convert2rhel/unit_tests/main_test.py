@@ -801,3 +801,12 @@ def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):
     assert main.main() == 1
     assert "Another copy of convert2rhel is running.\n" in caplog.records[-2].message
     assert "\nNo changes were made to the system.\n" in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(("rollback_failures", "return_code"), ((["test-fail"], 1), ([], 2)))
+def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, return_code, global_backup_control):
+    monkeypatch.setattr(global_backup_control, "_rollback_failures", rollback_failures)
+
+    ret = main._handle_inhibitors_found_exception()
+
+    assert ret == return_code

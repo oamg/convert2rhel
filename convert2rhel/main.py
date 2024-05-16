@@ -209,7 +209,8 @@ def main_locked():
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
         _handle_main_exceptions(process_phase, pre_conversion_results)
-        return ConversionExitCodes.INHIBITORS_FOUND
+
+        return _handle_inhibitors_found_exception()
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
@@ -307,6 +308,14 @@ def _handle_main_exceptions(process_phase, results=None):
         )
 
     return ConversionExitCodes.FAILURE
+
+
+def _handle_inhibitors_found_exception():
+    """Handle return code when handling InhibitorFound exception."""
+    if backup.backup_control.rollback_failed:
+        return ConversionExitCodes.FAILURE
+
+    return ConversionExitCodes.INHIBITORS_FOUND
 
 
 #
