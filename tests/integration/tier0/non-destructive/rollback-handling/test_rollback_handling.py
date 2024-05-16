@@ -60,7 +60,8 @@ def install_packages(shell, packages):
     """
     packages_to_remove_at_cleanup = []
     for package in packages:
-        if f"{package} is not installed" in shell(f"rpm -q {package}").output:
+        is_installed = shell(f"rpm -q {package}").returncode
+        if is_installed == 1:
             packages_to_remove_at_cleanup.append(package)
 
     # Run this only once as package managers take too long to figure out
@@ -90,8 +91,9 @@ def is_installed_post_rollback(shell, packages):
     """
     for package in packages:
         print(f"CHECK: Checking for {package}")
-        query = shell(f"rpm -q {package}")
-        assert f"{package} is not installed" not in query.output
+        is_installed = shell(f"rpm -q {package}").returncode
+        # rpm -q command returns 0 when package is installed, returns 1 otherwise
+        assert is_installed == 0
 
 
 def terminate_and_assert_good_rollback(c2r):

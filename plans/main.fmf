@@ -33,17 +33,17 @@ adjust+:
       when: distro == rocky-8-latest
 
 prepare+:
+    - name: install latest copr build
+      how: install
+      copr: '@oamg/convert2rhel'
+      package: convert2rhel
+      missing: fail
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml
     - name: reboot system after update
       how: ansible
       playbook: tests/ansible_collections/roles/reboot/main.yml
-    - name: install latest copr build
-      how: install
-      copr: '@oamg/convert2rhel'
-      package: convert2rhel
-      missing: fail
 
     # We need to remove all the repositories that were used to install c2r package.
     # The updated packages check may find that installed c2r is not latest and it then

@@ -34,5 +34,24 @@
     - beaker-harness.repo
     - beaker-tasks.repo
 
+- name: Remove epel repositories
+  ansible.builtin.file:
+    path: "/etc/yum.repos.d/{{ item }}"
+    state: absent
+  with_items:
+    - epel-testing.repo
+    - epel.repo
+
+# We remove the packages with rpm -e --nodeps as a safety measure to not remove any possibly dependent packages
+# for example removing python-jsonpatch with yum removes cloud-init and subsequently python-six as dependencies
+# causing problems with python versions compatibility and failing tests
+- name: Remove packages installed by Testing Farm
+  ansible.builtin.shell: rpm -e --nodeps {{ item }}
+  with_items:
+    - epel-release
+    - tps-devel
+    - python-jsonpatch
+  ignore_errors: true
+
 - name: Clean yum metadata
   ansible.builtin.shell: yum clean metadata

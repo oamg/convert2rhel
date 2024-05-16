@@ -98,9 +98,7 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
     assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
 
 
-@pytest.mark.parametrize(
-    "pre_registered", [(TEST_VARS["RHSM_NOSUB_USERNAME"], TEST_VARS["RHSM_NOSUB_PASSWORD"])], indirect=True
-)
+@pytest.mark.parametrize("pre_registered", [("RHSM_NOSUB_USERNAME", "RHSM_NOSUB_PASSWORD")], indirect=True)
 @pytest.mark.test_no_sca_subscription_attachment_error
 def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):
     """

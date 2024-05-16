@@ -27,8 +27,8 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
 
     for package in checked_packages:
         latest_version = shell(f"repoquery --quiet --latest-limit=1 {package}").output.strip("\n")
-        is_installed = shell(f"rpm -q {package}").output
-        if "is not installed" in is_installed:
+        is_installed = shell(f"rpm -q {package}").returncode
+        if is_installed == 1:
             shell(f"yum install -y {package}")
         # although not really used, keep the assembled dictionary if needed for version comparison
         # also the dictionary gets appended only when there is the package available to install

@@ -39,11 +39,6 @@ description+: |
 
             /pre_registered_system_conversion:
                 adjust+:
-                  - enabled: false
-                    when: distro == oracle
-                    because: |
-                        There is no subscription-manager package in Oracle Linux repositories
-                        and no documentation is provided - https://issues.redhat.com/browse/RHELC-1485.
                   - environment+:
                       C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
                       C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
@@ -166,20 +161,10 @@ description+: |
 
     /offline_system_conversion:
         adjust+:
-          # Disabled due to known issue: https://issues.redhat.com/browse/RHELC-1040
-          # Enable once this gets fixed
           - enabled: false
             when: distro == oracle-7
-        environment+:
-            CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP: 1
-            when: distro == oracle-8
-            because: |
-                The subman is installed from CentOS repo, resulting in outdated python3-ethtool
-                package which is then interfering with the test, inhibiting the conversion.
+            because: It will be enabled as a validation of https://issues.redhat.com/browse/RHELC-1544 fix
         prepare+:
-            - name: Install subscription manager
-              how: ansible
-              playbook: tests/ansible_collections/roles/install-submgr/main.yml
             - name: Allow access to Satellite only
               how: shell
               script: pytest --setup-show -svv tests/integration/*/destructive/offline-system-conversion/prepare_system.py

@@ -1,27 +1,15 @@
 import pytest
 
-from conftest import SATELLITE_PKG_DST, SATELLITE_PKG_URL, TEST_VARS
+from conftest import TEST_VARS
 
 
 @pytest.mark.test_satellite_conversion
-def test_satellite_conversion(shell, convert2rhel):
+def test_satellite_conversion(shell, convert2rhel, satellite_registration):
     """
     Conversion method using the Satellite credentials for registration.
-    The subscription-manager package is removed for this conversion method.
-    The katello-ca-consumer package is installed from the Satellite server.
+    Use the provided curl command to download the registration script to a file,
+    then run the registration script file.
     """
-    # Remove subscription manager if installed
-    assert shell("yum remove subscription-manager -y").returncode == 0
-
-    assert shell("yum install wget -y").returncode == 0
-
-    assert (
-        shell(
-            "wget --no-check-certificate --output-document {} {}".format(SATELLITE_PKG_DST, SATELLITE_PKG_URL)
-        ).returncode
-        == 0
-    )
-
     with convert2rhel(
         "-y -k {} -o {} --debug".format(
             TEST_VARS["SATELLITE_KEY"],

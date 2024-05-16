@@ -1,3 +1,4 @@
+import configparser
 import dataclasses
 import json
 import logging
@@ -29,10 +30,33 @@ logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
 TEST_VARS = dotenv_values("/var/tmp/.env")
+SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
 
-SATELLITE_URL = "satellite.sat.engineering.redhat.com"
-SATELLITE_PKG_URL = "https://satellite.sat.engineering.redhat.com/pub/katello-ca-consumer-latest.noarch.rpm"
-SATELLITE_PKG_DST = "/usr/share/convert2rhel/subscription-manager/katello-ca-consumer-latest.noarch.rpm"
+
+SAT_REG_COMMAND = {
+    "alma-8-latest": SAT_REG_FILE["ALMA8_SAT_REG"],
+    "alma-8.8": SAT_REG_FILE["ALMA88_SAT_REG"],
+    "rocky-8-latest": SAT_REG_FILE["ROCKY8_SAT_REG"],
+    "rocky-8.8": SAT_REG_FILE["ROCKY88_SAT_REG"],
+    "oracle-8-latest": SAT_REG_FILE["ORACLE8_SAT_REG"],
+    "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
+    "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
+    "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
+}
+
+
+def satellite_curl_command():
+    """
+    Get the Satellite registration command for the respective system.
+    """
+    sat_curl_command = None
+    try:
+        sat_curl_command = SAT_REG_COMMAND[SYSTEM_RELEASE_ENV]
+    except KeyError:
+        print(f"Key not found in satellite registration command dictionary: {SYSTEM_RELEASE_ENV}")
+
+    return sat_curl_command
+
 
 SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
@@ -41,8 +65,12 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 def shell(tmp_path):
     """Live shell."""
 
-    def factory(command, silent=False):
-        if not silent:
+    def factory(command, silent=False, hide_command=False):
+        if silent:
+            click.echo("This shell call is set to silent=True, therefore no output will be printed.")
+        if hide_command:
+            click.echo("This shell call is set to hide_command=True, so it won't show the called command.")
+        if not silent and not hide_command:
             click.echo(
                 "\nExecuting a command:\n{}\n\n".format(command),
                 color="green",
@@ -378,22 +406,21 @@ def required_packages(shell):
 
 
 @pytest.fixture(scope="function")
-def remove_repositories(shell):
+def remove_repositories(shell, backup_directory):
     """
     Fixture.
     Move all repositories to another location.
     """
-    backup_dir = "/tmp/test-backup-release_backup"
-
-    # Move all repos to other location, so it is not being used
+    backup_dir = os.path.join(backup_directory, "repos")
     shell(f"mkdir {backup_dir}")
+    # Move all repos to other location, so it is not being used
     assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
+    assert len(os.listdir("/etc/yum.repos.d/")) == 0
 
     yield
 
     # Return repositories to their original location
     assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
-    assert shell(f"rm -rf {backup_dir}")
 
 
 @pytest.fixture(autouse=True)
@@ -407,26 +434,31 @@ def missing_os_release_package_workaround(shell):
     yield
 
     os_to_pkg_mapping = {
-        "oracle-7": "oracle*-release-el7",
-        "oracle-8": "oraclelinux-release-el8",
-        "centos-7": "centos-release",
-        "centos-8": "centos-linux-release",
-        "alma-8": "almalinux-release",
-        "rocky-8": "rocky-release",
+        "oracle-7": ["oraclelinux-release-el7", "oraclelinux-release"],
+        "oracle-8": ["oraclelinux-release-el8", "oraclelinux-release"],
+        "centos-7": ["centos-release"],
+        "centos-8": ["centos-linux-release"],
+        "alma-8": ["almalinux-release"],
+        "rocky-8": ["rocky-release"],
     }
 
     # Run only for non-destructive tests.
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
-    if "INT_TESTS_NONDESTRUCTIVE" in os.environ:
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         os_name = SYSTEM_RELEASE_ENV.split("-")[0]
         os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
         os_key = f"{os_name}-{os_ver[0]}"
 
-        system_release_pkg = os_to_pkg_mapping.get(os_key)
+        system_release_pkgs = os_to_pkg_mapping.get(os_key)
 
-        rpm_output = shell(f"rpm -qa {system_release_pkg}").output
-        if "not installed" in rpm_output:
-            shell(f"yum install -y --releasever={os_ver} {system_release_pkg}")
+        for pkg in system_release_pkgs:
+            installed = shell(f"rpm -q {pkg}").returncode
+            if installed == 1:
+                shell(f"yum install -y --releasever={os_ver} {pkg}")
+
+        # Since we try to mitigate any damage caused by the incomplete rollback
+        # try to update the system, in case anything got downgraded
+        shell("yum update -y", silent=True)
 
 
 def _load_json_schema(path):
@@ -438,26 +470,37 @@ def _load_json_schema(path):
 
 
 @pytest.fixture
-def pre_registered(shell, request):
+def pre_registered(shell, request, yum_conf_exclude):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
+    For Oracle Linux we're using the _add_client_tools_repo_oracle to enable the client-tools repository
+    to install the subscription-manager package from.
+    We also exclude the rhn-client* packages for the same reason.
+    On Oracle Linux subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
+    By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
+    Can be parametrized by requesting a different KEY from the TEST_VARS file.
+    @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
     username = TEST_VARS["RHSM_USERNAME"]
     password = TEST_VARS["RHSM_PASSWORD"]
-    # Use custom parameters when the fixture is parametrized
+    # Use custom keys when the fixture is parametrized
     if hasattr(request, "param"):
-        username, password = request.param
+        username_key, password_key = request.param
+        username = TEST_VARS[username_key]
+        password = TEST_VARS[password_key]
+        print(">>> Using parametrized username and password requested in the fixture.")
+
     if "oracle" in SYSTEM_RELEASE_ENV:
-        # Documentation does not contain steps on how to subscribe OL systems
-        # https://issues.redhat.com/browse/RHELC-1485
-        pytest.fail(
-            "Subscription manager is not present in Oracle Linux repositories. Please refer to RHELC-1485 for more"
-        )
+        # Remove the rhn-client-tools package to make way for subscription-manager installation
+        # given subman is obsoleted by the rhn-client-tools on Oracle
+        shell("yum remove -y rhn-client-tools")
+        # Add the client-tools repository for Oracle linux to install subscription-manager from
+        _add_client_tools_repo(shell)
 
     assert shell("yum install -y subscription-manager").returncode == 0
-    # Download the SSL certificate
+    # Download the certificate using insecure connection
     shell(
-        "curl --create-dirs -o /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
+        "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
     )
     # Register the system
     assert (
@@ -465,7 +508,7 @@ def pre_registered(shell, request):
             "subscription-manager register --serverurl {} --username {} --password {}".format(
                 TEST_VARS["RHSM_SERVER_URL"], username, password
             ),
-            silent=True,
+            hide_command=True,
         ).returncode
         == 0
     )
@@ -482,6 +525,9 @@ def pre_registered(shell, request):
     original_registration_uuid = uuid_raw_output.split(":")[1].strip()
 
     yield
+
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        _remove_client_tools_repo(shell)
 
     # For some scenarios we do not pre-register the system, therefore we do not have the original UUID
     # and do not need to verify it stays the same
@@ -569,7 +615,7 @@ def remediation_out_of_date_packages(shell):
 
 def _create_old_repo(distro: str, repo_name: str):
     """
-    Create a repo on system with content that is older then the latest released version.
+    Create a repo on system with content that is older than the latest released version.
     The intended use is for Rocky-8 and Alma-8.
     """
     baseurl = None
@@ -662,3 +708,162 @@ def kernel(shell):
 
         # Reboot after clean-up
         shell("tmt-reboot -t 600")
+
+
+@pytest.fixture()
+def yum_conf_exclude(shell, backup_directory, request):
+    """
+    Fixture.
+    Define `exclude=kernel kernel-core` in /etc/yum.conf.
+    Using pytest.mark.parametrize pass the packages to exclude in a single scenario as a list.
+    The fixture is called indirectly in the test function.
+    Example:
+        # one testcase
+        @pytest.mark.parametrize("yum_conf_exclude", [["this", "that", "also_this"]])
+
+        # more testcases
+        @pytest.mark.parametrize("yum_conf_exclude", [["this", "that"], ["then_this"]])
+
+        def test_function(yum_conf_exclude):
+    """
+    # We need to do this only for Oracle Linux
+    # rhn* is one of the excluded packages in convert2rhel configs
+    # so if the package is present on the system, is excluded in yum.conf
+    # and convert2rhel tries to back it up by calling yumdownloader
+    # it fails to do so because the call conflicts with the exclude option
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        exclude = ["rhn-client*"]
+        if hasattr(request, "param"):
+            exclude = request.param
+            print(">>> Using parametrized packages requested in the fixture.")
+        yum_config = "/etc/yum.conf"
+        backup_dir = os.path.join(backup_directory, "yumconf")
+        shell(f"mkdir -v {backup_dir}")
+        config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
+        config = configparser.ConfigParser()
+        config.read(yum_config)
+
+        assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
+
+        pkgs_to_exclude = " ".join(exclude)
+        # If there is already an `exclude` section, append to the existing value
+        if config.has_option("main", "exclude"):
+            pre_existing_value = config.get("main", "exclude")
+            config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+        else:
+            config.set("main", "exclude", pkgs_to_exclude)
+
+        with open(yum_config, "w") as configfile:
+            config.write(configfile, space_around_delimiters=False)
+
+        assert config.has_option("main", "exclude")
+        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+
+    yield
+
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        # Clean up only for non-destrucive tests
+        # We need to keep the yum.conf in the descructive tests, since restoring the original
+        # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
+        # the system information from the then non-existent file
+        if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+            assert shell(f"mv {config_bak} {yum_config}").returncode == 0
+
+
+def _add_client_tools_repo(shell):
+    """
+    Helper function.
+    Runs only on Oracle Linux system
+    Create an ubi repo for its respective major version to install subscription-manager from.
+    """
+    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
+    if SystemInformationRelease.version.major == 7:
+        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
+
+    # Add the redhat-release GPG key
+    assert shell(f"curl -o /etc/yum.repos.d/client-tools-for-tests.repo {repo_url}")
+    shell("curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt")
+
+
+def _remove_client_tools_repo(shell):
+    """
+    Helper function.
+    Remove the client tools repositories and the redhat-release GPG key
+    on the Oracle Linux systems.
+    Created as a function given we need to be able to call this during
+    the test execution not just the teardown phase.
+    """
+    # Remove the client-tools repofile
+    shell("rm -f /etc/yum.repos.d/client-tools-for-tests.repo")
+    # Remove the redhat-release GPG key
+    shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
+
+
+@pytest.fixture
+def satellite_registration(shell, yum_conf_exclude, request):
+    """
+    Fixture
+    Register the system to the Satellite server
+    By default it acquires the curl command from the satellite_curl_command function
+    Can be parametrized with requesting a different key from the SAT_REG_FILE(.sat_reg_file):
+    @pytest.mark.parametrized("satellite_registration", ["DIFFERENT_KEY"], indirect=True)
+    """
+    # Get the curl command for the respective system
+    # from the conftest function
+    sat_curl_command = satellite_curl_command()
+    sat_script = "/var/tmp/register_to_satellite.sh"
+    # If the fixture is parametrized, use the parameter as the key to get the curl command
+    if hasattr(request, "param"):
+        sat_curl_command_key = request.param
+        sat_curl_command = SAT_REG_FILE[sat_curl_command_key]
+        print(">>> Using parametrized curl command requested in the fixture.")
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        _add_client_tools_repo(shell)
+
+    # Make sure it returned some value, otherwise it will fail.
+    assert sat_curl_command, "The registration command is empty."
+
+    # Curl the Satellite registration script silently
+    assert shell(f"{sat_curl_command} -o {sat_script}", silent=True).returncode == 0
+
+    # Make the script executable and run the registration
+    assert shell(f"chmod +x {sat_script} && /bin/bash {sat_script}").returncode == 0
+
+    if "oracle" in SYSTEM_RELEASE_ENV:
+        _remove_client_tools_repo(shell)
+
+    yield
+
+    # Remove the subman packages installed by the registration script
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Remove potential leftover subscription
+        shell("subscription-manager remove --all")
+        # Remove potential leftover registration
+        shell("subscription-manager unregister")
+        assert shell("yum remove -y subscription-manager*")
+
+
+@pytest.fixture
+def backup_directory(shell, request):
+    """
+    Fixture.
+    Creates a backup directory for needed file back up.
+    Directory at /var/tmp/custom_pytest_marker
+    We're using the /var/tmp instead of /tmp
+    for the directory to survive a system reboot
+    """
+    backup_path_base = "/var/tmp"
+    backup_dir_name = None
+    markers = request.node.own_markers
+    for marker in markers:
+        if marker.name not in ("parametrize",):
+            backup_dir_name = marker.name
+
+    assert backup_dir_name, "Did not manage to parse the function's pytest marker"
+    backup_path = os.path.join(backup_path_base, backup_dir_name)
+
+    assert shell(f"mkdir {backup_path}").returncode == 0
+
+    yield backup_path
+
+    shell(f"rm -rf {backup_path}")

@@ -27,7 +27,6 @@ def test_firewalld_disabled_ol8(shell, convert2rhel):
         "-y --debug --serverurl {} --username {} --password {}".format(
             TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
         ),
-        unregister=True,
     ) as c2r:
         c2r.expect("Firewalld service reported that it is not running.")
 

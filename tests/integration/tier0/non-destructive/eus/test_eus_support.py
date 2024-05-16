@@ -6,17 +6,14 @@ from conftest import TEST_VARS
 
 
 @pytest.fixture
-def eus_mapping_update(shell):
+def eus_mapping_update(shell, backup_directory):
     """
     Fixture to mock different scenarios while handling the EUS candidates.
     Backs up the convert2rhel/systeminfo.py and modifies the EUS_MINOR_VERISONS mapping.
     Restores the original version after the test is done.
     """
     eus_mapping_file = shell("find /usr -path '*/convert2rhel/systeminfo.py'").output.strip()
-    backup_dir = "/tmp/c2r_tests_backup/"
-    backup_file = f"{backup_dir}systeminfo.py.bkp"
-    if not os.path.exists(backup_dir):
-        shell(f"mkdir {backup_dir}")
+    backup_file = os.path.join(backup_directory, "systeminfo.py.bkp")
     assert shell(f"cp {eus_mapping_file} {backup_file}").returncode == 0
 
     original_mapping_value = '"8.8": "2023-11-14"'
