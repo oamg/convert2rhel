@@ -34,8 +34,8 @@ EUS_REPOID_MSG = (
     "RHEL repository IDs to enable: rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms"
 )
 
-MOCKED_PRE_EUS_PHASE = '"8.8": "2042-04-08",'
-MOCKED_EUS_PHASE = '"8.8": "1970-01-01",'
+MOCKED_PRE_EUS_PHASE = '"8.8": "2042-04-08"'
+MOCKED_EUS_PHASE = '"8.8": "1970-01-01"'
 
 
 eus_support_parameters = [
@@ -53,7 +53,12 @@ eus_support_parameters = [
 @pytest.mark.parametrize(
     "additional_option, repoid_message, modified_mapping, is_eus, recommend_eus_msg_displayed",
     eus_support_parameters,
-    ids=["non-eus-sys-eus-opt", "eus-sys-pre-eus-no-opt", "eus-sys-pre-eus-eus-opt", "eus-sys-eus-phase-no-opt"],
+    ids=[
+        "non-eus-system-eus-option-used",
+        "eus-system-eus-phase-did-not-start-yet-no-option-used",
+        "eus-system-eus-phase-did-not-start-yet-eus-option-used",
+        "eus-system-eus-phase-started-no-option-used",
+    ],
 )
 @pytest.mark.test_eus_support
 def test_eus_support(
@@ -67,7 +72,7 @@ def test_eus_support(
 ):
     """
     Test verifying correct behavior when converting EUS candidates.
-    EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+    EUS_MINOR_VERSIONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
     Verified scenarios (handled by pytest parametrization):
     1/ The system is considered as a non-EUS. This is done by removing the 8.8 version from the mapping file
         (note that this workaround works only on 8.8 systems).
@@ -123,4 +128,5 @@ def test_rhsm_non_eus_account(convert2rhel):
         c2r.expect_exact("Error: 'rhel-8-for-x86_64-baseos-eus-rpms' does not match a valid repository ID.")
         c2r.expect_exact("Error: 'rhel-8-for-x86_64-appstream-eus-rpms' does not match a valid repository ID.")
         c2r.expect_exact("The RHEL EUS repositories are not possible to enable.")
+        c2r.expect_exact("Trying to enable standard RHEL repositories as a fallback.")
     assert c2r.exitstatus == 0

@@ -7,7 +7,7 @@ from conftest import SystemInformationRelease
 
 
 def _check_enabled_repos_rhel8(enabled_repos: str = "", eus: bool = False):
-    """Helper function to assert RHEL repositories."""
+    """Helper function to assert correct RHEL8 repositories are enabled after the conversion."""
     baseos_repo = ""
     appstream_repo = ""
     if eus:
@@ -21,10 +21,21 @@ def _check_enabled_repos_rhel8(enabled_repos: str = "", eus: bool = False):
     assert appstream_repo in enabled_repos
 
 
+def _check_enabled_repos_rhel7(enabled_repos: str = "", els: bool = False):
+    """Helper function to assert correct RHEL7 repositories are enabled after the conversion."""
+    repo = ""
+    if els:
+        repo = "rhel-7-server-els-rpms"
+    else:
+        repo = "rhel-7-server-rpms"
+
+    assert repo in enabled_repos
+
+
 @pytest.mark.test_enabled_repositories
 def test_enabled_repositories(shell):
     """
-    Verify that the correct repositories (including EUS if applies) are enabled after the conversion.
+    Verify that the correct repositories (including EUS/ELS if applies) are enabled after the conversion.
     """
 
     try:
@@ -32,11 +43,16 @@ def test_enabled_repositories(shell):
         system_release = SystemInformationRelease()
         assert "redhat" in system_release.distribution
 
-        if system_release.version.major == 7 and system_release.version.minor == 9:
-            assert "rhel-7-server-rpms/7Server/x86_64" in enabled_repos
+        if system_release.version.major == 7:
+            # Handle the special test case scenario where we use the
+            # account with the ELS repositories available
+            if os.path.exists("/els_repos_used"):
+                _check_enabled_repos_rhel7(enabled_repos, els=True)
+            else:
+                _check_enabled_repos_rhel7(enabled_repos)
         elif system_release.version.major == 8:
-            # Handle the special test case scenario where we do not use the
-            # premium account with EUS repositories
+            # Handle the special test case scenario where we use the
+            # account with the EUS repositories available
             if os.path.exists("/eus_repos_used"):
                 _check_enabled_repos_rhel8(enabled_repos, eus=True)
             else:

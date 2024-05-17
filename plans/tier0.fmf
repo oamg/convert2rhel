@@ -73,6 +73,17 @@ description+: |
                 test+<:
                     - conversion-method/rhsm_eus_account_conversion
 
+        /rhsm_ELS_conversion:
+            enabled: false
+            adjust+:
+                - enabled: true
+                  when: >
+                    distro == centos-7, oracle-7
+                  because: The ELS offering is applicable to EL7 only.
+            discover+:
+                test+<:
+                    - conversion-method/rhsm_ELS_conversion
+
         /custom_repositories_conversion:
             environment+:
                 SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
