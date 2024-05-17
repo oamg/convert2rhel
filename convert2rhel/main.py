@@ -200,11 +200,6 @@ def main_locked():
         if backup.backup_control.rollback_failed:
             return ConversionExitCodes.FAILURE
 
-        report.pre_conversion_report(
-            results=pre_conversion_results,
-            include_all_reports=True,
-            disable_colors=logger_module.should_disable_color_output(),
-        )
         return ConversionExitCodes.SUCCESSFUL
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
