@@ -800,19 +800,19 @@ def enable_repos(rhel_repoids):
     else:
         repos_to_enable = rhel_repoids
 
-    if repos_to_enable == system_info.eus_rhsm_repoids:
+    if repos_to_enable in (system_info.eus_rhsm_repoids, system_info.els_rhsm_repoids):
         try:
             loggerinst.info(
-                "The system version corresponds to a RHEL Extended Update Support (EUS) release. "
-                "Trying to enable RHEL EUS repositories."
+                "The system version corresponds to a RHEL Extended Update Support (EUS) release or RHEL Lifecycle Support (ELS)."
             )
+            loggerinst.info("Trying to enable the repositories:\n%s" % "\n".join(repos_to_enable))
             # Try first if it's possible to enable EUS repoids. Otherwise try
             # enabling the default RHSM repoids. Otherwise, if it raiess an
             # exception, try to enable the default rhsm-repos
             _submgr_enable_repos(repos_to_enable)
         except SystemExit:
             loggerinst.info(
-                "The RHEL EUS repositories are not possible to enable.\n"
+                "The RHEL repositories are not possible to enable.\n"
                 "Trying to enable standard RHEL repositories as a fallback."
             )
             # Fallback to the default_rhsm_repoids
