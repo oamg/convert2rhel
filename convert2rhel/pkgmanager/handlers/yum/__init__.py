@@ -67,7 +67,8 @@ def _resolve_yum_problematic_dependencies(output):
             packages_to_remove.append(str(resolve_error[0]).replace(" ", ""))
 
     if packages_to_remove:
-        packages_to_remove = set(packages_to_remove)
+        # Need to make each item in the list unique, one pkg can be present more times in the list.
+        packages_to_remove = list(set(packages_to_remove))
         loggerinst.debug(
             "Removing problematic packages to continue with the conversion:\n%s",
             "\n".join(packages_to_remove),
