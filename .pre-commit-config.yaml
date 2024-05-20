@@ -10,7 +10,7 @@ repos:
         language_version: "python3"
         additional_dependencies: [click==7.1.2, black==21.12b0]
   - repo: https://github.com/pylint-dev/pylint
-    rev: v3.1.0
+    rev: v3.2.2
     hooks:
       - id: pylint
         args: [
