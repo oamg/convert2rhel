@@ -233,22 +233,19 @@ class TestRestorablePackageSet:
         return RestorablePackageSet(["subscription-manager", "python-syspurpose"])
 
     @pytest.mark.parametrize(
-        ("pkgs_to_install", "pkgs_to_update", "setopts"),
+        ("pkgs_to_install", "setopts"),
         (
-            (["pkg-1"], [], []),
-            (["pkg-1"], [], ["varsdir=test-dir"]),
-            ([], ["pkg-1"], []),
-            ([], [], ["reposdir=test-dir"]),
-            (["pkg-1"], ["pkg-2"], []),
+            (["pkg-1"], []),
+            (["pkg-1"], ["varsdir=test-dir"]),
+            ([], []),
+            ([], ["reposdir=test-dir"]),
+            (["pkg-1"], []),
         ),
     )
-    def test_smoketest_init(self, pkgs_to_install, pkgs_to_update, setopts):
-        package_set = RestorablePackageSet(
-            pkgs_to_install=pkgs_to_install, pkgs_to_update=pkgs_to_update, setopts=setopts
-        )
+    def test_smoketest_init(self, pkgs_to_install, setopts):
+        package_set = RestorablePackageSet(pkgs_to_install=pkgs_to_install, setopts=setopts)
 
         assert package_set.pkgs_to_install == pkgs_to_install
-        assert package_set.pkgs_to_update == pkgs_to_update
         assert package_set.setopts == setopts
 
         assert package_set.enabled is False
@@ -267,8 +264,6 @@ class TestRestorablePackageSet:
         global_system_info.version = Version(major, minor)
         monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
 
-        package_set.pkgs_to_update = ["json-c.x86_64"]
-
         package_set.enable()
 
         assert package_set.enabled is True
@@ -277,27 +272,6 @@ class TestRestorablePackageSet:
         assert "\nPackages we installed or updated:\n" in caplog.records[-1].message
         assert "python-syspurpose" in caplog.records[-1].message
         assert "subscription-manager" in caplog.records[-1].message
-        assert "json-c" in caplog.records[-1].message
-        assert "json-c" not in package_set.installed_pkgs
-        assert "json-c.x86_64" not in package_set.installed_pkgs
-
-    @centos7
-    def test_enable_set_custom_repository(self, pretend_os, caplog, monkeypatch):
-        monkeypatch.setattr(packages, "call_yum_cmd", CallYumCmdMocked())
-
-        package_set = RestorablePackageSet(["subscription-manager", "python-syspurpose"])
-        package_set.pkgs_to_update = ["json-c.x86_64"]
-        package_set.enable()
-
-        assert package_set.enabled is True
-        assert frozenset(("python-syspurpose", "subscription-manager")) == frozenset(package_set.installed_pkgs)
-
-        assert "\nPackages we installed or updated:\n" in caplog.records[-1].message
-        assert "python-syspurpose" in caplog.records[-1].message
-        assert "subscription-manager" in caplog.records[-1].message
-        assert "json-c" in caplog.records[-1].message
-        assert "json-c" not in package_set.installed_pkgs
-        assert "json-c.x86_64" not in package_set.installed_pkgs
 
     @centos7
     def test_enable_call_yum_cmd_fail(self, pretend_os, package_set, caplog, monkeypatch):
@@ -307,8 +281,7 @@ class TestRestorablePackageSet:
             package_set.enable()
 
         assert (
-            "Failed to install subscription-manager packages. Check the yum output below for details"
-            in caplog.records[-1].message
+            "Failed to install scheduled packages. Check the yum output below for details" in caplog.records[-1].message
         )
 
     def test_enable_already_enabled(self, package_set, monkeypatch):

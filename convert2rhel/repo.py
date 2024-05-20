@@ -89,23 +89,30 @@ def get_rhel_disable_repos_command(disable_repos):
 
 
 def download_repofile(repofile_url):
-    """Download the official repofile pointing to a convert2rhel repository.
+    """Download a repository file from a specific URL.
 
-    :raises exceptions.CriticalError: When the repository file can't be accessed.
-    :returns str: Path to a successfully downloaded repofile
+    :raises exceptions.CriticalError: When the repository file URL is inaccessible.
+    :returns str: Contents of the repofile if successfully downloaded.
     """
     try:
         with closing(urllib.request.urlopen(repofile_url, timeout=15)) as response:
             contents = response.read()
-            filepath = write_temporary_repofile(contents=contents.decode())
-            if filepath:
-                loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
 
-            return filepath
+            if not contents:
+                loggerinst.critical_no_exit("")
+                raise exceptions.CriticalError(
+                    id_="REPOSITORY_FILE_EMPTY_CONTENT",
+                    title="No content was availble in requested repository file.",
+                    description="The requested repository file seems to be empty. No content received when checking for url: %s"
+                    % repofile_url,
+                )
+
+            loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
+            return contents.decode()
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
-            title="Failed to download repository file",
+            title="Failed to download repository file.",
             description="Failed to download the requested repository file from %s.\n"
             "Reason: %s" % (repofile_url, err.reason),
         )
@@ -114,18 +121,22 @@ def download_repofile(repofile_url):
 def write_temporary_repofile(contents):
     """Write a temporary repository file inside the :py:TMP_DIR folder.
 
-    :param contents: The contents to write to the file
-    :type contents: str
+    :param contents str: The contents to write to the file
     :returns: The path to the temporary repofile. If failed to write the
         repofile, it will return None.
+
+    :raises exceptions.CriticalError: In case of not being able to write the
+        repository contents to a file.
     """
     repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
-    repofile_name = None
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
         try:
             store_content_to_file(filename=f.name, content=contents)
-            repofile_name = f.name
+            return f.name
         except (OSError, IOError) as err:
-            loggerinst.warning("OSError({0}): {1}".format(err.errno, err.strerror))
-
-    return repofile_name
+            raise exceptions.CriticalError(
+                id_="WRITE_REPOSITORY_FILE_FAILED",
+                title="Failed to write repository file.",
+                description="Failed to write the requested repository file contents to %s.\n"
+                "Reason: %s" % (f.name, str(err)),
+            )

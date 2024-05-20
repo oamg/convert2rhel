@@ -183,9 +183,8 @@ class RestorablePackageSet(RestorableChange):
         generic, some pieces of that will need to move into this class:
 
         * This class is useful for package installation but not package
-        removal. To replace backup.ChangedRPMPackagesController and
-        back.RestorablePackage, we need to implement removal as well.  Should
-        we do that here or in a second class?
+        removal. To replace back.RestorablePackage, we need to implement
+        removal as well.  Should we do that here or in a second class?
 
         * Do we need to deal with dependency version issues?  With this code,
         if an installed dependency is an older version than the
@@ -210,7 +209,6 @@ class RestorablePackageSet(RestorableChange):
     def __init__(
         self,
         pkgs_to_install,
-        pkgs_to_update=None,
         enable_repos=None,
         disable_repos=None,
         set_releasever=False,
@@ -218,9 +216,7 @@ class RestorablePackageSet(RestorableChange):
         setopts=None,
     ):
         self.pkgs_to_install = pkgs_to_install
-        self.pkgs_to_update = pkgs_to_update or []
         self.installed_pkgs = []
-        self.updated_pkgs = []
 
         self.enable_repos = enable_repos or []
         self.disable_repos = disable_repos or []
@@ -248,14 +244,13 @@ class RestorablePackageSet(RestorableChange):
             loggerinst.info("All packages were already installed")
             return
 
-        loggerinst.info("Downloading requested packages")
-        all_pkgs_to_install = self.pkgs_to_install + self.pkgs_to_update
+        formatted_pkgs_sequence = utils.format_sequence_as_message(self.pkgs_to_install)
 
-        loggerinst.debug("RPMs scheduled for installation: %s" % utils.format_sequence_as_message(all_pkgs_to_install))
+        loggerinst.debug("RPMs scheduled for installation: %s" % formatted_pkgs_sequence)
 
         output, ret_code = call_yum_cmd(
             command="install",
-            args=all_pkgs_to_install,
+            args=self.pkgs_to_install,
             print_output=False,
             # When installing subscription-manager packages, the RHEL repos are
             # not available yet for getting dependencies so we need to use the
@@ -269,33 +264,25 @@ class RestorablePackageSet(RestorableChange):
 
         if ret_code:
             loggerinst.critical_no_exit(
-                "Failed to install subscription-manager packages. Check the yum output below for details:\n\n %s"
-                % output
+                "Failed to install scheduled packages. Check the yum output below for details:\n\n %s" % output
             )
             raise exceptions.CriticalError(
-                id_="FAILED_TO_INSTALL_SUBSCRIPTION_MANAGER_PACKAGES",
-                title="Failed to install subscription-manager packages.",
-                description="convert2rhel was unable to install subscription-manager packages. These packages are required to subscribe the system and install RHEL packages.",
+                id_="FAILED_TO_INSTALL_SCHEDULED_PACKAGES",
+                title="Failed to install scheduled packages.",
+                description="convert2rhel was unable to install scheduled packages.",
                 diagnosis="Failed to install packages %s. Output: %s, Status: %s"
-                % (utils.format_sequence_as_message(all_pkgs_to_install), output, ret_code),
+                % (formatted_pkgs_sequence, output, ret_code),
             )
 
         # Need to do this here instead of in pkghandler.call_yum_cmd() to avoid
         # double printing the output if an error occurred.
         loggerinst.info(output.rstrip("\n"))
-        loggerinst.info(
-            "\nPackages we installed or updated:\n%s" % utils.format_sequence_as_message(all_pkgs_to_install)
-        )
+        loggerinst.info("\nPackages we installed or updated:\n%s" % formatted_pkgs_sequence)
 
         # We could rely on these always being installed/updated when
         # self.enabled is True but putting the values into separate attributes
         # is more friendly if outside code needs to inspect the values.
-        # It is tempting to use the rpms we actually installed to populate these
-        # but we would have to extract both name and arch information from the
-        # rpms if we do that. (for the cornercases where a pkg for one arch is
-        # already installed and we have to install a different one.
         self.installed_pkgs = self.pkgs_to_install[:]
-        self.updated_pkgs = self.pkgs_to_update[:]
 
         super(RestorablePackageSet, self).enable()
 
@@ -303,7 +290,7 @@ class RestorablePackageSet(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Remove installed RHSM packages")
+        loggerinst.task("Rollback: Remove installed packages")
         loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 

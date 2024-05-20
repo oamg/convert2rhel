@@ -146,65 +146,6 @@ class TestNeededSubscriptionManagerPkgs:
         assert subscription.needed_subscription_manager_pkgs()
 
     @pytest.mark.parametrize(
-        ("rhel_version", "json_c_i686", "pkg_list", "upgrade_deps"),
-        (
-            (
-                Version(7, 10),
-                True,
-                ["subscription-manager"],
-                set(),
-            ),
-            (
-                Version(8, 5),
-                True,
-                ["subscription-manager"],
-                {"python3-syspurpose", "json-c.x86_64", "json-c.i686"},
-            ),
-            (Version(8, 5), False, ["subscription-manager"], {"python3-syspurpose", "json-c.x86_64"}),
-        ),
-    )
-    def test__dependencies_to_update(
-        self, rhel_version, json_c_i686, pkg_list, upgrade_deps, monkeypatch, global_system_info
-    ):
-        global_system_info.version = rhel_version
-        global_system_info.id = "centos"
-        global_system_info.is_rpm_installed = lambda _: json_c_i686
-        monkeypatch.setattr(subscription, "system_info", global_system_info)
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkg_information",
-            mock.Mock(
-                return_value=[
-                    create_pkg_information(name="subscription-manager-rhsm-certificates.x86_64"),
-                    create_pkg_information(name="python3-subscription-manager-rhsm"),
-                    create_pkg_information(name="dnf-plugin-subscription-manager"),
-                    create_pkg_information(name="other-package"),
-                    create_pkg_information(name="centos-release"),
-                ]
-            ),
-        )
-        assert upgrade_deps == set(subscription.dependencies_to_update(pkg_list))
-
-    def test__dependencies_to_update_no_pkgs(self, monkeypatch, global_system_info):
-        global_system_info.version = Version(8, 5)
-        global_system_info.id = "centos"
-        monkeypatch.setattr(subscription, "system_info", global_system_info)
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkg_information",
-            mock.Mock(
-                return_value=[
-                    create_pkg_information(name="subscription-manager-rhsm-certificates.x86_64"),
-                    create_pkg_information(name="python3-subscription-manager-rhsm"),
-                    create_pkg_information(name="dnf-plugin-subscription-manager"),
-                    create_pkg_information(name="other-package"),
-                    create_pkg_information(name="centos-release"),
-                ]
-            ),
-        )
-        assert [] == subscription.dependencies_to_update([])
-
-    @pytest.mark.parametrize(
         (
             "version",
             "json_c_i686_installed",

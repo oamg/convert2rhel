@@ -119,23 +119,37 @@ class URLOpenMock:
         pass
 
 
-def test_download_repofile(monkeypatch, tmpdir, caplog):
-    monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents=b"test_file"))
-    tmp_dir = str(tmpdir)
-    monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
+class TestDownloadRepofile:
+    def test_download_repofile(self, monkeypatch, tmpdir, caplog):
+        monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents=b"test_file"))
+        tmp_dir = str(tmpdir)
+        monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
 
-    filepath = repo.download_repofile("https://test")
-    assert os.path.exists(filepath)
-    with open(filepath) as f:
-        assert f.read() == "test_file\n"
-    assert "Successfully downloaded the requested repofile from https://test" in caplog.records[-1].message
+        contents = repo.download_repofile("https://test")
+        assert contents == "test_file"
+        assert "Successfully downloaded the requested repofile from https://test" in caplog.records[-1].message
 
+    def test_failed_to_open_url(self, monkeypatch):
+        monkeypatch.setattr(repo.urllib.request, "urlopen", mock.Mock(side_effect=urllib.error.URLError(reason="test")))
 
-def test_download_repofile_urlerror(monkeypatch):
-    monkeypatch.setattr(repo.urllib.request, "urlopen", mock.Mock(side_effect=urllib.error.URLError(reason="test")))
+        with pytest.raises(exceptions.CriticalError) as execinfo:
+            repo.download_repofile("https://test")
 
-    with pytest.raises(exceptions.CriticalError):
-        repo.download_repofile("https://test")
+        assert "DOWNLOAD_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+        assert "Failed to download repository file." in execinfo._excinfo[1].title
+        assert "test" in execinfo._excinfo[1].description
+
+    def test_no_contents_in_request_url(self, monkeypatch):
+        monkeypatch.setattr(
+            repo.urllib.request, "urlopen", mock.Mock(return_value=URLOpenMock(url="", timeout=1, contents=b""))
+        )
+
+        with pytest.raises(exceptions.CriticalError) as execinfo:
+            repo.download_repofile("https://test")
+
+        assert "REPOSITORY_FILE_EMPTY_CONTENT" == execinfo._excinfo[1].id
+        assert "No content was availble in requested repository file." in execinfo._excinfo[1].title
+        assert "The requested repository file seems to be empty." in execinfo._excinfo[1].description
 
 
 def test_write_temporary_repofile(tmpdir, monkeypatch):
@@ -148,11 +162,13 @@ def test_write_temporary_repofile(tmpdir, monkeypatch):
         assert f.read() == "test\n"
 
 
-def test_write_temporary_repofile_oserror(tmpdir, monkeypatch, caplog):
+def test_write_temporary_repofile_oserror(tmpdir, monkeypatch):
     monkeypatch.setattr(repo, "TMP_DIR", str(tmpdir))
     monkeypatch.setattr(repo, "store_content_to_file", mock.Mock(side_effect=OSError("test")))
 
-    filepath = repo.write_temporary_repofile("test")
+    with pytest.raises(exceptions.CriticalError) as execinfo:
+        repo.write_temporary_repofile("test")
 
-    assert not filepath
-    assert "OSError(None): None" in caplog.records[-1].message
+    assert "WRITE_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+    assert "Failed to write repository file." in execinfo._excinfo[1].title
+    assert "test" in execinfo._excinfo[1].description
