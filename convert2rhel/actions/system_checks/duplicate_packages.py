@@ -35,6 +35,8 @@ class DuplicatePackages(actions.Action):
         output, ret_code = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)
         if not output:
             return
+        # Catching situation when repositories cannot be accessed.
+        # The output from the package-cleanup is: [Errno -2] Name or service not known
         # For el7 machines we have to depend on this output to know the check failed
         if system_info.version.major == 7 and "name or service not known" in output.lower():
             self.duplicate_packages_failure()

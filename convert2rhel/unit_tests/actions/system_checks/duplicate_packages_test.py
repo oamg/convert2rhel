@@ -81,7 +81,6 @@ def test_duplicate_packages_error(
     )
 
 
-# @all_systems
 @pytest.mark.parametrize(
     ("version_string", "output", "ret_code"),
     (
