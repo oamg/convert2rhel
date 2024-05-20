@@ -46,17 +46,13 @@ def test_enabled_repositories(shell):
         if system_release.version.major == 7:
             # Handle the special test case scenario where we use the
             # account with the ELS repositories available
-            if os.path.exists("/els_repos_used"):
-                _check_enabled_repos_rhel7(enabled_repos, els=True)
-            else:
-                _check_enabled_repos_rhel7(enabled_repos)
+            is_els = os.path.exists("/els_repos_used")
+            _check_enabled_repos_rhel7(enabled_repos, els=is_els)
         elif system_release.version.major == 8:
             # Handle the special test case scenario where we use the
             # account with the EUS repositories available
-            if os.path.exists("/eus_repos_used"):
-                _check_enabled_repos_rhel8(enabled_repos, eus=True)
-            else:
-                _check_enabled_repos_rhel8(enabled_repos)
+            is_eus = os.path.exists("/eus_repos_used")
+            _check_enabled_repos_rhel8(enabled_repos, eus=is_eus)
     finally:
         # We need to unregister the system after the conversion
         shell("subscription-manager unregister")

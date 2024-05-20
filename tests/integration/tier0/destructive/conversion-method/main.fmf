@@ -88,7 +88,7 @@ order: 49
         - pre-registered-system-conversion
     test: pytest -m test_pre_registered_conversion
 
-/rhsm_ELS_conversion:
+/rhsm_els_conversion:
     summary: |
         RHSM conversion method using ELS repositories
     description: |

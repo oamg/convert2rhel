@@ -876,13 +876,14 @@ def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
     rhsm.baseurl and server.hostname to be changed.
     This might be dropped when ELS, 8.10, etc. goes actually GA.
     """
-    enablerepo = "client-tools-for-rhel-8-rpms"
-    if SystemInformationRelease.version.major == 7:
-        enablerepo = "client-tools-for-rhel-7-server-rpms"
     # Add the client tools repository to install the subscription-manager from
     # This is mainly for Oracle Linux but does not hurt to do the same for CentOS as well
     _add_client_tools_repo(shell)
-    shell(f"yum install subscription-manager -y --disablerepo=* --enablerepo={enablerepo}")
+    # Since we're using the yum_conf_exclude fixture, which excludes rhn-client*
+    # by default, we need to remove the pacakge to prevent issues during the yum transaction
+    if SystemInformationRelease.distribution == "oracle":
+        shell("yum remove -y rhn-client*")
+    shell(f"yum install subscription-manager -y")
 
     # Point the server hostname to the staging environment,
     # so we don't need to pass it to convert2rhel explicitly
@@ -896,8 +897,9 @@ def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
 
     yield
 
-    shell("yum remove -y subscription-manager")
-    _remove_client_tools_repo(shell)
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        shell("yum remove -y subscription-manager")
+        _remove_client_tools_repo(shell)
 
 
 @pytest.fixture(autouse=True)

@@ -73,7 +73,7 @@ description+: |
                 test+<:
                     - conversion-method/rhsm_eus_account_conversion
 
-        /rhsm_ELS_conversion:
+        /rhsm_els_conversion:
             enabled: false
             adjust+:
                 - enabled: true
@@ -82,7 +82,7 @@ description+: |
                   because: The ELS offering is applicable to EL7 only.
             discover+:
                 test+<:
-                    - conversion-method/rhsm_ELS_conversion
+                    - conversion-method/rhsm_els_conversion
 
         /custom_repositories_conversion:
             environment+:

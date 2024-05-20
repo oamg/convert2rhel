@@ -12,28 +12,23 @@ def els_mock(shell, backup_directory):
     Backs up the convert2rhel/systeminfo.py and modifies the ELS_RELEASE_DATE variable.
     Restores the original version after the test is done.
     """
-    els_startdate_file = shell("find /usr -path '*/convert2rhel/systeminfo.py'").output.strip()
-    els_check_file = shell("find /usr -path '*/convert2rhel/actions/system_checks/els.py'").output.strip()
-    backup_startdate_file = os.path.join(backup_directory, "systeminfo.py.bkp")
-    backup_check_file = os.path.join(backup_directory, "els.py.bkp")
-    file_backup_mapping = {els_startdate_file: backup_startdate_file, els_check_file: backup_check_file}
-    for file, backup in file_backup_mapping.items():
-        assert shell(f"cp {file} {backup}").returncode == 0
+    systeminfo_file = shell("find /usr -path '*/convert2rhel/systeminfo.py'").output.strip()
+    bak_systeminfo_file = os.path.join(backup_directory, "systeminfo.py.bkp")
+    assert shell(f"cp {systeminfo_file} {bak_systeminfo_file}").returncode == 0
 
     original_startdate_value = '"2024-06-12"'
-    original_releasever_value = "if system_info.version.major == 7:"
+    original_releasever_value = "if tool_opts.els and self.version.major == 7:"
 
     def _update_els_mapping(modified_startdate=None, modified_releasever=None):
         if modified_startdate:
-            shell(f"sed -i 's/{original_startdate_value}/{modified_startdate}/' {els_startdate_file}")
+            shell(f"sed -i 's/{original_startdate_value}/{modified_startdate}/' {systeminfo_file}")
         if modified_releasever:
-            shell(f"sed -i 's/{original_releasever_value}/{modified_releasever}/' {els_check_file}")
+            shell(f"sed -i 's/{original_releasever_value}/{modified_releasever}/' {systeminfo_file}")
 
     yield _update_els_mapping
 
     def _restore_els_mapping():
-        for file, backup in file_backup_mapping.items():
-            assert shell(f"mv -v {backup} {file}").returncode == 0
+        assert shell(f"mv -v {bak_systeminfo_file} {systeminfo_file}").returncode == 0
 
     _restore_els_mapping()
 
@@ -42,7 +37,7 @@ REGULAR_REPOID_MSG = "RHEL repository IDs to enable: rhel-7-server-rpms"
 ELS_REPOID_MSG = "RHEL repository IDs to enable: rhel-7-server-els-rpms"
 
 MOCKED_ELS_PHASE = '"1970-01-01"'
-MOCKED_NON_ELS_SYSVER = "if system_info.version.major == 42:"
+MOCKED_NON_ELS_SYSVER = "if tool_opts.els and self.version.major == 42:"
 
 
 els_support_parameters = [

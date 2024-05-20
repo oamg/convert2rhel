@@ -20,6 +20,6 @@ def test_rhsm_els_conversion(convert2rhel, shell, install_and_set_up_subman_to_s
         )
     ) as c2r:
         c2r.expect_exact("Enabling RHEL repositories:")
-        c2r.expect_exact("rhel-7-for-x86_64-els-rpms")
+        c2r.expect_exact("rhel-7-server-els-rpms")
         c2r.expect_exact("Conversion successful!")
     assert c2r.exitstatus == 0
