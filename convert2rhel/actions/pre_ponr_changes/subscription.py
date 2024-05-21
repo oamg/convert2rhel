@@ -99,13 +99,7 @@ class PreSubscription(actions.Action):
                 logger.info("Subscription Manager is already present")
             else:
                 logger.task("Prepare: Subscription Manager - Install packages")
-                # Hack for 1.4: if we install subscription-manager from the UBI repo, it
-                # may require newer versions of packages than provided by the vendor.
-                # (Note: the function is marked private because this is a hack
-                # that should be replaced when we aren't under a release
-                # deadline.
-                update_pkgs = subscription._dependencies_to_update(subscription_manager_pkgs)
-                subscription.install_rhel_subscription_manager(subscription_manager_pkgs, update_pkgs)
+                subscription.install_rhel_subscription_manager(subscription_manager_pkgs)
 
             logger.task("Prepare: Subscription Manager - Verify installation")
             subscription.verify_rhsm_installed()
@@ -113,7 +107,6 @@ class PreSubscription(actions.Action):
             logger.task("Prepare: Install a RHEL product certificate for RHSM")
             product_cert = RestorablePEMCert(_RHSM_PRODUCT_CERT_SOURCE_DIR, _RHSM_PRODUCT_CERT_TARGET_DIR)
             backup.backup_control.push(product_cert)
-
         except SystemExit as e:
             # This should not occur anymore as all the relevant SystemExits has been changed to a CriticalError
             # exception. This exception handler is just a precaution

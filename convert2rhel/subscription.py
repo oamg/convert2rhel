@@ -30,7 +30,7 @@ import dbus
 import dbus.connection
 import dbus.exceptions
 
-from convert2rhel import backup, exceptions, i18n, pkghandler, utils
+from convert2rhel import backup, exceptions, i18n, pkghandler, repo, utils
 from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
@@ -58,7 +58,22 @@ REGISTRATION_TIMEOUT = 180
 # Location of the RHSM generated facts json file.
 RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
-#
+_CLIENT_TOOLS_REPOFILE_MAPPING = {
+    7: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo",
+    8: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo",
+    9: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo",
+}
+
+# Special case for RHEL 8.5 as we have to manually set the releasever to 8.5.
+_CLIENT_TOOLS_RHEL_8_5_REPO = """\
+[client-tools-for-rhel-8-rpms]
+name=Red Hat Client Tools for RHEL 8
+baseurl=https://cdn-public.redhat.com/content/public/addon/dist/client-tools8/8.5/$basearch/os/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+\n
+"""
 
 
 class UnregisterError(Exception):
@@ -624,25 +639,54 @@ def is_registered():
     return False
 
 
-def install_rhel_subscription_manager(pkgs_to_install, pkgs_to_upgrade=None):
+def install_rhel_subscription_manager(pkgs_to_install):
     """
     Install the RHEL versions of the subscription-manager packages.
 
-    ..seealso:: :func:`_relevant_subscription_manager_pkgs` for the list of packages that we install.
-    """
+    ..seealso:: :func:`_relevant_subscription_manager_pkgs` for the list of
+    packages that we install.
 
-    pkgs_to_upgrade = pkgs_to_upgrade or []
+    ..warning::
+        With enabling the client-tools repo we can't ensure that on CentOS
+        Linux 7 the subscription-manager-rhsm-certificates is downloaded from
+        the client-tools repo and not from the CentOS Linux 7 repo.
+
+        The thing is that the CentOS one is missing the Red Hat certificate
+        /etc/rhsm/ca/redhat-uep.pem which is necessary for being able to
+        register the system to Red Hat Subscription Management (sometimes
+        referred to as Customer Portal). However, the
+        :class:`InstallRedHatCertForYumRepositories` action takes care of that
+        shortcoming by installing the certificate.
+    """
     backedup_reposdir = backup.get_backedup_system_repos()
     varsdir = DEFAULT_YUM_VARS_DIR if system_info.version.major == 7 else DEFAULT_DNF_VARS_DIR
     backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 
+    setopts = []
+    # Oracle Linux 7 needs to set the exclude option to avoid installing the
+    # rhc-client-tools package instead of subscription-manager, as it is marked
+    # as obsolete in the subscription-manager specfile for OL7. This option in
+    # yum will make sure to ignore the rhn-client-tools package and install the
+    # correct packages we are requesting.
+    if system_info.id == "oracle" and system_info.version.major == 7:
+        setopts.append("exclude=rhn-client-tools")
+
+    client_tools_repofile_path = None
+    if system_info.id == "centos" and system_info.version.major == 8:
+        client_tools_repofile_path = repo.write_temporary_repofile(_CLIENT_TOOLS_RHEL_8_5_REPO)
+    else:
+        repofile_url = _CLIENT_TOOLS_REPOFILE_MAPPING[system_info.version.major]
+        contents = repo.download_repofile(repofile_url)
+        client_tools_repofile_path = repo.write_temporary_repofile(contents)
+
+    reposdir = [os.path.dirname(client_tools_repofile_path), backedup_reposdir]
+    setopts.append("reposdir=%s" % ",".join(reposdir))
+    setopts.append("varsdir=%s" % backedup_varsdir)
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
-        pkgs_to_upgrade,
-        reposdir=backedup_reposdir,
         custom_releasever=system_info.version.major,
         set_releasever=True,
-        varsdir=backedup_varsdir,
+        setopts=setopts,
     )
     backup.backup_control.push(installed_pkg_set)
 
@@ -873,38 +917,6 @@ def needed_subscription_manager_pkgs():
     loggerinst.debug("Packages we will install: %s" % utils.format_sequence_as_message(to_install_pkgs))
 
     return to_install_pkgs
-
-
-def _dependencies_to_update(pkg_list):
-    """
-    We are trying to get convert2rhel to only install the subset of subscription-manager packages
-    which it requires.  However, when we do have to install packages, we are getting them from the
-    UBI repositories where the version of subscription-manager may need a newer vrsion of
-    dependencies than the vendor has. For this reason, we may need to install some dependencies from
-    the UBI repositories even though the vendor versions of them are already installed.
-
-    Currently, python-syspurpose and json-c are the only problematic packages so make
-    sure that they are added to the install set.
-
-    .. seealso:: Bug report illustrating the version problem:
-        https://github.com/oamg/convert2rhel/pull/494
-    """
-    if not pkg_list:
-        return []
-
-    # Only apply this kludge on RHEL 8-based systems. We have detected the problem on CentOS/Alma/Rocky 8.
-    if not system_info.version.major == 8:
-        return []
-
-    # Package names that we require differ on various platforms so we need to
-    # extract them from the list for this platform.
-    pkgs_for_this_platform = _relevant_subscription_manager_pkgs()
-    upgrade_deps = (p for p in pkgs_for_this_platform if "syspurpose" in p or "json-c" in p)
-
-    # Make sure we don't call these upgrades if they need to be installed.
-    upgrade_deps = [p for p in upgrade_deps if p not in pkg_list]
-
-    return upgrade_deps
 
 
 def _relevant_subscription_manager_pkgs():

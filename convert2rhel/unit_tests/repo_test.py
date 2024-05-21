@@ -22,12 +22,12 @@ import os
 import pytest
 import six
 
-from convert2rhel import repo
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel import exceptions, repo
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
+from six.moves import mock, urllib
 
 
 @pytest.mark.parametrize(
@@ -101,3 +101,74 @@ def test_get_rhel_disable_repos_command(disable_repos, command):
     output = repo.get_rhel_disable_repos_command(disable_repos)
 
     assert output == command
+
+
+class URLOpenMock:
+    def __init__(self, url, timeout, contents):
+        self.url = url
+        self.timeout = timeout
+        self.contents = contents
+
+    def __call__(self, *args, **kwds):
+        return self
+
+    def read(self):
+        return self.contents
+
+    def close(self):
+        pass
+
+
+class TestDownloadRepofile:
+    def test_download_repofile(self, monkeypatch, tmpdir, caplog):
+        monkeypatch.setattr(repo.urllib.request, "urlopen", URLOpenMock(url=None, timeout=1, contents=b"test_file"))
+        tmp_dir = str(tmpdir)
+        monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
+
+        contents = repo.download_repofile("https://test")
+        assert contents == "test_file"
+        assert "Successfully downloaded the requested repofile from https://test" in caplog.records[-1].message
+
+    def test_failed_to_open_url(self, monkeypatch):
+        monkeypatch.setattr(repo.urllib.request, "urlopen", mock.Mock(side_effect=urllib.error.URLError(reason="test")))
+
+        with pytest.raises(exceptions.CriticalError) as execinfo:
+            repo.download_repofile("https://test")
+
+        assert "DOWNLOAD_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+        assert "Failed to download repository file" in execinfo._excinfo[1].title
+        assert "test" in execinfo._excinfo[1].description
+
+    def test_no_contents_in_request_url(self, monkeypatch):
+        monkeypatch.setattr(
+            repo.urllib.request, "urlopen", mock.Mock(return_value=URLOpenMock(url="", timeout=1, contents=b""))
+        )
+
+        with pytest.raises(exceptions.CriticalError) as execinfo:
+            repo.download_repofile("https://test")
+
+        assert "REPOSITORY_FILE_EMPTY_CONTENT" == execinfo._excinfo[1].id
+        assert "No content available in a repository file" in execinfo._excinfo[1].title
+        assert "The requested repository file seems to be empty." in execinfo._excinfo[1].description
+
+
+def test_write_temporary_repofile(tmpdir, monkeypatch):
+    tmp_dir = str(tmpdir)
+    monkeypatch.setattr(repo, "TMP_DIR", tmp_dir)
+    filepath = repo.write_temporary_repofile("test")
+
+    assert os.path.exists(filepath)
+    with open(filepath) as f:
+        assert f.read() == "test\n"
+
+
+def test_write_temporary_repofile_oserror(tmpdir, monkeypatch):
+    monkeypatch.setattr(repo, "TMP_DIR", str(tmpdir))
+    monkeypatch.setattr(repo, "store_content_to_file", mock.Mock(side_effect=OSError("test")))
+
+    with pytest.raises(exceptions.CriticalError) as execinfo:
+        repo.write_temporary_repofile("test")
+
+    assert "STORE_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+    assert "Failed to store a repository file" in execinfo._excinfo[1].title
+    assert "test" in execinfo._excinfo[1].description
