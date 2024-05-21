@@ -63,9 +63,7 @@ def test_duplicate_packages_error(
 
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=(output, 0)))
     monkeypatch.setattr(system_info, "version", version_string)
-
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
-
     duplicate_packages_action.run()
 
     unit_tests.assert_actions_result(
