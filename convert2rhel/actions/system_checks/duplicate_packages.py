@@ -18,6 +18,7 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, utils
+from convert2rhel.systeminfo import system_info
 
 
 logger = logging.getLogger(__name__)
@@ -31,10 +32,19 @@ class DuplicatePackages(actions.Action):
         super(DuplicatePackages, self).run()
 
         logger.task("Prepare: Check if there are any duplicate installed packages on the system")
-        output, _ = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)
+        output, ret_code = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)
         if not output:
             return
-
+        # Catching situation when repositories cannot be accessed.
+        # The output from the package-cleanup is: [Errno -2] Name or service not known
+        # For el7 machines we have to depend on this output to know the check failed
+        if system_info.version.major == 7 and "name or service not known" in output.lower():
+            self.duplicate_packages_failure()
+            return
+        # For el8 machines we can depend on just the return code being 1 to know the check failed
+        if system_info.version.major == 8 and ret_code == 1:
+            self.duplicate_packages_failure()
+            return
         duplicate_packages = filter(None, output.split("\n"))
         if duplicate_packages:
             self.set_result(
@@ -47,3 +57,16 @@ class DuplicatePackages(actions.Action):
                 " The command 'package-cleanup' can be used to automatically remove duplicate packages"
                 " on the system.",
             )
+
+    def duplicate_packages_failure(self):
+        """Raise a warning in the event the duplicate packages check cannot be executed."""
+
+        self.add_message(
+            level="WARNING",
+            id="DUPLICATE_PACKAGES_FAILURE",
+            title="Duplicate packages check unsuccessful",
+            description="The duplicate packages check did not run successfully.",
+            diagnosis="The check likely failed due to lack of access to enabled repositories on the system.",
+            remediations="Ensure that you can access all repositories enabled on the system and re-run convert2rhel."
+            " If the issue still persists manually check if there are any package duplicates on the system and remove them to ensure a successful conversion.",
+        )
