@@ -151,7 +151,11 @@ class TestRestorablePackage:
 
         rp = RestorablePackage(pkgs=["test.rpm"])
         rp.enabled = True
-        rp.restore()
+
+        with pytest.raises(exceptions.CriticalError) as err:
+            rp.restore()
+
+        assert err.value.diagnosis == "Couldn't find a backup for test.rpm package."
         assert utils.remove_orphan_folders.call_count == 1
         assert "Couldn't find a backup for test.rpm package." in caplog.records[-1].message
 

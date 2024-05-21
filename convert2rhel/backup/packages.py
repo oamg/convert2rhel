@@ -177,9 +177,17 @@ class RestorablePackage(RestorableChange):
         loggerinst.task("Rollback: Install removed packages")
         if not self._backedup_pkgs_paths:
             loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
-            return
+            raise exceptions.CriticalError(
+                id_="FAILED_TO_INSTALL_PACKAGES",
+                title="Couldn't find package backup",
+                description=(
+                    "While attempting to roll back changes, we encountered "
+                    "an unexpected failure while we cannot find a package backup."
+                ),
+                diagnosis="Couldn't find a backup for %s package." % utils.format_sequence_as_message(self.pkgs),
+            )
 
-        self._install_local_rpms(replace=True, critical=False)
+        self._install_local_rpms(replace=True, critical=True)
 
         super(RestorablePackage, self).restore()
 
