@@ -63,7 +63,7 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
         c2r.expect_exact("ERROR - (OVERRIDABLE) PACKAGE_UPDATES::OUT_OF_DATE_PACKAGES - Outdated packages detected")
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2
 
     # We need to set envar to override the out of date packages check
     # to perform the full conversion
@@ -78,8 +78,7 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
             TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
-        # TODO(danmyway) Uncomment when the https://issues.redhat.com/browse/RHELC-1291 gets fixed
-        # c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         c2r.expect_exact("Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
     assert c2r.exitstatus == 0
