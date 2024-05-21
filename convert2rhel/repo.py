@@ -99,12 +99,15 @@ def download_repofile(repofile_url):
             contents = response.read()
 
             if not contents:
-                loggerinst.critical_no_exit("")
+                description = (
+                    "The requested repository file seems to be empty. No content received when checking for url: %s"
+                    % repofile_url
+                )
+                loggerinst.critical_no_exit(description)
                 raise exceptions.CriticalError(
                     id_="REPOSITORY_FILE_EMPTY_CONTENT",
-                    title="No content was availble in requested repository file.",
-                    description="The requested repository file seems to be empty. No content received when checking for url: %s"
-                    % repofile_url,
+                    title="No content available in a repository file",
+                    description=description,
                 )
 
             loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
@@ -112,14 +115,14 @@ def download_repofile(repofile_url):
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
-            title="Failed to download repository file.",
+            title="Failed to download repository file",
             description="Failed to download the requested repository file from %s.\n"
             "Reason: %s" % (repofile_url, err.reason),
         )
 
 
 def write_temporary_repofile(contents):
-    """Write a temporary repository file inside the :py:TMP_DIR folder.
+    """Store a temporary repository file inside the :py:TMP_DIR folder.
 
     :param contents str: The contents to write to the file
     :returns: The path to the temporary repofile. If failed to write the
@@ -135,8 +138,8 @@ def write_temporary_repofile(contents):
             return f.name
         except (OSError, IOError) as err:
             raise exceptions.CriticalError(
-                id_="WRITE_REPOSITORY_FILE_FAILED",
-                title="Failed to write repository file.",
+                id_="STORE_REPOSITORY_FILE_FAILED",
+                title="Failed to store a repository file",
                 description="Failed to write the requested repository file contents to %s.\n"
                 "Reason: %s" % (f.name, str(err)),
             )

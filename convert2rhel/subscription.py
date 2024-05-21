@@ -663,25 +663,23 @@ def install_rhel_subscription_manager(pkgs_to_install):
     backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 
     setopts = []
-    # Oracle Linux 7 needs to set the obsoletes option to avoid installing the
+    # Oracle Linux 7 needs to set the exclude option to avoid installing the
     # rhc-client-tools package instead of subscription-manager, as it is marked
     # as obsolete in the subscription-manager specfile for OL7. This option in
-    # yum will make sure to ignore the obsoletes request and install the
+    # yum will make sure to ignore the rhn-client-tools package and install the
     # correct packages we are requesting.
-    # WARNING: This obsoletes will be applicable to all packages in the
-    # transaction.
     if system_info.id == "oracle" and system_info.version.major == 7:
         setopts.append("exclude=rhn-client-tools")
 
-    client_tools_repofile = None
+    client_tools_repofile_path = None
     if system_info.id == "centos" and system_info.version.major == 8:
-        client_tools_repofile = repo.write_temporary_repofile(_CLIENT_TOOLS_RHEL_8_5_REPO)
+        client_tools_repofile_path = repo.write_temporary_repofile(_CLIENT_TOOLS_RHEL_8_5_REPO)
     else:
         repofile_url = _CLIENT_TOOLS_REPOFILE_MAPPING[system_info.version.major]
         contents = repo.download_repofile(repofile_url)
-        client_tools_repofile = repo.write_temporary_repofile(contents)
+        client_tools_repofile_path = repo.write_temporary_repofile(contents)
 
-    reposdir = [os.path.dirname(client_tools_repofile), backedup_reposdir]
+    reposdir = [os.path.dirname(client_tools_repofile_path), backedup_reposdir]
     setopts.append("reposdir=%s" % ",".join(reposdir))
     setopts.append("varsdir=%s" % backedup_varsdir)
     installed_pkg_set = RestorablePackageSet(

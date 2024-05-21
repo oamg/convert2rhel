@@ -136,7 +136,7 @@ class TestDownloadRepofile:
             repo.download_repofile("https://test")
 
         assert "DOWNLOAD_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
-        assert "Failed to download repository file." in execinfo._excinfo[1].title
+        assert "Failed to download repository file" in execinfo._excinfo[1].title
         assert "test" in execinfo._excinfo[1].description
 
     def test_no_contents_in_request_url(self, monkeypatch):
@@ -148,7 +148,7 @@ class TestDownloadRepofile:
             repo.download_repofile("https://test")
 
         assert "REPOSITORY_FILE_EMPTY_CONTENT" == execinfo._excinfo[1].id
-        assert "No content was availble in requested repository file." in execinfo._excinfo[1].title
+        assert "No content available in a repository file" in execinfo._excinfo[1].title
         assert "The requested repository file seems to be empty." in execinfo._excinfo[1].description
 
 
@@ -169,6 +169,6 @@ def test_write_temporary_repofile_oserror(tmpdir, monkeypatch):
     with pytest.raises(exceptions.CriticalError) as execinfo:
         repo.write_temporary_repofile("test")
 
-    assert "WRITE_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
-    assert "Failed to write repository file." in execinfo._excinfo[1].title
+    assert "STORE_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+    assert "Failed to store a repository file" in execinfo._excinfo[1].title
     assert "test" in execinfo._excinfo[1].description
