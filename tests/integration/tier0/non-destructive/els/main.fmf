@@ -1,0 +1,43 @@
+summary: |
+    Verify the ELS candidates are handled correctly
+
+tag+:
+    - els
+
+enabled: false
+
+adjust+:
+    enabled: true
+    when: distro == centos-7, oracle-7
+    because: Only RHEL 7.9 has the ELS phase
+
+/els_support:
+    description: |
+        Test verifying correct behavior when converting ELS candidates.
+        ELS_RELEASE_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+        Verified scenarios (handled by pytest parametrization):
+        1/ The system is considered as a non-ELS. This is done by modifying the major system version
+            in the els.py file.
+            The --els option is used in the command. Only regular (non-els) repoids should be enabled.
+        2/ The start date of the ELS phase is set far to the past to simulate the ELS phase began.
+            The --els option *is used*.
+            The report is expected to print out a WARNING and advise to use the --els option.
+    tag+:
+        - test-els-support
+    test: |
+      pytest -m test_els_support
+
+/non_els_account:
+    # We expect this test to fail given a missing logic in the convert2rhel code,
+    # see https://issues.redhat.com/browse/RHELC-1554
+    # this is a safety measure to enable the test when the issue gets fixed
+    result: xfail
+
+    description: |
+        Verify that Convert2RHEL is working properly when ELS repositories are not available for conversions
+        (the account does not have the ELS SKU available) to RHEL ELS version (7.9)
+        and the --els option is provided. The regular repositories should be enabled as a fallback option.
+    tag+:
+        - test-rhsm-non-els-account
+    test: |
+      pytest -m test_rhsm_non_els_account

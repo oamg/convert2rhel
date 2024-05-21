@@ -867,3 +867,49 @@ def backup_directory(shell, request):
     yield backup_path
 
     shell(f"rm -rf {backup_path}")
+
+
+@pytest.fixture()
+def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
+    """ "
+    A fixture to install subscription-manager and set up to point to a testing environments.
+    rhsm.baseurl and server.hostname to be changed.
+    This might be dropped when ELS, 8.10, etc. goes actually GA.
+    """
+    # Add the client tools repository to install the subscription-manager from
+    # This is mainly for Oracle Linux but does not hurt to do the same for CentOS as well
+    _add_client_tools_repo(shell)
+    # Since we're using the yum_conf_exclude fixture, which excludes rhn-client*
+    # by default, we need to remove the pacakge to prevent issues during the yum transaction
+    if SystemInformationRelease.distribution == "oracle":
+        shell("yum remove -y rhn-client*")
+    shell(f"yum install subscription-manager -y")
+
+    # Point the server hostname to the staging environment,
+    # so we don't need to pass it to convert2rhel explicitly
+    # RHSM baseurl gets pointed to a stage cdn
+    shell(
+        "subscription-manager config --rhsm.baseurl=https://{}  --server.hostname={}".format(
+            TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
+        ),
+        silent=True,
+    )
+
+    yield
+
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        shell("yum remove -y subscription-manager")
+        _remove_client_tools_repo(shell)
+
+
+@pytest.fixture(autouse=True)
+def workaround_remove_uek(shell):
+    """
+    Fixture to remove the Unbreakable Enterprise Kernel package.
+    The package might cause dependency issues.
+    Reference issue https://issues.redhat.com/browse/RHELC-1544
+    """
+    if SystemInformationRelease.distribution == "oracle":
+        shell("yum remove -y kernel-uek", silent=True)
+
+    yield
