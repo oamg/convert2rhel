@@ -40,7 +40,7 @@ loggerinst = logging.getLogger(__name__)
 # an error.
 MAX_YUM_CMD_CALLS = 3
 
-_VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
+VERSIONLOCK_FILE_PATH = "/etc/yum/pluginconf.d/versionlock.list"  # This file is used by the dnf plugin as well
 
 #
 # Regular expressions used to find package names in yum output
@@ -875,12 +875,12 @@ def clear_versionlock():
     YUM works correctly even with DNF thanks to symlinks created by DNF.
     """
 
-    if os.path.isfile(_VERSIONLOCK_FILE_PATH) and os.path.getsize(_VERSIONLOCK_FILE_PATH) > 0:
+    if os.path.isfile(VERSIONLOCK_FILE_PATH) and os.path.getsize(VERSIONLOCK_FILE_PATH) > 0:
         loggerinst.warning("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         loggerinst.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
-        backup.backup_control.push(RestorableFile(_VERSIONLOCK_FILE_PATH))
+        backup.backup_control.push(RestorableFile(VERSIONLOCK_FILE_PATH))
 
         loggerinst.info("Clearing package versions locks...")
         pkgmanager.call_yum_cmd("versionlock", args=["clear"], print_output=False)

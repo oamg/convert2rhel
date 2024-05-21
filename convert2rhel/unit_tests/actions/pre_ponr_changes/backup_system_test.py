@@ -251,6 +251,10 @@ class TestBackupSystem:
         (
             ("S.5.?..T.     c   /etc/os-release", "File {filepath} already backed up - not backing up again"),
             ("S.5.?..T.     c   /etc/yum/vars/filename_4", "File {filepath} already backed up - not backing up again"),
+            (
+                "S.5....T.     c   /etc/yum/pluginconf.d/versionlock.list",
+                "File {filepath} already backed up - not backing up again",
+            ),
         ),
     )
     def test_backup_package_file_run(
