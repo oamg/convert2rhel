@@ -22,6 +22,7 @@ import re
 from convert2rhel import actions, backup, exceptions, subscription
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
+from convert2rhel.pkghandler import _VERSIONLOCK_FILE_PATH
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
@@ -148,7 +149,7 @@ class BackupPackageFiles(actions.Action):
         package_files_changes = self._get_changed_package_files()
 
         # Paths and files already backed up
-        backed_up_files = [system_release_file.filepath, os_release_file.filepath]
+        backed_up_files = [system_release_file.filepath, os_release_file.filepath, _VERSIONLOCK_FILE_PATH]
         backed_up_paths = ["/etc/yum.repos.d", "/etc/yum/vars", "/etc/dnf/vars"]
 
         for file in package_files_changes:
