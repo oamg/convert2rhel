@@ -236,6 +236,14 @@ class Breadcrumbs:
             RHSM_CUSTOM_FACTS_FILE,
         )
 
+        # Add in the warning about the system back up here!
+        loggerinst.warnign(
+            "Convert2RHEL modifies the systems during the analysis and then rolls back these"
+            " changes when the analysis is complete. In rare cases, this rollback can fail.\n"
+            "By continuing, you confirm that you have made a system backup and verified that"
+            " you can restore from the backup."
+        )
+
         utils.ask_to_continue()
 
 
