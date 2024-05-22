@@ -235,6 +235,7 @@ class Breadcrumbs:
             "- Convert2RHEL related environment variables\n\n",
             RHSM_CUSTOM_FACTS_FILE,
         )
+        utils.ask_to_continue()
 
         # Add in the warning about the system back up here!
         loggerinst.warnign(
