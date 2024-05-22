@@ -94,3 +94,16 @@ tag+:
             - terminate-on-registration-success
         test: |
             pytest -m test_terminate_on_registration_success
+
+/test_rollback_failure:
+    summary+: |
+        Unsuccessful rollback exits with code 1
+    description+: |
+        Make os-release file immutable. This will cause the
+        conversion rollback to fail (https://issues.redhat.com/browse/RHELC-1248).
+        Verify that the analysis and conversion ends with exit code 1
+        respecting the failure (https://issues.redhat.com/browse/RHELC-1275).
+    tag+:
+        - test-rollback-failure
+    test: |
+        pytest -m test_rollback_failure

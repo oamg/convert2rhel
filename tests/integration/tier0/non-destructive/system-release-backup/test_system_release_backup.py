@@ -37,7 +37,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
     ) as c2r:
         c2r.expect("Unable to find the /etc/system-release file containing the OS name and version")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
@@ -54,7 +54,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration,
     """
     assert shell("find /etc/os-release").returncode == 0
 
-    with convert2rhel("--debug") as c2r:
+    with convert2rhel("--debug", unregister=True) as c2r:
         # We need to get past the data collection acknowledgement.
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")

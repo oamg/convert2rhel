@@ -64,8 +64,12 @@ description+: |
             adjust+:
                 - enabled: true
                   when: distro == oracle-7, centos-7
-            environment+:
-                PACKAGES: gnome-documents-libs shim-x64 libreport-plugin-mantisbt
+                - environment+:
+                    PACKAGES: gnome-documents-libs shim-x64 libreport-plugin-mantisbt
+                  when: distro == oracle
+                - environment+:
+                    PACKAGES: gnome-documents-libs libreport-plugin-mantisbt
+                  when: distro == centos
 
 
     /one_kernel_scenario:

@@ -63,4 +63,4 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages, convert2rhel_r
             # Expect rollback, otherwise TIMEOUT
             c2r.expect("WARNING - Abnormal exit! Performing rollback", timeout=10)
 
-        assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 1

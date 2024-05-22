@@ -902,14 +902,14 @@ def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
         _remove_client_tools_repo(shell)
 
 
-@pytest.fixture(autouse=True)
-def workaround_remove_uek(shell):
+@pytest.fixture(scope="session", autouse=True)
+def workaround_remove_uek():
     """
     Fixture to remove the Unbreakable Enterprise Kernel package.
     The package might cause dependency issues.
     Reference issue https://issues.redhat.com/browse/RHELC-1544
     """
     if SystemInformationRelease.distribution == "oracle":
-        shell("yum remove -y kernel-uek", silent=True)
+        subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False)
 
     yield

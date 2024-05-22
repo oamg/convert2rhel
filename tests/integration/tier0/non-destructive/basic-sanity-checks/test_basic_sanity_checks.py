@@ -21,12 +21,12 @@ def test_check_user_privileges(shell):
     # Set user to non-root entity 'testuser' and run c2r
     result = shell("runuser -l testuser -c 'convert2rhel'")
     # Check the program exits as it is required to be run by root
-    assert result.returncode != 0
+    assert result.returncode == 1
     # Check the program exits for the correct reason
     assert "The tool needs to be run under the root user." in result.output
     assert "No changes were made to the system." in result.output
 
-    # Delete testuser (if present)
+    # Delete testuser
     assert shell(f"userdel -r '{user}'").returncode == 0
 
 
@@ -47,7 +47,7 @@ def test_smoke_basic(shell):
     """
     assert shell("convert2rhel --help").returncode == 0
     assert shell("convert2rhel -h").returncode == 0
-    assert shell("convert2rhel <<< n").returncode != 0
+    assert shell("convert2rhel <<< n").returncode == 1
 
 
 @pytest.mark.test_log_file_exists
@@ -55,9 +55,13 @@ def test_log_file_verification(shell):
     """
     Verify that the log file was created by the convert2rhel run.
     """
-    assert shell("convert2rhel <<< n").returncode != 0
+    log_file = "/var/log/convert2rhel/convert2rhel.log"
+    if os.path.exists(log_file):
+        os.remove(log_file)
 
-    assert os.path.exists("/var/log/convert2rhel/convert2rhel.log")
+    assert shell("convert2rhel <<< n").returncode == 1
+
+    assert os.path.exists(log_file)
 
 
 @pytest.fixture(scope="function")
@@ -95,7 +99,7 @@ def c2r_version(request):
 
 
 @pytest.mark.test_version_latest_or_newer
-@pytest.mark.parametrize("version", ["42.0.0"])
+@pytest.mark.parametrize("version", ["420.0.0"])
 def test_c2r_latest_newer(convert2rhel, c2r_version, version):
     """
     Verify that running latest or newer version does not interfere with running the conversion.
@@ -110,7 +114,7 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_version_older_no_envar
@@ -139,7 +143,7 @@ def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_version_older_with_envar
@@ -167,7 +171,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_clean_cache
@@ -185,7 +189,7 @@ def test_clean_cache(convert2rhel):
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_log_rhsm_error
@@ -218,7 +222,7 @@ def test_rhsm_error_logged(convert2rhel):
         # certificate
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
     # Verify the error message is not present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:
@@ -251,7 +255,7 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
         # Verify the file is not created if user refuses the collection.
         assert not os.path.exists(CONVERT2RHEL_FACTS_FILE)
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_analyze_incomplete_rollback
@@ -278,8 +282,8 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
             )
             == 0
         )
-        # The conversion should fail
-        assert c2r.exitstatus != 0
+    # The conversion should fail
+    assert c2r.exitstatus == 1
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement
@@ -293,7 +297,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
         )
         c2r.sendcontrol("c")
 
-        assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_analyze_no_rpm_va_option
@@ -308,3 +312,4 @@ def test_analyze_no_rpm_va_option(convert2rhel):
         c2r.expect_exact("Calling command 'rpm -Va'")
 
         c2r.sendcontrol("c")
+    assert c2r.exitstatus == 1

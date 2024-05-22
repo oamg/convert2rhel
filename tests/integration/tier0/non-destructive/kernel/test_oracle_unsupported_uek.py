@@ -38,6 +38,5 @@ def test_bad_conversion(shell, convert2rhel, unbreakable_kernel):
                 "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
                 timeout=600,
             )
-            c2r.sendcontrol("c")
 
-            assert c2r.exitstatus != 0
+        assert c2r.exitstatus == 2

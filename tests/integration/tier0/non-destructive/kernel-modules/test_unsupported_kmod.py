@@ -75,7 +75,7 @@ def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel
     ) as c2r:
         c2r.expect("ENSURE_KERNEL_MODULES_COMPATIBILITY::UNSUPPORTED_KERNEL_MODULES")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 2
 
 
 @pytest.mark.test_custom_module_not_loaded
@@ -118,7 +118,7 @@ def test_do_not_error_if_module_is_not_loaded(shell, convert2rhel):
         assert c2r.expect("All loaded kernel modules are available in RHEL") == 0
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.fixture()
@@ -151,7 +151,7 @@ def test_error_if_module_is_force_loaded(shell, convert2rhel, forced_kmods):
         assert c2r.expect("TAINTED_KMODS::TAINTED_KMODS_DETECTED - Tainted kernel modules detected") == 0
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.parametrize("envars", [["CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP"]])
@@ -184,7 +184,7 @@ def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.test_tainted_kernel_modules_error
@@ -210,7 +210,7 @@ def test_tainted_kernel_modules_error(custom_kmod, convert2rhel):
         )
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
 
 
 @pytest.mark.parametrize("envars", [["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"]])
@@ -240,4 +240,4 @@ def test_envar_overrides_unsupported_module_loaded(
 
         c2r.sendcontrol("c")
 
-    assert c2r.exitstatus != 0
+    assert c2r.exitstatus == 1
