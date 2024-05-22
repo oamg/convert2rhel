@@ -4,7 +4,11 @@ summary: |
 tag+:
     - non-destructive
     - satellite
-
+enabled: false
+adjust+:
+    enabled: true
+    when: distro == centos-7
+    because: currently we have satellite key only for CentOS7
 /enabled_repositories_after_analysis:
     description: |
         This test will perform the following operations:

@@ -22,6 +22,7 @@ def collect_enabled_repositories(shell):
 
 
 @pytest.mark.test_enabled_repositories_after_analysis
+@pytest.mark.parametrize("satellite_registration", ["RHEL7_AND_CENTOS7_SAT_REG"], indirect=True)
 def test_enabled_repositories_after_analysis(shell, convert2rhel, satellite_registration):
     """Test analysis systems not connected to the Internet but requiring sub-mgr (e.g. managed by Satellite).
 
@@ -33,7 +34,9 @@ def test_enabled_repositories_after_analysis(shell, convert2rhel, satellite_regi
     enabled_repositories_prior_analysis = collect_enabled_repositories(shell)
 
     with convert2rhel("analyze -y --debug") as c2r:
-        c2r.expect("Rollback: Enabling RHSM repositories")
+        c2r.expect("Enabling RHEL repositories:")
+        c2r.expect("rhel-7-server-rpms")
+        c2r.expect("Rollback: Restoring state of the repositories")
 
     assert c2r.exitstatus == 0
 
