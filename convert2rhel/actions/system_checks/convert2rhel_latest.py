@@ -228,7 +228,7 @@ class Convert2rhelLatest(actions.Action):
 
                 else:
                     self.set_result(
-                        level="ERROR",
+                        level="OVERRIDABLE",
                         id="OUT_OF_DATE",
                         title="Outdated convert2rhel version detected",
                         description="An outdated convert2rhel version has been detected",

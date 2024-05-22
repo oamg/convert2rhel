@@ -139,7 +139,7 @@ class TestCheckConvert2rhelLatest:
 
         unit_tests.assert_actions_result(
             convert2rhel_latest_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
@@ -557,7 +557,7 @@ class TestCheckConvert2rhelLatest:
 
         unit_tests.assert_actions_result(
             convert2rhel_latest_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
@@ -742,7 +742,7 @@ class TestCheckConvert2rhelLatest:
 
         unit_tests.assert_actions_result(
             convert2rhel_latest_action,
-            level="ERROR",
+            level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
