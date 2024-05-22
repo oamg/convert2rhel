@@ -218,19 +218,20 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_excl
         4/ Run the analysis and check that the transaction was successful.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel(
-            "analyze --serverurl {} --username {} --password {} --pool {} --debug -y".format(
-                TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
-            )
-        ) as c2r:
-            c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
-
         try:
-            assert c2r.exitstatus == 1
-        except AssertionError:
+            with convert2rhel(
+                "analyze --serverurl {} --username {} --password {} --pool {} --debug -y".format(
+                    TEST_VARS["RHSM_SERVER_URL"],
+                    TEST_VARS["RHSM_USERNAME"],
+                    TEST_VARS["RHSM_PASSWORD"],
+                    TEST_VARS["RHSM_POOL"],
+                )
+            ) as c2r:
+                c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
+
+            assert c2r.exitstatus == 0
+        except:  # pylint: disable=W0702
             shell(
                 "tmt-report-result /tests/integration/tier0/non-destructive/single-yum-transaction-validation/override_exclude_list_in_yum_config FAIL"
             )
+            raise

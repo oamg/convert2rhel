@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import SYSTEM_RELEASE_ENV
 
 
 @pytest.fixture(scope="function")
@@ -76,14 +76,14 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     Verify the IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel("-y --debug") as c2r:
-            c2r.expect("Check if the loaded kernel version is the most recent")
-            c2r.expect_exact("(OVERRIDABLE) IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION")
-            c2r.sendcontrol("c")
-
         try:
+            with convert2rhel("-y --debug") as c2r:
+                c2r.expect("Check if the loaded kernel version is the most recent")
+                c2r.expect_exact("(OVERRIDABLE) IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION")
+                c2r.sendcontrol("c")
+
             assert c2r.exitstatus == 1
-        except AssertionError:
+        except:  # pylint: disable=W0702
             shell(
                 "tmt-report-result /tests/integration/tier0/non-destructive/kernel/test_kernel_check_verification/non_latest_kernel_error FAIL"
             )

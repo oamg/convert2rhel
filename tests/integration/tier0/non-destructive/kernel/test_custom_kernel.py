@@ -107,17 +107,19 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel, hybrid_rocky_image):
         os_vendor = "Rocky"
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel("--debug") as c2r:
-            # We need to get past the data collection acknowledgement.
-            c2r.expect("Continue with the system conversion?")
-            c2r.sendline("y")
-
-            c2r.expect("WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor))
-            c2r.expect("RHEL_COMPATIBLE_KERNEL::INVALID_KERNEL_PACKAGE_SIGNATURE")
-
-            c2r.sendcontrol("c")
-
         try:
+            with convert2rhel("--debug") as c2r:
+                # We need to get past the data collection acknowledgement.
+                c2r.expect("Continue with the system conversion?")
+                c2r.sendline("y")
+
+                c2r.expect(
+                    "WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor)
+                )
+                c2r.expect("RHEL_COMPATIBLE_KERNEL::INVALID_KERNEL_PACKAGE_SIGNATURE")
+
+                c2r.sendcontrol("c")
+
             assert c2r.exitstatus == 1
-        except AssertionError:
+        except:  # pylint: disable=W0702
             shell("tmt-report-result /tests/integration/tier0/non-destructive/kernel/custom_kernel FAIL")

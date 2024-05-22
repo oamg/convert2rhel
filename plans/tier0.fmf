@@ -170,18 +170,14 @@ description+: |
                     - yum-distro-sync/yum_distro_sync
 
 
-    /offline_system_conversion:
-        adjust+:
-          - enabled: false
-            when: distro == oracle-7
-            because: It will be enabled as a validation of https://issues.redhat.com/browse/RHELC-1544 fix
+    /isolated_system_conversion:
         prepare+:
             - name: Allow access to Satellite only
               how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/offline-system-conversion/prepare_system.py
+              script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
         discover+:
             test+<:
-                - offline-system-conversion/offline_system_conversion
+                - isolated-system-conversion/isolated_system_conversion
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             exclude:
                 - checks-after-conversion/rhel_subman

@@ -27,7 +27,7 @@ def configure_connection():
         f.write("nameserver 127.0.0.1")
 
 
-@pytest.mark.prepare_offline_system
+@pytest.mark.prepare_isolated_system
 def test_prepare_system(shell, satellite_registration):
     """
     Perform all the steps to make the system appear to be offline.

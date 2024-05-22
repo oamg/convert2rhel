@@ -35,22 +35,23 @@ def test_unsupported_unbreakable_enterprise_kernel(shell, convert2rhel, unbreaka
     Expect the RHEL_COMPATIBLE_KERNEL.BOOTED_KERNEL_INCOMPATIBLE warning message and terminate the utility.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --debug".format(
-                TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_SCA_USERNAME"],
-                TEST_VARS["RHSM_SCA_PASSWORD"],
-            ),
-            unregister=True,
-        ) as c2r:
-            c2r.expect(
-                "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
-                timeout=600,
-            )
-
         try:
+            with convert2rhel(
+                "-y --serverurl {} --username {} --password {} --debug".format(
+                    TEST_VARS["RHSM_SERVER_URL"],
+                    TEST_VARS["RHSM_SCA_USERNAME"],
+                    TEST_VARS["RHSM_SCA_PASSWORD"],
+                ),
+                unregister=True,
+            ) as c2r:
+                c2r.expect(
+                    "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
+                    timeout=600,
+                )
+
             assert c2r.exitstatus == 2
-        except AssertionError:
+        except:  # pylint: disable=W0702
             shell(
                 "tmt-report-result /tests/integration/tier0/non-destructive/kernel/unsupported_unbreakable_enterprise_kernel FAIL"
             )
+            raise
