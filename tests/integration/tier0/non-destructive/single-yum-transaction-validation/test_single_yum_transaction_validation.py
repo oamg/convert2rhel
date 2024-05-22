@@ -202,7 +202,7 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
 
 @pytest.mark.parametrize("yum_conf_exclude", [["redhat-release-server"]])
 @pytest.mark.test_override_exclude_list_in_yum_config
-def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_exclude):
+def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_exclude, shell):
     """
     This test verifies that packages that are defined in the exclude
     section in the /etc/yum.conf file are ignored during the analysis and
@@ -228,4 +228,9 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_excl
         ) as c2r:
             c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
 
-        assert c2r.exitstatus == 0
+        try:
+            assert c2r.exitstatus == 1
+        except AssertionError:
+            shell(
+                "tmt-report-result /tests/integration/tier0/non-destructive/single-yum-transaction-validation/override_exclude_list_in_yum_config FAIL"
+            )

@@ -117,4 +117,7 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel, hybrid_rocky_image):
 
             c2r.sendcontrol("c")
 
-        assert c2r.exitstatus == 1
+        try:
+            assert c2r.exitstatus == 1
+        except AssertionError:
+            shell("tmt-report-result /tests/integration/tier0/non-destructive/kernel/custom_kernel FAIL")

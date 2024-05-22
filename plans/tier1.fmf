@@ -96,10 +96,6 @@ description+: |
             test+<:
                 - one-kernel-scenario/one_kernel_scenario
             exclude:
-                # We perform multiple reboots during the test itself,
-                # thus rendering the scripts/reboot-after-conversion unusable.
-                # The reboot after the conversion is performed at the end of the test itself.
-                - utils/reboot-after-conversion
                 # Exclude the rhel_subman check, we don't use RHSM for the conversion
                 - checks-after-conversion/rhel_subman
 

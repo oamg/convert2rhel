@@ -76,16 +76,14 @@ def test_non_latest_kernel_error(kernel, shell, convert2rhel):
     Verify the IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
-                TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
-            )
-        ) as c2r:
+        with convert2rhel("-y --debug") as c2r:
             c2r.expect("Check if the loaded kernel version is the most recent")
             c2r.expect_exact("(OVERRIDABLE) IS_LOADED_KERNEL_LATEST:INVALID_KERNEL_VERSION")
             c2r.sendcontrol("c")
 
-        assert c2r.exitstatus == 1
+        try:
+            assert c2r.exitstatus == 1
+        except AssertionError:
+            shell(
+                "tmt-report-result /tests/integration/tier0/non-destructive/kernel/test_kernel_check_verification/non_latest_kernel_error FAIL"
+            )

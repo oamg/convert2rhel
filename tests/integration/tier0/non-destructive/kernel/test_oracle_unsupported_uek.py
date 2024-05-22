@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from conftest import TEST_VARS
+
 
 @pytest.fixture(scope="function")
 def unbreakable_kernel(shell):
@@ -26,17 +28,29 @@ def unbreakable_kernel(shell):
 
 
 @pytest.mark.test_unsupported_unbreakable_enterprise_kernel
-def test_bad_conversion(shell, convert2rhel, unbreakable_kernel):
+def test_unsupported_unbreakable_enterprise_kernel(shell, convert2rhel, unbreakable_kernel):
     """
     Verify that the check for compatible kernel on Oracle Linux works.
     Install unsupported kernel and run the conversion.
     Expect the RHEL_COMPATIBLE_KERNEL.BOOTED_KERNEL_INCOMPATIBLE warning message and terminate the utility.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        with convert2rhel("-y --debug", unregister=True) as c2r:
+        with convert2rhel(
+            "-y --serverurl {} --username {} --password {} --debug".format(
+                TEST_VARS["RHSM_SERVER_URL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
+            ),
+            unregister=True,
+        ) as c2r:
             c2r.expect(
                 "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
                 timeout=600,
             )
 
-        assert c2r.exitstatus == 2
+        try:
+            assert c2r.exitstatus == 2
+        except AssertionError:
+            shell(
+                "tmt-report-result /tests/integration/tier0/non-destructive/kernel/unsupported_unbreakable_enterprise_kernel FAIL"
+            )

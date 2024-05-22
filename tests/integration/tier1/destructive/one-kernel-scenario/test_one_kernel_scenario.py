@@ -86,5 +86,3 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
         shell("yum-config-manager {}".format(enable_repo_opt))
 
         assert shell("yum install -y python3 --enablerepo=*").returncode == 0
-
-        shell("tmt-reboot -t 600")
