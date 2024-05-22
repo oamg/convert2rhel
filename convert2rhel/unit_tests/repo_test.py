@@ -92,9 +92,9 @@ def test_get_rhel_repos_to_disable(monkeypatch, enablerepo, disablerepos):
 @pytest.mark.parametrize(
     ("disable_repos", "command"),
     (
-        ([], ""),
-        (["test-repo"], "--disablerepo=test-repo"),
-        (["rhel*", "test-repo"], "--disablerepo=rhel* --disablerepo=test-repo"),
+        ([], []),
+        (["test-repo"], ["--disablerepo=test-repo"]),
+        (["rhel*", "test-repo"], ["--disablerepo=rhel*", "--disablerepo=test-repo"]),
     ),
 )
 def test_get_rhel_disable_repos_command(disable_repos, command):

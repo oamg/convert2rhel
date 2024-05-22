@@ -78,12 +78,12 @@ def get_rhel_disable_repos_command(disable_repos):
     :param disable_repos: List of repo IDs to disable
     :type disable_repos: List[str]
     :return: String for disabling the rhel and user provided repositories while performing checks.
-    :rtype: str
+    :rtype: list[str]
     """
     if not disable_repos:
-        return ""
+        return []
 
-    disable_repo_command = " ".join("--disablerepo=" + repo for repo in disable_repos)
+    disable_repo_command = ["".join("--disablerepo=" + repo) for repo in disable_repos]
 
     return disable_repo_command
 
