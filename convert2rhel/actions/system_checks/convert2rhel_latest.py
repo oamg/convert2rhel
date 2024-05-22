@@ -232,7 +232,7 @@ class Convert2rhelLatest(actions.Action):
                 id="CONVERT2RHEL_LATEST_CHECK_UNEXPECTED_SYS_VERSION",
                 title="Did not perform convert2rhel latest version check",
                 description="Checking whether the installed convert2rhel package is of the latest available version was"
-                " skipped due to an unexpected system version",
+                " skipped due to an unexpected system version.",
                 diagnosis="Expected system versions: %s. Detected major version: %s"
                 % (", ".join(str(x) for x in C2R_REPOFILE_URLS), system_info.version.major),
             )
@@ -248,7 +248,7 @@ class Convert2rhelLatest(actions.Action):
                 id="CONVERT2RHEL_LATEST_CHECK_REPO_DOWNLOAD_FAILED",
                 title="Did not perform convert2rhel latest version check",
                 description="Checking whether the installed convert2rhel package is of the latest available version was"
-                " skipped due to not being able to download the convert2rhel repository file",
+                " skipped due to not being able to download the convert2rhel repository file.",
                 diagnosis=err.description,
             )
             return None
