@@ -766,14 +766,37 @@ class TestIsLoadedKernelLatest:
 
     @centos7
     @pytest.mark.parametrize(
-        ("enablerepos", "disable_repo_cmd"),
+        ("enablerepos", "expected_cmd"),
         (
-            ([], "--disablerepo=rhel*"),
-            (["test-repo"], "--disablerepo=rhel* --disablerepo=test-repo"),
+            (
+                [],
+                [
+                    "repoquery",
+                    "--setopt=exclude=",
+                    "--quiet",
+                    "--disablerepo=rhel*",
+                    "--qf",
+                    "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                    "kernel",
+                ],
+            ),
+            (
+                ["test-repo"],
+                [
+                    "repoquery",
+                    "--setopt=exclude=",
+                    "--quiet",
+                    "--disablerepo=rhel*",
+                    "--disablerepo=test-repo",
+                    "--qf",
+                    "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
+                    "kernel",
+                ],
+            ),
         ),
     )
     def test_is_loaded_kernel_latest_disable_repos(
-        self, monkeypatch, enablerepos, is_loaded_kernel_latest_action, pretend_os, disable_repo_cmd
+        self, monkeypatch, enablerepos, expected_cmd, is_loaded_kernel_latest_action, pretend_os
     ):
         """Test if the --disablerepo part of the command is built propertly."""
         run_subprocess = mock.Mock(return_value=[None, None])
@@ -788,14 +811,6 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action.run()
 
         run_subprocess.assert_called_with(
-            [
-                "repoquery",
-                "--setopt=exclude=",
-                "--quiet",
-                disable_repo_cmd,
-                "--qf",
-                "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
-                "kernel",
-            ],
+            expected_cmd,
             print_output=False,
         )

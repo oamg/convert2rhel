@@ -51,10 +51,9 @@ class IsLoadedKernelLatest(actions.Action):
             "repoquery",
             "--setopt=exclude=",
             "--quiet",
-            disable_repo_command,
-            "--qf",
-            "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
         ]
+        cmd.extend(disable_repo_command)
+        cmd.extend(["--qf", "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}"])
 
         # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
         # we check for `kernel-core`. But 7 releases, the correct way to check is
