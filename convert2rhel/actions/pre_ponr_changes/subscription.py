@@ -210,11 +210,11 @@ class SubscribeSystem(actions.Action):
                 restorable_subscription = RestorableSystemSubscription()
                 backup.backup_control.push(restorable_subscription)
 
+            logger.task("Prepare: Subscription Manager - Disable all repositories")
+            backup.backup_control.push(RestorableDisableRepositories())
+
             logger.task("Prepare: Get RHEL repository IDs")
             rhel_repoids = repo.get_rhel_repoids()
-
-            logger.task("Prepare: Subscription Manager - Disable all repositories")
-            backup.backup_control.push(RestorableDisableRepositories(rhel_repos_ignore=rhel_repoids))
 
             # we need to enable repos after removing repofile pkgs, otherwise
             # we don't get backups to restore from on a rollback

@@ -745,11 +745,8 @@ def disable_repos():
     disabled. This can be overriden by the --disablerepo option.
     """
     cmd = ["subscription-manager", "repos"]
-    disable_cmd = []
     disabled_repos = ["*"] if not tool_opts.disablerepo else tool_opts.disablerepo
-    for repo in disabled_repos:
-        disable_cmd.append("--disable=%s" % repo)
-
+    disable_cmd = ["".join("--disable=" + repo) for repo in disabled_repos]
     cmd.extend(disable_cmd)
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:

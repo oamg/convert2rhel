@@ -149,7 +149,6 @@ class TestRestorableDisableRepositories:
     @pytest.mark.parametrize(
         (
             "output",
-            "rhel_repos_ignore",
             "expected",
         ),
         (
@@ -168,7 +167,6 @@ Repo Name: Base x86_64
 Repo URL:  https://Satellite_Engineering_CentOS_7_Base.x86_64
 Enabled:   1
 """,
-                [],
                 ["Test_Repository_ID", "Satellite_Engineering_CentOS_7_Base_x86_64"],
             ),
             (
@@ -186,8 +184,7 @@ Repo Name: Base x86_64
 Repo URL:  https://Satellite_Engineering_CentOS_7_Base.x86_64
 Enabled:   1
 """,
-                ["RHEL_Repository"],
-                ["Satellite_Engineering_CentOS_7_Base_x86_64"],
+                ["RHEL_Repository", "Satellite_Engineering_CentOS_7_Base_x86_64"],
             ),
             (
                 """
@@ -200,14 +197,13 @@ Repo URL:  https://test_repository.id
 Enabled:   1
 """,
                 ["RHEL_Repository"],
-                [],
             ),
-            ("There were no available repositories matching the specified criteria.", [], []),
+            ("There were no available repositories matching the specified criteria.", []),
         ),
     )
-    def test_get_enabled_repositories(self, output, rhel_repos_ignore, expected, monkeypatch):
+    def test_get_enabled_repositories(self, output, expected, monkeypatch):
         monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=(output, 0)))
-        results = RestorableDisableRepositories(rhel_repos_ignore)._get_enabled_repositories()
+        results = RestorableDisableRepositories()._get_enabled_repositories()
         assert results == expected
         assert utils.run_subprocess.call_count == 1
 
@@ -233,7 +229,7 @@ Enabled:   1
         )
         monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
 
-        action = RestorableDisableRepositories([])
+        action = RestorableDisableRepositories()
         action.enable()
 
         assert action.enabled
@@ -261,7 +257,8 @@ Enabled:   1
     )
     def test_restore(self, enabled_repositories, log_message, monkeypatch, caplog):
         monkeypatch.setattr(subscription, "submgr_enable_repos", mock.Mock())
-        action = RestorableDisableRepositories([])
+        monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
+        action = RestorableDisableRepositories()
         action.enabled = True
         action._repos_to_enable = enabled_repositories
 
@@ -274,7 +271,7 @@ Enabled:   1
             assert log_message % ",".join(enabled_repositories) in caplog.records[-1].message
 
     def test_not_enabled_restore(self):
-        action = RestorableDisableRepositories([])
+        action = RestorableDisableRepositories()
         action.restore()
 
         assert not action.enabled

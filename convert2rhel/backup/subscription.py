@@ -91,10 +91,9 @@ class RestorableDisableRepositories(RestorableChange):
     # occurrences of the Repo ID in the output.
     ENABLED_REPOS_PATTERN = re.compile(r"Repo ID:\s+(?P<repo_id>\S+)")
 
-    def __init__(self, rhel_repos_ignore):
+    def __init__(self):
         super(RestorableDisableRepositories, self).__init__()
         self._repos_to_enable = []
-        self._rhel_repos_ignore = rhel_repos_ignore or []
 
     def _get_enabled_repositories(self):
         """Get repositories that were enabled prior to the conversion.
@@ -109,9 +108,8 @@ class RestorableDisableRepositories(RestorableChange):
         repositories = []
         matches = re.finditer(self.ENABLED_REPOS_PATTERN, output)
         if matches:
-            repositories = [
-                match.group("repo_id") for match in matches if match.group("repo_id") not in self._rhel_repos_ignore
-            ]
+            repositories = [match.group("repo_id") for match in matches if match.group("repo_id")]
+
         return repositories
 
     def enable(self):
@@ -128,10 +126,15 @@ class RestorableDisableRepositories(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Enabling RHSM repositories")
+        loggerinst.task("Rollback: Restoring state of the repositories")
 
         if self._repos_to_enable:
             loggerinst.debug("Repositories to enable: %s" % ",".join(self._repos_to_enable))
+
+            # This is not the ideal state. We should really have a generic
+            # class for enabling/disabling the repositories we have touched for
+            # RHSM. Jira issue: https://issues.redhat.com/browse/RHELC-1560
+            subscription.disable_repos()
             subscription.submgr_enable_repos(self._repos_to_enable)
 
         super(RestorableDisableRepositories, self).restore()

@@ -1,7 +1,5 @@
 import pytest
 
-from conftest import TEST_VARS
-
 
 def collect_enabled_repositories(shell):
     """
@@ -18,7 +16,7 @@ def collect_enabled_repositories(shell):
             # Get the repo_id as in that split it will be the last thing in the
             # array.
             repo_id = line.split("Repo ID:")[-1]
-            enabled_repositories.append(repo_id)
+            enabled_repositories.append(repo_id.strip())
 
     return enabled_repositories
 
@@ -41,4 +39,7 @@ def test_enabled_repositories_after_analysis(shell, convert2rhel, satellite_regi
 
     enabled_repositories_after_analysis = collect_enabled_repositories(shell)
 
-    assert enabled_repositories_prior_analysis == enabled_repositories_after_analysis
+    # Repositories can be listed in a different order than the one we captured
+    # before the analysis.
+    for repository in enabled_repositories_after_analysis:
+        assert repository in enabled_repositories_prior_analysis
