@@ -97,3 +97,14 @@ order: 49
     tag+:
         - rhsm-els-conversion
     test: pytest -m test_rhsm_els_conversion
+
+/one_key_satellite_conversion:
+    summary: |
+        Satellite conversion of pre-registered system
+    description: |
+        Conversion method using the Satellite credentials for a registration.
+        The system is pre-registered to the Satellite instance prior to the conversion.
+        We use one activation key containing both the original OS and RHEL repositories.
+    tag+:
+        - one-key-satellite-conversion
+    test: pytest -m test_one_key_satellite_conversion
