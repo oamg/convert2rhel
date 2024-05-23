@@ -109,13 +109,12 @@ def convert2rhel(shell):
     >>>     (
     >>>         "-y "
     >>>         "--serverurl {} --username {} "
-    >>>         "--password {} --pool {} "
+    >>>         "--password {} "
     >>>         "--debug"
     >>>     ).format(
     >>>         TEST_VARS["RHSM_SERVER_URL"],
     >>>         TEST_VARS["RHSM_USERNAME"],
     >>>         TEST_VARS["RHSM_PASSWORD"],
-    >>>         TEST_VARS["RHSM_POOL"],
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")

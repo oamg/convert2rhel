@@ -65,11 +65,10 @@ def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel
     ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
     """
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -103,11 +102,10 @@ def test_do_not_error_if_module_is_not_loaded(shell, convert2rhel):
 
     # If custom module is not loaded the conversion should not raise an error
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -168,8 +166,8 @@ def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -196,11 +194,10 @@ def test_tainted_kernel_modules_error(custom_kmod, convert2rhel):
     """
 
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         ),
         unregister=True,
     ) as c2r:
@@ -225,11 +222,10 @@ def test_envar_overrides_unsupported_module_loaded(
     """
     environment_variables(envars)
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
+        "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")

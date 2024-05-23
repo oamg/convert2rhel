@@ -72,11 +72,10 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     transaction.
     """
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
@@ -114,11 +113,10 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     tool is doing a proper rollback when the transaction is being processed.
     """
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect(
@@ -176,11 +174,10 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
     """
 
     with convert2rhel(
-        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "analyze --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         # Swallow the data collection warning
@@ -219,11 +216,10 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_excl
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
         with convert2rhel(
-            "analyze --serverurl {} --username {} --password {} --pool {} --debug -y".format(
+            "analyze --serverurl {} --username {} --password {} --debug -y".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             )
         ) as c2r:
             c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")

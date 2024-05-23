@@ -32,11 +32,10 @@ def test_releasever_as_mapping_config_modified(convert2rhel, os_release, c2r_con
     """
     with c2r_config.replace_line(pattern="releasever=.*", repl="releasever=333"):
         with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --debug".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             ),
             unregister=True,
         ) as c2r:
@@ -72,11 +71,10 @@ def test_releasever_as_mapping_not_existing_release(convert2rhel, config_at, os_
         f"release {os_release.version[0]}.1.1111",
     ):
         with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --debug".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             ),
             unregister=True,
         ) as c2r:
