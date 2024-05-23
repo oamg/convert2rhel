@@ -110,14 +110,13 @@ def download_repofile(repofile_url):
                     description=description,
                 )
 
-            loggerinst.info("Successfully downloaded the requested repofile from %s." % repofile_url)
+            loggerinst.info("Successfully downloaded a repository file from %s." % repofile_url)
             return contents.decode()
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
-            title="Failed to download repository file",
-            description="Failed to download the requested repository file from %s.\n"
-            "Reason: %s" % (repofile_url, err.reason),
+            title="Failed to download a repository file",
+            description="Failed to download a repository file from %s.\n" "Reason: %s" % (repofile_url, err.reason),
         )
 
 
@@ -132,12 +131,12 @@ def write_temporary_repofile(contents):
         repository contents to a file.
     """
     try:
-        repofile_dir = tempfile.mkdtemp(prefix="convert2rhel_repo.", dir=TMP_DIR)
+        repofile_dir = tempfile.mkdtemp(prefix="downloaded_repofiles.", dir=TMP_DIR)
     except (OSError, IOError) as err:
         raise exceptions.CriticalError(
-            id_="CREATE_TMP_DIR_FOR_C2R_REPO_FAILED",
+            id_="CREATE_TMP_DIR_FOR_REPOFILES_FAILED",
             title="Failed to create a temporary directory",
-            description="Failed to create a temporary directory for the convert2rhel repository under %s.\n"
+            description="Failed to create a temporary directory for storing a repository file under %s.\n"
             "Reason: %s" % (TMP_DIR, str(err)),
         )
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
@@ -146,8 +145,7 @@ def write_temporary_repofile(contents):
             return f.name
         except (OSError, IOError) as err:
             raise exceptions.CriticalError(
-                id_="STORE_REPOSITORY_FILE_FAILED",
+                id_="STORE_REPOFILE_FAILED",
                 title="Failed to store a repository file",
-                description="Failed to write the requested repository file contents to %s.\n"
-                "Reason: %s" % (f.name, str(err)),
+                description="Failed to write a repository file contents to %s.\n" "Reason: %s" % (f.name, str(err)),
             )

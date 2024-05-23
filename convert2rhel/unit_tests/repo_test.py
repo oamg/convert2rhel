@@ -127,7 +127,7 @@ class TestDownloadRepofile:
 
         contents = repo.download_repofile("https://test")
         assert contents == "test_file"
-        assert "Successfully downloaded the requested repofile from https://test" in caplog.records[-1].message
+        assert "Successfully downloaded a repository file from https://test" in caplog.records[-1].message
 
     def test_failed_to_open_url(self, monkeypatch):
         monkeypatch.setattr(repo.urllib.request, "urlopen", mock.Mock(side_effect=urllib.error.URLError(reason="test")))
@@ -136,7 +136,7 @@ class TestDownloadRepofile:
             repo.download_repofile("https://test")
 
         assert "DOWNLOAD_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
-        assert "Failed to download repository file" in execinfo._excinfo[1].title
+        assert "Failed to download a repository file" in execinfo._excinfo[1].title
         assert "test" in execinfo._excinfo[1].description
 
     def test_no_contents_in_request_url(self, monkeypatch):
@@ -168,7 +168,7 @@ def test_write_temporary_repofile_mkdir_failure(monkeypatch):
     with pytest.raises(exceptions.CriticalError) as execinfo:
         repo.write_temporary_repofile("test")
 
-    assert "CREATE_TMP_DIR_FOR_C2R_REPO_FAILED" in execinfo._excinfo[1].id
+    assert "CREATE_TMP_DIR_FOR_REPOFILES_FAILED" in execinfo._excinfo[1].id
     assert "Failed to create a temporary directory" in execinfo._excinfo[1].title
     assert "unable" in execinfo._excinfo[1].description
 
@@ -180,6 +180,6 @@ def test_write_temporary_repofile_store_failure(tmpdir, monkeypatch):
     with pytest.raises(exceptions.CriticalError) as execinfo:
         repo.write_temporary_repofile("test")
 
-    assert "STORE_REPOSITORY_FILE_FAILED" in execinfo._excinfo[1].id
+    assert "STORE_REPOFILE_FAILED" in execinfo._excinfo[1].id
     assert "Failed to store a repository file" in execinfo._excinfo[1].title
     assert "test" in execinfo._excinfo[1].description

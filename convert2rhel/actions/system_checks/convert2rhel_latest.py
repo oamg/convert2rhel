@@ -44,7 +44,7 @@ class Convert2rhelLatest(actions.Action):
 
         super(Convert2rhelLatest, self).run()
 
-        repofile_path = self._get_convert2rhel_repofile_path()
+        repofile_path = self._download_convert2rhel_repofile()
         if not repofile_path:
             return
 
@@ -218,7 +218,7 @@ class Convert2rhelLatest(actions.Action):
 
         logger.info("Latest available convert2rhel version is installed.")
 
-    def _get_convert2rhel_repofile_path(self):
+    def _download_convert2rhel_repofile(self):
         """Download the official downstream convert2rhel repofile to a temporary directory.
 
         :return: Path of the downloaded downstream convert2rhel repofile
