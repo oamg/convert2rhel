@@ -2,3 +2,5 @@ pytest==4.6.11
 pathlib2==2.3.7.post1
 mock==3.0.5
 pytest-cov==2.12.1
+sphinx
+sphinx_autodoc_typehints
