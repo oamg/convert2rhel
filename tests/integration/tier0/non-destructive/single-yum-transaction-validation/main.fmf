@@ -72,7 +72,7 @@ tag+:
             CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
         when: distro == oracle-8
         because: |
-            With an older kernel, older, with RHEL incompatible kernel modules get installed as well,
+            When we install the older kernel, RHEL incompatible kernel modules are inserted in  as well,
             raising an inhibitor during the conversion.
     environment+:
         CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
