@@ -20,6 +20,11 @@ import os.path
 
 from convert2rhel import actions, backup, exceptions, pkghandler, repo, subscription, toolopts, utils
 from convert2rhel.backup.certs import RestorablePEMCert
+from convert2rhel.backup.subscription import (
+    RestorableAutoAttachmentSubscription,
+    RestorableDisableRepositories,
+    RestorableSystemSubscription,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -184,7 +189,7 @@ class SubscribeSystem(actions.Action):
                     "The system is registered with an RHSM account that has Simple Content Access (SCA) disabled but no subscription is attached. Without enabled SCA or an attached subscription the system can't access RHEL repositories. We'll try to auto-attach a subscription."
                 )
                 try:
-                    backup.backup_control.push(subscription.RestorableAutoAttachmentSubscription())
+                    backup.backup_control.push(RestorableAutoAttachmentSubscription())
                 except subscription.SubscriptionAutoAttachmentError:
                     self.set_result(
                         level="ERROR",
@@ -202,14 +207,14 @@ class SubscribeSystem(actions.Action):
             # have to disentangle the exception handling when we do that.
             if subscription.should_subscribe():
                 logger.task("Prepare: Subscription Manager - Subscribe system")
-                restorable_subscription = subscription.RestorableSystemSubscription()
+                restorable_subscription = RestorableSystemSubscription()
                 backup.backup_control.push(restorable_subscription)
+
+            logger.task("Prepare: Subscription Manager - Disable all repositories")
+            backup.backup_control.push(RestorableDisableRepositories())
 
             logger.task("Prepare: Get RHEL repository IDs")
             rhel_repoids = repo.get_rhel_repoids()
-
-            logger.task("Prepare: Subscription Manager - Disable all repositories")
-            subscription.disable_repos()
 
             # we need to enable repos after removing repofile pkgs, otherwise
             # we don't get backups to restore from on a rollback

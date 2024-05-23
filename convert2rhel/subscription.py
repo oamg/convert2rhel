@@ -96,59 +96,6 @@ class SubscriptionAutoAttachmentError(Exception):
     """Raised when there is a failure in auto attaching a subscription via subscription-manager."""
 
 
-class RestorableSystemSubscription(backup.RestorableChange):
-    """
-    Register with RHSM in a fashion that can be reverted.
-    """
-
-    # We need this __init__ because it is an abstractmethod in the base class
-    def __init__(self):  # pylint: disable=useless-parent-delegation
-        super(RestorableSystemSubscription, self).__init__()
-
-    def enable(self):
-        """Register and attach a specific subscription to OS."""
-        if self.enabled:
-            return
-
-        register_system()
-        attach_subscription()
-
-        super(RestorableSystemSubscription, self).enable()
-
-    def restore(self):
-        """Rollback subscription related changes"""
-        loggerinst.task("Rollback: RHSM-related actions")
-
-        if self.enabled:
-            try:
-                unregister_system()
-            except UnregisterError as e:
-                loggerinst.warning(str(e))
-            except OSError:
-                loggerinst.warning("subscription-manager not installed, skipping")
-
-        super(RestorableSystemSubscription, self).restore()
-
-
-class RestorableAutoAttachmentSubscription(backup.RestorableChange):
-    """
-    Auto attach subscriptions with RHSM in a fashion that can be reverted.
-    """
-
-    def __init__(self):
-        super(RestorableAutoAttachmentSubscription, self).__init__()
-        self._is_attached = False
-
-    def enable(self):
-        self._is_attached = auto_attach_subscription()
-        super(RestorableAutoAttachmentSubscription, self).enable()
-
-    def restore(self):
-        if self._is_attached:
-            remove_subscription()
-            super(RestorableAutoAttachmentSubscription, self).restore()
-
-
 def remove_subscription():
     """Remove all subscriptions added from auto attachment"""
     loggerinst.info("Removing auto attached subscriptions.")
@@ -797,18 +744,11 @@ def disable_repos():
     """Before enabling specific repositories, all repositories should be
     disabled. This can be overriden by the --disablerepo option.
     """
-    disable_cmd = ["subscription-manager", "repos"]
-    disable_repos = []
-    for repo in tool_opts.disablerepo:
-        disable_repos.append("--disable=%s" % repo)
-
-    if not disable_repos:
-        # Default is to disable all repos to make clean environment for
-        # enabling repos later
-        disable_repos.append("--disable=*")
-
-    disable_cmd.extend(disable_repos)
-    output, ret_code = utils.run_subprocess(disable_cmd, print_output=False)
+    cmd = ["subscription-manager", "repos"]
+    disabled_repos = ["*"] if not tool_opts.disablerepo else tool_opts.disablerepo
+    disable_cmd = ["".join("--disable=" + repo) for repo in disabled_repos]
+    cmd.extend(disable_cmd)
+    output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
         loggerinst.critical_no_exit("Could not disable subscription-manager repositories:\n%s" % output)
         raise exceptions.CriticalError(
@@ -817,8 +757,8 @@ def disable_repos():
             description="As part of the conversion process, convert2rhel disables all current subscription-manager repositories and enables only repositories required for the conversion. convert2rhel was unable to disable these repositories, and the conversion is unable to proceed.",
             diagnosis="Failed to disable repositories: %s." % (output),
         )
+
     loggerinst.info("Repositories disabled.")
-    return
 
 
 def enable_repos(rhel_repoids):
@@ -853,7 +793,7 @@ def enable_repos(rhel_repoids):
             # Try first if it's possible to enable EUS repoids. Otherwise try
             # enabling the default RHSM repoids. Otherwise, if it raiess an
             # exception, try to enable the default rhsm-repos
-            _submgr_enable_repos(repos_to_enable)
+            submgr_enable_repos(repos_to_enable)
         except SystemExit:
             loggerinst.info(
                 "The RHEL EUS repositories are not possible to enable.\n"
@@ -861,16 +801,16 @@ def enable_repos(rhel_repoids):
             )
             # Fallback to the default_rhsm_repoids
             repos_to_enable = system_info.default_rhsm_repoids
-            _submgr_enable_repos(repos_to_enable)
+            submgr_enable_repos(repos_to_enable)
     else:
         # This could be either the default_rhsm repos or any user specific
         # repoids
-        _submgr_enable_repos(repos_to_enable)
+        submgr_enable_repos(repos_to_enable)
 
     system_info.submgr_enabled_repos = repos_to_enable
 
 
-def _submgr_enable_repos(repos_to_enable):
+def submgr_enable_repos(repos_to_enable):
     """Go through subscription manager repos and try to enable them through subscription-manager."""
     enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:

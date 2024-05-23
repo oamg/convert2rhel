@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-import errno
 import json
 import os
 
@@ -33,17 +32,14 @@ from convert2rhel import exceptions, pkghandler, pkgmanager, repo, subscription,
 from convert2rhel.backup import files
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
-    AutoAttachSubscriptionMocked,
     PromptUserMocked,
-    RegisterSystemMocked,
-    RemoveAutoAttachSubscriptionMocked,
     RunSubprocessMocked,
     UnregisterSystemMocked,
     create_pkg_information,
     get_pytest_marker,
     run_subprocess_side_effect,
 )
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -222,87 +218,7 @@ class TestNeededSubscriptionManagerPkgs:
         assert pkgs_to_download == frozenset(pkgs)
 
 
-class TestRestorableSystemSubscription:
-    @pytest.fixture
-    def system_subscription(self):
-        return subscription.RestorableSystemSubscription()
-
-    def test_subscribe_system(self, system_subscription, tool_opts, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-        monkeypatch.setattr(tool_opts, "username", "user")
-        monkeypatch.setattr(tool_opts, "password", "pass")
-
-        system_subscription.enable()
-
-        assert subscription.register_system.call_count == 1
-
-    def test_subscribe_system_already_enabled(self, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        system_subscription.enabled = True
-
-        system_subscription.enable()
-
-        assert not subscription.register_system.called
-
-    def test_enable_fail_once(self, system_subscription, tool_opts, caplog, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
-        monkeypatch.setattr(tool_opts, "username", "user")
-        monkeypatch.setattr(tool_opts, "password", "pass")
-
-        with pytest.raises(exceptions.CriticalError):
-            system_subscription.enable()
-
-        assert caplog.records[-1].levelname == "CRITICAL"
-
-    def test_restore(self, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
-
-        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
-        system_subscription.enable()
-
-        system_subscription.restore()
-        assert subscription.unregister_system.call_count == 1
-
-    def test_restore_not_enabled(self, monkeypatch, caplog, system_subscription):
-        monkeypatch.setattr(subscription, "unregister_system", UnregisterSystemMocked())
-
-        system_subscription.restore()
-
-        assert not subscription.unregister_system.called
-
-    def test_restore_unregister_call_fails(self, monkeypatch, caplog, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
-
-        mocked_unregister_system = UnregisterSystemMocked(side_effect=subscription.UnregisterError("Unregister failed"))
-        monkeypatch.setattr(subscription, "unregister_system", mocked_unregister_system)
-
-        system_subscription.enable()
-
-        system_subscription.restore()
-
-        assert mocked_unregister_system.call_count == 1
-        assert "Unregister failed" == caplog.records[-1].message
-
-    def test_restore_subman_uninstalled(self, caplog, monkeypatch, system_subscription):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(subscription, "attach_subscription", mock.Mock(return_value=True))
-        monkeypatch.setattr(
-            subscription,
-            "unregister_system",
-            UnregisterSystemMocked(side_effect=OSError(errno.ENOENT, "command not found")),
-        )
-        system_subscription.enable()
-
-        system_subscription.restore()
-
-        assert "subscription-manager not installed, skipping" == caplog.messages[-1]
-
-
-@all_systems
+@centos7
 def test_install_rhel_subsription_manager(pretend_os, monkeypatch):
     mock_backup_control = mock.Mock()
     mock_write_temporary_repofile = mock.Mock(return_value="/test")
@@ -348,74 +264,6 @@ def test_is_subscription_attached(monkeypatch, return_string, expected):
     )
     result = subscription.is_subscription_attached()
     assert expected == result
-
-
-class TestRestorableAutoAttachmentSubscription:
-    @pytest.fixture
-    def auto_attach_subscription(self):
-        return subscription.RestorableAutoAttachmentSubscription()
-
-    def test_enable_auto_attach(self, auto_attach_subscription, monkeypatch):
-        monkeypatch.setattr(subscription, "auto_attach_subscription", AutoAttachSubscriptionMocked())
-        auto_attach_subscription.enable()
-        assert subscription.auto_attach_subscription.call_count == 1
-
-    def test_restore_auto_attach(self, auto_attach_subscription, monkeypatch):
-        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
-        monkeypatch.setattr(subscription, "auto_attach_subscription", mock.Mock(return_value=True))
-        auto_attach_subscription.enable()
-        auto_attach_subscription.restore()
-        assert subscription.remove_subscription.call_count == 1
-
-    def test_restore_auto_attach_not_enabled(self, auto_attach_subscription, monkeypatch):
-        monkeypatch.setattr(subscription, "remove_subscription", RemoveAutoAttachSubscriptionMocked())
-        auto_attach_subscription.restore()
-        assert subscription.remove_subscription.call_count == 0
-
-    @pytest.mark.parametrize(
-        ("return_code", "exception"),
-        (
-            (1, True),
-            (0, False),
-        ),
-    )
-    def test_auto_attach_subscription(self, auto_attach_subscription, monkeypatch, return_code, exception):
-
-        monkeypatch.setattr(
-            utils,
-            "run_subprocess",
-            RunSubprocessMocked(return_code=return_code),
-        )
-        if exception:
-            with pytest.raises(subscription.SubscriptionAutoAttachmentError):
-                subscription.auto_attach_subscription()
-        else:
-            try:
-                subscription.auto_attach_subscription()
-            except subscription.SubscriptionAutoAttachmentError:
-                assert False
-
-    @pytest.mark.parametrize(
-        ("return_code", "exception"),
-        (
-            (1, True),
-            (0, False),
-        ),
-    )
-    def test_remove_subscription(self, monkeypatch, return_code, exception):
-        monkeypatch.setattr(
-            utils,
-            "run_subprocess",
-            RunSubprocessMocked(return_code=return_code),
-        )
-        if exception:
-            with pytest.raises(subscription.SubscriptionRemovalError):
-                subscription.remove_subscription()
-        else:
-            try:
-                subscription.remove_subscription()
-            except subscription.SubscriptionRemovalError:
-                assert False
 
 
 @pytest.mark.usefixtures("tool_opts", scope="function")
@@ -1430,3 +1278,78 @@ def test_get_rhsm_facts_json_decode_error_el8(monkeypatch, global_tool_opts, cap
     assert isinstance(facts, dict)
     assert len(facts) == 0
     assert run_mock.call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("return_code", "exception"),
+    (
+        (1, True),
+        (0, False),
+    ),
+)
+def test_auto_attach_subscription(monkeypatch, return_code, exception):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_code=return_code),
+    )
+    if exception:
+        with pytest.raises(subscription.SubscriptionAutoAttachmentError):
+            subscription.auto_attach_subscription()
+    else:
+        try:
+            subscription.auto_attach_subscription()
+        except subscription.SubscriptionAutoAttachmentError:
+            assert False
+
+
+@pytest.mark.parametrize(
+    ("return_code", "exception"),
+    (
+        (1, True),
+        (0, False),
+    ),
+)
+def test_remove_subscription(monkeypatch, return_code, exception):
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        RunSubprocessMocked(return_code=return_code),
+    )
+    if exception:
+        with pytest.raises(subscription.SubscriptionRemovalError):
+            subscription.remove_subscription()
+    else:
+        try:
+            subscription.remove_subscription()
+        except subscription.SubscriptionRemovalError:
+            assert False
+
+
+@pytest.mark.parametrize(
+    (
+        "toolopts_disablerepo",
+        "expected_cmd",
+    ),
+    (
+        (["test", "repo"], ["subscription-manager", "repos", "--disable=test", "--disable=repo"]),
+        (None, ["subscription-manager", "repos", "--disable=*"]),
+    ),
+)
+def test_disable_repos(toolopts_disablerepo, expected_cmd, global_tool_opts, monkeypatch, caplog):
+    global_tool_opts.disablerepo = toolopts_disablerepo
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=0))
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+
+    subscription.disable_repos()
+    assert utils.run_subprocess.cmd == expected_cmd
+    assert "Repositories disabled" in caplog.records[-1].message
+
+
+def test_disable_repos_critical_error(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="error"))
+    with pytest.raises(exceptions.CriticalError):
+        subscription.disable_repos()
+        assert "Could not disable subscription-manager repositories:\nerror" in caplog.records[-1].message
+
+    assert utils.run_subprocess.cmd == ["subscription-manager", "repos", "--disable=*"]

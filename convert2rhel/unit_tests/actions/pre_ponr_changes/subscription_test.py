@@ -28,6 +28,7 @@ from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
+from convert2rhel.backup.subscription import RestorableDisableRepositories, RestorableSystemSubscription
 from convert2rhel.subscription import RefreshSubscriptionManagerError, SubscriptionAutoAttachmentError
 from convert2rhel.unit_tests import AutoAttachSubscriptionMocked, RefreshSubscriptionManagerMocked, RunSubprocessMocked
 
@@ -222,15 +223,15 @@ class TestSubscribeSystem:
 
         assert expected_dependencies == subscribe_system_instance.dependencies
 
-    def test_subscribe_system_do_not_subscribe(self, global_tool_opts, subscribe_system_instance, monkeypatch, caplog):
+    def test_subscribe_system_do_not_subscribe(self, global_tool_opts, subscribe_system_instance, monkeypatch):
         global_tool_opts.no_rhsm = False
         # partial saves the real copy of tool_opts to use with
         # _should_subscribe so we have to monkeypatch with the mocked version
         # of tool_opts.
         monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
-        monkeypatch.setattr(subscription.RestorableSystemSubscription, "enable", mock.Mock())
+        monkeypatch.setattr(RestorableSystemSubscription, "enable", mock.Mock())
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
-        monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
+        monkeypatch.setattr(RestorableDisableRepositories, "enable", mock.Mock())
         monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
@@ -291,17 +292,17 @@ class TestSubscribeSystem:
 
     def test_subscribe_system_run(self, subscribe_system_instance, monkeypatch):
         monkeypatch.setattr(subscription, "should_subscribe", lambda: True)
-        monkeypatch.setattr(subscription.RestorableSystemSubscription, "enable", mock.Mock())
+        monkeypatch.setattr(RestorableSystemSubscription, "enable", mock.Mock())
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
-        monkeypatch.setattr(subscription, "disable_repos", mock.Mock())
+        monkeypatch.setattr(RestorableDisableRepositories, "enable", mock.Mock())
         monkeypatch.setattr(subscription, "enable_repos", mock.Mock())
 
         subscribe_system_instance.run()
 
         assert subscribe_system_instance.result.level == STATUS_CODE["SUCCESS"]
-        assert subscription.RestorableSystemSubscription.enable.call_count == 1
+        assert RestorableSystemSubscription.enable.call_count == 1
         assert repo.get_rhel_repoids.call_count == 1
-        assert subscription.disable_repos.call_count == 1
+        assert RestorableDisableRepositories.enable.call_count == 1
         assert subscription.enable_repos.call_count == 1
 
     def test_subscribe_no_access_to_rhel_repos(self, subscribe_system_instance, monkeypatch):
@@ -316,7 +317,6 @@ class TestSubscribeSystem:
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         subscribe_system_instance.run()
-        print(subscribe_system_instance.result)
         unit_tests.assert_actions_result(
             subscribe_system_instance,
             level="ERROR",
@@ -361,7 +361,7 @@ class TestSubscribeSystem:
         # In the actual code, the exceptions can happen at different stages, but
         # since it is a unit test, it doesn't matter what function will raise the
         # exception we want.
-        monkeypatch.setattr(subscription.RestorableSystemSubscription, "enable", mock.Mock(side_effect=exception))
+        monkeypatch.setattr(RestorableSystemSubscription, "enable", mock.Mock(side_effect=exception))
 
         subscribe_system_instance.run()
 

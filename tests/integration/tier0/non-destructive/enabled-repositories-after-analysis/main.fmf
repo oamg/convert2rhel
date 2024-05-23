@@ -1,0 +1,24 @@
+summary: |
+    Verify repositories stay enabled after analysis
+
+tag+:
+    - non-destructive
+    - satellite
+enabled: false
+adjust+:
+    enabled: true
+    when: distro == centos-7
+    because: currently we have satellite key only for CentOS7
+/enabled_repositories_after_analysis:
+    description: |
+        This test will perform the following operations:
+            - Collect the enabled repositories prior to the analysis start
+            - Run the analysis and assert that we successfully enabled the RHSM
+            repositories
+            - Collect the enabled repositories after the tool run to compare
+            with the repositories prior to the analysis
+
+    tag+:
+        - test-enabled-repositories-after-analysis
+    test: |
+      pytest -m test_enabled_repositories_after_analysis

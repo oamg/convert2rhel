@@ -806,7 +806,7 @@ def satellite_registration(shell, yum_conf_exclude, request):
     Register the system to the Satellite server
     By default it acquires the curl command from the satellite_curl_command function
     Can be parametrized with requesting a different key from the SAT_REG_FILE(.sat_reg_file):
-    @pytest.mark.parametrized("satellite_registration", ["DIFFERENT_KEY"], indirect=True)
+    @pytest.mark.parametrize("satellite_registration", ["DIFFERENT_KEY"], indirect=True)
     """
     # Get the curl command for the respective system
     # from the conftest function

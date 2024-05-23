@@ -132,7 +132,7 @@ def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version
         c2r.sendline("y")
 
         assert (
-            c2r.expect(
+            c2r.expect_exact(
                 "(OVERRIDABLE) CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - Outdated convert2rhel version detected",
                 timeout=300,
             )
