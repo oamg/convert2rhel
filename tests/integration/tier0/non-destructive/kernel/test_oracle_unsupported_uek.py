@@ -1,5 +1,6 @@
 import os
 
+import pexpect.exceptions
 import pytest
 
 from conftest import TEST_VARS
@@ -44,13 +45,14 @@ def test_unsupported_unbreakable_enterprise_kernel(shell, convert2rhel, unbreaka
                 ),
                 unregister=True,
             ) as c2r:
-                c2r.expect(
+                c2r.expect_exact(
                     "RHEL_COMPATIBLE_KERNEL::INCOMPATIBLE_VERSION - Incompatible booted kernel version",
                     timeout=600,
                 )
 
             assert c2r.exitstatus == 2
-        except:  # pylint: disable=W0702
+        except (AssertionError, pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT) as e:
+            print(f"There was an error: \n{e}")
             shell(
                 "tmt-report-result /tests/integration/tier0/non-destructive/kernel/unsupported_unbreakable_enterprise_kernel FAIL"
             )

@@ -1,6 +1,7 @@
 import os
 import re
 
+import pexpect.exceptions
 import pytest
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
@@ -230,7 +231,8 @@ def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_excl
                 c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
 
             assert c2r.exitstatus == 0
-        except:  # pylint: disable=W0702
+        except (AssertionError, pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT) as e:
+            print(f"There was an error: \n{e}")
             shell(
                 "tmt-report-result /tests/integration/tier0/non-destructive/single-yum-transaction-validation/override_exclude_list_in_yum_config FAIL"
             )

@@ -1,5 +1,6 @@
 import os
 
+import pexpect.exceptions
 import pytest
 
 from conftest import SYSTEM_RELEASE_ENV
@@ -53,7 +54,7 @@ _, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[distro].values()
 
 
 @pytest.fixture(scope="function")
-def custom_kernel(shell):
+def custom_kernel(shell, hybrid_rocky_image):
     """
     Fixture for test_custom_kernel.
     Install CentOS kernel on Oracle Linux and vice versa to mimic the custom
@@ -94,7 +95,7 @@ def custom_kernel(shell):
 
 
 @pytest.mark.test_custom_kernel
-def test_custom_kernel(convert2rhel, shell, custom_kernel, hybrid_rocky_image):
+def test_custom_kernel(convert2rhel, shell, custom_kernel):
     """
     Run the conversion with custom kernel installed on the system.
     """
@@ -116,10 +117,12 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel, hybrid_rocky_image):
                 c2r.expect(
                     "WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor)
                 )
-                c2r.expect("RHEL_COMPATIBLE_KERNEL::INVALID_KERNEL_PACKAGE_SIGNATURE")
+                c2r.expect_exact("RHEL_COMPATIBLE_KERNEL::INVALID_KERNEL_PACKAGE_SIGNATURE")
 
                 c2r.sendcontrol("c")
 
             assert c2r.exitstatus == 1
-        except:  # pylint: disable=W0702
+        except (AssertionError, pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT) as e:
+            print(f"There was an error: \n{e}")
             shell("tmt-report-result /tests/integration/tier0/non-destructive/kernel/custom_kernel FAIL")
+            raise
