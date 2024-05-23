@@ -419,8 +419,9 @@ def remove_repositories(shell, backup_directory):
 
     yield
 
-    # Return repositories to their original location
-    assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Return repositories to their original location
+        assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
 
 
 @pytest.fixture(autouse=True)

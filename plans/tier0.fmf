@@ -37,6 +37,17 @@ description+: |
                     test+<:
                         - conversion-method/satellite_conversion
 
+            /one_key_satellite_conversion:
+              enabled: false
+              adjust+:
+                - enabled: true
+                  when: >
+                    distro == centos-7
+                  because: So far we have only one key set up, covering CentOS7->RHEL7
+              discover+:
+                test+<:
+                  - conversion-method/one_key_satellite_conversion
+
             /pre_registered_system_conversion:
                 adjust+:
                   - environment+:
