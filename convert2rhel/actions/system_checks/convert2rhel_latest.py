@@ -50,8 +50,6 @@ class Convert2rhelLatest(actions.Action):
 
         cmd = [
             "repoquery",
-            "--disablerepo=*",
-            "--enablerepo=convert2rhel",
             "--releasever=%s" % system_info.version.major,
             "--setopt=reposdir=%s" % os.path.dirname(repofile_path),
             "--qf",
