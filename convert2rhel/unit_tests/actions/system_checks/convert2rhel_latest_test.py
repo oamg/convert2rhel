@@ -48,7 +48,7 @@ def prepare_convert2rhel_latest_action(monkeypatch, tmpdir, request, global_syst
     marker = request.param
     monkeypatch.setattr(
         convert2rhel_latest.Convert2rhelLatest,
-        "_get_convert2rhel_repofile_path",
+        "_download_convert2rhel_repofile",
         mock.Mock(return_value="/test/path.py"),
     )
     monkeypatch.setattr(convert2rhel_latest, "running_convert2rhel_version", marker["local_version"])
@@ -770,7 +770,7 @@ class TestCheckConvert2rhelLatest:
         self, global_system_info, monkeypatch, convert2rhel_latest_action_instance
     ):
         monkeypatch.setattr(convert2rhel_latest, "system_info", global_system_info)
-        # Setting the major version to 0 will make _get_convert2rhel_repofile_path() generate
+        # Setting the major version to 0 will make _download_convert2rhel_repofile() generate
         # a WARNING-level report message and return None
         monkeypatch.setattr(global_system_info, "version", systeminfo.Version(0, 0))
 
@@ -791,7 +791,7 @@ class TestCheckConvert2rhelLatest:
             (8, False, True, None, "store failed"),
         ),
     )
-    def test_get_convert2rhel_repofile_path(
+    def test_download_convert2rhel_repofile(
         self,
         monkeypatch,
         global_system_info,
@@ -821,7 +821,7 @@ class TestCheckConvert2rhelLatest:
             monkeypatch.setattr(repo, "write_temporary_repofile", mock.Mock(return_value="/test/path.py"))
 
         convert2rhel_latest_action_instance = convert2rhel_latest.Convert2rhelLatest()
-        returned = convert2rhel_latest_action_instance._get_convert2rhel_repofile_path()
+        returned = convert2rhel_latest_action_instance._download_convert2rhel_repofile()
 
         assert returned == expected_return
         if msg_diag:
