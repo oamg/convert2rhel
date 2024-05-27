@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        1.7.1
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,56 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon May 27 2024 Adam Hosek <ahosek@redhat.com> 2.0.0
+- Breaking change: Remove deprecated CLI arguments
+- Breaking change: Remove deprecated latest kernel check env variable
+- Breaking change: Remove deprecated unsupported convert2rhel version env variable
+- Breaking change: Remove `--disable-submgr` arg
+- Breaking change: Rename incomplete rollback envvar
+- Breaking change: Remove `-v|--variant` arg
+- Port RestorablePackage and ChangedRPMPackagesController
+- Remove backup controller partition
+- Update RHSM custom facts during analysis
+- Remove ppc64 architecture from data
+- Add debug logs to host-metering
+- Add post conversion stages for Action Framework
+- Set consistent task prefix for pre-conversion
+- Migrate post conversion transaction function
+- Improve efi error check for PART_ENTRY_NUMBER
+- Unify parsing of the system release string
+- Drop support for 8.6 EUS conversions
+- Improve detection of RHSM credentials in subscription check
+- Update report to include post conversion actions
+- Satellite package backup failure fix
+- Drop internet connection check and its dependencies
+- Don't report on skipping dbus check
+- Modify exit code for conversion when inhibitor is found
+- Add RHEL 9 version support up to 9.10
+- Allow converting to RHEL 7 ELS
+- Exit with 1 when rollback fails
+- Fix empty error message in Yum transaction failure
+- Disable RHEL repos when performing checks
+- Update the Red Hat package signing key
+- Install subscription-manager using package manager
+- Change result of the c2r version check to OVERRIDABLE
+- Restore disabled repos during conversion in rollback
+- Rollback task using "Convert" instead of "Rollback"
+- Override yum config exclude list
+- Fix an error message referring to a non-existing --organization option
+- Fix RHSM facts filepath in a log message
+- Remove leftover reposdir from package updates action
+- Require username and password to be specified
+- Fix check for reposdir in RestorablePackage class
+- Add the libreport-plugin-mantisbt to excluded list
+- Always backup redhat.repo
+- Fix cornercase with userpass and keyorg
+- Fix report duplication after analysis
+- Fix regression in installing removed packages during rollback
+- Check if rollback failed when handling InhibitorFound exception
+- Skip versionlock file in backup system actions
+- Fix bug with duplicate packages check when running with Satellite offline
+- Raise when RestorablePackage fails to restore
+- Return a list instead of string for disablerepo command
 
 * Mon Mar 04 2024 Freya Gustavsson <fgustavs@redhat.com> 1.7.1
 - Set downgrade to strict mode to not miss dependencies
