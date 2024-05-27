@@ -1,0 +1,68 @@
+summary+: |
+    CentOS Stream plans
+description+: |
+    This needs to be changed.
+    Pls anyone remind me, if I forgot.
+
+enabled: false
+
+adjust+:
+  - enabled: true
+    when: distro == stream-8-latest
+
+/non-destructive:
+  /sanity:
+    discover+:
+      filter+:
+        [ 'tier: 0', 'tag: non-destructive', 'tag: sanity' ]
+  /others:
+    discover+:
+      filter+:
+        [ 'tier: 0', 'tag: non-destructive', 'tag: -sanity' ]
+
+/destructive:
+    discover+:
+        # List of tests run for every plan/test case.
+        # tmt-reboot feature is used for rebooting the system using
+        # the test management framework.
+        # The main test scenario gets prepended by the "+<" in each case.
+        test:
+            - utils/reboot-after-conversion
+            - checks-after-conversion
+
+    /basic_conversion_methods:
+
+        /activation_key_conversion:
+            discover+:
+                test+<:
+                    - conversion-method/activation_key_conversion
+
+        /rhsm_conversion:
+            discover+:
+                test+<:
+                    - conversion-method/rhsm_conversion
+
+
+        /pre_registered_system_conversion:
+            adjust+:
+              - environment+:
+                  C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                  C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
+            discover+:
+                test+<:
+                    - conversion-method/pre_registered_system_conversion
+
+
+        /custom_repositories_conversion:
+          environment+:
+            SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
+          prepare+:
+            - name: Add custom repositories
+              how: ansible
+              playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+          discover+:
+            test+<:
+              - conversion-method/custom_repos_conversion
+            # Exclude the rhel_subman check, we don't use RHSM for the conversion
+            exclude:
+              - checks-after-conversion/rhel_subman

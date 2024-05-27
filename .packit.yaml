@@ -44,6 +44,39 @@ jobs:
   # TEST JOBS
   ## Tests on pull request stage. Tests are run on demand
   ### Definitions of the tier0 tests (non-destructive and destructive separately)
+  - &tests-stream-8
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-8-x86_64:
+        distros: [CentOS-Stream-8]
+    trigger: pull_request
+    identifier: "stream-8"
+    tmt_plan: "stream"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "stream-8-latest"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - stream-8
+
   - &tests-tier0-centos
     job: tests
     # Run tests on-demand

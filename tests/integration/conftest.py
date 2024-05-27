@@ -339,16 +339,23 @@ class SystemInformationRelease:
 
     with open("/etc/system-release", "r") as file:
         system_release_content = file.read()
-        match_version = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
-        if not match_version:
-            print("not match")
-        version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), int(match_version.group(2)))
+        # Evaluate if we're looking at CentOS Stream
+        is_stream = re.match("stream", system_release_content.split()[1].lower())
         distribution = system_release_content.split()[0].lower()
         if distribution == "ol":
             distribution = "oracle"
         elif distribution == "red":
             distribution = "redhat"
-        system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
+        match_version = re.search(r".+?(\d+)\.?(\d+)?\D?", system_release_content)
+        if not match_version:
+            pytest.fail("Something is wrong with the /etc/system-release, cowardly refusing to continue.")
+        if is_stream:
+            system_release = "stream-{}-latest".format(match_version.group(1))
+        else:
+            version = namedtuple("Version", ["major", "minor"])(
+                int(match_version.group(1)), int(match_version.group(2))
+            )
+            system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
 
 
 @pytest.fixture()

@@ -41,6 +41,11 @@ DISTRO_KERNEL_MAPPING = {
         "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
         "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
     },
+    "stream-8-latest": {
+        "original_kernel": f"{ORIGINAL_KERNEL}",
+        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
+        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
+    },
 }
 
 if "alma-8" in SYSTEM_RELEASE_ENV:
