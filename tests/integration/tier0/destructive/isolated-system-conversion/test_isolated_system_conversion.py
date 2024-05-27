@@ -3,8 +3,8 @@ import pytest
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_offline_system_conversion
-def test_offline_system_conversion(convert2rhel):
+@pytest.mark.test_isolated_system_conversion
+def test_isolated_system_conversion(convert2rhel):
     """Test converting systems not connected to the Internet but requiring sub-mgr (e.g. managed by Satellite)."""
 
     with convert2rhel(

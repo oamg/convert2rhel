@@ -67,6 +67,13 @@ tag+:
         pytest -m test_validation_packages_with_in_name_period
 
 /override_exclude_list_in_yum_config:
+    adjust+:
+        environment+:
+            CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+        when: distro == oracle-8
+        because: |
+            When we install the older kernel, RHEL incompatible kernel modules are inserted in  as well,
+            raising an inhibitor during the conversion.
     environment+:
         CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
     summary+: |

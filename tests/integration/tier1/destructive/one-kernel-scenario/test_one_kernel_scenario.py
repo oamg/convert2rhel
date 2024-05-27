@@ -27,12 +27,18 @@ def one_kernel(shell):
         shell("tmt-reboot -t 600")
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        # remove all kernels except the kernel-3.10.0-1160.el7.x86_64
-        assert shell("rpm -qa kernel | grep -v 'kernel-3.10.0-1160.el7.x86_64' | xargs yum -y remove")
-        assert shell("rpm -qa kernel | wc -l").output == "1\n"
-        # Also remove the UEK on Oracle
-        if "oracle" in SYSTEM_RELEASE_ENV:
-            assert shell("yum remove -y kernel-uek")
+        try:
+            # remove all kernels except the kernel-3.10.0-1160.el7.x86_64
+            shell("rpm -qa kernel | grep -v 'kernel-3.10.0-1160.el7.x86_64' | xargs yum -y remove")
+            assert shell("rpm -qa kernel | wc -l").output == "1\n"
+
+            # Also remove the UEK on Oracle
+            if "oracle" in SYSTEM_RELEASE_ENV:
+                assert shell("yum remove -y kernel-uek")
+        except AssertionError as e:
+            print(f"An AssertionError was raised: \n{e}")
+            shell("tmt-report-result /tests/integration/tier1/destructive/one-kernel-scenario/one_kernel_scenario FAIL")
+            raise
 
         shell("tmt-reboot -t 600")
 
@@ -86,5 +92,3 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
         shell("yum-config-manager {}".format(enable_repo_opt))
 
         assert shell("yum install -y python3 --enablerepo=*").returncode == 0
-
-        shell("tmt-reboot -t 600")

@@ -1,0 +1,15 @@
+summary: |
+    Convert isolated system
+
+description: |
+    Convert systems that have no access to the Internet.
+    This is done by dnsmasq configure to the Satellite only, everything else is resolved to the
+    localhost.
+    This test requires having the repositories of the original OS available in the Satellite server.
+
+tag+:
+    - isolated-system-conversion
+    - satellite
+
+/isolated_system_conversion:
+    test: pytest -m test_isolated_system_conversion
