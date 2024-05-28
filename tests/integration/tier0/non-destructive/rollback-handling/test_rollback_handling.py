@@ -28,6 +28,7 @@ def assign_packages(packages=None):
     cos_8_pkgs = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
     alm_8_pkgs = ["almalinux-release", "usermode", "rhn-setup", "python3-syspurpose", "almalinux-logos"]
     roc_8_pkgs = ["rocky-release", "usermode", "rhn-setup", "python3-syspurpose", "rocky-logos"]
+    str_8_pkgs = ["centos-stream-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
     # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
     # and Oracle Linux 8.2 respectively.
 
@@ -38,6 +39,7 @@ def assign_packages(packages=None):
         "oracle-8": ol_8_pkgs,
         "alma-8": alm_8_pkgs,
         "rocky-8": roc_8_pkgs,
+        "stream-8": str_8_pkgs,
     }
 
     release_key = SYSTEM_RELEASE_ENV

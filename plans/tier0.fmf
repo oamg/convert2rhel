@@ -4,6 +4,11 @@ description+: |
     Critical set of tests/plans to be run for each upstream PR
     before merge commit to the main branch.
 
+adjust+:
+  - enabled: false
+    when: distro == stream-8
+    because: We have a separate plan for CentOS Stream
+
 /sanity:
     /non-destructive:
         discover+:

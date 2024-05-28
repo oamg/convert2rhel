@@ -42,6 +42,7 @@ SAT_REG_COMMAND = {
     "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
     "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
     "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
+    "stream-8-latest": SAT_REG_FILE["STREAM8_SAT_REG"],
 }
 
 
@@ -350,7 +351,9 @@ class SystemInformationRelease:
         if not match_version:
             pytest.fail("Something is wrong with the /etc/system-release, cowardly refusing to continue.")
         if is_stream:
-            system_release = "stream-{}-latest".format(match_version.group(1))
+            distribution = "stream"
+            version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), "latest")
+            system_release = "{}-{}-{}".format(distribution, version.major, version.minor)
         else:
             version = namedtuple("Version", ["major", "minor"])(
                 int(match_version.group(1)), int(match_version.group(2))
@@ -448,14 +451,17 @@ def missing_os_release_package_workaround(shell):
         "centos-8": ["centos-linux-release"],
         "alma-8": ["almalinux-release"],
         "rocky-8": ["rocky-release"],
+        "stream-8": ["centos-stream-release"],
     }
 
     # Run only for non-destructive tests.
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Not using the SystemInformationRelease class here, because at this point the *-release
+        # package is missing from the system, including the /etc/system-release file
         os_name = SYSTEM_RELEASE_ENV.split("-")[0]
         os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
-        os_key = f"{os_name}-{os_ver[0]}"
+        os_key = f"{os_name}-{os_ver}"
 
         system_release_pkgs = os_to_pkg_mapping.get(os_key)
 
@@ -682,6 +688,9 @@ def kernel(shell):
             _create_old_repo(distro="rocky", repo_name=repo_name)
             assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
             shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+        elif "stream-8" in SYSTEM_RELEASE_ENV:
+            # Given the CentOS Stream rolling release, we are able to just downgrade the kernel
+            assert shell("yum downgrade kernel -y").returncode == 0
 
         shell("tmt-reboot -t 600")
 

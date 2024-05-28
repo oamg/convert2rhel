@@ -5,6 +5,10 @@ description+: |
     Set of tests/plans of less frequency demands.
     tier1 is run when the PR gets merged to the main branch.
 
+adjust+:
+  - enabled: false
+    when: distro == stream-8
+    because: We have a separate plan for CentOS Stream
 
 /non-destructive:
     discover+:

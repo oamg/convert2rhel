@@ -42,6 +42,10 @@ adjust+:
                 test+<:
                     - conversion-method/rhsm_conversion
 
+        /satellite_conversion:
+            discover+:
+                test+<:
+                    - conversion-method/satellite_conversion
 
         /pre_registered_system_conversion:
             adjust+:
@@ -66,3 +70,35 @@ adjust+:
             # Exclude the rhel_subman check, we don't use RHSM for the conversion
             exclude:
               - checks-after-conversion/rhel_subman
+
+
+        /isolated_system_conversion:
+            prepare+:
+                - name: Allow access to Satellite only
+                  how: shell
+                  script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+            discover+:
+                test+<:
+                    - isolated-system-conversion/isolated_system_conversion
+                # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                exclude:
+                    - checks-after-conversion/rhel_subman
+
+
+    /single_yum_transaction:
+      /packages_upgraded_after_conversion:
+        discover+:
+          test+<:
+            - single-yum-transaction/packages_upgraded_after_conversion
+
+      /observe_errors:
+        enabled: false
+        discover+:
+          test+<:
+            - single-yum-transaction/single_yum_transaction
+
+        /mismatch_errors:
+          prepare+:
+            - name: Install multilib packages with dnf
+              how: shell
+              script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py

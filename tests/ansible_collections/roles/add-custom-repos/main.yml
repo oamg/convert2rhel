@@ -6,7 +6,7 @@
   when: ansible_facts['distribution_major_version'] == "7"
   #TODO(danmyway) bump when new minor available
 - import_playbook: rhel8-repos.yml
-  when: ansible_facts['distribution_version'] == "8.5" or ansible_facts['distribution_version'] == "8.9" or ansible_facts['distribution_version'] == "8.10"
+  when: ansible_facts['distribution_version'] in ["8.5", "8.9", "8.10"] or ansible_facts['distribution_release'] == "Stream"
 - import_playbook: rhel8-eus-repos.yml
   # We need to skip for Oracle Linux machines since we don't test EUS on OL
   when: ansible_facts['distribution_version'] == "8.8" and ansible_facts['distribution'] != "OracleLinux"
