@@ -461,7 +461,7 @@ def missing_os_release_package_workaround(shell):
         # package is missing from the system, including the /etc/system-release file
         os_name = SYSTEM_RELEASE_ENV.split("-")[0]
         os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
-        os_key = f"{os_name}-{os_ver}"
+        os_key = f"{os_name}-{os_ver[0]}"
 
         system_release_pkgs = os_to_pkg_mapping.get(os_key)
 

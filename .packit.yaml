@@ -91,7 +91,7 @@ jobs:
         distros: [centos-8-latest]
     trigger: pull_request
     identifier: "tier0-centos"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -128,7 +128,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-ol7"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -171,7 +171,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-ol8"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -214,7 +214,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-al88"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -261,7 +261,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-al8"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -304,7 +304,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-rl88"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
@@ -347,7 +347,7 @@ jobs:
     merge_pr_in_ci: false
     trigger: pull_request
     identifier: "tier0-rl8"
-    tmt_plan: "tier0/non-destructive|tier0/destructive"
+    tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,

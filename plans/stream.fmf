@@ -10,95 +10,116 @@ adjust+:
   - enabled: true
     when: distro == stream-8-latest
 
-/non-destructive:
-  /sanity:
-    discover+:
-      filter+:
-        [ 'tier: 0', 'tag: non-destructive', 'tag: sanity' ]
-  /others:
-    discover+:
-      filter+:
-        [ 'tier: 0', 'tag: non-destructive', 'tag: -sanity' ]
-
-/destructive:
-    discover+:
-        # List of tests run for every plan/test case.
-        # tmt-reboot feature is used for rebooting the system using
-        # the test management framework.
-        # The main test scenario gets prepended by the "+<" in each case.
-        test:
-            - utils/reboot-after-conversion
-            - checks-after-conversion
-
-    /basic_conversion_methods:
-
-        /activation_key_conversion:
-            discover+:
-                test+<:
-                    - conversion-method/activation_key_conversion
-
-        /rhsm_conversion:
-            discover+:
-                test+<:
-                    - conversion-method/rhsm_conversion
-
-        /satellite_conversion:
-            discover+:
-                test+<:
-                    - conversion-method/satellite_conversion
-
-        /pre_registered_system_conversion:
-            adjust+:
-              - environment+:
-                  C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-                  C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
-            discover+:
-                test+<:
-                    - conversion-method/pre_registered_system_conversion
-
-
-        /custom_repositories_conversion:
-          environment+:
-            SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
-          prepare+:
-            - name: Add custom repositories
-              how: ansible
-              playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
-          discover+:
-            test+<:
-              - conversion-method/custom_repos_conversion
-            # Exclude the rhel_subman check, we don't use RHSM for the conversion
-            exclude:
-              - checks-after-conversion/rhel_subman
-
-
-        /isolated_system_conversion:
-            prepare+:
-                - name: Allow access to Satellite only
-                  how: shell
-                  script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
-            discover+:
-                test+<:
-                    - isolated-system-conversion/isolated_system_conversion
-                # Exclude the rhel_subman check, we don't use RHSM for the conversion
-                exclude:
-                    - checks-after-conversion/rhel_subman
-
-
-    /single_yum_transaction:
-      /packages_upgraded_after_conversion:
+/sanity:
+    /non-destructive:
         discover+:
-          test+<:
-            - single-yum-transaction/packages_upgraded_after_conversion
+            filter+:
+                [ 'tier: 0', 'tag: non-destructive', 'tag: sanity' ]
 
-      /observe_errors:
-        enabled: false
+    /destructive:
         discover+:
-          test+<:
-            - single-yum-transaction/single_yum_transaction
+            # List of tests run for every plan/test case.
+            # tmt-reboot feature is used for rebooting the system using
+            # the test management framework.
+            # The main test scenario gets prepended by the "+<" in each case.
+            test:
+                - utils/reboot-after-conversion
+                - checks-after-conversion
 
-        /mismatch_errors:
-          prepare+:
-            - name: Install multilib packages with dnf
-              how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+        /basic_conversion_methods:
+            /activation_key_conversion:
+                discover+:
+                    test+<:
+                        - conversion-method/activation_key_conversion
+            /rhsm_conversion:
+                discover+:
+                    test+<:
+                        - conversion-method/rhsm_conversion
+            /satellite_conversion:
+                discover+:
+                    test+<:
+                        - conversion-method/satellite_conversion
+            /pre_registered_system_conversion:
+                adjust+:
+                    - environment+:
+                          C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                          C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
+                discover+:
+                    test+<:
+                        - conversion-method/pre_registered_system_conversion
+            /custom_repositories_conversion:
+                environment+:
+                    SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
+                prepare+:
+                    - name: Add custom repositories
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+                discover+:
+                    test+<:
+                        - conversion-method/custom_repos_conversion
+                    # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                    exclude:
+                        - checks-after-conversion/rhel_subman
+            /isolated_system_conversion:
+                prepare+:
+                    - name: Allow access to Satellite only
+                      how: shell
+                      script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+                discover+:
+                    test+<:
+                        - isolated-system-conversion/isolated_system_conversion
+                    # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                    exclude:
+                        - checks-after-conversion/rhel_subman
+
+/core:
+    /non-destructive:
+        discover+:
+            filter+:
+                [ 'tier: 0', 'tag: non-destructive', 'tag: -sanity' ]
+    /destructive:
+        discover+:
+            # List of tests run for every plan/test case.
+            # tmt-reboot feature is used for rebooting the system using
+            # the test management framework.
+            # The main test scenario gets prepended by the "+<" in each case.
+            test:
+                - utils/reboot-after-conversion
+                - checks-after-conversion
+        /single_yum_transaction:
+            /packages_upgraded_after_conversion:
+                discover+:
+                    test+<:
+                        - single-yum-transaction/packages_upgraded_after_conversion
+            /observe_errors:
+                discover+:
+                    test+<:
+                        - single-yum-transaction/single_yum_transaction
+                /mismatch_errors:
+                    prepare+:
+                        - name: Install multilib packages with dnf
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+                /resolve_dependency:
+                    summary+: |
+                        Handle dependency packages
+                    description+: |
+                        This case installs a couple of packages that we know cause dependency
+                        issues during the package replacement, so the intention of this is to
+                        assert that convert2rhel can handle those packages and not fail during the
+                        replacement, especially with the yum transaction.
+                    prepare+:
+                        - name: Install dependency packages
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
+            /yum_distro_sync:
+                prepare+:
+                    - name: enable CentOS' extras repo
+                      how: ansible
+                      playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
+                    - name: Install problematic package
+                      how: shell
+                      script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
+                discover+:
+                    test+<:
+                        - yum-distro-sync/yum_distro_sync

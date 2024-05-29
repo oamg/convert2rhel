@@ -19,14 +19,16 @@ tag+:
 
 
 /transaction_validation_error:
+    enabled: false
     summary+: |
         Error during processing the transaction
     description+: |
         This test case removes the certs during the transaction processing
         to throw the following yum error: pkgmanager.Errors.YumDownloadError
     adjust+:
-        - enabled: false
-          when: distro == centos-8, alma-8, rocky-8, oracle-8
+        - enabled: true
+          when: distro == centos-7, oracle-7
+          because: This scenario is valid only for systems with yum as the package manager.
     tag+:
         - transaction-validation-error
     test: |
