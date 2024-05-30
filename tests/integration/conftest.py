@@ -569,7 +569,7 @@ def pre_registered(shell, request, yum_conf_exclude):
 
 
 @pytest.fixture()
-def hybrid_rocky_image():
+def hybrid_rocky_image(shell):
     """
     Fixture to detect a hybrid Rocky Linux cloud image.
     Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
@@ -577,7 +577,8 @@ def hybrid_rocky_image():
     kernel than the last selected.
     """
     grubenv_file = "/boot/grub2/grubenv"
-    if "rocky" in SystemInformationRelease.distribution:
+    is_efi = shell("efibootmgr", silent=True).returncode
+    if "rocky" in SystemInformationRelease.distribution and is_efi != 0:
         if os.path.islink(grubenv_file):
             target_grubenv_file = os.path.realpath(grubenv_file)
 
