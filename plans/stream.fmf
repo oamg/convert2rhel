@@ -100,18 +100,6 @@ adjust+:
                         - name: Install multilib packages with dnf
                           how: shell
                           script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
-                /resolve_dependency:
-                    summary+: |
-                        Handle dependency packages
-                    description+: |
-                        This case installs a couple of packages that we know cause dependency
-                        issues during the package replacement, so the intention of this is to
-                        assert that convert2rhel can handle those packages and not fail during the
-                        replacement, especially with the yum transaction.
-                    prepare+:
-                        - name: Install dependency packages
-                          how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
             /yum_distro_sync:
                 prepare+:
                     - name: enable CentOS' extras repo
