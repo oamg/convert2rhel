@@ -327,6 +327,7 @@ def perform_boilerplate():
 
     loggerinst.task("Prepare: Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
+    breadcrumbs.bredcrumbs.confirm_backup()
 
 
 def show_eula():
