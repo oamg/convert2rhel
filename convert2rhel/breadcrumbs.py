@@ -237,6 +237,7 @@ class Breadcrumbs:
         )
         utils.ask_to_continue()
 
+    def confirm_backup(self):
         # Add in the warning about the system back up here!
         loggerinst.warnign(
             "Convert2RHEL modifies the systems during the analysis and then rolls back these"
