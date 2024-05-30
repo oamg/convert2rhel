@@ -186,7 +186,11 @@ jobs:
     use_internal_tf: True
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
     # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    # Additionally on Alma 8.8 there is an issue with installing convert2rhel testing artifact due to
+    # messed up GPG keys, when the artifact is installed the repositories are not pinned to 8.8
+    # thus the dependencies are installed from the latest release, the new GPG key needed for installation
+    # of new packages is not imported at that point, we need to install them manually
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux'
     targets:
       epel-8-x86_64:
         distros: ["AlmaLinux OS 8.8.20230524 x86_64"]
