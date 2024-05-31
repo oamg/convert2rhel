@@ -144,6 +144,14 @@ class TestRestorableAutoAttachmentSubscription:
         auto_attach_subscription.restore()
         assert subscription.remove_subscription.call_count == 0
 
+    def test_already_enabled(self, auto_attach_subscription, monkeypatch):
+        monkeypatch.setattr(subscription, "auto_attach_subscription", mock.Mock())
+        auto_attach_subscription.enabled = True
+
+        auto_attach_subscription.enable()
+
+        assert subscription.auto_attach_subscription.call_count == 0
+
 
 class TestRestorableDisableRepositories:
     @pytest.mark.parametrize(
