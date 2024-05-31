@@ -2,16 +2,18 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/docker-existing-dockerfile
 {
 	"name": "Alma Linux 9",
-	// Sets the run context to one level up to be inside of the .devcontainer folder.
-	"context": "..",
+	// Sets the run context to two levels up to be inside of the convert2rhel project root folder.
+	"context": "../..",
 	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
 	"dockerFile": "alma9-development.Containerfile",
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
 	"postCreateCommand": "pre-commit install",
 	"runArgs": [
-		"--userns", "keep-id",
+		"--userns",
+		"keep-id",
 		// Make it easier to find the container by having the project name.
-		"--name", "convert2rhel-alma9-devcontainer"
+		"--name",
+		"convert2rhel-alma9-devcontainer"
 	],
 	// Default workspace path to open in container. Sometimes when the
 	// container crashes or you need to re-attach to the container, it opens in

@@ -5,7 +5,8 @@ ENV PYTHON python3
 ENV PIP pip
 ENV PYTHONDONTWRITEBYTECODE 1
 
-ENV APP_DEV_DEPS "alma9/requirements.txt"
+ENV APP_DEV_DEPS ".devcontainer/alma9/requirements.txt"
+ENV APP_DOCS_DEPS "docs/requirements.txt"
 ENV APP_MAIN_DEPS \
     python3 \
     python3-pip \
@@ -30,7 +31,8 @@ RUN dnf update -y && dnf install -y $APP_MAIN_DEPS && dnf clean all
 FROM install_main_deps as install_dev_deps
 
 COPY $APP_DEV_DEPS $APP_DEV_DEPS
-RUN $PIP install -r $APP_DEV_DEPS
+COPY $APP_DOCS_DEPS $APP_DOCS_DEPS
+RUN $PIP install -r $APP_DEV_DEPS -r $APP_DOCS_DEPS
 
 FROM install_dev_deps as install_application
 
@@ -40,5 +42,5 @@ RUN groupadd --gid=$USER_GID -r $USERNAME && \
 RUN chown -R $USERNAME:$USERNAME .
 COPY --chown=$USERNAME:$USERNAME . .
 
-COPY alma9/.bashrc /home/$USERNAME
+COPY .devcontainer/alma9/.bashrc /home/$USERNAME
 USER $USERNAME:$USERNAME
