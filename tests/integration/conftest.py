@@ -578,7 +578,7 @@ def hybrid_rocky_image(shell):
     """
     grubenv_file = "/boot/grub2/grubenv"
     is_efi = shell("efibootmgr", silent=True).returncode
-    if "rocky" in SystemInformationRelease.distribution and is_efi != 0:
+    if "rocky" in SystemInformationRelease.distribution and is_efi not in (None, 0):
         if os.path.islink(grubenv_file):
             target_grubenv_file = os.path.realpath(grubenv_file)
 

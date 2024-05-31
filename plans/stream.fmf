@@ -1,8 +1,8 @@
 summary+: |
     CentOS Stream plans
 description+: |
-    This needs to be changed.
-    Pls anyone remind me, if I forgot.
+    Separate plan for CentOS Stream.
+    The plan is separated, so we can keep better control of when it will be run.
 
 enabled: false
 

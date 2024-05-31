@@ -20,7 +20,7 @@ def test_install_dependency_packages(shell):
         "python-requests",  # OAMG-4936
     ]
     if SystemInformationRelease.version.major == 8:
-        if "oracle-8" in SYSTEM_RELEASE_ENV:
+        if SystemInformationRelease.distribution == "oracle":
             dependency_pkgs = [
                 "iwl7260-firmware",  # RHELC-567
                 "iwlax2xx-firmware",  # RHELC-567 - causing problems during the conversion on OL8
