@@ -6,7 +6,7 @@ description+: |
 
 adjust+:
   - enabled: false
-    when: distro == stream-8
+    when: distro == stream-8-latest
     because: We have a separate plan for CentOS Stream
 
 /sanity:
