@@ -49,10 +49,10 @@ jobs:
 
           #  RegEx explained
           # (?<!\/) Negative lookbehind of / to avoid grabbing URLs
-          # (RHELC?-\d+) Get RHEL or RHELC keys, add to a group
+          # ((?:RHELC?|HMS)-\d+) Get HMS, RHEL or RHELC keys, add to a group
           # \b Word boundary to indicate this should be the end of the match
           # (?!\]\() Negative lookahead of ]( to prevent Jira keys in markdown links
-          regex=re.compile(r"(?<!\/)(RHELC?-\d+)\b(?!\]\()", re.MULTILINE)
+          regex=re.compile(r"(?<!\/)((?:RHELC?|HMS)-\d+)\b(?!\]\()", re.MULTILINE)
           with open("releaseBody.txt", 'r+') as f:
             data = f.read()
             f.seek(0)

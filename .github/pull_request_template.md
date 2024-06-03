@@ -10,7 +10,7 @@ Checklist
 
 - [ ] PR has been tested manually in a VM (either author or reviewer)
 - [ ] Jira issue has been made public if possible
-- [ ] `[RHELC-]` is part of the PR title <!-- For a proper sync with Jira -->
+- [ ] `[RHELC-]` or `[HMS-]` is part of the PR title <!-- For a proper sync with Jira -->
 - [ ] GitHub label has been added to help with Release notes <!-- enhancement, bug-fix, no-changelog, security-hardening, breaking-change, test-coverage-enhancement -->
 - [ ] PR title explains the change from the user's point of view
 - [ ] Code and tests are documented properly
