@@ -236,7 +236,7 @@ jobs:
     tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
     targets:
       epel-8-x86_64:
-        distros: ["AlmaLinux OS 8.9.20231123 x86_64"]
+        distros: ["AlmaLinux OS 8.10.20240530 x86_64"]
     tf_extra_params:
       environments:
         - tmt:
