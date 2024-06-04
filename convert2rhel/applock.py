@@ -71,8 +71,6 @@ class ApplicationLock:
         self._pid = os.getpid()
         # Path to the file that contains the process id
         self._pidfile = os.path.join(_DEFAULT_LOCK_DIR, self._name + ".pid")
-        # File object for _pidfile when the file is locked
-        self._pidfile_fp = None
 
     def __str__(self):
         if self.is_locked:
@@ -82,9 +80,10 @@ class ApplicationLock:
         return "%s PID %d %s" % (self._pidfile, self._pid, status)
 
     def _try_create(self):
-        """Try to create the lock file. If this succeeds, the lock file
-        exists and we created it. If an exception other than the one
-        we expect is raised, re-raises it.
+        """Try to create the lock file. If this succeeds, the lock
+        file exists and we created it, so we hold the lock. If an
+        exception other than the one we expect is raised, re-raises
+        it.
 
         :returns: True if we created the lock, False if we didn't.
         """
@@ -97,7 +96,8 @@ class ApplicationLock:
         # Note that NamedTemporaryFile will clean up the file it created,
         # but the lockfile we created by doing the link will stay around.
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as f:
-            # Using flock() on a group- or world-readable file poses an
+            # Elsewhere in the code, we use flock() on this file;
+            # using that call on a group- or world-readable file poses an
             # extreme security risk.
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR)
             f.write(str(self._pid) + "\n")
@@ -116,47 +116,20 @@ class ApplicationLock:
     def is_locked(self):
         """Test whether this object was locked by this instance of
         the application."""
-        pid = self._read_pidfile()
-        self._release_pidfile_flock()
-        if pid:
-            return pid == self._pid
-        return False
-
-    def _release_pidfile_flock(self):
-        """Release the advisory file lock we hold on the PID file
-        and close the open file descriptor."""
-        if self._pidfile_fp:
-            fcntl.flock(self._pidfile_fp, fcntl.LOCK_UN)
-            if not self._pidfile_fp.closed:
-                self._pidfile_fp.close()
-            self._pidfile_fp = None
-
-    def _read_pidfile(self):
-        """Read and return the contents of the PID file.
-
-        If this method does not raise an exception, the
-        _release_pidfile_flock() method must be called to release the
-        advisory lock and close the file.
-
-        :returns: the file contents as an integer, or None if it doesn't exist
-        :raises: ApplicationLockedError if the contents are corrupt
-        """
-        # pylint: disable=consider-using-with
         try:
-            self._pidfile_fp = open(self._pidfile, "r")
-            fcntl.flock(self._pidfile_fp, fcntl.LOCK_EX)
-            file_contents = self._pidfile_fp.read()
-            pid = int(file_contents.rstrip())
-            return pid
-        except IOError as exc:
-            # The open() failed because the file exists.
-            # In Python 3 this could be changed to FileNotFoundError.
+            with open(self._pidfile, "r") as filep:
+                fcntl.flock(filep, fcntl.LOCK_EX)
+                try:
+                    file_contents = filep.read()
+                    pid = int(file_contents.rstrip())
+                    if pid:
+                        return pid == self._pid
+                finally:
+                    fcntl.flock(filep, fcntl.LOCK_UN)
+        except (IOError, OSError) as exc:
             if exc.errno == errno.ENOENT:
-                return None
-            raise
-        except ValueError:
-            self._release_pidfile_flock()
-            raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
+                pass
+        return False
 
     @staticmethod
     def _pid_exists(pid):
@@ -167,7 +140,8 @@ class ApplicationLock:
                 os.kill(pid, 0)
         except OSError as exc:
             # The only other (theoretical) possibility is EPERM, which
-            # would mean the process exists.
+            # would mean the process exists and therefore we should return
+            # True.
             if exc.errno == errno.ESRCH:
                 return False
         return True
@@ -198,18 +172,24 @@ class ApplicationLock:
         """
         if self._try_create():
             return
-        try:
-            pid = self._read_pidfile()
-            if pid == self._pid:
-                return
-            if self._pid_exists(pid):
-                raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
-            # The lock file was created by a process that has exited;
-            # remove it and try again.
-            loggerinst.info("Cleaning up lock held by exited process %d." % pid)
-            self._safe_unlink()
-        finally:
-            self._release_pidfile_flock()
+        with open(self._pidfile, "r") as filep:
+            fcntl.flock(filep, fcntl.LOCK_EX)
+            try:
+                file_contents = filep.read()
+                pid = int(file_contents.rstrip())
+                if pid == self._pid:
+                    return
+                if self._pid_exists(pid):
+                    raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
+                # The lock file was created by a process that has exited;
+                # remove it and try again.
+                loggerinst.info("Cleaning up lock held by exited process %d." % pid)
+                self._safe_unlink()
+            except ValueError:
+                raise ApplicationLockedError("%s has invalid contents" % (self._pidfile))
+            finally:
+                fcntl.flock(filep, fcntl.LOCK_UN)
+
         if not self._try_create():
             # Between the unlink and our attempt to create the lock
             # file, another process got there first.
