@@ -1,0 +1,3 @@
+six
+pexpect
+argparse-manpage

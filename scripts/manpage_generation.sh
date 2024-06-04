@@ -11,14 +11,14 @@ if git diff --quiet HEAD~1 -- convert2rhel/__init__.py; then
     echo "No new version detected"
     exit 0
 else
-    echo "enter changes deteced"
+    echo "New version detected"
     # Changes detected, generate manpages
 
-    #get dependcy
+    #get dependency
     import subprocess
 
     # Install Python packages
-    subprocess.run(["pip", "install", "argparse-manpage", "six", "pexpect"])
+    subprocess.run(["pip", "install", "-r", "requirements.txt"])
 
 
     # Generate a file with convert2rhel synopsis for argparse-manpage
