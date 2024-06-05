@@ -86,6 +86,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
         # going in with the packages in the transaction.
         self._base._ds_callback = DependencySolverProgressIndicatorCallback()
 
+        # Override the exclude option that is loaded from the config and set it
+        # to empty.
+        self._base.conf.substitutions["exclude"] = []
+
     def _enable_repos(self):
         """Enable a list of required repositories."""
         self._base.read_all_repos()

@@ -71,10 +71,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
             "--releasever=%s" % system_info.releasever,
             "--setopt=*.skip_if_unavailable=False",
         ]
-        basecmd = [
-            "repoquery",
-            "--releasever=%s" % system_info.releasever,
-        ]
+        basecmd = ["repoquery", "--releasever=%s" % system_info.releasever, "--setopt=exclude="]
 
         if system_info.version.major >= 8:
             basecmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
