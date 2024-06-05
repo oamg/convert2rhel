@@ -20,19 +20,21 @@ import logging
 import os
 import re
 
-from convert2rhel import actions, exceptions, pkghandler, pkgmanager, utils
+from convert2rhel import actions, pkghandler, pkgmanager, utils
 from convert2rhel.systeminfo import system_info
 
 
 loggerinst = logging.getLogger(__name__)
 
-# create classes for installing, removing non rhel kernels, install additional rhel kernel pkgs and update rhel kernel if needed
+
 class InstallRhelKernel(actions.Action):
     id = "INSTALL_RHEL_KERNEL"
+    dependencies = ("CONVERT_SYSTEM_PACKAGES",)
 
     def run(self):
         """Install and update the RHEL kernel."""
         super(InstallRhelKernel, self).run()
+
         loggerinst.info("Installing RHEL kernel ...")
         output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
         kernel_update_needed = False
@@ -62,17 +64,12 @@ class InstallRhelKernel(actions.Action):
                     # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
                     # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
                     # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
-
-                    loggerinst.info(
-                        "\nConflict of kernels: One of the installed kernels"
+                    info_message = (
+                        "Conflict of kernels: One of the installed kernels"
                         " has the same version as the latest RHEL kernel."
                     )
-                    self.add_message(
-                        level="INFO",
-                        id="CONFLICT_OF_KERNELS",
-                        description="Conflict of kernels: One of the installed kernels"
-                        " has the same version as the latest RHEL kernel.",
-                    )
+                    loggerinst.info("\n%s" % info_message)
+                    self.add_message(level="INFO", id="CONFLICT_OF_KERNELS", description=info_message)
                     pkghandler.handle_no_newer_rhel_kernel_available()
                     kernel_update_needed = True
         if kernel_update_needed:
@@ -81,9 +78,12 @@ class InstallRhelKernel(actions.Action):
 
 class VerifyRhelKernelInstalled(actions.Action):
     id = "VERIFY_RHEL_KERNEL_INSTALLED"
+    dependencies = ("INSTALL_RHEL_KERNEL",)
 
     def run(self):
         """Verify that the RHEL kernel has been successfully installed and raise an ERROR if not"""
+        super(VerifyRhelKernelInstalled, self).run()
+
         loggerinst.info("Verifying that RHEL kernel has been installed")
         if not pkghandler.is_rhel_kernel_installed():
             self.set_result(
@@ -94,17 +94,19 @@ class VerifyRhelKernelInstalled(actions.Action):
                 remediations="Verify that the repository used for installing kernel contains RHEL packages.",
             )
             return
-          loggerinst.info("RHEL kernel has been installed.")
-          self.add_message(
-              level="INFO",
-              id="RHEL_KERNEL_INSTALLED",
-              title="RHEL kernel installed",
-              description="The RHEL kernel has been installed successfully.",
-          )
+
+        loggerinst.info("RHEL kernel has been installed.")
+        self.add_message(
+            level="INFO",
+            id="RHEL_KERNEL_INSTALLED",
+            title="RHEL kernel installed",
+            description="The RHEL kernel has been installed successfully.",
+        )
 
 
 class FixInvalidGrub2Entries(actions.Action):
     id = "FIX_INVALID_GRUB2_ENTRIES"
+    dependencies = ("KERNEL_PACKAGES_INSTALLATION",)
 
     def run(self):
         """
@@ -117,6 +119,8 @@ class FixInvalidGrub2Entries(actions.Action):
         The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
         OS kernels, and set the RHEL kernel as default.
         """
+        super(FixInvalidGrub2Entries, self).run()
+
         if system_info.version.major < 8:
             # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
             return
@@ -159,6 +163,7 @@ class FixInvalidGrub2Entries(actions.Action):
 
 class FixDefaultKernel(actions.Action):
     id = "FIX_DEFAULT_KERNEL"
+    dependencies = ("FIX_INVALID_GRUB2_ENTRIES",)
 
     def run(self):
         """
@@ -199,9 +204,11 @@ class FixDefaultKernel(actions.Action):
 
 class KernelPkgsInstall(actions.Action):
     id = "KERNEL_PACKAGES_INSTALLATION"
+    dependencies = ("VERIFY_RHEL_KERNEL_INSTALLED",)
 
     def run(self):
         """Install kernel packages and remove non-RHEL kernels."""
+        super(KernelPkgsInstall, self).run()
 
         kernel_pkgs_to_install = pkghandler.remove_non_rhel_kernels()
         if kernel_pkgs_to_install:
