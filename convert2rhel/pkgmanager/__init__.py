@@ -211,7 +211,7 @@ def call_yum_cmd(
     args = args or []
     setopts = setopts or []
 
-    cmd = ["yum", command, "-y"]
+    cmd = ["yum", command, "--setopt=exclude=", "-y"]
 
     # The --disablerepo yum option must be added before --enablerepo,
     #   otherwise the enabled repo gets disabled if --disablerepo="*" is used
