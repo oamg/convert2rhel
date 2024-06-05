@@ -52,6 +52,7 @@ class Convert2rhelLatest(actions.Action):
             "repoquery",
             "--releasever=%s" % system_info.version.major,
             "--setopt=reposdir=%s" % os.path.dirname(repofile_path),
+            "--setopt=exclude=",
             "--qf",
             "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}",
             "convert2rhel",
