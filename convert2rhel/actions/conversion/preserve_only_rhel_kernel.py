@@ -45,6 +45,7 @@ class InstallRhelKernel(actions.Action):
                 description="There was an error while attempting to install the RHEL kernel from yum.",
                 remediations="Please check that you can access the repositories that provide the RHEL kernel.",
             )
+            return
 
         # Check if kernel with same version is already installed.
         # Example output from yum and dnf:
@@ -92,14 +93,14 @@ class VerifyRhelKernelInstalled(actions.Action):
                 description="There is no RHEL kernel installed on the system.",
                 remediations="Verify that the repository used for installing kernel contains RHEL packages.",
             )
-        else:
-            loggerinst.info("RHEL kernel has been installed.")
-            self.add_message(
-                level="INFO",
-                id="RHEL_KERNEL_INSTALLED",
-                title="RHEL kernel installed",
-                description="The RHEL kernel has been installed successfully.",
-            )
+            return
+          loggerinst.info("RHEL kernel has been installed.")
+          self.add_message(
+              level="INFO",
+              id="RHEL_KERNEL_INSTALLED",
+              title="RHEL kernel installed",
+              description="The RHEL kernel has been installed successfully.",
+          )
 
 
 class FixInvalidGrub2Entries(actions.Action):
@@ -116,17 +117,17 @@ class FixInvalidGrub2Entries(actions.Action):
         The solution handled by this function is to remove the non-functioning boot entries upon the removal of the original
         OS kernels, and set the RHEL kernel as default.
         """
-        if system_info.version.major < 8 or system_info.arch == "s390x":
+        if system_info.version.major < 8:
             # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
             return
 
         loggerinst.info("Fixing GRUB boot loader entries.")
 
-        machine_id = utils.get_file_content("/etc/machine-id")
+        machine_id = utils.get_file_content("/etc/machine-id").strip()
         boot_entries = glob.glob("/boot/loader/entries/*.conf")
         for entry in boot_entries:
             # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
-            if machine_id.strip() not in os.path.basename(entry):
+            if machine_id not in os.path.basename(entry):
                 loggerinst.debug("Removing boot entry %s" % entry)
                 os.remove(entry)
 
