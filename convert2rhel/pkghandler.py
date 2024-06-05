@@ -402,7 +402,7 @@ def _get_package_repositories(pkgs, disable_repos=None):
     # If needed, disable some repos for the repoquery
     disable_repo_command = repo.get_rhel_disable_repos_command(disable_repos)
 
-    cmd = ["repoquery", "--quiet", "-q"]
+    cmd = ["repoquery", "--quiet", "-q", "--setopt=exclude="]
     cmd.extend(disable_repo_command)
     cmd.extend(pkgs)
     cmd.extend(["--qf", query_format])

@@ -99,6 +99,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--releasever=8",
             "--setopt=module_platform_id=platform:el8",
@@ -110,7 +111,7 @@ class TestCallYumCmd:
 
         pkgmanager.call_yum_cmd("install", set_releasever=False)
 
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y"]
+        assert utils.run_subprocess.cmd == ["yum", "install", "--setopt=exclude=", "-y"]
 
     @centos7
     def test_call_yum_cmd_with_disablerepo_and_enablerepo(self, pretend_os, monkeypatch):
@@ -124,6 +125,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--disablerepo=*",
             "--releasever=7Server",
@@ -141,6 +143,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--releasever=7Server",
             "--enablerepo=rhel-7-extras-rpm",
@@ -154,7 +157,7 @@ class TestCallYumCmd:
 
         pkgmanager.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[])
 
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--releasever=7Server", "pkg"]
+        assert utils.run_subprocess.cmd == ["yum", "install", "--setopt=exclude=", "-y", "--releasever=7Server", "pkg"]
 
         pkgmanager.call_yum_cmd(
             "install",
@@ -166,6 +169,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--disablerepo=disable-repo",
             "--releasever=7Server",
@@ -185,6 +189,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--releasever=8.5",
             "--setopt=module_platform_id=platform:el8",
@@ -206,6 +211,7 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--releasever=8",
             "--setopt=module_platform_id=platform:el8",
@@ -245,6 +251,7 @@ class TestCallYumCmd:
         expected_cmd = [
             "yum",
             "install",
+            "--setopt=exclude=",
             "-y",
             "--setopt=module_platform_id=platform:el8",
         ]
