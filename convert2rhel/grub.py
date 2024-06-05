@@ -335,51 +335,6 @@ def canonical_path_to_efi_format(canonical_path):
     return canonical_path.replace(EFI_MOUNTPOINT[:-1], "").replace("/", "\\")
 
 
-def _copy_grub_files(required, optional):
-    """Copy grub files from centos/ dir to the /boot/efi/EFI/redhat/ dir.
-
-    The grub.cfg, grubenv, ... files are not present in the redhat/ directory
-    after the conversion on a CentOS Linux system. These files are usually created
-    during the OS installation by anaconda and have to be present in the
-    redhat/ directory after the conversion.
-
-    The copy of the centos/ directory should be ok. In case of the conversion
-    from Oracle Linux, the redhat/ directory is already used.
-
-    Return False when any required file has not been copied or is missing.
-    """
-    if systeminfo.system_info.id != "centos":
-        logger.debug("Skipping copying GRUB files - only related to CentOS Linux.")
-        return True
-
-    # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
-    #  the different grub content...
-    # E.g. if the efibin is located in a different directory, are these two files valid?
-    logger.info("Copying GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
-    flag_ok = True
-    all_files = required + optional
-    for filename in all_files:
-        src_path = os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename)
-        dst_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
-        if os.path.exists(dst_path):
-            logger.debug("The %s file already exists. Copying skipped." % dst_path)
-            continue
-        if not os.path.exists(src_path):
-            if filename in required:
-                # without the required files user should not reboot the system
-                logger.error("Unable to find the original file required for GRUB configuration: %s" % src_path)
-                flag_ok = False
-            continue
-        logger.info("Copying '%s' to '%s'" % (src_path, dst_path))
-        try:
-            shutil.copy2(src_path, dst_path)
-        except (OSError, IOError) as err:
-            # IOError for py2 and OSError for py3
-            logger.error("I/O error(%s): %s" % (err.errno, err.strerror))
-            flag_ok = False
-    return flag_ok
-
-
 def _is_rhel_in_boot_entries(efibootinfo, efi_path, label):
     """
     Verify that Red Hat Enterprise Linux is present within the boot
@@ -510,7 +465,7 @@ def _remove_orig_boot_entry(efibootinfo_orig, efibootinfo_new):
     )
 
 
-def _replace_efi_boot_entry():
+def replace_efi_boot_entry():
     """Replace the current UEFI bootloader entry with the RHEL one.
 
     The current UEFI bootloader entry could be invalid or misleading. It's
@@ -531,70 +486,6 @@ def _replace_efi_boot_entry():
 
     logger.info("Removing the original UEFI bootloader entry.")
     _remove_orig_boot_entry(efibootinfo_orig, efibootinfo_new)
-
-
-def _remove_efi_centos():
-    """Remove the /boot/efi/EFI/centos/ directory when no UEFI files remains.
-
-    The centos/ directory after the conversion contains usually just grubenv,
-    grub.cfg, .. files only. Which we copy into the redhat/ directory. If no
-    other UEFI files are present, we can remove this dir. However, if additional
-    UEFI files are present, we should keep the directory for now, until we
-    deal with it.
-    """
-    if systeminfo.system_info.id != "centos":
-        # nothing to do
-        return
-    try:
-        os.rmdir(CENTOS_EFIDIR_CANONICAL_PATH)
-    except OSError:
-        logger.warning(
-            "The folder %s is left untouched. You may remove the folder manually"
-            " after you ensure there is no custom data you would need." % CENTOS_EFIDIR_CANONICAL_PATH
-        )
-
-
-def post_ponr_set_efi_configuration():
-    """Configure GRUB after the conversion.
-
-    Original setup on CentOS Linux points to \\EFI\\centos\\shimx64.efi but after
-    the conversion it should point to \\EFI\\redhat\\shimx64.efi. As well some
-    files like grubenv, grub.cfg, ...  are not migrated by default to the
-    new directory as these are usually created just during the installation of the OS.
-
-    The current implementation ignores possible multi-boot installations.
-    It expects just one installed OS. IOW, only the CurrentBoot entry is handled
-    correctly right now. Other possible boot entries have to be handled manually
-    if needed.
-
-    Nothing happens on BIOS.
-    """
-    if not is_efi():
-        logger.info("BIOS detected. Nothing to do.")
-        return
-
-    new_default_efibin = None
-    for filename in DEFAULT_INSTALLED_EFIBIN_FILENAMES:
-        efi_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
-        if os.path.exists(efi_path):
-            logger.info("UEFI binary found: %s" % efi_path)
-            new_default_efibin = efi_path
-            break
-        logger.debug("UEFI binary %s not found. Checking next possibility..." % efi_path)
-    if not new_default_efibin:
-        _log_critical_error("None of the expected RHEL UEFI binaries exist.")
-    if not os.path.exists("/usr/sbin/efibootmgr"):
-        _log_critical_error("The /usr/sbin/efibootmgr utility is not installed.")
-
-    # related just to CentOS Linux. checks inside
-    if not _copy_grub_files(["grubenv", "grub.cfg"], ["user.cfg"]):
-        _log_critical_error("Some GRUB files have not been copied to /boot/efi/EFI/redhat")
-    _remove_efi_centos()
-
-    try:
-        _replace_efi_boot_entry()
-    except BootloaderError as e:
-        _log_critical_error(e.message)
 
 
 def get_grub_config_file():
