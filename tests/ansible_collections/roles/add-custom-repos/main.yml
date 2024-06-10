@@ -10,3 +10,8 @@
 - import_playbook: rhel8-eus-repos.yml
   # We need to skip for Oracle Linux machines since we don't test EUS on OL
   when: ansible_facts['distribution_version'] == "8.8" and ansible_facts['distribution'] != "OracleLinux"
+- import_playbook: rhel9-repos.yml
+  when: ansible_facts['distribution_version'] in ["9.5", "9.7", "9.9", "9.10"]
+- import_playbook: rhel9-eus-repos.yml
+  # We need to skip for Oracle Linux machines since we don't test EUS on OL
+  when: ansible_facts['distribution_version'] in ["9.4", "9.6", "9.8"] and ansible_facts['distribution'] != "OracleLinux"
