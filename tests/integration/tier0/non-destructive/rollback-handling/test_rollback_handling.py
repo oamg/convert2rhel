@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SystemInformationRelease
 
 
 @pytest.fixture(autouse=True)
@@ -22,34 +22,33 @@ def assign_packages(packages=None):
     if not packages:
         packages = []
 
-    ol_7_pkgs = ["oracle-release-el7", "usermode", "rhn-setup", "oracle-logos"]
-    ol_8_pkgs = ["oraclelinux-release-el8", "usermode", "rhn-setup", "oracle-logos"]
-    cos_7_pkgs = ["centos-release", "usermode", "rhn-setup", "python-syspurpose", "centos-logos"]
-    cos_8_pkgs = ["centos-linux-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
-    alm_8_pkgs = ["almalinux-release", "usermode", "rhn-setup", "python3-syspurpose", "almalinux-logos"]
-    roc_8_pkgs = ["rocky-release", "usermode", "rhn-setup", "python3-syspurpose", "rocky-logos"]
-    str_8_pkgs = ["centos-stream-release", "usermode", "rhn-setup", "python3-syspurpose", "centos-logos"]
-    # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
-    # and Oracle Linux 8.2 respectively.
+    os_distribution = SystemInformationRelease.distribution
+    os_version = SystemInformationRelease.version.major
 
     release_mapping = {
-        "centos-7": cos_7_pkgs,
-        "centos-8": cos_8_pkgs,
-        "oracle-7": ol_7_pkgs,
-        "oracle-8": ol_8_pkgs,
-        "alma-8": alm_8_pkgs,
-        "rocky-8": roc_8_pkgs,
-        "stream-8": str_8_pkgs,
+        "centos-7": ["centos-release", "centos-logos"],
+        "centos-8": ["centos-linux-release", "centos-logos"],
+        "oracle": [f"oraclelinux-release-el{os_version}", "oracle-logos"],
+        "almalinux": ["almalinux-release", "almalinux-logos"],
+        "rocky": ["rocky-release", "rocky-logos"],
+        "stream": ["centos-stream-release", "centos-logos"],
     }
 
-    release_key = SYSTEM_RELEASE_ENV
+    packages = ["usermode", "rhn-setup"]
 
-    if "." in SYSTEM_RELEASE_ENV:
-        release_key = SYSTEM_RELEASE_ENV.split(".")[0]
-    elif "-latest" in SYSTEM_RELEASE_ENV:
-        release_key = SYSTEM_RELEASE_ENV.split("-latest")[0]
+    # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
+    # and Oracle Linux 8.2 respectively.
+    if not os_distribution == "oracle":
+        python_ver = ""
+        if os_version > 7:
+            python_ver = "3"
+        packages.append(f"python{python_ver}-syspurpose")
 
-    packages = release_mapping.get(release_key)
+    os_key = os_distribution
+    if os_distribution == "centos":
+        os_key = f"{os_distribution}-{os_version}"
+
+    packages.extend(release_mapping.get(os_key))
 
     return packages
 

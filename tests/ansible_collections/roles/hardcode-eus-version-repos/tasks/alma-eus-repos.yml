@@ -1,0 +1,35 @@
+- name: Gather facts
+  ansible.builtin.setup:
+
+- name: Overwrite AppStream repository (AlmaLinux {{ ansible_distribution_version }})
+  yum_repository:
+    name: appstream
+    description: AppStream repo
+    baseurl: https://repo.almalinux.org/vault/{{ ansible_distribution_version }}/AppStream/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux
+
+- name: Overwrite BaseOS repository (AlmaLinux {{ ansible_distribution_version }})
+  yum_repository:
+    name: baseos
+    description: BaseOS repo
+    baseurl: https://repo.almalinux.org/vault/{{ ansible_distribution_version }}/BaseOS/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux
+
+- name: Overwrite Extras repository (AlmaLinux {{ ansible_distribution_version }})
+  yum_repository:
+    name: extras
+    description: Extras repo
+    baseurl: https://repo.almalinux.org/vault/{{ ansible_distribution_version }}/extras/$basearch/os/
+    state: present
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+    file: almalinux

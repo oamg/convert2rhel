@@ -464,25 +464,28 @@ def missing_os_release_package_workaround(shell):
     yield
 
     os_to_pkg_mapping = {
-        "oracle-7": ["oraclelinux-release-el7", "oraclelinux-release"],
-        "oracle-8": ["oraclelinux-release-el8", "oraclelinux-release"],
         "centos-7": ["centos-release"],
         "centos-8": ["centos-linux-release"],
-        "alma-8": ["almalinux-release"],
-        "rocky-8": ["rocky-release"],
-        "stream-8": ["centos-stream-release"],
+        "almalinux": ["almalinux-release"],
+        "rocky": ["rocky-release"],
+        "oracle": ["oraclelinux-release"],
+        "stream": ["centos-stream-release"],
     }
 
     # Run only for non-destructive tests.
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        # Not using the SystemInformationRelease class here, because at this point the *-release
-        # package is missing from the system, including the /etc/system-release file
-        os_name = SYSTEM_RELEASE_ENV.split("-")[0]
-        os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
-        os_key = f"{os_name}-{os_ver[0]}"
+        os_name = SystemInformationRelease.distribution
+        os_ver = SystemInformationRelease.version.major
+        if "centos" in os_name:
+            os_key = f"{os_name}-{os_ver}"
+        else:
+            os_key = os_name
 
         system_release_pkgs = os_to_pkg_mapping.get(os_key)
+
+        if os_key == "oracle":
+            system_release_pkgs.append(f"oraclelinux-release-el{SystemInformationRelease.version.major}")
 
         for pkg in system_release_pkgs:
             installed = shell(f"rpm -q {pkg}").returncode
@@ -809,8 +812,10 @@ def _add_client_tools_repo(shell):
     Runs only on Oracle Linux system
     Create an ubi repo for its respective major version to install subscription-manager from.
     """
-    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
-    if SystemInformationRelease.version.major == 7:
+    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo"
+    if SystemInformationRelease.version.major == 8:
+        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
+    elif SystemInformationRelease.version.major == 7:
         repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
 
     # Add the redhat-release GPG key
