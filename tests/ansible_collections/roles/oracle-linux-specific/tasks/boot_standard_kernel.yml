@@ -1,4 +1,7 @@
 ---
+- name: Gather facts
+  ansible.builtin.setup:
+
 - name: Install standard kernel
   yum:
     name: "kernel.*"
@@ -10,3 +13,9 @@
 
 - name: Set default kernel to Red Hat compatible kernel
   shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
+
+# On OL9 the grubby call is not recognized for some reason
+# Set the entry manually just as a safety measure
+- name: Set the default kernel manually for OL9
+  shell: 'grub2-set-default "Oracle Linux Server ({{ kernel_ver.stdout }}) {{ ansible_distribution_version }}"'
+  when: ansible_distribution == "OracleLinux" and ansible_distribution_major_version == "9"
