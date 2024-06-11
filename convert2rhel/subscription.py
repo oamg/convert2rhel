@@ -779,33 +779,10 @@ def enable_repos(rhel_repoids):
         subscription-manager.
     :type rhel_repoids: list[str]
     """
-    if tool_opts.enablerepo:
-        repos_to_enable = tool_opts.enablerepo
-    else:
-        repos_to_enable = rhel_repoids
+    repos_to_enable = tool_opts.enablerepo if tool_opts.enablerepo else rhel_repoids
 
-    if repos_to_enable == system_info.eus_rhsm_repoids:
-        try:
-            loggerinst.info(
-                "The system version corresponds to a RHEL Extended Update Support (EUS) release. "
-                "Trying to enable RHEL EUS repositories."
-            )
-            # Try first if it's possible to enable EUS repoids. Otherwise try
-            # enabling the default RHSM repoids. Otherwise, if it raiess an
-            # exception, try to enable the default rhsm-repos
-            submgr_enable_repos(repos_to_enable)
-        except SystemExit:
-            loggerinst.info(
-                "The RHEL EUS repositories are not possible to enable.\n"
-                "Trying to enable standard RHEL repositories as a fallback."
-            )
-            # Fallback to the default_rhsm_repoids
-            repos_to_enable = system_info.default_rhsm_repoids
-            submgr_enable_repos(repos_to_enable)
-    else:
-        # This could be either the default_rhsm repos or any user specific
-        # repoids
-        submgr_enable_repos(repos_to_enable)
+    loggerinst.info("Trying to enable the following RHEL repositories: %s" % ", ".join(repos_to_enable))
+    submgr_enable_repos(repos_to_enable)
 
     system_info.submgr_enabled_repos = repos_to_enable
 
@@ -815,9 +792,17 @@ def submgr_enable_repos(repos_to_enable):
     enable_cmd = ["subscription-manager", "repos"]
     for repo in repos_to_enable:
         enable_cmd.append("--enable=%s" % repo)
+
     output, ret_code = utils.run_subprocess(enable_cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical("Repositories were not possible to enable through subscription-manager:\n%s" % output)
+        description = "Repositories were not possible to enable through subscription-manager:\n%s" % output
+        loggerinst.critical_no_exit(description)
+        raise exceptions.CriticalError(
+            id_="FAILED_TO_ENABLE_RHSM_REPOSITORIES",
+            title="Failed to enable RHSM repositories",
+            description=description,
+        )
+
     loggerinst.info("Repositories enabled through subscription-manager")
 
 
