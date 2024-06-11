@@ -971,6 +971,13 @@ def test_get_pool_id():
             ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
             "Repositories enabled through subscription-manager",
         ),
+        (
+            ["rhel-7-server-els-rpms"],
+            ("rhel-7-server-els-rpms", 0),
+            False,
+            ["rhel-7-server-els-rpms"],
+            "Repositories enabled through subscription-manager",
+        ),
     ),
 )
 @centos8
@@ -1002,7 +1009,7 @@ def test_enable_repos_rhel_repoids(
     )
 
     if should_raise:
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             subscription.enable_repos(rhel_repoids=rhel_repoids)
     else:
         subscription.enable_repos(rhel_repoids=rhel_repoids)
@@ -1010,65 +1017,6 @@ def test_enable_repos_rhel_repoids(
 
     assert expected_message in caplog.records[-1].message
     assert run_subprocess_mock.call_count == 1
-
-
-@pytest.mark.parametrize(
-    ("rhel_repoids", "default_rhsm_repoids", "subprocess", "subprocess2", "should_raise", "expected"),
-    (
-        (
-            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
-            ["test-repo-1", "test-repo-2"],
-            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
-            ("test-repo-1, test-repo-2", 1),
-            True,
-            "Repositories were not possible to enable through subscription-manager:\ntest-repo-1, test-repo-2",
-        ),
-        (
-            ["rhel-8-for-x86_64-baseos-eus-rpms", "rhel-8-for-x86_64-appstream-eus-rpms"],
-            ["test-repo-1", "test-repo-2"],
-            ("rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms", 1),
-            ("test-repo-1, test-repo-2", 0),
-            False,
-            "Repositories enabled through subscription-manager",
-        ),
-    ),
-)
-@centos8
-def test_enable_repos_rhel_repoids_fallback_default_rhsm(
-    pretend_os,
-    rhel_repoids,
-    default_rhsm_repoids,
-    subprocess,
-    subprocess2,
-    should_raise,
-    expected,
-    monkeypatch,
-    caplog,
-    global_system_info,
-):
-    monkeypatch.setattr(subscription, "system_info", global_system_info)
-    cmd_mock = ["subscription-manager", "repos"]
-    for repo in rhel_repoids:
-        cmd_mock.append("--enable=%s" % repo)
-
-    run_subprocess_mock = RunSubprocessMocked(side_effect=[subprocess, subprocess2])
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    monkeypatch.setattr(subscription.system_info, "default_rhsm_repoids", default_rhsm_repoids)
-    monkeypatch.setattr(subscription.system_info, "eus_rhsm_repoids", rhel_repoids)
-
-    if should_raise:
-        with pytest.raises(SystemExit):
-            subscription.enable_repos(rhel_repoids=rhel_repoids)
-    else:
-        subscription.enable_repos(rhel_repoids=rhel_repoids)
-        assert subscription.system_info.submgr_enabled_repos == default_rhsm_repoids
-
-    assert expected in caplog.records[-1].message
-    assert run_subprocess_mock.call_count == 2
 
 
 @pytest.mark.parametrize(
@@ -1126,7 +1074,7 @@ def test_enable_repos_toolopts_enablerepo(
     tool_opts.enablerepo = toolopts_enablerepo
 
     if should_raise:
-        with pytest.raises(SystemExit):
+        with pytest.raises(exceptions.CriticalError):
             subscription.enable_repos(rhel_repoids=None)
     else:
         subscription.enable_repos(rhel_repoids=None)
@@ -1353,3 +1301,34 @@ def test_disable_repos_critical_error(monkeypatch, caplog):
         assert "Could not disable subscription-manager repositories:\nerror" in caplog.records[-1].message
 
     assert utils.run_subprocess.cmd == ["subscription-manager", "repos", "--disable=*"]
+
+
+def test_submgr_enable_repos(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=0, return_string=""))
+    subscription.submgr_enable_repos(["rhel-8-repo", "rhel-8-extra-repo"])
+
+    assert utils.run_subprocess.cmd == [
+        "subscription-manager",
+        "repos",
+        "--enable=rhel-8-repo",
+        "--enable=rhel-8-extra-repo",
+    ]
+    assert "Repositories enabled through subscription-manager" in caplog.records[-1].message
+
+
+def test_submgr_enable_repos_critical_error(monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1, return_string="error"))
+    with pytest.raises(exceptions.CriticalError) as execinfo:
+        subscription.submgr_enable_repos(["rhel-8-repo", "rhel-8-extra-repo"])
+
+    description = "Repositories were not possible to enable through subscription-manager:\nerror"
+    assert "FAILED_TO_ENABLE_RHSM_REPOSITORIES" in execinfo._excinfo[1].id
+    assert "Failed to enable RHSM repositories" in execinfo._excinfo[1].title
+    assert description in execinfo._excinfo[1].description
+    assert utils.run_subprocess.cmd == [
+        "subscription-manager",
+        "repos",
+        "--enable=rhel-8-repo",
+        "--enable=rhel-8-extra-repo",
+    ]
+    assert description in caplog.records[-1].message
