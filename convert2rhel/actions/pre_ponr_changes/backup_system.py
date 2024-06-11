@@ -19,7 +19,7 @@ import logging
 import os
 import re
 
-from convert2rhel import actions, backup, exceptions, subscription
+from convert2rhel import actions, backup, exceptions
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.pkghandler import VERSIONLOCK_FILE_PATH
@@ -174,9 +174,8 @@ class BackupPackageFiles(actions.Action):
         [{"status":"S5T", "file_type":"c", "path":"/etc/yum.repos.d/CentOS-Linux-AppStream.repo"}]
         """
         data = []
-
         path = os.path.join(LOG_DIR, PRE_RPM_VA_LOG_FILENAME)
-
+        output = ""
         try:
             with open(path, "r") as f:
                 output = f.read()
@@ -192,9 +191,7 @@ class BackupPackageFiles(actions.Action):
                 loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
                 loggerinst.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
 
-        output = output.strip()
-        lines = output.split("\n")
-
+        lines = output.strip().split("\n")
         for line in lines:
             parsed_line = self._parse_line(line.strip())
             if parsed_line["path"] and parsed_line["status"]:
