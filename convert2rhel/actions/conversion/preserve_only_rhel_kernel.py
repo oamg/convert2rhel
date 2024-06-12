@@ -53,11 +53,13 @@ class InstallRhelKernel(actions.Action):
         # Example output from yum and dnf:
         #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
         already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
+        print("1")
         if already_installed:
             rhel_kernel_nevra = already_installed.group(1)
             non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_fingerprint(
                 system_info.fingerprints_rhel, "kernel"
             )
+            print("2")
             for non_rhel_kernel in non_rhel_kernels:
                 # We're comparing to NEVRA since that's what yum/dnf prints out
                 if rhel_kernel_nevra == pkghandler.get_pkg_nevra(non_rhel_kernel):
@@ -69,10 +71,15 @@ class InstallRhelKernel(actions.Action):
                         " has the same version as the latest RHEL kernel."
                     )
                     loggerinst.info("\n%s" % info_message)
-                    self.add_message(level="INFO", id="CONFLICT_OF_KERNELS", description=info_message)
+                    self.add_message(
+                        level="INFO", id="CONFLICT_OF_KERNELS", title="Conflict of kernels", description=info_message
+                    )
                     pkghandler.handle_no_newer_rhel_kernel_available()
                     kernel_update_needed = True
+                    print("3")
+
         if kernel_update_needed:
+            print("4")
             pkghandler.update_rhel_kernel()
 
 
