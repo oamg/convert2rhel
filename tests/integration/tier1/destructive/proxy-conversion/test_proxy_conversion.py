@@ -1,3 +1,4 @@
+import re
 import socket
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
@@ -91,36 +92,29 @@ def setup_rhsm(shell):
         ).returncode
         == 0
     )
-    if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
-        assert (
-            shell(
-                f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo \
-                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
-                silent=True,
-            ).returncode
-            == 0
-        )
-    else:
-        assert (
-            shell(
-                f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo \
-                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
-                silent=True,
-            ).returncode
-            == 0
-        )
-        # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
-        # otherwise the dnf will complain with dependency issues.
-        if "centos-8" in SYSTEM_RELEASE_ENV:
-            shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
+
+    client_tools_repo = ""
+    if re.match(r"^(centos|oracle)-7", SYSTEM_RELEASE_ENV):
+        client_tools_repo = "client-tools-for-rhel-7-server.repo"
+    elif re.match(r"^(alma|centos|oracle|rocky|stream)-8", SYSTEM_RELEASE_ENV):
+        client_tools_repo = "client-tools-for-rhel-8.repo"
+    elif re.match(r"^(alma|oracle|rocky|stream)-9", SYSTEM_RELEASE_ENV):
+        client_tools_repo = "client-tools-for-rhel-9.repo"
+
+    ct_repo_shell_call = f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/{client_tools_repo} \
+                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}"
+
+    assert shell(ct_repo_shell_call, silent=True).returncode == 0
+
+    # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
+    # otherwise the dnf will complain with dependency issues.
+    if "centos-8" in SYSTEM_RELEASE_ENV:
+        shell("sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
 
     # On Oracle Linux 7 a "rhn-client-tools" package may be present on
     # the system which prevents "subscription-manager" to be installed.
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        shell("yum remove rhn-client-tools -y")
-        shell("echo 'exclude=rhn-client*' >> /etc/yum.conf")
-
-    shell("yum -y install subscription-manager subscription-manager-rhsm-certificates")
+    # Run the yum install call with no obsoletes flag.
+    shell("yum -y install --setopt=obsoletes=0 subscription-manager subscription-manager-rhsm-certificates")
 
     shell(
         f"subscription-manager config --server.proxy_hostname={TEST_VARS['PROXY_SERVER']} --server.proxy_port={TEST_VARS['PROXY_PORT']}",
