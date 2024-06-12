@@ -36,10 +36,6 @@ tag+:
         Get right to the point of no return and end the conversion.
         Verify that the system has been successfully unregistered after the rollback.
         Verify that usermode, rhn-setup and os-release packages are not removed.
-    adjust+:
-        - environment+:
-            CONVERT2RHEL_EXPERIMENTAL_ANALYSIS: 1
-          when: distro == centos-8-latest
     tag+:
         - rhsm-cleanup
     test: |

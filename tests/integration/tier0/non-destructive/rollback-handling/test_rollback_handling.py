@@ -177,7 +177,7 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     packages_to_remove_at_cleanup = install_packages(shell, assign_packages())
 
     with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
+        "analyze --serverurl {} --username {} --password {} --pool {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
             TEST_VARS["RHSM_USERNAME"],
             TEST_VARS["RHSM_PASSWORD"],

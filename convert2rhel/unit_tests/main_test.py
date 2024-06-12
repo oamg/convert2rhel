@@ -552,7 +552,6 @@ class TestRollbackFromMain:
             (subscription, "should_subscribe", mock.Mock(side_effect=lambda: True)),
             (subscription, "update_rhsm_custom_facts", mock.Mock()),
             (main, "rollback_changes", mock.Mock()),
-            (os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1}),
             (report, "summary_as_json", mock.Mock()),
             (report, "summary_as_txt", mock.Mock()),
         )
@@ -618,7 +617,6 @@ class TestRollbackFromMain:
         monkeypatch.setattr(subscription, "should_subscribe", should_subscribe_mock)
         monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
-        monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_EXPERIMENTAL_ANALYSIS": 1})
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
         global_tool_opts.activity = "analysis"
