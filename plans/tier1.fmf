@@ -189,6 +189,10 @@ adjust+:
                     - changed-grub-file/valid_changes_to_grub_file
 
         /changed_grub_invalid:
+            adjust+:
+                - enabled: false
+                  when: distro == alma-8-latest and boot_method == uefi or distro == alma-9
+                  because: The changes to the grub file result in a unbootable system.
             discover+:
                 test+<:
                     - changed-grub-file/invalid_changes_to_grub_file
