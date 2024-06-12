@@ -1,8 +1,9 @@
 import os
+import re
 
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 @pytest.fixture()
@@ -18,20 +19,18 @@ def downgrade_and_versionlock(shell):
     """
     # On some systems we cannot do the downgrade as the repos contain only the latest package version.
     # We need to install package from older repository as a workaround.
-    centos_8_pkg_url = "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm"
-    alma_8eus_pkg_url = (
-        "https://repo.almalinux.org/vault/8.3/BaseOS/x86_64/os/Packages/wpa_supplicant-2.9-2.el8_3.1.x86_64.rpm"
-    )
-    rocky_8eus_pkg_url = (
-        "https://dl.rockylinux.org/vault/rocky/8.3/BaseOS/x86_64/os/Packages/wpa_supplicant-2.9-2.el8.1.x86_64.rpm"
-    )
+    older_packages_mapping = {
+        "centos-8": "https://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/wpa_supplicant-2.7-1.el8.x86_64.rpm",
+        "almalinux-8": "https://repo.almalinux.org/vault/8.3/BaseOS/x86_64/os/Packages/wpa_supplicant-2.9-2.el8_3.1.x86_64.rpm",
+        "rocky-8": "https://dl.rockylinux.org/vault/rocky/8.3/BaseOS/x86_64/os/Packages/wpa_supplicant-2.9-2.el8.1.x86_64.rpm",
+        "almalinux-9": "https://vault.almalinux.org/9.2/BaseOS/x86_64/os/Packages/wpa_supplicant-2.10-4.el9.x86_64.rpm",
+        "rocky-9": "https://download.rockylinux.org/vault/rocky/9.2/BaseOS/x86_64/os/Packages/w/wpa_supplicant-2.10-4.el9.x86_64.rpm",
+    }
 
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install -y {}".format(centos_8_pkg_url)).returncode == 0
-    elif "alma-8" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install -y {}".format(alma_8eus_pkg_url)).returncode == 0
-    elif "rocky-8" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install -y {}".format(rocky_8eus_pkg_url)).returncode == 0
+    os_key = f"{SystemInformationRelease.distribution}-{SystemInformationRelease.version.major}"
+
+    if re.match(r"^(almalinux|centos|rocky)-[89]", os_key):
+        assert shell("yum install -y {}".format(older_packages_mapping.get(os_key))).returncode == 0
     else:
         assert shell("yum install openldap wpa_supplicant sqlite -y").returncode == 0
         # Try to downgrade some packages.

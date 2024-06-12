@@ -11,19 +11,21 @@ def backup_removal(shell):
     /usr/share/convert2rhel/subscription-manager/
     """
     dirs_to_clear = ["/usr/share/convert2rhel/subscription-manager/", "/var/lib/convert2rhel/backup/"]
-    for dir in dirs_to_clear:
-        shell(f"rm -rf {dir}*")
+    for directory in dirs_to_clear:
+        shell(f"rm -rf {directory}*")
 
     yield
 
 
-def assign_packages(packages=None):
-    # If nothing was passed down to packages, set it to an empty list
-    if not packages:
-        packages = []
-
+def assign_packages():
+    """
+    Helper function.
+    Assign packages to be installed and/or validated.
+    """
     os_distribution = SystemInformationRelease.distribution
     os_version = SystemInformationRelease.version.major
+
+    os_key = f"{os_distribution}-{os_version}" if os_distribution == "centos" else os_distribution
 
     release_mapping = {
         "centos-7": ["centos-release", "centos-logos"],
@@ -34,21 +36,13 @@ def assign_packages(packages=None):
         "stream": ["centos-stream-release", "centos-logos"],
     }
 
-    packages = ["usermode", "rhn-setup"]
+    python_ver = "3" if os_version > 7 else ""
 
+    packages = release_mapping.get(os_key, []) + ["usermode"]
     # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
-    # and Oracle Linux 8.2 respectively.
-    if not os_distribution == "oracle":
-        python_ver = ""
-        if os_version > 7:
-            python_ver = "3"
-        packages.append(f"python{python_ver}-syspurpose")
-
-    os_key = os_distribution
-    if os_distribution == "centos":
-        os_key = f"{os_distribution}-{os_version}"
-
-    packages.extend(release_mapping.get(os_key))
+    # and Oracle Linux 8.2 respectively, the package is also not present in EL9 systems, same as the rhn-setup
+    if os_distribution != "oracle" and os_version != 9:
+        packages.extend(["rhn-setup", f"python{python_ver}-syspurpose"])
 
     return packages
 

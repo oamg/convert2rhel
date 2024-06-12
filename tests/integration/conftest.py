@@ -54,14 +54,18 @@ SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
 
 SAT_REG_COMMAND = {
     "alma-8-latest": SAT_REG_FILE["ALMA8_SAT_REG"],
+    "alma-9-latest": SAT_REG_FILE["ALMA9_SAT_REG"],
     "alma-8.8": SAT_REG_FILE["ALMA88_SAT_REG"],
     "rocky-8-latest": SAT_REG_FILE["ROCKY8_SAT_REG"],
     "rocky-8.8": SAT_REG_FILE["ROCKY88_SAT_REG"],
+    "rocky-9-latest": SAT_REG_FILE["ROCKY9_SAT_REG"],
     "oracle-8-latest": SAT_REG_FILE["ORACLE8_SAT_REG"],
+    "oracle-9-latest": SAT_REG_FILE["ORACLE9_SAT_REG"],
     "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
     "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
     "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
     "stream-8-latest": SAT_REG_FILE["STREAM8_SAT_REG"],
+    "stream-9-latest": SAT_REG_FILE["STREAM9_SAT_REG"],
 }
 
 
@@ -507,13 +511,13 @@ def _load_json_schema(path):
 
 
 @pytest.fixture
-def pre_registered(shell, request, yum_conf_exclude):
+def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     For Oracle Linux we're using the _add_client_tools_repo_oracle to enable the client-tools repository
     to install the subscription-manager package from.
-    We also exclude the rhn-client* packages for the same reason.
-    On Oracle Linux subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
+    We call the subman installation with the no obsolete flag to be able to install the package even on Oracle Linux
+     where the subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
     By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
@@ -528,13 +532,10 @@ def pre_registered(shell, request, yum_conf_exclude):
         print(">>> Using parametrized username and password requested in the fixture.")
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        # Remove the rhn-client-tools package to make way for subscription-manager installation
-        # given subman is obsoleted by the rhn-client-tools on Oracle
-        shell("yum remove -y rhn-client-tools")
         # Add the client-tools repository for Oracle linux to install subscription-manager from
         _add_client_tools_repo(shell)
 
-    assert shell("yum install -y subscription-manager").returncode == 0
+    assert shell("yum install --setopt=obsoletes=0 -y subscription-manager").returncode == 0
     # The SSL certificate for accessing cdn.redhat.com is intentionally missing from
     # the subscription-manager-rhsm-certificates package on CentOS Linux 7
     shell(
@@ -762,38 +763,32 @@ def yum_conf_exclude(shell, backup_directory, request):
 
         def test_function(yum_conf_exclude):
     """
-    # We need to do this only for Oracle Linux
-    # rhn* is one of the excluded packages in convert2rhel configs
-    # so if the package is present on the system, is excluded in yum.conf
-    # and convert2rhel tries to back it up by calling yumdownloader
-    # it fails to do so because the call conflicts with the exclude option
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        exclude = ["rhn-client*"]
-        if hasattr(request, "param"):
-            exclude = request.param
-            print(">>> Using parametrized packages requested in the fixture.")
-        yum_config = "/etc/yum.conf"
-        backup_dir = os.path.join(backup_directory, "yumconf")
-        shell(f"mkdir -v {backup_dir}")
-        config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-        config = configparser.ConfigParser()
-        config.read(yum_config)
+    exclude = [""]
+    if hasattr(request, "param"):
+        exclude = request.param
+        print(">>> Using parametrized packages requested in the fixture.")
+    yum_config = "/etc/yum.conf"
+    backup_dir = os.path.join(backup_directory, "yumconf")
+    shell(f"mkdir -v {backup_dir}")
+    config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
+    config = configparser.ConfigParser()
+    config.read(yum_config)
 
-        assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
+    assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
-        pkgs_to_exclude = " ".join(exclude)
-        # If there is already an `exclude` section, append to the existing value
-        if config.has_option("main", "exclude"):
-            pre_existing_value = config.get("main", "exclude")
-            config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
-        else:
-            config.set("main", "exclude", pkgs_to_exclude)
+    pkgs_to_exclude = " ".join(exclude)
+    # If there is already an `exclude` section, append to the existing value
+    if config.has_option("main", "exclude"):
+        pre_existing_value = config.get("main", "exclude")
+        config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+    else:
+        config.set("main", "exclude", pkgs_to_exclude)
 
-        with open(yum_config, "w") as configfile:
-            config.write(configfile, space_around_delimiters=False)
+    with open(yum_config, "w") as configfile:
+        config.write(configfile, space_around_delimiters=False)
 
-        assert config.has_option("main", "exclude")
-        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+    assert config.has_option("main", "exclude")
+    assert all(pkg in config.get("main", "exclude") for pkg in exclude)
 
     yield
 
@@ -838,7 +833,7 @@ def _remove_client_tools_repo(shell):
 
 
 @pytest.fixture
-def satellite_registration(shell, yum_conf_exclude, request):
+def satellite_registration(shell, request):
     """
     Fixture
     Register the system to the Satellite server
@@ -869,6 +864,10 @@ def satellite_registration(shell, yum_conf_exclude, request):
 
     if "oracle" in SYSTEM_RELEASE_ENV:
         _remove_client_tools_repo(shell)
+
+    ### This is a workaround which might be removed, when we enable the Satellite repositories by default
+    for repo in shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output:
+        shell(f"subscription-manager --enable {repo}")
 
     yield
 
@@ -908,7 +907,7 @@ def backup_directory(shell, request):
 
 
 @pytest.fixture()
-def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
+def install_and_set_up_subman_to_stagecdn(shell):
     """ "
     A fixture to install subscription-manager and set up to point to a testing environments.
     rhsm.baseurl and server.hostname to be changed.
@@ -917,11 +916,7 @@ def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
     # Add the client tools repository to install the subscription-manager from
     # This is mainly for Oracle Linux but does not hurt to do the same for CentOS as well
     _add_client_tools_repo(shell)
-    # Since we're using the yum_conf_exclude fixture, which excludes rhn-client*
-    # by default, we need to remove the pacakge to prevent issues during the yum transaction
-    if SystemInformationRelease.distribution == "oracle":
-        shell("yum remove -y rhn-client*")
-    shell(f"yum install subscription-manager -y")
+    shell(f"yum install --setopt=obsoletes=0 subscription-manager -y")
 
     # Point the server hostname to the staging environment,
     # so we don't need to pass it to convert2rhel explicitly
