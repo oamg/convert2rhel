@@ -35,7 +35,7 @@ jobs:
       - uses: ammaraskar/sphinx-action@dev
         with:
           docs-folder: "docs/"
-          pre-build-command: "pip install -r docs/requirements.txt"
+          pre-build-command: "pip install -r docs/requirements.txt --force-reinstall"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
