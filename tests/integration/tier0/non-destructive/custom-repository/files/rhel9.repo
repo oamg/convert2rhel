@@ -1,0 +1,11 @@
+[rhel-9-for-x86_64-baseos-rpms]
+name=RHEL 9 BaseOS for $basearch
+baseurl=https://rhsm-pulp.corp.redhat.com/content/dist/rhel9/$releasever/$basearch/baseos/os/
+gpgcheck=0
+enabled=0
+
+[rhel-9-for-x86_64-appstream-rpms]
+name=RHEL 9 AppStream for $basearch
+baseurl=https://rhsm-pulp.corp.redhat.com/content/dist/rhel9/$releasever/$basearch/appstream/os/
+gpgcheck=0
+enabled=0

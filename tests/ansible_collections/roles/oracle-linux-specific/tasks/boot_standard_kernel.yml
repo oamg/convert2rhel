@@ -14,17 +14,5 @@
 - name: Set default kernel to Red Hat compatible kernel
   shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
 
-# On OL9 the /etc/default/grub might be configured in a way, that it's not possible to boot
-# into the RHCK (Red Hat Compatible Kernel), fix that here
-- name: Set the /etc/grub/default
-  lineinfile:
-    path: /etc/default/grub
-    line: '{{ item }}'
-    insertafter: EOF
-  loop:
-    - 'GRUB_ENABLE_BLSCFG=true'
-    - 'GRUB_TERMINAL_OUTPUT="console"'
-  when: ansible_distribution == "OracleLinux" and ansible_distribution_major_version == "9"
-
 - name: Run grub2-mkconfig
   shell: grub2-mkconfig -o /boot/grub2/grub.cfg

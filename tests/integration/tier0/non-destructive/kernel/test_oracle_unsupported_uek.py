@@ -22,9 +22,9 @@ def unbreakable_kernel(shell):
     yield
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        shell(
-            "grubby --set-default /boot/vmlinuz-`rpm -q --qf '%{BUILDTIME}\t%{EVR}.%{ARCH}\n' kernel | sort -nr | head -1 | cut -f2`"
-        )
+        rhck_kernel = shell("rpm -q --qf '%{BUILDTIME}\t%{EVR}.%{ARCH}\n' kernel | sort -nr | head -1 | cut -f2").output
+        shell(f"grubby --set-default /boot/vmlinuz-{rhck_kernel}")
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
         shell("tmt-reboot -t 600")
 
 

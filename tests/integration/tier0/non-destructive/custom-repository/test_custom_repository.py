@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import SystemInformationRelease
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease
 
 
 class AssignRepositoryVariables:
@@ -9,30 +9,31 @@ class AssignRepositoryVariables:
     Assign correct repofile content, name and enable_repo_opt to their respective major/eus system version.
     """
 
-    repofile_epel7 = "rhel7"
-    repofile_epel8 = "rhel8"
-    repofile_epel8_eus = "rhel8-eus"
-    enable_repo_opt_epel7 = (
+    system_version = SystemInformationRelease.version.major
+
+    repofile_el7 = "rhel7"
+    enable_repo_opt_el7 = (
         "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms "
         "--enablerepo rhel-7-server-extras-rpms"
     )
-    enable_repo_opt_epel8 = "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
-    enable_repo_opt_epel8_eus = (
-        "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
-    )
+    repofile_el = f"rhel{system_version}"
+    enable_repo_opt_el = f"--enablerepo rhel-{system_version}-for-x86_64-baseos-rpms --enablerepo rhel-{system_version}-for-x86_64-appstream-rpms"
+    repofile_el_eus = f"rhel{system_version}-eus"
+    enable_repo_opt_el_eus = f"--enablerepo rhel-{system_version}-for-x86_64-baseos-eus-rpms --enablerepo rhel-{system_version}-for-x86_64-appstream-eus-rpms"
 
-    system_version = SystemInformationRelease.version
-
-    if system_version.major == 7:
-        repofile = repofile_epel7
-        enable_repo_opt = enable_repo_opt_epel7
-    elif system_version.major == 8:
-        if system_version.minor == 8:
-            repofile = repofile_epel8_eus
-            enable_repo_opt = enable_repo_opt_epel8_eus
+    if system_version == 7:
+        repofile = repofile_el7
+        enable_repo_opt = enable_repo_opt_el7
+    elif system_version >= 8:
+        # We want to assign EUS repositories to EUS eligible minor releases,
+        # but only in the case when the release is not currently the latest
+        # (denoted by "-latest" in the test metadata)
+        if SystemInformationRelease.version.minor in (2, 4, 6, 8) and "latest" not in SYSTEM_RELEASE_ENV:
+            repofile = repofile_el_eus
+            enable_repo_opt = enable_repo_opt_el_eus
         else:
-            repofile = repofile_epel8
-            enable_repo_opt = enable_repo_opt_epel8
+            repofile = repofile_el
+            enable_repo_opt = enable_repo_opt_el
 
 
 @pytest.fixture(scope="function")

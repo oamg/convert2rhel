@@ -50,7 +50,7 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
     """
 
     kernel_name = "kernel"
-    if re.match(r"^(centos|oracle|alma|rocky|stream)-8", SYSTEM_RELEASE_ENV):
+    if re.match(r"^(centos|oracle|alma|rocky|stream)-[89]", SYSTEM_RELEASE_ENV):
         kernel_name = "kernel-core"
 
     with convert2rhel(
