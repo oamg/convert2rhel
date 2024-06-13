@@ -33,6 +33,14 @@ order: 52
             Verify, that the conversion successfully converted to the correct target system.
         test: pytest -m test_correct_distro
 
+    /grub_default:
+        summary+: |
+            Grub default
+        description+: |
+            Verify that the default grub title matches RHEL.
+            Additionally verify that the kernel the system is booted into
+            equals to the one defined in the default entry.
+        test: pytest -m test_grub_default
 
 /data_collection:
     summary+: |

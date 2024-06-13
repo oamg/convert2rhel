@@ -447,12 +447,16 @@ def remove_repositories(shell, backup_directory):
     backup_dir = os.path.join(backup_directory, "repos")
     shell(f"mkdir {backup_dir}")
     # Move all repos to other location, so it is not being used
-    assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
+    assert shell(f"mv -v /etc/yum.repos.d/* {backup_dir}").returncode == 0
     assert len(os.listdir("/etc/yum.repos.d/")) == 0
+    assert os.path.exists("/etc/yum.repos.d")
 
     yield
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Make sure the reposdir is present
+        # It gets removed with the *-release package on EL9 systems
+        shell("mkdir /etc/yum.repos.d")
         # Return repositories to their original location
         assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
 
@@ -633,24 +637,6 @@ def environment_variables(request):
             assert envar not in os.environ
 
     return _unset_env_var
-
-
-# TODO remove when https://issues.redhat.com/browse/RHELC-1389 resolved
-@pytest.fixture(autouse=True, scope="function")
-def remediation_out_of_date_packages(shell):
-    """
-    Remediation fixture.
-    There is an open issue https://issues.redhat.com/browse/RHELC-1389
-    The python3-syspurpose package is left outdated on the system in some cases,
-    causing subsequent tests to fail.
-    Update the package at the end of each test function if needed.
-    """
-    problematic_packages = ["python3-syspurpose"]
-
-    yield
-
-    for package in problematic_packages:
-        shell(f"yum update -y {package}")
 
 
 def _create_old_repo(distro: str, repo_name: str):
@@ -884,8 +870,9 @@ def satellite_registration(shell, request):
         _remove_client_tools_repo(shell)
 
     ### This is a workaround which might be removed, when we enable the Satellite repositories by default
-    for repo in shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output:
-        shell(f"subscription-manager --enable {repo}")
+    repos_to_enable = shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output.split()
+    for repo in repos_to_enable:
+        shell(f"subscription-manager repos --enable {repo}")
 
     yield
 
