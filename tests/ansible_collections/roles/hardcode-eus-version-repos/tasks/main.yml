@@ -3,10 +3,10 @@
   include_tasks: alma-eus-repos.yml
   when: >
     ansible_facts['distribution'] == "AlmaLinux"
-    and ansible_facts['distribution_minor_version'] in ["2", "4", "6", "8"]
+    and ansible_facts['distribution_version'] in ["8.8", "9.2", "9.4", "9.6", "9.8"]
 
 - name: Hardcode RockyLinux EUS repositories to the vault
   include_tasks: rocky-eus-repos.yml
   when: >
     ansible_facts['distribution'] == "Rocky"
-    and ansible_facts['distribution_minor_version'] in ["2", "4", "6", "8"]
+    and ansible_facts['distribution_version'] in ["8.8", "9.2", "9.4", "9.6", "9.8"]
