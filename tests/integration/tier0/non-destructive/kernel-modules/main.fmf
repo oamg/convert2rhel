@@ -75,9 +75,9 @@ tag+:
             Convert2RHEL sees force loaded kmod as tainted.
         adjust+:
             - enabled: false
-              when: distro == centos-7, oracle-7
+              when: distro == centos-7, oracle-7, alma-9, rocky-9, oracle-9
               because: |
-                Force loading the kernel module on RHEL7 like distros is flaky.
+                Force loading the kernel module on RHEL7 and RHEL9 like distros is flaky.
         tag+:
             - force-loaded-kmod
         test: |
@@ -94,9 +94,9 @@ tag+:
             Convert2RHEL sees force loaded kmod as tainted.
         adjust+:
             - enabled: false
-              when: distro == centos-7, oracle-7
+              when: distro == centos-7, oracle-7, alma-9, rocky-9, oracle-9
               because: |
-                Force loading the kernel module on RHEL7 like distros is flaky.
+                Force loading the kernel module on RHEL7 and RHEL9 like distros is flaky.
         tag+:
             - force-loaded-kmod
             - override

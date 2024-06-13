@@ -15,9 +15,15 @@ def _cross_vendor_kernel():
         distro == centos-7
         install_what = oracle-7-kernel
     """
+    with open("/etc/yum.repos.d/stream9test.repo", "a") as repo:
+        repo.write(f"[custom-kernel-repo]\n")
+        repo.write(f"name=Repo to install the cross vendor kernel from\n")
+        repo.write(f"baseurl=https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os\n")
+        repo.write("enabled=0\n")
+        repo.write("gpgcheck=0\n")
 
     # This mapping includes cross vendor kernels and their respective grub substrings to set for boot
-    INSTALL_WHAT_KERNEL_MAPPING = {
+    install_what_kernel_mapping = {
         "oracle-7-kernel": {
             "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.76.1.0.1.el7.x86_64.rpm",
             "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)",
@@ -53,16 +59,16 @@ def _cross_vendor_kernel():
         install_what = "centos-7-kernel"
     elif distro == "centos-7":
         install_what = "oracle-7-kernel"
-    elif re.match(r"^(alma|rocky|centos|stream)-8", distro):
+    elif re.match(r"^(almalinux|rocky|centos|stream)-8", distro):
         install_what = "oracle-8-kernel"
     elif distro == "oracle-8":
         install_what = "centos-8-kernel"
-    elif re.match(r"^(alma|rocky|centos|oracle)-9", distro):
+    elif re.match(r"^(almalinux|rocky|centos|oracle)-9", distro):
         install_what = "stream-9-kernel"
     elif distro == "stream-9":
         install_what = "alma-9-kernel"
 
-    custom_kernel, grub_substring = INSTALL_WHAT_KERNEL_MAPPING[install_what].values()
+    custom_kernel, grub_substring = install_what_kernel_mapping[install_what].values()
 
     return custom_kernel, grub_substring
 
@@ -79,9 +85,15 @@ def custom_kernel(shell, hybrid_rocky_image):
     custom_kernel, grub_substring = _cross_vendor_kernel()
     if os.environ["TMT_REBOOT_COUNT"] == "0":
 
-        assert shell("yum install %s -y" % custom_kernel).returncode == 0
+        # We need to provide full repository for Stream 9 kernel installation
+        # to satisfy the dependencies
+        repo_opt = ""
+        if "Stream" in grub_substring:
+            repo_opt = "--enablerepo=custom-kernel-repo"
 
-        assert shell("grub2-set-default '%s'" % grub_substring).returncode == 0
+        assert shell(f"yum install {custom_kernel} -y {repo_opt}").returncode == 0
+
+        assert shell(f"grub2-set-default '{grub_substring}'").returncode == 0
 
         shell("tmt-reboot -t 600")
 
@@ -105,6 +117,8 @@ def custom_kernel(shell, hybrid_rocky_image):
             ).returncode
             == 0
         )
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
+        shell("rm -f /etc/yum.repos.d/stream9test.repo")
         # Reboot
         shell("tmt-reboot -t 600")
 

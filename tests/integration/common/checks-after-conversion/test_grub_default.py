@@ -11,4 +11,4 @@ def test_grub_default(shell):
     """
     grub_default = shell("grubby --default-title").output.strip()
     running_kernel = shell("uname -r").output.strip()
-    assert f"Red Hat Enterprise Linux Server ({running_kernel})" in grub_default
+    assert f"Red Hat Enterprise Linux ({running_kernel})" in grub_default

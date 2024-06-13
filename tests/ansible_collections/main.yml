@@ -12,6 +12,9 @@
     - role: update-system
       when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"
 
+    - role: grub-setup
+      when: ansible_facts['distribution_major_version'] ==  "9"
+
     - role: oracle-linux-specific
       when: ansible_facts['distribution'] == "OracleLinux"
 

@@ -642,17 +642,18 @@ def environment_variables(request):
 def _create_old_repo(distro: str, repo_name: str):
     """
     Create a repo on system with content that is older than the latest released version.
-    The intended use is for Rocky-8 and Alma-8.
+    The intended use is for Rocky and Alma.
     """
     baseurl = None
+    version = SystemInformationRelease.version.major
     if distro == "alma":
-        baseurl = "https://repo.almalinux.org/vault/8.8/BaseOS/$basearch/os/"
-        if "8.8" in SYSTEM_RELEASE_ENV:
-            baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
+        baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
+        if version == 9:
+            baseurl = "https://vault.almalinux.org/9.3/BaseOS/x86_64/os/"
     elif distro == "rocky":
-        baseurl = "https://download.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/"
-        if "8.8" in SYSTEM_RELEASE_ENV:
-            baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
+        baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
+        if version == 9:
+            baseurl = "https://download.rockylinux.org/vault/rocky/9.3/BaseOS/x86_64/os/"
     else:
         pytest.fail(f"Unsupported distro ({distro}) provided.")
     with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
@@ -679,6 +680,7 @@ def kernel(shell):
         pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
+        version = SystemInformationRelease.version.major
         # Set default kernel
         if "centos-7" in SYSTEM_RELEASE_ENV:
             assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
@@ -690,30 +692,33 @@ def kernel(shell):
             assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
             shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
         # Test is being run only for the latest released oracle-linux
-        elif "oracle-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
-        elif "alma-8" in SYSTEM_RELEASE_ENV:
+        elif "oracle" in SYSTEM_RELEASE_ENV:
+            if version == 8:
+                assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
+                shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
+            elif version:
+                assert shell("yum install kernel-5.14.0-162.12.1.el9_1.x86_64 -y").returncode == 0
+                shell("grub2-set-default 'Oracle Linux Server (kernel-5.14.0-162.12.1.el9_1.x86_64) 9.1'")
+        elif "alma" in SYSTEM_RELEASE_ENV:
             repo_name = "alma_old"
             _create_old_repo(distro="alma", repo_name=repo_name)
-            if "8.8" in SYSTEM_RELEASE_ENV:
+            if version == 8:
                 assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
                 shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
             else:
-                assert shell(f"yum install kernel-4.18.0-477.27.2.el8_8.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-477.27.2.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+                assert shell(f"yum install kernel-5.14.0-362.24.2.el9_3.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'AlmaLinux (kernel-5.14.0-362.24.2.el9_3.x86_64) 9.3'")
+        elif "rocky" in SYSTEM_RELEASE_ENV:
             repo_name = "rocky_old"
             _create_old_repo(distro="rocky", repo_name=repo_name)
-            if "8.8" in SYSTEM_RELEASE_ENV:
+            if version == 8:
                 assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
                 shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
             else:
-                assert shell(f"yum install kernel-4.18.0-477.27.1.el8_8.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-477.27.1.el8_8.x86_64) 8.8 (Green Obsidian)'")
-        elif "stream-8" in SYSTEM_RELEASE_ENV:
-            # Given the CentOS Stream rolling release, we are able to just downgrade the kernel
-            assert shell("yum downgrade kernel -y").returncode == 0
+                assert shell(f"yum install kernel-kernel-5.14.0-362.24.1.el9_3.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'Rocky Linux (kernel-5.14.0-362.24.1.el9_3.x86_64) 9.3'")
+
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         shell("tmt-reboot -t 600")
 
@@ -740,6 +745,7 @@ def kernel(shell):
 
         # Set the latest kernel as the one we want to reboot to
         shell("grub2-set-default '{}'".format(full_name.strip()))
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         # Remove the mocked repofile
         if "alma-8" in SYSTEM_RELEASE_ENV:

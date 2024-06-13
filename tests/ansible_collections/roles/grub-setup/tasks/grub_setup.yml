@@ -1,0 +1,22 @@
+---
+- name: Gather facts
+  ansible.builtin.setup:
+
+# Booting an older kernel causes issues due to disabled GRUB_ENABLE_BLSCFG option
+# Set the option to true
+- name: Set the /etc/grub/default GRUB_ENABLE_BLSCFG
+  lineinfile:
+    path: /etc/default/grub
+    line: 'GRUB_ENABLE_BLSCFG=true'
+    insertafter: EOF
+
+# Additionally OracleLinux 9 has the GRUB_TERMINAL_OUTPUT set up weirdly
+- name: Set the /etc/grub/default GRUB_ENABLE_BLSCFG
+  lineinfile:
+    path: /etc/default/grub
+    line: 'GRUB_TERMINAL_OUTPUT="console"'
+    insertafter: EOF
+  when: ansible_distribution == "OracleLinux"
+
+- name: Run grub2-mkconfig
+  shell: grub2-mkconfig -o /boot/grub2/grub.cfg
