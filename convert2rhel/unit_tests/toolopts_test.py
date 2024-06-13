@@ -310,130 +310,261 @@ def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch, globa
 
 
 @pytest.mark.parametrize(
+    ("content", "expected_message"),
+    (
+        (
+            """
+            [subscription_manager]
+            incorect_option = yes
+            """,
+            "Unsupported option",
+        ),
+        (
+            """
+            [invalid_header]
+            username = correct_username
+            """,
+            "Couldn't find header",
+        ),
+    ),
+)
+def test_options_from_config_files_invalid_head_and_options(content, expected_message, tmpdir, caplog):
+    path = os.path.join(str(tmpdir), "convert2rhel.ini")
+
+    with open(path, "w") as file:
+        file.write(content)
+    os.chmod(path, 0o600)
+
+    opts = convert2rhel.toolopts.options_from_config_files(path)
+
+    assert not opts
+    assert expected_message in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("content", "expected_message"),
+    (
+        (
+            """
+            [subscription_manager]
+            """,
+            "No options found for subscription_manager. It seems to be empty or commented.",
+        ),
+    ),
+)
+def test_options_from_config_files_commented_out_options(content, expected_message, tmpdir, caplog):
+    path = os.path.join(str(tmpdir), "convert2rhel.ini")
+
+    with open(path, "w") as file:
+        file.write(content)
+    os.chmod(path, 0o600)
+
+    opts = convert2rhel.toolopts.options_from_config_files(path)
+
+    assert not opts
+    assert expected_message in caplog.text
+
+
+@pytest.mark.parametrize(
     ("content", "output"),
     (
         (
-            "[subscription_manager]\nusername = correct_username",
-            {"username": "correct_username", "password": None, "activation_key": None, "org": None},
+            """
+            [subscription_manager]
+            username = correct_username
+            """,
+            {"username": "correct_username"},
+        ),
+        # Test if we will unquote this correctly
+        (
+            """
+            [subscription_manager]
+            username = "correct_username"
+            """,
+            {"username": "correct_username"},
         ),
         (
-            "[subscription_manager]\npassword = correct_password",
-            {"username": None, "password": "correct_password", "activation_key": None, "org": None},
+            """
+            [subscription_manager]
+            password = correct_password
+            """,
+            {"password": "correct_password"},
         ),
-        pytest.param(
-            "[subscription_manager]\n"
-            "activation_key = correct_key\n"
-            "Password = correct_password\n"
-            "username = correct_username\n"
-            "org = correct_org\n",
+        (
+            """
+            [subscription_manager]
+            activation_key = correct_key
+            password = correct_password
+            username = correct_username
+            org = correct_org
+            """,
             {
                 "username": "correct_username",
                 "password": "correct_password",
                 "activation_key": "correct_key",
                 "org": "correct_org",
             },
-            id="All options used together",
         ),
         (
-            "[subscription_manager]\norg = correct_org",
-            {"username": None, "password": None, "activation_key": None, "org": "correct_org"},
+            """
+            [subscription_manager]
+            org = correct_org
+            """,
+            {"org": "correct_org"},
         ),
         (
-            "[subscription_manager]\nincorrect_option = incorrect_content",
-            {"username": None, "password": None, "activation_key": None, "org": None},
+            """
+            [settings]
+            incomplete_rollback = 1
+            """,
+            {"incomplete_rollback": "1"},
         ),
         (
-            "[INVALID_HEADER]\nusername = correct_username\npassword = correct_password\nactivation_key = correct_key\norg = correct_org",
-            {"username": None, "password": None, "activation_key": None, "org": None},
+            """
+            [subscription_manager]
+            org = correct_org
+
+            [settings]
+            incomplete_rollback = 1
+            """,
+            {"org": "correct_org", "incomplete_rollback": "1"},
         ),
-        (None, {"username": None, "password": None, "activation_key": None, "org": None}),
+        (
+            """
+            [settings]
+            incomplete_rollback = 1
+            tainted_kernel_module_check_skip = 1
+            outdated_package_check_skip = 1
+            allow_older_version = 1
+            allow_unavailable_kmods = 1
+            configure_host_metering = 1
+            skip_kernel_currency_check = 1
+            """,
+            {
+                "incomplete_rollback": "1",
+                "tainted_kernel_module_check_skip": "1",
+                "outdated_package_check_skip": "1",
+                "allow_older_version": "1",
+                "allow_unavailable_kmods": "1",
+                "configure_host_metering": "1",
+                "skip_kernel_currency_check": "1",
+            },
+        ),
     ),
 )
-def test_options_from_config_files_default(content, output, monkeypatch, tmpdir, caplog):
+def test_options_from_config_files_default(content, output, monkeypatch, tmpdir):
     """Test config files in default path."""
     path = os.path.join(str(tmpdir), "convert2rhel.ini")
-    if content:
-        with open(path, "w") as file:
-            file.write(content)
-        os.chmod(path, 0o600)
+
+    with open(path, "w") as file:
+        file.write(content)
+    os.chmod(path, 0o600)
 
     paths = ["/nonexisting/path", path]
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
-    opts = convert2rhel.toolopts.options_from_config_files()
+    opts = convert2rhel.toolopts.options_from_config_files(None)
 
-    assert opts["username"] == output["username"]
-    assert opts["password"] == output["password"]
-    assert opts["activation_key"] == output["activation_key"]
-    assert opts["org"] == output["org"]
-
-    if content:
-        if "INVALID_HEADER" in content:
-            assert "Unsupported header" in caplog.text
-        if "incorrect_option" in content:
-            assert "Unsupported option" in caplog.text
+    for key in ["username", "password", "activation_key", "org"]:
+        if key in opts:
+            assert opts[key] == output[key]
 
 
 @pytest.mark.parametrize(
     ("content", "output", "content_lower_priority"),
     (
         (
-            "[subscription_manager]\nusername = correct_username\nactivation_key = correct_key",
+            """
+            [subscription_manager]
+            username = correct_username
+            activation_key = correct_key
+            """,
             {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
-            "[subscription_manager]\nusername = low_prior_username",
+            """
+            [subscription_manager]
+            username = low_prior_username
+            """,
         ),
         (
-            "[subscription_manager]\nusername = correct_username\nactivation_key = correct_key",
+            """
+            [subscription_manager]
+            username = correct_username
+            activation_key = correct_key
+            """,
             {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
-            "[subscription_manager]\nactivation_key = low_prior_key",
+            """
+            [subscription_manager]
+            activation_key = low_prior_key
+            """,
         ),
         (
-            "[subscription_manager]\nactivation_key = correct_key\norg = correct_org",
+            """
+            [subscription_manager]
+            activation_key = correct_key
+            org = correct_org""",
             {"username": None, "password": None, "activation_key": "correct_key", "org": "correct_org"},
-            "[subscription_manager]\norg = low_prior_org",
+            """
+            [subscription_manager]
+            org = low_prior_org
+            """,
         ),
         (
-            "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
+            """
+            [subscription_manager]
+            activation_key = correct_key
+            Password = correct_password
+            """,
             {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            "[subscription_manager]\npassword = low_prior_pass",
+            """
+            [subscription_manager]
+            password = low_prior_pass
+            """,
         ),
         (
-            "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
+            """
+            [subscription_manager]
+            activation_key = correct_key
+            Password = correct_password
+            """,
             {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            "[INVALID_HEADER]\npassword = low_prior_pass",
+            """
+            [INVALID_HEADER]
+            password = low_prior_pass
+            """,
         ),
         (
-            "[subscription_manager]\nactivation_key = correct_key\nPassword = correct_password",
+            """
+            [subscription_manager]
+            activation_key = correct_key
+            Password = correct_password
+            """,
             {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            "[subscription_manager]\nincorrect_option = incorrect_option",
+            """
+            [subscription_manager]
+            incorrect_option = incorrect_option
+            """,
         ),
     ),
 )
 def test_options_from_config_files_specified(content, output, content_lower_priority, monkeypatch, tmpdir, caplog):
     """Test user specified path for config file."""
-    path = os.path.join(str(tmpdir), "convert2rhel.ini")
-    with open(path, "w") as file:
+    path_higher_priority = os.path.join(str(tmpdir), "convert2rhel.ini")
+    with open(path_higher_priority, "w") as file:
         file.write(content)
-    os.chmod(path, 0o600)
+    os.chmod(path_higher_priority, 0o600)
 
     path_lower_priority = os.path.join(str(tmpdir), "convert2rhel_lower.ini")
     with open(path_lower_priority, "w") as file:
         file.write(content_lower_priority)
     os.chmod(path_lower_priority, 0o600)
 
-    paths = [path_lower_priority]
+    paths = [path_higher_priority, path_lower_priority]
     monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
-    # user specified path
-    opts = convert2rhel.toolopts.options_from_config_files(path)
 
-    assert opts["username"] == output["username"]
-    assert opts["password"] == output["password"]
-    assert opts["activation_key"] == output["activation_key"]
-    assert opts["org"] == output["org"]
+    opts = convert2rhel.toolopts.options_from_config_files(None)
 
-    if "INVALID_HEADER" in content or "INVALID_HEADER" in content_lower_priority:
-        assert "Unsupported header" in caplog.text
-    if "incorrect_option" in content or "incorrect_option" in content_lower_priority:
-        assert "Unsupported option" in caplog.text
+    for key in ["username", "password", "activation_key", "org"]:
+        if key in opts:
+            assert opts[key] == output[key]
 
 
 @pytest.mark.parametrize(

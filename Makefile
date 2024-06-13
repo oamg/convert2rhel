@@ -56,7 +56,7 @@ install: .install .pre-commit
 .install:
 	virtualenv --system-site-packages --python $(PYTHON) $(VENV); \
 	. $(VENV)/bin/activate; \
-	$(PIP) install --upgrade -r ./requirements/centos8.requirements.txt; \
+	$(PIP) install --upgrade -r ./requirements/centos9.requirements.txt; \
 	touch $@
 
 .pre-commit:

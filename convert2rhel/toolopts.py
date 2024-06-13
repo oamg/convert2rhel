@@ -62,6 +62,19 @@ PRE_RPM_VA_LOG_FILENAME = "rpm_va.log"
 # For a list of modified rpm files after the conversion finishes for comparison purposes
 POST_RPM_VA_LOG_FILENAME = "rpm_va_after_conversion.log"
 
+CONFIG_FILE_MAPPING_OPTIONS = {
+    "subscription_manager": ["username", "password", "org", "activation_key"],
+    "settings": [
+        "incomplete_rollback",
+        "tainted_kernel_module_check_skip",
+        "outdated_package_check_skip",
+        "allow_older_version",
+        "allow_unavailable_kmods",
+        "configure_host_metering",
+        "skip_kernel_currency_check",
+    ],
+}
+
 
 class ToolOpts:
     def __init__(self):
@@ -87,13 +100,22 @@ class ToolOpts:
         self.els = False
         self.activity = None
 
+        # Settings
+        self.incomplete_rollback = None
+        self.tainted_kernel_module_check_skip = None
+        self.outdated_package_check_skip = None
+        self.allow_older_version = None
+        self.allow_unavailable_kmods = None
+        self.configure_host_metering = None
+        self.skip_kernel_currency_check = None
+
     def set_opts(self, supported_opts):
         """Set ToolOpts data using dict with values from config file.
 
         :param supported_opts: Supported options in config file
         """
         for key, value in supported_opts.items():
-            if value is not None and hasattr(self, key):
+            if value and hasattr(self, key):
                 setattr(self, key, value)
 
 
@@ -515,6 +537,111 @@ class CLI:
             )
 
 
+def options_from_config_files(cfg_path):
+    """Parse the convert2rhel.ini configuration file.
+
+    This function will try to parse the convert2rhel.ini configuration file and
+    return a dictionary containing the values found in the file.
+
+    .. note::
+        This function will parse the configuration file in the following way:
+
+        1) If the path provided by the user in cfg_path is set (Highest
+           priority), then we use only that.
+
+        Otherwise, if cfg_path is `None`, we proceed to check the following
+        paths:
+
+        2) ~/.convert2rhel.ini (The 2nd highest priority).
+        3) /etc/convert2rhel.ini (The lowest priority).
+
+        In any case, they are parsed in reversed order, meaning that we will
+        start with the lowest priority and go until the highest.
+
+    :param cfg_path: Path of a custom configuration file
+    :type cfg_path: str
+
+    :return: Dict with the supported options alongside their values.
+    :rtype: dict[str, str]
+    """
+    # Paths for the configuration files. In case we have cfg_path defined
+    # (meaning that the user entered something through the `-c` option), we
+    # will use only that, as it has a higher priority over the rest
+    config_paths = [cfg_path] if cfg_path else CONFIG_PATHS
+    paths = [os.path.expanduser(path) for path in config_paths if os.path.exists(os.path.expanduser(path))]
+
+    if cfg_path and not paths:
+        raise FileNotFoundError("No such file or directory: %s" % ", ".join(paths))
+
+    found_opts = _parse_options_from_config(paths)
+    return found_opts
+
+
+def _parse_options_from_config(paths):
+    """Parse the options from the given config files.
+
+    .. note::
+        If no configuration file is provided through the command line option
+        (`-c`), we will use the default paths and follow their priority.
+
+    :param paths: List of paths to iterate through and gather the options from
+        them.
+    :type paths: list[str]
+    """
+    config_file = configparser.ConfigParser()
+    found_opts = {}
+
+    for path in reversed(paths):
+        loggerinst.debug("Checking configuration file at %s" % path)
+        # Check for correct permissions on file
+        if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
+            loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
+
+        config_file.read(path)
+
+        # Mapping of all supported options we can have in the config file
+        for supported_header, supported_opts in CONFIG_FILE_MAPPING_OPTIONS.items():
+            loggerinst.debug("Checking for header '%s'" % supported_header)
+            if supported_header not in config_file.sections():
+                loggerinst.warning("Couldn't find header '%s' in the configuration file %s." % (supported_header, path))
+                continue
+
+            options = _get_options_value(config_file, supported_header, supported_opts)
+            found_opts.update(options)
+
+    return found_opts
+
+
+def _get_options_value(config_file, header, supported_opts):
+    """Helper function to iterate through the options in a config file.
+
+    :param config_file: An instance of `py:ConfigParser` after reading the file
+        to iterate through the options.
+    :type config_file: configparser.ConfigParser
+    :param header: The header name to get options from.
+    :type header: str
+    :param supported_opts: List of supported options that can be parsed from
+        the config file.
+    :type supported_opts: list[str]
+    """
+    options = {}
+    conf_options = config_file.options(header)
+
+    if len(conf_options) == 0:
+        loggerinst.debug("No options found for %s. It seems to be empty or commented." % header)
+        return options
+
+    for option in conf_options:
+        if option.lower() not in supported_opts:
+            loggerinst.warning("Unsupported option '%s' in '%s'" % (option, header))
+            continue
+
+        options[option] = config_file.get(header, option).strip('"')
+        loggerinst.debug("Found %s in %s" % (option, header))
+
+    return options
+
+
 def _log_command_used():
     """We want to log the command used for convert2rhel to make it easier to know what command was used
     when debugging the log files. Since we can't differentiate between the handlers we log to both stdout
@@ -522,63 +649,6 @@ def _log_command_used():
     """
     command = " ".join(utils.hide_secrets(sys.argv))
     loggerinst.info("convert2rhel command used:\n{0}".format(command))
-
-
-def options_from_config_files(cfg_path=None):
-    """Parse the convert2rhel.ini configuration file.
-
-    This function will try to parse the convert2rhel.ini configuration file and
-    return a dictionary containing the values found in the file.
-
-    .. note::
-       This function will parse the configuration file following a specific
-       order, which is:
-       1) Path provided by the user in cfg_path (Highest priority).
-       2) ~/.convert2rhel.ini (The 2nd highest priority).
-       3) /etc/convert2rhel.ini (The lowest priority).
-
-    :param cfg_path: Path of a custom configuration file
-    :type cfg_path: str
-
-    :return: Dict with the supported options alongside their values.
-    :rtype: dict[str, str | None]
-    """
-    headers = ["subscription_manager"]  # supported sections in config file
-    # Create dict with all supported options, all of them set to None
-    # needed for avoiding problems with files priority
-    # The name of supported option MUST correspond with the name in ToolOpts()
-    # Otherwise it won't be used
-    supported_opts = {"username": None, "password": None, "activation_key": None, "org": None}
-
-    config_file = configparser.ConfigParser()
-    paths = [os.path.expanduser(path) for path in CONFIG_PATHS]
-
-    if cfg_path:
-        cfg_path = os.path.expanduser(cfg_path)
-        if not os.path.exists(cfg_path):
-            raise OSError(2, "No such file or directory: '%s'" % cfg_path)
-        paths.insert(0, cfg_path)  # highest priority
-
-    for path in paths:
-        if os.path.exists(path):
-            if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
-                loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
-            config_file.read(path)
-
-            for header in config_file.sections():
-                if header in headers:
-                    for option in config_file.options(header):
-                        if option.lower() in supported_opts:
-                            # Solving priority
-                            if supported_opts[option.lower()] is None:
-                                supported_opts[option] = config_file.get(header, option)
-                                loggerinst.debug("Found %s in %s" % (option, path))
-                        else:
-                            loggerinst.warning("Unsupported option %s in %s" % (option, path))
-                elif header not in headers and header != "DEFAULT":
-                    loggerinst.warning("Unsupported header %s in %s." % (header, path))
-
-    return supported_opts
 
 
 def _parse_subscription_manager_serverurl(serverurl):
