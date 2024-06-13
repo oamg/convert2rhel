@@ -48,15 +48,17 @@ class RestorableSystemSubscription(RestorableChange):
 
     def restore(self):
         """Rollback subscription related changes"""
+        if not self.enabled:
+            return
+
         loggerinst.task("Rollback: RHSM-related actions")
 
-        if self.enabled:
-            try:
-                subscription.unregister_system()
-            except subscription.UnregisterError as e:
-                loggerinst.warning(str(e))
-            except OSError:
-                loggerinst.warning("subscription-manager not installed, skipping")
+        try:
+            subscription.unregister_system()
+        except subscription.UnregisterError as e:
+            loggerinst.warning(str(e))
+        except OSError:
+            loggerinst.warning("subscription-manager not installed, skipping")
 
         super(RestorableSystemSubscription, self).restore()
 
@@ -71,11 +73,15 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
         self._is_attached = False
 
     def enable(self):
+        if self.enabled:
+            return
+
         self._is_attached = subscription.auto_attach_subscription()
         super(RestorableAutoAttachmentSubscription, self).enable()
 
     def restore(self):
         if self._is_attached:
+            loggerinst.task("Rollback: Removing auto-attached subscription")
             subscription.remove_subscription()
             super(RestorableAutoAttachmentSubscription, self).restore()
 
