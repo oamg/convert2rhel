@@ -28,7 +28,8 @@ from collections import namedtuple
 from six.moves import configparser
 
 from convert2rhel import logger, utils
-from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME, tool_opts
+from convert2rhel.cli import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
 
 

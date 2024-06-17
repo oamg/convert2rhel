@@ -24,7 +24,7 @@ from functools import partial
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, repo, subscription, toolopts, unit_tests, utils
+from convert2rhel import actions, cli, pkghandler, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.pre_ponr_changes import subscription as appc_subscription
 from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, SubscribeSystem
@@ -228,7 +228,7 @@ class TestSubscribeSystem:
         # partial saves the real copy of tool_opts to use with
         # _should_subscribe so we have to monkeypatch with the mocked version
         # of tool_opts.
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(subscription, "should_subscribe", partial(cli._should_subscribe, global_tool_opts))
         monkeypatch.setattr(RestorableSystemSubscription, "enable", mock.Mock())
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
         monkeypatch.setattr(RestorableDisableRepositories, "enable", mock.Mock())
@@ -249,7 +249,7 @@ class TestSubscribeSystem:
         # partial saves the real copy of tool_opts to use with
         # _should_subscribe so we have to monkeypatch with the mocked version
         # of tool_opts.
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(subscription, "should_subscribe", partial(cli._should_subscribe, global_tool_opts))
 
         expected = set(
             (

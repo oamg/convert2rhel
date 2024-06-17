@@ -20,7 +20,7 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions, grub, hostmetering
+from convert2rhel import actions, applock, backup, breadcrumbs, checks, cli, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, redhatrelease, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
@@ -109,7 +109,7 @@ def main():
     """
 
     # handle command line arguments
-    toolopts.CLI()
+    cli.CLI()
 
     # Make sure we're being run by root
     utils.require_root()
