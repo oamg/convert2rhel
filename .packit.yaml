@@ -44,7 +44,7 @@ jobs:
   # TEST JOBS
   ## Tests on pull request stage. Tests are run on demand
   ### Definitions of the tier0 tests (non-destructive and destructive separately)
-    - &tests-tier0-oraclelinux-9
+  - &tests-tier0-oraclelinux-9
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -179,7 +179,7 @@ jobs:
       - sanity
       - el9
 
-    - &tests-stream-8
+  - &tests-stream-8
     job: tests
     # Run tests on-demand
     manual_trigger: true

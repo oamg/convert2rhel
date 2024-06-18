@@ -1,4 +1,4 @@
-from conftest import SystemInformationRelease, SYSTEM_RELEASE_ENV
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease
 
 
 def test_system_conversion_using_custom_repositories(shell, convert2rhel):
