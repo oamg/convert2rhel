@@ -19,7 +19,7 @@ import logging
 import os
 import shutil
 
-from convert2rhel import actions, grub, systeminfo, utils
+from convert2rhel import actions, grub, systeminfo
 from convert2rhel.grub import CENTOS_EFIDIR_CANONICAL_PATH, RHEL_EFIDIR_CANONICAL_PATH
 
 
@@ -31,6 +31,7 @@ class NewDefaultEfiBin(actions.Action):
 
     def run(self):
         """Check that the expected RHEL UEFI binaries exist."""
+        super(NewDefaultEfiBin, self).run()
 
         if not grub.is_efi():
             logger.info("BIOS detected. Nothing to do.")
@@ -68,6 +69,7 @@ class EfibootmgrUtilityInstalled(actions.Action):
 
     def run(self):
         """Check if the Efibootmgr utility is installed"""
+        super(EfibootmgrUtilityInstalled, self).run()
 
         if not os.path.exists("/usr/sbin/efibootmgr"):
             self.set_result(
@@ -94,6 +96,7 @@ class CopyGrubFiles(actions.Action):
         The copy of the centos/ directory should be ok. In case of the conversion
         from Oracle Linux, the redhat/ directory is already used.
         """
+        super(CopyGrubFiles, self).run()
 
         if systeminfo.system_info.id != "centos":
             logger.debug("Skipping copying GRUB files - only related to CentOS Linux.")
@@ -131,13 +134,16 @@ class CopyGrubFiles(actions.Action):
                     level="ERROR",
                     id="IO_ERROR",
                     title="I/O error",
-                    description=("I/O error(%s): %s" % (err.errno, err.strerror)),
+                    description=(
+                        "I/O error(%s): %s Some GRUB files have not been copied to /boot/efi/EFI/redhat."
+                        % (err.errno, err.strerror)
+                    ),
                 )
 
 
 class RemoveEfiCentos(actions.Action):
     id = "REMOVE_EFI_CENTOS"
-    dependencies = "COPY_GRUB_FILES"
+    dependencies = ("COPY_GRUB_FILES",)
 
     def run(self):
         """Remove the /boot/efi/EFI/centos/ directory when no UEFI files remains.
@@ -148,7 +154,10 @@ class RemoveEfiCentos(actions.Action):
         UEFI files are present, we should keep the directory for now, until we
         deal with it.
         """
+        super(RemoveEfiCentos, self).run()
+
         if systeminfo.system_info.id != "centos":
+            logger.debug("Skipping removing EFI files - only related to CentOS Linux.")
             # nothing to do
             return
         try:
@@ -183,9 +192,10 @@ class ReplaceEfiBootEntry(actions.Action):
         The current (original) UEFI bootloader entry is removed under some conditions
         (see _remove_orig_boot_entry() for more info).
         """
+        super(ReplaceEfiBootEntry, self).run()
 
         try:
-            grub._replace_efi_boot_entry()
+            grub.replace_efi_boot_entry()
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
