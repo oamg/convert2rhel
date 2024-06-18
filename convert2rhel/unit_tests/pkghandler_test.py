@@ -231,29 +231,6 @@ class TestGetRpmHeader:
             pkghandler.get_rpm_header(unknown_pkg)
 
 
-class TestPreserveOnlyRHELKernel:
-    @centos7
-    def test_preserve_only_rhel_kernel(self, pretend_os, monkeypatch):
-        monkeypatch.setattr(pkghandler, "install_rhel_kernel", lambda: True)
-        monkeypatch.setattr(pkghandler, "fix_invalid_grub2_entries", lambda: None)
-        monkeypatch.setattr(pkghandler, "remove_non_rhel_kernels", mock.Mock(return_value=[]))
-        monkeypatch.setattr(pkghandler, "install_gpg_keys", mock.Mock())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
-        )
-        monkeypatch.setattr(system_info, "name", "CentOS7")
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-
-        pkghandler.preserve_only_rhel_kernel()
-
-        assert utils.run_subprocess.cmd == ["yum", "update", "-y", "--releasever=7Server", "kernel"]
-        assert pkghandler.get_installed_pkgs_by_fingerprint.call_count == 1
-
-
 class TestGetKernelAvailability:
     @pytest.mark.parametrize(
         ("subprocess_output", "expected_installed", "expected_available"),
@@ -385,19 +362,6 @@ class TestGetKernel:
         assert kernel_version == ["4.7.4-200.fc24", "4.7.4-200.fc24"]
 
 
-class TestVerifyRHELKernelInstalled:
-    def test_verify_rhel_kernel_installed(self, monkeypatch):
-        monkeypatch.setattr(pkghandler, "is_rhel_kernel_installed", lambda: True)
-
-        pkghandler.verify_rhel_kernel_installed()
-
-    def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch):
-        monkeypatch.setattr(pkghandler, "is_rhel_kernel_installed", lambda: False)
-
-        with pytest.raises(SystemExit):
-            pkghandler.verify_rhel_kernel_installed()
-
-
 class TestIsRHELKernelInstalled:
     def test_is_rhel_kernel_installed_no(self, monkeypatch):
         monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, name: [])
@@ -412,129 +376,6 @@ class TestIsRHELKernelInstalled:
         )
 
         assert pkghandler.is_rhel_kernel_installed()
-
-
-class TestFixInvalidGrub2Entries:
-    @pytest.mark.parametrize(
-        ("version", "arch"),
-        (
-            (Version(7, 0), "x86_64"),
-            (Version(8, 0), "s390x"),
-        ),
-    )
-    def test_fix_invalid_grub2_entries_not_applicable(self, version, arch, caplog, monkeypatch):
-        monkeypatch.setattr(system_info, "version", version)
-        monkeypatch.setattr(system_info, "arch", arch)
-
-        pkghandler.fix_invalid_grub2_entries()
-
-        assert not [r for r in caplog.records if r.levelname != "DEBUG"]
-
-    def test_fix_invalid_grub2_entries(self, caplog, monkeypatch):
-        monkeypatch.setattr(system_info, "version", Version(8, 0))
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(
-            utils,
-            "get_file_content",
-            lambda x: "1b11755afe1341d7a86383ca4944c324\n",
-        )
-        monkeypatch.setattr(
-            glob,
-            "glob",
-            lambda x: [
-                "/boot/loader/entries/1b11755afe1341d7a86383ca4944c324-0-rescue.conf",
-                "/boot/loader/entries/1b11755afe1341d7a86383ca4944c324-4.18.0-193.28.1.el8_2.x86_64.conf",
-                "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-0-rescue.conf",
-                "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-4.18.0-193.el8.x86_64.conf",
-                "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-5.4.17-2011.7.4.el8uek.x86_64.conf",
-            ],
-        )
-        monkeypatch.setattr(os, "remove", mock.Mock())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-
-        pkghandler.fix_invalid_grub2_entries()
-
-        assert os.remove.call_count == 3
-        assert utils.run_subprocess.call_count == 2
-
-
-class TestFixDefaultKernel:
-    @pytest.mark.parametrize(
-        ("system_name", "version", "old_kernel", "new_kernel", "not_default_kernels"),
-        (
-            (
-                "Oracle Linux Server release 7.9",
-                Version(7, 9),
-                "kernel-uek",
-                "kernel",
-                ("kernel-uek", "kernel-core"),
-            ),
-            (
-                "Oracle Linux Server release 8.1",
-                Version(8, 1),
-                "kernel-uek",
-                "kernel-core",
-                ("kernel-uek", "kernel"),
-            ),
-            (
-                "CentOS Plus Linux Server release 7.9",
-                Version(7, 9),
-                "kernel-plus",
-                "kernel",
-                ("kernel-plus",),
-            ),
-        ),
-    )
-    def test_fix_default_kernel_converting_success(
-        self, system_name, version, old_kernel, new_kernel, not_default_kernels, caplog, monkeypatch
-    ):
-        monkeypatch.setattr(system_info, "name", system_name)
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(system_info, "version", version)
-        monkeypatch.setattr(
-            utils,
-            "get_file_content",
-            lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=%s\n" % old_kernel,
-        )
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-
-        pkghandler.fix_default_kernel()
-
-        warning_msgs = [r for r in caplog.records if r.levelname == "WARNING"]
-        assert warning_msgs
-        assert "Detected leftover boot kernel, changing to RHEL kernel" in warning_msgs[-1].message
-
-        (filename, content), _dummy = utils.store_content_to_file.call_args
-        kernel_file_lines = content.splitlines()
-
-        assert "/etc/sysconfig/kernel" == filename
-        assert "DEFAULTKERNEL=%s" % new_kernel in kernel_file_lines
-
-        for kernel_name in not_default_kernels:
-            assert "DEFAULTKERNEL=%s" % kernel_name not in kernel_file_lines
-
-    def test_fix_default_kernel_with_no_incorrect_kernel(self, caplog, monkeypatch):
-        monkeypatch.setattr(system_info, "name", "CentOS Plus Linux Server release 7.9")
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(system_info, "version", Version(7, 9))
-        monkeypatch.setattr(
-            utils,
-            "get_file_content",
-            lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=kernel\n",
-        )
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-
-        pkghandler.fix_default_kernel()
-
-        info_records = [m for m in caplog.records if m.levelname == "INFO"]
-        warning_records = [m for m in caplog.records if m.levelname == "WARNING"]
-        debug_records = [m for m in caplog.records if m.levelname == "DEBUG"]
-
-        assert not warning_records
-        assert any("Boot kernel validated." in r.message for r in debug_records)
-
-        for record in info_records:
-            assert not re.search("Boot kernel [^ ]\\+ was changed to [^ ]\\+", record.message)
 
 
 @pytest.mark.parametrize(
@@ -1667,65 +1508,6 @@ def test_list_non_red_hat_pkgs_left(monkeypatch):
 
     assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
     assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"
-
-
-@pytest.mark.parametrize(
-    (
-        "subprocess_output",
-        "is_only_rhel_kernel",
-        "expected",
-    ),
-    (
-        ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", True, False),
-        ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", False, True),
-        ("Installed:\nkernel", False, False),
-    ),
-    ids=(
-        "Kernels collide and installed is already RHEL. Do not update.",
-        "Kernels collide and installed is not RHEL and older. Update.",
-        "Kernels do not collide. Install RHEL kernel and do not update.",
-    ),
-)
-@centos7
-def test_install_rhel_kernel(subprocess_output, is_only_rhel_kernel, expected, pretend_os, monkeypatch):
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
-    monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-
-    if is_only_rhel_kernel:
-        pkg_selection = "empty"
-    else:
-        pkg_selection = "kernels"
-
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
-    )
-
-    update_kernel = pkghandler.install_rhel_kernel()
-
-    assert update_kernel is expected
-
-
-@pytest.mark.parametrize(
-    ("subprocess_output",),
-    (
-        ("Package kernel-2.6.32-754.33.1.el7.x86_64 already installed and latest version",),
-        ("Package kernel-4.18.0-193.el8.x86_64 is already installed.",),
-    ),
-)
-@centos7
-def test_install_rhel_kernel_already_installed_regexp(subprocess_output, pretend_os, monkeypatch):
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-    )
-
-    pkghandler.install_rhel_kernel()
-
-    assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
 
 
 def test_remove_non_rhel_kernels(monkeypatch):
