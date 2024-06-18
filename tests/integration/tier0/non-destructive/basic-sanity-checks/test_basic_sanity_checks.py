@@ -160,7 +160,7 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        assert c2r.expect("You are currently running 0.01", timeout=300) == 0
+        assert c2r.expect("You are currently running 0.01.0", timeout=300) == 0
         assert (
             c2r.expect(
                 "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion",
