@@ -286,6 +286,13 @@ class TestBackupSystem:
                 ],
                 (False, True, False, False, True),
             ),
+            (
+                [
+                    "S.5.?..T.     c   {path}/filename",
+                    "S.5.?..T.     c   {path}/filename",
+                ],
+                (True, True),
+            ),
         ),
     )
     def test_backup_package_file_complete(
@@ -297,37 +304,46 @@ class TestBackupSystem:
         backup_package_files_action,
         global_backup_control,
     ):
-        # Prepare the rpm -va ouput to the PRE_RPM_VA_LOG_FILENAME file
+        # Prepare the 'rpm -Va' ouput to the PRE_RPM_VA_LOG_FILENAME file
         rpm_va_output = ""
         rpm_va_path = str(tmpdir)
+        # Prepare 'rpm -Va' output with paths to tmpdir
         for i, line in enumerate(rpm_va_output_lines):
-            status = line.split()[0]
-            # Need to insert tmpdir into the filepath
             rpm_va_output_lines[i] = rpm_va_output_lines[i].format(path=rpm_va_path)
-            # Write some content to the newly created path if the file is present on the system
-            if status != "missing":
-                try:
-                    with open(rpm_va_output_lines[i].split()[-1], mode="w") as f:
-                        # Append the original path to the content
-                        f.write("Content for testing of file %s" % rpm_va_output_lines[i].split()[-1])
-                except (OSError, IOError):
-                    # case with invalid filepath
-                    pass
-            # Prepared rpm -Va output with paths to tmpdir
             rpm_va_output += rpm_va_output_lines[i] + "\n"
-        # Write the data to a file since data from systeminfo are being used
+        # Write the data to a file containing the 'rpm -Va' output since data from systeminfo are being used
         rpm_va_logfile_path = os.path.join(rpm_va_path, PRE_RPM_VA_LOG_FILENAME)
         with open(rpm_va_logfile_path, "w") as f:
             f.write(rpm_va_output)
+
+        # Prepare the files from the 'rpm -Va' output by creating them
+        #
+        # Use only unique paths, since one path can be present multiple times in the output
+        # https://issues.redhat.com/browse/RHELC-1606
+        unique_rpm_va_output_lines = list(set(rpm_va_output_lines))
+        for i, line in enumerate(unique_rpm_va_output_lines):
+            status = line.split()[0]
+            # Write some content to the newly created path if the file is present on the system
+            if status != "missing":
+                try:
+                    path = line.split()[-1]
+                    with open(path, mode="w") as f:
+                        # Append the original path to the content
+                        f.write("Content for testing of file %s" % path)
+                except (OSError, IOError):
+                    # case with invalid filepath
+                    pass
 
         backup_dir = str(tmpdir.mkdir("backup"))
 
         monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
         monkeypatch.setattr(backup_system, "LOG_DIR", rpm_va_path)
 
+        # Run the function
         backup_package_files_action.run()
 
         # Change the original files (remove, create)
+        removed_paths = []
         for i, line in enumerate(rpm_va_output_lines):
             original_file_path = line.split()[-1]
             status = line.split()[0]
@@ -342,7 +358,16 @@ class TestBackupSystem:
                 # Check if the file exists and contains right content
                 with open(backed_up_file_path, mode="r") as f:
                     assert f.read() == "Content for testing of file %s" % original_file_path
-                os.remove(original_file_path)
+                # Remove the original file
+                try:
+                    os.remove(original_file_path)
+                    removed_paths.append(original_file_path)
+                # FileNotFound on Python 3+, due compatibility with Python 2.7 using OSError
+                except IOError:
+                    # If the path is present multiple times in the 'rpm -Va' output
+                    # it's possible, the path was already removed. If not, that's fail.
+                    if original_file_path not in removed_paths:
+                        assert False
             elif status == "missing":
                 with open(original_file_path, mode="w") as f:
                     # Append the original path to the content
@@ -350,9 +375,12 @@ class TestBackupSystem:
             else:
                 assert not os.path.isfile(backed_up_file_path)
 
+        # Restore everything
         global_backup_control.pop_all()
 
-        # Check the existence/nonexistence and content rolled back file
+        assert not global_backup_control.rollback_failures
+
+        # Check the existence/nonexistence and content rolled back files
         for i, line in enumerate(rpm_va_output_lines):
             original_file_path = line.split()[-1]
             status = line.split()[0]

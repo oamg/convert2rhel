@@ -162,6 +162,7 @@ class BackupPackageFiles(actions.Action):
                     # If the MD5 checksum differs, the content of the file differs
                     restorable_file = RestorableFile(file["path"])
                     backup.backup_control.push(restorable_file)
+                    backed_up_files.append(file["path"])
                 else:
                     loggerinst.debug(
                         "File {filepath} already backed up - not backing up again".format(filepath=file["path"])
