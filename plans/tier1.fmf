@@ -300,3 +300,15 @@ adjust+:
         discover+:
             test+<:
                 - proxy-conversion/proxy_conversion
+
+    /error-after-ponr:
+        adjust+:
+          - enabled: false
+            when: distro == centos-8
+            because: On CentOS-8 the test doesn't behave well. The conversion does not report failure.
+        discover+:
+            # Disregarding inheritance in the test discovery.
+            # As the conversion fails and the system is left in an undetermined state,
+            # we can't perform any checks after the conversion.
+            test:
+                - error-after-ponr
