@@ -4,6 +4,11 @@ description+: |
     Critical set of tests/plans to be run for each upstream PR
     before merge commit to the main branch.
 
+adjust+:
+  - enabled: false
+    when: distro == stream-8-latest
+    because: We have a separate plan for CentOS Stream
+
 /sanity:
     /non-destructive:
         discover+:
@@ -56,139 +61,139 @@ description+: |
                 discover+:
                     test+<:
                         - conversion-method/pre_registered_system_conversion
+/core:
+    /non-destructive:
+        discover+:
+            filter+:
+                ['tier: 0', 'tag: non-destructive', 'tag: -sanity']
 
-/non-destructive:
-    discover+:
-        filter+:
-            ['tier: 0', 'tag: non-destructive', 'tag: -sanity']
+    /destructive:
+        discover+:
+            # List of tests run for every plan/test case.
+            # tmt-reboot feature is used for rebooting the system using
+            # the test management framework.
+            # The main test scenario gets prepended by the "+<" in each case.
+            test:
+                - utils/reboot-after-conversion
+                - checks-after-conversion
 
-/destructive:
-    discover+:
-        # List of tests run for every plan/test case.
-        # tmt-reboot feature is used for rebooting the system using
-        # the test management framework.
-        # The main test scenario gets prepended by the "+<" in each case.
-        test:
-            - utils/reboot-after-conversion
-            - checks-after-conversion
+        /basic_conversion_methods:
 
-    /basic_conversion_methods:
+            /rhsm_eus_conversion:
+                enabled: false
+                adjust+:
+                    - enabled: true
+                      when: >
+                        distro == alma-8.8, rocky-8.8
+                discover+:
+                    test+<:
+                        - conversion-method/rhsm_eus_account_conversion
 
-        /rhsm_eus_conversion:
-            enabled: false
-            adjust+:
-                - enabled: true
-                  when: >
-                    distro == alma-8.8, rocky-8.8
-            discover+:
-                test+<:
-                    - conversion-method/rhsm_eus_account_conversion
+            /rhsm_els_conversion:
+                enabled: false
+                adjust+:
+                    - enabled: true
+                      when: >
+                        distro == centos-7, oracle-7
+                      because: The ELS offering is applicable to EL7 only.
+                discover+:
+                    test+<:
+                        - conversion-method/rhsm_els_conversion
 
-        /rhsm_els_conversion:
-            enabled: false
-            adjust+:
-                - enabled: true
-                  when: >
-                    distro == centos-7, oracle-7
-                  because: The ELS offering is applicable to EL7 only.
-            discover+:
-                test+<:
-                    - conversion-method/rhsm_els_conversion
+            /custom_repositories_conversion:
+                environment+:
+                    SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
+                prepare+:
+                    - name: Add custom repositories
+                      how: ansible
+                      playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+                discover+:
+                    test+<:
+                        - conversion-method/custom_repos_conversion
+                    # Exclude the rhel_subman check, we don't use RHSM for the conversion
+                    exclude:
+                        - checks-after-conversion/rhel_subman
 
-        /custom_repositories_conversion:
-            environment+:
-                SUBMGR_DISABLED_SKIP_CHECK_RHSM_CUSTOM_FACTS: 1
+
+        /single_yum_transaction:
+            /packages_upgraded_after_conversion:
+                discover+:
+                    test+<:
+                        - single-yum-transaction/packages_upgraded_after_conversion
+
+            /observe_errors:
+                enabled: false
+                discover+:
+                    test+<:
+                        - single-yum-transaction/single_yum_transaction
+
+                /all_errors:
+                    adjust+:
+                        - enabled: true
+                          when: >
+                            distro == oracle-7
+                    prepare+:
+                        - name: Install ntp package and remove one dependency
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
+
+                /excluded_packages:
+                    adjust+:
+                        - enabled: true
+                          when: distro == centos-7
+                    prepare+:
+                        - name: Remove some packages from the excluded packages config list
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
+
+                /mismatch_errors:
+                    adjust+:
+                        - enabled: true
+                          when: >
+                            distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
+                    prepare+:
+                        - name: Install multilib packages with dnf
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+
+                /resolve_dependency:
+                    adjust+:
+                        - enabled: true
+                          when: distro == centos, oracle
+                          because: We do not have any tracked packages with Rocky and Alma for this test case
+                    summary+: |
+                        Handle dependency packages
+                    description+: |
+                        This case installs a couple of packages that we know cause dependency
+                        issues during the package replacement, so the intention of this is to
+                        assert that convert2rhel can handle those packages and not fail during the
+                        replacement, especially with the yum transaction.
+                    prepare+:
+                        - name: Install dependency packages
+                          how: shell
+                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
+
+            /yum_distro_sync:
+                prepare+:
+                      - name: enable CentOS' extras repo
+                        how: ansible
+                        playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
+                      - name: Install problematic package
+                        how: shell
+                        script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
+                discover+:
+                    test+<:
+                        - yum-distro-sync/yum_distro_sync
+
+
+        /isolated_system_conversion:
             prepare+:
-                - name: Add custom repositories
-                  how: ansible
-                  playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
+                - name: Allow access to Satellite only
+                  how: shell
+                  script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
             discover+:
                 test+<:
-                    - conversion-method/custom_repos_conversion
+                    - isolated-system-conversion/isolated_system_conversion
                 # Exclude the rhel_subman check, we don't use RHSM for the conversion
                 exclude:
                     - checks-after-conversion/rhel_subman
-
-
-    /single_yum_transaction:
-        /packages_upgraded_after_conversion:
-            discover+:
-                test+<:
-                    - single-yum-transaction/packages_upgraded_after_conversion
-
-        /observe_errors:
-            enabled: false
-            discover+:
-                test+<:
-                    - single-yum-transaction/single_yum_transaction
-
-            /all_errors:
-                adjust+:
-                    - enabled: true
-                      when: >
-                        distro == oracle-7
-                prepare+:
-                    - name: Install ntp package and remove one dependency
-                      how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
-
-            /excluded_packages:
-                adjust+:
-                    - enabled: true
-                      when: distro == centos-7
-                prepare+:
-                    - name: Remove some packages from the excluded packages config list
-                      how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
-
-            /mismatch_errors:
-                adjust+:
-                    - enabled: true
-                      when: >
-                        distro == centos-8, oracle-8, alma-8-latest, rocky-8-latest
-                prepare+:
-                    - name: Install multilib packages with dnf
-                      how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
-
-            /resolve_dependency:
-                adjust+:
-                    - enabled: true
-                      when: distro == centos, oracle
-                      because: We do not have any tracked packages with Rocky and Alma for this test case
-                summary+: |
-                    Handle dependency packages
-                description+: |
-                    This case installs a couple of packages that we know cause dependency
-                    issues during the package replacement, so the intention of this is to
-                    assert that convert2rhel can handle those packages and not fail during the
-                    replacement, especially with the yum transaction.
-                prepare+:
-                    - name: Install dependency packages
-                      how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
-
-        /yum_distro_sync:
-            prepare+:
-                  - name: enable CentOS' extras repo
-                    how: ansible
-                    playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
-                  - name: Install problematic package
-                    how: shell
-                    script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
-            discover+:
-                test+<:
-                    - yum-distro-sync/yum_distro_sync
-
-
-    /isolated_system_conversion:
-        prepare+:
-            - name: Allow access to Satellite only
-              how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
-        discover+:
-            test+<:
-                - isolated-system-conversion/isolated_system_conversion
-            # Exclude the rhel_subman check, we don't use RHSM for the conversion
-            exclude:
-                - checks-after-conversion/rhel_subman

@@ -12,6 +12,7 @@ tag+:
 /os_release_restored:
     summary+: |
         Restore the os-release file during rollback
+
     /related_environment_variable:
         description+: |
             We remove all the system repositories from the usual location.
@@ -19,6 +20,7 @@ tag+:
             convert2rhel is unable to perform back-up of some packages.
             Set the "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
             Verify that the /etc/os-release file is restored after the rollback.
+
         /backup_os_release_no_envar:
             summary+: |
                 Restore os-release without CONVERT2RHEL_INCOMPLETE_ROLLBACK

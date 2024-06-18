@@ -31,6 +31,9 @@ adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8-latest
       when: distro == rocky-8-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: stream-8-latest
+      when: distro == stream-8-latest
 
 prepare+:
     - name: install latest copr build

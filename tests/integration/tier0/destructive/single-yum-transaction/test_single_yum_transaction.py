@@ -14,7 +14,7 @@ def test_single_yum_transaction(convert2rhel, shell):
     """
     pkgmanager = "yum"
 
-    if re.match(r"^(centos|oracle|alma|rocky)-8", SYSTEM_RELEASE_ENV):
+    if re.match(r"^(centos|oracle|alma|rocky|stream)-8", SYSTEM_RELEASE_ENV):
         pkgmanager = "dnf"
 
     with convert2rhel(

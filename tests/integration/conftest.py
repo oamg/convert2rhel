@@ -42,6 +42,7 @@ SAT_REG_COMMAND = {
     "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
     "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
     "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
+    "stream-8-latest": SAT_REG_FILE["STREAM8_SAT_REG"],
 }
 
 
@@ -339,16 +340,25 @@ class SystemInformationRelease:
 
     with open("/etc/system-release", "r") as file:
         system_release_content = file.read()
-        match_version = re.search(r".+?(\d+)\.(\d+)\D?", system_release_content)
-        if not match_version:
-            print("not match")
-        version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), int(match_version.group(2)))
+        # Evaluate if we're looking at CentOS Stream
+        is_stream = re.match("stream", system_release_content.split()[1].lower())
         distribution = system_release_content.split()[0].lower()
         if distribution == "ol":
             distribution = "oracle"
         elif distribution == "red":
             distribution = "redhat"
-        system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
+        match_version = re.search(r".+?(\d+)\.?(\d+)?\D?", system_release_content)
+        if not match_version:
+            pytest.fail("Something is wrong with the /etc/system-release, cowardly refusing to continue.")
+        if is_stream:
+            distribution = "stream"
+            version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), "latest")
+            system_release = "{}-{}-{}".format(distribution, version.major, version.minor)
+        else:
+            version = namedtuple("Version", ["major", "minor"])(
+                int(match_version.group(1)), int(match_version.group(2))
+            )
+            system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
 
 
 @pytest.fixture()
@@ -441,11 +451,14 @@ def missing_os_release_package_workaround(shell):
         "centos-8": ["centos-linux-release"],
         "alma-8": ["almalinux-release"],
         "rocky-8": ["rocky-release"],
+        "stream-8": ["centos-stream-release"],
     }
 
     # Run only for non-destructive tests.
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Not using the SystemInformationRelease class here, because at this point the *-release
+        # package is missing from the system, including the /etc/system-release file
         os_name = SYSTEM_RELEASE_ENV.split("-")[0]
         os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
         os_key = f"{os_name}-{os_ver[0]}"
@@ -556,7 +569,7 @@ def pre_registered(shell, request, yum_conf_exclude):
 
 
 @pytest.fixture()
-def hybrid_rocky_image():
+def hybrid_rocky_image(shell):
     """
     Fixture to detect a hybrid Rocky Linux cloud image.
     Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
@@ -564,7 +577,8 @@ def hybrid_rocky_image():
     kernel than the last selected.
     """
     grubenv_file = "/boot/grub2/grubenv"
-    if "rocky" in SystemInformationRelease.distribution:
+    is_efi = shell("efibootmgr", silent=True).returncode
+    if "rocky" in SystemInformationRelease.distribution and is_efi not in (None, 0):
         if os.path.islink(grubenv_file):
             target_grubenv_file = os.path.realpath(grubenv_file)
 
@@ -622,9 +636,13 @@ def _create_old_repo(distro: str, repo_name: str):
     """
     baseurl = None
     if distro == "alma":
-        baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
+        baseurl = "https://repo.almalinux.org/vault/8.8/BaseOS/$basearch/os/"
+        if "8.8" in SYSTEM_RELEASE_ENV:
+            baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
     elif distro == "rocky":
-        baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
+        baseurl = "https://download.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/"
+        if "8.8" in SYSTEM_RELEASE_ENV:
+            baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
     else:
         pytest.fail(f"Unsupported distro ({distro}) provided.")
     with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
@@ -668,13 +686,24 @@ def kernel(shell):
         elif "alma-8" in SYSTEM_RELEASE_ENV:
             repo_name = "alma_old"
             _create_old_repo(distro="alma", repo_name=repo_name)
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-            shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
+            if "8.8" in SYSTEM_RELEASE_ENV:
+                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
+            else:
+                assert shell(f"yum install kernel-4.18.0-477.27.2.el8_8.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'AlmaLinux (4.18.0-477.27.2.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
         elif "rocky-8" in SYSTEM_RELEASE_ENV:
             repo_name = "rocky_old"
             _create_old_repo(distro="rocky", repo_name=repo_name)
-            assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-            shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+            if "8.8" in SYSTEM_RELEASE_ENV:
+                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+            else:
+                assert shell(f"yum install kernel-4.18.0-477.27.1.el8_8.x86_64 -y --enablerepo {repo_name}")
+                shell("grub2-set-default 'Rocky Linux (4.18.0-477.27.1.el8_8.x86_64) 8.8 (Green Obsidian)'")
+        elif "stream-8" in SYSTEM_RELEASE_ENV:
+            # Given the CentOS Stream rolling release, we are able to just downgrade the kernel
+            assert shell("yum downgrade kernel -y").returncode == 0
 
         shell("tmt-reboot -t 600")
 
