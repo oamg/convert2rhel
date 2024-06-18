@@ -11,7 +11,7 @@
     insertafter: EOF
 
 # Additionally OracleLinux 9 has the GRUB_TERMINAL_OUTPUT set up weirdly
-- name: Set the /etc/grub/default GRUB_ENABLE_BLSCFG
+- name: Set the /etc/grub/default GRUB_TERMINAL_OUTPUT
   lineinfile:
     path: /etc/default/grub
     line: 'GRUB_TERMINAL_OUTPUT="console"'

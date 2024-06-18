@@ -664,6 +664,19 @@ def _create_old_repo(distro: str, repo_name: str):
         f.write("gpgcheck=0\n")
 
 
+def _get_full_kernel_title(shell, kernel=None):
+    """
+    Helper function.
+    Get the full kernel boot entry title.
+    """
+    # Get the full name of the kernel (ignore rescue kernels)
+    full_title = shell(
+        f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
+    ).output.strip()
+
+    return full_title
+
+
 @pytest.fixture(scope="function")
 def kernel(shell):
     """
@@ -671,7 +684,6 @@ def kernel(shell):
     the system to boot to it. The kernel version is not the
     latest one available in repositories.
     """
-
     # If the fixture gets executed after second `tmt-reboot` (after cleanup of a test) then
     # do not trigger test again by yielding.
     # Note that we cannot just run `return` command as this fixture require to have
@@ -681,42 +693,43 @@ def kernel(shell):
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         version = SystemInformationRelease.version.major
+        older_kernel_version = None
+        yum_opt = ""
         # Set default kernel
         if "centos-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'")
+            older_kernel_version = "3.10.0-1160.el7.x86_64"
+
         elif "oracle-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
+            older_kernel_version = "3.10.0-1160.el7.x86_64"
         elif "centos-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
+            older_kernel_version = "4.18.0-348.el8"
         # Test is being run only for the latest released oracle-linux
         elif "oracle" in SYSTEM_RELEASE_ENV:
             if version == 8:
-                assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
-                shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
+                older_kernel_version = "4.18.0-80.el8.x86_64"
             elif version:
-                assert shell("yum install kernel-5.14.0-162.12.1.el9_1.x86_64 -y").returncode == 0
-                shell("grub2-set-default 'Oracle Linux Server (kernel-5.14.0-162.12.1.el9_1.x86_64) 9.1'")
+                older_kernel_version = "5.14.0-162.12.1.el9_1.x86_64"
         elif "alma" in SYSTEM_RELEASE_ENV:
             repo_name = "alma_old"
+            yum_opt = f"--enablerepo {repo_name}"
             _create_old_repo(distro="alma", repo_name=repo_name)
             if version == 8:
-                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
+                older_kernel_version = "4.18.0-372.13.1.el8_6.x86_64"
             else:
-                assert shell(f"yum install kernel-5.14.0-362.24.2.el9_3.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'AlmaLinux (kernel-5.14.0-362.24.2.el9_3.x86_64) 9.3'")
+                older_kernel_version = "5.14.0-362.24.2.el9_3.x86_64"
         elif "rocky" in SYSTEM_RELEASE_ENV:
             repo_name = "rocky_old"
             _create_old_repo(distro="rocky", repo_name=repo_name)
+            yum_opt = f"--enablerepo {repo_name}"
             if version == 8:
-                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
+                older_kernel_version = "4.18.0-372.13.1.el8_6.x86_64"
             else:
-                assert shell(f"yum install kernel-kernel-5.14.0-362.24.1.el9_3.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'Rocky Linux (kernel-5.14.0-362.24.1.el9_3.x86_64) 9.3'")
+                older_kernel_version = "5.14.0-362.24.1.el9_3.x86_64"
+
+        assert shell(f"yum install kernel-{older_kernel_version} -y {yum_opt}").returncode == 0
+
+        older_kernel_title = _get_full_kernel_title(shell, kernel=older_kernel_version)
+        shell(f"grub2-set-default '{older_kernel_title}'")
 
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
@@ -736,21 +749,16 @@ def kernel(shell):
             "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
         ).output
 
-        # Get the full name of the kernel (ignore rescue kernels)
-        full_name = shell(
-            'grubby --info ALL | grep "title=.*{}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''.format(
-                latest_kernel
-            )
-        ).output
+        full_boot_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
 
         # Set the latest kernel as the one we want to reboot to
-        shell("grub2-set-default '{}'".format(full_name.strip()))
+        shell("grub2-set-default '{}'".format(full_boot_kernel_title.strip()))
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         # Remove the mocked repofile
-        if "alma-8" in SYSTEM_RELEASE_ENV:
+        if "alma" in SYSTEM_RELEASE_ENV:
             shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
+        elif "rocky" in SYSTEM_RELEASE_ENV:
             shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
 
         # Reboot after clean-up
@@ -777,37 +785,39 @@ def yum_conf_exclude(shell, backup_directory, request):
     if hasattr(request, "param"):
         exclude = request.param
         print(">>> Using parametrized packages requested in the fixture.")
-    yum_config = "/etc/yum.conf"
+    yum_configs = ["/etc/yum.conf", "/etc/dnf/dnf.conf"]
     backup_dir = os.path.join(backup_directory, "yumconf")
     shell(f"mkdir -v {backup_dir}")
-    config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-    config = configparser.ConfigParser()
-    config.read(yum_config)
+    for yum_config in yum_configs:
+        config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
+        config = configparser.ConfigParser()
+        config.read(yum_config)
 
-    assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
+        assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
 
-    pkgs_to_exclude = " ".join(exclude)
-    # If there is already an `exclude` section, append to the existing value
-    if config.has_option("main", "exclude"):
-        pre_existing_value = config.get("main", "exclude")
-        config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
-    else:
-        config.set("main", "exclude", pkgs_to_exclude)
+        pkgs_to_exclude = " ".join(exclude)
+        # If there is already an `exclude` section, append to the existing value
+        if config.has_option("main", "exclude"):
+            pre_existing_value = config.get("main", "exclude")
+            config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+        else:
+            config.set("main", "exclude", pkgs_to_exclude)
 
-    with open(yum_config, "w") as configfile:
-        config.write(configfile, space_around_delimiters=False)
+        with open(yum_config, "w") as configfile:
+            config.write(configfile, space_around_delimiters=False)
 
-    assert config.has_option("main", "exclude")
-    assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+        assert config.has_option("main", "exclude")
+        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
 
     yield
 
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        # Clean up only for non-destrucive tests
-        # We need to keep the yum.conf in the descructive tests, since restoring the original
-        # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
-        # the system information from the then non-existent file
-        if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+    # Clean up only for non-destrucive tests
+    # We need to keep the yum.conf in the descructive tests, since restoring the original
+    # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
+    # the system information from the then non-existent file
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        for yum_config in yum_configs:
+            config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
             assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
@@ -919,7 +929,7 @@ def backup_directory(shell, request):
 
 @pytest.fixture()
 def install_and_set_up_subman_to_stagecdn(shell):
-    """ "
+    """
     A fixture to install subscription-manager and set up to point to a testing environments.
     rhsm.baseurl and server.hostname to be changed.
     This might be dropped when ELS, 8.10, etc. goes actually GA.
@@ -960,6 +970,21 @@ def workaround_remove_uek():
 
 
 @pytest.fixture(autouse=True)
+def grub_setup_workaround(shell):
+    """
+    Workaround fixture.
+    /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
+    Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
+    as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
+    than the latest.
+    """
+    if SystemInformationRelease.version.major == 9:
+        shell(r"sudo sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub", silent=True)
+
+    yield
+
+
+@pytest.fixture(autouse=True)
 def keep_centos_pointed_to_vault(shell):
     """
     Fixture.
@@ -969,6 +994,6 @@ def keep_centos_pointed_to_vault(shell):
     Make sure the repositories are pointed to the vault to keep the system usable.
     """
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
-        sed_repos_to_vault = 'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+        sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
         print("TESTS >>> Resetting the repos to vault")
         shell(sed_repos_to_vault, silent=True)
