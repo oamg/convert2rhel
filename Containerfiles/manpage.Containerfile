@@ -4,14 +4,11 @@
 # You can also specify other runtimes (e.g., runsc, krun) if available
 # See the OCI runtime documentation for details
 # https://github.com/opencontainers/runtime-spec/blob/master/config.md#linux
-FROM centos:9
-
-RUN echo "runc" > /etc/containers/oci-runtime
 
 FROM quay.io/centos/centos:stream9 as base
 
 # Install Python and other dependencies
-RUN yum install -y python3
+RUN yum install -y requirements/manpages_requirements.txt
 
 # Set the working directory
 WORKDIR /app
