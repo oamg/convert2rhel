@@ -19,7 +19,7 @@ import datetime
 import logging
 
 from convert2rhel import actions
-from convert2rhel.systeminfo import ELS_RELEASE_DATE, system_info
+from convert2rhel.systeminfo import ELS_START_DATE, system_info
 from convert2rhel.toolopts import tool_opts
 
 
@@ -35,16 +35,19 @@ class ElsSystemCheck(actions.Action):
 
         if system_info.version.major == 7:
             current_datetime = datetime.date.today()
-            # Turn ELS_RELEASE_DATE into a datetime object
-            els_release_date = datetime.datetime.strptime(ELS_RELEASE_DATE, "%Y-%m-%d").date()
+            # Turn ELS_START_DATE into a datetime object
+            els_start_date = datetime.datetime.strptime(ELS_START_DATE, "%Y-%m-%d").date()
 
             # warning message if the els release date is past and the --els option is not set
-            if not tool_opts.els and current_datetime > els_release_date:
+            if not tool_opts.els and current_datetime > els_start_date:
                 self.add_message(
                     level="WARNING",
                     id="ELS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --els command line option is unused",
-                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
-                    " command line option to land on a system patched with the latest security errata.",
+                    description=(
+                        "Current system version is under Extended Lifecycle Support (ELS). You may want to "
+                        "consider using the --els command line option to land on a system patched with the latest "
+                        "security errata.",
+                    ),
                 )
         return

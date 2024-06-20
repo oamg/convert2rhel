@@ -14,7 +14,7 @@ adjust+:
 /els_support:
     description: |
         Test verifying correct behavior when converting ELS candidates.
-        ELS_RELEASE_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+        ELS_START_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
         Verified scenarios (handled by pytest parametrization):
         1/ The system is considered as a non-ELS. This is done by modifying the major system version
             in the els.py file.

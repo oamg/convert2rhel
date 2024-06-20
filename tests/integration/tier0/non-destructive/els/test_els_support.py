@@ -9,7 +9,7 @@ from conftest import TEST_VARS
 def els_mock(shell, backup_directory):
     """
     Fixture to mock different scenarios while handling the ELS candidates.
-    Backs up the convert2rhel/systeminfo.py and modifies the ELS_RELEASE_DATE variable.
+    Backs up the convert2rhel/systeminfo.py and modifies the ELS_START_DATE variable.
     Restores the original version after the test is done.
     """
     systeminfo_file = shell("find /usr -path '*/convert2rhel/systeminfo.py'").output.strip()
@@ -66,7 +66,7 @@ def test_els_support(
 ):
     """
     Test verifying correct behavior when converting ELS candidates.
-    ELS_RELEASE_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
+    ELS_START_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
     Verified scenarios (handled by pytest parametrization):
     1/ The system is considered as a non-ELS. This is done by modifying the major system version
         in the els.py file.
