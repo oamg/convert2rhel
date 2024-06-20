@@ -19,11 +19,13 @@ import datetime
 import logging
 
 from convert2rhel import actions
-from convert2rhel.systeminfo import ELS_START_DATE, system_info
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
 logger = logging.getLogger(__name__)
+
+ELS_START_DATE = "2024-07-01"
 
 
 class ElsSystemCheck(actions.Action):
@@ -38,6 +40,7 @@ class ElsSystemCheck(actions.Action):
             # Turn ELS_START_DATE into a datetime object
             els_start_date = datetime.datetime.strptime(ELS_START_DATE, "%Y-%m-%d").date()
 
+            print(current_datetime > els_start_date)
             # warning message if the els release date is past and the --els option is not set
             if not tool_opts.els and current_datetime > els_start_date:
                 self.add_message(

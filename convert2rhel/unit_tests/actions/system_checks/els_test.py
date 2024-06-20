@@ -32,7 +32,7 @@ def els_action():
 class DateMock(datetime.date):
     @classmethod
     def today(cls):
-        return cls(2024, 6, 13)
+        return cls(2024, 7, 2)
 
 
 class TestEus:
@@ -58,8 +58,11 @@ class TestEus:
                     level="WARNING",
                     id="ELS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --els command line option is unused",
-                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
-                    " command line option to land on a system patched with the latest security errata.",
+                    description=(
+                        "Current system version is under Extended Lifecycle Support (ELS). You may want to "
+                        "consider using the --els command line option to land on a system patched with the latest "
+                        "security errata.",
+                    ),
                 ),
             )
         )

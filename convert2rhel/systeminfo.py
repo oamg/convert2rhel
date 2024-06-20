@@ -62,8 +62,6 @@ RELEASE_VER_MAPPING = {
 # Dictionary of EUS minor versions supported and their EUS period start date
 EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
-ELS_START_DATE = "2024-07-01"
-
 Version = namedtuple("Version", ["major", "minor"])
 
 
