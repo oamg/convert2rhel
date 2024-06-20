@@ -20,6 +20,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
 }
 
+autodoc_mock_imports = ["dnf", "yum", "rpm", "hawkey", "dbus", "pexpect"]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 autoclass_content = "both"  # Add __init__ doc (ie. params) to class summaries
 html_show_sourcelink = False  # Remove 'view source code' from top of page (for html, not python)
