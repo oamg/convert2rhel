@@ -1,8 +1,6 @@
 import platform
 import subprocess
 
-import pytest
-
 from conftest import TEST_VARS
 
 
@@ -34,7 +32,6 @@ def get_device_partition(device):
     return partition.rsplit("PART_ENTRY_NUMBER=", maxsplit=1)[-1].replace('"', "")
 
 
-@pytest.mark.test_detect_correct_boot_partition
 def test_detect_correct_boot_partition(convert2rhel):
     """
     Verify that the correct arguments for disk and partition will be used

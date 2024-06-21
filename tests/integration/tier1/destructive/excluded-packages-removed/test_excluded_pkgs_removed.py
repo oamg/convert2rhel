@@ -1,11 +1,8 @@
 import os
 
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_excluded_packages_removed
 def test_excluded_packages_removed(shell, convert2rhel):
     """
     Verify, that convert2rhel removes packages, which are specified as excluded_pkgs in config.

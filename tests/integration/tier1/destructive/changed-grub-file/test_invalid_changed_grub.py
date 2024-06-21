@@ -2,16 +2,13 @@ from __future__ import print_function
 
 import fileinput
 
-import pytest
-
 from conftest import TEST_VARS
 
 
 target_line = "GRUB_CMDLINE_LINUX"
 
 
-@pytest.mark.test_invalid_changes_to_grub_file
-def test_modify_grub_invalid(convert2rhel):
+def test_invalid_changes_to_grub_file(convert2rhel):
     """
     Modify the /etc/default/grub file with 'invalid' changes.
     These changes should cause the 'grub2-mkfile' call to fail.

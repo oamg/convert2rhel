@@ -1,9 +1,6 @@
 import os
 
-import pytest
 
-
-@pytest.mark.test_check_data_collection
 def test_check_data_collection():
     """
     Verify that after conversion the convert2rhel.facts file is present.

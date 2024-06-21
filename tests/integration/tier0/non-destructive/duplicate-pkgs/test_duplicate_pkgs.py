@@ -45,8 +45,7 @@ def install_duplicate_pkg(shell):
         shell(f"yum install -y {pkg}")
 
 
-@pytest.mark.test_duplicate_pkgs
-def test_duplicate_pkgs(convert2rhel, install_duplicate_pkg):
+def test_duplicate_packages_installed(convert2rhel, install_duplicate_pkg):
     """
     Verify that the conversion does not crash when the same
     package (of different version) is installed on the system.

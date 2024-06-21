@@ -121,7 +121,6 @@ def config_files_removed(shell, backup_directory):
     "file_action_fixture",
     ["config_files_modified", "config_files_removed"],
 )
-@pytest.mark.test_file_backup
 def test_file_backup(convert2rhel, shell, file_action_fixture, request):
     """
     This test verifies correct handling of backup and restore of config files.

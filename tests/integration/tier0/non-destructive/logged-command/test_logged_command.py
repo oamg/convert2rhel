@@ -1,15 +1,12 @@
 import json
 import os.path
 
-import pytest
-
 
 C2R_LOG = "/var/log/convert2rhel/convert2rhel.log"
 C2R_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
 
-@pytest.mark.test_logfile_starts_with_command
-def test_verify_logfile_starts_with_command(convert2rhel):
+def test_logfile_starts_with_command(convert2rhel):
     """
     This test verifies, that the command passed to the command line is at the beginning of the log file.
     Also verify, that the passed password is obfuscated.

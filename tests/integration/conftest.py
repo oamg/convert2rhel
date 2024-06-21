@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import warnings
 
 from collections import namedtuple
 from contextlib import contextmanager
@@ -17,6 +18,7 @@ import click
 import pexpect
 import pytest
 
+from _pytest.warning_types import PytestUnknownMarkWarning
 from dotenv import dotenv_values
 
 
@@ -28,6 +30,20 @@ except ImportError:
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
+
+
+def pytest_collection_modifyitems(items):
+    # This will filter out warning for unregistered markers
+    # e.g. "PytestUnknownMarkWarning: Unknown pytest.mark.test_this_interface - is this a typo?"
+    warnings.filterwarnings("ignore", category=PytestUnknownMarkWarning, message=r"Unknown pytest\.mark\.test_[^ ]+ -")
+    for item in items:
+        marker_name = item.nodeid.split("::")[-1]  # Derive marker from the nodeid test_file.py::test_this_interface
+        try:
+            marker = getattr(pytest.mark, marker_name)
+        except AttributeError:
+            marker = pytest.mark.custom_marker(marker_name)  # Use a custom marker if the attribute doesn't exist
+        item.add_marker(marker)
+
 
 TEST_VARS = dotenv_values("/var/tmp/.env")
 SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")

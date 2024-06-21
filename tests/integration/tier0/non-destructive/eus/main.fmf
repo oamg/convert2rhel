@@ -11,7 +11,7 @@ adjust+:
     when: distro == alma-8.8, rocky-8.8
     because: The only consistently relevant EUS releases are Alma and Rocky.
 
-/eus_support:
+/eus_enablement:
     description: |
         Test verifying correct behavior when converting EUS candidates.
         EUS_MINOR_VERISONS mapping in convert2rhel/systeminfo.py is modified to mock the different scenarios.
@@ -29,9 +29,9 @@ adjust+:
             The --eus option *is used*.
             The report is expected to print out a WARNING and advise to use the --eus option.
     tag+:
-        - test-eus-support
+        - test-eus-enablement
     test: |
-      pytest -m test_eus_support
+      pytest -m test_eus_enablement
 
 /non_eus_account:
     description: |

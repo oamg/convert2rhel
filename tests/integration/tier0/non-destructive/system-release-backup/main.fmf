@@ -12,57 +12,57 @@ tag+:
 /os_release_restored:
     summary+: |
         Restore the os-release file during rollback
-
-    /related_environment_variable:
+    description+: |
+        We remove all the system repositories from the usual location.
+        Since the host is registered through Satellite having access only to the RHEL repositories,
+        convert2rhel is unable to perform back-up of some packages.
+        Set the "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
+        Verify that the /etc/os-release file is restored after the rollback.
+    tag+:
+        - inhibitor
+    /inhibitor_os_release_restored:
+        summary+: |
+            os-release restored without CONVERT2RHEL_INCOMPLETE_ROLLBACK
         description+: |
-            We remove all the system repositories from the usual location.
-            Since the host is registered through Satellite having access only to the RHEL repositories,
-            convert2rhel is unable to perform back-up of some packages.
-            Set the "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" envar to bypass kernel check.
-            Verify that the /etc/os-release file is restored after the rollback.
+            In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is not set, therefore
+            using analyze we expect convert2rhel to raise an error and return code 1.
+        adjust+:
+            environment+:
+                CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
+        tag+:
+            - backup-os-release-no-envar
+            - sanity
+        test: |
+            pytest -m test_inhibitor_os_release_restored
 
-        /backup_os_release_no_envar:
-            summary+: |
-                Restore os-release without CONVERT2RHEL_INCOMPLETE_ROLLBACK
-            description+: |
-                In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is not set, therefore
-                using analyze we expect convert2rhel to raise an error and return code 1.
-            adjust+:
-                environment+:
-                    CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
-            tag+:
-                - backup-os-release-no-envar
-                - sanity
-            test: |
-                pytest -m test_backup_os_release_no_envar
-
-        /backup_os_release_with_envar:
-            summary+: |
-                Restore os-release with CONVERT2RHEL_INCOMPLETE_ROLLBACK
-            description+: |
-                In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
-                Ref ticket: OAMG-5457.
-                Note that after the test, the $releasever variable is unset.
-                That is due to the incomplete rollback not being able to back up/restore the *-linux-release
-                package, the issue gets resolved by the (autoused) missing_os_release_package_workaround fixture.
-            adjust+:
-                environment+:
-                    CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
-                    CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
-            tag+:
-                - backup-os-release-with-envar
-            test: |
-                pytest -m test_backup_os_release_with_envar
-            link:
-                - verifies: https://issues.redhat.com/browse/OAMG-5457
+    /override_inhibitor_os_release_restored:
+        summary+: |
+            os-release restored with CONVERT2RHEL_INCOMPLETE_ROLLBACK
+        description+: |
+            In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
+            Note that after the test, the $releasever variable is unset.
+            That is due to the incomplete rollback not being able to back up/restore the *-linux-release
+            package, the issue gets resolved by the (auto used) missing_os_release_package_workaround fixture.
+        adjust+:
+            environment+:
+                CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+                CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
+        tag+:
+            - backup-os-release-with-envar
+            - override
+        test: |
+            pytest -m test_override_inhibitor_os_release_restored
+        link:
+            - verifies: https://issues.redhat.com/browse/OAMG-5457
 
 
-/missing_system_release:
+/inhibitor_missing_system_release:
     summary+: |
         Removed system-release inhibits the conversion
     description+: |
         Verify that missing /etc/system-release (removed pre-conversion) inhibits the conversion.
     tag+:
         - missing-system-release
+        - inhibitor
     test: |
-        pytest -m test_missing_system_release
+        pytest -m test_inhibitor_missing_system_release
