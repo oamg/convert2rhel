@@ -8,7 +8,6 @@ from conftest import TEST_VARS
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 
-@pytest.mark.test_firewalld_disabled
 def test_firewalld_disabled_ol8(shell, convert2rhel):
     """
     Verify that when the firewalld is not running and the configuration option has

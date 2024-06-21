@@ -28,7 +28,6 @@ def tainted_repository(shell):
     assert shell(f"rm -f /etc/yum.repos.d/{repofile}.repo").returncode == 0
 
 
-@pytest.mark.test_failed_repoquery
 def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, tainted_repository):
     """
     This test verifies, that failed repoquery is handled correctly.
@@ -51,8 +50,7 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
 
 
 @pytest.mark.parametrize("yum_conf_exclude", [["kernel", "kernel-core"]], indirect=True)
-@pytest.mark.test_yum_exclude_kernel
-def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_exclude):
+def test_latest_kernel_check_with_yum_exclude_kernel_option(convert2rhel, yum_conf_exclude):
     """
     Verify, the conversion does not raise:
     'Could not find any kernel from repositories to compare against the loaded kernel.'
@@ -70,8 +68,7 @@ def test_latest_kernel_check_with_exclude_kernel_option(convert2rhel, yum_conf_e
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_non_latest_kernel_error
-def test_non_latest_kernel_error(kernel, shell, convert2rhel):
+def test_outdated_kernel_error(kernel, shell, convert2rhel):
     """
     System has non latest kernel installed.
     Verify the IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.

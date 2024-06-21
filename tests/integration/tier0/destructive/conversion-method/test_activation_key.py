@@ -1,9 +1,6 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_activation_key_conversion
 def test_activation_key_conversion(convert2rhel):
     """
     Basic conversion method using the RHSM activation key and organization for registration.

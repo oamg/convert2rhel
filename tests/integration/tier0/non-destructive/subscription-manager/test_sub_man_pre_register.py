@@ -3,7 +3,6 @@ import pytest
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_pre_registered_wont_unregister
 def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system won't unregister the system.
@@ -30,7 +29,6 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_pre_registered_re_register
 def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system and providing convert2rhel
@@ -60,7 +58,6 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     assert "This system is not yet registered" in shell("subscription-manager identity").output
 
 
-@pytest.mark.test_unregistered_no_credentials
 def test_unregistered_no_credentials(shell, convert2rhel):
     """
     This test verifies that conversion fails when the system is not pre-registered
@@ -77,8 +74,7 @@ def test_unregistered_no_credentials(shell, convert2rhel):
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.test_no_sca_not_subscribed
-def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
+def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
@@ -99,7 +95,6 @@ def test_no_sca_no_subscribed(shell, pre_registered, convert2rhel):
 
 
 @pytest.mark.parametrize("pre_registered", [("RHSM_NOSUB_USERNAME", "RHSM_NOSUB_PASSWORD")], indirect=True)
-@pytest.mark.test_no_sca_subscription_attachment_error
 def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):
     """
     This test verifies that running conversion on pre-registered system

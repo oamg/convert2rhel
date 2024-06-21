@@ -15,6 +15,6 @@ description+: |
         v8-devel from the epel repository
         nodejs from the epel repository
     tag+:
-        - test-list-third-party-pkgs-error
+        - test-list-third-party-pkgs
     test: |
-        pytest -m test_list_third_party_pkgs_error
+        pytest -m test_list_third_party_pkgs

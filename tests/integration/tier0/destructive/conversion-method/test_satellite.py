@@ -1,9 +1,6 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_satellite_conversion
 def test_satellite_conversion(convert2rhel, satellite_registration):
     """
     Conversion method using the Satellite credentials for registration.

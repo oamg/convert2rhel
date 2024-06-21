@@ -23,8 +23,7 @@ def system_release_missing(shell, backup_directory):
     assert shell(f"mv -v {system_release_bak} {system_release}").returncode == 0
 
 
-@pytest.mark.test_missing_system_release
-def test_missing_system_release(shell, convert2rhel, system_release_missing):
+def test_inhibitor_missing_system_release(shell, convert2rhel, system_release_missing):
     """
     It is required to have /etc/system-release file present on the system.
     If the file is missing inhibit the conversion.
@@ -41,8 +40,7 @@ def test_missing_system_release(shell, convert2rhel, system_release_missing):
 
 
 @pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
-@pytest.mark.test_backup_os_release_no_envar
-def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration, remove_repositories):
+def test_inhibitor_os_release_restored(shell, convert2rhel, satellite_registration, remove_repositories):
     """
     We remove all the system repositories from the usual location.
     Since the host is registered through Satellite having access only to the RHEL repositories,
@@ -67,8 +65,7 @@ def test_backup_os_release_no_envar(shell, convert2rhel, satellite_registration,
 
 
 @pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
-@pytest.mark.test_backup_os_release_with_envar
-def test_backup_os_release_with_envar(
+def test_override_inhibitor_os_release_restored(
     shell,
     convert2rhel,
     satellite_registration,

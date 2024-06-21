@@ -57,7 +57,6 @@ def remove_entitlement_certs():
             print("Failed to delete %s. Reason: %s" % (cert_path, e))
 
 
-@pytest.mark.test_package_download_error
 def test_package_download_error(convert2rhel, shell, yum_cache):
     """
     Remove the entitlement certs found at /etc/pki/entitlement during package
@@ -105,7 +104,6 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.test_transaction_validation_error
 def test_transaction_validation_error(convert2rhel, shell, yum_cache):
     """
     Remove the entitlement certs found at /etc/pki/entitlement during transaction
@@ -166,8 +164,7 @@ def packages_with_period(shell):
         shell(f"yum remove -y {package}")
 
 
-@pytest.mark.test_validation_packages_with_in_name_period
-def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_with_period):
+def test_packages_with_in_name_period(shell, convert2rhel, packages_with_period):
     """
     This test verifies that packages with period in their name are parsed correctly.
         1/ Install problematic packages with period in name using packages_with_period fixture.
@@ -204,7 +201,6 @@ def test_validation_packages_with_in_name_period(shell, convert2rhel, packages_w
 
 
 @pytest.mark.parametrize("yum_conf_exclude", [["redhat-release-server"]])
-@pytest.mark.test_override_exclude_list_in_yum_config
 def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_exclude, shell):
     """
     This test verifies that packages that are defined in the exclude

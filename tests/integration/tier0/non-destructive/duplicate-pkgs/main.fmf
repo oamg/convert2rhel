@@ -18,4 +18,4 @@ enabled: false
     tag+:
         - test-duplicate-pkgs
     test: |
-        pytest -m test_duplicate_pkgs
+        pytest -m test_duplicate_packages_installed

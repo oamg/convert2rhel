@@ -135,7 +135,7 @@ adjust+:
                     prepare+:
                         - name: Install ntp package and remove one dependency
                           how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
+                          script: pytest tests/integration/*/destructive/single-yum-transaction/install_ntp_and_remove_dependency.py
 
                 /excluded_packages:
                     adjust+:
@@ -144,7 +144,7 @@ adjust+:
                     prepare+:
                         - name: Remove some packages from the excluded packages config list
                           how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
+                          script: pytest tests/integration/*/destructive/single-yum-transaction/remove_excld_pkgs_from_config.py
 
                 /mismatch_errors:
                     adjust+:
@@ -154,7 +154,7 @@ adjust+:
                     prepare+:
                         - name: Install multilib packages with dnf
                           how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+                          script: pytest tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
 
                 /resolve_dependency:
                     adjust+:
@@ -171,7 +171,7 @@ adjust+:
                     prepare+:
                         - name: Install dependency packages
                           how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
+                          script: pytest tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
 
             /yum_distro_sync:
                 prepare+:
@@ -180,7 +180,7 @@ adjust+:
                         playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                       - name: Install problematic package
                         how: shell
-                        script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
+                        script: pytest tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
                 discover+:
                     test+<:
                         - yum-distro-sync/yum_distro_sync
@@ -193,7 +193,7 @@ adjust+:
             prepare+:
                 - name: Allow access to Satellite only
                   how: shell
-                  script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+                  script: pytest tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
                 - name: Reboot the system
                   how: ansible
                   playbook: tests/ansible_collections/roles/reboot/main.yml

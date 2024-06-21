@@ -1,7 +1,3 @@
-import pytest
-
-
-@pytest.mark.test_verify_logging_is_not_duplicated
 def test_verify_logging_is_not_duplicated():
     """
     Verify that the logfile does not contain duplicated lines.

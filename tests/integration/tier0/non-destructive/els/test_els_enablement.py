@@ -40,7 +40,7 @@ MOCKED_ELS_PHASE = '"1970-01-01"'
 MOCKED_NON_ELS_SYSVER = "if tool_opts.els and self.version.major == 42:"
 
 
-els_support_parameters = [
+els_enablement_parameters = [
     # System not recognized as an ELS candidate with --els option used
     ("--els", REGULAR_REPOID_MSG, None, MOCKED_NON_ELS_SYSVER, False),
     # System recognized as an ELS candidate after the start of ELS phase without --els option
@@ -50,11 +50,10 @@ els_support_parameters = [
 
 @pytest.mark.parametrize(
     "additional_option, repoid_message, modified_startdate, modified_releasever, recommend_els_msg_displayed",
-    els_support_parameters,
+    els_enablement_parameters,
     ids=["non-els-system-els-option-used", "els-system-els-phase-started-no-option-used"],
 )
-@pytest.mark.test_els_support
-def test_els_support(
+def test_els_enablement(
     convert2rhel,
     install_and_set_up_subman_to_stagecdn,
     els_mock,
@@ -92,7 +91,6 @@ def test_els_support(
             c2r.sendcontrol("c")
 
 
-@pytest.mark.test_rhsm_non_els_account
 def test_rhsm_non_els_account(convert2rhel):
     """
     Verify that Convert2RHEL is working properly when ELS repositories are not available for conversions

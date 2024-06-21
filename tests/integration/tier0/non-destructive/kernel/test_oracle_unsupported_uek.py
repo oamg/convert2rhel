@@ -28,7 +28,6 @@ def unbreakable_kernel(shell):
         shell("tmt-reboot -t 600")
 
 
-@pytest.mark.test_unsupported_unbreakable_enterprise_kernel
 def test_unsupported_unbreakable_enterprise_kernel(shell, convert2rhel, unbreakable_kernel):
     """
     Verify that the check for compatible kernel on Oracle Linux works.

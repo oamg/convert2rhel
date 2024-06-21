@@ -1,5 +1,5 @@
 summary: |
-    Running conversion when firewalld is not running.
+    firewalld disabled before the conversion
 description: |
     Verify that on the OL8.8 the conversion does not break when
     firewalld is not running and the the `CleanupModulesOnExit` configuration
@@ -10,4 +10,4 @@ tag+:
     - firewalld-disabled
 
 test: |
-    pytest -m test_firewalld_disabled
+    pytest -m test_firewalld_disabled_ol8

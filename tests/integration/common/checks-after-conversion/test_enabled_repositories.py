@@ -1,7 +1,4 @@
 import os.path
-import re
-
-import pytest
 
 from conftest import SystemInformationRelease
 
@@ -32,7 +29,6 @@ def _check_enabled_repos_rhel7(enabled_repos: str = "", els: bool = False):
     assert repo in enabled_repos
 
 
-@pytest.mark.test_enabled_repositories
 def test_enabled_repositories(shell):
     """
     Verify that the correct repositories (including EUS/ELS if applies) are enabled after the conversion.
