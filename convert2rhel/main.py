@@ -68,9 +68,10 @@ _REPORT_MAPPING = {
 class ConversionExitCodes:
     # No errors detected during the conversion
     SUCCESSFUL = 0
-    # Some inhibitors appeared during the pre conversion analysis
+    # Some exception was raised (excluding _InhibitorsFound and _AnalyzeExit) or rollback failed
+    # Internal convert2rhel problem
     FAILURE = 1
-    # Inhibitors that are part of the conversion process
+    # Inhibitors found - problem found on the system (like outdated packages, failed to subscribe etc.)
     INHIBITORS_FOUND = 2
 
 
