@@ -45,7 +45,7 @@ class RestorableFile(RestorableChange):
             raise TypeError("Path must be a file not a directory.")
 
         self.filepath = filepath
-        self._backup_path = None
+        self.backup_path = None
 
     def enable(self):
         """Save current version of a file"""
@@ -57,8 +57,8 @@ class RestorableFile(RestorableChange):
         if os.path.isfile(self.filepath):
             try:
                 backup_path = self._hash_backup_path()
+                self.backup_path = backup_path
                 shutil.copy2(self.filepath, backup_path)
-                self._backup_path = backup_path
                 loggerinst.debug("Copied %s to %s." % (self.filepath, backup_path))
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
@@ -129,10 +129,10 @@ class RestorableFile(RestorableChange):
             return
 
         # Possible exceptions will be handled in the BackupController
-        shutil.copy2(self._backup_path, self.filepath)
+        shutil.copy2(self.backup_path, self.filepath)
         if rollback:
             # Remove the backed up file only when processing rollback
-            os.remove(self._backup_path)
+            os.remove(self.backup_path)
 
         if rollback:
             loggerinst.info("File %s restored." % self.filepath)
@@ -149,6 +149,14 @@ class RestorableFile(RestorableChange):
             loggerinst.debug("File %s removed." % self.filepath)
         except (OSError, IOError):
             loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
+
+    def __eq__(self, value):
+        if hash(self) == hash(value):
+            return True
+        return False
+
+    def __hash__(self):
+        return hash(self.filepath) if self.filepath else super(RestorableFile, self).__hash__()
 
 
 class MissingFile(RestorableChange):

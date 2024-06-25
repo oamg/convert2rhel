@@ -869,6 +869,17 @@ class MinimalRestorable(backup.RestorableChange):
         super(MinimalRestorable, self).restore()
 
 
+class FilePathRestorable(MinimalRestorable):
+    def __init__(self, filepath=None):
+        self.backup_path = filepath
+        super(FilePathRestorable, self).__init__()
+
+    def __eq__(self, value):
+        if self.backup_path:
+            return self.backup_path == value.backup_path
+        return super(FilePathRestorable, self).__eq__(value)
+
+
 class ErrorOnRestoreRestorable(MinimalRestorable):
     def __init__(self, exception=None):
         self.exception = exception or Exception()

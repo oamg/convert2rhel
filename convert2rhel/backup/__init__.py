@@ -58,7 +58,7 @@ class BackupController:
     """
 
     def __init__(self):
-        self._restorables = []
+        self._restorables = []  # type: list[RestorableChange]
         self._rollback_failures = []
 
     def push(self, restorable):
@@ -69,6 +69,13 @@ class BackupController:
         """
         if not isinstance(restorable, RestorableChange):
             raise TypeError("`%s` is not a RestorableChange object" % restorable)
+
+        # Check if the restorable is already backed up
+        # if it is, we skip it
+        for r in self._restorables:
+            if r == restorable:
+                loggerinst.debug("Skipping: {} has already been backed up".format(restorable.__class__.__name__))
+                return
 
         restorable.enable()
 
@@ -149,6 +156,9 @@ class BackupController:
         :returns: List of strings containing errors captured during rollback.
         """
         return self._rollback_failures
+
+    def __len__(self):
+        return len(self._restorables)
 
 
 @six.add_metaclass(abc.ABCMeta)
