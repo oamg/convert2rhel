@@ -342,28 +342,3 @@ def test_set_target_os(pretend_os):
         "name": "CentOS Linux",
         "version": "7.9",
     } == breadcrumbs.breadcrumbs.target_os
-
-
-@pytest.mark.parametrize(
-    ("argv", "expected", "message"),
-    (
-        (
-            ["analyze"],
-            False,
-            "Convert2RHEL modifies the systems during the analysis and then rolls back these "
-            "changes when the analysis is complete. In rare cases, this rollback can fail. "
-            "By continuing, you confirm that you have made a system backup and verified that "
-            "you can restore from the backup.",
-        ),
-    ),
-)
-def test_confirm_user_backup(argv, expected, message, monkeypatch, global_tool_opts, caplog):
-    monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
-    try:
-        convert2rhel.toolopts.CLI()
-    except SystemExit:
-        pass
-
-    # assert global_tool_opts.no_rpm_va == expected
-    if message:
-        assert message in caplog.text
