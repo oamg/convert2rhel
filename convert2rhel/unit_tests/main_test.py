@@ -768,3 +768,16 @@ def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, retur
     ret = main._handle_inhibitors_found_exception()
 
     assert ret == return_code
+
+
+def test_confirm_user_backup(caplog):
+    message = (
+        "Convert2RHEL modifies the systems during the analysis and then rolls back these "
+        "changes when the analysis is complete. In rare cases, this rollback can fail. "
+        "By continuing, you confirm that you have made a system backup and verified that "
+        "you can restore from the backup."
+    )
+
+    main.confirm_user_backup()
+
+    assert message in caplog.text
