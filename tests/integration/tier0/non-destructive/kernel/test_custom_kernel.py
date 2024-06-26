@@ -1,61 +1,62 @@
 import os
+import re
 
 import pexpect.exceptions
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, _get_full_kernel_title
 
 
-ORIGINAL_KERNEL = os.popen("rpm -q --last kernel | head -1 | cut -d ' ' -f1").read()
+def _cross_vendor_kernel():
+    """
+    Helper function to assign a cross vendor kernel.
+    Example:
+        Running on CentOS 7, we install the Oracle Linux 7 signed kernel.
+        distro == centos-7
+        install_what = oracle-7-kernel
+    """
+    with open("/etc/yum.repos.d/stream9test.repo", "a") as repo:
+        repo.write(f"[custom-kernel-repo]\n")
+        repo.write(f"name=Repo to install the cross vendor kernel from\n")
+        repo.write(f"baseurl=https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os\n")
+        repo.write("enabled=0\n")
+        repo.write("gpgcheck=0\n")
 
-DISTRO_KERNEL_MAPPING = {
-    "centos-7": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.76.1.0.1.el7.x86_64.rpm",
-        "grub_substring": "CentOS Linux (3.10.0-1160.76.1.0.1.el7.x86_64) 7 (Core)",
-    },
-    # We hardcode original kernel for CentOS 8.5 as it won't receive any updates anymore
-    "centos-8-latest": {
-        "original_kernel": "kernel-core-4.18.0-348.7.1.el8_5.x86_64",
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
-    },
-    "oracle-7": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64",
-    },
-    # Install CentOS 8.5 kernel
-    "oracle-8-latest": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-core-4.18.0-348.7.1.el8_5.x86_64.rpm",
-        "grub_substring": "CentOS Linux (4.18.0-348.7.1.el8_5.x86_64) 8",
-    },
-    "alma-8": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
-    },
-    "rocky-8": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
-    },
-    "stream-8-latest": {
-        "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-core-4.18.0-348.el8.x86_64.rpm",
-        "grub_substring": "Oracle Linux Server (4.18.0-348.el8.x86_64) 8.5",
-    },
-}
+    # This mapping includes cross vendor kernels and their respective grub substrings to set for boot
+    install_what_kernel_mapping = {
+        "oracle-7-kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.76.1.0.1.el7.x86_64.rpm",
+        "centos-7-kernel": "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm",
+        "oracle-8-kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/getPackage/kernel-4.18.0-348.el8.x86_64.rpm",
+        "centos-8-kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/Packages/kernel-4.18.0-348.7.1.el8_5.x86_64.rpm",
+        "stream-9-kernel": "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/Packages/kernel-5.14.0-457.el9.x86_64.rpm",
+        "alma-9-kernel": "https://repo.almalinux.org/almalinux/9.4/BaseOS/x86_64/os/Packages/kernel-5.14.0-427.20.1.el9_4.x86_64.rpm",
+    }
 
-if "alma-8" in SYSTEM_RELEASE_ENV:
-    distro = "alma-8"
-elif "rocky" in SYSTEM_RELEASE_ENV:
-    distro = "rocky-8"
-else:
-    distro = SYSTEM_RELEASE_ENV
+    distro = f"{SystemInformationRelease.distribution}-{SystemInformationRelease.version.major}"
 
-_, CUSTOM_KERNEL, GRUB_SUBSTRING = DISTRO_KERNEL_MAPPING[distro].values()
+    install_what = ""
+    enable_repo_opt = ""
+    # Based on a current OS we decide which cross vendor kernel to install
+    # install_what variable indicates that
+    if distro == "oracle-7":
+        install_what = "centos-7-kernel"
+    elif distro == "centos-7":
+        install_what = "oracle-7-kernel"
+    elif re.match(r"^(almalinux|rocky|centos|stream)-8", distro):
+        install_what = "oracle-8-kernel"
+    elif distro == "oracle-8":
+        install_what = "centos-8-kernel"
+    elif re.match(r"^(almalinux|rocky|centos|oracle)-9", distro):
+        install_what = "stream-9-kernel"
+        # We need to provide full repository for Stream 9 kernel installation
+        # to satisfy the dependencies
+        enable_repo_opt = "--enablerepo=custom-kernel-repo"
+    elif distro == "stream-9":
+        install_what = "alma-9-kernel"
+
+    custom_kernel = install_what_kernel_mapping.get(install_what)
+
+    return custom_kernel, enable_repo_opt
 
 
 @pytest.fixture(scope="function")
@@ -67,36 +68,36 @@ def custom_kernel(shell, hybrid_rocky_image):
     Remove the current installed kernel and install the machine default kernel
     after the test.
     """
+    custom_kernel, enable_repo_opt = _cross_vendor_kernel()
+    custom_kernel_pkg = custom_kernel.rsplit("/", 1)[-1].replace(".rpm", "")
     if os.environ["TMT_REBOOT_COUNT"] == "0":
 
-        assert shell("yum install %s -y" % CUSTOM_KERNEL).returncode == 0
-
-        assert shell("grub2-set-default '%s'" % GRUB_SUBSTRING).returncode == 0
-
+        assert shell(f"yum install {custom_kernel} -y {enable_repo_opt}").returncode == 0
+        grub_substring = _get_full_kernel_title(shell, kernel=custom_kernel_pkg.replace("kernel-", ""))
+        assert shell(f"grub2-set-default '{grub_substring}'").returncode == 0
         shell("tmt-reboot -t 600")
 
     yield
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        # Remove the current installed kernel and install the machine default kernel.
-        custom_kernel_release = CUSTOM_KERNEL.rsplit("/", 1)[-1].replace(".rpm", "")
-        assert shell("rpm -e %s" % custom_kernel_release).returncode == 0
-
-        original_kernel = os.popen("rpm -q --last kernel | head -1 | cut -d ' ' -f1").read()
-        original_kernel_release = original_kernel.rsplit("/")[-1].replace(".rpm", "").split("-")[-1]
-
+        # This is kind of naive, but we need to get the second latest installed kernel
+        # We use head to filter the first two lines of the output and tail to filter the bottom line
+        original_kernel = os.popen("rpm -q --last kernel | head -2 | tail -1 | cut -d ' ' -f1").read().strip()
+        original_kernel_title = _get_full_kernel_title(shell, kernel=original_kernel.replace("kernel-", ""))
         # Install back the CentOS 8.5 original kernel
         if "centos-8-latest" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install -y %s" % original_kernel).returncode == 0
+            assert shell(f"yum reinstall -y kernel").returncode == 0
 
-        assert (
-            shell(
-                "grubby --set-default /boot/vmlinuz-*%s" % original_kernel_release,
-            ).returncode
-            == 0
-        )
+        assert shell(f"grub2-set-default '{original_kernel_title}'").returncode == 0
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
         # Reboot
         shell("tmt-reboot -t 600")
+
+    if os.environ["TMT_REBOOT_COUNT"] == "2":
+        # After the system has the original kernel running, remove the custom kernel
+        all_kernel_pkgs = custom_kernel_pkg.replace("kernel", "kernel*")
+        assert shell(f"yum remove -y {all_kernel_pkgs}").returncode == 0
+        shell("rm -f /etc/yum.repos.d/stream9test.repo")
 
 
 @pytest.mark.test_custom_kernel
