@@ -20,9 +20,9 @@ import shutil
 import pytest
 import six
 
-from convert2rhel import actions, exceptions, grub, unit_tests
+from convert2rhel import actions, grub, unit_tests
 from convert2rhel.actions.conversion import set_efi_config
-from convert2rhel.unit_tests.conftest import all_systems, centos7
+from convert2rhel.unit_tests.conftest import centos7
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -62,8 +62,8 @@ def replace_efi_boot_entry_instance():
     ),
 )
 def test_new_default_efi_bin(new_default_efi_bin_instance, is_efi, efi_file_exists, log_msg, monkeypatch, caplog):
-    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=efi_file_exists))
-    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=efi_file_exists))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
     new_default_efi_bin_instance.run()
     assert log_msg in caplog.records[-1].message
     unit_tests.assert_actions_result(
@@ -73,8 +73,8 @@ def test_new_default_efi_bin(new_default_efi_bin_instance, is_efi, efi_file_exis
 
 
 def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
-    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=False))
-    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=True))
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     new_default_efi_bin_instance.run()
 
     unit_tests.assert_actions_result(
@@ -96,7 +96,7 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
 
 
 def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_instance, monkeypatch):
-    monkeypatch.setattr("os.path.exists", mock.Mock(return_value=False))
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
     efi_bootmgr_utility_installed_instance.run()
 
     unit_tests.assert_actions_result(
@@ -117,11 +117,7 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
         ("centos", True, False, "Copying '"),
     ),
 )
-@mock.patch("shutil.copy2")
-@mock.patch("os.path.exists")
 def test__copy_grub_files(
-    mock_path_exists,
-    mock_path_copy2,
     sys_id,
     src_file_exists,
     dst_file_exists,
@@ -129,17 +125,19 @@ def test__copy_grub_files(
     monkeypatch,
     caplog,
     copy_grub_files_instance,
+    global_system_info,
 ):
     def path_exists(path):
         return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
 
-    mock_path_exists.side_effect = path_exists
-    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=path_exists))
+    monkeypatch.setattr(shutil, "copy2", mock.Mock())
+    global_system_info.id = sys_id
 
     copy_grub_files_instance.run()
     assert any(log_msg in record.message for record in caplog.records)
     if sys_id == "centos" and src_file_exists and not dst_file_exists:
-        assert mock_path_copy2.call_args_list == [
+        assert shutil.copy2.call_args_list == [
             mock.call("/boot/efi/EFI/centos/grubenv", "/boot/efi/EFI/redhat/grubenv"),
             mock.call("/boot/efi/EFI/centos/grub.cfg", "/boot/efi/EFI/redhat/grub.cfg"),
             mock.call("/boot/efi/EFI/centos/user.cfg", "/boot/efi/EFI/redhat/user.cfg"),
@@ -150,23 +148,15 @@ def test__copy_grub_files(
     ("sys_id", "src_file_exists", "dst_file_exists"),
     (("centos", False, False),),
 )
-@mock.patch("shutil.copy2")
-@mock.patch("os.path.exists")
 def test__copy_grub_files_error(
-    mock_path_exists,
-    mock_path_copy2,
-    sys_id,
-    src_file_exists,
-    dst_file_exists,
-    monkeypatch,
-    caplog,
-    copy_grub_files_instance,
+    sys_id, src_file_exists, dst_file_exists, monkeypatch, caplog, copy_grub_files_instance, global_system_info
 ):
     def path_exists(path):
         return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
 
-    mock_path_exists.side_effect = path_exists
-    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
+    monkeypatch.setattr(os.path, "exists", path_exists)
+    monkeypatch.setattr(shutil, "copy2", mock.Mock())
+    global_system_info.id = sys_id
 
     copy_grub_files_instance.run()
     unit_tests.assert_actions_result(
@@ -208,7 +198,7 @@ def test__copy_grub_files_io_error(
 
 def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
 
-    monkeypatch.setattr("os.rmdir", mock.Mock())
+    monkeypatch.setattr(os, "rmdir", mock.Mock())
     os.rmdir.side_effect = OSError()
     remove_efi_centos_instance.run()
 
