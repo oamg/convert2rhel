@@ -36,7 +36,7 @@ def list_non_red_hat_pkgs_left_instance():
 def test_list_non_red_hat_pkgs_left(list_non_red_hat_pkgs_left_instance, monkeypatch):
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="key_ids")
     )
     list_non_red_hat_pkgs_left_instance.run()
 

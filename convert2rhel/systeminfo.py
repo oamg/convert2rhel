@@ -110,11 +110,11 @@ class SystemInfo:
         self.version = None
         # Platform architecture
         self.arch = None
-        # Fingerprints of the original operating system GPG keys
-        self.fingerprints_orig_os = None
-        # Fingerprints of RHEL GPG keys available at:
+        # key_ids of the original operating system GPG keys
+        self.key_ids_orig_os = None
+        # key_ids of RHEL GPG keys available at:
         #  https://access.redhat.com/security/team/key/
-        self.fingerprints_rhel = [
+        self.key_ids_rhel = [
             # RPM-GPG-KEY-redhat-release
             "199e2f91fd431d51",
             # RPM-GPG-KEY-redhat-legacy-release
@@ -170,7 +170,7 @@ class SystemInfo:
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
         self.els_rhsm_repoids = self._get_els_rhsm_repoids()
-        self.fingerprints_orig_os = self._get_gpg_key_fingerprints()
+        self.key_ids_orig_os = self._get_gpg_key_key_ids()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
@@ -330,8 +330,8 @@ class SystemInfo:
                 "Internal error: %s option not found in %s config file." % (option_name, self.cfg_filename)
             )
 
-    def _get_gpg_key_fingerprints(self):
-        return self._get_cfg_opt("gpg_fingerprints").split()
+    def _get_gpg_key_key_ids(self):
+        return self._get_cfg_opt("gpg_key_ids").split()
 
     def _get_excluded_pkgs(self):
         return self._get_cfg_opt("excluded_pkgs").split()
