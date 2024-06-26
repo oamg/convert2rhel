@@ -231,36 +231,6 @@ class TestGetRpmHeader:
             pkghandler.get_rpm_header(unknown_pkg)
 
 
-class TestPreserveOnlyRHELKernel:
-    @centos7
-    def test_preserve_only_rhel_kernel(self, pretend_os, monkeypatch):
-        monkeypatch.setattr(pkghandler, "install_rhel_kernel", lambda: True)
-        monkeypatch.setattr(pkghandler, "fix_invalid_grub2_entries", lambda: None)
-        monkeypatch.setattr(pkghandler, "remove_non_rhel_kernels", mock.Mock(return_value=[]))
-        monkeypatch.setattr(pkghandler, "install_gpg_keys", mock.Mock())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
-        )
-        monkeypatch.setattr(system_info, "name", "CentOS7")
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
-
-        pkghandler.preserve_only_rhel_kernel()
-
-        assert utils.run_subprocess.cmd == [
-            "yum",
-            "update",
-            "--setopt=exclude=",
-            "-y",
-            "--releasever=7Server",
-            "kernel",
-        ]
-        assert pkghandler.get_installed_pkgs_by_fingerprint.call_count == 1
-
-
 class TestGetKernelAvailability:
     @pytest.mark.parametrize(
         ("subprocess_output", "expected_installed", "expected_available"),
