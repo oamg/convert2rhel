@@ -44,8 +44,8 @@ from convert2rhel.unit_tests import (
     DownloadPkgMocked,
     FormatPkgInfoMocked,
     GetInstalledPkgInformationMocked,
-    GetInstalledPkgsByFingerprintMocked,
-    GetInstalledPkgsWDifferentFingerprintMocked,
+    GetInstalledPkgsByKeyIdMocked,
+    GetInstalledPkgsWDifferentkey_idMocked,
     RemovePkgsMocked,
     RunSubprocessMocked,
     StoreContentToFileMocked,
@@ -241,8 +241,8 @@ class TestPreserveOnlyRHELKernel:
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
+            "get_installed_pkgs_by_key_id",
+            GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
         )
         monkeypatch.setattr(system_info, "name", "CentOS7")
         monkeypatch.setattr(system_info, "arch", "x86_64")
@@ -251,7 +251,7 @@ class TestPreserveOnlyRHELKernel:
         pkghandler.preserve_only_rhel_kernel()
 
         assert utils.run_subprocess.cmd == ["yum", "update", "-y", "--releasever=7Server", "kernel"]
-        assert pkghandler.get_installed_pkgs_by_fingerprint.call_count == 1
+        assert pkghandler.get_installed_pkgs_by_key_id.call_count == 1
 
 
 class TestGetKernelAvailability:
@@ -400,15 +400,15 @@ class TestVerifyRHELKernelInstalled:
 
 class TestIsRHELKernelInstalled:
     def test_is_rhel_kernel_installed_no(self, monkeypatch):
-        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, name: [])
+        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_key_id", lambda x, name: [])
 
         assert not pkghandler.is_rhel_kernel_installed()
 
     def test_is_rhel_kernel_installed_yes(self, monkeypatch):
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
+            "get_installed_pkgs_by_key_id",
+            GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
         )
 
         assert pkghandler.is_rhel_kernel_installed()
@@ -1127,7 +1127,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="not-the-centos7-fingerprint",
+                    key_id="not-the-centos7-key_id",
                     signature="test",
                 )
             ],
@@ -1143,7 +1143,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 )
             ],
@@ -1159,7 +1159,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
                 create_pkg_information(
@@ -1170,7 +1170,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
                 create_pkg_information(
@@ -1181,7 +1181,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
                 create_pkg_information(
@@ -1192,7 +1192,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
             ],
@@ -1208,7 +1208,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="24c6a8a7f4a80eb5",
+                    key_id="24c6a8a7f4a80eb5",
                     signature="test",
                 ),
                 create_pkg_information(
@@ -1219,7 +1219,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch="x86_64",
-                    fingerprint="this-is-a-fingerprint",
+                    key_id="this-is-a-key_id",
                     signature="test",
                 ),
             ],
@@ -1235,7 +1235,7 @@ class TestInstallGpgKeys:
                     release="1.0.0",
                     version="1",
                     arch=".(none)",
-                    fingerprint="none",
+                    key_id="none",
                     signature="(none)",
                 )
             ],
@@ -1300,7 +1300,7 @@ def test_get_installed_pkg_objects_dnf(name, version, release, arch, total_pkgs_
 
 
 @centos7
-def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monkeypatch):
+def test_get_installed_pkgs_by_key_id_correct_key_id(pretend_os, monkeypatch):
     package = [
         create_pkg_information(
             packager="test",
@@ -1310,7 +1310,7 @@ def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monke
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),  # RHEL
         create_pkg_information(
@@ -1321,7 +1321,7 @@ def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monke
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="72f97b74ec551f03",
+            key_id="72f97b74ec551f03",
             signature="test",
         ),  # OL
         create_pkg_information(
@@ -1332,21 +1332,21 @@ def test_get_installed_pkgs_by_fingerprint_correct_fingerprint(pretend_os, monke
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),
     ]
     monkeypatch.setattr(
         pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=package)
     )
-    pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("199e2f91fd431d51")
+    pkgs_by_key_id = pkghandler.get_installed_pkgs_by_key_id("199e2f91fd431d51")
 
-    for pkg in pkgs_by_fingerprint:
+    for pkg in pkgs_by_key_id:
         assert pkg in ("pkg1.x86_64", "gpg-pubkey.x86_64")
 
 
 @centos7
-def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, monkeypatch):
+def test_get_installed_pkgs_by_key_id_incorrect_key_id(pretend_os, monkeypatch):
     package = [
         create_pkg_information(
             packager="test",
@@ -1356,7 +1356,7 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),  # RHEL
         create_pkg_information(
@@ -1367,7 +1367,7 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="72f97b74ec551f03",
+            key_id="72f97b74ec551f03",
             signature="test",
         ),  # OL
         create_pkg_information(
@@ -1378,16 +1378,16 @@ def test_get_installed_pkgs_by_fingerprint_incorrect_fingerprint(pretend_os, mon
             version="1.0.0",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),
     ]
     monkeypatch.setattr(
         pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(return_value=package)
     )
-    pkgs_by_fingerprint = pkghandler.get_installed_pkgs_by_fingerprint("non-existing fingerprint")
+    pkgs_by_key_id = pkghandler.get_installed_pkgs_by_key_id("non-existing key_id")
 
-    assert not pkgs_by_fingerprint
+    assert not pkgs_by_key_id
 
 
 @pytest.mark.skipif(
@@ -1405,7 +1405,7 @@ def test_format_pkg_info_yum(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),  # RHEL
         create_pkg_information(
@@ -1414,7 +1414,7 @@ def test_format_pkg_info_yum(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="72f97b74ec551f03",
+            key_id="72f97b74ec551f03",
             signature="test",
         ),  # OL
         create_pkg_information(
@@ -1423,7 +1423,7 @@ def test_format_pkg_info_yum(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),
     ]
@@ -1477,7 +1477,7 @@ def test_format_pkg_info_dnf(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",  # RHEL
+            key_id="199e2f91fd431d51",  # RHEL
             signature="test",
         ),
         create_pkg_information(
@@ -1486,7 +1486,7 @@ def test_format_pkg_info_dnf(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="72f97b74ec551f03",
+            key_id="72f97b74ec551f03",
             signature="test",
         ),  # OL
         create_pkg_information(
@@ -1495,7 +1495,7 @@ def test_format_pkg_info_dnf(pretend_os, monkeypatch):
             version="0.1",
             release="1",
             arch="x86_64",
-            fingerprint="199e2f91fd431d51",
+            key_id="199e2f91fd431d51",
             signature="test",
         ),
     ]
@@ -1530,10 +1530,10 @@ C2R gpg-pubkey-0:0.1-1.x86_64&test
     )
 
 
-def different_fingerprints_for_packages_to_remove(fingerprints, name=""):
+def different_key_ids_for_packages_to_remove(key_ids, name=""):
     if name and name != "installed_pkg":
         return []
-    if "rhel_fingerprint" in fingerprints:
+    if "rhel_key_id" in key_ids:
         pkg_obj = create_pkg_information(
             packager="Oracle", vendor=None, name="installed_pkg", version="0.1", release="1", arch="x86_64"
         )
@@ -1549,11 +1549,11 @@ def different_fingerprints_for_packages_to_remove(fingerprints, name=""):
 
 
 def test_get_packages_to_remove(monkeypatch):
-    monkeypatch.setattr(system_info, "fingerprints_rhel", ["rhel_fingerprint"])
+    monkeypatch.setattr(system_info, "key_ids_rhel", ["rhel_key_id"])
     monkeypatch.setattr(
         pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(side_effect=different_fingerprints_for_packages_to_remove),
+        "get_installed_pkgs_w_different_key_id",
+        GetInstalledPkgsWDifferentkey_idMocked(side_effect=different_key_ids_for_packages_to_remove),
     )
     original_func = pkghandler.get_packages_to_remove.__wrapped__
     monkeypatch.setattr(pkghandler, "get_packages_to_remove", mock_decorator(original_func))
@@ -1571,9 +1571,9 @@ def test_get_packages_to_remove(monkeypatch):
         ("test", "none"),
     ),
 )
-def test_get_pkg_fingerprint(signature, expected):
-    fingerprint = pkghandler._get_pkg_fingerprint(signature)
-    assert fingerprint == expected
+def test_get_pkg_key_id(signature, expected):
+    key_id = pkghandler._get_pkg_key_id(signature)
+    assert key_id == expected
 
 
 @pytest.mark.parametrize(
@@ -1638,18 +1638,18 @@ def test_get_pkg_nevra(pkgmanager_name, package, include_zero_epoch, expected, m
 
 
 @pytest.mark.parametrize(
-    ("fingerprint_orig_os", "expected_count", "expected_pkgs"),
+    ("key_id_orig_os", "expected_count", "expected_pkgs"),
     (
         (["24c6a8a7f4a80eb5", "a963bbdbf533f4fa"], 0, 1),
         (["72f97b74ec551f03"], 0, 0),
     ),
 )
-def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs, monkeypatch):
+def test_get_third_party_pkgs(key_id_orig_os, expected_count, expected_pkgs, monkeypatch):
     monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
-    monkeypatch.setattr(system_info, "fingerprints_orig_os", fingerprint_orig_os)
+    monkeypatch.setattr(system_info, "key_ids_orig_os", key_id_orig_os)
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="key_ids")
     )
 
     pkgs = pkghandler.get_third_party_pkgs()
@@ -1661,7 +1661,7 @@ def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs
 def test_list_non_red_hat_pkgs_left(monkeypatch):
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(
-        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="key_ids")
     )
     pkghandler.list_non_red_hat_pkgs_left()
 
@@ -1698,8 +1698,8 @@ def test_install_rhel_kernel(subprocess_output, is_only_rhel_kernel, expected, p
 
     monkeypatch.setattr(
         pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
+        "get_installed_pkgs_w_different_key_id",
+        GetInstalledPkgsWDifferentkey_idMocked(pkg_selection=pkg_selection),
     )
 
     update_kernel = pkghandler.install_rhel_kernel()
@@ -1719,20 +1719,20 @@ def test_install_rhel_kernel_already_installed_regexp(subprocess_output, pretend
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
     monkeypatch.setattr(
         pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        "get_installed_pkgs_w_different_key_id",
+        GetInstalledPkgsWDifferentkey_idMocked(pkg_selection="kernels"),
     )
 
     pkghandler.install_rhel_kernel()
 
-    assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
+    assert pkghandler.get_installed_pkgs_w_different_key_id.call_count == 1
 
 
 def test_remove_non_rhel_kernels(monkeypatch):
     monkeypatch.setattr(
         pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        "get_installed_pkgs_w_different_key_id",
+        GetInstalledPkgsWDifferentkey_idMocked(pkg_selection="kernels"),
     )
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
@@ -1753,8 +1753,8 @@ def test_remove_non_rhel_kernels(monkeypatch):
 def test_install_additional_rhel_kernel_pkgs(monkeypatch):
     monkeypatch.setattr(
         pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        "get_installed_pkgs_w_different_key_id",
+        GetInstalledPkgsWDifferentkey_idMocked(pkg_selection="kernels"),
     )
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
@@ -1782,7 +1782,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                         release="4.el8_5",
                         arch="i686",
                     ),
-                    fingerprint="05b555b38483c65d",
+                    key_id="05b555b38483c65d",
                     signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
                 )
             ],
@@ -1808,7 +1808,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                         release="6112bcdc",
                         arch=None,
                     ),
-                    fingerprint="none",
+                    key_id="none",
                     signature="(none)",
                 )
             ],
@@ -1835,7 +1835,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                         release="4.el8_5",
                         arch="i686",
                     ),
-                    fingerprint="05b555b38483c65d",
+                    key_id="05b555b38483c65d",
                     signature="RSA/SHA256, Fri Nov 12 21:15:26 2021, Key ID 05b555b38483c65d",
                 )
             ],
@@ -1857,7 +1857,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="rpmlint-fedora-license-data", epoch="0", version="1.17", release="1.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",
                 )
             ],
@@ -1882,7 +1882,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="rpmlint-fedora-license-data", epoch="0", version="1.17", release="1.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Wed 05 Apr 2023 14:27:35 -03, Key ID f55ad3fb5323552a",
                 )
             ],
@@ -1919,7 +1919,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="fonts-filesystem", epoch="1", version="2.0.5", release="9.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a",
                 ),
                 PackageInformation(
@@ -1928,7 +1928,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="fedora-logos", epoch="0", version="36.0.0", release="3.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a",
                 ),
             ],
@@ -1954,7 +1954,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="fonts-filesystem", epoch="1", version="2.0.5", release="9.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Tue 23 Aug 2022 08:06:00 -03, Key ID f55ad3fb5323552a",
                 ),
                 PackageInformation(
@@ -1963,7 +1963,7 @@ def test_install_additional_rhel_kernel_pkgs(monkeypatch):
                     nevra=PackageNevra(
                         name="fedora-logos", epoch="0", version="36.0.0", release="3.fc37", arch="noarch"
                     ),
-                    fingerprint="f55ad3fb5323552a",
+                    key_id="f55ad3fb5323552a",
                     signature="RSA/SHA256, Thu 21 Jul 2022 02:54:29 -03, Key ID f55ad3fb5323552a",
                 ),
             ],
