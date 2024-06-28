@@ -42,40 +42,6 @@ def register_system_info_logger(monkeypatch):
     monkeypatch.setattr(system_info, "logger", logging.getLogger(__name__))
 
 
-class TestRPMFilesDiff:
-    def test_modified_rpm_files_diff_with_no_rpm_va(self, monkeypatch):
-        monkeypatch.setattr(tool_opts, "no_rpm_va", mock.Mock(return_value=True))
-        assert system_info.modified_rpm_files_diff() is None
-
-    def test_modified_rpm_files_diff_without_differences_after_conversion(self, monkeypatch):
-        monkeypatch.setattr(system_info, "generate_rpm_va", mock.Mock())
-        monkeypatch.setattr(utils, "get_file_content", mock.Mock(side_effect=(["rpm1", "rpm2"], ["rpm1", "rpm2"])))
-
-        assert system_info.modified_rpm_files_diff() is None
-
-    def test_modified_rpm_files_diff_with_differences_after_conversion(self, monkeypatch, caplog):
-        monkeypatch.setattr(system_info, "generate_rpm_va", mock.Mock())
-        monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
-        monkeypatch.setattr(tool_opts, "no_rpm_va", False)
-        monkeypatch.setattr(
-            utils,
-            "get_file_content",
-            mock.Mock(
-                side_effect=(
-                    [".M.......  g /etc/pki/ca-trust/extracted/java/cacerts"],
-                    [
-                        ".M.......  g /etc/pki/ca-trust/extracted/java/cacerts",
-                        "S.5....T.  c /etc/yum.conf",
-                    ],
-                )
-            ),
-        )
-
-        system_info.modified_rpm_files_diff()
-
-        assert any("S.5....T.  c /etc/yum.conf" in elem.message for elem in caplog.records if elem.levelname == "INFO")
-
-
 class TestGenerateRPMVA:
     def test_generate_rpm_va(self, global_tool_opts, monkeypatch, tmpdir):
         global_tool_opts.no_rpm_va = False
