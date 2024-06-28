@@ -106,28 +106,40 @@ class CopyGrubFiles(actions.Action):
         #  the different grub content...
         # E.g. if the efibin is located in a different directory, are these two files valid?
         logger.info("Copying GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
-        required = ["grubenv", "grub.cfg"]
-        optional = ["user.cfg"]
-        all_files = required + optional
-        for filename in all_files:
-            src_path = os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename)
-            dst_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
-            if os.path.exists(dst_path):
-                logger.debug("The %s file already exists. Copying skipped." % dst_path)
+        all_files = ["grubenv", "grub.cfg", "user.cfg"]
+        required = all_files[:2]
+
+        # Verify if all_files exist in the `py:CENTOS_EFIDIR_CANONICAL_PATH` directory, if so, add the file_name to
+        # the list of src_paths
+        src_paths = [filename for filename in all_files if os.path.exists(filename) and filename in required]
+
+        # Verify if all destination paths exists in the `py:RHEL_EFIDIR_CANONICAL_PATH`, if so, add the file_name to the
+        # list of dst_paths.
+        dst_path = [path for path in all_files if os.path.exists(os.path.join(RHEL_EFIDIR_CANONICAL_PATH, path))]
+        if not src_paths:
+            # without the required files user should not reboot the system
+            self.set_result(
+                level="ERROR",
+                id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
+                title="Unable to find required file for GRUB config",
+                description="Unable to find the original file required for GRUB configuration at: %s"
+                % ",".join(src_paths),
+            )
+            return
+
+        for filename in src_paths:
+            if filename in dst_path:
+                logger.debug(
+                    "The %s file already exists in %s folder. Copying skipped."
+                    % (os.path.basename(filename), RHEL_EFIDIR_CANONICAL_PATH)
+                )
                 continue
-            if not os.path.exists(src_path):
-                if filename in required:
-                    # without the required files user should not reboot the system
-                    self.set_result(
-                        level="ERROR",
-                        id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
-                        title="Unable to find required file for GRUB config",
-                        description="Unable to find the original file required for GRUB configuration: %s" % src_path,
-                    )
-                    return
-            logger.info("Copying '%s' to '%s'" % (src_path, dst_path))
+
+            src_file = os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename)
+            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
+            logger.info("Copying '%s' to '%s'" % (src_file, dst_file))
             try:
-                shutil.copy2(src_path, dst_path)
+                shutil.copy2(src_file, dst_file)
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
                 self.set_result(

@@ -133,6 +133,7 @@ def test__copy_grub_files(
     monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=path_exists))
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
     global_system_info.id = sys_id
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
 
     copy_grub_files_instance.run()
     assert any(log_msg in record.message for record in caplog.records)
@@ -154,11 +155,13 @@ def test__copy_grub_files_error(
     def path_exists(path):
         return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
 
-    monkeypatch.setattr(os.path, "exists", path_exists)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, False, False, False, False, False]))
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
     global_system_info.id = sys_id
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
 
     copy_grub_files_instance.run()
+    print(copy_grub_files_instance.result)
     unit_tests.assert_actions_result(
         copy_grub_files_instance,
         level="ERROR",
@@ -185,8 +188,9 @@ def test__copy_grub_files_io_error(
 
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
     shutil.copy2.side_effect = IOError(13, "Permission denied")
-    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True]))
+    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True]))
     copy_grub_files_instance.run()
+
     unit_tests.assert_actions_result(
         copy_grub_files_instance,
         level="ERROR",
