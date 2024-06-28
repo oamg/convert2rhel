@@ -106,28 +106,42 @@ class CopyGrubFiles(actions.Action):
         #  the different grub content...
         # E.g. if the efibin is located in a different directory, are these two files valid?
         logger.info("Copying GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
-        required = ["grubenv", "grub.cfg"]
-        optional = ["user.cfg"]
-        all_files = required + optional
-        for filename in all_files:
-            src_path = os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename)
-            dst_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
-            if os.path.exists(dst_path):
-                logger.debug("The %s file already exists. Copying skipped." % dst_path)
+        src_files = [
+            os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename) for filename in ["grubenv", "grub.cfg", "user.cfg"]
+        ]
+        required = src_files[:2]
+
+        # If at least one file exists, this will be skipped. Otherwise, if all
+        # are missing, this will be a hit.
+        if not any(os.path.exists(filename) for filename in src_files):
+            # Get a list of files that are missing that are required and does
+            # not exist.
+            missing_files = [
+                filename for filename in src_files if filename in required and not os.path.exists(filename)
+            ]
+            # without the required files user should not reboot the system
+            self.set_result(
+                level="ERROR",
+                id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
+                title="Unable to find required file for GRUB config",
+                description="Unable to find the original file required for GRUB configuration at: %s"
+                % ", ".join(missing_files),
+            )
+            return
+
+        for src_file in src_files:
+            # Check if the src_file already exists at the RHEL_EFIDR_CANONICAL_PATH
+            if os.path.exists(os.path.join(RHEL_EFIDIR_CANONICAL_PATH, src_file)):
+                logger.debug(
+                    "The %s file already exists in %s folder. Copying skipped."
+                    % (os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH)
+                )
                 continue
-            if not os.path.exists(src_path):
-                if filename in required:
-                    # without the required files user should not reboot the system
-                    self.set_result(
-                        level="ERROR",
-                        id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
-                        title="Unable to find required file for GRUB config",
-                        description="Unable to find the original file required for GRUB configuration: %s" % src_path,
-                    )
-                    return
-            logger.info("Copying '%s' to '%s'" % (src_path, dst_path))
+
+            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
+            logger.info("Copying '%s' to '%s'" % (src_file, dst_file))
             try:
-                shutil.copy2(src_path, dst_path)
+                shutil.copy2(src_file, dst_file)
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
                 self.set_result(
