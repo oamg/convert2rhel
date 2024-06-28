@@ -209,7 +209,7 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_get_architecture",
         value=lambda: "x86_64",
     )
-    tool_opts.no_rpm_va = True
+    monkeypatch.setattr(tool_opts, "no_rpm_va", True)
 
     # We can't depend on a test environment (containers) having an init system so we have to
     # disable probing for the right value by hardcoding an anwer

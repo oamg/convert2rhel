@@ -395,33 +395,6 @@ class SystemInfo:
         utils.store_content_to_file(output_file, rpm_va)
         self.logger.info("The 'rpm -Va' output has been stored in the %s file." % output_file)
 
-    def modified_rpm_files_diff(self):
-        """Get a list of modified rpm files after the conversion and compare it to the one from before the conversion."""
-        self.generate_rpm_va(log_filename=POST_RPM_VA_LOG_FILENAME)
-
-        pre_rpm_va_log_path = os.path.join(logger.LOG_DIR, PRE_RPM_VA_LOG_FILENAME)
-        if not os.path.exists(pre_rpm_va_log_path):
-            self.logger.info("Skipping comparison of the 'rpm -Va' output from before and after the conversion.")
-            return
-        pre_rpm_va = utils.get_file_content(pre_rpm_va_log_path, True)
-        post_rpm_va_log_path = os.path.join(logger.LOG_DIR, POST_RPM_VA_LOG_FILENAME)
-        post_rpm_va = utils.get_file_content(post_rpm_va_log_path, True)
-        modified_rpm_files_diff = "\n".join(
-            difflib.unified_diff(
-                pre_rpm_va,
-                post_rpm_va,
-                fromfile=pre_rpm_va_log_path,
-                tofile=post_rpm_va_log_path,
-                n=0,
-                lineterm="",
-            )
-        )
-
-        if modified_rpm_files_diff:
-            self.logger.info(
-                "Comparison of modified rpm files from before and after the conversion:\n%s" % modified_rpm_files_diff
-            )
-
     @staticmethod
     def is_rpm_installed(name):
         _, return_code = run_subprocess(["rpm", "-q", name], print_cmd=False, print_output=False)
