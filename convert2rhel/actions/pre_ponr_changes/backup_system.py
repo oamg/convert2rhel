@@ -27,6 +27,7 @@ from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 # Regex explanation:
@@ -181,7 +182,7 @@ class BackupPackageFiles(actions.Action):
                 output = f.read()
         # Catch the IOError due Python 2 compatibility
         except IOError as err:
-            if os.environ.get("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
+            if check_environment_variable_value("CONVERT2RHEL_INCOMPLETE_ROLLBACK"):
                 loggerinst.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
                 # Return empty list results in no backup of the files
                 return data

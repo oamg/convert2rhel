@@ -26,6 +26,7 @@ import sys
 from six.moves import configparser, urllib
 
 from convert2rhel import __version__, utils
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 loggerinst = logging.getLogger(__name__)
@@ -357,7 +358,7 @@ class CLI:
                     " in the analysis mode is essential for a complete rollback to the original"
                     " system state at the end of the analysis."
                 )
-            elif os.getenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
+            elif check_environment_variable_value("CONVERT2RHEL_INCOMPLETE_ROLLBACK"):
                 tool_opts.no_rpm_va = True
             else:
                 message = (

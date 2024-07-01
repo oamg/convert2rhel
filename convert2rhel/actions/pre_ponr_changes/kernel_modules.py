@@ -25,6 +25,7 @@ from functools import cmp_to_key
 from convert2rhel import actions, pkghandler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 logger = logging.getLogger(__name__)
@@ -247,7 +248,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
             # Check if we have the environment variable set, if we do, send a
             # warning and return.
-            if "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS" in os.environ:
+            if check_environment_variable_value("CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"):
                 logger.warning(
                     "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
                     " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
