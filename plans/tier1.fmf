@@ -285,3 +285,8 @@ adjust+:
         discover+:
             test+<:
                 - proxy-conversion/proxy_conversion
+
+    /error-after-ponr:
+        discover+:
+            test:
+                - error-after-ponr

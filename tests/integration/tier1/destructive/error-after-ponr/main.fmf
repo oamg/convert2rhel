@@ -1,0 +1,9 @@
+summary: |
+    Trigger a error after PONR
+description: |
+    Verify that convert2rhel exits with 1 after a error in PONR
+    Verify that the error is logged with a message to the user
+    This test will break the machine, there is no reboot or checks after this test
+
+/error_after_ponr:
+    test: pytest -m test_error_after_ponr
