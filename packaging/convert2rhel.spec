@@ -44,6 +44,8 @@ Requires:       python%{python_pkgversion}-setuptools
 Requires:       python%{python_pkgversion}-six
 %if 0%{?rhel} && 0%{?rhel} >= 8
 Requires:       dnf
+# The yum rpm mainly takes care of creating symlinks to dnf. We need it since we call yum in convert2rhel.
+Requires:       yum
 # dnf-utils includes yumdownloader and package-cleanup we use
 Requires:       dnf-utils
 Requires:       grubby
