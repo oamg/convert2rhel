@@ -39,7 +39,9 @@ repos:
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
-        files: tests/
+        files: 
+          - tests/
+          - plans/
 
   - repo: https://github.com/packit/pre-commit-hooks
     rev: v1.2.0
