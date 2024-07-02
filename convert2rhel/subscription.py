@@ -23,7 +23,6 @@ import logging
 import os
 import re
 
-from functools import partial
 from time import sleep
 
 import dbus
@@ -35,7 +34,7 @@ from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import _should_subscribe, tool_opts
+from convert2rhel.toolopts import tool_opts
 
 
 loggerinst = logging.getLogger(__name__)
@@ -982,19 +981,3 @@ def get_rhsm_facts():
             "Failed to get the RHSM facts : %s." % e,
         )
     return rhsm_facts
-
-
-# subscription is the natural place to look for should_subscribe but it
-# is needed by toolopts.  So define it as a private function in toolopts but
-# create a public identifier to access it here.
-
-#: Whether we should subscribe the system with subscription-manager.
-#:
-#: If the user has specified some way to authenticate with subscription-manager
-#: then we need to subscribe the system. If not, the assumption is that the
-#: user has already subscribed the system or that this machine does not need to
-#: subscribe to rhsm in order to get the RHEL rpm packages.
-#:
-#: :returns: Returns True if we need to subscribe the system, otherwise return False.
-#: :rtype: bool
-should_subscribe = partial(_should_subscribe, tool_opts)

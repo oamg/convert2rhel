@@ -21,12 +21,12 @@ import re
 
 from convert2rhel import actions, backup, exceptions
 from convert2rhel.backup.files import MissingFile, RestorableFile
+from convert2rhel.cli import PRE_RPM_VA_LOG_FILENAME
 from convert2rhel.logger import LOG_DIR
 from convert2rhel.pkghandler import VERSIONLOCK_FILE_PATH
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 
 
 # Regex explanation:
