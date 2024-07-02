@@ -21,17 +21,15 @@ import re
 import pytest
 import six
 
-from convert2rhel import actions, exceptions, pkghandler, unit_tests, utils
-from convert2rhel.actions import STATUS_CODE
+from convert2rhel import actions, pkghandler, unit_tests, utils
 from convert2rhel.actions.conversion import preserve_only_rhel_kernel
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
-    GetInstalledPkgsByFingerprintMocked,
     GetInstalledPkgsWDifferentFingerprintMocked,
     RunSubprocessMocked,
     StoreContentToFileMocked,
 )
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.unit_tests.conftest import centos7
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
