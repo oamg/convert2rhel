@@ -40,6 +40,7 @@ import rpm
 from six import moves
 
 from convert2rhel import exceptions, i18n
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 loggerinst = logging.getLogger(__name__)
@@ -790,7 +791,7 @@ def report_on_a_download_error(output, pkg):
     from convert2rhel.systeminfo import system_info
 
     if toolopts.tool_opts.activity == "conversion":
-        if "CONVERT2RHEL_INCOMPLETE_ROLLBACK" not in os.environ:
+        if check_environment_variable_value("CONVERT2RHEL_INCOMPLETE_ROLLBACK"):
             loggerinst.critical(
                 "Couldn't download the %s package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
