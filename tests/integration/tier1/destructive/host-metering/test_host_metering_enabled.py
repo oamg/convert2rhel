@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
 
-
-@pytest.mark.test_active_host_metering
 def test_active_host_metering(shell):
     """
     Verify that host-metering is enabled and started after conversion on

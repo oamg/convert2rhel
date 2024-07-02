@@ -1,9 +1,6 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_yum_conf_patch
 def test_yum_conf_patch(convert2rhel, shell):
     """Test the scenario in which the user modifies /etc/yum.conf before the conversion.
     In that case during the conversion the config file does not get replaced with the config file from the RHEL package

@@ -2,16 +2,13 @@ from __future__ import print_function
 
 import fileinput
 
-import pytest
-
 from conftest import TEST_VARS
 
 
 target_line = "GRUB_CMDLINE_LINUX"
 
 
-@pytest.mark.test_valid_changes_to_grub_file
-def test_modify_grub_valid(convert2rhel):
+def test_valid_changes_to_grub_file(convert2rhel):
     """
     Modify the /etc/default/grub file with 'valid' changes adding newlines, whitespaces and comments.
     Valid meaning that none of the changes should cause any issue calling 'grub2-mkconfig'.

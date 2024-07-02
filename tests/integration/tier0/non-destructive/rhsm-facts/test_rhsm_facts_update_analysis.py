@@ -1,8 +1,4 @@
-import pytest
-
-
-@pytest.mark.test_rhsm_facts_called_in_analysis
-def test_rhsm_facts_called_after_analysis(convert2rhel, pre_registered):
+def test_rhsm_facts_update_called_after_analysis(convert2rhel, pre_registered):
     """
     Verify that the RHSM custom facts are uploaded after the analysis is done.
     """

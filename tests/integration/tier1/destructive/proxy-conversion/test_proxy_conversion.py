@@ -1,7 +1,5 @@
 import socket
 
-import pytest
-
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
@@ -114,7 +112,7 @@ def setup_rhsm(shell):
         # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
         # otherwise the dnf will complain with dependency issues.
         if "centos-8" in SYSTEM_RELEASE_ENV:
-            shell("sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
+            shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
 
     # On Oracle Linux 7 a "rhn-client-tools" package may be present on
     # the system which prevents "subscription-manager" to be installed.
@@ -137,7 +135,6 @@ def setup_rhsm(shell):
     shell(f"subscription-manager config --rhsm.baseurl=https://{TEST_VARS['RHSM_STAGECDN']}", silent=True)
 
 
-@pytest.mark.test_proxy_conversion
 def test_proxy_conversion(shell, convert2rhel):
     """
     System is connected to the internet through a proxy server.

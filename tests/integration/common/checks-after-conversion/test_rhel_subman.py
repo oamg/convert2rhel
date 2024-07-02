@@ -1,7 +1,3 @@
-import pytest
-
-
-@pytest.mark.test_rhel_subscription_manager
 def test_rhel_subscription_manager(shell):
     """
     After conversion check.

@@ -45,7 +45,7 @@ tag+:
         pytest -m test_package_download_error
 
 
-/validating_packages_with_in_name_period:
+/packages_with_in_name_period:
     enabled: false
     adjust+:
         - enabled: true
@@ -66,7 +66,7 @@ tag+:
         - validation-packages-with-in-name-period
         - sanity
     test: |
-        pytest -m test_validation_packages_with_in_name_period
+        pytest -m test_packages_with_in_name_period
 
 /override_exclude_list_in_yum_config:
     adjust+:

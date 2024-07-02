@@ -39,7 +39,7 @@ tag+:
     tag+:
         - rhsm-cleanup
     test: |
-        pytest -m test_rhsm_cleanup
+        pytest -m test_proper_rhsm_clean_up
 
 /packages_untracked_graceful_rollback:
     summary+: |
@@ -91,7 +91,7 @@ tag+:
         test: |
             pytest -m test_terminate_on_registration_success
 
-/test_rollback_failure:
+/rollback_failure_returncode:
     summary+: |
         Unsuccessful rollback exits with code 1
     description+: |
@@ -102,4 +102,4 @@ tag+:
     tag+:
         - test-rollback-failure
     test: |
-        pytest -m test_rollback_failure
+        pytest -m test_rollback_failure_returncode

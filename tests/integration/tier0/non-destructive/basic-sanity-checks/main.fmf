@@ -21,7 +21,7 @@ tag+:
         - root-privileges
         - sanity
     test: |
-      pytest -m test_root_privileges
+      pytest -m test_user_privileges
 
 
 /manpage:
@@ -32,7 +32,7 @@ tag+:
     tag+:
         - manpage
     test: |
-      pytest -m test_manpage
+      pytest -m test_manpage_exists
 
 
 /smoke:
@@ -63,17 +63,17 @@ tag+:
 /convert2rhel_version:
     summary+: |
         convert2rhel version check
-    /c2r_version_latest_or_newer:
+    /c2r_is_latest_with_mocked_newer_version:
         summary+: |
-            Latest or newer version of convert2rhel
+            Mock newer version of convert2rhel
         description+: |
-            Verify that running the latest or newer than latest version
+            Verify that running the newer than the latest GA version of convert2rhel
             does not raise the CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
         tag+:
             - version-latest-or-newer
             - sanity
         test: |
-          pytest -m test_version_latest_or_newer
+          pytest -m test_c2r_version_latest_with_mocked_newer_version
 
     /c2r_version_older_no_envar:
         summary+: |
@@ -84,7 +84,7 @@ tag+:
         tag+:
             - version-older-no-envar
         test: |
-          pytest -m test_version_older_no_envar
+          pytest -m test_c2r_version_latest_raise_older_version_error
 
     /c2r_version_older_with_envar:
         summary+: |
@@ -98,7 +98,7 @@ tag+:
         tag+:
             - version-older-with-envar
         test: |
-          pytest -m test_version_older_with_envar
+          pytest -m test_c2r_version_latest_override_older_version_error
 
 
 /clean_cache:
@@ -121,7 +121,7 @@ tag+:
     tag+:
         - log-rhsm-error
     test: |
-      pytest -m test_log_rhsm_error
+      pytest -m test_rhsm_error_logged
 
 
 /data_collection:

@@ -99,7 +99,6 @@ def custom_kernel(shell, hybrid_rocky_image):
         shell("tmt-reboot -t 600")
 
 
-@pytest.mark.test_custom_kernel
 def test_custom_kernel(convert2rhel, shell, custom_kernel):
     """
     Run the conversion with custom kernel installed on the system.

@@ -108,7 +108,7 @@ adjust+:
         prepare+:
             - name: Set non english locale
               how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/set-locale/use_non_english_language.py
+              script: pytest tests/integration/*/destructive/set-locale/use_non_english_language.py
         discover+:
             test+<:
                 - conversion-method/activation_key_conversion
@@ -118,7 +118,7 @@ adjust+:
         prepare+:
             - name: Remove the /etc/os-release file
               how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/os-release-removal/remove_os_release.py
+              script: pytest tests/integration/*/destructive/os-release-removal/remove_os_release.py
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion
@@ -156,7 +156,7 @@ adjust+:
             prepare+:
                 - name: Prepare non latest kernel
                   how: shell
-                  script: pytest --setup-show -svv tests/integration/*/destructive/kernel-check-skip/install_older_kernel.py
+                  script: pytest tests/integration/*/destructive/kernel-check-skip/install_older_kernel.py
                 - name: Add custom repos
                   how: ansible
                   playbook: tests/ansible_collections/roles/add-custom-repos/main.yml
@@ -232,7 +232,7 @@ adjust+:
         prepare+:
             - name: Make sure the 'kernel-core' is the only installed kernel package
               how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/kernel-core-only/remove_kernel_pkg.py
+              script: pytest tests/integration/*/destructive/kernel-core-only/remove_kernel_pkg.py
             - name: Reboot after kernel package removal leaving only kernel-core on the system
               how: ansible
               playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -265,7 +265,7 @@ adjust+:
         prepare+:
             - name: Verify multiple NIC are present
               how: shell
-              script: pytest --setup-show -svv tests/integration/*/destructive/multiple-nic/multiple_nic.py
+              script: pytest tests/integration/*/destructive/multiple-nic/multiple_nic.py
         discover+:
             test+<:
                 - conversion-method/rhsm_conversion

@@ -1,10 +1,7 @@
-import pytest
-
 from conftest import SystemInformationRelease
 
 
-@pytest.mark.test_custom_repos_conversion
-def test_run_conversion_using_custom_repos(shell, convert2rhel):
+def test_system_conversion_using_custom_repositories(shell, convert2rhel):
     """
     Conversion method with disabled subscription manager/RHSM and enabled 'custom' repositories.
     Usually we use the RHSM to enable the repositories `rhel-$releasever-server`.
