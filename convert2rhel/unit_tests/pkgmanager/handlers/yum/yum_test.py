@@ -43,7 +43,7 @@ SYSTEM_PACKAGES = [
         version="1.0.0",
         release="1",
         arch="x86_64",
-        fingerprint="24c6a8a7f4a80eb5",
+        key_id="24c6a8a7f4a80eb5",
         signature="test",
     ),
     create_pkg_information(
@@ -54,7 +54,7 @@ SYSTEM_PACKAGES = [
         version="1.0.0",
         release="1",
         arch="x86_64",
-        fingerprint="24c6a8a7f4a80eb5",
+        key_id="24c6a8a7f4a80eb5",
         signature="test",
     ),
     create_pkg_information(
@@ -65,7 +65,7 @@ SYSTEM_PACKAGES = [
         version="1.0.0",
         release="1",
         arch="x86_64",
-        fingerprint="24c6a8a7f4a80eb5",
+        key_id="24c6a8a7f4a80eb5",
         signature="test",
     ),
 ]
