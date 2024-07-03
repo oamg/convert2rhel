@@ -18,17 +18,13 @@
 __metaclass__ = type
 
 import json
-import sys
 
 import pytest
 import six
 
-import convert2rhel.toolopts
-
 from convert2rhel import breadcrumbs, pkghandler, pkgmanager
 from convert2rhel.unit_tests import create_pkg_information, create_pkg_obj
 from convert2rhel.unit_tests.conftest import centos7
-from convert2rhel.unit_tests.toolopts_test import mock_cli_arguments
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
