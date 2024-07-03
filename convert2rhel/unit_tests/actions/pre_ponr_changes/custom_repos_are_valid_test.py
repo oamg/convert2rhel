@@ -20,7 +20,7 @@ __metaclass__ = type
 import pytest
 
 from convert2rhel import unit_tests
-from convert2rhel.actions.system_checks import custom_repos_are_valid
+from convert2rhel.actions.pre_ponr_changes import custom_repos_are_valid
 
 
 @pytest.fixture
@@ -73,6 +73,6 @@ def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch,
     custom_repos_are_valid_action.run()
 
     assert (
-        "Skipping the check as there was no --enablerepo option detected in the command-line."
+        "Did not perform the check of repositories due to the use of RHSM for the conversion."
         in caplog.records[-1].message
     )
