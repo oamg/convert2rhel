@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class CustomReposAreValid(actions.Action):
     id = "CUSTOM_REPOSITORIES_ARE_VALID"
+    dependencies = ("SUBSCRIBE_SYSTEM",)
 
     def run(self):
         """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
