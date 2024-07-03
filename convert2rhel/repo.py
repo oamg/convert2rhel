@@ -58,16 +58,28 @@ def get_rhel_repoids():
 
 
 def get_rhel_repos_to_disable():
-    """Get the list of repositories which should be disabled when performing pre-conversion checks. Avoid downloading
-    backup and up-to-date checks from them. The output list can looks like:
-    ['rhel*', 'user-provided', 'user-provided1']
+    """Get the list of repositories which should be disabled when performing pre-conversion checks.
+
+    Avoid downloading backup and up-to-date checks from them. The output list can looks like: ["rhel*"]
+
+    .. note::
+        If --enablerepo switch is enabled, we will return a combination of repositories to disable as following:
+
+        >>> # tool_opts.enablerepo comes from the CLI option `--enablerepo`.
+        >>> repos_to_disable = ["rhel*"]
+        >>> repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "rhel-7-server-optional-rpms"]
 
     :return: List of repositories to disable when performing checks.
-    :rtype: List[str]
+    :rtype: list[str]
     """
     # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
-    # Also disable repositories enabled by the user for the conversion.
-    return ["rhel*"] + tool_opts.enablerepo
+    repos_to_disable = ["rhel*"]
+
+    # In case we want to disable also the custom repositories set by the user in CLI
+    if tool_opts.no_rhsm:
+        repos_to_disable.extend(tool_opts.enablerepo)
+
+    return repos_to_disable
 
 
 def get_rhel_disable_repos_command(disable_repos):
