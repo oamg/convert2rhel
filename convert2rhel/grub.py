@@ -104,6 +104,7 @@ def _get_partition(directory):
 
     Raise BootloaderError if the partition can't be detected.
     """
+    print("GET PARTITION")
     stdout, ecode = utils.run_subprocess(["/usr/sbin/grub2-probe", "--target=device", directory], print_output=False)
     if ecode or not stdout:
         logger.error("grub2-probe returned %s. Output:\n%s" % (ecode, stdout))

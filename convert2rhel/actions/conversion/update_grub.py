@@ -66,14 +66,16 @@ class UpdateGrub(actions.Action):
             logger.debug("Detected BIOS setup, proceeding to install the new GRUB2 images.")
             try:
                 blk_device = grub.get_grub_device()
-            # two kinds of bootloader errors, maybe generalize it
-            except grub.BootloaderError:
+            # two kinds of bootloader errors so we output the specific issue in diagnosis
+            except grub.BootloaderError as e:
                 self.set_result(
                     level="ERROR",
-                    id="GRUB2_PROBE_FAILED",
-                    title="Grub2 probe call failed",
-                    description="Unable to get device information for /boot directory",
+                    id="BOOTLOADER_ERROR",
+                    title="Bootloader error detected",
+                    description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+                    diagnosis=str(e),
                 )
+                return
 
             logger.debug("Device to install the GRUB2 image to: '%s'" % blk_device)
 

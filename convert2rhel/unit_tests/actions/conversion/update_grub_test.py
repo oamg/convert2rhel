@@ -157,3 +157,31 @@ def test_update_grub_messages(
 
     assert expected.issuperset(update_grub_instance.messages)
     assert expected.issubset(update_grub_instance.messages)
+
+
+@pytest.mark.parametrize(
+    ("get_partition_error", "get_blk_device_error", "diagnosis"),
+    (
+        (True, False, "Unable to get device information for"),
+        (False, True, "Unable to get a block device for"),
+    ),
+)
+def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_error, get_blk_device_error, diagnosis):
+
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=0))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
+    if get_partition_error:
+        monkeypatch.setattr(grub, "_get_partition", mock.Mock(side_effect=grub.BootloaderError(diagnosis)))
+    if get_blk_device_error:
+        monkeypatch.setattr(grub, "_get_blk_device", mock.Mock(side_effect=grub.BootloaderError(diagnosis)))
+
+    update_grub_instance.run()
+
+    unit_tests.assert_actions_result(
+        update_grub_instance,
+        level="ERROR",
+        id="BOOTLOADER_ERROR",
+        title="Bootloader error detected",
+        description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+        diagnosis=diagnosis,
+    )
