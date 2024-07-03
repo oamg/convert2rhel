@@ -63,11 +63,11 @@ def get_rhel_repos_to_disable():
     Avoid downloading backup and up-to-date checks from them. The output list can looks like: ["rhel*"]
 
     .. note::
-        If --enablerepo switch is enabled, we will return a combination of repositories to disable as following:
+        If --enablerepo switch is used together with the --no-rhsm, we will return a combination of repositories to disable as following:
 
         >>> # tool_opts.enablerepo comes from the CLI option `--enablerepo`.
         >>> repos_to_disable = ["rhel*"]
-        >>> repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "rhel-7-server-optional-rpms"]
+        >>> repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "my-rhel-repo-mirror"]
 
     :return: List of repositories to disable when performing checks.
     :rtype: list[str]
@@ -75,7 +75,8 @@ def get_rhel_repos_to_disable():
     # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
     repos_to_disable = ["rhel*"]
 
-    # In case we want to disable also the custom repositories set by the user in CLI
+    # this is for the case where the user configures e.g. [my-rhel-repo-mirror] on the system and leaves it enabled
+    # before running convert2rhel - we want to prevent the checks from accessing it as it contains packages for RHEL
     if tool_opts.no_rhsm:
         repos_to_disable.extend(tool_opts.enablerepo)
 
