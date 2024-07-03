@@ -70,7 +70,10 @@ class InstallRhelKernel(actions.Action):
                     )
                     loggerinst.info("\n%s" % info_message)
                     self.add_message(
-                        level="INFO", id="CONFLICT_OF_KERNELS", title="Conflict of kernels", description=info_message
+                        level="INFO",
+                        id="CONFLICT_OF_KERNELS",
+                        title="Conflict of installed kernel versions",
+                        description=info_message,
                     )
                     pkghandler.handle_no_newer_rhel_kernel_available()
                     kernel_update_needed = True

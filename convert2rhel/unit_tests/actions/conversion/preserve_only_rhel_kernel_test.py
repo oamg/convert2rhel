@@ -157,7 +157,7 @@ def test_install_rhel_kernel_info_msg(pretend_os, install_rhel_kernel_instance, 
             actions.ActionMessage(
                 level="INFO",
                 id="CONFLICT_OF_KERNELS",
-                title="Conflict of kernels",
+                title="Conflict of installed kernel versions",
                 description="Conflict of kernels: One of the installed kernels has the same version as the latest RHEL kernel.",
                 diagnosis=None,
                 remediations=None,
