@@ -261,7 +261,7 @@ class TestFixInvalidGrub2Entries:
                             level="WARNING",
                             id="UNABLE_TO_GET_GRUB2_BOOT_LOADER_ENTRY",
                             title="Unable to get the GRUB2 boot loader entry",
-                            description="Couldn't get the default GRUB2 boot loader entry:\nboot loader",
+                            description="Couldn't get the default GRUB2 boot loader entry:\nbootloader",
                             diagnosis=None,
                             remediations=None,
                         ),
@@ -277,7 +277,7 @@ class TestFixInvalidGrub2Entries:
                             level="WARNING",
                             id="UNABLE_TO_SET_GRUB2_BOOT_LOADER_ENTRY",
                             title="Unable to set the GRUB2 boot loader entry",
-                            description="Couldn't set the default GRUB2 boot loader entry:\ngrep: /boot/grub2/grubenv: Permission denied\nThe param boot loader is incorrect\n",
+                            description="Couldn't set the default GRUB2 boot loader entry:\nbootloader",
                             diagnosis=None,
                             remediations=None,
                         ),
@@ -316,17 +316,20 @@ class TestFixInvalidGrub2Entries:
                         "--default-kernel",
                     ),
                     (
-                        "boot loader",
+                        "bootloader",
                         return_code_1,
                     ),
                 ),
                 (
-                    "/usr/sbin/grubby",
-                    "--set-default",
-                ),
-                (
-                    "boot loader",
-                    return_code_2,
+                    (
+                        "/usr/sbin/grubby",
+                        "--set-default",
+                        "bootloader",
+                    ),
+                    (
+                        "bootloader",
+                        return_code_2,
+                    ),
                 ),
             ),
         )
@@ -338,6 +341,8 @@ class TestFixInvalidGrub2Entries:
         )
 
         fix_invalid_grub2_entries_instance.run()
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(fix_invalid_grub2_entries_instance.messages)
         assert expected.issuperset(fix_invalid_grub2_entries_instance.messages)
         assert expected.issubset(fix_invalid_grub2_entries_instance.messages)
 
