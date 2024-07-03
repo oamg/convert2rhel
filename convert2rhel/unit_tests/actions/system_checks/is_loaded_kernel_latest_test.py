@@ -787,7 +787,6 @@ class TestIsLoadedKernelLatest:
                     "--setopt=exclude=",
                     "--quiet",
                     "--disablerepo=rhel*",
-                    "--disablerepo=test-repo",
                     "--qf",
                     "C2R\\t%{BUILDTIME}\\t%{VERSION}-%{RELEASE}\\t%{REPOID}",
                     "kernel",
