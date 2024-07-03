@@ -285,7 +285,7 @@ def test_main(monkeypatch, global_tool_opts, tmp_path):
     assert raise_for_skipped_failures_mock.call_count == 2
     assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
-    assert ask_to_continue_mock.call_count == 1
+    assert ask_to_continue_mock.call_count == 2
     assert restart_system_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
     assert summary_as_txt_mock.call_count == 1
