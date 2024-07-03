@@ -317,7 +317,7 @@ def test_main(monkeypatch, tmp_path):
     assert raise_for_skipped_failures_mock.call_count == 2
     assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
-    assert ask_to_continue_mock.call_count == 1
+    assert ask_to_continue_mock.call_count == 2
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
     assert remove_tmp_dir_mock.call_count == 1
@@ -700,7 +700,7 @@ class TestRollbackFromMain:
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
-        assert ask_to_continue_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 2
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
