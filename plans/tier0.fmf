@@ -184,10 +184,16 @@ adjust+:
 
 
         /isolated_system_conversion:
+            adjust+:
+                - environment+:
+                    TESTS_DONT_UPDATE_SYSTEM: 1
             prepare+:
                 - name: Allow access to Satellite only
                   how: shell
                   script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+                - name: Reboot the system
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
             discover+:
                 test+<:
                     - isolated-system-conversion/isolated_system_conversion

@@ -49,3 +49,9 @@ def test_prepare_system(shell, satellite_registration):
     configure_connection()
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
+
+    # We need to update the system at this point instead of relying on the ansible playbook
+    # run with the host set up.
+    # At this point we actually update the system from the repositories synced to the Satellite
+    # dogfood server, not the system ones.
+    assert shell("yum update -y")
