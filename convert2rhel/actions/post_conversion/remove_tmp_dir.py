@@ -17,7 +17,6 @@ __metaclass__ = type
 
 import errno
 import logging
-import os
 import shutil
 
 from convert2rhel import actions
