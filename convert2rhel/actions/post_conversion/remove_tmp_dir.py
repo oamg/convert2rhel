@@ -55,9 +55,3 @@ class RemoveTmpDir(actions.Action):
                 " after you ensure there is no preserved data you would need." % self.tmp_dir
             )
             loggerinst.warning(warning_message)
-            self.set_result(
-                level="SKIP",
-                id="FOLDER_NOT_REMOVED",
-                title="Folder was not removed",
-                description=warning_message,
-            )
