@@ -20,7 +20,7 @@ import os
 
 import pytest
 
-from convert2rhel import unit_tests, utils
+from convert2rhel import unit_tests
 from convert2rhel.actions.post_conversion import remove_tmp_dir
 
 
