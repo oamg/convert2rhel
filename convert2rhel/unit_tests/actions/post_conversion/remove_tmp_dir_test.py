@@ -35,7 +35,7 @@ def test_remove_tmp_dir(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert os.path.isdir(path)
     remove_tmp_dir_instance.run()
-    assert "Temporary folder " + str(path) + " removed" in caplog.text
+    assert "Temporary folder %s removed" % path in caplog.text
     assert not os.path.isdir(path)
 
 
