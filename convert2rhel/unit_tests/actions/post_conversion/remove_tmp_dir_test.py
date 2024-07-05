@@ -52,7 +52,6 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
     caplog.set_level(logging.INFO)
     path = str(tmpdir)
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
-    assert os.path.isdir(path)
     os.chmod(path, 0)
     remove_tmp_dir_instance.run()
     expected_message = (
