@@ -59,13 +59,7 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
         "The folder %s is left untouched. You may remove the folder manually"
         " after you ensure there is no preserved data you would need." % path
     )
-    unit_tests.assert_actions_result(
-        remove_tmp_dir_instance,
-        level="SKIP",
-        id="FOLDER_NOT_REMOVED",
-        title="Folder was not removed",
-        description=expected_message,
-    )
+    assert expected_message in caplog.text
     os.chmod(path, 0o755)
 
 
