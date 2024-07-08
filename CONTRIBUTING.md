@@ -219,14 +219,24 @@ linters/formatters that are run directly from
 Don't worry, most of the code formatting and styleguide is handled by
 [black](https://github.com/psf/black), an awesome formatter for python code.
 
-### Python documentation styleguide
+#### Documenting the code
 
-The documentation for our python code should follow the [PEP 8 -- Documentation
+##### Docstrings for classes, functions, and variables
+Code should be self-documenting, but it does not take into consideration how
+the functions should be used, what the scope of the classes are, or what the variable
+is to be used for. We follow [PEP 8 -- Documentation
 Strings](https://www.python.org/dev/peps/pep-0008/#toc-entry-20) or more
 precisely the [PEP 257 -- Docstring
 Conventions](https://www.python.org/dev/peps/pep-0257/) and preferably all
 functions should contain at least a minimum docstring to identify what that
 function is used for.
+
+When writing the docstrings, imagine onboarding a new person to the codebase half
+a year down the line and what they need to know to understand the function and
+any edge-cases.
+
+##### Type comments
+We make use of type comments where possible to get type hinting, since we cannot use type hints due to having to support python 2.7. You can find the type comments style in [PEP-0484#type-comments](https://peps.python.org/pep-0484/#type-comments)
 
 ## Additional information
 
@@ -234,7 +244,6 @@ Additional technical information is located [on the
 wiki](https://github.com/oamg/convert2rhel/wiki).  When you add a new feature that others might need
 to plug into or affects how their code should be written in the future, please add a new page there
 and link it to the toplevel [Topics section](https://github.com/oamg/convert2rhel/wiki#topics).
-
 
 ### Building rpms locally
 
