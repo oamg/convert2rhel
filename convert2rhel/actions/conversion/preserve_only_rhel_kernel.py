@@ -91,7 +91,10 @@ class VerifyRhelKernelInstalled(actions.Action):
         super(VerifyRhelKernelInstalled, self).run()
 
         loggerinst.info("Verifying that RHEL kernel has been installed")
-        if not pkghandler.is_rhel_kernel_installed():
+        installed_rhel_kernels = pkghandler.get_installed_pkgs_by_fingerprint(
+            system_info.fingerprints_rhel, name="kernel"
+        )
+        if len(installed_rhel_kernels) <= 0:
             self.set_result(
                 level="ERROR",
                 id="NO_RHEL_KERNEL_INSTALLED",
@@ -216,6 +219,36 @@ class KernelPkgsInstall(actions.Action):
         """Install kernel packages and remove non-RHEL kernels."""
         super(KernelPkgsInstall, self).run()
 
-        kernel_pkgs_to_install = pkghandler.remove_non_rhel_kernels()
+        kernel_pkgs_to_install = self.remove_non_rhel_kernels()
         if kernel_pkgs_to_install:
-            pkghandler.install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
+            self.install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
+
+    def remove_non_rhel_kernels(self):
+        loggerinst.info("Searching for non-RHEL kernels ...")
+        non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_fingerprint(
+            system_info.fingerprints_rhel, "kernel*"
+        )
+        if non_rhel_kernels:
+            loggerinst.info("Removing non-RHEL kernels\n")
+            pkghandler.print_pkg_info(non_rhel_kernels)
+            utils.remove_pkgs(
+                pkgs_to_remove=[pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
+            )
+        else:
+            loggerinst.info("None found.")
+        return non_rhel_kernels
+
+    def install_additional_rhel_kernel_pkgs(self, additional_pkgs):
+        """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
+        tries to install back all of these from RHEL repositories.
+        """
+        # OL renames some of the kernel packages by adding "-uek" (Unbreakable
+        # Enterprise Kernel), e.g. kernel-uek-devel instead of kernel-devel. Such
+        # package names need to be mapped to the RHEL kernel package names to have
+        # them installed on the converted system.
+        ol_kernel_ext = "-uek"
+        pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
+        for name in set(pkg_names):
+            if name != "kernel":
+                loggerinst.info("Installing RHEL %s" % name)
+                pkgmanager.call_yum_cmd("install", args=[name])

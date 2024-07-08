@@ -362,22 +362,6 @@ class TestGetKernel:
         assert kernel_version == ["4.7.4-200.fc24", "4.7.4-200.fc24"]
 
 
-class TestIsRHELKernelInstalled:
-    def test_is_rhel_kernel_installed_no(self, monkeypatch):
-        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", lambda x, name: [])
-
-        assert not pkghandler.is_rhel_kernel_installed()
-
-    def test_is_rhel_kernel_installed_yes(self, monkeypatch):
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
-        )
-
-        assert pkghandler.is_rhel_kernel_installed()
-
-
 @pytest.mark.parametrize(
     ("version1", "version2", "expected"),
     (
@@ -1508,43 +1492,6 @@ def test_list_non_red_hat_pkgs_left(monkeypatch):
 
     assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
     assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"
-
-
-def test_remove_non_rhel_kernels(monkeypatch):
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-    )
-    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
-    monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
-
-    removed_pkgs = pkghandler.remove_non_rhel_kernels()
-
-    assert len(removed_pkgs) == 6
-    assert [p.nevra.name for p in removed_pkgs] == [
-        "kernel",
-        "kernel-uek",
-        "kernel-headers",
-        "kernel-uek-headers",
-        "kernel-firmware",
-        "kernel-uek-firmware",
-    ]
-
-
-def test_install_additional_rhel_kernel_pkgs(monkeypatch):
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-    )
-    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
-    monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
-    monkeypatch.setattr(pkgmanager, "call_yum_cmd", CallYumCmdMocked())
-
-    removed_pkgs = pkghandler.remove_non_rhel_kernels()
-    pkghandler.install_additional_rhel_kernel_pkgs(removed_pkgs)
-    assert pkgmanager.call_yum_cmd.call_count == 2
 
 
 @pytest.mark.parametrize(

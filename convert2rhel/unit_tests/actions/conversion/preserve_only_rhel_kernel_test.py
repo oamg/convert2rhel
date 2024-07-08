@@ -21,15 +21,20 @@ import re
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, unit_tests, utils
+from convert2rhel import actions, pkghandler, pkgmanager, unit_tests, utils
 from convert2rhel.actions.conversion import preserve_only_rhel_kernel
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
+    CallYumCmdMocked,
+    FormatPkgInfoMocked,
+    GetInstalledPkgsByFingerprintMocked,
     GetInstalledPkgsWDifferentFingerprintMocked,
+    RemovePkgsMocked,
     RunSubprocessMocked,
     StoreContentToFileMocked,
+    create_pkg_information,
 )
-from convert2rhel.unit_tests.conftest import centos7
+from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -61,132 +66,177 @@ def kernel_packages_install_instance():
     return preserve_only_rhel_kernel.KernelPkgsInstall()
 
 
-@pytest.mark.parametrize(
-    (
-        "subprocess_output",
-        "is_only_rhel_kernel",
-        "expected",
-    ),
-    (
-        ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", True, False),
-        ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", False, True),
-        ("Installed:\nkernel", False, False),
-    ),
-    ids=(
-        "Kernels collide and installed is already RHEL. Do not update.",
-        "Kernels collide and installed is not RHEL and older. Update.",
-        "Kernels do not collide. Install RHEL kernel and do not update.",
-    ),
-)
-@centos7
-def test_install_rhel_kernel(
-    subprocess_output, is_only_rhel_kernel, expected, pretend_os, install_rhel_kernel_instance, monkeypatch
-):
-    update_rhel_kernel_mock = mock.Mock()
-
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output, return_code=0))
-    monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-    monkeypatch.setattr(pkghandler, "update_rhel_kernel", value=update_rhel_kernel_mock)
-
-    pkg_selection = "empty" if is_only_rhel_kernel else "kernels"
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
-    )
-    install_rhel_kernel_instance.run()
-    if expected:
-        update_rhel_kernel_mock.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    ("subprocess_output",),
-    (
-        ("Package kernel-2.6.32-754.33.1.el7.x86_64 already installed and latest version",),
-        ("Package kernel-4.18.0-193.el8.x86_64 is already installed.",),
-    ),
-)
-@centos7
-def test_install_rhel_kernel_already_installed_regexp(
-    subprocess_output, pretend_os, monkeypatch, install_rhel_kernel_instance
-):
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-    )
-
-    install_rhel_kernel_instance.run()
-
-    assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
-
-
-@centos7
-def test_install_rhel_kernel_error(pretend_os, install_rhel_kernel_instance, monkeypatch):
-
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
-    install_rhel_kernel_instance.run()
-    unit_tests.assert_actions_result(
-        install_rhel_kernel_instance,
-        level="ERROR",
-        id="FAILED_TO_INSTALL_RHEL_KERNEL",
-        title="Failed to install RHEL kernel",
-        description="There was an error while attempting to install the RHEL kernel from yum.",
-        remediations="Please check that you can access the repositories that provide the RHEL kernel.",
-    )
-
-
-@centos7
-def test_install_rhel_kernel_info_msg(pretend_os, install_rhel_kernel_instance, monkeypatch):
-    subprocess_output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
-    monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-    monkeypatch.setattr(
-        pkghandler,
-        "get_installed_pkgs_w_different_fingerprint",
-        GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-    )
-    install_rhel_kernel_instance.run()
-    expected = set(
+class TestInstallRhelKernel:
+    @pytest.mark.parametrize(
         (
-            actions.ActionMessage(
-                level="INFO",
-                id="CONFLICT_OF_KERNELS",
-                title="Conflict of installed kernel versions",
-                description="Conflict of kernels: One of the installed kernels has the same version as the latest RHEL kernel.",
-                diagnosis=None,
-                remediations=None,
-            ),
+            "subprocess_output",
+            "is_only_rhel_kernel",
+            "expected",
+        ),
+        (
+            ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", True, False),
+            ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", False, True),
+            ("Installed:\nkernel", False, False),
+        ),
+        ids=(
+            "Kernels collide and installed is already RHEL. Do not update.",
+            "Kernels collide and installed is not RHEL and older. Update.",
+            "Kernels do not collide. Install RHEL kernel and do not update.",
+        ),
+    )
+    @centos7
+    def test_install_rhel_kernel(
+        self, subprocess_output, is_only_rhel_kernel, expected, pretend_os, install_rhel_kernel_instance, monkeypatch
+    ):
+        update_rhel_kernel_mock = mock.Mock()
+
+        monkeypatch.setattr(
+            utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output, return_code=0)
         )
+        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
+        monkeypatch.setattr(pkghandler, "update_rhel_kernel", value=update_rhel_kernel_mock)
+
+        pkg_selection = "empty" if is_only_rhel_kernel else "kernels"
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_w_different_fingerprint",
+            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
+        )
+        install_rhel_kernel_instance.run()
+        if expected:
+            update_rhel_kernel_mock.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("subprocess_output",),
+        (
+            ("Package kernel-2.6.32-754.33.1.el7.x86_64 already installed and latest version",),
+            ("Package kernel-4.18.0-193.el8.x86_64 is already installed.",),
+        ),
     )
-    assert expected.issuperset(install_rhel_kernel_instance.messages)
-    assert expected.issubset(install_rhel_kernel_instance.messages)
+    @centos7
+    def test_install_rhel_kernel_already_installed_regexp(
+        self, subprocess_output, pretend_os, monkeypatch, install_rhel_kernel_instance
+    ):
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_w_different_fingerprint",
+            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        )
+
+        install_rhel_kernel_instance.run()
+
+        assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
+
+    @centos7
+    def test_install_rhel_kernel_error(self, pretend_os, install_rhel_kernel_instance, monkeypatch):
+
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
+        install_rhel_kernel_instance.run()
+        unit_tests.assert_actions_result(
+            install_rhel_kernel_instance,
+            level="ERROR",
+            id="FAILED_TO_INSTALL_RHEL_KERNEL",
+            title="Failed to install RHEL kernel",
+            description="There was an error while attempting to install the RHEL kernel from yum.",
+            remediations="Please check that you can access the repositories that provide the RHEL kernel.",
+        )
+
+    @centos7
+    def test_install_rhel_kernel_info_msg(self, pretend_os, install_rhel_kernel_instance, monkeypatch):
+        subprocess_output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
+        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_w_different_fingerprint",
+            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        )
+        install_rhel_kernel_instance.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="INFO",
+                    id="CONFLICT_OF_KERNELS",
+                    title="Conflict of installed kernel versions",
+                    description="Conflict of kernels: One of the installed kernels has the same version as the latest RHEL kernel.",
+                    diagnosis=None,
+                    remediations=None,
+                ),
+            )
+        )
+        assert expected.issuperset(install_rhel_kernel_instance.messages)
+        assert expected.issubset(install_rhel_kernel_instance.messages)
 
 
-@pytest.mark.parametrize(
-    ("kernel_pkgs_to_install",),
-    (
-        (["example_pkg"],),
-        ([],),
-    ),
-)
-def test_kernel_pkgs_install(monkeypatch, kernel_packages_install_instance, kernel_pkgs_to_install):
-    install_additional_rhel_kernel_pkgs_mock = mock.Mock()
-    monkeypatch.setattr(
-        pkghandler, "install_additional_rhel_kernel_pkgs", value=install_additional_rhel_kernel_pkgs_mock
+class TestKernelPkgsInstall:
+    @pytest.mark.parametrize(
+        ("kernel_pkgs_to_install",),
+        (
+            (["example_pkg"],),
+            ([],),
+        ),
     )
-    monkeypatch.setattr(pkghandler, "remove_non_rhel_kernels", mock.Mock(return_value=kernel_pkgs_to_install))
+    def test_kernel_pkgs_install(self, monkeypatch, kernel_packages_install_instance, kernel_pkgs_to_install):
+        install_additional_rhel_kernel_pkgs_mock = mock.Mock()
+        monkeypatch.setattr(
+            preserve_only_rhel_kernel.KernelPkgsInstall,
+            "install_additional_rhel_kernel_pkgs",
+            value=install_additional_rhel_kernel_pkgs_mock,
+        )
+        monkeypatch.setattr(
+            preserve_only_rhel_kernel.KernelPkgsInstall,
+            "remove_non_rhel_kernels",
+            mock.Mock(return_value=kernel_pkgs_to_install),
+        )
 
-    kernel_packages_install_instance.run()
-    if kernel_pkgs_to_install:
-        install_additional_rhel_kernel_pkgs_mock.assert_called_once()
+        kernel_packages_install_instance.run()
+        if kernel_pkgs_to_install:
+            install_additional_rhel_kernel_pkgs_mock.assert_called_once()
+
+    def test_remove_non_rhel_kernels(self, monkeypatch, kernel_packages_install_instance):
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_w_different_fingerprint",
+            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        )
+        monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+        monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
+
+        removed_pkgs = kernel_packages_install_instance.remove_non_rhel_kernels()
+
+        assert len(removed_pkgs) == 6
+        assert [p.nevra.name for p in removed_pkgs] == [
+            "kernel",
+            "kernel-uek",
+            "kernel-headers",
+            "kernel-uek-headers",
+            "kernel-firmware",
+            "kernel-uek-firmware",
+        ]
+
+    def test_install_additional_rhel_kernel_pkgs(self, monkeypatch, kernel_packages_install_instance):
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_w_different_fingerprint",
+            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+        )
+        monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+        monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
+        monkeypatch.setattr(pkgmanager, "call_yum_cmd", CallYumCmdMocked())
+
+        removed_pkgs = kernel_packages_install_instance.remove_non_rhel_kernels()
+        kernel_packages_install_instance.install_additional_rhel_kernel_pkgs(removed_pkgs)
+        assert pkgmanager.call_yum_cmd.call_count == 2
 
 
 class TestVerifyRHELKernelInstalled:
     def test_verify_rhel_kernel_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
-        monkeypatch.setattr(pkghandler, "is_rhel_kernel_installed", lambda: True)
-
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_by_fingerprint",
+            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
+        )
         verify_rhel_kernel_installed_instance.run()
         expected = set(
             (
@@ -204,7 +254,7 @@ class TestVerifyRHELKernelInstalled:
         assert expected.issubset(verify_rhel_kernel_installed_instance.messages)
 
     def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
-        monkeypatch.setattr(pkghandler, "is_rhel_kernel_installed", lambda: False)
+        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", mock.Mock(return_value=[]))
 
         verify_rhel_kernel_installed_instance.run()
         unit_tests.assert_actions_result(
@@ -245,6 +295,7 @@ class TestFixInvalidGrub2Entries:
         assert os.remove.call_count == 3
         assert utils.run_subprocess.call_count == 2
 
+    @centos8
     @pytest.mark.parametrize(
         ("return_code_1", "return_code_2", "expected"),
         (
@@ -283,7 +334,7 @@ class TestFixInvalidGrub2Entries:
         ),
     )
     def test_fix_invalid_grub2_entries_messages(
-        self, monkeypatch, fix_invalid_grub2_entries_instance, return_code_1, return_code_2, expected
+        self, monkeypatch, fix_invalid_grub2_entries_instance, return_code_1, return_code_2, expected, pretend_os
     ):
         monkeypatch.setattr(os, "remove", mock.Mock())
         monkeypatch.setattr(
@@ -297,8 +348,6 @@ class TestFixInvalidGrub2Entries:
                 "/boot/loader/entries/b5aebfb91bff486bb9d44ba85e4ae683-5.4.17-2011.7.4.el8uek.x86_64.conf",
             ],
         )
-        monkeypatch.setattr(system_info, "version", Version(8, 0))
-        monkeypatch.setattr(system_info, "arch", "x86_64")
         monkeypatch.setattr(
             utils,
             "get_file_content",
@@ -337,8 +386,6 @@ class TestFixInvalidGrub2Entries:
         )
 
         fix_invalid_grub2_entries_instance.run()
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print(fix_invalid_grub2_entries_instance.messages)
         assert expected.issuperset(fix_invalid_grub2_entries_instance.messages)
         assert expected.issubset(fix_invalid_grub2_entries_instance.messages)
 
@@ -406,10 +453,10 @@ class TestFixDefaultKernel:
         for kernel_name in not_default_kernels:
             assert "DEFAULTKERNEL=%s" % kernel_name not in kernel_file_lines
 
-    def test_fix_default_kernel_with_no_incorrect_kernel(self, caplog, monkeypatch, fix_default_kernel_instance):
-        monkeypatch.setattr(system_info, "name", "CentOS Plus Linux Server release 7.9")
-        monkeypatch.setattr(system_info, "arch", "x86_64")
-        monkeypatch.setattr(system_info, "version", Version(7, 9))
+    @centos7
+    def test_fix_default_kernel_with_no_incorrect_kernel(
+        self, caplog, monkeypatch, fix_default_kernel_instance, pretend_os
+    ):
         monkeypatch.setattr(
             utils,
             "get_file_content",
