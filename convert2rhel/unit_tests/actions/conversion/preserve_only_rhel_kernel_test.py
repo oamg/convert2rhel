@@ -22,8 +22,6 @@ import pytest
 import six
 
 from convert2rhel import actions, pkghandler, unit_tests, utils
-from convert2rhel import actions, pkghandler, unit_tests, utils
-
 from convert2rhel.actions.conversion import preserve_only_rhel_kernel
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
@@ -32,6 +30,7 @@ from convert2rhel.unit_tests import (
     StoreContentToFileMocked,
 )
 from convert2rhel.unit_tests.conftest import centos7
+
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
