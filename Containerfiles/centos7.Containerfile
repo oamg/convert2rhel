@@ -14,6 +14,10 @@ ENV APP_MAIN_DEPS \
 WORKDIR /data
 
 FROM base as install_main_deps
+
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=https://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+
 RUN yum update -y && yum install -y $APP_MAIN_DEPS && yum clean all
 
 FROM install_main_deps as install_dev_deps

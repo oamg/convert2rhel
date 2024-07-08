@@ -1,5 +1,8 @@
 FROM centos:7 as base
 
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=https://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-*
+
 RUN yum update -y && yum clean all
 
 ENV APP_MAIN_DEPS \
