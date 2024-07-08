@@ -22,6 +22,8 @@ import pytest
 import six
 
 from convert2rhel import actions, pkghandler, unit_tests, utils
+from convert2rhel import actions, pkghandler, unit_tests, utils
+
 from convert2rhel.actions.conversion import preserve_only_rhel_kernel
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
@@ -30,7 +32,6 @@ from convert2rhel.unit_tests import (
     StoreContentToFileMocked,
 )
 from convert2rhel.unit_tests.conftest import centos7
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -88,11 +89,7 @@ def test_install_rhel_kernel(
     monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
     monkeypatch.setattr(pkghandler, "update_rhel_kernel", value=update_rhel_kernel_mock)
 
-    if is_only_rhel_kernel:
-        pkg_selection = "empty"
-    else:
-        pkg_selection = "kernels"
-
+    pkg_selection = "empty" if is_only_rhel_kernel else "kernels"
     monkeypatch.setattr(
         pkghandler,
         "get_installed_pkgs_w_different_fingerprint",
@@ -401,7 +398,7 @@ class TestFixDefaultKernel:
         assert warning_msgs
         assert "Detected leftover boot kernel, changing to RHEL kernel" in warning_msgs[-1].message
 
-        (filename, content), _dummy = utils.store_content_to_file.call_args
+        (filename, content), _ = utils.store_content_to_file.call_args
         kernel_file_lines = content.splitlines()
 
         assert "/etc/sysconfig/kernel" == filename
