@@ -170,32 +170,41 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 
 
 @pytest.mark.parametrize(
-    ("major", "minor", "expected"),
+    ("version_str", "expected"),
     (
-        (7, 9, False),
-        (8, 5, False),
-        (8, 6, False),
-        (8, 7, False),
-        (8, 8, True),
-        (8, 9, False),
+        ("7.9", False),
+        ("8", False),
+        ("8.5", False),
+        ("8.6", False),
+        ("8.7", False),
+        ("8.8", True),
+        ("8.9", False),
+        ("9", False),
     ),
 )
-def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch, global_tool_opts):
-    version = Version(major, minor)
+def test_corresponds_to_rhel_eus_release(version_str, expected, monkeypatch, global_tool_opts):
     global_tool_opts.eus = True
     monkeypatch.setattr(tool_opts, "eus", global_tool_opts)
-    monkeypatch.setattr(system_info, "version", version)
+    monkeypatch.setattr(system_info, "version_str", version_str)
 
     assert system_info.corresponds_to_rhel_eus_release() == expected
 
 
 @pytest.mark.parametrize(
-    ("major", "minor", "expected"),
-    ((7, 9, False), (8, 5, False), (8, 6, False), (8, 7, False), (8, 8, True), (8, 9, False)),
+    ("version_str", "expected"),
+    (
+        ("7.9", False),
+        ("8", False),
+        ("8.5", False),
+        ("8.6", False),
+        ("8.7", False),
+        ("8.8", True),
+        ("8.9", False),
+        ("9", False),
+    ),
 )
-def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, monkeypatch, global_tool_opts):
-    version = Version(major, minor)
-    monkeypatch.setattr(system_info, "version", version)
+def test_corresponds_to_rhel_eus_release_eus_override(version_str, expected, monkeypatch, global_tool_opts):
+    monkeypatch.setattr(system_info, "version_str", version_str)
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     global_tool_opts.eus = True
     assert system_info.corresponds_to_rhel_eus_release() == expected
@@ -209,8 +218,12 @@ def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, mo
         ("Oracle Linux Server release 7.8", "distribution_id", None),
         ("CentOS Stream release 8", "id", "centos"),
         ("CentOS Linux release 8.1.1911 (Core)", "version", Version(8, 1)),
-        ("CentOS Stream release 8", "version", Version(8, 10)),
+        ("CentOS Stream release 8", "version", Version(8, None)),
         ("Red Hat Enterprise Linux release 8.10 Beta (Ootpa)", "version", Version(8, 10)),
+        ("CentOS Stream release 9", "version", Version(9, None)),
+        ("CentOS Linux release 8.1.1911 (Core)", "version_str", "8.1"),
+        ("CentOS Stream release 8", "version_str", "8"),
+        ("Red Hat Enterprise Linux release 8.10 Beta (Ootpa)", "version_str", "8.10"),
     ),
 )
 def test_parse_system_release_content_from_string(system_release_content, key, value):
