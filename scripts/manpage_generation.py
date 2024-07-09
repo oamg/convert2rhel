@@ -27,8 +27,7 @@ if result.returncode == 0:
 else:
     print("Changes detected")
 
-    subprocess.run(["dnf", "install", "-y", "python3-rpm"], check=True)
-    subprocess.run(["dnf", "install", "-y", "python3-dnf"], check=True)
+    subprocess.run(["dnf", "install", "-y", "python3-rpm", "python3-dnf"], check=True)
 
     print("apt-get done")
 
