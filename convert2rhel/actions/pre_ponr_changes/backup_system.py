@@ -171,7 +171,6 @@ class BackupPackageFiles(actions.Action):
         """Get the output from rpm -Va command from during resolving system info
         to get changes made to package files.
 
-        The dict itself is unique and does not have duplicate entries
 
         :return dict: Return them as a list of dict, for example:
         [{"status":"S5T", "file_type":"c", "path":"/etc/yum.repos.d/CentOS-Linux-AppStream.repo"}]
