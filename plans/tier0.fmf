@@ -175,9 +175,6 @@ adjust+:
 
             /yum_distro_sync:
                 prepare+:
-                      - name: enable CentOS' extras repo
-                        how: ansible
-                        playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                       - name: Install problematic package
                         how: shell
                         script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
