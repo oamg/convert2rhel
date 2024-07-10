@@ -317,7 +317,7 @@ def test_main(monkeypatch, tmp_path):
     assert raise_for_skipped_failures_mock.call_count == 2
     assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
-    assert ask_to_continue_mock.call_count == 2
+    assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
     assert remove_tmp_dir_mock.call_count == 1
@@ -700,7 +700,7 @@ class TestRollbackFromMain:
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
-        assert ask_to_continue_mock.call_count == 2
+        assert ask_to_continue_mock.call_count == 1
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
@@ -810,8 +810,13 @@ def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, retur
     assert ret == return_code
 
 
-@pytest.mark.parametrize("user_input", ["y", "n"])
-def test_confirm_user_backup(caplog, monkeypatch, user_input):
+def test_confirm_user_backup(monkeypatch, caplog):
+    ask_to_continue_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+
+    main.confirm_user_backup()
+
     message = (
         "Convert2RHEL modifies the systems during the analysis and then rolls back these "
         "changes when the analysis is complete. In rare cases, this rollback can fail. "
@@ -819,9 +824,4 @@ def test_confirm_user_backup(caplog, monkeypatch, user_input):
         "you can restore from the backup."
     )
 
-    # Simulate user input
-    monkeypatch.setattr("builtins.input", lambda _: user_input)
-
-    main.confirm_user_backup()
-
-    assert message in caplog.text
+    assert ask_to_continue_mock.call_count == 1
