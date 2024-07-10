@@ -173,20 +173,19 @@ class TestRemoveSpecialPackages:
     def test_run_all_removed(self, monkeypatch, remove_special_packages_instance):
         pkgs_to_remove = [get_centos_logos_pkg_object()]
         pkgs_removed = ["centos-logos-70.0.6-3.el7.centos.noarch"]
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="INFO",
-                    id="SPECIAL_PACKAGES_REMOVED",
-                    title="Special packages to be removed",
-                    description="We have identified installed packages that match a pre-defined list of packages that are"
-                    " to be removed during the conversion",
-                    diagnosis="The following packages will be removed during the conversion: centos-logos-70.0.6-3.el7.centos.noarch",
-                    remediations=None,
-                    variables={},
-                ),
+        expected = {
+            actions.ActionMessage(
+                level="INFO",
+                id="SPECIAL_PACKAGES_REMOVED",
+                title="Packages to be removed",
+                description="The following packages will be removed during the conversion:"
+                " centos-logos-70.0.6-3.el7.centos.noarch",
+                diagnosis="We have identified installed packages that match a pre-defined list of packages that"
+                " are known to cause a conversion failure.",
+                remediations="Check that the system runs correctly without the packages after the conversion.",
+                variables={},
             )
-        )
+        }
         monkeypatch.setattr(
             pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=pkgs_to_remove)
         )
@@ -206,31 +205,30 @@ class TestRemoveSpecialPackages:
     @centos8
     def test_run_packages_not_removed(self, pretend_os, monkeypatch, remove_special_packages_instance):
         pkgs_removed = ["kernel-core"]
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="WARNING",
-                    id="SPECIAL_PACKAGES_NOT_REMOVED",
-                    title="Special packages not removed",
-                    description="Special packages which could not be removed",
-                    diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
-                    remediations=None,
-                    variables={},
-                ),
-                actions.ActionMessage(
-                    level="INFO",
-                    id="SPECIAL_PACKAGES_REMOVED",
-                    title="Special packages to be removed",
-                    description=(
-                        "We have identified installed packages that match a pre-defined list of packages that are"
-                        " to be removed during the conversion"
-                    ),
-                    diagnosis="The following packages will be removed during the conversion: kernel-core",
-                    remediations=None,
-                    variables={},
-                ),
-            )
-        )
+        expected = {
+            actions.ActionMessage(
+                level="WARNING",
+                id="SPECIAL_PACKAGES_NOT_REMOVED",
+                title="Some packages cannot be removed",
+                description="The packages in diagnosis match a pre-defined list of packages that are to be removed"
+                " during the conversion. This list includes packages that are known to cause a conversion failure.",
+                diagnosis="The following packages cannot be removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None,"
+                " pkg2-None-None.None",
+                remediations="Remove the packages manually before running convert2rhel again:\n"
+                "yum remove -y gpg-pubkey-1.0.0-1.x86_64 pkg1-None-None.None pkg2-None-None.None",
+                variables={},
+            ),
+            actions.ActionMessage(
+                level="INFO",
+                id="SPECIAL_PACKAGES_REMOVED",
+                title="Packages to be removed",
+                description="The following packages will be removed during the conversion: kernel-core",
+                diagnosis="We have identified installed packages that match a pre-defined list of packages that"
+                " are known to cause a conversion failure.",
+                remediations="Check that the system runs correctly without the packages after the conversion.",
+                variables={},
+            ),
+        }
         monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="key_ids"))
         monkeypatch.setattr(
             handle_packages,
