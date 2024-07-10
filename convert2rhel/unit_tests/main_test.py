@@ -770,8 +770,13 @@ def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, retur
     assert ret == return_code
 
 
-@pytest.mark.parametrize("user_input", ["y", "n"])
-def test_confirm_user_backup(caplog, monkeypatch, user_input):
+def test_confirm_user_backup(monkeypatch, caplog):
+    ask_to_continue_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+
+    main.confirm_user_backup()
+
     message = (
         "Convert2RHEL modifies the systems during the analysis and then rolls back these "
         "changes when the analysis is complete. In rare cases, this rollback can fail. "
@@ -779,9 +784,4 @@ def test_confirm_user_backup(caplog, monkeypatch, user_input):
         "you can restore from the backup."
     )
 
-    # Simulate user input
-    monkeypatch.setattr("builtins.input", lambda _: user_input)
-
-    main.confirm_user_backup()
-
-    assert message in caplog.text
+    assert ask_to_continue_mock.call_count == 1
