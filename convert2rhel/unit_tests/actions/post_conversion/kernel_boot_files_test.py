@@ -14,6 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __metaclass__ = type
+
+import os
+
 import pytest
 import six
 
@@ -51,6 +54,8 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch, kernel
 
     monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
     monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(checks, "is_initramfs_file_valid", mock.Mock(return_value=True))
     monkeypatch.setattr(
         checks, "run_subprocess", RunSubprocessMocked(side_effect=[rpm_last_kernel_output, ("test", 0)])
     )
