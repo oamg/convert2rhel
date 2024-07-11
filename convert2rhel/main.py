@@ -373,9 +373,6 @@ def prepare_system():
 def post_ponr_changes():
     """Start the conversion itself"""
 
-    loggerinst.task("Final: Check kernel boot files")
-    checks.check_kernel_boot_files()
-
     loggerinst.task("Final: Configure host-metering")
     hostmetering.configure_host_metering()
 

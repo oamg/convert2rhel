@@ -17,7 +17,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import checks, unit_tests
+from convert2rhel import actions, checks, unit_tests
 from convert2rhel.actions.post_conversion import kernel_boot_files
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
@@ -134,9 +134,9 @@ def test_check_kernel_boot_files_missing(
         with open(initramfs_file % latest_installed_kernel, mode="w") as _:
             pass
 
-        monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+        monkeypatch.setattr(kernel_boot_files, "INITRAMFS_FILEPATH", initramfs_file)
     else:
-        monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", "/non-existing-%s.img")
+        monkeypatch.setattr(kernel_boot_files, "INITRAMFS_FILEPATH", "/non-existing-%s.img")
 
     if create_vmlinuz:
         vmlinuz_file = boot_folder.join("vmlinuz-%s")
@@ -144,9 +144,28 @@ def test_check_kernel_boot_files_missing(
         with open(vmlinuz_file % latest_installed_kernel, mode="w") as _:
             pass
 
-        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", vmlinuz_file)
+        monkeypatch.setattr(kernel_boot_files, "VMLINUZ_FILEPATH", vmlinuz_file)
     else:
-        monkeypatch.setattr(checks, "VMLINUZ_FILEPATH", "/non-existing-%s")
+        monkeypatch.setattr(kernel_boot_files, "VMLINUZ_FILEPATH", "/non-existing-%s")
+
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="WARNING",
+                id="UNABLE_TO_VERIFY_KERNEL_BOOT_FILES",
+                title="Unable to verify kernel boot files",
+                description="Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
+                "of your system.",
+                diagnosis=None,
+                remediations="In order to fix this problem you may need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
+                "1. yum reinstall kernel-core- -y\n"
+                "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
+                "3. reboot",
+            ),
+        )
+    )
 
     kernel_boot_files_instance.run()
     assert "Couldn't verify the kernel boot files in the boot partition." in caplog.records[-1].message
+    assert expected.issuperset(kernel_boot_files_instance.messages)
+    assert expected.issubset(kernel_boot_files_instance.messages)
