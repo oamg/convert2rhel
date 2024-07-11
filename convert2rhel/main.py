@@ -379,9 +379,6 @@ def post_ponr_changes():
     loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
     utils.remove_tmp_dir()
 
-    loggerinst.task("Final: Check kernel boot files")
-    checks.check_kernel_boot_files()
-
     loggerinst.task("Final: Configure host-metering")
     hostmetering.configure_host_metering()
 

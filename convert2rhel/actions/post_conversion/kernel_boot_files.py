@@ -39,6 +39,8 @@ class KernelBootFiles(actions.Action):
         """Check if the required kernel files exist and are valid under the boot partition."""
         super(KernelBootFiles, self).run()
 
+        logger.task("Final: Check kernel boot files")
+
         # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
         # we check for `kernel-core`. This is not true regarding the 7.* releases.
         kernel_name = "kernel-core" if system_info.version.major >= 8 else "kernel"
@@ -88,10 +90,7 @@ class KernelBootFiles(actions.Action):
                     " and then run the following commands in your terminal:\n"
                     "1. yum reinstall %s-%s -y\n"
                     "2. grub2-mkconfig -o %s\n"
-                    "3. reboot",
-                    kernel_name,
-                    latest_installed_kernel,
-                    grub2_config_file,
+                    "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
                 ),
             )
 
