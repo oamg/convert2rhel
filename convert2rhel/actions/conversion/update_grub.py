@@ -36,6 +36,8 @@ class UpdateGrub(actions.Action):
         """
         super(UpdateGrub, self).run()
 
+        logger.task("Final: Update GRUB2 configuration")
+
         backup.backup_control.push(RestorableFile(grub.GRUB2_BIOS_CONFIG_FILE))
         backup.backup_control.push(RestorableFile(grub.GRUB2_BIOS_ENV_FILE))
 

@@ -242,7 +242,6 @@ def test_main(monkeypatch, tmp_path):
     clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
-    update_grub_after_conversion_mock = mock.Mock()
     remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
     finish_collection_mock = mock.Mock()
