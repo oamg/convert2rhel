@@ -376,9 +376,6 @@ def post_ponr_changes():
     loggerinst.task("Final: Show RPM files modified by the conversion")
     systeminfo.system_info.modified_rpm_files_diff()
 
-    loggerinst.task("Final: Update GRUB2 configuration")
-    grub.update_grub_after_conversion()
-
     loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
     utils.remove_tmp_dir()
 
