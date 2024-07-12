@@ -104,7 +104,6 @@ def _get_partition(directory):
 
     Raise BootloaderError if the partition can't be detected.
     """
-    print("GET PARTITION")
     stdout, ecode = utils.run_subprocess(["/usr/sbin/grub2-probe", "--target=device", directory], print_output=False)
     if ecode or not stdout:
         logger.error("grub2-probe returned %s. Output:\n%s" % (ecode, stdout))
@@ -504,47 +503,6 @@ def get_grub_config_file():
         grub_config_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
 
     return grub_config_path
-
-
-def update_grub_after_conversion():
-    """Update GRUB2 images and config after conversion.
-
-    This is mainly a protective measure to prevent issues in case the original distribution GRUB2 tooling
-    generates images that expect different format of a config file. To be on the safe side we
-    rather re-generate the GRUB2 config file and install the GRUB2 image.
-    """
-
-    backup.backup_control.push(RestorableFile(GRUB2_BIOS_CONFIG_FILE))
-    backup.backup_control.push(RestorableFile(GRUB2_BIOS_ENV_FILE))
-
-    grub2_config_file = get_grub_config_file()
-
-    output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False)
-    logger.debug("Output of the grub2-mkconfig call:\n%s" % output)
-
-    if ret_code != 0:
-        logger.warning("GRUB2 config file generation failed.")
-        return
-
-    if not is_efi():
-        # We don't need to call `grub2-install` in EFI systems because the image change is already being handled
-        # by grub itself. We only need to regenerate the grub.cfg file in order to make it work.
-        # And this can be done by calling the `grub2-mkconfig` or reinstalling some packages
-        # as we are already calling `grub2-mkconfig` before of this step, then it's not necessary
-        # to proceed and call it a second time.
-        # Relevant bugzilla for this: https://bugzilla.redhat.com/show_bug.cgi?id=1917213
-        logger.debug("Detected BIOS setup, proceeding to install the new GRUB2 images.")
-        blk_device = get_grub_device()
-        logger.debug("Device to install the GRUB2 image to: '%s'" % blk_device)
-
-        output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-install", blk_device], print_output=False)
-        logger.debug("Output of the grub2-install call:\n%s" % output)
-
-        if ret_code != 0:
-            logger.warning("Couldn't install the new images with GRUB2.")
-            return
-
-    logger.info("Successfully updated GRUB2 on the system.")
 
 
 def _log_critical_error(title):
