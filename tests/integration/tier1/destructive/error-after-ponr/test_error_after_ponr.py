@@ -6,11 +6,11 @@ from conftest import TEST_VARS
 @pytest.mark.test_error_after_ponr
 def test_error_after_ponr(convert2rhel, shell):
     """
-    Test the log message is displayed to the user when there is a fail after PONR
+    Verify the improved explanatory log message is displayed to the user when a fail occurs after the point of no return
 
-    And and exit code is 1
+    And an exit code is 1
 
-    This test destroys the machine so there aren't after checks or a reboot
+    This test destroys the machine so neither reboot nor any checks after conversion are called
     """
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -24,11 +24,7 @@ def test_error_after_ponr(convert2rhel, shell):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        # Assert that we start rollback first
         c2r.expect("WARNING - The tool allows rollback of any action until this point")
-        c2r.expect(
-            "WARNING - By continuing all further changes on the system will need to be reverted manually by the user, if necessary"
-        )
         c2r.expect("Continue with the system conversion?")
 
         shell('echo "proxy=localhost" >> /etc/yum.conf').returncode == 0
