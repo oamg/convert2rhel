@@ -372,9 +372,6 @@ def prepare_system():
 
 def post_ponr_changes():
     """Start the conversion itself"""
-    loggerinst.task("Final: Update breadcrumbs")
-    breadcrumbs.breadcrumbs.finish_collection(success=True)
-
     loggerinst.task("Final: Update RHSM custom facts")
     subscription.update_rhsm_custom_facts()
 
