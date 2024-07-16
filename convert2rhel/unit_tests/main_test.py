@@ -784,4 +784,5 @@ def test_confirm_user_backup(monkeypatch, caplog):
         "you can restore from the backup."
     )
 
+    assert message in caplog.records[-1].message
     assert ask_to_continue_mock.call_count == 1
