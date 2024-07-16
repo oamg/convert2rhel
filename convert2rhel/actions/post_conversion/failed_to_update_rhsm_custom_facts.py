@@ -15,26 +15,24 @@
 
 __metaclass__ = type
 
-import logging
-
 from convert2rhel import subscription
 
 
-class UpdateRSHMCustomFacts:
+class UpdateRHSMCustomFacts:
 
-    id = "Update_RSHM_Custom_Facts"
+    id = "Update_RHSM_Custom_Facts"
 
     dependencies = ()
 
+    def run(self):
+        super(UpdateRHSMCustomFacts, self).run
 
-def run(self):
-    super(UpdateRSHMCustomFacts, self).run
+        ret_code, output = subscription.update_rhsm_custom_facts()
 
-    ret_code, output = subscription.update_rhsm_custom_facts()
-
-    if ret_code != 0:
-        self.add_message(
-            level="WARNING",
-            id="UPDATE_RHSM_CUSTOM_FACTS",
-            description=output,
-        )
+        if ret_code != 0:
+            self.add_message(
+                level="WARNING",
+                title="",
+                id="UPDATE_RHSM_CUSTOM_FACTS",
+                description=output,
+            )

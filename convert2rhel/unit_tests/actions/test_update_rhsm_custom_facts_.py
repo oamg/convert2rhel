@@ -18,24 +18,31 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions
-from convert2rhel.actions.post_conversion import port_update_rhsm_custom_facts
+from convert2rhel import actions, utils
+from convert2rhel.actions.post_conversion.failed_to_update_rhsm_custom_facts import UpdateRHSMCustomFacts
+from convert2rhel.unit_tests import RunSubprocessMocked
 
 
-@pytest
+six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
+from six.moves import mock
+
+
+@pytest.fixture
 def update_rhsm_custom_facts_instance():
-    return port_update_rhsm_custom_facts
+    return UpdateRHSMCustomFacts()
 
 
-def test_update_rhsm_custom_fatcs():
+@mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
+def test_update_rhsm_custom_fatcs_failure(update_rhsm_custom_facts_instance, monkeypatch):
     # need to mock runsubprocess
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
     # here is the message expected
     diagnosis = "Failed to update the RHSM custom facts with return code 'whatever return code is' and output 'whatever output is'."
 
     update_rhsm_custom_facts_instance.run()
 
-    excepted = set((actions.ActionMessage(level="WARNING", id="", description="", diagnosis=diagnosis)))
+    excepted = set((actions.ActionMessage(level="WARNING", id="", description="", diagnosis=None)))
 
     assert excepted.issuperset(update_rhsm_custom_facts_instance.message)
     assert excepted.issubset(update_rhsm_custom_facts_instance.message)
