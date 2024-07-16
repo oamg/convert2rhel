@@ -1,0 +1,8 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: false
+- import_playbook: centos7_extras.yml
+  when: ansible_facts['distribution_major_version'] == "7"
+- import_playbook: centos8_extras.yml
+  when: ansible_facts['distribution_major_version'] == "8"
