@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateGrub(actions.Action):
-    id = (("UPDATE_GRUB"),)
+    id = "UPDATE_GRUB"
 
     def run(self):
         """Update GRUB2 images and config after conversion.
