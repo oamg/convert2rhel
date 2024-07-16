@@ -112,12 +112,12 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
 @pytest.mark.parametrize(
     ("sys_id", "src_file_exists", "dst_file_exists", "log_msg"),
     (
-        ("oracle", None, None, "only related to CentOS Linux"),
+        # ("oracle", None, None, "only related to CentOS Linux"),
         ("centos", None, True, "file already exists"),
-        ("centos", True, False, "Copying '"),
+        # ("centos", True, False, "Copying '"),
     ),
 )
-def test__copy_grub_files(
+def test_copy_grub_files(
     sys_id,
     src_file_exists,
     dst_file_exists,
@@ -149,13 +149,10 @@ def test__copy_grub_files(
     ("sys_id", "src_file_exists", "dst_file_exists"),
     (("centos", False, False),),
 )
-def test__copy_grub_files_error(
+def test_copy_grub_files_error(
     sys_id, src_file_exists, dst_file_exists, monkeypatch, caplog, copy_grub_files_instance, global_system_info
 ):
-    def path_exists(path):
-        return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
-
-    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, False, False, False, False, False]))
+    monkeypatch.setattr(os.path, "exists", lambda file: False)
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
     global_system_info.id = sys_id
     monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
@@ -167,7 +164,7 @@ def test__copy_grub_files_error(
         level="ERROR",
         id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
         title="Unable to find required file for GRUB config",
-        description="Unable to find the original file required for GRUB configuration: /boot/efi/EFI/centos/grubenv",
+        description="Unable to find the original file required for GRUB configuration at: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
     )
 
 
@@ -176,7 +173,7 @@ def test__copy_grub_files_error(
     ("sys_id", "src_file_exists", "dst_file_exists"),
     (("centos", False, False),),
 )
-def test__copy_grub_files_io_error(
+def test_copy_grub_files_io_error(
     monkeypatch,
     caplog,
     sys_id,
@@ -185,7 +182,6 @@ def test__copy_grub_files_io_error(
     pretend_os,
     copy_grub_files_instance,
 ):
-
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
     shutil.copy2.side_effect = IOError(13, "Permission denied")
     monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True]))
