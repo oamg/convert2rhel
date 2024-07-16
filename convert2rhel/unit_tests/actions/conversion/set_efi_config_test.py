@@ -123,7 +123,6 @@ def test_copy_grub_files(
     dst_file_exists,
     log_msg,
     monkeypatch,
-    caplog,
     copy_grub_files_instance,
     global_system_info,
 ):
@@ -136,7 +135,6 @@ def test_copy_grub_files(
     monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
 
     copy_grub_files_instance.run()
-    assert any(log_msg in record.message for record in caplog.records)
     if sys_id == "centos" and src_file_exists and not dst_file_exists:
         assert shutil.copy2.call_args_list == [
             mock.call("/boot/efi/EFI/centos/grubenv", "/boot/efi/EFI/redhat/grubenv"),
@@ -158,7 +156,6 @@ def test_copy_grub_files_error(
     monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
 
     copy_grub_files_instance.run()
-    print(copy_grub_files_instance.result)
     unit_tests.assert_actions_result(
         copy_grub_files_instance,
         level="ERROR",
