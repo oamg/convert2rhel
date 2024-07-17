@@ -175,6 +175,9 @@ adjust+:
 
             /yum_distro_sync:
                 prepare+:
+                      - name: enable CentOS' extras repo
+                        how: ansible
+                        playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                       - name: Install problematic package
                         how: shell
                         script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
@@ -184,10 +187,16 @@ adjust+:
 
 
         /isolated_system_conversion:
+            adjust+:
+                - environment+:
+                    TESTS_DONT_UPDATE_SYSTEM: 1
             prepare+:
                 - name: Allow access to Satellite only
                   how: shell
                   script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+                - name: Reboot the system
+                  how: ansible
+                  playbook: tests/ansible_collections/roles/reboot/main.yml
             discover+:
                 test+<:
                     - isolated-system-conversion/isolated_system_conversion

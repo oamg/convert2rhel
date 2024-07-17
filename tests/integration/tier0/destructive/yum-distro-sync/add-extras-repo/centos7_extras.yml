@@ -1,0 +1,10 @@
+- hosts: all
+  tasks:
+    - name: Add CentOS extras repo
+      yum_repository:
+        name: centos7-extras
+        description: CentOS extras for $basearch
+        baseurl: https://vault.centos.org/centos/7/extras/$basearch/
+        gpgcheck: no
+        enabled: yes
+        file: centos7-extras

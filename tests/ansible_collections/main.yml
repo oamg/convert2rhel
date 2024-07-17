@@ -10,6 +10,7 @@
     - role: remove-tf-artifact-leftovers
 
     - role: update-system
+      when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"
 
     - role: oracle-linux-specific
       when: ansible_facts['distribution'] == "OracleLinux"
@@ -21,3 +22,6 @@
     - role: get-test-vars
 
     - role: update-ca-trust
+
+- import_playbook: roles/reboot/main.yml
+  when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"
