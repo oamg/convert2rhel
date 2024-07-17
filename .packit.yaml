@@ -98,7 +98,7 @@ jobs:
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
     # therefore we need to pass post-install-script to enable root login on the host
     # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-Linux-*.repo'
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
     tf_extra_params:
       environments:
         - settings:

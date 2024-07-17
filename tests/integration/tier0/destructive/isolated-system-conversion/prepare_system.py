@@ -3,7 +3,7 @@ import socket
 
 import pytest
 
-from conftest import TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 def configure_connection():
@@ -32,20 +32,31 @@ def test_prepare_system(shell, satellite_registration):
     """
     Perform all the steps to make the system appear to be offline.
     Register to the Satellite server.
-    Remove all the repositories before the Satellite subscription,
+    Remove all the repositories before the Satellite registration,
     so there is only the redhat.repo created by subscription-manager.
     The original system repositories are then used from the synced Satellite server.
     """
     assert shell("yum install dnsmasq -y").returncode == 0
 
-    repos_dir = "/etc/yum.repos.d"
-    # Remove all repofiles except the redhat.repo
-    for file in os.listdir(repos_dir):
-        if not file.endswith("redhat.repo"):
-            os.remove(os.path.join(repos_dir, file))
-
-    assert os.path.isfile("/etc/yum.repos.d/redhat.repo")
-
     configure_connection()
 
     assert shell("systemctl enable dnsmasq && systemctl restart dnsmasq").returncode == 0
+
+    # We need to update the system at this point instead of relying on the ansible playbook
+    # run with the host set up.
+    # We could remove all the system repositories before the update, but in case
+    # there is also an update of the <system>-release package the repositories would get restored.
+    # Therefore, we update the system with all repositories disabled enabling only the Satellite.
+    assert shell("yum update -y --disablerepo=* --enablerepo=Satellite_Engineering*")
+
+    repos_dir = "/etc/yum.repos.d"
+    # At this point we can safely remove all the repofiles except the redhat.repo
+    for file in os.listdir(repos_dir):
+        os.remove(os.path.join(repos_dir, file))
+        assert not os.path.isfile(os.path.join(repos_dir, file))
+
+    # Clean the package manager metadata and the cache directory
+    pkgmanager = "yum"
+    if SystemInformationRelease.version.major >= 8:
+        pkgmanager = "dnf"
+    shell(f"{pkgmanager} clean all && rm -rf /var/cache/{pkgmanager}/*")
