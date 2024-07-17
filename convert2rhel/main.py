@@ -373,9 +373,6 @@ def prepare_system():
 def post_ponr_changes():
     """Start the conversion itself"""
 
-    loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-    utils.remove_tmp_dir()
-
     loggerinst.task("Final: Check kernel boot files")
     checks.check_kernel_boot_files()
 
