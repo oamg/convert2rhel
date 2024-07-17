@@ -472,6 +472,7 @@ def missing_os_release_package_workaround(shell):
 
         # Since we try to mitigate any damage caused by the incomplete rollback
         # try to update the system, in case anything got downgraded
+        print("TESTS >>> Updating the system.")
         shell("yum update -y", silent=True)
 
 
@@ -944,3 +945,18 @@ def workaround_remove_uek():
         subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False)
 
     yield
+
+
+@pytest.fixture(autouse=True)
+def keep_centos_pointed_to_vault(shell):
+    """
+    Fixture.
+    In some rare cases we (re)install the centos-release package.
+    This overwrites the repofiles to its default state using mirrorlist instead of vault
+    which won't work since the EOL.
+    Make sure the repositories are pointed to the vault to keep the system usable.
+    """
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
+        sed_repos_to_vault = 'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+        print("TESTS >>> Resetting the repos to vault")
+        shell(sed_repos_to_vault, silent=True)

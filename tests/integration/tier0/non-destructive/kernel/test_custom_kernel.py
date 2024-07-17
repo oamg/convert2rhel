@@ -22,7 +22,7 @@ DISTRO_KERNEL_MAPPING = {
     },
     "oracle-7": {
         "original_kernel": ORIGINAL_KERNEL,
-        "custom_kernel": "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm",
+        "custom_kernel": "http://vault.centos.org/centos/7/os/x86_64/Packages/kernel-3.10.0-1160.el7.x86_64.rpm",
         "grub_substring": "Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64",
     },
     # Install CentOS 8.5 kernel
