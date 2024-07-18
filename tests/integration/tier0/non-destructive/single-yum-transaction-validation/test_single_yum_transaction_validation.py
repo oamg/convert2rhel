@@ -19,6 +19,8 @@ elif "alma" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "AlmaLinux"
 elif "rocky" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "Rocky Linux"
+elif "stream" in SYSTEM_RELEASE_ENV:
+    SERVER_SUB = "CentOS Stream"
 
 if "8" in SYSTEM_RELEASE_ENV:
     PKGMANAGER = "dnf"

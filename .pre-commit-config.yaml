@@ -10,7 +10,7 @@ repos:
         language_version: "python3"
         additional_dependencies: [click==7.1.2, black==21.12b0]
   - repo: https://github.com/pylint-dev/pylint
-    rev: v3.2.3
+    rev: v3.2.5
     hooks:
       - id: pylint
         args: [
@@ -35,10 +35,11 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.33.0"
+    rev: "1.34.0"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
+        files: ^(tests/|plans/)
 
   - repo: https://github.com/packit/pre-commit-hooks
     rev: v1.2.0
@@ -48,7 +49,7 @@ repos:
           - https://github.com/oamg/convert2rhel.git
         stages: [manual, push]
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.3
+    rev: v8.18.4
     hooks:
       - id: gitleaks
         stages: [manual, push]

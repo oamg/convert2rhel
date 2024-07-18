@@ -31,8 +31,11 @@ def test_install_non_latest_kernel(shell, hybrid_rocky_image):
         assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
         shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
     elif "alma-8" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
+        assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y").returncode == 0
         shell("grub2-set-default 'AlmaLinux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
     elif "rocky-8" in SYSTEM_RELEASE_ENV:
-        assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y")
+        assert shell("yum install --releasever=8.8 kernel-4.18.0-477.10.1.el8_8.x86_64 -y").returncode == 0
         shell("grub2-set-default 'Rocky Linux (4.18.0-477.10.1.el8_8.x86_64) 8.8 (Green Obsidian)'")
+    elif "stream-8" in SYSTEM_RELEASE_ENV:
+        assert shell("yum install kernel-4.18.0-547.el8.x86_64 -y").returncode == 0
+        shell("grub2-set-default 'CentOS Stream (kernel-4.18.0-547.el8.x86_64) 8'")

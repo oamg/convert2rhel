@@ -5,12 +5,12 @@
     - role: hardcode-eus-version-repos
       when: >
         ansible_facts['distribution_version'] ==  "8.8"
-        and (ansible_facts['distribution'] == "AlmaLinux"
-        or ansible_facts['distribution'] == "Rocky")
+        and ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
 
     - role: remove-tf-artifact-leftovers
 
     - role: update-system
+      when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"
 
     - role: oracle-linux-specific
       when: ansible_facts['distribution'] == "OracleLinux"
@@ -22,3 +22,6 @@
     - role: get-test-vars
 
     - role: update-ca-trust
+
+- import_playbook: roles/reboot/main.yml
+  when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"

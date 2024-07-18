@@ -20,6 +20,10 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
 }
 
+# For external system related libraries that might be difficult to get on the system
+# we can utilize auto mocking to make sure it works correctly
+# See https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autodoc_mock_imports
+autodoc_mock_imports = ["dnf", "yum", "rpm", "hawkey", "dbus", "pexpect"]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 autoclass_content = "both"  # Add __init__ doc (ie. params) to class summaries
 html_show_sourcelink = False  # Remove 'view source code' from top of page (for html, not python)

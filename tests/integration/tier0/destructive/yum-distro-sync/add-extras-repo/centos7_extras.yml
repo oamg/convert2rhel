@@ -4,7 +4,7 @@
       yum_repository:
         name: centos7-extras
         description: CentOS extras for $basearch
-        baseurl: http://mirror.centos.org/centos-7/7/extras/$basearch/
+        baseurl: https://vault.centos.org/centos/7/extras/$basearch/
         gpgcheck: no
         enabled: yes
         file: centos7-extras

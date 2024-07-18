@@ -218,11 +218,8 @@ def test_rhsm_error_logged(convert2rhel):
                     # We just need to make sure the file does not exist.
                     pass
 
-        # Now trigger a rollback, so we can see if it handles the missing
-        # certificate
-        c2r.sendcontrol("c")
-
-    assert c2r.exitstatus == 1
+    # Let the conversion fail on the subscription-manager register call
+    assert c2r.exitstatus == 2
 
     # Verify the error message is not present in the log file
     with open("/var/log/convert2rhel/convert2rhel.log", "r") as logfile:

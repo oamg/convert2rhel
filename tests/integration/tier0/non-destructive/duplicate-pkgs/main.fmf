@@ -5,12 +5,13 @@ description+: |
     package (of different version) is installed on the system.
     Verify that the proper inhibitor is raised.
 
+enabled: false
 
 /duplicate-pkgs:
     link: https://issues.redhat.com/browse/RHELC-1070
     adjust+:
-        - enabled: false
-          when: distro == centos-8, alma-8, rocky-8, oracle-8
+        - enabled: true
+          when: distro == centos-7, oracle-7
           because: |
             The bug is reproducible only on EL7 distros.
             On EL8 the issue is handled by the DNF itself.
