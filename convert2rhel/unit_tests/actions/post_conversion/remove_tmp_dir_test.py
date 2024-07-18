@@ -41,7 +41,7 @@ def test_remove_tmp_dir(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
 
 def test_remove_tmp_dir_non_existent(remove_tmp_dir_instance, monkeypatch, caplog):
     caplog.set_level(logging.INFO)
-    path = "/tmp/this/path/is/unlikely/to/exist"
+    path = unit_tests.NONEXISTING_DIR
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert not os.path.isdir(path)
     remove_tmp_dir_instance.run()
@@ -59,7 +59,7 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
         " after you ensure there is no preserved data you would need." % path
     )
     assert expected_message in caplog.text
-    os.chmod(path, 0o755)
+    os.chmod(path, 0o700)
 
 
 def test_remove_tmp_dir_nonempty(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
