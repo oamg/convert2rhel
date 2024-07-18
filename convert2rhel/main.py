@@ -400,7 +400,6 @@ def post_ponr_conversion():
     loggerinst.task("Convert: Prepare kernel")
     pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
-    pkghandler.list_non_red_hat_pkgs_left()
     loggerinst.task("Convert: Configure the bootloader")
     grub.post_ponr_set_efi_configuration()
     loggerinst.task("Convert: Patch yum configuration file")
