@@ -1483,17 +1483,6 @@ def test_get_third_party_pkgs(fingerprint_orig_os, expected_count, expected_pkgs
     assert len(pkgs) == expected_pkgs
 
 
-def test_list_non_red_hat_pkgs_left(monkeypatch):
-    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
-    monkeypatch.setattr(
-        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
-    )
-    pkghandler.list_non_red_hat_pkgs_left()
-
-    assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
-    assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"
-
-
 @pytest.mark.parametrize(
     ("package_name", "subprocess_output", "expected", "expected_command"),
     (

@@ -21,12 +21,14 @@ import os
 import pytest
 import six
 
+from convert2rhel.actions.conversion import list_non_red_hat_pkgs_left
+
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 from convert2rhel import pkghandler, unit_tests
-from convert2rhel.actions.conversion import list_non_red_hat_pkgs_left
+from convert2rhel.unit_tests import FormatPkgInfoMocked, GetInstalledPkgInformationMocked
 
 
 @pytest.fixture
@@ -35,7 +37,11 @@ def list_non_red_hat_pkgs_left_instance():
 
 
 def test_list_non_red_hat_pkgs_left(list_non_red_hat_pkgs_left_instance, monkeypatch):
-    list_non_red_hat_pkgs_left_mock = mock.Mock()
-    monkeypatch.setattr(pkghandler, "list_non_red_hat_pkgs_left", list_non_red_hat_pkgs_left_mock)
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="fingerprints")
+    )
     list_non_red_hat_pkgs_left_instance.run()
-    assert list_non_red_hat_pkgs_left_mock.call_count == 1
+
+    assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
+    assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"

@@ -18,6 +18,8 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, pkghandler
+from convert2rhel.pkghandler import get_installed_pkgs_w_different_fingerprint, print_pkg_info
+from convert2rhel.systeminfo import system_info
 
 
 loggerinst = logging.getLogger(__name__)
@@ -32,4 +34,10 @@ class ListNonRedHatPkgsLeft(actions.Action):
         Red Hat-signed ones during the conversion.
         """
         super(ListNonRedHatPkgsLeft, self).run()
-        pkghandler.list_non_red_hat_pkgs_left()
+        loggerinst.info("Listing packages not signed by Red Hat")
+        non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
+        if non_red_hat_pkgs:
+            loggerinst.info("The following packages were left unchanged.\n")
+            print_pkg_info(non_red_hat_pkgs)
+        else:
+            loggerinst.info("All packages are now signed by Red Hat.")

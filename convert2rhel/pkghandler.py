@@ -536,19 +536,6 @@ def get_vendor(pkg_obj):
     return pkg_obj.vendor if pkg_obj.vendor else "N/A"
 
 
-def list_non_red_hat_pkgs_left():
-    """List all the packages that have not been replaced by the
-    Red Hat-signed ones during the conversion.
-    """
-    loggerinst.info("Listing packages not signed by Red Hat")
-    non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
-    if non_red_hat_pkgs:
-        loggerinst.info("The following packages were left unchanged.\n")
-        print_pkg_info(non_red_hat_pkgs)
-    else:
-        loggerinst.info("All packages are now signed by Red Hat.")
-
-
 def get_pkg_nevras(pkg_objects):
     """Get a list of package NEVRA strings from a list of PackageInformation objects."""
     return [get_pkg_nevra(pkg_obj) for pkg_obj in pkg_objects]
