@@ -35,7 +35,8 @@ tag+:
     adjust+:
         - enabled: true
     tag+:
-        - sub-man-registration
+        - subscription-manager-registration
+
     /pre_registered_system_wont_unregister:
         summary+: |
             The convert2rhel won't unregister the system
@@ -77,6 +78,7 @@ tag+:
             pytest -m test_pre_registered_re_register
         tag+:
             - pre-registered-re-register
+
     /unregistered_system_no_credentials:
         summary+: |
             The convert2rhel fails without pre-registration and credentials
@@ -88,6 +90,7 @@ tag+:
             pytest -m test_unregistered_no_credentials
         tag+:
             - unregistered-no-credentials
+
     /no_sca_not_subscribed:
         summary+: |
             convert2rhel auto-attaches subscription on a pre-registered system
@@ -98,9 +101,10 @@ tag+:
             - environment+:
                 C2R_TESTS_NOSUB: 1
         test: |
-            pytest --setup-show -svv -m test_no_sca_not_subscribed
+            pytest -m test_no_sca_not_subscribed
         tag+:
             - no-sca-not-subscribed
+
     /no_sca_subscription_attachment_error:
         summary+: |
             The subscription auto-attach fails
@@ -113,6 +117,6 @@ tag+:
             - environment+:
                 C2R_TESTS_NOSUB: 1
         test: |
-            pytest --setup-show -svv -m test_no_sca_subscription_attachment_error
+            pytest -m test_no_sca_subscription_attachment_error
         tag+:
             - no-sca-subscription-attachment-error

@@ -1,25 +1,23 @@
 summary: |
     Kernel modules
-description: |
-    Load kernel module that is not supported in RHEL and verify the utility works as expected.
-    Verify that removing this kmod does not interfere with new conversion run.
-    Verify that loading custom kernel module, that marks the kernel as "tainted",
-    raises an error during the conversion.
 
 tier: 0
 
 tag+:
     - kernel-modules
+    - kmods
 
 
-/custom_kernel_module:
+/unsupported_kernel_module:
     summary+: |
-        Custom kernel module
+        Unsupported kernel module
     description+:
         One kernel module is moved to a custom location,
         therefore denoted as custom by the running system.
-
-    /custom_module_loaded:
+    tag+:
+        - ensure-kernel-modules-compatibility
+        - inhibitor
+    /inhibitor_with_unavailable_kmod_loaded:
         summary+: |
             Load custom kernel module
         description+: |
@@ -30,85 +28,77 @@ tag+:
             - custom-module-loaded
             - sanity
         test: |
-            pytest -m test_custom_module_loaded
+            pytest -m test_inhibitor_with_unavailable_kmod_loaded
 
-    /custom_module_not_loaded:
-        summary+: |
-            Remove custom kernel module
-        description+: |
-            Load the kmod from custom location.
-            Verify that it is loaded.
-            Remove the previously loaded 'custom' kmod and verify, the conversion
-            does not raise the ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
-            The kmod compatibility check is right before the point of no return.
-            Abort the conversion right after the check.
-        tag+:
-            - custom-module-not-loaded
-        test: |
-            pytest -m test_custom_module_not_loaded
-
-    /unsupported_kmod_with_envar:
+    /override_inhibitor_with_unavailable_kmod_loaded:
         summary+: |
             Bypass loaded custom kernel module
         description+: |
             This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
-            will override the check error when there is RHEL unsupported kernel module detected.
+            will override the check error when there is an kernel module unavailable in RHEL detected.
             The environment variable is set through the test metadata.
         tag+:
-            - unsupported-kmod-with-envar
+            - override-inhibitor-with-unavailable-module-loaded
+            - override
         test: |
-            pytest -m test_unsupported_kmod_with_envar
+            pytest -m test_override_inhibitor_with_unavailable_kmod_loaded
         link:
             verifies: https://issues.redhat.com/browse/RHELC-244
 
 
-/force_loaded_kmod:
+/tainted_kernel_module:
     summary+: |
-        Force load a kernel module
-    description+: |
-        In this test case we force load kmod and verify that the convert2rhel raises:
-        TAINTED_KMODS.TAINTED_KMODS_DETECTED.
-        Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
-        Convert2RHEL sees force loaded kmod as tainted.
-    adjust+:
-        - enabled: false
-          when: distro == centos-7, oracle-7
-          because: |
-            Force loading the kernel module on RHEL7 like distros is flaky.
+        Tainted kernel module check
     tag+:
-        - force-loaded-kmod
-    test: |
-        pytest -m test_force_loaded_kmod
+        - tainted-kernel-module
+        - inhibitor
 
+    /inhibitor_with_custom_built_tainted_kmod:
+        summary+: |
+            Custom built kernel module
+        description+: |
+            This test marks the kernel as tainted which is not supported by convert2rhel.
+            We need to install specific kernel packages to build own custom kernel module.
+            Verify TAINTED_KMODS.TAINTED_KMODS_DETECTED is raised.
+        tag+:
+            - custom-built-tainted-kernel-module
+        test: |
+            pytest -m test_inhibitor_with_custom_built_tainted_kmod
 
-/tainted_kernel_modules_error:
-    summary+: |
-        Build own custom kernel module
-    description+: |
-        This test marks the kernel as tainted which is not supported by convert2rhel.
-        We need to install specific kernel packages to build own custom kernel module.
-        Verify TAINTED_KMODS.TAINTED_KMODS_DETECTED is raised.
-    tag+:
-        - tainted-kernel-modules-error
-    test: |
-        pytest -m test_tainted_kernel_modules_error
+    /inhibitor_with_force_loaded_tainted_kmod:
+        summary+: |
+            Force load a kernel module
+        description+: |
+            In this test case we force load kmod and verify that the convert2rhel raises:
+            TAINTED_KMODS.TAINTED_KMODS_DETECTED.
+            Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
+            Convert2RHEL sees force loaded kmod as tainted.
+        adjust+:
+            - enabled: false
+              when: distro == centos-7, oracle-7
+              because: |
+                Force loading the kernel module on RHEL7 like distros is flaky.
+        tag+:
+            - force-loaded-kmod
+        test: |
+            pytest -m test_inhibitor_with_force_loaded_tainted_kmod
 
-
-/tainted_kernel_modules_check_override:
-    summary+: |
-        Tainted kernel modules check is overridable
-    description+: |
-        In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
-        is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
-        to '1'
-        Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
-        Convert2RHEL sees force loaded kmod as tainted.
-    adjust+:
-        - enabled: false
-          when: distro == centos-7, oracle-7
-          because: |
-            Force loading the kernel module on RHEL7 like distros is flaky.
-    tag+:
-        - tainted-kernel-modules-check-skip
-    test: |
-        pytest -m test_tainted_kernel_modules_check_override
+    /override_inhibitor_with_tainted_kmod:
+        summary+: |
+            Check is overridable
+        description+: |
+            In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
+            is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
+            to '1'
+            Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
+            Convert2RHEL sees force loaded kmod as tainted.
+        adjust+:
+            - enabled: false
+              when: distro == centos-7, oracle-7
+              because: |
+                Force loading the kernel module on RHEL7 like distros is flaky.
+        tag+:
+            - force-loaded-kmod
+            - override
+        test: |
+            pytest -m test_override_inhibitor_with_tainted_kmod

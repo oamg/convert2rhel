@@ -24,7 +24,6 @@ def collect_enabled_repositories(shell):
     return enabled_repositories
 
 
-@pytest.mark.test_enabled_repositories_after_analysis
 @pytest.mark.parametrize("satellite_registration", ["RHEL7_AND_CENTOS7_SAT_REG"], indirect=True)
 @pytest.mark.parametrize("rhel_repo_enabled", [False, True])
 def test_enabled_repositories_after_analysis(

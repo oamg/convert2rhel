@@ -1,9 +1,6 @@
 import re
 
-import pytest
 
-
-@pytest.mark.test_simultaneous_runs
 def test_simultaneous_runs(convert2rhel):
     """
     Verify that running convert2rhel locks out other instances.

@@ -1,4 +1,5 @@
-summary: Change yum configuration file
+summary: |
+  Change yum configuration file
 
 description: |
     Test a scenario in which the user modifies /etc/yum.conf

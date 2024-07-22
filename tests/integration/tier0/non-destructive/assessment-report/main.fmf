@@ -51,4 +51,4 @@ tag+:
     tag+:
         - convert-success-report
     test: |
-        pytest -m test_convert_successful_report
+        pytest -m test_convert_method_successful_report

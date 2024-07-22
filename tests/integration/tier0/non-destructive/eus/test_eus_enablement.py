@@ -38,7 +38,7 @@ MOCKED_PRE_EUS_PHASE = '"8.8": "2042-04-08"'
 MOCKED_EUS_PHASE = '"8.8": "1970-01-01"'
 
 
-eus_support_parameters = [
+eus_enablement_parameters = [
     # System not recognized as an EUS candidate with --eus option used
     ("--eus", REGULAR_REPOID_MSG, "", False, False),
     # System recognized as an EUS candidate before the start of EUS phase without --eus option
@@ -52,7 +52,7 @@ eus_support_parameters = [
 
 @pytest.mark.parametrize(
     "additional_option, repoid_message, modified_mapping, is_eus, recommend_eus_msg_displayed",
-    eus_support_parameters,
+    eus_enablement_parameters,
     ids=[
         "non-eus-system-eus-option-used",
         "eus-system-eus-phase-did-not-start-yet-no-option-used",
@@ -60,8 +60,7 @@ eus_support_parameters = [
         "eus-system-eus-phase-started-no-option-used",
     ],
 )
-@pytest.mark.test_eus_support
-def test_eus_support(
+def test_eus_enablement(
     convert2rhel,
     eus_mapping_update,
     additional_option,
@@ -110,7 +109,6 @@ def test_eus_support(
             c2r.sendcontrol("c")
 
 
-@pytest.mark.test_rhsm_non_eus_account
 def test_rhsm_non_eus_account(convert2rhel):
     """
     Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions

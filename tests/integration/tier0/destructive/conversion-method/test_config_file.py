@@ -2,8 +2,6 @@ import os
 
 from collections import namedtuple
 
-import pytest
-
 from conftest import TEST_VARS
 
 
@@ -23,7 +21,6 @@ def remove_files(config):
         os.remove(os.path.expanduser(cfg.path))
 
 
-@pytest.mark.test_conversion_with_config_file
 def test_conversion_with_config_file(convert2rhel):
     """
     Use config file to feed the credentials for the registration and verify a successful conversion.

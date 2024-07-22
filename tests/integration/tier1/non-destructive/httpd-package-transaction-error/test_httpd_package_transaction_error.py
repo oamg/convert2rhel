@@ -48,7 +48,6 @@ def handle_packages(shell):
         assert shell(f"yum install -y {pkg}").returncode == 0
 
 
-@pytest.mark.test_httpd_package_transaction_error
 def test_httpd_package_transaction_error(shell, convert2rhel, handle_packages):
     """
     This test verifies the https://issues.redhat.com/browse/RHELC-1130.

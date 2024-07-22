@@ -1,9 +1,6 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_yum_distro_sync
 def test_yum_distro_sync(convert2rhel, shell):
     """Test yum distro-sync command edge-cases when given packages aren't in enabled repositories.
 

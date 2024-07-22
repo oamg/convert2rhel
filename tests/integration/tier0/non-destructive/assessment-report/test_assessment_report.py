@@ -2,7 +2,6 @@ import os.path
 import re
 
 import jsonschema
-import pytest
 
 from conftest import TEST_VARS, _load_json_schema
 from pexpect import EOF
@@ -38,7 +37,6 @@ def _validate_report():
         raise
 
 
-@pytest.mark.test_failures_and_skips_in_report
 def test_failures_and_skips_in_report(convert2rhel):
     """
     Verify that the assessment report contains the following headers and messages:
@@ -89,7 +87,6 @@ def test_failures_and_skips_in_report(convert2rhel):
     _validate_report()
 
 
-@pytest.mark.test_successful_report
 def test_successful_report(convert2rhel):
     """
     Test if the assessment report contains the following header: Success header.
@@ -133,8 +130,7 @@ def test_successful_report(convert2rhel):
     _validate_report()
 
 
-@pytest.mark.test_convert_successful_report
-def test_convert_successful_report(convert2rhel):
+def test_convert_method_successful_report(convert2rhel):
     """
     Validate that calling the `convert` subcommand works.
     Verify the assessment report does not contain any of the following headers:

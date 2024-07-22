@@ -43,7 +43,6 @@ def one_kernel(shell):
         shell("tmt-reboot -t 600")
 
 
-@pytest.mark.test_one_kernel_scenario
 def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
     """TODO(r0x0d) better description and function name"""
 
@@ -81,7 +80,7 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
 
         # replace url in yum.repos.d rhel repo to the original one
         original_url = (
-            "baseurl = https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
+            r"baseurl = https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
         )
         new_url = "baseurl=https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"
         shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel7.repo'.format(new_url, original_url))

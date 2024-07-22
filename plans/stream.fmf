@@ -67,7 +67,7 @@ adjust+:
                 prepare+:
                     - name: Allow access to Satellite only
                       how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
+                      script: pytest tests/integration/*/destructive/isolated-system-conversion/prepare_system.py
                     - name: Reboot the system
                       how: ansible
                       playbook: tests/ansible_collections/roles/reboot/main.yml
@@ -105,7 +105,7 @@ adjust+:
                     prepare+:
                         - name: Install multilib packages with dnf
                           how: shell
-                          script: pytest --setup-show -svv tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
+                          script: pytest tests/integration/*/destructive/single-yum-transaction/install_multilib_packages.py
             /yum_distro_sync:
                 prepare+:
                     - name: enable CentOS' extras repo
@@ -113,7 +113,7 @@ adjust+:
                       playbook: tests/integration/tier0/destructive/yum-distro-sync/add-extras-repo/main.yml
                     - name: Install problematic package
                       how: shell
-                      script: pytest --setup-show -svv tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
+                      script: pytest tests/integration/*/destructive/yum-distro-sync/install_problematic_package.py
                 discover+:
                     test+<:
                         - yum-distro-sync/yum_distro_sync

@@ -21,7 +21,7 @@ tag+:
         - root-privileges
         - sanity
     test: |
-      pytest -m test_root_privileges
+      pytest -m test_user_privileges
 
 
 /manpage:
@@ -32,7 +32,7 @@ tag+:
     tag+:
         - manpage
     test: |
-      pytest -m test_manpage
+      pytest -m test_manpage_exists
 
 
 /smoke:
@@ -63,19 +63,19 @@ tag+:
 /convert2rhel_version:
     summary+: |
         convert2rhel version check
-    /c2r_version_latest_or_newer:
+    /c2r_is_latest_with_mocked_newer_version:
         summary+: |
-            Latest or newer version of convert2rhel
+            Mock newer version of convert2rhel
         description+: |
-            Verify that running the latest or newer than latest version
+            Verify that running the newer than the latest GA version of convert2rhel
             does not raise the CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
         tag+:
             - version-latest-or-newer
             - sanity
         test: |
-          pytest -m test_version_latest_or_newer
+          pytest -m test_c2r_version_latest_with_mocked_newer_version
 
-    /c2r_version_older_no_envar:
+    /c2r_is_latest_with_mocked_older_version_inhibitor:
         summary+: |
             Older convert2rhel version without envar
         description+: |
@@ -83,10 +83,11 @@ tag+:
             environment variable in place, raises CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
         tag+:
             - version-older-no-envar
+            - inhibitor
         test: |
-          pytest -m test_version_older_no_envar
+          pytest -m test_c2r_version_latest_inhibitor
 
-    /c2r_version_older_with_envar:
+    /c2r_is_latest_with_mocked_older_version_override_inhibitor:
         summary+: |
             Older convert2rhel version with envar
         description+: |
@@ -97,8 +98,10 @@ tag+:
                 CONVERT2RHEL_ALLOW_OLDER_VERSION: 1
         tag+:
             - version-older-with-envar
+            - inhibitor
+            - override
         test: |
-          pytest -m test_version_older_with_envar
+          pytest -m test_c2r_version_latest_override_inhibitor
 
 
 /clean_cache:
@@ -121,7 +124,7 @@ tag+:
     tag+:
         - log-rhsm-error
     test: |
-      pytest -m test_log_rhsm_error
+      pytest -m test_rhsm_error_logged
 
 
 /data_collection:

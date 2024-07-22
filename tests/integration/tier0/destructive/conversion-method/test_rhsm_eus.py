@@ -1,10 +1,7 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_rhsm_eus_account_conversion
-def test_rhsm_eus_account(convert2rhel, shell):
+def test_rhsm_with_eus_system_conversion(convert2rhel, shell):
     """
     Verify that Convert2RHEL is working properly when EUS repositories are used during the conversion.
     Only on EUS versions (8.6, 8.8, ...) it is possible to do EUS conversion.

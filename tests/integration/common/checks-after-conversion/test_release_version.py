@@ -1,10 +1,7 @@
 import json
 
-import pytest
 
-
-@pytest.mark.test_conversion_sanity_rhel_in_os_release
-def test_sanity_conversion(shell):
+def test_conversion_sanity_red_hat_in_os_release(shell):
     """
     After conversion sanity check to verify, that Red Hat Enterprise Linux is present in /etc/os-release.
     """
@@ -33,7 +30,6 @@ DISTRO_CONVERSION_MAPPING = {
 }
 
 
-@pytest.mark.test_correct_distro
 def test_correct_distro():
     """
     Verify, that we landed on the correct system version.

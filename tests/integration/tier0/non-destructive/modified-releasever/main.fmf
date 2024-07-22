@@ -10,23 +10,24 @@ tag+:
 
 /modified_releasever_in_configs:
     summary+: |
-        Releasever in /usr/share/convert2rhel/configs/
+        Modified releasever in convert2rhel configs
     description+: |
         Verify that modifying the releasever value in config files
-        at `/usr/share/convert2rhel/configs/` will override the $releasever
-        when calling the `yumdownloader` command.
+        at `/usr/share/convert2rhel/configs/` will override the system
+        $releasever when calling the `yumdownloader` command.
     tag+:
         - modified-releasever-in-configs
     test: |
-      pytest -m test_modified_config
+      pytest -m test_releasever_modified_in_c2r_config
 
 /modified_releasever_to_unknown_release:
     summary+: |
         Set /etc/system-release to unsupported version
     description+: |
-        Verify that running the utility with unsupported OS version inhibits the conversion.
-        Set the releasever to unsupported version (e.g. x.1.1111)
+        Verify that running not allowed OS release inhibits the conversion.
+        Modify the /etc/system-release file to set the releasever to an unsupported version (e.g. x.1.1111)
     tag+:
         - releasever-unknown-release
+        - inhibitor
     test: |
-      pytest -m test_unknown_release
+      pytest -m test_inhibitor_releasever_noexistent_release

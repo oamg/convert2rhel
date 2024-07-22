@@ -1,7 +1,3 @@
-import pytest
-
-
-@pytest.mark.test_yum_check
 def test_yum_check(shell):
     """
     After conversion check verifying yum check is able to finis without any issues.

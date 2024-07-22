@@ -30,7 +30,7 @@ tag+:
     tag+:
         - failed-repoquery
     test: |
-        pytest -m test_failed_repoquery
+        pytest -m test_verify_latest_kernel_check_passes_with_failed_repoquery
 
 
 /yum_exclude_kernel:
@@ -44,10 +44,10 @@ tag+:
     tag+:
         - yum-exclude-kernel
     test: |
-        pytest -m test_yum_exclude_kernel
+        pytest -m test_latest_kernel_check_with_yum_exclude_kernel_option
 
 
-/non_latest_kernel_error:
+/outdated_kernel_error:
     summary+: |
         Outdated kernel version installed
     description+: |
@@ -56,7 +56,7 @@ tag+:
     tag+:
         - non-latest-kernel-error
     test: |
-        pytest -m test_non_latest_kernel_error
+        pytest -m test_outdated_kernel_error
 
 
 /unsupported_unbreakable_enterprise_kernel:

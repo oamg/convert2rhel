@@ -1,13 +1,10 @@
 import os
 import re
 
-import pytest
-
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
-@pytest.mark.test_latest_kernel_check_skip
-def test_skip_kernel_check(shell, convert2rhel, backup_directory):
+def test_latest_kernel_check_skip(shell, convert2rhel, backup_directory):
     """
     Verify that it's possible to run the full conversion with older kernel,
     than available in the RHEL repositories.
@@ -34,7 +31,7 @@ def test_skip_kernel_check(shell, convert2rhel, backup_directory):
 
     # Resolve the $releasever for CentOS 7 latest manually as it gets resolved to `7` instead of required `7Server`
     if SYSTEM_RELEASE_ENV in ["centos-7", "oracle-7"]:
-        shell("sed -i 's/\$releasever/7Server/g' /etc/yum.repos.d/rhel7.repo")
+        shell(r"sed -i 's/\$releasever/7Server/g' /etc/yum.repos.d/rhel7.repo")
 
     # Disable all repositories
     shell("yum-config-manager --disable *")
