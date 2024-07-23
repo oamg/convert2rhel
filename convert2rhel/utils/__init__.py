@@ -350,7 +350,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        bufsize=1,
+        bufsize=-1,
     )
     output = ""
     for line in iter(process.stdout.readline, b""):
