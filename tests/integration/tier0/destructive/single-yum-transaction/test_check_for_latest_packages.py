@@ -1,11 +1,8 @@
 import re
 
-import pytest
-
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
 
-@pytest.mark.test_packages_upgraded_after_conversion
 def test_packages_upgraded_after_conversion(convert2rhel, shell):
     """
     Verify that packages get correctly reinstalled and not

@@ -6,7 +6,7 @@ tier: 0
 tag+:
     - user-prompt-response
 
-/empty_username_and_password:
+/empty_user_response_username_and_password:
     # The test is disabled because there are no interactive prompts for the user when the
     # credentials are missing and the machine is not registered before.
     # When the prompts for the user are put back we can re-enable the test.
@@ -21,4 +21,4 @@ tag+:
     tag+:
         - empty-username-and-password
     test: |
-      pytest -m test_empty_username_and_password
+      pytest -m test_empty_user_response_username_and_password

@@ -202,7 +202,7 @@ class TestRestorableFile:
 
         file_backup = RestorableFile(orig_file_path)
         file_backup.enabled = enabled
-        file_backup._backup_path = backedup_file_path
+        file_backup.backup_path = backedup_file_path
         file_backup.restore(rollback=rollback)
 
         # Check if the correct messages printed
@@ -233,7 +233,7 @@ class TestRestorableFile:
 
         file_backup = RestorableFile(orig_file_path)
         file_backup.enabled = True
-        file_backup._backup_path = backedup_file_path
+        file_backup.backup_path = backedup_file_path
 
         # Check if the exception is raised when the file is missing in the backup folder
         with pytest.raises(OSError):
@@ -252,7 +252,7 @@ class TestRestorableFile:
 
         file_backup = RestorableFile(orig_file_path)
         file_backup.enabled = True
-        file_backup._backup_path = backedup_file_path
+        file_backup.backup_path = backedup_file_path
 
         # Check if the exception is raised when the file is missing in the backup folder
         with pytest.raises(IOError):
@@ -306,6 +306,24 @@ class TestRestorableFile:
         result = file._hash_backup_path()
         assert os.path.exists(os.path.dirname(result))
         assert result == expected
+
+    @pytest.mark.parametrize(
+        ("filepath1", "filepath2"),
+        (
+            ("/test.txt", "/test.txt"),
+            ("/another/directory/file.txt", "/test.txt"),
+        ),
+    )
+    def test___eq___works(self, filepath1, filepath2, tmpdir, monkeypatch):
+        backup_dir = str(tmpdir)
+        monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
+        file1 = RestorableFile(filepath1)
+        file2 = RestorableFile(filepath2)
+
+        if filepath1 == filepath2:
+            assert file1 == file2
+        else:
+            assert file1 != file2
 
 
 class TestMissingFile:

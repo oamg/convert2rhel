@@ -170,7 +170,9 @@ class BackupPackageFiles(actions.Action):
     def _get_changed_package_files(self):
         """Get the output from rpm -Va command from during resolving system info
         to get changes made to package files.
-        Return them as a list of dict, for example:
+
+
+        :return dict: Return them as a list of dict, for example:
         [{"status":"S5T", "file_type":"c", "path":"/etc/yum.repos.d/CentOS-Linux-AppStream.repo"}]
         """
         data = []
@@ -194,6 +196,7 @@ class BackupPackageFiles(actions.Action):
         lines = output.strip().split("\n")
         for line in lines:
             parsed_line = self._parse_line(line.strip())
+            # We first check that it has a path and status, otherwise nothing to backup
             if parsed_line["path"] and parsed_line["status"]:
                 data.append(parsed_line)
 

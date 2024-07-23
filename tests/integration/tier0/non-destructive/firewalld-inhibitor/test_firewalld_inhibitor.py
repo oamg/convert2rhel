@@ -8,7 +8,6 @@ from conftest import TEST_VARS
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 
-@pytest.mark.test_firewalld_inhibitor
 def test_firewalld_inhibitor(shell, convert2rhel):
     """
     Verify that on the OL8.8 the conversion is inhibited when

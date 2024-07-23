@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
-
 from conftest import TEST_VARS
 
 
@@ -48,8 +46,7 @@ write_url=http://localhost:9090/api/v1/write
 # is running after the conversion
 
 
-@pytest.mark.test_host_metering_conversion
-def test_run_conversion_with_metering(shell, convert2rhel):
+def test_run_conversion_with_host_metering(shell, convert2rhel):
     """
     Verify that convert2rhel automatically installs, enables and starts host-metering
     service on hyperscalers on RHEL 7.9.

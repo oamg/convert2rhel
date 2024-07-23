@@ -24,7 +24,7 @@ order: 52
             RHEL present in /etc/os-release
         description: |
             Sanity check to verify, that Red Hat Enterprise Linux is present in /etc/os-release
-        test: pytest -m test_conversion_sanity_rhel_in_os_release
+        test: pytest -m test_conversion_sanity_red_hat_in_os_release
 
     /correct_distro:
         summary+: |
@@ -123,7 +123,7 @@ order: 52
             and validating that the initramfs file is not corrupted.
         tag+:
             - initramfs-and-vmlinuz-present
-        test: pytest -m test_initramfs_and_vmlinuz_present
+        test: pytest -m test_verify_initramfs_and_vmlinuz_present
 
     /failed_to_parse_package_not_present:
         summary+: |
@@ -156,4 +156,4 @@ order: 52
         Firewalld issues after the conversion
     description+: |
         Verify that firewalld is not reporting any issues in the logs.
-    test: pytest -m check_firewalld_errors
+    test: pytest -m test_check_firewalld_errors

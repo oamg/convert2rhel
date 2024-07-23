@@ -41,7 +41,6 @@ def downgrade_and_versionlock(shell):
     assert shell("yum versionlock wpa_supplicant sqlite").returncode == 0
 
 
-@pytest.mark.test_system_not_updated
 def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
     """
     System contains at least one package that is not updated to

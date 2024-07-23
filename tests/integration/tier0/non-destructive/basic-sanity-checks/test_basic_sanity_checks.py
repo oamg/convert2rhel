@@ -10,8 +10,7 @@ import pytest
 CONVERT2RHEL_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 
 
-@pytest.mark.test_root_privileges
-def test_check_user_privileges(shell):
+def test_user_privileges(shell):
     """
     Verify that running the convert2rhel is only being possible as a root user.
     """
@@ -30,7 +29,6 @@ def test_check_user_privileges(shell):
     assert shell(f"userdel -r '{user}'").returncode == 0
 
 
-@pytest.mark.test_manpage
 def test_manpage_exists(shell):
     """
     Check if manpage exists.
@@ -38,8 +36,7 @@ def test_manpage_exists(shell):
     assert shell("man -w convert2rhel").returncode == 0
 
 
-@pytest.mark.test_smoke
-def test_smoke_basic(shell):
+def test_smoke(shell):
     """
     Verify basic behaviour.
     Show help and exit.
@@ -50,8 +47,7 @@ def test_smoke_basic(shell):
     assert shell("convert2rhel <<< n").returncode == 1
 
 
-@pytest.mark.test_log_file_exists
-def test_log_file_verification(shell):
+def test_log_file_exists(shell):
     """
     Verify that the log file was created by the convert2rhel run.
     """
@@ -98,9 +94,8 @@ def c2r_version(request):
     _restore_c2r_version()
 
 
-@pytest.mark.test_version_latest_or_newer
 @pytest.mark.parametrize("version", ["420.0.0"])
-def test_c2r_latest_newer(convert2rhel, c2r_version, version):
+def test_c2r_version_latest_with_mocked_newer_version(convert2rhel, c2r_version, version):
     """
     Verify that running latest or newer version does not interfere with running the conversion.
     """
@@ -117,9 +112,8 @@ def test_c2r_latest_newer(convert2rhel, c2r_version, version):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_version_older_no_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
-def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version):
+def test_c2r_version_latest_inhibitor(convert2rhel, c2r_version, version):
     """
     Verify that running older version raises an error during the conversion.
     """
@@ -146,9 +140,8 @@ def test_c2r_latest_check_older_version_error(convert2rhel, c2r_version, version
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_version_older_with_envar
 @pytest.mark.parametrize("version", ["0.01.0"])
-def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version):
+def test_c2r_version_latest_override_inhibitor(convert2rhel, c2r_version, version):
     """
     Verify that running older version of Convert2RHEL with the environment
     variable "CONVERT2RHEL_ALLOW_OLDER_VERSION" continues the conversion.
@@ -174,7 +167,6 @@ def test_c2r_latest_older_unsupported_version(convert2rhel, c2r_version, version
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_clean_cache
 def test_clean_cache(convert2rhel):
     """
     Verify that the yum clean is done before any other check that convert2rhel does.
@@ -192,7 +184,6 @@ def test_clean_cache(convert2rhel):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_log_rhsm_error
 def test_rhsm_error_logged(convert2rhel):
     """
     Verify that the OSError for RHSM certificate being removed
@@ -227,7 +218,6 @@ def test_rhsm_error_logged(convert2rhel):
             assert "ERROR - OSError(2): No such file or directory" not in line
 
 
-@pytest.mark.test_data_collection_acknowledgement
 def test_data_collection_acknowledgement(shell, convert2rhel):
     """
     This test verifies, that information about data collection is printed out
@@ -255,7 +245,6 @@ def test_data_collection_acknowledgement(shell, convert2rhel):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_analyze_incomplete_rollback
 def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     """
     This test verifies that the CONVERT2RHEL_(UNSUPPORTED_)INCOMPLETE_ROLLBACK envar
@@ -297,7 +286,6 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_analyze_no_rpm_va_option
 def test_analyze_no_rpm_va_option(convert2rhel):
     """
     This test verifies a basic incompatibility of the analyze and --no-rpm-va options.

@@ -3,7 +3,7 @@ __metaclass__ = type
 import pytest
 
 from convert2rhel import backup
-from convert2rhel.unit_tests import ErrorOnRestoreRestorable, MinimalRestorable
+from convert2rhel.unit_tests import ErrorOnRestoreRestorable, FilePathRestorable, MinimalRestorable
 
 
 @pytest.fixture
@@ -28,6 +28,23 @@ class TestBackupController:
 
         assert popped_restorable is restorable
         assert restorable.called["restore"] == 1
+
+    def test_backup_same_paths(self, backup_controller):
+        restorable1 = FilePathRestorable("samepath")
+        restorable2 = FilePathRestorable("samepath")
+
+        backup_controller.push(restorable1)
+        backup_controller.push(restorable2)
+
+        # If we backup the same filepath we should ignore the next one
+        assert restorable1.backup_path == restorable2.backup_path
+
+        # Same path on both restorables means only one gets backed up
+        assert len(backup_controller) == 1
+        assert len(backup_controller.pop_all()) == 1
+
+        assert restorable1.called["restore"] == 1
+        assert restorable2.called["restore"] == 0
 
     def test_pop_multiple(self, backup_controller):
         restorable1 = MinimalRestorable()

@@ -11,7 +11,7 @@ adjust+:
     when: distro == centos-7, oracle-7
     because: Only RHEL 7.9 has the ELS phase
 
-/els_support:
+/els_enablement:
     description: |
         Test verifying correct behavior when converting ELS candidates.
         ELS_RELEASE_DATE in convert2rhel/systeminfo.py is modified to mock the different scenarios.
@@ -23,9 +23,9 @@ adjust+:
             The --els option *is used*.
             The report is expected to print out a WARNING and advise to use the --els option.
     tag+:
-        - test-els-support
+        - test-els-enablement
     test: |
-      pytest -m test_els_support
+      pytest -m test_els_enablement
 
 /non_els_account:
     # We expect this test to fail given a missing logic in the convert2rhel code,
