@@ -728,6 +728,8 @@ def kernel(shell):
 
         assert shell(f"yum install kernel-{older_kernel_version} -y {yum_opt}").returncode == 0
 
+        grub_setup_workaround(shell)
+
         older_kernel_title = _get_full_kernel_title(shell, kernel=older_kernel_version)
         shell(f"grub2-set-default '{older_kernel_title}'")
 
@@ -969,7 +971,6 @@ def workaround_remove_uek():
     yield
 
 
-@pytest.fixture(autouse=True)
 def grub_setup_workaround(shell):
     """
     Workaround fixture.
@@ -979,9 +980,8 @@ def grub_setup_workaround(shell):
     than the latest.
     """
     if SystemInformationRelease.version.major == 9:
-        shell(r"sudo sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub", silent=True)
-
-    yield
+        print("TESTS >>> Setting grub default to correct values.")
+        shell(r"sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub")
 
 
 @pytest.fixture(autouse=True)
