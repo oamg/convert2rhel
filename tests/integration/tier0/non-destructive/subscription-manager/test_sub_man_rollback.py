@@ -1,11 +1,6 @@
-import os.path
-
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_sub_man_rollback
 def test_sub_man_rollback(convert2rhel, shell, required_packages):
     """
     Verify that convert2rhel removes and backs up the original vendor subscription-manager packages, including

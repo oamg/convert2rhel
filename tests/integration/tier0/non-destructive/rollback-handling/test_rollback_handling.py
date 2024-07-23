@@ -145,7 +145,6 @@ def immutable_os_release_file(shell):
         shell("chattr -i $(realpath /etc/os-release)")
 
 
-@pytest.mark.test_polluted_yumdownloader_output_by_yum_plugin_local
 def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel, yum_plugin_local):
     """
     Verify that the yumdownloader output in the backup packages task is parsed correctly.
@@ -169,7 +168,6 @@ def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel, 
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.test_rhsm_cleanup
 def test_proper_rhsm_clean_up(shell, convert2rhel):
     """
     Verify that the system has been successfully unregistered after the rollback.
@@ -203,7 +201,6 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.test_missing_credentials_rollback
 def test_missing_credentials_rollback(convert2rhel, shell):
     """
     The credentials are omitted during the call of convert2rhel. This results in
@@ -221,8 +218,7 @@ def test_missing_credentials_rollback(convert2rhel, shell):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.test_packages_untracked_graceful_rollback
-def test_check_untrack_pkgs_graceful(convert2rhel, shell):
+def test_packages_untracked_graceful_rollback(convert2rhel, shell):
     """
     Provide c2r with incorrect username and password, so the registration fails and c2r performs rollback.
     Primary issue - checking for python/3-syspurpose not being removed.
@@ -238,8 +234,7 @@ def test_check_untrack_pkgs_graceful(convert2rhel, shell):
     remove_packages(shell, packages_to_remove_at_cleanup)
 
 
-@pytest.mark.test_terminate_on_registration_start
-def test_terminate_registration_start(convert2rhel):
+def test_terminate_on_registration_start(convert2rhel):
     """
     Send termination signal immediately after c2r tries the registration.
     Verify that c2r goes successfully through the rollback.
@@ -258,8 +253,7 @@ def test_terminate_registration_start(convert2rhel):
 
 
 @pytest.mark.skip(reason="SIGINT is sent too soon which breaks the rollback")
-@pytest.mark.test_terminate_on_registration_success
-def test_terminate_registration_success(convert2rhel):
+def test_terminate_on_registration_success(convert2rhel):
     """
     Send termination signal immediately after c2r successfully finishes the registration.
     Verify that c2r goes successfully through the rollback.
@@ -284,8 +278,7 @@ def test_terminate_registration_success(convert2rhel):
 
 
 @pytest.mark.parametrize("c2r_mode", ["analyze", "convert"])
-@pytest.mark.test_rollback_failure
-def test_rollback_failure_analysis(shell, convert2rhel, immutable_os_release_file, c2r_mode):
+def test_rollback_failure_returncode(shell, convert2rhel, immutable_os_release_file, c2r_mode):
     """
     Make os-release file immutable. This will cause the conversion rollback to fail (https://issues.redhat.com/browse/RHELC-1248).
     Verify that the analysis and conversion ends with exit code 1 respecting the failure (https://issues.redhat.com/browse/RHELC-1275).

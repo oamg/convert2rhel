@@ -405,7 +405,7 @@ class TestRegisterSystem:
         os_release_file.enable()
 
         # Remove the file from the backup and orig path, so there will be failure during restoring the file
-        os.remove(os_release_file._backup_path)
+        os.remove(os_release_file.backup_path)
         os.remove(str(os_release_path))
 
         ### Test the register system

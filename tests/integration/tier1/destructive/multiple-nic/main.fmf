@@ -7,4 +7,4 @@ description+: |
   The test uses RHSM as a conversion method.
 
 test: |
-  pytest --setup-show -svv
+  pytest -m test_provisioned_machine

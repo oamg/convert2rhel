@@ -10,34 +10,6 @@ CUSTOM_KMOD_DIRECTORY = ORIGIN_KMOD_LOCATION.parent / "custom_module_location"
 
 
 @pytest.fixture()
-def custom_kmod(shell):
-    """
-    Fixture to copy files needed to build custom kmod to the testing machine.
-    Clean up after.
-    """
-
-    tmp_dir = "/tmp/my-test"
-    files = ["my_kmod.c", "Makefile"]
-    assert shell(f"mkdir {tmp_dir}").returncode == 0
-    for file in files:
-        assert shell(f"cp files/{file} /tmp/my-test").returncode == 0
-
-    shell("yum -y install gcc make kernel-headers kernel-devel-$(uname -r) elfutils-libelf-devel")
-
-    # Build own kmod form source file that has been copied to the testing machine.
-    # This kmod marks the system with the P, O and E flags.
-    assert shell("make -C /tmp/my-test/").returncode == 0
-    assert shell("insmod /tmp/my-test/my_kmod.ko").returncode == 0
-
-    yield
-
-    # Clean up
-    assert shell("rmmod my_kmod").returncode == 0
-    assert shell("rm -rf /tmp/my-test/").returncode == 0
-    shell("yum -y remove gcc make kernel-headers kernel-devel-$(uname -r) elfutils-libelf-devel")
-
-
-@pytest.fixture()
 def kmod_in_different_directory(shell):
     """
     This fixture moves an existing kmod to a custom location.
@@ -57,10 +29,9 @@ def kmod_in_different_directory(shell):
     shell("depmod")
 
 
-@pytest.mark.test_custom_module_loaded
-def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel):
+def test_inhibitor_with_unavailable_kmod_loaded(kmod_in_different_directory, convert2rhel):
     """
-    This test verifies that rpmquery for detecting supported kernel modules in RHEL works correctly.
+    This test verifies that the check for detecting supported kernel modules in RHEL works correctly.
     If custom module is loaded the conversion has to raise:
     ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
     """
@@ -78,44 +49,30 @@ def test_error_if_custom_module_loaded(kmod_in_different_directory, convert2rhel
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.test_custom_module_not_loaded
-def test_do_not_error_if_module_is_not_loaded(shell, convert2rhel):
+@pytest.mark.parametrize("envars", [["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"]])
+def test_override_inhibitor_with_unavailable_kmod_loaded(
+    kmod_in_different_directory, convert2rhel, environment_variables, envars
+):
     """
-    Load the kmod from custom location.
-    Verify that it is loaded.
-    Remove the previously loaded 'custom' kmod and verify, the conversion
-    does not raise the ENSURE_KERNEL_MODULES_COMPATIBILITY.UNSUPPORTED_KERNEL_MODULES.
-    The kmod compatibility check is right before the point of no return.
-    Abort the conversion right after the check.
+    This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
+    will override the check error when there is an kernel module unavailable in RHEL detected.
+    The environment variable is set through the test metadata.
     """
-    # Move the kmod to a custom location
-    shell(f"mkdir {CUSTOM_KMOD_DIRECTORY.as_posix()}")
-    shell(f"mv {ORIGIN_KMOD_LOCATION.as_posix()} {CUSTOM_KMOD_DIRECTORY.as_posix()}")
-    shell("depmod")
-    shell("modprobe bonding -v")
-    # Verify that it is loaded
-    assert "bonding" in shell("cat /proc/modules").output
-    # Remove the kmod and clean up
-    assert shell("modprobe -r -v bonding").returncode == 0
-    shell(f"mv {CUSTOM_KMOD_DIRECTORY.as_posix()}/bonding.ko.xz {ORIGIN_KMOD_LOCATION.as_posix()}")
-    assert shell(f"rm -rf {CUSTOM_KMOD_DIRECTORY.as_posix()}").returncode == 0
-    shell("depmod")
-
-    # If custom module is not loaded the conversion should not raise an error
+    environment_variables(envars)
     with convert2rhel(
         "--serverurl {} --username {} --password {} --pool {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
             TEST_VARS["RHSM_USERNAME"],
             TEST_VARS["RHSM_PASSWORD"],
             TEST_VARS["RHSM_POOL"],
-        ),
-        unregister=True,
+        )
     ) as c2r:
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        # Stop conversion before the point of no return as we do not need to run the full conversion
-        assert c2r.expect("All loaded kernel modules are available in RHEL") == 0
+        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
+        c2r.expect("We will continue the conversion with the following kernel modules")
+
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus == 1
@@ -135,8 +92,7 @@ def forced_kmods(shell):
     assert "(FE)" not in shell("cat /proc/modules").output
 
 
-@pytest.mark.test_force_loaded_kmod
-def test_error_if_module_is_force_loaded(shell, convert2rhel, forced_kmods):
+def test_inhibitor_with_force_loaded_tainted_kmod(shell, convert2rhel, forced_kmods):
     """
     In this test case we force load kmod and verify that the convert2rhel raises:
     TAINTED_KMODS.TAINTED_KMODS_DETECTED.
@@ -155,8 +111,7 @@ def test_error_if_module_is_force_loaded(shell, convert2rhel, forced_kmods):
 
 
 @pytest.mark.parametrize("envars", [["CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP"]])
-@pytest.mark.test_tainted_kernel_modules_check_override
-def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods, environment_variables, envars):
+def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods, environment_variables, envars):
     """
     In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
     is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
@@ -187,8 +142,35 @@ def test_tainted_kernel_modules_check_override(shell, convert2rhel, forced_kmods
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.test_tainted_kernel_modules_error
-def test_tainted_kernel_modules_error(custom_kmod, convert2rhel):
+@pytest.fixture()
+def custom_kmod(shell):
+    """
+    Fixture to copy files needed to build custom kmod to the testing machine.
+    Clean up after.
+    """
+
+    tmp_dir = "/tmp/my-test"
+    files = ["my_kmod.c", "Makefile"]
+    assert shell(f"mkdir {tmp_dir}").returncode == 0
+    for file in files:
+        assert shell(f"cp files/{file} /tmp/my-test").returncode == 0
+
+    shell("yum -y install gcc make kernel-headers kernel-devel-$(uname -r) elfutils-libelf-devel")
+
+    # Build own kmod form source file that has been copied to the testing machine.
+    # This kmod marks the system with the P, O and E flags.
+    assert shell("make -C /tmp/my-test/").returncode == 0
+    assert shell("insmod /tmp/my-test/my_kmod.ko").returncode == 0
+
+    yield
+
+    # Clean up
+    assert shell("rmmod my_kmod").returncode == 0
+    assert shell("rm -rf /tmp/my-test/").returncode == 0
+    shell("yum -y remove gcc make kernel-headers kernel-devel-$(uname -r) elfutils-libelf-devel")
+
+
+def test_inhibitor_with_custom_built_tainted_kmod(custom_kmod, convert2rhel):
     """
     This test marks the kernel as tainted which is not supported by convert2rhel.
     We need to install specific kernel packages to build own custom kernel module.
@@ -208,36 +190,6 @@ def test_tainted_kernel_modules_error(custom_kmod, convert2rhel):
         c2r.expect(
             "disregard this message by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'"
         )
-        c2r.sendcontrol("c")
-
-    assert c2r.exitstatus == 1
-
-
-@pytest.mark.parametrize("envars", [["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"]])
-@pytest.mark.test_unsupported_kmod_with_envar
-def test_envar_overrides_unsupported_module_loaded(
-    kmod_in_different_directory, convert2rhel, environment_variables, envars
-):
-    """
-    This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
-    will override the check error when there is RHEL unsupported kernel module detected.
-    The environment variable is set through the test metadata.
-    """
-    environment_variables(envars)
-    with convert2rhel(
-        "--serverurl {} --username {} --password {} --pool {} --debug".format(
-            TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
-        )
-    ) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-
-        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
-        c2r.expect("We will continue the conversion with the following kernel modules")
-
         c2r.sendcontrol("c")
 
     assert c2r.exitstatus == 1

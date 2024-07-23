@@ -1,10 +1,7 @@
-import pytest
-
 from conftest import TEST_VARS
 
 
-@pytest.mark.test_package_removed_from_centos_85
-def test_removed_pkg_from_centos_85(convert2rhel, shell):
+def test_package_removed_from_centos_85(convert2rhel, shell):
     """
     Verify that Convert2RHEL can correctly handle removal of package from the
     excluded list that is listed under the configuration files. This test
