@@ -151,13 +151,10 @@ tests9: image9
 	$(PODMAN) build -f Containerfiles/rpmbuild.centos9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild):/data/.rpms .
 
-.rpm-container-cleanup:
-	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
-
-rpms: .rpm7 .rpm8 .rpm9 .rpm-container-cleanup
-rpm7: .rpm7 .rpm-container-cleanup
-rpm8: .rpm8 .rpm-container-cleanup
-rpm9: .rpm9 .rpm-container-cleanup
+rpms: .rpm7 .rpm8 .rpm9
+rpm7: .rpm7
+rpm8: .rpm8
+rpm9: .rpm9
 
 copr-build: rpms
 	mkdir -p .srpms
@@ -165,5 +162,4 @@ copr-build: rpms
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.srpms .
 	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.srpms .
-	$(PODMAN) rm $$($(PODMAN) ps -aq) -f
 	copr-cli --config .copr.conf build --nowait @oamg/convert2rhel .srpms/*
