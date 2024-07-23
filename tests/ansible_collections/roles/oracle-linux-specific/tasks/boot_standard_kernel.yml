@@ -11,6 +11,8 @@
   shell: rpm -q --last kernel | head -1 | cut -d " " -f1 | sed 's/kernel-//'
   register: kernel_ver
 
+- include_tasks: roles/grub-setup/tasks/grub_setup.yml
+
 - name: Set default kernel to Red Hat compatible kernel
   shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
 
