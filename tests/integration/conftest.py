@@ -966,7 +966,7 @@ def workaround_remove_uek():
     Reference issue https://issues.redhat.com/browse/RHELC-1544
     """
     if SystemInformationRelease.distribution == "oracle":
-        subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False)
+        subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False, capture_output=True)
 
     yield
 

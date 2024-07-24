@@ -4,13 +4,13 @@ import re
 import pexpect.exceptions
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SystemInformationRelease
 
 
 PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
 
 SERVER_SUB = "CentOS Linux"
-PKGMANAGER = "yum"
+PKGMANAGER = "dnf"
 FINAL_MESSAGE = "Diagnosis: There are no suitable mirrors available for the loaded repositories."
 
 if "oracle" in SYSTEM_RELEASE_ENV:
@@ -22,8 +22,8 @@ elif "rocky" in SYSTEM_RELEASE_ENV:
 elif "stream" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "CentOS Stream"
 
-if "8" in SYSTEM_RELEASE_ENV:
-    PKGMANAGER = "dnf"
+if SystemInformationRelease.version.major == 7:
+    PKGMANAGER = "yum"
 
 
 @pytest.fixture()
@@ -93,7 +93,7 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
         # Error header first
         c2r.expect("Pre-conversion analysis report", timeout=600)
         c2r.expect("Must fix before conversion")
-        if "8" in SYSTEM_RELEASE_ENV:
+        if SystemInformationRelease.version.major >= 8:
             # TODO
             # The second message should be in plural - FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGES,
             # but the regex has troubles finding it, as it reports on another line
