@@ -179,10 +179,11 @@ def post_conversion_report(results, include_all_reports=False, disable_colors=Fa
     :type include_all_reports: bool
     """
     logger.task("Post-conversion report")
-    _summary(results, include_all_reports, disable_colors)
+    # In the post conversion report we want to print also INFO messages in the final report
+    _summary(results, include_all_reports, disable_colors, lowest_message_level="INFO")
 
 
-def _summary(results, include_all_reports, disable_colors):
+def _summary(results, include_all_reports, disable_colors, lowest_message_level="WARNING"):
     """Output a summary regarding the actions execution.
 
     This summary is intended to be used to inform the user about the results
@@ -220,10 +221,10 @@ def _summary(results, include_all_reports, disable_colors):
                 for the user.
         * Some action_id have results that are not successes (warnings, errors...)
             * For those cases, we only want to print whatever is higher than
-                STATUS_CODE['WARNING']
+                specified in `lowest_message_level`, default is STATUS_CODE['WARNING']
 
         The order of the message is from the highest priority (ERROR) to the
-        lowest priority (WARNING).
+        lowest priority (specified / default - WARNING).
 
         Message example's::
             * (ERROR) SubscribeSystem.ERROR: Error message
@@ -234,7 +235,8 @@ def _summary(results, include_all_reports, disable_colors):
         default message will be used::
             * (ERROR) SubscribeSystem.ERROR: N/A
 
-        In case of all actions executed without warnings or errors, the
+        In case of all actions executed without specified the lowest error for logging
+        (in case of the default `WARNING` warnings or errors would be printed), the
         following message is used::
             * No problems detected during the analysis!
 
@@ -245,6 +247,9 @@ def _summary(results, include_all_reports, disable_colors):
     :keyword include_all_reports: If all reports should be logged instead of the
         highest ones.
     :type include_all_reports: bool
+    :param lowest_message_level: The lowest level from which are message printed. Default is "WARNING".
+        Possible values are INFO and WARNING.
+    :type lowest_message_level: str
     """
     report = []
 
@@ -255,7 +260,7 @@ def _summary(results, include_all_reports, disable_colors):
 
     else:
         combined_results_and_message = find_actions_of_severity(
-            combined_results_and_message, "WARNING", level_for_combined_action_data
+            combined_results_and_message, lowest_message_level, level_for_combined_action_data
         )
 
     terminal_size = utils.get_terminal_size()

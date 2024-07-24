@@ -514,6 +514,101 @@ def test_summary(results, expected_results, include_all_reports, caplog):
 
 
 @pytest.mark.parametrize(
+    ("results", "include_all_reports", "lowest_message_level", "expected_results"),
+    (
+        # Test controlling of lowest reporting level of message. From INFO:
+        (
+            {
+                "PreSubscription": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                        {
+                            "level": STATUS_CODE["INFO"],
+                            "id": "INFO_ID",
+                            "title": "Info",
+                            "description": "Action info",
+                            "diagnosis": "User info",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                }
+            },
+            False,
+            "INFO",
+            [
+                "(WARNING) PreSubscription::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+                "(INFO) PreSubscription::INFO_ID - Info\n     Description: Action info\n     Diagnosis: User info\n     Remediations: move on",
+            ],
+        ),
+        # Test controlling of lowest reporting level of message. From WARNING.
+        (
+            {
+                "PreSubscription": {
+                    "messages": [
+                        {
+                            "level": STATUS_CODE["WARNING"],
+                            "id": "WARNING_ID",
+                            "title": "Warning",
+                            "description": "Action warning",
+                            "diagnosis": "User warning",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                        {
+                            "level": STATUS_CODE["INFO"],
+                            "id": "INFO_ID",
+                            "title": "Info",
+                            "description": "Action info",
+                            "diagnosis": "User info",
+                            "remediations": "move on",
+                            "variables": {},
+                        },
+                    ],
+                    "result": {
+                        "level": STATUS_CODE["SUCCESS"],
+                        "id": "SUCCESS",
+                        "title": "",
+                        "description": "",
+                        "diagnosis": "",
+                        "remediations": "",
+                        "variables": {},
+                    },
+                }
+            },
+            False,
+            "WARNING",
+            [
+                "(WARNING) PreSubscription::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on",
+            ],
+        ),
+    ),
+)
+def test_summary_lowest_message_level(results, expected_results, include_all_reports, caplog, lowest_message_level):
+    report._summary(results, include_all_reports, disable_colors=True, lowest_message_level=lowest_message_level)
+
+    for expected in expected_results:
+        assert expected in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
     ("long_message"),
     (
         (_LONG_MESSAGE),
