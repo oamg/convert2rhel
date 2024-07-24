@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        2.0.0
+Version:        2.0.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -122,6 +122,10 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Tue Jul 23 2024 Freya Gustavsson <fgustavs@redhat.com> 2.0.1
+- Fix files being backed up multiple times and causing rollback errors
+- Fix conversions failing with third-party repositories
+
 * Mon May 27 2024 Adam Hosek <ahosek@redhat.com> 2.0.0
 - Breaking change: Remove deprecated CLI arguments
 - Breaking change: Remove deprecated latest kernel check env variable
