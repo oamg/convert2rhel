@@ -1,5 +1,8 @@
 ---
 - include_tasks: boot_standard_kernel.yml
-# Workaround reference: https://issues.redhat.com/browse/RHELC-1180
+  # We don't want to end up with the latest kernel package from the system repositories in some cases
+  # e.g. isolated_system_conversion test needs to have the system updated from the Satellite
+  when: lookup('env', 'TESTS_DONT_UPDATE_SYSTEM') != "1"
+  # Workaround reference: https://issues.redhat.com/browse/RHELC-1180
 - include_tasks: stop_firewalld_workaround.yml
   when: ansible_facts['distribution_major_version'] ==  "8"
