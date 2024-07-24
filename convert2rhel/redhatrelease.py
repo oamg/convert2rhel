@@ -49,35 +49,42 @@ def get_system_release_content():
         loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
-class YumConf:
-    _yum_conf_path = "/etc/yum.conf"
+class PkgManagerConf:
+    """
+    Check if the config file of the systems package manager has been modified and if it has then
+    remove those changes before the conversion completes.
+    NOTE: The pkg manager config file path only needs to be set to yum.conf as there is a symlink between yum and dnf.
+    This means that on dnf systems the dnf.conf will be modified.
+    """
+
+    _pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
 
     def __init__(self):
-        self._yum_conf_content = utils.get_file_content(self._yum_conf_path)
+        self._pkg_manager_conf_content = utils.get_file_content(self._pkg_manager_conf_path)
 
     def patch(self):
         """Comment out the distroverpkg variable in yum.conf so yum can determine
         release version ($releasever) based on the installed redhat-release
         package.
         """
-        if YumConf.is_modified():
-            # When the user touches the yum.conf before executing the conversion, then during the conversion yum as a
+        if PkgManagerConf.is_modified():
+            # When the user touches the yum/dnf config before executing the conversion, then during the conversion yum/dmf as a
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
-            self._write_altered_yum_conf()
-            loggerinst.info("%s patched." % self._yum_conf_path)
+            self._write_altered_pkg_manager_conf()
+            loggerinst.info("%s patched." % self._pkg_manager_conf_path)
         else:
-            loggerinst.info("Skipping patching, yum configuration file not modified")
+            loggerinst.info("Skipping patching, package manager configuration file has not been modified.")
 
         return
 
     def _comment_out_distroverpkg_tag(self):
-        if re.search(r"^distroverpkg=", self._yum_conf_content, re.MULTILINE):
-            self._yum_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._yum_conf_content)
+        if re.search(r"^distroverpkg=", self._pkg_manager_conf_content, re.MULTILINE):
+            self._pkg_manager_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._pkg_manager_conf_content)
 
-    def _write_altered_yum_conf(self):
-        with open(self._yum_conf_path, "w") as file_to_write:
-            file_to_write.write(self._yum_conf_content)
+    def _write_altered_pkg_manager_conf(self):
+        with open(self._pkg_manager_conf_path, "w") as file_to_write:
+            file_to_write.write(self._pkg_manager_conf_content)
 
     @staticmethod
     def is_modified():
