@@ -294,7 +294,7 @@ def test_analyze_no_rpm_va_option(convert2rhel):
     """
     with convert2rhel("analyze -y --no-rpm-va --debug") as c2r:
         c2r.expect("We will proceed with ignoring the --no-rpm-va option")
-        c2r.expect_exact("Calling command 'rpm -Va'")
+        c2r.expect_exact("Calling command 'rpm -Va --nodeps'")
 
         c2r.sendcontrol("c")
     assert c2r.exitstatus == 1
