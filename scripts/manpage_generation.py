@@ -27,10 +27,6 @@ if result.returncode == 0:
 else:
     print("Changes detected")
 
-    subprocess.run(["dnf", "install", "-y", "python3-rpm", "python3-dnf"], check=True)
-
-    print("apt-get done")
-
     # Generate a file with convert2rhel synopsis for argparse-manpage
     from convert2rhel import toolopts
 
