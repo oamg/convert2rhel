@@ -395,8 +395,7 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    loggerinst.task("Convert: Patch yum configuration file")
-    redhatrelease.YumConf().patch()
+
     loggerinst.task("Convert: Lock releasever in RHEL repositories")
     subscription.lock_releasever_in_rhel_repositories()
 

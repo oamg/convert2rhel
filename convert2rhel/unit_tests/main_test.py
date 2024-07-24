@@ -208,15 +208,12 @@ class TestShowEula:
 
 def test_post_ponr_conversion(monkeypatch):
     post_ponr_set_efi_configuration_mock = mock.Mock()
-    yum_conf_patch_mock = mock.Mock()
     lock_releasever_in_rhel_repositories_mock = mock.Mock()
 
-    monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
     monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
 
     main.post_ponr_conversion()
 
-    assert yum_conf_patch_mock.call_count == 1
     assert lock_releasever_in_rhel_repositories_mock.call_count == 1
 
 
