@@ -20,4 +20,4 @@ COPY scripts/manpage_generation.py /app/
 RUN chmod +x manpage_generation.py
 
 # Run the Python script
-CMD ["/usr/bin/python3", "scripts/manpage_generation.py"]
+CMD ["/usr/bin/python3", "manpage_generation.py"]

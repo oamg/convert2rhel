@@ -20,12 +20,9 @@ jobs:
 
       - name: Build Podman Image
         run: |
-          echo "IMAGE_ID=$(podman build -q -f Containerfiles/manpage.Containerfile)" >> $GITHUB_ENV
-
-      - name: Print Image ID
-        run: |
-          echo "Image ID: ${{ env.IMAGE_ID }}"
+          echo "IMAGE_NAME=manpage_img" >> $GITHUB_ENV
+          podman build -t ${{ env.IMAGE_NAME }} -f Containerfiles/manpage.Containerfile .
 
       - name: Run Podman Container
         run: |
-          podman run --rm ${{ env.IMAGE_ID }}
+          podman run --rm ${{ env.IMAGE_NAME }}
