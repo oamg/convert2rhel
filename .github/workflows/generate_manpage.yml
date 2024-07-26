@@ -19,11 +19,12 @@ jobs:
           python-version: 3.10.13
 
       - name: Build Podman Image
+        id: build_image
         run: |
-          podman build -t manpage_img -f Containerfiles/manpage.Containerfile .
+          echo "::set-output name=IMAGE_ID::$(podman build -q -f Containerfiles/manpage.Containerfile .)"
         env:
           IMAGE_NAME: manpage_img
 
       - name: Run Podman Container
         run: |
-          podman run --rm ${{ env.IMAGE_NAME }}
+          podman run --rm ${{ steps.build_image.outputs.IMAGE_ID }}
