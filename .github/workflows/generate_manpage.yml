@@ -18,6 +18,10 @@ jobs:
         with:
           python-version: 3.10.13
 
+      - name: Build Podman Image
+        run: |
+          echo "IMAGE_ID=$(podman build -q -f Containerfiles/manpage.Containerfile)" >> $GITHUB_ENV
+
       - name: Run Podman Container
         run: |
-          podman run --rm ($ podman build -q -f Containerfiles/manpage.Containerfile)
+          podman run --rm ${{ env.IMAGE_ID }}
