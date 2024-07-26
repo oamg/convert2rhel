@@ -20,8 +20,9 @@ jobs:
 
       - name: Build Podman Image
         run: |
-          echo "IMAGE_NAME=manpage_img" >> $GITHUB_ENV
-          podman build -t ${{ env.IMAGE_NAME }} -f Containerfiles/manpage.Containerfile .
+          podman build -t manpage_img -f Containerfiles/manpage.Containerfile .
+        env:
+          IMAGE_NAME: manpage_img
 
       - name: Run Podman Container
         run: |
