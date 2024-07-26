@@ -18,6 +18,11 @@ jobs:
         with:
           python-version: 3.10.13
 
+      - name: Install Git
+        run: |
+          apt-get update
+          apt-get install -y git
+
       - name: Build Podman Image
         id: build_image
         run: |
