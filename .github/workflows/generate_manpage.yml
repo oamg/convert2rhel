@@ -18,7 +18,6 @@ jobs:
         with:
           python-version: 3.10.13
 
-      - name: Generate Manpages
+      - name: Run Podman Container
         run: |
-          chmod +x scripts/manpage_generation.py
-          bash scripts/manpage_generation.py
+          podman run --rm ($ podman build -q -f Containerfiles/manpage.Containerfile)
