@@ -6,8 +6,8 @@
 # https://github.com/opencontainers/runtime-spec/blob/master/config.md#linux
 
 FROM quay.io/centos/centos:stream9 AS base
-# Install Python and other dependencies
-RUN yum install -y python3-pip
+# Install Python, pip, and git
+RUN yum install -y python3-pip git
 COPY requirements/manpages_requirements.txt /tmp/
 RUN pip3 install -r /tmp/manpages_requirements.txt
 
