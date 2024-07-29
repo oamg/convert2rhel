@@ -53,8 +53,9 @@ class PkgManagerConf:
     """
     Check if the config file of the systems package manager has been modified and if it has then
     remove those changes before the conversion completes.
-    NOTE: The pkg manager config file path only needs to be set to yum.conf as there is a symlink between yum and dnf.
-    This means that on dnf systems the dnf.conf will be modified.
+    .. note::  
+        The pkg manager config file path only needs to be set to yum.conf as there is a symlink between yum and dnf.
+    This means that on dnf systems the dnf.conf will be modified even the path is for the yum.conf.
     """
 
     _pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
