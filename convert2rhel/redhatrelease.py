@@ -58,9 +58,8 @@ class PkgManagerConf:
     This means that on dnf systems the dnf.conf will be modified even the path is for the yum.conf.
     """
 
-    _pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
-
     def __init__(self):
+        self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
         self._pkg_manager_conf_content = utils.get_file_content(self._pkg_manager_conf_path)
 
     def patch(self):
@@ -87,15 +86,13 @@ class PkgManagerConf:
         with open(self._pkg_manager_conf_path, "w") as file_to_write:
             file_to_write.write(self._pkg_manager_conf_content)
 
-    @staticmethod
-    def is_modified():
+    def is_modified(self):
         """Return true if the YUM/DNF configuration file has been modified by the user."""
-        conf = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
 
-        output, _ = utils.run_subprocess(["rpm", "-Vf", conf], print_output=False)
+        output, _ = utils.run_subprocess(["rpm", "-Vf", self._pkg_manager_conf_path], print_output=False)
         # rpm -Vf does not return information about the queried file but about all files owned by the rpm
         # that owns the queried file. Character '5' on position 3 means that the file was modified.
-        return True if re.search(r"^.{2}5.*? %s$" % conf, output, re.MULTILINE) else False
+        return True if re.search(r"^.{2}5.*? %s$" % self._pkg_manager_conf_path, output, re.MULTILINE) else False
 
 
 # Code to be executed upon module import
