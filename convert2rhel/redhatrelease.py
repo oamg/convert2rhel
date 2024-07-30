@@ -58,8 +58,10 @@ class PkgManagerConf:
     This means that on dnf systems the dnf.conf will be modified even the path is for the yum.conf.
     """
 
-    def __init__(self):
-        self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
+    def __init__(self, config_path=None):
+        self._pkg_manager_conf_path = config_path
+        if config_path is None:
+            self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
         self._pkg_manager_conf_content = utils.get_file_content(self._pkg_manager_conf_path)
 
     def patch(self):

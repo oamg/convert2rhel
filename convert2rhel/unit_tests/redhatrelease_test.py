@@ -48,19 +48,21 @@ distroverpkg=centos-release
 SUPPORTED_RHEL_VERSIONS = [7, 8]
 
 
-def test_get_pkg_manager_conf_content(monkeypatch):
-    pkg_manager_conf = redhatrelease.PkgManagerConf()
-    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
+@pytest.fixture()
+def pkg_manager_conf_instance():
+    return PkgManagerConf()
 
+
+def test_get_pkg_manager_conf_content(monkeypatch):
+    pkg_manager_conf = redhatrelease.PkgManagerConf(config_path=unit_tests.DUMMY_FILE)
     assert "Dummy file to read" in pkg_manager_conf._pkg_manager_conf_content
 
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
-def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch):
+def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
 
     monkeypatch.setattr(system_info, "version", version)
-    pkg_manager_conf = redhatrelease.PkgManagerConf()
-    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
+    pkg_manager_conf = pkg_manager_conf_instance
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
@@ -71,11 +73,10 @@ def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch):
 
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
-def test_patch_pkg_manager_conf_existing_distroverpkg(version, monkeypatch):
+def test_patch_pkg_manager_conf_existing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
 
     monkeypatch.setattr(system_info, "version", systeminfo.Version(version, 0))
-    pkg_manager_conf = redhatrelease.PkgManagerConf()
-    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
+    pkg_manager_conf = pkg_manager_conf_instance
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITH_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
