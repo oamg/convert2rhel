@@ -49,18 +49,18 @@ SUPPORTED_RHEL_VERSIONS = [7, 8]
 
 
 def test_get_pkg_manager_conf_content(monkeypatch):
-    monkeypatch.setattr(redhatrelease.PkgManagerConf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
-
     pkg_manager_conf = redhatrelease.PkgManagerConf()
+    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
 
     assert "Dummy file to read" in pkg_manager_conf._pkg_manager_conf_content
 
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
 def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch):
-    monkeypatch.setattr(redhatrelease.PkgManagerConf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
+
     monkeypatch.setattr(system_info, "version", version)
     pkg_manager_conf = redhatrelease.PkgManagerConf()
+    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
@@ -72,9 +72,10 @@ def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch):
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
 def test_patch_pkg_manager_conf_existing_distroverpkg(version, monkeypatch):
-    monkeypatch.setattr(redhatrelease.PkgManagerConf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
+
     monkeypatch.setattr(system_info, "version", systeminfo.Version(version, 0))
     pkg_manager_conf = redhatrelease.PkgManagerConf()
+    monkeypatch.setattr(pkg_manager_conf, "_pkg_manager_conf_path", unit_tests.DUMMY_FILE)
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITH_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
@@ -101,8 +102,9 @@ def test_pkg_manager_is_modified(monkeypatch, pkg_type, subprocess_ret, expected
 
     run_subprocess = unit_tests.RunSubprocessMocked(return_string=subprocess_ret)
     monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess)
+    pkg_manager_conf = redhatrelease.PkgManagerConf()
 
-    assert PkgManagerConf.is_modified() == expected_result
+    assert pkg_manager_conf.is_modified() == expected_result
 
 
 @pytest.mark.parametrize("modified", (True, False))
