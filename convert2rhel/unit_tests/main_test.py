@@ -210,19 +210,16 @@ def test_post_ponr_conversion(monkeypatch):
     perserve_only_rhel_kernel_mock = mock.Mock()
     post_ponr_set_efi_configuration_mock = mock.Mock()
     yum_conf_patch_mock = mock.Mock()
-    lock_releasever_in_rhel_repositories_mock = mock.Mock()
 
     monkeypatch.setattr(pkghandler, "preserve_only_rhel_kernel", perserve_only_rhel_kernel_mock)
     monkeypatch.setattr(grub, "post_ponr_set_efi_configuration", post_ponr_set_efi_configuration_mock)
     monkeypatch.setattr(redhatrelease.YumConf, "patch", yum_conf_patch_mock)
-    monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
 
     main.post_ponr_conversion()
 
     assert perserve_only_rhel_kernel_mock.call_count == 1
     assert post_ponr_set_efi_configuration_mock.call_count == 1
     assert yum_conf_patch_mock.call_count == 1
-    assert lock_releasever_in_rhel_repositories_mock.call_count == 1
 
 
 def test_help_exit(monkeypatch, tmp_path):
