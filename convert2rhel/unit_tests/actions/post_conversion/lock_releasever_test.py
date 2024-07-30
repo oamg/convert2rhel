@@ -15,8 +15,6 @@
 
 __metaclass__ = type
 
-import logging
-import os
 
 import pytest
 import six
@@ -31,8 +29,7 @@ from convert2rhel.unit_tests.conftest import centos7, centos8
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import pkghandler, unit_tests
-from convert2rhel.unit_tests import FormatPkgInfoMocked, GetInstalledPkgInformationMocked
+from convert2rhel import unit_tests
 
 
 @pytest.fixture
