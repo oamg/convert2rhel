@@ -34,4 +34,5 @@ class PkgManagerConfig(actions.Action):
         super(PkgManagerConfig, self).run()
 
         logger.task("Convert: Patch package manager configuration file")
-        redhatrelease.PkgManagerConf.patch()
+        pmc = redhatrelease.PkgManagerConf()
+        pmc.patch()
