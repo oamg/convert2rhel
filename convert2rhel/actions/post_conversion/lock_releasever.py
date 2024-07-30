@@ -58,15 +58,7 @@ class LockReleaseverInRHELRepositories(actions.Action):
 
             output, ret_code = utils.run_subprocess(cmd, print_output=False)
             if ret_code != 0:
-                self.set_result(
-                    level="ERROR",
-                    id="LOCKING_RHEL_REPOSITORIES_FAILED",
-                    title="Locking RHEL repositories failed",
-                    description="Subscription Manager command to lock RHEL repositories failed.",
-                    diagnosis="Subscription Manager command to set release to %s failed with return code %d and message: %s."
-                    % (system_info.releasever, ret_code, output),
-                    remediations=("XXX I have no idea."),
-                )
+                loggerinst.warning("Locking RHEL repositories failed.")
             else:
                 loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
         else:
