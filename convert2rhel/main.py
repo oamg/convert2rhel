@@ -395,9 +395,10 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-
-    loggerinst.task("Convert: Lock releasever in RHEL repositories")
-    subscription.lock_releasever_in_rhel_repositories()
+    loggerinst.task("Convert: Configure the bootloader")
+    grub.post_ponr_set_efi_configuration()
+    loggerinst.task("Convert: Patch yum configuration file")
+    redhatrelease.YumConf().patch()
 
 
 #

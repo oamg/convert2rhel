@@ -899,44 +899,6 @@ def _relevant_subscription_manager_pkgs():
     return relevant_pkgs
 
 
-def lock_releasever_in_rhel_repositories():
-    """Lock the releasever in the RHEL repositories located under /etc/yum.repos.d/redhat.repo
-
-    After converting to a RHEL EUS minor version, we need to lock the releasever in the redhat.repo file
-    to prevent future errors such as, running `yum update` and not being able to find the repositories metadata.
-
-    .. note::
-        This function should only run if the system corresponds to a RHEL EUS version to make sure the converted system
-        keeps receiving updates for the specific EUS minor version instead of the latest minor version which is the
-        default.
-    """
-
-    # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
-    # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be available.
-    if system_info.eus_system and not tool_opts.no_rhsm:
-        loggerinst.info(
-            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
-            % system_info.releasever
-        )
-        cmd = [
-            "subscription-manager",
-            "release",
-            "--set=%s" % system_info.releasever,
-        ]
-
-        output, ret_code = utils.run_subprocess(cmd, print_output=False)
-        if ret_code != 0:
-            loggerinst.warning(
-                "Locking RHEL repositories failed with return code %d and message:\n%s",
-                ret_code,
-                output,
-            )
-        else:
-            loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
-    else:
-        loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
-
-
 def update_rhsm_custom_facts():
     """Update the RHSM custom facts in the candlepin server.
 
