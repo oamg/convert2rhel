@@ -700,7 +700,7 @@ class TestRollbackFromMain:
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
-        assert ask_to_continue_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 2
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
