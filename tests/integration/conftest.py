@@ -87,7 +87,9 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
 @pytest.fixture()
 def shell(tmp_path):
-    """Live shell."""
+    """
+    Live shell.
+    """
 
     def factory(command, silent=False, hide_command=False):
         if silent:
@@ -639,35 +641,15 @@ def environment_variables(request):
     return _unset_env_var
 
 
-def _create_old_repo(distro: str, repo_name: str):
-    """
-    Create a repo on system with content that is older than the latest released version.
-    The intended use is for Rocky and Alma.
-    """
-    baseurl = None
-    version = SystemInformationRelease.version.major
-    if distro == "alma":
-        baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
-        if version == 9:
-            baseurl = "https://vault.almalinux.org/9.3/BaseOS/x86_64/os/"
-    elif distro == "rocky":
-        baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
-        if version == 9:
-            baseurl = "https://download.rockylinux.org/vault/rocky/9.3/BaseOS/x86_64/os/"
-    else:
-        pytest.fail(f"Unsupported distro ({distro}) provided.")
-    with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
-        f.write(f"[{repo_name}]\n")
-        f.write(f"name={repo_name}\n")
-        f.write(f"baseurl={baseurl}\n")
-        f.write("enabled=0\n")
-        f.write("gpgcheck=0\n")
-
-
 def _get_full_kernel_title(shell, kernel=None):
     """
     Helper function.
     Get the full kernel boot entry title.
+    :param kernel: kernel pacakge VRA (version-release.architecture)
+    :type kernel: str
+
+    :return: The full boot entry title for the given kernel.
+    :rtype: str
     """
     # Get the full name of the kernel (ignore rescue kernels)
     full_title = shell(
@@ -678,11 +660,9 @@ def _get_full_kernel_title(shell, kernel=None):
 
 
 @pytest.fixture(scope="function")
-def kernel(shell):
+def outdated_kernel(shell, hybrid_rocky_image):
     """
-    Install specific kernel version and configure
-    the system to boot to it. The kernel version is not the
-    latest one available in repositories.
+    Install an older version of kernel and let the system boot to it.
     """
     # If the fixture gets executed after second `tmt-reboot` (after cleanup of a test) then
     # do not trigger test again by yielding.
@@ -692,47 +672,43 @@ def kernel(shell):
         pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        version = SystemInformationRelease.version.major
-        older_kernel_version = None
-        yum_opt = ""
-        # Set default kernel
-        if "centos-7" in SYSTEM_RELEASE_ENV:
-            older_kernel_version = "3.10.0-1160.el7.x86_64"
+        # Verify that there is multiple kernels installed
+        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
+            # We don't need to do anything at this point
+            # The whole setup needed happens after
+            pass
 
-        elif "oracle-7" in SYSTEM_RELEASE_ENV:
-            older_kernel_version = "3.10.0-1160.el7.x86_64"
-        elif "centos-8" in SYSTEM_RELEASE_ENV:
-            older_kernel_version = "4.18.0-348.el8"
-        # Test is being run only for the latest released oracle-linux
-        elif "oracle" in SYSTEM_RELEASE_ENV:
-            if version == 8:
-                older_kernel_version = "4.18.0-80.el8.x86_64"
-            elif version:
-                older_kernel_version = "5.14.0-162.12.1.el9_1.x86_64"
-        elif "alma" in SYSTEM_RELEASE_ENV:
-            repo_name = "alma_old"
-            yum_opt = f"--enablerepo {repo_name}"
-            _create_old_repo(distro="alma", repo_name=repo_name)
-            if version == 8:
-                older_kernel_version = "4.18.0-372.13.1.el8_6.x86_64"
-            else:
-                older_kernel_version = "5.14.0-362.24.2.el9_3.x86_64"
-        elif "rocky" in SYSTEM_RELEASE_ENV:
-            repo_name = "rocky_old"
-            _create_old_repo(distro="rocky", repo_name=repo_name)
-            yum_opt = f"--enablerepo {repo_name}"
-            if version == 8:
-                older_kernel_version = "4.18.0-372.13.1.el8_6.x86_64"
-            else:
-                older_kernel_version = "5.14.0-362.24.1.el9_3.x86_64"
+        # Try to downgrade kernel version, if there is not multiple versions installed already.
+        # If the kernel downgrade fails, assume it's not possible and try to install from
+        # an older repo. This should only happen when Alma and Rocky has just landed on
+        # a fresh minor version.
+        elif shell("yum downgrade kernel -y").returncode != 0:
+            # Assuming this can only happen with Alma and Rocky we'll try to install an older kernel
+            # from a previous minor version.
+            # For that we need to use the vault url and bump te current minor down one version.
+            major_ver = SystemInformationRelease.version.major
+            minor_ver = SystemInformationRelease.version.minor
+            minor_ver -= 1
+            if minor_ver < 0:
+                # In case we're on a x.0 version, there is not an older repo to work with.
+                # Skip the test if so
+                pytest.skip("There is no older kernel to install for this system.")
+            releasever = ".".join((str(major_ver), str(minor_ver)))
+            old_repo = None
+            if SystemInformationRelease.distribution == "alma":
+                old_repo = f"https://vault.almalinux.org/{releasever}/BaseOS/x86_64/os/"
+            elif SystemInformationRelease.distribution == "rocky":
+                old_repo = f"https://dl.rockylinux.org/vault/rocky/{releasever}/BaseOS/x86_64/os/"
+            # Install the kernel from the url
+            shell(f"yum install kernel -y --repofromurl 'oldrepo,{old_repo}'")
 
-        assert shell(f"yum install kernel-{older_kernel_version} -y {yum_opt}").returncode == 0
-
+        # Get the oldest kernel VRA
+        oldest_kernel = shell("rpm -q kernel | sort -V | head -1 | awk -F'kernel-' '{print $2}'").output.strip()
+        # Get the full kernel title from grub to set later
+        default_kernel_title = _get_full_kernel_title(shell, kernel=oldest_kernel)
         grub_setup_workaround(shell)
-
-        older_kernel_title = _get_full_kernel_title(shell, kernel=older_kernel_version)
-        shell(f"grub2-set-default '{older_kernel_title}'")
-
+        # Set the older kernel as default
+        shell(f"grub2-set-default '{default_kernel_title.strip()}'")
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         shell("tmt-reboot -t 600")
@@ -754,14 +730,8 @@ def kernel(shell):
         full_boot_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
 
         # Set the latest kernel as the one we want to reboot to
-        shell("grub2-set-default '{}'".format(full_boot_kernel_title.strip()))
+        shell(f"grub2-set-default '{full_boot_kernel_title.strip()}'")
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
-
-        # Remove the mocked repofile
-        if "alma" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
-        elif "rocky" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
 
         # Reboot after clean-up
         shell("tmt-reboot -t 600")

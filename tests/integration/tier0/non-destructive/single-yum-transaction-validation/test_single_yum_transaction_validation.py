@@ -201,7 +201,7 @@ def test_packages_with_in_name_period(shell, convert2rhel, packages_with_period)
 
 
 @pytest.mark.parametrize("yum_conf_exclude", [["redhat-release-server"]])
-def test_override_exclude_list_in_yum_config(convert2rhel, kernel, yum_conf_exclude, shell):
+def test_override_exclude_list_in_yum_config(convert2rhel, outdated_kernel, yum_conf_exclude, shell):
     """
     This test verifies that packages that are defined in the exclude
     section in the /etc/yum.conf file are ignored during the analysis and
