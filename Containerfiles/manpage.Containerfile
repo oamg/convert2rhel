@@ -8,6 +8,7 @@
 FROM quay.io/centos/centos:stream9 AS base
 # Install Python, pip, git, and podman
 RUN yum install -y python3-pip git podman
+run podman --version
 COPY requirements/manpages_requirements.txt /tmp/
 RUN pip3 install -r /tmp/manpages_requirements.txt
 
