@@ -36,7 +36,7 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
     global_tool_opts.debug = True  # debug entries > stdout if True
     logger_module.setup_logger_handler()
     logger_module.add_file_handler(log_name=log_fname, log_dir=str(tmpdir))
-    logger = logging.getLogger(__name__)
+    logger = logger_module.CustomLogger(logging.getLogger(__name__))
 
     # emitting some log entries
     logger.info("Test info: %s", "data")
@@ -56,7 +56,7 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
 def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
     monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
     logger_module.setup_logger_handler()
-    logger = logging.getLogger(__name__)
+    logger = logger_module.CustomLogger(logging.getLogger(__name__))
     global_tool_opts.debug = True
     logger.debug("debug entry 1: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
@@ -90,7 +90,7 @@ class TestCustomLogger:
     def test_logger_custom_logger(self, log_method_name, level_name, caplog):
         """Test CustomLogger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.CustomLogger(logging.getLogger(__name__))
         log_method = getattr(logger, log_method_name)
 
         log_method("Some task: %s", "data")
@@ -102,7 +102,7 @@ class TestCustomLogger:
     def test_logger_critical(self, caplog):
         """Test CustomLogger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.CustomLogger(logging.getLogger(__name__))
 
         with pytest.raises(SystemExit):
             logger.critical("Critical error: %s", "data")
@@ -123,7 +123,7 @@ class TestCustomLogger:
     def test_logger_custom_logger_insufficient_level(self, log_method_name, caplog):
         """Test CustomLogger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.CustomLogger(logging.getLogger(__name__))
         logger.setLevel(logging.CRITICAL + 40)
         log_method = getattr(logger, log_method_name)
 
@@ -135,7 +135,7 @@ class TestCustomLogger:
     def test_logger_critical_insufficient_level(self, caplog):
         """Test CustomLogger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.CustomLogger(logging.getLogger(__name__))
         logger.setLevel(logging.CRITICAL + 40)
 
         logger.critical("Critical error: %s", "data")
@@ -204,3 +204,21 @@ def test_logfile_buffer_handler(read_std):
     stdouterr_out, _ = read_std()
     assert "message 1" not in stdouterr_out
     assert "message 2" in stdouterr_out
+
+
+class TestCustomFormatter:
+    """For testing the Custom Formatter to work as expected."""
+
+    def test_task_logger(self, read_std):
+        logger = logging.getLogger("convert2rhel")
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        formatter = logger_module.CustomFormatter("%(message)s")
+        formatter.disable_colors(True)
+        stdout_handler.setFormatter(formatter)
+        stdout_handler.setLevel(logging.DEBUG)
+        logger.addHandler(stdout_handler)
+
+        logger.info("Testing", extra={"isTask": True})
+
+        stdouterr_out, stdouterr_err = read_std()
+        assert "TASK - [Testing]" in stdouterr_out
