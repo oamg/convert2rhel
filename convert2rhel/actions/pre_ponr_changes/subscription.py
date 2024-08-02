@@ -25,9 +25,10 @@ from convert2rhel.backup.subscription import (
     RestorableDisableRepositories,
     RestorableSystemSubscription,
 )
+from convert2rhel.logger import CustomLogger
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 # Source and target directories for the cdn.redhat.com domain ssl ca cert that:
 # - we tell customers to use when installing convert2rhel from that domain

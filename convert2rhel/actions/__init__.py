@@ -29,9 +29,10 @@ from functools import wraps
 import six
 
 from convert2rhel import utils
+from convert2rhel.logger import CustomLogger
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 #: Status code of an Action.

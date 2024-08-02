@@ -26,7 +26,7 @@ from convert2rhel import pkghandler, pkgmanager, redhatrelease, subscription, sy
 from convert2rhel.actions import level_for_raw_action_data, report
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger_module.CustomLogger(logging.getLogger(__name__))
 
 
 class _AnalyzeExit(Exception):

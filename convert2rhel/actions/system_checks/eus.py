@@ -19,11 +19,12 @@ import datetime
 import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, system_info
 from convert2rhel.toolopts import tool_opts
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class EusSystemCheck(actions.Action):

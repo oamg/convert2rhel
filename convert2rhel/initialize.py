@@ -24,7 +24,7 @@ from convert2rhel import i18n
 from convert2rhel import logger as logger_module
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger_module.CustomLogger(logging.getLogger(__name__))
 
 
 def disable_root_logger():

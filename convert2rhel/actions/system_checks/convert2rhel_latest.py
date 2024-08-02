@@ -23,11 +23,12 @@ import rpm
 from convert2rhel import __file__ as convert2rhel_file
 from convert2rhel import __version__ as running_convert2rhel_version
 from convert2rhel import actions, exceptions, repo, utils
+from convert2rhel.logger import CustomLogger
 from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 C2R_REPOFILE_URLS = {
     7: "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel/server/7/7Server/x86_64/files/repofile.repo",

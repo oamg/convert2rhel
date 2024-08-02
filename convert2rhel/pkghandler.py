@@ -30,11 +30,12 @@ import rpm
 from convert2rhel import backup, pkgmanager, repo, utils
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
-loggerinst = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 # Limit the number of loops over yum command calls for the case there was
 # an error.
@@ -177,7 +178,7 @@ def get_installed_pkg_information(pkg_name="*"):
                     )
                 )
             except ValueError as e:
-                loggerinst.debug("Failed to parse a package: %s", e)
+                logger.debug("Failed to parse a package: %s", e)
 
     return normalized_list
 
@@ -198,7 +199,7 @@ def get_rpm_header(pkg_obj):
             return rpm_hdr
 
     # Package not found in the rpm db
-    loggerinst.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
+    logger.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
 
 
 def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
@@ -380,7 +381,7 @@ def print_pkg_info(pkgs, disable_repos=None):
     :type disable_repos: List[str]
     """
 
-    loggerinst.info(format_pkg_info(pkgs, disable_repos))
+    logger.info(format_pkg_info(pkgs, disable_repos))
 
 
 def _get_package_repositories(pkgs, disable_repos=None):
@@ -417,7 +418,7 @@ def _get_package_repositories(pkgs, disable_repos=None):
     # In case of repoquery returning an retcode different from 0, let's log the
     # output as a debug and return N/A for the caller.
     if retcode != 0:
-        loggerinst.debug("Repoquery exited with return code %s and with output: %s", retcode, " ".join(output))
+        logger.debug("Repoquery exited with return code %s and with output: %s", retcode, " ".join(output))
         for package in pkgs:
             repositories_mapping[package] = "N/A"
     else:
@@ -429,7 +430,7 @@ def _get_package_repositories(pkgs, disable_repos=None):
                 repoid = split_output[1]
                 repositories_mapping[nevra] = repoid if repoid else "N/A"
             else:
-                loggerinst.debug("Got a line without the C2R identifier: %s", line)
+                logger.debug("Got a line without the C2R identifier: %s", line)
 
     return repositories_mapping
 
@@ -540,13 +541,13 @@ def list_non_red_hat_pkgs_left():
     """List all the packages that have not been replaced by the
     Red Hat-signed ones during the conversion.
     """
-    loggerinst.info("Listing packages not signed by Red Hat")
+    logger.info("Listing packages not signed by Red Hat")
     non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
     if non_red_hat_pkgs:
-        loggerinst.info("The following packages were left unchanged.\n")
+        logger.info("The following packages were left unchanged.\n")
         print_pkg_info(non_red_hat_pkgs)
     else:
-        loggerinst.info("All packages are now signed by Red Hat.")
+        logger.info("All packages are now signed by Red Hat.")
 
 
 def get_pkg_nevras(pkg_objects):
@@ -578,7 +579,7 @@ def get_packages_to_remove(pkgs):
         temp = "." * (50 - len(pkg) - 2)
         pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
         pkgs_to_remove.extend(pkg_objects)
-        loggerinst.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
+        logger.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
 
     return pkgs_to_remove
 
@@ -611,9 +612,9 @@ def install_gpg_keys():
             restorable_key = RestorableRpmKey(gpg_key)
             backup.backup_control.push(restorable_key)
         except utils.ImportGPGKeyError as e:
-            loggerinst.critical("Importing the GPG key into rpm failed:\n %s" % str(e))
+            logger.critical("Importing the GPG key into rpm failed:\n %s" % str(e))
 
-        loggerinst.info("GPG key %s imported successfuly.", gpg_key)
+        logger.info("GPG key %s imported successfuly.", gpg_key)
 
 
 def preserve_only_rhel_kernel():
@@ -634,11 +635,11 @@ def install_rhel_kernel():
     """Return boolean indicating whether it's needed to update the kernel
     later on.
     """
-    loggerinst.info("Installing RHEL kernel ...")
+    logger.info("Installing RHEL kernel ...")
     output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
 
     if ret_code != 0:
-        loggerinst.critical("Error occured while attempting to install the RHEL kernel")
+        logger.critical("Error occured while attempting to install the RHEL kernel")
 
     # Check if kernel with same version is already installed.
     # Example output from yum and dnf:
@@ -653,7 +654,7 @@ def install_rhel_kernel():
                 # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
                 # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
                 # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
-                loggerinst.info(
+                logger.info(
                     "\nConflict of kernels: One of the installed kernels"
                     " has the same version as the latest RHEL kernel."
                 )
@@ -702,7 +703,7 @@ def get_kernel(kernels_raw):
 
 def replace_non_rhel_installed_kernel(version):
     """Replace the installed non-RHEL kernel with RHEL kernel with same version."""
-    loggerinst.warning(
+    logger.warning(
         "The convert2rhel utlity is going to force-replace the only"
         " kernel installed, which has the same NEVRA as the"
         " only available RHEL kernel. If anything goes wrong"
@@ -725,9 +726,9 @@ def replace_non_rhel_installed_kernel(version):
         enable_repos=repos_to_enable,
     )
     if not path:
-        loggerinst.critical("Unable to download the RHEL kernel package.")
+        logger.critical("Unable to download the RHEL kernel package.")
 
-    loggerinst.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+    logger.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
@@ -742,19 +743,19 @@ def replace_non_rhel_installed_kernel(version):
         print_output=False,
     )
     if ret_code != 0:
-        loggerinst.critical("Unable to replace the kernel package: %s" % output)
+        logger.critical("Unable to replace the kernel package: %s" % output)
 
-    loggerinst.info("\nRHEL %s installed.\n" % pkg)
+    logger.info("\nRHEL %s installed.\n" % pkg)
 
 
 def verify_rhel_kernel_installed():
-    loggerinst.info("Verifying that RHEL kernel has been installed")
+    logger.info("Verifying that RHEL kernel has been installed")
     if not is_rhel_kernel_installed():
-        loggerinst.critical(
+        logger.critical(
             "No RHEL kernel installed. Verify that the repository used for installing kernel contains RHEL packages."
         )
     else:
-        loggerinst.info("RHEL kernel has been installed.")
+        logger.info("RHEL kernel has been installed.")
 
 
 def is_rhel_kernel_installed():
@@ -763,16 +764,16 @@ def is_rhel_kernel_installed():
 
 
 def remove_non_rhel_kernels():
-    loggerinst.info("Searching for non-RHEL kernels ...")
+    logger.info("Searching for non-RHEL kernels ...")
     non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel*")
     if non_rhel_kernels:
-        loggerinst.info("Removing non-RHEL kernels\n")
+        logger.info("Removing non-RHEL kernels\n")
         print_pkg_info(non_rhel_kernels)
         utils.remove_pkgs(
             pkgs_to_remove=[get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
         )
     else:
-        loggerinst.info("None found.")
+        logger.info("None found.")
     return non_rhel_kernels
 
 
@@ -783,9 +784,9 @@ def fix_default_kernel():
     This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for
     RHEL7 and kernel-core for RHEL8
     """
-    loggerinst = logging.getLogger(__name__)
+    logger = CustomLogger(logging.getLogger(__name__))
 
-    loggerinst.info("Checking for incorrect boot kernel")
+    logger.info("Checking for incorrect boot kernel")
     kernel_sys_cfg = utils.get_file_content("/etc/sysconfig/kernel")
 
     possible_kernels = ["kernel-uek", "kernel-plus"]
@@ -794,15 +795,15 @@ def fix_default_kernel():
         None,
     )
     if kernel_to_change:
-        loggerinst.warning("Detected leftover boot kernel, changing to RHEL kernel")
+        logger.warning("Detected leftover boot kernel, changing to RHEL kernel")
         # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
         new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
 
         kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
         utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)
-        loggerinst.info("Boot kernel %s was changed to %s" % (kernel_to_change, new_kernel_str))
+        logger.info("Boot kernel %s was changed to %s" % (kernel_to_change, new_kernel_str))
     else:
-        loggerinst.debug("Boot kernel validated.")
+        logger.debug("Boot kernel validated.")
 
 
 def fix_invalid_grub2_entries():
@@ -820,14 +821,14 @@ def fix_invalid_grub2_entries():
         # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
         return
 
-    loggerinst.info("Fixing GRUB boot loader entries.")
+    logger.info("Fixing GRUB boot loader entries.")
 
     machine_id = utils.get_file_content("/etc/machine-id")
     boot_entries = glob.glob("/boot/loader/entries/*.conf")
     for entry in boot_entries:
         # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
         if machine_id.strip() not in os.path.basename(entry):
-            loggerinst.debug("Removing boot entry %s" % entry)
+            logger.debug("Removing boot entry %s" % entry)
             os.remove(entry)
 
     # Removing a boot entry that used to be the default makes grubby to choose a different entry as default, but we will
@@ -836,12 +837,12 @@ def fix_invalid_grub2_entries():
     if ret_code:
         # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
         # pick one entry in any case.
-        loggerinst.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
+        logger.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
         return
-    loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
+    logger.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
     output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
     if ret_code:
-        loggerinst.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
+        logger.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
 
 
 def install_additional_rhel_kernel_pkgs(additional_pkgs):
@@ -856,7 +857,7 @@ def install_additional_rhel_kernel_pkgs(additional_pkgs):
     pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
     for name in set(pkg_names):
         if name != "kernel":
-            loggerinst.info("Installing RHEL %s" % name)
+            logger.info("Installing RHEL %s" % name)
             pkgmanager.call_yum_cmd("install", args=[name])
 
 
@@ -865,7 +866,7 @@ def update_rhel_kernel():
     convert2rhel needs to install older RHEL kernel version first. In this function, RHEL kernel is updated to the
     latest available version.
     """
-    loggerinst.info("Updating RHEL kernel.")
+    logger.info("Updating RHEL kernel.")
     pkgmanager.call_yum_cmd(command="update", args=["kernel"])
 
 
@@ -879,16 +880,16 @@ def clear_versionlock():
     """
 
     if os.path.isfile(VERSIONLOCK_FILE_PATH) and os.path.getsize(VERSIONLOCK_FILE_PATH) > 0:
-        loggerinst.warning("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
-        loggerinst.info("Upon continuing, we will clear all package version locks.")
+        logger.warning("YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
+        logger.info("Upon continuing, we will clear all package version locks.")
         utils.ask_to_continue()
 
         backup.backup_control.push(RestorableFile(VERSIONLOCK_FILE_PATH))
 
-        loggerinst.info("Clearing package versions locks...")
+        logger.info("Clearing package versions locks...")
         pkgmanager.call_yum_cmd("versionlock", args=["clear"], print_output=False)
     else:
-        loggerinst.info("Usage of YUM/DNF versionlock plugin not detected.")
+        logger.info("Usage of YUM/DNF versionlock plugin not detected.")
 
 
 @utils.run_as_child_process

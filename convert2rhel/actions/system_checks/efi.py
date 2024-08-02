@@ -19,10 +19,11 @@ import logging
 import os.path
 
 from convert2rhel import actions, grub
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class Efi(actions.Action):

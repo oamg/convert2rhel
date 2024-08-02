@@ -18,10 +18,11 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, subscription
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class DbusIsRunning(actions.Action):

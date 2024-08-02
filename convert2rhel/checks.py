@@ -19,11 +19,12 @@ import logging
 import os
 
 from convert2rhel import grub
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 VMLINUZ_FILEPATH = "/boot/vmlinuz-%s"

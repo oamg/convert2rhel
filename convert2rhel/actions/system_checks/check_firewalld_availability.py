@@ -20,10 +20,11 @@ import os
 import re
 
 from convert2rhel import actions, systeminfo
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 # Path to the firewalld config file.
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
