@@ -23,7 +23,7 @@ DISTRO_CONVERSION_MAPPING = {
     ),
     "Red Hat Enterprise Linux release 8.10 (Ootpa)": (
         {"id": "null", "name": "Oracle Linux Server", "version": "8.10"},
-        {"id": "null", "name": "CentOS Stream", "version": "8.10"},
+        {"id": "null", "name": "CentOS Stream", "version": "8"},
         {"id": "Cerulean Leopard", "name": "AlmaLinux", "version": "8.10"},
         {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.10"},
     ),
