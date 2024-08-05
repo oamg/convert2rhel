@@ -108,9 +108,9 @@ class VerifyRhelKernelInstalled(actions.Action):
         loggerinst.info("RHEL kernel has been installed.")
         self.add_message(
             level="INFO",
-            id="RHEL_KERNEL_INSTALLED",
-            title="RHEL kernel installed",
-            description="The RHEL kernel has been installed successfully.",
+            id="RHEL_KERNEL_INSTALL_VERIFIED",
+            title="RHEL kernel install verified",
+            description="The RHEL kernel has been verified to be on the system.",
         )
 
 
@@ -238,10 +238,10 @@ class KernelPkgsInstall(actions.Action):
 
         loggerinst.info("Removing non-RHEL kernels\n")
         pkghandler.print_pkg_info(non_rhel_kernels)
-        utils.remove_pkgs(
-            pkgs_to_remove=[pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
-        )
+        pkgs_to_remove = [pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels]
+        utils.remove_pkgs(pkgs_to_remove)
         return non_rhel_kernels
+
     def install_additional_rhel_kernel_pkgs(self, additional_pkgs):
         """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
         tries to install back all of these from RHEL repositories.
