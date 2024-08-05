@@ -394,8 +394,6 @@ def post_ponr_changes():
 
 def post_ponr_conversion():
     """Perform main steps for system conversion."""
-    # loggerinst.task("Convert: Prepare kernel")
-    # pkghandler.preserve_only_rhel_kernel()
     loggerinst.task("Convert: List remaining non-Red Hat packages")
     pkghandler.list_non_red_hat_pkgs_left()
     loggerinst.task("Convert: Configure the bootloader")

@@ -34,6 +34,7 @@ class InstallRhelKernel(actions.Action):
     def run(self):
         """Install and update the RHEL kernel."""
         super(InstallRhelKernel, self).run()
+        loggerinst.task("Convert: Prepare kernel")
 
         loggerinst.info("Installing RHEL kernel ...")
         output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
