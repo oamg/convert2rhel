@@ -20,7 +20,7 @@ import shutil
 import pytest
 import six
 
-from convert2rhel import actions, grub, unit_tests
+from convert2rhel import actions, grub, systeminfo, unit_tests
 from convert2rhel.actions.conversion import set_efi_config
 from convert2rhel.unit_tests.conftest import centos7
 
@@ -76,22 +76,16 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
     monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     new_default_efi_bin_instance.run()
-
+    print("HEREEEEEEEEEEE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(new_default_efi_bin_instance.result)
     unit_tests.assert_actions_result(
         new_default_efi_bin_instance,
         level="ERROR",
-        id="RHEL_UEFI_BINARIES_DO_NOT_EXIST",
-        title="RHEL UEFI binaries do not exist",
+        id="RHEL_UEFI_BINARIES_NOT_FOUND",
+        title="RHEL UEFI binaries not found",
         description="None of the expected RHEL UEFI binaries exist.",
-        diagnosis="The migration of the bootloader setup was not successful.",
-        remediations=(
-            "Do not reboot your machine before doing a manual check of the\n"
-            "bootloader configuration. Ensure that grubenv and grub.cfg files\n"
-            "are present in the %s directory and that\n"
-            "a new bootloader entry for Red Hat Enterprise Linux exists\n"
-            "(check `efibootmgr -v` output).\n"
-            "The entry should point to '\\EFI\\redhat\\shimx64.efi'." % grub.RHEL_EFIDIR_CANONICAL_PATH
-        ),
+        diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: /boot/efi/EFI/redhat/shimx64.efi, /boot/efi/EFI/redhat/grubx64.efi .",
+        remediations="Verify the bootloader configuration as follows and reboot the system. Ensure that `grubenv` and `grub.cfg` files are present in the /boot/efi/EFI/redhat/ directory. Verify that `efibootmgr -v` shows a bootloader entry for Red Hat Enterprise Linux that points to to '\\EFI\\redhat\\shimx64.efi'.",
     )
 
 
@@ -103,79 +97,90 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
         efi_bootmgr_utility_installed_instance,
         level="ERROR",
         id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
-        title="Efibootmgr utility is not installed",
-        description="The /usr/sbin/efibootmgr utility is not installed.",
-        remediations="Install the efibootmgr utility via YUM/DNF.",
+        title="UEFI boot manager utility not found",
+        description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
+        remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
     )
 
 
 @pytest.mark.parametrize(
-    ("sys_id", "src_file_exists", "dst_file_exists", "log_msg"),
+    ("available_files",),
     (
-        # ("oracle", None, None, "only related to CentOS Linux"),
-        ("centos", None, True, "file already exists"),
-        # ("centos", True, False, "Copying '"),
+        (
+            [
+                "grubenv",
+                "grub.cfg",
+                "user.cfg",
+            ],
+        ),
+        (
+            [
+                "grubenv",
+                "user.cfg",
+            ],
+        ),
+        (
+            [
+                "grubenv",
+            ],
+        ),
+        # This is not a required file
+        (
+            [
+                "user.cfg",
+            ],
+        ),
     ),
 )
 def test_copy_grub_files(
-    sys_id,
-    src_file_exists,
-    dst_file_exists,
-    log_msg,
+    available_files,
     monkeypatch,
     copy_grub_files_instance,
     global_system_info,
+    tmpdir,
 ):
-    def path_exists(path):
-        return src_file_exists if grub.CENTOS_EFIDIR_CANONICAL_PATH in path else dst_file_exists
-
-    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=path_exists))
-    monkeypatch.setattr(shutil, "copy2", mock.Mock())
-    global_system_info.id = sys_id
-    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
+    global_system_info.id = "centos"
+    monkeypatch.setattr(systeminfo, "system_info", global_system_info)
+    centos_efidir = tmpdir.join("centos").mkdir()
+    # Create an empty file at the centos_efidir/{file} location
+    [centos_efidir.join(file).write("\n") for file in available_files]
+    monkeypatch.setattr(set_efi_config, "CENTOS_EFIDIR_CANONICAL_PATH", str(centos_efidir))
+    rhel_efidir = tmpdir.join("rhel").mkdir()
+    monkeypatch.setattr(set_efi_config, "RHEL_EFIDIR_CANONICAL_PATH", str(rhel_efidir))
 
     copy_grub_files_instance.run()
-    if sys_id == "centos" and src_file_exists and not dst_file_exists:
-        assert shutil.copy2.call_args_list == [
-            mock.call("/boot/efi/EFI/centos/grubenv", "/boot/efi/EFI/redhat/grubenv"),
-            mock.call("/boot/efi/EFI/centos/grub.cfg", "/boot/efi/EFI/redhat/grub.cfg"),
-            mock.call("/boot/efi/EFI/centos/user.cfg", "/boot/efi/EFI/redhat/user.cfg"),
-        ]
+
+    for file in available_files:
+        assert os.path.join(str(rhel_efidir), file)
 
 
-@pytest.mark.parametrize(
-    ("sys_id", "src_file_exists", "dst_file_exists"),
-    (("centos", False, False),),
-)
-def test_copy_grub_files_error(
-    sys_id, src_file_exists, dst_file_exists, monkeypatch, caplog, copy_grub_files_instance, global_system_info
-):
+def test_copy_grub_files_non_centos(monkeypatch, copy_grub_files_instance, caplog, global_system_info):
+    global_system_info.id = "oracle"
+    monkeypatch.setattr(systeminfo, "system_info", global_system_info)
+    copy_grub_files_instance.run()
+    assert "Did not perform copying of GRUB files" in caplog.text
+
+
+def test_copy_grub_files_error(monkeypatch, caplog, copy_grub_files_instance, global_system_info):
     monkeypatch.setattr(os.path, "exists", lambda file: False)
     monkeypatch.setattr(shutil, "copy2", mock.Mock())
-    global_system_info.id = sys_id
-    monkeypatch.setattr("convert2rhel.systeminfo.system_info.id", sys_id)
+    global_system_info.id = "centos"
+    monkeypatch.setattr(systeminfo, "system_info", global_system_info)
 
     copy_grub_files_instance.run()
     unit_tests.assert_actions_result(
         copy_grub_files_instance,
         level="ERROR",
         id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
-        title="Unable to find required file for GRUB config",
-        description="Unable to find the original file required for GRUB configuration at: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
+        title="Couldn't find system GRUB config",
+        description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
     )
 
 
 @centos7
-@pytest.mark.parametrize(
-    ("sys_id", "src_file_exists", "dst_file_exists"),
-    (("centos", False, False),),
-)
 def test_copy_grub_files_io_error(
     monkeypatch,
     caplog,
-    sys_id,
-    src_file_exists,
-    dst_file_exists,
     pretend_os,
     copy_grub_files_instance,
 ):
@@ -187,8 +192,8 @@ def test_copy_grub_files_io_error(
     unit_tests.assert_actions_result(
         copy_grub_files_instance,
         level="ERROR",
-        id="IO_ERROR",
-        title="I/O error",
+        id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
+        title="GRUB files have not been copied to boot directory",
         description=("I/O error(13): Permission denied Some GRUB files have not been copied to /boot/efi/EFI/redhat."),
     )
 
@@ -203,8 +208,8 @@ def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="FOLDER_NOT_REMOVED",
-                title="Folder was not removed",
+                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
+                title="Centos EFI directory was not removed",
                 description="The folder %s is left untouched. You may remove the folder manually"
                 " after you ensure there is no custom data you would need." % grub.CENTOS_EFIDIR_CANONICAL_PATH,
             ),
@@ -221,7 +226,7 @@ def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instan
     unit_tests.assert_actions_result(
         replace_efi_boot_entry_instance,
         level="ERROR",
-        id="BOOTLOADER_ERROR",
-        title="Bootloader error",
+        id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
+        title="Failed to replace EFI boot entry",
         description="Bootloader error",
     )
