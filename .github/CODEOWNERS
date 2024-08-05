@@ -1,0 +1,24 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @global-owner1 and @global-owner2 will be requested for
+# review when someone opens a pull request.
+
+# If you would like to be the owner of something and you
+# are either a member or well-known contributor. Just
+# submit a PR to add yourself
+
+# Convert2RHEL codebase itself
+convert2rhel/             @oamg/convert2rhel-developers
+
+# Integration tests
+tests/integration         @danmyway @kokesak @SerCantus
+
+# Packaging
+packaging/                @Venefilyn @bocekm @pr-watson @r0x0d @bookwar
+
+# Containers
+.devcontainer/            @Venefilyn @r0x0d
+*.Containerfile           @Venefilyn @r0x0d
