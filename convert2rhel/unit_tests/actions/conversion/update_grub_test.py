@@ -182,6 +182,6 @@ def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_erro
         level="ERROR",
         id="BOOTLOADER_ERROR",
         title="Bootloader error detected",
-        description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+        description="A bootloader error has occurred, please look at the diagnosis for more information.",
         diagnosis=diagnosis,
     )

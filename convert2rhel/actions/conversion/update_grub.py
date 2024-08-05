@@ -74,7 +74,7 @@ class UpdateGrub(actions.Action):
                     level="ERROR",
                     id="BOOTLOADER_ERROR",
                     title="Bootloader error detected",
-                    description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+                    description="A bootloader error has occurred, please look at the diagnosis for more information.",
                     diagnosis=str(e),
                 )
                 return
