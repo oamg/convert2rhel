@@ -38,6 +38,8 @@ class NewDefaultEfiBin(actions.Action):
             return
 
         new_default_efibin = None
+        mising_binaries = []
+
         for filename in grub.DEFAULT_INSTALLED_EFIBIN_FILENAMES:
             efi_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
             if os.path.exists(efi_path):
@@ -45,20 +47,22 @@ class NewDefaultEfiBin(actions.Action):
                 new_default_efibin = efi_path
                 break
             logger.debug("UEFI binary %s not found. Checking next possibility..." % efi_path)
+            mising_binaries.append(efi_path)
         if not new_default_efibin:
             self.set_result(
                 level="ERROR",
-                id="RHEL_UEFI_BINARIES_DO_NOT_EXIST",
-                title="RHEL UEFI binaries do not exist",
+                id="RHEL_UEFI_BINARIES_NOT_FOUND",
+                title="RHEL UEFI binaries not found",
                 description="None of the expected RHEL UEFI binaries exist.",
-                diagnosis="The migration of the bootloader setup was not successful.",
+                diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: {} .".format(
+                    ", ".join(mising_binaries)
+                ),
                 remediations=(
-                    "Do not reboot your machine before doing a manual check of the\n"
-                    "bootloader configuration. Ensure that grubenv and grub.cfg files\n"
-                    "are present in the %s directory and that\n"
-                    "a new bootloader entry for Red Hat Enterprise Linux exists\n"
-                    "(check `efibootmgr -v` output).\n"
-                    "The entry should point to '\\EFI\\redhat\\shimx64.efi'." % grub.RHEL_EFIDIR_CANONICAL_PATH
+                    "Verify the bootloader configuration as follows and reboot the system."
+                    " Ensure that `grubenv` and `grub.cfg` files"
+                    " are present in the %s directory. Verify that `efibootmgr -v`"
+                    " shows a bootloader entry for Red Hat Enterprise Linux"
+                    " that points to to '\\EFI\\redhat\\shimx64.efi'." % grub.RHEL_EFIDIR_CANONICAL_PATH
                 ),
             )
 
@@ -75,15 +79,14 @@ class EfibootmgrUtilityInstalled(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
-                title="Efibootmgr utility is not installed",
-                description="The /usr/sbin/efibootmgr utility is not installed.",
-                remediations="Install the efibootmgr utility via YUM/DNF.",
+                title="UEFI boot manager utility not found",
+                description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
+                remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
             )
 
 
 class CopyGrubFiles(actions.Action):
     id = "COPY_GRUB_FILES"
-    dependencies = ("EFIBOOTMGR_UTILITY_INSTALLED",)
 
     def run(self):
         """Copy grub files from centos/ dir to the /boot/efi/EFI/redhat/ dir.
@@ -99,7 +102,7 @@ class CopyGrubFiles(actions.Action):
         super(CopyGrubFiles, self).run()
 
         if systeminfo.system_info.id != "centos":
-            logger.debug("Skipping copying GRUB files - only related to CentOS Linux.")
+            logger.debug("Did not perform copying of GRUB files - only related to CentOS Linux.")
             return
 
         # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
@@ -123,22 +126,23 @@ class CopyGrubFiles(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
-                title="Unable to find required file for GRUB config",
-                description="Unable to find the original file required for GRUB configuration at: %s"
-                % ", ".join(missing_files),
+                title="Couldn't find system GRUB config",
+                description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL: {}".format(
+                    ", ".join(missing_files)
+                ),
             )
             return
 
         for src_file in src_files:
-            # Check if the src_file already exists at the RHEL_EFIDR_CANONICAL_PATH
-            if os.path.exists(os.path.join(RHEL_EFIDIR_CANONICAL_PATH, src_file)):
+            # Skip already existing file in destination directory
+            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
+            if os.path.exists(dst_file):
                 logger.debug(
                     "The %s file already exists in %s folder. Copying skipped."
                     % (os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH)
                 )
                 continue
 
-            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
             logger.info("Copying '%s' to '%s'" % (src_file, dst_file))
             try:
                 shutil.copy2(src_file, dst_file)
@@ -146,8 +150,8 @@ class CopyGrubFiles(actions.Action):
                 # IOError for py2 and OSError for py3
                 self.set_result(
                     level="ERROR",
-                    id="IO_ERROR",
-                    title="I/O error",
+                    id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
+                    title="GRUB files have not been copied to boot directory",
                     description=(
                         "I/O error(%s): %s Some GRUB files have not been copied to /boot/efi/EFI/redhat."
                         % (err.errno, err.strerror)
@@ -171,7 +175,7 @@ class RemoveEfiCentos(actions.Action):
         super(RemoveEfiCentos, self).run()
 
         if systeminfo.system_info.id != "centos":
-            logger.debug("Skipping removing EFI files - only related to CentOS Linux.")
+            logger.debug("Did not perform removal of EFI files - only related to CentOS Linux.")
             # nothing to do
             return
         try:
@@ -184,8 +188,8 @@ class RemoveEfiCentos(actions.Action):
             logger.warning(warning_message)
             self.add_message(
                 level="WARNING",
-                id="FOLDER_NOT_REMOVED",
-                title="Folder was not removed",
+                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
+                title="Centos EFI directory was not removed",
                 description=warning_message,
             )
 
@@ -213,7 +217,7 @@ class ReplaceEfiBootEntry(actions.Action):
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
-                id="BOOTLOADER_ERROR",
-                title="Bootloader error",
+                id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
+                title="Failed to replace EFI boot entry",
                 description=e.message,
             )
