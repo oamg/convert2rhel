@@ -105,7 +105,7 @@ class VerifyRhelKernelInstalled(actions.Action):
             )
             return
 
-        loggerinst.info("RHEL kernel has been installed.")
+        loggerinst.info("RHEL kernel has been verified to be on the system.")
         self.add_message(
             level="INFO",
             id="RHEL_KERNEL_INSTALL_VERIFIED",
