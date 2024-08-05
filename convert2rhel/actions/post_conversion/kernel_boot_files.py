@@ -68,7 +68,7 @@ class KernelBootFiles(actions.Action):
         if is_initramfs_valid or vmlinuz_exists:
             logger.info("The initramfs and vmlinuz files are valid.")
             return
-       
+
         logger.warning(
             "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
             "of your system.\nIn order to fix this problem you may need to free/increase space in your boot partition"
@@ -94,4 +94,3 @@ class KernelBootFiles(actions.Action):
                 "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
             ),
         )
-
