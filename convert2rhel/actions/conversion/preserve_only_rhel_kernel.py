@@ -151,23 +151,25 @@ class FixInvalidGrub2Entries(actions.Action):
         if ret_code:
             # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
             # pick one entry in any case.
-            loggerinst.warning("Couldn't get the default GRUB2 boot loader entry:\n%s" % output)
+            description = "Couldn't get the default GRUB2 boot loader entry:\n%s" % output
+            loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
                 id="UNABLE_TO_GET_GRUB2_BOOT_LOADER_ENTRY",
                 title="Unable to get the GRUB2 boot loader entry",
-                description="Couldn't get the default GRUB2 boot loader entry:\n%s" % output,
+                description=description,
             )
             return
         loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
         output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
         if ret_code:
-            loggerinst.warning("Couldn't set the default GRUB2 boot loader entry:\n%s" % output)
+            description = "Couldn't get the default GRUB2 boot loader entry:\n%s" % output
+            loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
                 id="UNABLE_TO_SET_GRUB2_BOOT_LOADER_ENTRY",
                 title="Unable to set the GRUB2 boot loader entry",
-                description="Couldn't set the default GRUB2 boot loader entry:\n%s" % output,
+                description=description,
             )
 
 
@@ -195,12 +197,13 @@ class FixDefaultKernel(actions.Action):
             None,
         )
         if kernel_to_change:
-            loggerinst.warning("Detected leftover boot kernel, changing to RHEL kernel")
+            description = "Detected leftover boot kernel, changing to RHEL kernel"
+            loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
                 id="LEFTOVER_BOOT_KERNEL_DETECTED",
                 title="Leftover boot kernel detected",
-                description="Detected leftover boot kernel, changing to RHEL kernel",
+                description=description,
             )
             # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
             new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
@@ -229,16 +232,16 @@ class KernelPkgsInstall(actions.Action):
         non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_fingerprint(
             system_info.fingerprints_rhel, "kernel*"
         )
-        if non_rhel_kernels:
-            loggerinst.info("Removing non-RHEL kernels\n")
-            pkghandler.print_pkg_info(non_rhel_kernels)
-            utils.remove_pkgs(
-                pkgs_to_remove=[pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
-            )
-        else:
+        if not non_rhel_kernels:
             loggerinst.info("None found.")
-        return non_rhel_kernels
+            return
 
+        loggerinst.info("Removing non-RHEL kernels\n")
+        pkghandler.print_pkg_info(non_rhel_kernels)
+        utils.remove_pkgs(
+            pkgs_to_remove=[pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels],
+        )
+        return non_rhel_kernels
     def install_additional_rhel_kernel_pkgs(self, additional_pkgs):
         """Convert2rhel removes all non-RHEL kernel packages, including kernel-tools, kernel-headers, etc. This function
         tries to install back all of these from RHEL repositories.
