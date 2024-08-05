@@ -125,7 +125,7 @@ def test_update_grub(
         ),
     ),
 )
-def test_update_grub_messages(
+def test_update_grub_action_messages(
     update_grub_instance, monkeypatch, config_path, grub2_mkconfig_exit_code, grub2_install_exit_code, expected
 ):
     monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
