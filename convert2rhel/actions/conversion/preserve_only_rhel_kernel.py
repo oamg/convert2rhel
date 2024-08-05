@@ -163,7 +163,7 @@ class FixInvalidGrub2Entries(actions.Action):
         loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
         output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
         if ret_code:
-            description = "Couldn't get the default GRUB2 boot loader entry:\n%s" % output
+            description = "Couldn't set the default GRUB2 boot loader entry:\n%s" % output
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",

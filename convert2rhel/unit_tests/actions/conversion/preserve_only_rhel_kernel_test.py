@@ -242,9 +242,9 @@ class TestVerifyRHELKernelInstalled:
             (
                 actions.ActionMessage(
                     level="INFO",
-                    id="RHEL_KERNEL_INSTALLED",
-                    title="RHEL kernel installed",
-                    description="The RHEL kernel has been installed successfully.",
+                    id="RHEL_KERNEL_INSTALL_VERIFIED",
+                    title="RHEL kernel install verified",
+                    description="The RHEL kernel has been verified to be on the system.",
                     diagnosis=None,
                     remediations=None,
                 ),
