@@ -13,8 +13,8 @@ export PATH=$INSTALL_DIR:$PATH
 if ! command -v podman &> /dev/null
 then
     echo "Podman could not be found, installing..."
-    # Download and install podman
-    curl -L https://github.com/containers/podman/releases/download/v4.0.0/podman-remote-static.tar.gz | tar -xz -C $INSTALL_DIR
+    # Download and install podman from an alternative URL
+    curl -L https://download.copr.fedorainfracloud.org/results/@podman/stable/epel-7-x86_64/podman-remote-static.tar.gz | tar -xz -C $INSTALL_DIR
 fi
 
 # Run the container
