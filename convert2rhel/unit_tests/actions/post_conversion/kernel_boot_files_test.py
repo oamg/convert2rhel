@@ -20,7 +20,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import actions, checks, unit_tests
+from convert2rhel import actions, checks
 from convert2rhel.actions.post_conversion import kernel_boot_files
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
