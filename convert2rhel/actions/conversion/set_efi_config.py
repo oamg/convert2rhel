@@ -99,7 +99,7 @@ class CopyGrubFiles(actions.Action):
         super(CopyGrubFiles, self).run()
 
         if systeminfo.system_info.id != "centos":
-            logger.debug("Skipping copying GRUB files - only related to CentOS Linux.")
+            logger.debug("Did not perform copying of GRUB files - only related to CentOS Linux.")
             return
 
         # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
@@ -131,14 +131,14 @@ class CopyGrubFiles(actions.Action):
 
         for src_file in src_files:
             # Check if the src_file already exists at the RHEL_EFIDR_CANONICAL_PATH
-            if os.path.exists(os.path.join(RHEL_EFIDIR_CANONICAL_PATH, src_file)):
+            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
+            if os.path.exists(dst_file):
                 logger.debug(
                     "The %s file already exists in %s folder. Copying skipped."
                     % (os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH)
                 )
                 continue
 
-            dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
             logger.info("Copying '%s' to '%s'" % (src_file, dst_file))
             try:
                 shutil.copy2(src_file, dst_file)
@@ -146,8 +146,8 @@ class CopyGrubFiles(actions.Action):
                 # IOError for py2 and OSError for py3
                 self.set_result(
                     level="ERROR",
-                    id="IO_ERROR",
-                    title="I/O error",
+                    id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
+                    title="GRUB files have not been copied to boot directory",
                     description=(
                         "I/O error(%s): %s Some GRUB files have not been copied to /boot/efi/EFI/redhat."
                         % (err.errno, err.strerror)
@@ -184,8 +184,8 @@ class RemoveEfiCentos(actions.Action):
             logger.warning(warning_message)
             self.add_message(
                 level="WARNING",
-                id="FOLDER_NOT_REMOVED",
-                title="Folder was not removed",
+                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
+                title="Centos EFI directory was not removed",
                 description=warning_message,
             )
 
@@ -213,7 +213,7 @@ class ReplaceEfiBootEntry(actions.Action):
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
-                id="BOOTLOADER_ERROR",
-                title="Bootloader error",
+                id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
+                title="Failed to replace EFI boot entry",
                 description=e.message,
             )
