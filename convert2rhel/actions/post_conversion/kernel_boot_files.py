@@ -62,37 +62,36 @@ class KernelBootFiles(actions.Action):
 
         logger.info("Checking if the '%s' file exists.", vmlinuz_file)
         vmlinuz_exists = os.path.exists(vmlinuz_file)
-        if not vmlinuz_exists:
-            logger.info("The vmlinuz file is not present.")
-
+        logger.info("Checking if the '%s' file exists.", initramfs_file)
         is_initramfs_valid = checks.is_initramfs_file_valid(initramfs_file)
 
-        if not is_initramfs_valid or not vmlinuz_exists:
-            logger.warning(
-                "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-                "of your system.\nIn order to fix this problem you may need to free/increase space in your boot partition"
+        if is_initramfs_valid or vmlinuz_exists:
+            logger.info("The initramfs and vmlinuz files are valid.")
+            return
+       
+        logger.warning(
+            "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
+            "of your system.\nIn order to fix this problem you may need to free/increase space in your boot partition"
+            " and then run the following commands in your terminal:\n"
+            "1. yum reinstall %s-%s -y\n"
+            "2. grub2-mkconfig -o %s\n"
+            "3. reboot",
+            kernel_name,
+            latest_installed_kernel,
+            grub2_config_file,
+        )
+        self.add_message(
+            level="WARNING",
+            id="UNABLE_TO_VERIFY_KERNEL_BOOT_FILES",
+            title="Unable to verify kernel boot files",
+            description="Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
+            "of your system.",
+            remediations=(
+                "In order to fix this problem you may need to free/increase space in your boot partition"
                 " and then run the following commands in your terminal:\n"
                 "1. yum reinstall %s-%s -y\n"
                 "2. grub2-mkconfig -o %s\n"
-                "3. reboot",
-                kernel_name,
-                latest_installed_kernel,
-                grub2_config_file,
-            )
-            self.add_message(
-                level="WARNING",
-                id="UNABLE_TO_VERIFY_KERNEL_BOOT_FILES",
-                title="Unable to verify kernel boot files",
-                description="Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-                "of your system.",
-                remediations=(
-                    "In order to fix this problem you may need to free/increase space in your boot partition"
-                    " and then run the following commands in your terminal:\n"
-                    "1. yum reinstall %s-%s -y\n"
-                    "2. grub2-mkconfig -o %s\n"
-                    "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
-                ),
-            )
+                "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
+            ),
+        )
 
-        else:
-            logger.info("The initramfs and vmlinuz files are valid.")
