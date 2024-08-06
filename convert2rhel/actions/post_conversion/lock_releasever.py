@@ -45,21 +45,20 @@ class LockReleaseverInRHELRepositories(actions.Action):
         # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
         # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be
         # available.
-        if system_info.eus_system and not tool_opts.no_rhsm:
-            loggerinst.info(
-                "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
-                % system_info.releasever
-            )
-            cmd = [
-                "subscription-manager",
-                "release",
-                "--set=%s" % system_info.releasever,
-            ]
-
-            _, ret_code = utils.run_subprocess(cmd, print_output=False)
-            if ret_code != 0:
-                loggerinst.warning("Locking RHEL repositories failed.")
-            else:
-                loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
-        else:
+        if not system_info.eus_system and tool_opts.no_rhsm:
             loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
+            return
+        loggerinst.info(
+            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
+            % system_info.releasever
+        )
+        cmd = [
+            "subscription-manager",
+            "release",
+            "--set=%s" % system_info.releasever,
+        ]
+        _, ret_code = utils.run_subprocess(cmd, print_output=False)
+        if ret_code != 0:
+            loggerinst.warning("Locking RHEL repositories failed.")
+            return
+        loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
