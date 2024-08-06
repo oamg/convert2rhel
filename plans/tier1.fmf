@@ -288,5 +288,8 @@ adjust+:
 
     /error-after-ponr:
         discover+:
+            # Disregarding inheritance in the test discovery. 
+            # As the conversion fails and the system is left in an undetermined state,
+            # we can't perform any checks after the conversion.
             test:
                 - error-after-ponr
