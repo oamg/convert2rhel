@@ -549,7 +549,7 @@ def options_from_config_files(cfg_path):
         This function will parse the configuration file in the following way:
 
         1) If the path provided by the user in cfg_path is set (Highest
-           priority), then we use only that.
+           priority), then we append that to the config files path as index 0.
 
         Otherwise, if cfg_path is `None`, we proceed to check the following
         paths:
@@ -562,18 +562,18 @@ def options_from_config_files(cfg_path):
 
     :param cfg_path: Path of a custom configuration file
     :type cfg_path: str
-
     :return: Dict with the supported options alongside their values.
     :rtype: dict[str, str]
     """
-    # Paths for the configuration files. In case we have cfg_path defined
-    # (meaning that the user entered something through the `-c` option), we
-    # will use only that, as it has a higher priority over the rest
-    config_paths = [cfg_path] if cfg_path else CONFIG_PATHS
+    # Paths for the configuration files. In case we have cfg_path defined (meaning that the user entered something
+    # through the `-c` option), we will insert that option as index 0 in the list of config files paths.
+    config_paths = CONFIG_PATHS
+    if cfg_path:
+        config_paths.insert(0, cfg_path)
     paths = [os.path.expanduser(path) for path in config_paths if os.path.exists(os.path.expanduser(path))]
 
     if cfg_path and not paths:
-        raise FileNotFoundError("No such file or directory: %s" % ", ".join(paths))
+        raise OSError("No such file or directory: %s" % ", ".join(paths))
 
     found_opts = _parse_options_from_config(paths)
     return found_opts
@@ -582,12 +582,7 @@ def options_from_config_files(cfg_path):
 def _parse_options_from_config(paths):
     """Parse the options from the given config files.
 
-    .. note::
-        If no configuration file is provided through the command line option
-        (`-c`), we will use the default paths and follow their priority.
-
-    :param paths: List of paths to iterate through and gather the options from
-        them.
+    :param paths: List of paths to iterate through and gather the options from them.
     :type paths: list[str]
     :return: Return a dict of loaded values under all headers from all the config files with solved priority
     :rtype: dict[str, str]
@@ -619,13 +614,11 @@ def _parse_options_from_config(paths):
 def _get_options_value(config_file, header, supported_opts):
     """Helper function to iterate through the options in a config file.
 
-    :param config_file: An instance of `py:ConfigParser` after reading the file
-        to iterate through the options.
+    :param config_file: An instance of `py:ConfigParser` after reading the file to iterate through the options.
     :type config_file: configparser.ConfigParser
     :param header: The header name to get options from.
     :type header: str
-    :param supported_opts: List of supported options that can be parsed from
-        the config file.
+    :param supported_opts: List of supported options that can be parsed from the config file.
     :type supported_opts: list[str]
     :return: Dict of keys and values loaded from the config file under the provided header
     :rtype: dict[str, str]
@@ -642,7 +635,7 @@ def _get_options_value(config_file, header, supported_opts):
             loggerinst.warning("Unsupported option '%s' in '%s'" % (option, header))
             continue
 
-        options[option] = config_file.get(header, option).strip('"')
+        options[option] = config_file.get(header, option)
         loggerinst.debug("Found %s in %s" % (option, header))
 
     return options
