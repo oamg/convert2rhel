@@ -5,7 +5,7 @@ ENV PIP pip3
 ENV PYTHONDONTWRITEBYTECODE 1
 
 ENV APP_DEV_DEPS "requirements/centos9.requirements.txt"
-ENV APP_DOCS_DEPS "requirements/centos9.requirements.txt"
+ENV APP_DOCS_DEPS "docs/requirements.txt"
 ENV APP_MAIN_DEPS \
     util-linux \
     python3 \
@@ -23,6 +23,7 @@ RUN dnf update -y && dnf install -y $APP_MAIN_DEPS && dnf clean all
 FROM install_main_deps as install_dev_deps
 RUN curl $URL_GET_PIP | $PYTHON
 COPY $APP_DEV_DEPS $APP_DEV_DEPS
+COPY $APP_DOCS_DEPS $APP_DOCS_DEPS
 RUN $PIP install -r $APP_DEV_DEPS -r $APP_DOCS_DEPS
 
 FROM install_dev_deps as install_application
