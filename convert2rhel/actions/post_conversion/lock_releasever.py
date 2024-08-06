@@ -56,7 +56,7 @@ class LockReleaseverInRHELRepositories(actions.Action):
                 "--set=%s" % system_info.releasever,
             ]
 
-            output, ret_code = utils.run_subprocess(cmd, print_output=False)
+            _, ret_code = utils.run_subprocess(cmd, print_output=False)
             if ret_code != 0:
                 loggerinst.warning("Locking RHEL repositories failed.")
             else:
