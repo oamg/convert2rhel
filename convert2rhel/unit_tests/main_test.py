@@ -266,7 +266,6 @@ def test_main(monkeypatch, tmp_path):
     post_ponr_conversion_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
     update_grub_after_conversion_mock = mock.Mock()
-    remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
     finish_collection_mock = mock.Mock()
     check_kernel_boot_files_mock = mock.Mock()
@@ -294,7 +293,6 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(system_info, "modified_rpm_files_diff", rpm_files_diff_mock)
     monkeypatch.setattr(grub, "update_grub_after_conversion", update_grub_after_conversion_mock)
-    monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
@@ -320,7 +318,6 @@ def test_main(monkeypatch, tmp_path):
     assert ask_to_continue_mock.call_count == 1
     assert post_ponr_conversion_mock.call_count == 1
     assert rpm_files_diff_mock.call_count == 1
-    assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert check_kernel_boot_files_mock.call_count == 1

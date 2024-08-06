@@ -379,9 +379,6 @@ def post_ponr_changes():
     loggerinst.task("Final: Update GRUB2 configuration")
     grub.update_grub_after_conversion()
 
-    loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-    utils.remove_tmp_dir()
-
     loggerinst.task("Final: Check kernel boot files")
     checks.check_kernel_boot_files()
 
