@@ -45,7 +45,7 @@ class LockReleaseverInRHELRepositories(actions.Action):
         # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
         # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be
         # available.
-        if not system_info.eus_system and tool_opts.no_rhsm:
+        if not system_info.eus_system or tool_opts.no_rhsm:
             loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
             return
         loggerinst.info(
