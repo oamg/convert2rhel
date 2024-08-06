@@ -3,9 +3,10 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import CustomLogger
 
 
-loginst = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class DivideByZeroTest(actions.Action):
@@ -23,7 +24,7 @@ class LogCriticalTest(actions.Action):
 
     def run(self):
         super(LogCriticalTest, self).run()
-        loginst.critical("Critical log will cause a SystemExit.")
+        logger.critical("Critical log will cause a SystemExit.")
 
 
 class SuccessTest(actions.Action):

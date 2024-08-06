@@ -45,16 +45,6 @@ LOG_DIR = "/var/log/convert2rhel"
 logger = logging.getLogger("convert2rhel")
 
 
-class LogLevelCriticalNoExit:
-    level = 50
-    label = "CRITICAL"
-
-
-class LogLevelTask:
-    level = 15
-    label = "TASK"
-
-
 class LogLevelFile:
     level = 5
     # Label messages DEBUG as it is contains the same messages as debug, just that they always go
@@ -122,14 +112,9 @@ def setup_logger_handler():
     from your application's main start point.
     """
     # set custom labels
-    logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
-    logging.addLevelName(LogLevelCriticalNoExit.level, LogLevelCriticalNoExit.label)
-    logging.Logger.task = _task
-    logging.Logger.file = _file
     logging.Logger.debug = _debug
     logging.Logger.critical = _critical
-    logging.Logger.critical_no_exit = _critical_no_exit
 
     # enable raising exceptions
     logging.raiseExceptions = True
@@ -233,25 +218,12 @@ def archive_old_logger_files(log_name, log_dir):
     shutil.move(current_log_file, archive_log_file)
 
 
-def _task(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelTask.level):
-        self._log(LogLevelTask.level, msg, args, **kwargs)
-
-
-def _file(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelFile.level):
-        self._log(LogLevelFile.level, msg, args, **kwargs)
-
-
 def _critical(self, msg, *args, **kwargs):
     if self.isEnabledFor(logging.CRITICAL):
         self._log(logging.CRITICAL, msg, args, **kwargs)
-        sys.exit(msg)
-
-
-def _critical_no_exit(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelCriticalNoExit.level):
-        self._log(LogLevelCriticalNoExit.level, msg, args, **kwargs)
+        extra = kwargs.pop("extra", {})
+        if not extra.get("noExit"):
+            sys.exit(msg)
 
 
 def _debug(self, msg, *args, **kwargs):
@@ -299,33 +271,74 @@ class CustomFormatter(logging.Formatter):
         self.color_disabled = value
 
     def format(self, record):
-        if record.levelno == LogLevelTask.level:
-            temp = "*" * (90 - len(record.msg) - 25)
-            fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "OKGREEN")
-            self._fmt = new_fmt
+        """Format tasks, etc
+
+        :param logging.LogRecord record: Logger-provided LogRecord that is
+        provided when we use logging.warning() etc.
+        :return str: _description_
+        """
+        fmt_orig = "%(levelname)s - %(message)s"
+        self.datefmt = ""
+        # Used when providing isTask in the extra field
+        # e.g. logging.warning("Testing", extra={"isTask": True})
+        isTask = getattr(record, "isTask", False)
+        color = self._getLogLevelColor(record, isTask)
+        if isTask:
+            asterisks = "*" * (90 - len(record.msg) - 25)
+            fmt_orig = "\n[%(asctime)s] TASK - [%(message)s] " + asterisks
             self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
-        elif record.levelno in [logging.INFO]:
-            self._fmt = "%(message)s"
-            self.datefmt = ""
-        elif record.levelno in [logging.WARNING]:
-            fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "WARNING")
-            self._fmt = new_fmt
-            self.datefmt = ""
-        elif record.levelno >= logging.ERROR:
-            # Error, Critical, Critical_no_exit
-            fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "FAIL")
-            self._fmt = new_fmt
-            self.datefmt = ""
-        else:
-            self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
+        elif record.levelno >= logging.INFO:
+            fmt_orig = "%(message)s"
+        elif record.levelno >= logging.DEBUG:
+            fmt_orig = "[%(asctime)s] %(levelname)s - %(message)s"
             self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
 
+        new_fmt = fmt_orig if not color or self.color_disabled else colorize(fmt_orig, color)
+        self._fmt = new_fmt
         if hasattr(self, "_style"):
             # Python 3 has _style for formatter
             # Overwriting the style _fmt gets the result we want
             self._style._fmt = self._fmt
 
         return super(CustomFormatter, self).format(record)
+
+    def _getLogLevelColor(self, record, isTask=False):
+        if isTask:
+            return "OKGREEN"
+        elif record.levelno >= logging.WARNING:
+            return "WARNING"
+        elif record.levelno >= logging.ERROR:
+            return "FAIL"
+        return None
+
+
+class CustomLogger(logging.Logger):
+
+    loggerInst = logging.getLogger()
+
+    def __init__(self, logger):
+        self.loggerInst = logger
+
+    def critical_no_exit(self, message, *args, **kwargs):
+        return self.loggerInst.critical(message, extra={"noExit": True}, *args, **kwargs)
+
+    def task(self, message, *args, **kwargs):
+        return self.loggerInst.info(message, extra={"isTask": True}, *args, **kwargs)
+
+    def file(self, message, *args, **kwargs):
+        return self.loggerInst.debug(message, *args, **kwargs)
+
+    def __getattribute__(self, attr):
+        """_summary_
+
+        :param _type_ name: _description_
+        :return logging.Logger: _description_
+        """
+        # First check the logger provided
+        logger = object.__getattribute__(self, "loggerInst")
+        if attr in logger.__dict__:
+            return logger.__dict__[attr]
+        # if it doesn't exist in the logger provided, check our own methods
+        selfAttr = object.__getattribute__(self, attr)
+        if selfAttr:
+            return selfAttr

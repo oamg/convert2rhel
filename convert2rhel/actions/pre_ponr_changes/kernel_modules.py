@@ -23,11 +23,12 @@ import re
 from functools import cmp_to_key
 
 from convert2rhel import actions, pkghandler
+from convert2rhel.logger import CustomLogger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"
 

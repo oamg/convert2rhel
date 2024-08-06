@@ -19,12 +19,13 @@ import logging
 import os
 
 from convert2rhel import actions, repo
+from convert2rhel.logger import CustomLogger
 from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class IsLoadedKernelLatest(actions.Action):

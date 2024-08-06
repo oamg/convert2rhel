@@ -21,6 +21,8 @@ import pytest
 from _pytest.warning_types import PytestUnknownMarkWarning
 from dotenv import dotenv_values
 
+from convert2rhel.logger import CustomLogger
+
 
 try:
     from pathlib import Path
@@ -29,7 +31,7 @@ except ImportError:
 
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 def pytest_collection_modifyitems(items):

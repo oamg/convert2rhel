@@ -18,9 +18,10 @@ __metaclass__ = type
 import logging
 
 from convert2rhel import actions, exceptions, pkgmanager
+from convert2rhel.logger import CustomLogger
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 
 class ValidatePackageManagerTransaction(actions.Action):

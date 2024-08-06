@@ -24,9 +24,10 @@ import shutil
 
 from convert2rhel import backup, systeminfo, utils
 from convert2rhel.backup.files import RestorableFile
+from convert2rhel.logger import CustomLogger
 
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger(logging.getLogger(__name__))
 
 GRUB2_BIOS_ENTRYPOINT = "/boot/grub2"
 """The entrypoint path of the BIOS GRUB2"""
