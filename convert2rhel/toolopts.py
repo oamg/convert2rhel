@@ -589,6 +589,8 @@ def _parse_options_from_config(paths):
     :param paths: List of paths to iterate through and gather the options from
         them.
     :type paths: list[str]
+    :return: Return a dict of loaded values under all headers from all the config files with solved priority
+    :rtype: dict[str, str]
     """
     config_file = configparser.ConfigParser()
     found_opts = {}
@@ -625,6 +627,8 @@ def _get_options_value(config_file, header, supported_opts):
     :param supported_opts: List of supported options that can be parsed from
         the config file.
     :type supported_opts: list[str]
+    :return: Dict of keys and values loaded from the config file under the provided header
+    :rtype: dict[str, str]
     """
     options = {}
     conf_options = config_file.options(header)
