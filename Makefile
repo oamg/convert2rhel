@@ -121,7 +121,9 @@ tests: tests7 tests8 tests9
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
+MANPAGES_WIRTABLE_FILES=. man/synopsis man/convert2rhel.8
 CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
+CONTAINER_MANPAGE_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:Z --name manpage-container -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(MANPAGES_WIRTABLE_FILES) ; chown app:app $(MANPAGES_WIRTABLE_FILES); su app -c "PYTHONPATH=. python3 scripts/manpage_generation.py"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
 
 tests7: image7
 	@echo 'CentOS Linux 7 tests'
@@ -135,6 +137,9 @@ tests9: image9
 	@echo 'CentOS 9 tests'
 	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
+build_manpage: image9
+	@echo 'Building Manpage with CentOS 9'
+	@$(call CONTAINER_MANPAGE_FUNC,centos9)
 
 .rpm7:
 	rm -frv .rpms/*el7*
