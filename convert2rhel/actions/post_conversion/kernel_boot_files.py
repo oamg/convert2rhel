@@ -70,15 +70,16 @@ class KernelBootFiles(actions.Action):
             return
 
         remediations = (
-                "In order to fix this problem you may need to free/increase space in your boot partition"
-                " and then run the following commands in your terminal:\n"
-                "1. yum reinstall %s-%s -y\n"
-                "2. grub2-mkconfig -o %s\n"
-                "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
-            )
+            "In order to fix this problem you may need to free/increase space in your boot partition"
+            " and then run the following commands in your terminal:\n"
+            "1. yum reinstall %s-%s -y\n"
+            "2. grub2-mkconfig -o %s\n"
+            "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
+        )
         logger.warning(
             "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-            "of your system.\n%s", remediations
+            "of your system.\n%s",
+            remediations,
         )
         self.add_message(
             level="WARNING",
