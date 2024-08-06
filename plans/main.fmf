@@ -54,6 +54,9 @@ prepare+:
       copr: '@oamg/convert2rhel'
       package: convert2rhel
       missing: fail
+    - name: Install general dependencies
+      how: install
+      package: rpmdevtools
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

@@ -60,21 +60,26 @@ def custom_kernel(shell, hybrid_rocky_image):
     repo_from_path = _cross_vendor_kernel()
     custom_kernel_installed = None
     if os.environ["TMT_REBOOT_COUNT"] == "0":
+        yum_call = f"yum --disablerepo=* --repofrompath=customkernelrepo,{repo_from_path}"
+
+        # Query for all kernels in the repoquery
+        # grep -v exclude any .src packages
+        # rpmdev-sort sort packages by version
+        # tail -1 the last in the list as the latest one
+        #   (we don't really care about the version, install the latest to mitigate any potential dependency issues)
+        available_kernel_version = shell(
+            f"{yum_call} repoquery kernel | grep -v '.src' | rpmdev-sort | tail -1"
+        ).output.strip()
+
         # Install the kernel from the path provided by the _cross_vendor_kernel
         # This way we don't rely on any specific version of kernel hardcoded and install what's available in the repository
         # Disable all other repositories
         # Call without the gpg check, so we won't need to import the GPG key
-        assert (
-            shell(
-                f"yum install kernel -y --nogpgcheck --disablerepo=* --repofrompath=customkernelrepo,{repo_from_path}"
-            ).returncode
-            == 0
-        )
-        # Read the last installed kernel version from the rpm command output
-        custom_kernel_installed = os.popen("rpm -q --last kernel | head -1 | cut -d ' ' -f1").read().strip()
+        assert shell(f"{yum_call} install -y --nogpgcheck {available_kernel_version}").returncode == 0
 
+        custom_kernel_installed = re.sub("kernel-(?:\d+:)?", "", available_kernel_version)
         # Assemble the full title of the custom kernel and set it as default to boot to
-        grub_substring = _get_full_kernel_title(shell, kernel=custom_kernel_installed.replace("kernel-", ""))
+        grub_substring = _get_full_kernel_title(shell, kernel=custom_kernel_installed)
         assert shell(f"grub2-set-default '{grub_substring}'").returncode == 0
         shell("tmt-reboot -t 600")
 

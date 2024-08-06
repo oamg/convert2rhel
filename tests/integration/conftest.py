@@ -703,7 +703,8 @@ def outdated_kernel(shell, hybrid_rocky_image):
             shell(f"yum install kernel -y --repofromurl 'oldrepo,{old_repo}'")
 
         # Get the oldest kernel VRA
-        oldest_kernel = shell("rpm -q kernel | sort -V | head -1 | awk -F'kernel-' '{print $2}'").output.strip()
+        # Sort the versions numerically by each item using
+        oldest_kernel = shell("rpm -q kernel | awk -F'kernel-' '{print $2}' | rpmdev-sort | head -1").output.strip()
         # Get the full kernel title from grub to set later
         default_kernel_title = _get_full_kernel_title(shell, kernel=oldest_kernel)
         grub_setup_workaround(shell)
@@ -936,7 +937,9 @@ def workaround_remove_uek():
     Reference issue https://issues.redhat.com/browse/RHELC-1544
     """
     if SystemInformationRelease.distribution == "oracle":
-        subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False, capture_output=True)
+        subprocess.run(
+            ["yum", "remove", "-y", "kernel-uek"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
     yield
 
