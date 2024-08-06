@@ -389,6 +389,55 @@ class TestFixInvalidGrub2Entries:
         assert expected.issuperset(fix_invalid_grub2_entries_instance.messages)
         assert expected.issubset(fix_invalid_grub2_entries_instance.messages)
 
+    @pytest.mark.parametrize(
+        ("version", "expected"),
+        (
+            (Version(7, 9), False),
+            (Version(8, 9), True),
+        ),
+    )
+    def test_fix_invalid_grub2_entries_execution(
+        self, monkeypatch, fix_invalid_grub2_entries_instance, caplog, version, expected
+    ):
+
+        monkeypatch.setattr(system_info, "version", version)
+        run_subprocess_mocked = RunSubprocessMocked(
+            side_effect=unit_tests.run_subprocess_side_effect(
+                (
+                    (
+                        "/usr/sbin/grubby",
+                        "--default-kernel",
+                    ),
+                    (
+                        "bootloader",
+                        0,
+                    ),
+                ),
+                (
+                    (
+                        "/usr/sbin/grubby",
+                        "--set-default",
+                        "bootloader",
+                    ),
+                    (
+                        "bootloader",
+                        0,
+                    ),
+                ),
+            ),
+        )
+
+        monkeypatch.setattr(
+            utils,
+            "run_subprocess",
+            value=run_subprocess_mocked,
+        )
+        fix_invalid_grub2_entries_instance.run()
+        if expected:
+            assert "Fixing GRUB boot loader" in caplog.text
+        else:
+            assert "Fixing GRUB boot loader" not in caplog.text
+
 
 class TestFixDefaultKernel:
     @pytest.mark.parametrize(

@@ -234,7 +234,7 @@ class KernelPkgsInstall(actions.Action):
         )
         if not non_rhel_kernels:
             loggerinst.info("None found.")
-            return
+            return None
 
         loggerinst.info("Removing non-RHEL kernels\n")
         pkghandler.print_pkg_info(non_rhel_kernels)
