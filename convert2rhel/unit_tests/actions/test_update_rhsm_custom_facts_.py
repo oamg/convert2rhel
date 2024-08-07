@@ -37,12 +37,18 @@ def test_update_rhsm_custom_fatcs_failure(update_rhsm_custom_facts_instance, mon
     # need to mock runsubprocess
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
-    # here is the message expected
-    diagnosis = "Failed to update the RHSM custom facts with return code 'whatever return code is' and output 'whatever output is'."
-
     update_rhsm_custom_facts_instance.run()
 
-    excepted = set((actions.ActionMessage(level="WARNING", id="", description="", diagnosis=None)))
+    # expected = set((actions.ActionMessage(level="WARNING", id="UPDATE_RHSM_CUSTOM_FACTS", title="FailedRHSMUpdateCustomFacts", description=message, diagnosis=None),))
+    expected = {
+        actions.ActionMessage(
+            level="WARNING",
+            title="FailedRHSMUpdateCustomFacts",
+            id="UPDATE_RHSM_CUSTOM_FACTS",
+            description="Failed to update the RHSM custom facts with return code 'whatever return code is' and output 'whatever output is'.",
+            diagnosis=None,
+        )
+    }
 
-    assert excepted.issuperset(update_rhsm_custom_facts_instance.message)
-    assert excepted.issubset(update_rhsm_custom_facts_instance.message)
+    assert expected.issuperset(update_rhsm_custom_facts_instance.messages)
+    assert expected.issubset(update_rhsm_custom_facts_instance.messages)
