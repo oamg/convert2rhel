@@ -93,6 +93,8 @@ class RemoveSpecialPackages(actions.Action):
         got merged together into this one, making possible to remove and back
         up all the packages in a single transaction.
         """
+        super(RemoveSpecialPackages, self).run()
+
         all_pkgs = []
         pkgs_removed = []
         try:
@@ -169,8 +171,6 @@ class RemoveSpecialPackages(actions.Action):
                 ),
                 diagnosis=message,
             )
-
-        super(RemoveSpecialPackages, self).run()
 
 
 def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
