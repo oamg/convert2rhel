@@ -86,27 +86,27 @@ PackageInformation = namedtuple(
         "packager",
         "vendor",
         "nevra",
-        "fingerprint",
+        "key_id",
         "signature",
     ),
 )
 
 
-def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
+def get_installed_pkgs_by_key_id(key_ids, name=""):
     """
     Return list of names of installed packages that are signed by the specific
-    OS GPG keys. Fingerprints of the GPG keys are passed as a list in the
-    fingerprints parameter.
+    OS GPG keys. key_ids of the GPG keys are passed as a list in the
+    key_ids parameter.
     The packages can be optionally filtered by name.
 
-    :param fingerprints: Fingerprints to filter packages found
-    :type fingerprints: list[str]
+    :param key_ids: key_ids to filter packages found
+    :type key_ids: list[str]
     :param name: Name of a package to filter. Defaults to empty string
     :type name: str
     :return: A list of packages with name and arch.
     :rtype: list[str]
     """
-    pkgs_w_fingerprints = get_installed_pkg_information(name)
+    pkgs_w_key_ids = get_installed_pkg_information(name)
 
     # We have a problem regarding the package names not being converted and
     # causing duplicate problems if they are both installed on their i686 and
@@ -114,21 +114,19 @@ def get_installed_pkgs_by_fingerprint(fingerprints, name=""):
     # architecture to make sure both of them will be passed to dnf and, if
     # possible, converted. This issue does not happen on yum, so we can still
     # use only the package name for it.
-    return [
-        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_fingerprints if pkg.fingerprint in fingerprints
-    ]
+    return ["%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_key_ids if pkg.key_id in key_ids]
 
 
-def _get_pkg_fingerprint(signature):
-    """Get fingerprint of the key used to sign a package."""
-    fingerprint_match = re.search("Key ID (.*)", signature)
-    return fingerprint_match.group(1) if fingerprint_match else "none"
+def _get_pkg_key_id(signature):
+    """Get key_id of the key used to sign a package."""
+    key_id_match = re.search("Key ID (.*)", signature)
+    return key_id_match.group(1) if key_id_match else "none"
 
 
 def get_installed_pkg_information(pkg_name="*"):
     """
     Get information about a package, such as signature from the RPM database,
-    packager, vendor, NEVRA and fingerprint.
+    packager, vendor, NEVRA and key_id.
 
     :param pkg_name: Full name of a package to check their signature.  If not given, information about all installed packages is returned.
     :type pkg_obj: str
@@ -164,15 +162,15 @@ def get_installed_pkg_information(pkg_name="*"):
                 name, epoch, version, release, arch = tuple(parse_pkg_string(name))
 
                 # If a package has a signature, then proceed to get the package
-                # fingerprint. Otherwise, just set it to None.
-                fingerprint = _get_pkg_fingerprint(signature) if signature else None
+                # key_id. Otherwise, just set it to None.
+                key_id = _get_pkg_key_id(signature) if signature else None
 
                 normalized_list.append(
                     PackageInformation(
                         packager.strip(),
                         vendor,
                         PackageNevra(name, epoch, version, release, arch),
-                        fingerprint,
+                        key_id,
                         signature,
                     )
                 )
@@ -273,29 +271,25 @@ def get_third_party_pkgs():
     Get all the third party packages (non-Red Hat and non-original OS-signed)
     that are going to be kept untouched.
     """
-    third_party_pkgs = get_installed_pkgs_w_different_fingerprint(
-        system_info.fingerprints_orig_os + system_info.fingerprints_rhel
-    )
+    third_party_pkgs = get_installed_pkgs_w_different_key_id(system_info.key_ids_orig_os + system_info.key_ids_rhel)
 
     return third_party_pkgs
 
 
-def get_installed_pkgs_w_different_fingerprint(fingerprints, name="*"):
+def get_installed_pkgs_w_different_key_id(key_ids, name="*"):
     """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
     of yum and hawkey.Package objects in case of dnf) that are not signed
-    by the specific OS GPG keys. Fingerprints of the GPG keys are passed as a
-    list in the fingerprints parameter. The packages can be optionally
+    by the specific OS GPG keys. key_ids of the GPG keys are passed as a
+    list in the key_ids parameter. The packages can be optionally
     filtered by name.
     """
-    # if no fingerprints, skip this check.
-    if not fingerprints:
+    # if no key_ids, skip this check.
+    if not key_ids:
         return []
 
-    pkgs_w_fingerprints = get_installed_pkg_information(name)
+    pkgs_w_key_ids = get_installed_pkg_information(name)
 
-    return [
-        pkg for pkg in pkgs_w_fingerprints if pkg.fingerprint not in fingerprints and pkg.nevra.name != "gpg-pubkey"
-    ]
+    return [pkg for pkg in pkgs_w_key_ids if pkg.key_id not in key_ids and pkg.nevra.name != "gpg-pubkey"]
 
 
 @utils.run_as_child_process
@@ -541,7 +535,7 @@ def list_non_red_hat_pkgs_left():
     Red Hat-signed ones during the conversion.
     """
     loggerinst.info("Listing packages not signed by Red Hat")
-    non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
+    non_red_hat_pkgs = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel)
     if non_red_hat_pkgs:
         loggerinst.info("The following packages were left unchanged.\n")
         print_pkg_info(non_red_hat_pkgs)
@@ -576,7 +570,7 @@ def get_packages_to_remove(pkgs):
     pkgs_to_remove = []
     for pkg in pkgs:
         temp = "." * (50 - len(pkg) - 2)
-        pkg_objects = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, pkg)
+        pkg_objects = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, pkg)
         pkgs_to_remove.extend(pkg_objects)
         loggerinst.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
 
@@ -587,19 +581,15 @@ def get_system_packages_for_replacement():
     """
     Get a list of packages in the system to be replaced. This function will
     return a list of packages installed on the system by using the
-    `system_info.fingerprint_orig_os` signature.
+    `system_info.key_id_orig_os` signature.
 
     :return: A list of packages installed on the system.
     :rtype: list[str]
     """
-    fingerprints = system_info.fingerprints_orig_os
-    packages_with_fingerprints = get_installed_pkg_information()
+    key_ids = system_info.key_ids_orig_os
+    packages_with_key_ids = get_installed_pkg_information()
 
-    return [
-        "%s.%s" % (pkg.nevra.name, pkg.nevra.arch)
-        for pkg in packages_with_fingerprints
-        if pkg.fingerprint in fingerprints
-    ]
+    return ["%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in packages_with_key_ids if pkg.key_id in key_ids]
 
 
 def install_gpg_keys():
@@ -646,7 +636,7 @@ def install_rhel_kernel():
     already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
     if already_installed:
         rhel_kernel_nevra = already_installed.group(1)
-        non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
+        non_rhel_kernels = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel")
         for non_rhel_kernel in non_rhel_kernels:
             # We're comparing to NEVRA since that's what yum/dnf prints out
             if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
@@ -758,13 +748,13 @@ def verify_rhel_kernel_installed():
 
 
 def is_rhel_kernel_installed():
-    installed_rhel_kernels = get_installed_pkgs_by_fingerprint(system_info.fingerprints_rhel, name="kernel")
+    installed_rhel_kernels = get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
     return len(installed_rhel_kernels) > 0
 
 
 def remove_non_rhel_kernels():
     loggerinst.info("Searching for non-RHEL kernels ...")
-    non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel*")
+    non_rhel_kernels = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel*")
     if non_rhel_kernels:
         loggerinst.info("Removing non-RHEL kernels\n")
         print_pkg_info(non_rhel_kernels)
