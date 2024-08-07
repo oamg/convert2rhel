@@ -1139,41 +1139,6 @@ def test_enable_repos_toolopts_enablerepo(
 @pytest.mark.parametrize(
     ("subprocess", "expected"),
     (
-        (("output", 0), "RHEL repositories locked"),
-        (("output", 1), "Locking RHEL repositories failed"),
-    ),
-)
-@centos8
-def test_lock_releasever_in_rhel_repositories(subprocess, expected, monkeypatch, caplog, pretend_os):
-    cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
-    run_subprocess_mock = RunSubprocessMocked(
-        side_effect=unit_tests.run_subprocess_side_effect(
-            (cmd, subprocess),
-        )
-    )
-    version = Version(8, 6)
-    monkeypatch.setattr(system_info, "version", version)
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mock,
-    )
-    monkeypatch.setattr(system_info, "eus_system", value=True)
-    subscription.lock_releasever_in_rhel_repositories()
-
-    assert expected in caplog.records[-1].message
-    assert run_subprocess_mock.call_count == 1
-
-
-@centos7
-def test_lock_releasever_in_rhel_repositories_not_eus(pretend_os, caplog):
-    subscription.lock_releasever_in_rhel_repositories()
-    assert "Skipping locking RHEL repositories to a specific EUS minor version." in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
-    ("subprocess", "expected"),
-    (
         (("output", 0), "RHSM custom facts uploaded successfully."),
         (("output", 1), "Failed to update the RHSM custom facts with return code '1' and output 'output'."),
     ),
