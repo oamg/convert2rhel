@@ -638,27 +638,25 @@ def install_rhel_kernel():
     output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
 
     if ret_code != 0:
-        loggerinst.critical("Error occured while attempting to install the RHEL kernel")
+        loggerinst.critical("Error occurred while attempting to install the RHEL kernel")
 
     # Check if kernel with same version is already installed.
     # Example output from yum and dnf:
     #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
-    already_installed = re.search(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
+    already_installed = re.findall(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
     if already_installed:
-        rhel_kernel_nevra = already_installed.group(1)
         non_rhel_kernels = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel, "kernel")
-        for non_rhel_kernel in non_rhel_kernels:
-            # We're comparing to NEVRA since that's what yum/dnf prints out
-            if rhel_kernel_nevra == get_pkg_nevra(non_rhel_kernel):
-                # If the installed kernel is from a third party (non-RHEL) and has the same NEVRA as the one available
-                # from RHEL repos, it's necessary to install an older version RHEL kernel and the third party one will
-                # be removed later in the conversion process. It's because yum/dnf is unable to reinstall a kernel.
-                loggerinst.info(
-                    "\nConflict of kernels: One of the installed kernels"
-                    " has the same version as the latest RHEL kernel."
-                )
-                handle_no_newer_rhel_kernel_available()
-                return True
+        # At this point the only possibility to have a unique RHEL kernel installed is through the main transaction
+        # We can assume, that this kernel package is newer, than those available in the original OS repositories
+        unique_rhel_kernel = [kernel for kernel in already_installed if kernel not in non_rhel_kernels]
+        if not unique_rhel_kernel:
+            loggerinst.info(
+                "\nConflict of kernels: One of the installed kernels" " has the same version as the latest RHEL kernel."
+            )
+
+            handle_no_newer_rhel_kernel_available()
+            return True
+
     return False
 
 
