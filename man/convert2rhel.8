@@ -4,9 +4,9 @@ convert2rhel \- Automates the conversion of Red Hat Enterprise Linux derivative 
 .SH SYNOPSIS
 .
   convert2rhel [--version] [-h]
-  convert2rhel <subcommand> [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
-  convert2rhel <subcommand> [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
-  convert2rhel <subcommand> [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--els] [--eus] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--els] [--eus] [--debug] [--restart] [-y]
+  convert2rhel <subcommand> [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--els] [--eus] [--debug] [--restart] [-y]
 .SH DESCRIPTION
 The Convert2RHEL utility automates converting Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux. The whole conversion procedure is performed on the running RHEL derivative OS installation and a restart is needed at the end of the conversion to boot into the RHEL kernel. The utility replaces the original OS packages with the RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8, Scientific Linux 7, Alma Linux 8, and Rocky Linux 8 to the respective major version of RHEL.
 
@@ -32,9 +32,9 @@ Convert the system. If no subcommand is given, 'convert' is used as a default.
 .SH COMMAND \fI\,'convert2rhel analyze'\/\fR
 usage:
   convert2rhel [\-\-version] [\-h]
-  convert2rhel analyze [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel analyze [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel analyze [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel analyze [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
 
 .SH OPTIONS \fI\,'convert2rhel analyze'\/\fR
 .TP
@@ -55,6 +55,11 @@ compared to show you what rpm files have been affected by the conversion.
 Cannot be used with analyze subcommand. The environment variable
 CONVERT2RHEL_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
 argument.
+
+.TP
+\fB\-\-els\fR
+Utilize Extended Lifecycle Support (els) repositories. Necessary for RHEL 7
+servers to land on a system patched with the latest security errata.
 
 .TP
 \fB\-\-eus\fR
@@ -171,9 +176,9 @@ requires to have the \-\-enablerepo specified.
 .SH COMMAND \fI\,'convert2rhel convert'\/\fR
 usage:
   convert2rhel [\-\-version] [\-h]
-  convert2rhel convert [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel convert [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
-  convert2rhel convert [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-u username] [\-p password | \-c conf_file_path] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-\-no\-rhsm] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
+  convert2rhel convert [\-k activation_key | \-c conf_file_path] [\-o organization] [\-\-pool pool_id | \-a] [\-\-disablerepo repoid] [\-\-enablerepo repoid] [\-\-serverurl url] [\-\-no\-rpm\-va] [\-\-els] [\-\-eus] [\-\-debug] [\-\-restart] [\-y]
 
 .SH OPTIONS \fI\,'convert2rhel convert'\/\fR
 .TP
@@ -194,6 +199,11 @@ compared to show you what rpm files have been affected by the conversion.
 Cannot be used with analyze subcommand. The environment variable
 CONVERT2RHEL_INCOMPLETE_ROLLBACK needs to be set to 1 to use this
 argument.
+
+.TP
+\fB\-\-els\fR
+Utilize Extended Lifecycle Support (els) repositories. Necessary for RHEL 7
+servers to land on a system patched with the latest security errata.
 
 .TP
 \fB\-\-eus\fR
