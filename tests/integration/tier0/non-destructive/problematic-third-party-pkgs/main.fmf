@@ -4,7 +4,6 @@ description+: |
     Verify that the overridable checks work as intended in both
     scenarios with or without the respective envar set.
 
-
 /list_third_party_pkgs:
     summary+: |
         List third party packages check

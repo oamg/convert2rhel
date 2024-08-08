@@ -61,6 +61,10 @@ tag+:
 
 
 /convert2rhel_version:
+    adjust+:
+        result: xfail
+        when: distro == alma-9, oracle-9, rocky-9, stream-9
+        because: We're unable to validate the version of convert2rhel, as there is no build GA for EL9 yet
     summary+: |
         convert2rhel version check
     /c2r_is_latest_with_mocked_newer_version:
@@ -93,9 +97,8 @@ tag+:
         description+: |
             Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
             environment variable in place, does not raise CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE.
-        adjust+:
-            environment+:
-                CONVERT2RHEL_ALLOW_OLDER_VERSION: 1
+        environment+:
+            CONVERT2RHEL_ALLOW_OLDER_VERSION: 1
         tag+:
             - version-older-with-envar
             - inhibitor
@@ -153,9 +156,8 @@ tag+:
            honored and the conversion should end
         2/ convert2rhel is run in conversion mode, the envar should be
            accepted and conversion continues
-    adjust+:
-        environment+:
-            CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+    environment+:
+        CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
     tag+:
         - incomplete-rollback-in-analyze
     test: |
@@ -168,9 +170,8 @@ tag+:
         This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
         The user should be warned that the --no-rpm-va option will be ignored and the command
         will be called.
-    adjust+:
-        environment+:
-            CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
+    environment+:
+        CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
     tag+:
         - analyze-no-rpm-va-option
         - sanity

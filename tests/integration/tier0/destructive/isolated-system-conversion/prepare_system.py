@@ -3,7 +3,7 @@ import socket
 
 import pytest
 
-from conftest import TEST_VARS, SystemInformationRelease
+from conftest import TEST_VARS, SystemInformationRelease, _get_full_kernel_title, grub_setup_workaround
 
 
 def configure_connection():
@@ -48,6 +48,18 @@ def test_prepare_system(shell, satellite_registration):
     # there is also an update of the <system>-release package the repositories would get restored.
     # Therefore, we update the system with all repositories disabled enabling only the Satellite.
     assert shell("yum update -y --disablerepo=* --enablerepo=Satellite_Engineering*")
+
+    # We have deliberately skipped setting the standard RHCK as a running kernel ansible task during the host preparation
+    # that is done, so we do not end up with kernel version ahead of the one available on the Satellite server
+    if SystemInformationRelease.distribution == "oracle":
+        # The latest RHCK should be installed at this point already by the system update
+        # Keep this just as a safety measure
+        shell("yum install kernel -y --disablerepo=* --enablerepo=Satellite_Engineering*")
+        latest_kernel = shell("rpm -q --last kernel | head -1 | cut -d ' ' -f1 | sed 's/kernel-//'").output.strip()
+        default_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
+        grub_setup_workaround(shell)
+        shell(f"grub2-set-default '{default_kernel_title.strip()}'")
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
     repos_dir = "/etc/yum.repos.d"
     # At this point we can safely remove all the repofiles except the redhat.repo

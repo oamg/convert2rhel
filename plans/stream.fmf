@@ -40,10 +40,9 @@ adjust+:
                     test+<:
                         - conversion-method/satellite_conversion
             /pre_registered_system_conversion:
-                adjust+:
-                    - environment+:
-                          C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-                          C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
+                environment+:
+                    C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                    C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
                 discover+:
                     test+<:
                         - conversion-method/pre_registered_system_conversion
@@ -61,9 +60,8 @@ adjust+:
                     exclude:
                         - checks-after-conversion/rhel_subman
             /isolated_system_conversion:
-                adjust+:
-                  - environment+:
-                      TESTS_DONT_UPDATE_SYSTEM: 1
+                environment+:
+                    TESTS_DONT_UPDATE_SYSTEM: 1
                 prepare+:
                     - name: Allow access to Satellite only
                       how: shell

@@ -54,14 +54,18 @@ SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
 
 SAT_REG_COMMAND = {
     "alma-8-latest": SAT_REG_FILE["ALMA8_SAT_REG"],
+    "alma-9-latest": SAT_REG_FILE["ALMA9_SAT_REG"],
     "alma-8.8": SAT_REG_FILE["ALMA88_SAT_REG"],
     "rocky-8-latest": SAT_REG_FILE["ROCKY8_SAT_REG"],
     "rocky-8.8": SAT_REG_FILE["ROCKY88_SAT_REG"],
+    "rocky-9-latest": SAT_REG_FILE["ROCKY9_SAT_REG"],
     "oracle-8-latest": SAT_REG_FILE["ORACLE8_SAT_REG"],
+    "oracle-9-latest": SAT_REG_FILE["ORACLE9_SAT_REG"],
     "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
     "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
     "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
     "stream-8-latest": SAT_REG_FILE["STREAM8_SAT_REG"],
+    "stream-9-latest": SAT_REG_FILE["STREAM9_SAT_REG"],
 }
 
 
@@ -83,7 +87,9 @@ SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
 @pytest.fixture()
 def shell(tmp_path):
-    """Live shell."""
+    """
+    Live shell.
+    """
 
     def factory(command, silent=False, hide_command=False):
         if silent:
@@ -443,12 +449,16 @@ def remove_repositories(shell, backup_directory):
     backup_dir = os.path.join(backup_directory, "repos")
     shell(f"mkdir {backup_dir}")
     # Move all repos to other location, so it is not being used
-    assert shell(f"mv /etc/yum.repos.d/* {backup_dir}").returncode == 0
+    assert shell(f"mv -v /etc/yum.repos.d/* {backup_dir}").returncode == 0
     assert len(os.listdir("/etc/yum.repos.d/")) == 0
+    assert os.path.exists("/etc/yum.repos.d")
 
     yield
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        # Make sure the reposdir is present
+        # It gets removed with the *-release package on EL9 systems
+        shell("mkdir /etc/yum.repos.d")
         # Return repositories to their original location
         assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
 
@@ -464,25 +474,28 @@ def missing_os_release_package_workaround(shell):
     yield
 
     os_to_pkg_mapping = {
-        "oracle-7": ["oraclelinux-release-el7", "oraclelinux-release"],
-        "oracle-8": ["oraclelinux-release-el8", "oraclelinux-release"],
         "centos-7": ["centos-release"],
         "centos-8": ["centos-linux-release"],
-        "alma-8": ["almalinux-release"],
-        "rocky-8": ["rocky-release"],
-        "stream-8": ["centos-stream-release"],
+        "almalinux": ["almalinux-release"],
+        "rocky": ["rocky-release"],
+        "oracle": ["oraclelinux-release"],
+        "stream": ["centos-stream-release"],
     }
 
     # Run only for non-destructive tests.
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        # Not using the SystemInformationRelease class here, because at this point the *-release
-        # package is missing from the system, including the /etc/system-release file
-        os_name = SYSTEM_RELEASE_ENV.split("-")[0]
-        os_ver = SYSTEM_RELEASE_ENV.split("-")[1]
-        os_key = f"{os_name}-{os_ver[0]}"
+        os_name = SystemInformationRelease.distribution
+        os_ver = SystemInformationRelease.version.major
+        if "centos" in os_name:
+            os_key = f"{os_name}-{os_ver}"
+        else:
+            os_key = os_name
 
         system_release_pkgs = os_to_pkg_mapping.get(os_key)
+
+        if os_key == "oracle":
+            system_release_pkgs.append(f"oraclelinux-release-el{SystemInformationRelease.version.major}")
 
         for pkg in system_release_pkgs:
             installed = shell(f"rpm -q {pkg}").returncode
@@ -504,13 +517,13 @@ def _load_json_schema(path):
 
 
 @pytest.fixture
-def pre_registered(shell, request, yum_conf_exclude):
+def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     For Oracle Linux we're using the _add_client_tools_repo_oracle to enable the client-tools repository
     to install the subscription-manager package from.
-    We also exclude the rhn-client* packages for the same reason.
-    On Oracle Linux subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
+    We call the subman installation with the no obsolete flag to be able to install the package even on Oracle Linux
+     where the subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
     By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
@@ -525,13 +538,10 @@ def pre_registered(shell, request, yum_conf_exclude):
         print(">>> Using parametrized username and password requested in the fixture.")
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        # Remove the rhn-client-tools package to make way for subscription-manager installation
-        # given subman is obsoleted by the rhn-client-tools on Oracle
-        shell("yum remove -y rhn-client-tools")
         # Add the client-tools repository for Oracle linux to install subscription-manager from
         _add_client_tools_repo(shell)
 
-    assert shell("yum install -y subscription-manager").returncode == 0
+    assert shell("yum install --setopt=obsoletes=0 -y subscription-manager").returncode == 0
     # The SSL certificate for accessing cdn.redhat.com is intentionally missing from
     # the subscription-manager-rhsm-certificates package on CentOS Linux 7
     shell(
@@ -631,56 +641,29 @@ def environment_variables(request):
     return _unset_env_var
 
 
-# TODO remove when https://issues.redhat.com/browse/RHELC-1389 resolved
-@pytest.fixture(autouse=True, scope="function")
-def remediation_out_of_date_packages(shell):
+def _get_full_kernel_title(shell, kernel=None):
     """
-    Remediation fixture.
-    There is an open issue https://issues.redhat.com/browse/RHELC-1389
-    The python3-syspurpose package is left outdated on the system in some cases,
-    causing subsequent tests to fail.
-    Update the package at the end of each test function if needed.
+    Helper function.
+    Get the full kernel boot entry title.
+    :param kernel: kernel pacakge VRA (version-release.architecture)
+    :type kernel: str
+
+    :return: The full boot entry title for the given kernel.
+    :rtype: str
     """
-    problematic_packages = ["python3-syspurpose"]
+    # Get the full name of the kernel (ignore rescue kernels)
+    full_title = shell(
+        f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
+    ).output.strip()
 
-    yield
-
-    for package in problematic_packages:
-        shell(f"yum update -y {package}")
-
-
-def _create_old_repo(distro: str, repo_name: str):
-    """
-    Create a repo on system with content that is older than the latest released version.
-    The intended use is for Rocky-8 and Alma-8.
-    """
-    baseurl = None
-    if distro == "alma":
-        baseurl = "https://repo.almalinux.org/vault/8.8/BaseOS/$basearch/os/"
-        if "8.8" in SYSTEM_RELEASE_ENV:
-            baseurl = "https://repo.almalinux.org/vault/8.6/BaseOS/$basearch/os/"
-    elif distro == "rocky":
-        baseurl = "https://download.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/"
-        if "8.8" in SYSTEM_RELEASE_ENV:
-            baseurl = "https://download.rockylinux.org/vault/rocky/8.6/BaseOS/$basearch/os/"
-    else:
-        pytest.fail(f"Unsupported distro ({distro}) provided.")
-    with open(f"/etc/yum.repos.d/{repo_name}.repo", "w") as f:
-        f.write(f"[{repo_name}]\n")
-        f.write(f"name={repo_name}\n")
-        f.write(f"baseurl={baseurl}\n")
-        f.write("enabled=0\n")
-        f.write("gpgcheck=0\n")
+    return full_title
 
 
 @pytest.fixture(scope="function")
-def kernel(shell):
+def outdated_kernel(shell, hybrid_rocky_image):
     """
-    Install specific kernel version and configure
-    the system to boot to it. The kernel version is not the
-    latest one available in repositories.
+    Install an older version of kernel and let the system boot to it.
     """
-
     # If the fixture gets executed after second `tmt-reboot` (after cleanup of a test) then
     # do not trigger test again by yielding.
     # Note that we cannot just run `return` command as this fixture require to have
@@ -689,41 +672,45 @@ def kernel(shell):
         pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        # Set default kernel
-        if "centos-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Linux (3.10.0-1160.el7.x86_64) 7 (Core)'")
-        elif "oracle-7" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-3.10.0-1160.el7.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server 7.9, with Linux 3.10.0-1160.el7.x86_64'")
-        elif "centos-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-348.el8 -y").returncode == 0
-            shell("grub2-set-default 'CentOS Stream (4.18.0-348.el8.x86_64) 8'")
-        # Test is being run only for the latest released oracle-linux
-        elif "oracle-8" in SYSTEM_RELEASE_ENV:
-            assert shell("yum install kernel-4.18.0-80.el8.x86_64 -y").returncode == 0
-            shell("grub2-set-default 'Oracle Linux Server (4.18.0-80.el8.x86_64) 8.0'")
-        elif "alma-8" in SYSTEM_RELEASE_ENV:
-            repo_name = "alma_old"
-            _create_old_repo(distro="alma", repo_name=repo_name)
-            if "8.8" in SYSTEM_RELEASE_ENV:
-                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Sky Tiger)'")
-            else:
-                assert shell(f"yum install kernel-4.18.0-477.27.2.el8_8.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'AlmaLinux (4.18.0-477.27.2.el8_8.x86_64) 8.8 (Sapphire Caracal)'")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            repo_name = "rocky_old"
-            _create_old_repo(distro="rocky", repo_name=repo_name)
-            if "8.8" in SYSTEM_RELEASE_ENV:
-                assert shell(f"yum install kernel-4.18.0-372.13.1.el8_6.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-372.13.1.el8_6.x86_64) 8.6 (Green Obsidian)'")
-            else:
-                assert shell(f"yum install kernel-4.18.0-477.27.1.el8_8.x86_64 -y --enablerepo {repo_name}")
-                shell("grub2-set-default 'Rocky Linux (4.18.0-477.27.1.el8_8.x86_64) 8.8 (Green Obsidian)'")
-        elif "stream-8" in SYSTEM_RELEASE_ENV:
-            # Given the CentOS Stream rolling release, we are able to just downgrade the kernel
-            assert shell("yum downgrade kernel -y").returncode == 0
+        # Verify that there is multiple kernels installed
+        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
+            # We don't need to do anything at this point
+            # The whole setup needed happens after
+            pass
+
+        # Try to downgrade kernel version, if there is not multiple versions installed already.
+        # If the kernel downgrade fails, assume it's not possible and try to install from
+        # an older repo. This should only happen when Alma and Rocky has just landed on
+        # a fresh minor version.
+        elif shell("yum downgrade kernel -y").returncode != 0:
+            # Assuming this can only happen with Alma and Rocky we'll try to install an older kernel
+            # from a previous minor version.
+            # For that we need to use the vault url and bump te current minor down one version.
+            major_ver = SystemInformationRelease.version.major
+            minor_ver = SystemInformationRelease.version.minor
+            minor_ver -= 1
+            if minor_ver < 0:
+                # In case we're on a x.0 version, there is not an older repo to work with.
+                # Skip the test if so
+                pytest.skip("There is no older kernel to install for this system.")
+            releasever = ".".join((str(major_ver), str(minor_ver)))
+            old_repo = None
+            if SystemInformationRelease.distribution == "alma":
+                old_repo = f"https://vault.almalinux.org/{releasever}/BaseOS/x86_64/os/"
+            elif SystemInformationRelease.distribution == "rocky":
+                old_repo = f"https://dl.rockylinux.org/vault/rocky/{releasever}/BaseOS/x86_64/os/"
+            # Install the kernel from the url
+            shell(f"yum install kernel -y --repofromurl 'oldrepo,{old_repo}'")
+
+        # Get the oldest kernel VRA
+        # Sort the versions numerically by each item using
+        oldest_kernel = shell("rpm -q kernel | awk -F'kernel-' '{print $2}' | rpmdev-sort | head -1").output.strip()
+        # Get the full kernel title from grub to set later
+        default_kernel_title = _get_full_kernel_title(shell, kernel=oldest_kernel)
+        grub_setup_workaround(shell)
+        # Set the older kernel as default
+        shell(f"grub2-set-default '{default_kernel_title.strip()}'")
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         shell("tmt-reboot -t 600")
 
@@ -741,21 +728,11 @@ def kernel(shell):
             "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
         ).output
 
-        # Get the full name of the kernel (ignore rescue kernels)
-        full_name = shell(
-            'grubby --info ALL | grep "title=.*{}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''.format(
-                latest_kernel
-            )
-        ).output
+        full_boot_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
 
         # Set the latest kernel as the one we want to reboot to
-        shell("grub2-set-default '{}'".format(full_name.strip()))
-
-        # Remove the mocked repofile
-        if "alma-8" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/alma_old.repo")
-        elif "rocky-8" in SYSTEM_RELEASE_ENV:
-            shell(f"rm -f /etc/yum.repos.d/rocky_old.repo")
+        shell(f"grub2-set-default '{full_boot_kernel_title.strip()}'")
+        shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
 
         # Reboot after clean-up
         shell("tmt-reboot -t 600")
@@ -777,19 +754,14 @@ def yum_conf_exclude(shell, backup_directory, request):
 
         def test_function(yum_conf_exclude):
     """
-    # We need to do this only for Oracle Linux
-    # rhn* is one of the excluded packages in convert2rhel configs
-    # so if the package is present on the system, is excluded in yum.conf
-    # and convert2rhel tries to back it up by calling yumdownloader
-    # it fails to do so because the call conflicts with the exclude option
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        exclude = ["rhn-client*"]
-        if hasattr(request, "param"):
-            exclude = request.param
-            print(">>> Using parametrized packages requested in the fixture.")
-        yum_config = "/etc/yum.conf"
-        backup_dir = os.path.join(backup_directory, "yumconf")
-        shell(f"mkdir -v {backup_dir}")
+    exclude = [""]
+    if hasattr(request, "param"):
+        exclude = request.param
+        print(">>> Using parametrized packages requested in the fixture.")
+    yum_configs = ["/etc/yum.conf", "/etc/dnf/dnf.conf"]
+    backup_dir = os.path.join(backup_directory, "yumconf")
+    shell(f"mkdir -v {backup_dir}")
+    for yum_config in yum_configs:
         config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
         config = configparser.ConfigParser()
         config.read(yum_config)
@@ -812,12 +784,13 @@ def yum_conf_exclude(shell, backup_directory, request):
 
     yield
 
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        # Clean up only for non-destrucive tests
-        # We need to keep the yum.conf in the descructive tests, since restoring the original
-        # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
-        # the system information from the then non-existent file
-        if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+    # Clean up only for non-destrucive tests
+    # We need to keep the yum.conf in the descructive tests, since restoring the original
+    # version has the discoverpkg option set to centos|oracle|alma|rocky-release trying to read
+    # the system information from the then non-existent file
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        for yum_config in yum_configs:
+            config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
             assert shell(f"mv {config_bak} {yum_config}").returncode == 0
 
 
@@ -827,8 +800,10 @@ def _add_client_tools_repo(shell):
     Runs only on Oracle Linux system
     Create an ubi repo for its respective major version to install subscription-manager from.
     """
-    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
-    if SystemInformationRelease.version.major == 7:
+    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo"
+    if SystemInformationRelease.version.major == 8:
+        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
+    elif SystemInformationRelease.version.major == 7:
         repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
 
     # Add the redhat-release GPG key
@@ -851,7 +826,7 @@ def _remove_client_tools_repo(shell):
 
 
 @pytest.fixture
-def satellite_registration(shell, yum_conf_exclude, request):
+def satellite_registration(shell, request):
     """
     Fixture
     Register the system to the Satellite server
@@ -882,6 +857,11 @@ def satellite_registration(shell, yum_conf_exclude, request):
 
     if "oracle" in SYSTEM_RELEASE_ENV:
         _remove_client_tools_repo(shell)
+
+    ### This is a workaround which might be removed, when we enable the Satellite repositories by default
+    repos_to_enable = shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output.split()
+    for repo in repos_to_enable:
+        shell(f"subscription-manager repos --enable {repo}")
 
     yield
 
@@ -921,8 +901,8 @@ def backup_directory(shell, request):
 
 
 @pytest.fixture()
-def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
-    """ "
+def install_and_set_up_subman_to_stagecdn(shell):
+    """
     A fixture to install subscription-manager and set up to point to a testing environments.
     rhsm.baseurl and server.hostname to be changed.
     This might be dropped when ELS, 8.10, etc. goes actually GA.
@@ -930,11 +910,7 @@ def install_and_set_up_subman_to_stagecdn(shell, yum_conf_exclude):
     # Add the client tools repository to install the subscription-manager from
     # This is mainly for Oracle Linux but does not hurt to do the same for CentOS as well
     _add_client_tools_repo(shell)
-    # Since we're using the yum_conf_exclude fixture, which excludes rhn-client*
-    # by default, we need to remove the pacakge to prevent issues during the yum transaction
-    if SystemInformationRelease.distribution == "oracle":
-        shell("yum remove -y rhn-client*")
-    shell(f"yum install subscription-manager -y")
+    shell(f"yum install --setopt=obsoletes=0 subscription-manager -y")
 
     # Point the server hostname to the staging environment,
     # so we don't need to pass it to convert2rhel explicitly
@@ -961,9 +937,24 @@ def workaround_remove_uek():
     Reference issue https://issues.redhat.com/browse/RHELC-1544
     """
     if SystemInformationRelease.distribution == "oracle":
-        subprocess.run(["yum", "remove", "-y", "kernel-uek"], check=False)
+        subprocess.run(
+            ["yum", "remove", "-y", "kernel-uek"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
     yield
+
+
+def grub_setup_workaround(shell):
+    """
+    Workaround fixture.
+    /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
+    Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
+    as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
+    than the latest.
+    """
+    if SystemInformationRelease.version.major == 9:
+        print("TESTS >>> Setting grub default to correct values.")
+        shell(r"sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub")
 
 
 @pytest.fixture(autouse=True)
@@ -976,6 +967,6 @@ def keep_centos_pointed_to_vault(shell):
     Make sure the repositories are pointed to the vault to keep the system usable.
     """
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
-        sed_repos_to_vault = 'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+        sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
         print("TESTS >>> Resetting the repos to vault")
         shell(sed_repos_to_vault, silent=True)

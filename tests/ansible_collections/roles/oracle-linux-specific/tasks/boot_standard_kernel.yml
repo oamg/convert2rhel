@@ -1,4 +1,7 @@
 ---
+- name: Gather facts
+  ansible.builtin.setup:
+
 - name: Install standard kernel
   yum:
     name: "kernel.*"
@@ -10,3 +13,6 @@
 
 - name: Set default kernel to Red Hat compatible kernel
   shell: "grubby --set-default /boot/vmlinuz-{{ kernel_ver.stdout }}"
+
+- name: Run grub2-mkconfig
+  shell: grub2-mkconfig -o /boot/grub2/grub.cfg

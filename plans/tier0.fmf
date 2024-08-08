@@ -54,10 +54,9 @@ adjust+:
                   - conversion-method/one_key_satellite_conversion
 
             /pre_registered_system_conversion:
-                adjust+:
-                  - environment+:
-                      C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-                      C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
+                environment+:
+                    C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+                    C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
                 discover+:
                     test+<:
                         - conversion-method/pre_registered_system_conversion
@@ -159,8 +158,8 @@ adjust+:
                 /resolve_dependency:
                     adjust+:
                         - enabled: true
-                          when: distro == centos, oracle
-                          because: We do not have any tracked packages with Rocky and Alma for this test case
+                          when: distro == centos, oracle and distro != oracle-9
+                          because: We do not have any tracked packages for Alma, Rocky or Oracle Linux 9 for this test case
                     summary+: |
                         Handle dependency packages
                     description+: |
@@ -174,6 +173,10 @@ adjust+:
                           script: pytest tests/integration/*/destructive/single-yum-transaction/install_dependency_packages.py
 
             /yum_distro_sync:
+                adjust+:
+                  - enabled: false
+                    when: distro == stream-9, oracle-9, alma-9, rocky-9
+                    because: We don't have any reported/reproduced problematic package for EL9
                 prepare+:
                       - name: enable CentOS' extras repo
                         how: ansible
@@ -187,9 +190,8 @@ adjust+:
 
 
         /isolated_system_conversion:
-            adjust+:
-                - environment+:
-                    TESTS_DONT_UPDATE_SYSTEM: 1
+            environment+:
+                TESTS_DONT_UPDATE_SYSTEM: 1
             prepare+:
                 - name: Allow access to Satellite only
                   how: shell

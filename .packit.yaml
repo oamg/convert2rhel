@@ -44,6 +44,141 @@ jobs:
   # TEST JOBS
   ## Tests on pull request stage. Tests are run on demand
   ### Definitions of the tier0 tests (non-destructive and destructive separately)
+  - &tests-tier0-oraclelinux-9
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-9-x86_64:
+        distros: ["OL9.3-x86_64-HVM-2024-02-02"] # Owner ID for Oracle Linux images 131827586825
+    trigger: pull_request
+    identifier: "tier0-ol9"
+    tmt_plan: "tier0/core"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: oracle-9-latest
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - tier0
+      - oracle9
+      - el9
+
+  - &tests-sanity-oraclelinux-9
+    <<: *tests-tier0-oraclelinux-9
+    identifier: "sanity-ol9"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - oracle9
+      - sanity
+      - el9
+
+  - &tests-tier0-almalinux-9
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-9-x86_64:
+        distros: ["AlmaLinux OS 9.4.20240509 x86_64"] # Owner ID for Rocky Linux images 764336703387
+    trigger: pull_request
+    identifier: "tier0-al9"
+    tmt_plan: "tier0/core"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: alma-9-latest
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - tier0
+      - alma9
+      - el9
+
+  - &tests-sanity-almalinux-9
+    <<: *tests-tier0-almalinux-9
+    identifier: "sanity-al9"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - alma9
+      - sanity
+      - el9
+
+  - &tests-tier0-rockylinux-9
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-9-x86_64:
+        distros: ["Rocky-9-EC2-Base-9.4-20240509.0.x86_64"] # Owner ID for Rocky Linux images 792107900819
+    trigger: pull_request
+    identifier: "tier0-rl9"
+    tmt_plan: "tier0/core"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: rocky-9-latest
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - tier0
+      - rocky9
+      - el9
+
+  - &tests-sanity-rockylinux-9
+    <<: *tests-tier0-rockylinux-9
+    identifier: "sanity-rl9"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - tier0
+      - rocky9
+      - sanity
+      - el9
+
   - &tests-stream-8
     job: tests
     # Run tests on-demand
@@ -440,6 +575,33 @@ jobs:
       - tier1
       - rocky-8
 
+  - &tests-tier1-manual-rockylinux-9
+    <<: *tests-tier0-rockylinux-9
+    identifier: "tier1-rl9"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - rocky9
+      - el9
+
+  - &tests-tier1-manual-almalinux-9
+    <<: *tests-tier0-almalinux-9
+    identifier: "tier1-al9"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - alma9
+      - el9
+
+  - &tests-tier1-manual-oraclelinux-9
+    <<: *tests-tier0-oraclelinux-9
+    identifier: "tier1-ol9"
+    tmt_plan: "tier1"
+    labels:
+      - tier1
+      - oracle9
+      - el9
+
   ## Tests on merge to main stage. Tests are run automatically
   - &tests-main-tier1-centos
     <<: *tests-tier0-centos
@@ -500,6 +662,41 @@ jobs:
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-rl8"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-stream-8
+    <<: *tests-stream-8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "stream8"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-rockylinux-9
+    <<: *tests-tier0-rockylinux-9
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-rl9"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-almalinux-9
+    <<: *tests-tier0-almalinux-9
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-al9"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-oraclelinux-9
+    <<: *tests-tier0-oraclelinux-9
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-ol9"
     tmt_plan: "tier1"
     trigger: commit
     branch: main

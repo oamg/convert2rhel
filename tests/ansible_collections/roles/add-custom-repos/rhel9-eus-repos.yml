@@ -1,0 +1,19 @@
+- hosts: all
+  tasks:
+    - name: Add rhel9 baseos eus repo
+      yum_repository:
+        name: rhel-9-for-x86_64-baseos-eus-rpms
+        description: RHEL 9 BaseOS for $basearch
+        baseurl: https://rhsm-pulp.corp.redhat.com/content/eus/rhel9/$releasever/$basearch/baseos/os/
+        gpgcheck: no
+        enabled: no
+        file: rhel9-eus
+
+    - name: Add rhel9 appstream eus repo
+      yum_repository:
+        name: rhel-9-for-x86_64-appstream-eus-rpms
+        description: RHEL 9 AppStream for $basearch
+        baseurl: https://rhsm-pulp.corp.redhat.com/content/eus/rhel9/$releasever/$basearch/appstream/os/
+        gpgcheck: no
+        enabled: no
+        file: rhel9-eus

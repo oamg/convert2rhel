@@ -68,7 +68,7 @@ def test_inhibitor_releasever_noexistent_release(convert2rhel, config_at, os_rel
     """
     with config_at(Path("/etc/system-release")).replace_line(
         "release .+",
-        f"release {os_release.version[0]}.1.1111",
+        f"release {os_release.version[0]}.11.1111",
     ):
         with convert2rhel(
             "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
@@ -80,6 +80,6 @@ def test_inhibitor_releasever_noexistent_release(convert2rhel, config_at, os_rel
             unregister=True,
         ) as c2r:
             c2r.expect(
-                f"CRITICAL - {os_release.name} of version {os_release.version[0]}.1 is not allowed for conversion."
+                f"CRITICAL - {os_release.name} of version {os_release.version[0]}.11 is not allowed for conversion."
             )
         assert c2r.exitstatus == 1

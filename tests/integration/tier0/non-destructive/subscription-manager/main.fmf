@@ -22,8 +22,9 @@ tag+:
         - enabled: true
           when: >
               distro == centos-8
-        - environment+:
-            TEST_REQUIRES: subscription-manager
+
+    environment+:
+        TEST_REQUIRES: subscription-manager
 
     test: |
         pytest -m test_sub_man_rollback
@@ -48,11 +49,9 @@ tag+:
             3. Run convert2rhel without provided credentials
             4. Exit at the point of no return.
             5. Verify that convert2rhel won't unregister the system at any point and the UUID is same before and after the run.
-        adjust+:
-            - environment+:
-                C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-            - environment+:
-                C2R_TESTS_SUBMAN_CLEANUP: 1
+        environment+:
+            C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
+            C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
             pytest -m test_pre_registered_wont_unregister
         tag+:
@@ -71,9 +70,8 @@ tag+:
             3. Run convert2rhel with provided credentials
             4. Verify that convert2rhel re-registered the system
             4. Exit at the point of no return.
-        adjust+:
-            - environment+:
-                C2R_TESTS_SUBMAN_CLEANUP: 1
+        environment+:
+            C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
             pytest -m test_pre_registered_re_register
         tag+:
@@ -97,9 +95,8 @@ tag+:
         description+: |
             This test verifies that running conversion on pre-registered system
             without an attached subscription will try auto attaching the subscription.
-        adjust+:
-            - environment+:
-                C2R_TESTS_NOSUB: 1
+        environment+:
+            C2R_TESTS_NOSUB: 1
         test: |
             pytest -m test_no_sca_not_subscribed
         tag+:
@@ -113,9 +110,8 @@ tag+:
             without an attached subscription will try auto attaching the subscription.
             When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
             error is raised.
-        adjust+:
-            - environment+:
-                C2R_TESTS_NOSUB: 1
+        environment+:
+            C2R_TESTS_NOSUB: 1
         test: |
             pytest -m test_no_sca_subscription_attachment_error
         tag+:
