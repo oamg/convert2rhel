@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from convert2rhel import toolopts
+from convert2rhel import cli
 
 
 def get_parser():
@@ -27,7 +27,7 @@ def get_parser():
     $ python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
     $ PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel <ver>" --prog="convert2rhel" --include man/distribution --include man/synopsis > man/convert2rhel.8
     """
-    parser = toolopts.CLI()._parser
+    parser = cli.CLI()._parser
 
     # Description taken out of our Confluence page.
     parser.description = (

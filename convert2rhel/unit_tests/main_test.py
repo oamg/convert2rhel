@@ -27,7 +27,7 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, checks, exceptions, grub, hostmetering
+from convert2rhel import actions, applock, backup, checks, cli, exceptions, grub, hostmetering
 from convert2rhel import logger as logger_module
 from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, utils
 from convert2rhel.actions import report
@@ -247,7 +247,7 @@ def test_help_exit(monkeypatch, tmp_path):
 def test_main(monkeypatch, tmp_path):
     require_root_mock = mock.Mock()
     initialize_file_logging_mock = mock.Mock()
-    toolopts_cli_mock = mock.Mock()
+    cli_cli_mock = mock.Mock()
     show_eula_mock = mock.Mock()
     print_data_collection_mock = mock.Mock()
     resolve_system_info_mock = mock.Mock()
@@ -275,7 +275,7 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
     monkeypatch.setattr(utils, "require_root", require_root_mock)
     monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-    monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+    monkeypatch.setattr(cli, "CLI", cli_cli_mock)
     monkeypatch.setattr(main, "show_eula", show_eula_mock)
     monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
     monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
@@ -302,7 +302,7 @@ def test_main(monkeypatch, tmp_path):
     assert main.main() == 0
     assert require_root_mock.call_count == 1
     assert initialize_file_logging_mock.call_count == 1
-    assert toolopts_cli_mock.call_count == 1
+    assert cli_cli_mock.call_count == 1
     assert show_eula_mock.call_count == 1
     assert print_data_collection_mock.call_count == 1
     assert resolve_system_info_mock.call_count == 1
@@ -328,21 +328,21 @@ class TestRollbackFromMain:
     def test_main_rollback_post_cli_phase(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
         initialize_file_logging_mock = mock.Mock()
-        toolopts_cli_mock = mock.Mock()
+        cli_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock(side_effect=Exception)
         finish_collection_mock = mock.Mock()
 
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", require_root_mock)
         monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(cli, "CLI", cli_cli_mock)
         monkeypatch.setattr(main, "show_eula", show_eula_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
 
         assert main.main() == 1
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
-        assert toolopts_cli_mock.call_count == 1
+        assert cli_cli_mock.call_count == 1
         assert show_eula_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert "No changes were made to the system." in caplog.records[-2].message
@@ -351,7 +351,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", RequireRootMocked())
         monkeypatch.setattr(main, "initialize_file_logging", InitializeFileLoggingMocked())
-        monkeypatch.setattr(toolopts, "CLI", CLIMocked())
+        monkeypatch.setattr(cli, "CLI", CLIMocked())
         monkeypatch.setattr(main, "show_eula", ShowEulaMocked())
         monkeypatch.setattr(breadcrumbs, "print_data_collection", PrintDataCollectionMocked())
         monkeypatch.setattr(system_info, "resolve_system_info", ResolveSystemInfoMocked())
@@ -376,7 +376,7 @@ class TestRollbackFromMain:
 
         assert main.main() == 1
         assert utils.require_root.call_count == 1
-        assert toolopts.CLI.call_count == 1
+        assert cli.CLI.call_count == 1
         assert main.show_eula.call_count == 1
         assert breadcrumbs.print_data_collection.call_count == 1
         assert system_info.resolve_system_info.call_count == 1
@@ -396,7 +396,7 @@ class TestRollbackFromMain:
     def test_main_traceback_before_action_completion(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
         initialize_file_logging_mock = mock.Mock()
-        toolopts_cli_mock = mock.Mock()
+        cli_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock()
         print_data_collection_mock = mock.Mock()
         resolve_system_info_mock = mock.Mock()
@@ -417,7 +417,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", require_root_mock)
         monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(cli, "CLI", cli_cli_mock)
         monkeypatch.setattr(main, "show_eula", show_eula_mock)
         monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
         monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
@@ -436,7 +436,7 @@ class TestRollbackFromMain:
         assert main.main() == 1
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
-        assert toolopts_cli_mock.call_count == 1
+        assert cli_cli_mock.call_count == 1
         assert show_eula_mock.call_count == 1
         assert print_data_collection_mock.call_count == 1
         assert resolve_system_info_mock.call_count == 1
@@ -459,7 +459,7 @@ class TestRollbackFromMain:
     def test_main_rollback_pre_ponr_changes_phase(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
         initialize_file_logging_mock = mock.Mock()
-        toolopts_cli_mock = mock.Mock()
+        cli_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock()
         print_data_collection_mock = mock.Mock()
         resolve_system_info_mock = mock.Mock()
@@ -482,7 +482,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", require_root_mock)
         monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(cli, "CLI", cli_cli_mock)
         monkeypatch.setattr(main, "show_eula", show_eula_mock)
         monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
         monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
@@ -503,7 +503,7 @@ class TestRollbackFromMain:
         assert main.main() == 2
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
-        assert toolopts_cli_mock.call_count == 1
+        assert cli_cli_mock.call_count == 1
         assert show_eula_mock.call_count == 1
         assert print_data_collection_mock.call_count == 1
         assert resolve_system_info_mock.call_count == 1
@@ -533,7 +533,7 @@ class TestRollbackFromMain:
             (applock, "_DEFAULT_LOCK_DIR", str(tmp_path)),
             (utils, "require_root", mock.Mock()),
             (main, "initialize_file_logging", mock.Mock()),
-            (toolopts, "CLI", mock.Mock()),
+            (cli, "CLI", mock.Mock()),
             (main, "show_eula", mock.Mock()),
             (breadcrumbs, "print_data_collection", mock.Mock()),
             (system_info, "resolve_system_info", mock.Mock()),
@@ -556,7 +556,7 @@ class TestRollbackFromMain:
 
         assert main.main() == 0
         assert utils.require_root.call_count == 1
-        assert toolopts.CLI.call_count == 1
+        assert cli.CLI.call_count == 1
         assert main.show_eula.call_count == 1
         assert breadcrumbs.print_data_collection.call_count == 1
         assert system_info.resolve_system_info.call_count == 1
@@ -576,7 +576,7 @@ class TestRollbackFromMain:
     def test_main_rollback_analyze_exit_phase(self, global_tool_opts, monkeypatch, tmp_path):
         require_root_mock = mock.Mock()
         initialize_file_logging_mock = mock.Mock()
-        toolopts_cli_mock = mock.Mock()
+        cli_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock()
         print_data_collection_mock = mock.Mock()
         resolve_system_info_mock = mock.Mock()
@@ -598,7 +598,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", require_root_mock)
         monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(cli, "CLI", cli_cli_mock)
         monkeypatch.setattr(main, "show_eula", show_eula_mock)
         monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
         monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
@@ -619,7 +619,7 @@ class TestRollbackFromMain:
         assert main.main() == 0
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
-        assert toolopts_cli_mock.call_count == 1
+        assert cli_cli_mock.call_count == 1
         assert show_eula_mock.call_count == 1
         assert print_data_collection_mock.call_count == 1
         assert resolve_system_info_mock.call_count == 1
@@ -638,7 +638,7 @@ class TestRollbackFromMain:
     def test_main_rollback_post_ponr_changes_phase(self, monkeypatch, caplog, tmp_path):
         require_root_mock = mock.Mock()
         initialize_file_logging_mock = mock.Mock()
-        toolopts_cli_mock = mock.Mock()
+        cli_cli_mock = mock.Mock()
         show_eula_mock = mock.Mock()
         print_data_collection_mock = mock.Mock()
         resolve_system_info_mock = mock.Mock()
@@ -662,7 +662,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", require_root_mock)
         monkeypatch.setattr(main, "initialize_file_logging", initialize_file_logging_mock)
-        monkeypatch.setattr(toolopts, "CLI", toolopts_cli_mock)
+        monkeypatch.setattr(cli, "CLI", cli_cli_mock)
         monkeypatch.setattr(main, "show_eula", show_eula_mock)
         monkeypatch.setattr(breadcrumbs, "print_data_collection", print_data_collection_mock)
         monkeypatch.setattr(system_info, "resolve_system_info", resolve_system_info_mock)
@@ -684,7 +684,7 @@ class TestRollbackFromMain:
         assert main.main() == 1
         assert require_root_mock.call_count == 1
         assert initialize_file_logging_mock.call_count == 1
-        assert toolopts_cli_mock.call_count == 1
+        assert cli_cli_mock.call_count == 1
         assert show_eula_mock.call_count == 1
         assert print_data_collection_mock.call_count == 1
         assert resolve_system_info_mock.call_count == 1
@@ -786,7 +786,7 @@ def test_raise_for_skipped_failures(data, exception, match, activity, global_too
 
 
 def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):
-    monkeypatch.setattr(toolopts, "CLI", mock.Mock())
+    monkeypatch.setattr(cli, "CLI", mock.Mock())
     monkeypatch.setattr(utils, "require_root", mock.Mock())
     monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmpdir))
     monkeypatch.setattr(main, "main_locked", mock.Mock(side_effect=applock.ApplicationLockedError("failed")))
