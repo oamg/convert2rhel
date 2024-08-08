@@ -44,11 +44,12 @@ class ModifiedRPMFilesDiff(actions.Action):
 
         pre_rpm_va_log_path = os.path.join(LOG_DIR, PRE_RPM_VA_LOG_FILENAME)
         if not os.path.exists(pre_rpm_va_log_path):
-            logger.info("Skipping comparison of the 'rpm -Va' output from before and after the conversion.")
+            title = "Skipping comparison of the 'rpm -Va' output from before and after the conversion."
+            logger.info(title)
             self.add_message(
                 level="INFO",
                 id="SKIPPED_MODIFIED_RPM_FILES_DIFF",
-                title="Skipped comparison of 'rpm -Va' output from before and after the conversion.",
+                title=title,
                 description="Comparison of 'rpm -Va' output was skipped due missing output "
                 "of the 'rpm -Va' run before the conversion.",
                 diagnosis="This is caused mainly by using '--no-rpm-va' argument for convert2rhel.",
@@ -70,13 +71,13 @@ class ModifiedRPMFilesDiff(actions.Action):
         )
 
         if modified_rpm_files_diff:
-            logger.info(
+            description = (
                 "Comparison of modified rpm files from before and after the conversion:\n%s" % modified_rpm_files_diff
             )
+            logger.info(description)
             self.add_message(
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
                 title="Modified rpm files from before and after the conversion were found.",
-                description="Comparison of modified rpm files from before and after "
-                "the conversion: \n%s" % modified_rpm_files_diff,
+                description=description,
             )
