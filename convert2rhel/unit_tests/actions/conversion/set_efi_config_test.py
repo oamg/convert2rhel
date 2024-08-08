@@ -76,12 +76,10 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
     monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     new_default_efi_bin_instance.run()
-    print("HEREEEEEEEEEEE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(new_default_efi_bin_instance.result)
     unit_tests.assert_actions_result(
         new_default_efi_bin_instance,
         level="ERROR",
-        id="RHEL_UEFI_BINARIES_NOT_FOUND",
+        id="NOT_FOUND_RHEL_UEFI_BINARIES",
         title="RHEL UEFI binaries not found",
         description="None of the expected RHEL UEFI binaries exist.",
         diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: /boot/efi/EFI/redhat/shimx64.efi, /boot/efi/EFI/redhat/grubx64.efi .",
@@ -96,7 +94,7 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
     unit_tests.assert_actions_result(
         efi_bootmgr_utility_installed_instance,
         level="ERROR",
-        id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
+        id="NOT_INSTALLED_EFIBOOTMGR_UTILITY",
         title="UEFI boot manager utility not found",
         description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
         remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
@@ -173,7 +171,7 @@ def test_copy_grub_files_error(monkeypatch, caplog, copy_grub_files_instance, gl
         level="ERROR",
         id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
         title="Couldn't find system GRUB config",
-        description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
+        description="Couldn't find one of the GRUB config files in the current system which is required for configuring UEFI for RHEL: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
     )
 
 
@@ -201,22 +199,30 @@ def test_copy_grub_files_io_error(
 def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
 
     monkeypatch.setattr(os, "rmdir", mock.Mock())
-    os.rmdir.side_effect = OSError()
+    os.rmdir.side_effect = OSError("Could not remove folder")
     remove_efi_centos_instance.run()
 
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
-                title="Centos EFI directory was not removed",
-                description="The folder %s is left untouched. You may remove the folder manually"
+                id="NOT_REMOVED_CENTOS_EFI_DIRECTORY",
+                title="Centos EFI directory could not be removed",
+                description="Failed to remove the folder %s with error: 'Could not remove folder'. You may remove the folder manually"
                 " after you ensure there is no custom data you would need." % grub.CENTOS_EFIDIR_CANONICAL_PATH,
             ),
         )
     )
     assert expected.issuperset(remove_efi_centos_instance.messages)
     assert expected.issubset(remove_efi_centos_instance.messages)
+
+
+def test_remove_efi_centos_non_centos(monkeypatch, remove_efi_centos_instance, global_system_info, caplog):
+    global_system_info.id = "oracle"
+    monkeypatch.setattr(systeminfo, "system_info", global_system_info)
+    remove_efi_centos_instance.run()
+    assert "Did not perform removal of EFI files" in caplog.text
+    assert "Failed to remove the folder" not in caplog.text
 
 
 def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instance):
@@ -228,5 +234,5 @@ def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instan
         level="ERROR",
         id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
         title="Failed to replace EFI boot entry",
-        description="Bootloader error",
+        description="The EFI boot entry could not be replaced due to the following error: 'Bootloader error'",
     )
