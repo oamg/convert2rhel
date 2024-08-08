@@ -38,6 +38,8 @@ class NewDefaultEfiBin(actions.Action):
             return
 
         new_default_efibin = None
+        mising_binaries = []
+
         for filename in grub.DEFAULT_INSTALLED_EFIBIN_FILENAMES:
             efi_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
             if os.path.exists(efi_path):
@@ -45,15 +47,18 @@ class NewDefaultEfiBin(actions.Action):
                 new_default_efibin = efi_path
                 break
             logger.debug("UEFI binary %s not found. Checking next possibility..." % efi_path)
+            mising_binaries.append(efi_path)
         if not new_default_efibin:
             self.set_result(
                 level="ERROR",
-                id="RHEL_UEFI_BINARIES_DO_NOT_EXIST",
+                id="RHEL_UEFI_BINARIES_NOT_FOUND",
                 title="RHEL UEFI binaries not found",
                 description="None of the expected RHEL UEFI binaries exist.",
-                diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries.",
+                diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: {} .".format(
+                    ", ".join(mising_binaries)
+                ),
                 remediations=(
-                    "Verify the bootloader configuration as follows and reboot the system"
+                    "Verify the bootloader configuration as follows and reboot the system."
                     " Ensure that `grubenv` and `grub.cfg` files"
                     " are present in the %s directory. Verify that `efibootmgr -v`"
                     " shows a bootloader entry for Red Hat Enterprise Linux"
@@ -122,8 +127,8 @@ class CopyGrubFiles(actions.Action):
                 level="ERROR",
                 id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
                 title="Couldn't find system GRUB config",
-                description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL:{}".format(
-                    "\n- ".join(missing_files)
+                description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL: {}".format(
+                    ", ".join(missing_files)
                 ),
             )
             return

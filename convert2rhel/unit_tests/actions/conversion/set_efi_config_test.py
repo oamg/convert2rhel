@@ -76,22 +76,16 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
     monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     new_default_efi_bin_instance.run()
-
+    print("HEREEEEEEEEEEE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(new_default_efi_bin_instance.result)
     unit_tests.assert_actions_result(
         new_default_efi_bin_instance,
         level="ERROR",
-        id="RHEL_UEFI_BINARIES_DO_NOT_EXIST",
-        title="RHEL UEFI binaries do not exist",
+        id="RHEL_UEFI_BINARIES_NOT_FOUND",
+        title="RHEL UEFI binaries not found",
         description="None of the expected RHEL UEFI binaries exist.",
-        diagnosis="The migration of the bootloader setup was not successful.",
-        remediations=(
-            "Do not reboot your machine before doing a manual check of the\n"
-            "bootloader configuration. Ensure that grubenv and grub.cfg files\n"
-            "are present in the %s directory and that\n"
-            "a new bootloader entry for Red Hat Enterprise Linux exists\n"
-            "(check `efibootmgr -v` output).\n"
-            "The entry should point to '\\EFI\\redhat\\shimx64.efi'." % grub.RHEL_EFIDIR_CANONICAL_PATH
-        ),
+        diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: /boot/efi/EFI/redhat/shimx64.efi, /boot/efi/EFI/redhat/grubx64.efi .",
+        remediations="Verify the bootloader configuration as follows and reboot the system. Ensure that `grubenv` and `grub.cfg` files are present in the /boot/efi/EFI/redhat/ directory. Verify that `efibootmgr -v` shows a bootloader entry for Red Hat Enterprise Linux that points to to '\\EFI\\redhat\\shimx64.efi'.",
     )
 
 
@@ -103,9 +97,9 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
         efi_bootmgr_utility_installed_instance,
         level="ERROR",
         id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
-        title="Efibootmgr utility is not installed",
-        description="The /usr/sbin/efibootmgr utility is not installed.",
-        remediations="Install the efibootmgr utility via YUM/DNF.",
+        title="UEFI boot manager utility not found",
+        description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
+        remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
     )
 
 
@@ -178,8 +172,8 @@ def test_copy_grub_files_error(monkeypatch, caplog, copy_grub_files_instance, gl
         copy_grub_files_instance,
         level="ERROR",
         id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
-        title="Unable to find required file for GRUB config",
-        description="Unable to find the original file required for GRUB configuration at: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
+        title="Couldn't find system GRUB config",
+        description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL: /boot/efi/EFI/centos/grubenv, /boot/efi/EFI/centos/grub.cfg",
     )
 
 
