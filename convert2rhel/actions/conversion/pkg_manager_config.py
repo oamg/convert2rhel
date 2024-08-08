@@ -28,7 +28,7 @@ class PkgManagerConfig(actions.Action):
 
     def run(self):
         """
-        Check if the distoverpkg tag inside the package manager config has been modified before the conversion and if so
+        Check if the distroverpkg tag inside the package manager config has been modified before the conversion and if so
         comment it out and write to the file.
         """
         super(PkgManagerConfig, self).run()

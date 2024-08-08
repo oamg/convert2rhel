@@ -17,7 +17,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import redhatrelease, unit_tests
+from convert2rhel import redhatrelease
 from convert2rhel.actions.conversion import pkg_manager_config
 
 
