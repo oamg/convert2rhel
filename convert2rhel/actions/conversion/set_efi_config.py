@@ -122,7 +122,9 @@ class CopyGrubFiles(actions.Action):
                 level="ERROR",
                 id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
                 title="Couldn't find system GRUB config",
-                description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL:{}".format("\n- ".join(missing_files)),
+                description="Couldn't find any GRUB config files in the current system which is required for configuring UEFI for RHEL:{}".format(
+                    "\n- ".join(missing_files)
+                ),
             )
             return
 
