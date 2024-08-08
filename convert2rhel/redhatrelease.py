@@ -58,10 +58,14 @@ class PkgManagerConf:
     This means that on dnf systems the dnf.conf will be modified even the path is for the yum.conf.
     """
 
-    def __init__(self, config_path=None):
-        self._pkg_manager_conf_path = config_path
+    _pkg_manager_conf_path = ""  # type: str
+    _pkg_manager_conf_content = ""  # type: str
+
+    def __init__(self, config_path=None):  # type: (str|None) -> None
         if config_path is None:
             self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
+        else:
+            self._pkg_manager_conf_path = config_path
         self._pkg_manager_conf_content = utils.get_file_content(self._pkg_manager_conf_path)
 
     def patch(self):
@@ -69,7 +73,7 @@ class PkgManagerConf:
         release version ($releasever) based on the installed redhat-release
         package.
         """
-        if PkgManagerConf.is_modified():
+        if self.is_modified():
             # When the user touches the yum/dnf config before executing the conversion, then during the conversion yum/dmf as a
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
