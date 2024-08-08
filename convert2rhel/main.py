@@ -180,7 +180,7 @@ def main_locked():
         _raise_for_skipped_failures(post_conversion_results)
         report.post_conversion_report(
             results=post_conversion_results,
-            include_all_reports=False,
+            include_all_reports=True,
             disable_colors=logger_module.should_disable_color_output(),
         )
 
