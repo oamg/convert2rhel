@@ -267,7 +267,6 @@ def test_main(monkeypatch, tmp_path):
     restart_system_mock = mock.Mock()
     finish_collection_mock = mock.Mock()
     check_kernel_boot_files_mock = mock.Mock()
-    update_rhsm_custom_facts_mock = mock.Mock()
     summary_as_json_mock = mock.Mock()
     summary_as_txt_mock = mock.Mock()
     configure_host_metering_mock = mock.Mock()
@@ -294,7 +293,6 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
-    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
     monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
     monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
     monkeypatch.setattr(hostmetering, "configure_host_metering", configure_host_metering_mock)
@@ -319,7 +317,6 @@ def test_main(monkeypatch, tmp_path):
     assert restart_system_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert check_kernel_boot_files_mock.call_count == 1
-    assert update_rhsm_custom_facts_mock.call_count == 1
     assert summary_as_json_mock.call_count == 1
     assert summary_as_txt_mock.call_count == 1
 

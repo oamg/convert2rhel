@@ -955,6 +955,7 @@ def update_rhsm_custom_facts():
                 ret_code,
                 output,
             )
+            return ret_code, output
         else:
             loggerinst.info("RHSM custom facts uploaded successfully.")
     else:
