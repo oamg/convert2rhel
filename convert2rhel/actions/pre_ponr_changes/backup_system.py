@@ -38,7 +38,7 @@ from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 # Match unix path:
 #   [\/\\](?:(?!\.\s+)\S)+(\.)?
 RPM_VA_REGEX = re.compile(
-    r"^(missing|([S\.\?][M\.\?][5\.\?][D\.\?][L\.\?][U\.\?][G\.\?][T\.\?][P\.\?]))\s+[cdlr\s+]\s+[\/\\](?:(?!\.\s+)\S)+(\.)?$"
+    r"^(missing|([S\.\?][M\.\?][5\.\?][D\.\?][L\.\?][U\.\?][G\.\?][T\.\?][P\.\?]))\s+[cdlrg\s+]\s+[\/\\](?:(?!\.\s+)\S)+(\.)?$"
 )
 
 
@@ -153,6 +153,11 @@ class BackupPackageFiles(actions.Action):
         backed_up_paths = ["/etc/yum.repos.d", "/etc/yum/vars", "/etc/dnf/vars"]
 
         for file in package_files_changes:
+            # Ghost files can be skipped since those files are generated during the package run, usually temporary.
+            # We don't need to backup those type of files as was discussed under RHELC-1427
+            if file["file_type"] == "g":
+                continue
+
             if file["status"] == "missing":
                 missing_file = MissingFile(file["path"])
                 backup.backup_control.push(missing_file)

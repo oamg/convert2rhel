@@ -54,7 +54,7 @@ class TestGenerateRPMVA:
 
         # Check that rpm -Va is executed (default)
         assert utils.run_subprocess.called
-        assert utils.run_subprocess.call_args_list[0][0][0] == ["rpm", "-Va"]
+        assert utils.run_subprocess.call_args_list[0][0][0] == ["rpm", "-Va", "--nodeps"]
 
         # Check that the output was stored into the specific file.
         assert os.path.isfile(rpmva_output_file)

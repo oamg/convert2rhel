@@ -390,7 +390,9 @@ class SystemInfo:
             " minutes. It can be disabled by using the"
             " --no-rpm-va option."
         )
-        rpm_va, _ = utils.run_subprocess(["rpm", "-Va"], print_output=False)
+        # Discussed under RHELC-1427, `--nodeps` will skip verification of package dependencies,
+        # avoiding unnecessary packages lookup.
+        rpm_va, _ = utils.run_subprocess(["rpm", "-Va", "--nodeps"], print_output=False)
         output_file = os.path.join(logger.LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
         self.logger.info("The 'rpm -Va' output has been stored in the %s file." % output_file)

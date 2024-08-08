@@ -293,6 +293,14 @@ class TestBackupSystem:
                 ],
                 (True, True),
             ),
+            (
+                [
+                    "S.5.?..T.     c   {path}/filename0",
+                    "S.5.?..T.     g   {path}/filename1",
+                    "S.5.?..T.     c   {path}/filename2",
+                ],
+                (True, False, True),
+            ),
         ),
     )
     def test_backup_package_file_complete(
@@ -390,6 +398,33 @@ class TestBackupSystem:
                     assert f.read() == "Content for testing of file %s" % original_file_path
             elif status == "missing":
                 assert not os.path.isfile(original_file_path)
+
+    @pytest.mark.parametrize(
+        ("rpm_va_output"),
+        (
+            (
+                """S.5.?..T.     g   /path/filename_0,
+                missing     g   /path/filename_1""",
+            )
+        ),
+    )
+    def test_backup_package_file_ghost_files(
+        self, monkeypatch, rpm_va_output, backup_package_files_action, tmpdir, global_backup_control, caplog
+    ):
+        """Test if ghost files are skipped correctly."""
+        rpm_va_logfile_path = os.path.join(str(tmpdir), PRE_RPM_VA_LOG_FILENAME)
+        with open(rpm_va_logfile_path, "w") as f:
+            f.write(rpm_va_output)
+        global_backup_control_push = mock.Mock()
+
+        monkeypatch.setattr(files, "BACKUP_DIR", str(tmpdir))
+        monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
+        monkeypatch.setattr(global_backup_control, "push", global_backup_control_push)
+
+        backup_package_files_action.run()
+
+        assert global_backup_control_push.call_count == 0
+        assert "Skipping invalid output" not in caplog.text
 
 
 class TestBackupRepository:
