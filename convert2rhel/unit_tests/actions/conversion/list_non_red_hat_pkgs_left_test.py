@@ -42,3 +42,13 @@ def test_list_non_red_hat_pkgs_left(list_non_red_hat_pkgs_left_instance, monkeyp
 
     assert len(pkghandler.format_pkg_info.call_args[0][0]) == 1
     assert pkghandler.format_pkg_info.call_args[0][0][0].nevra.name == "pkg2"
+
+
+def test_no_non_red_hat_pkgs_left(list_non_red_hat_pkgs_left_instance, monkeypatch, caplog):
+    monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
+    monkeypatch.setattr(
+        pkghandler, "get_installed_pkg_information", GetInstalledPkgInformationMocked(pkg_selection="empty")
+    )
+    list_non_red_hat_pkgs_left_instance.run()
+
+    assert "All packages are now signed by Red Hat." in caplog.records[-1].message
