@@ -27,7 +27,7 @@ from six.moves import mock
 
 @pytest.fixture
 def pkg_manager_config_instance():
-    return pkg_manager_config.PkgManagerConfig()
+    return pkg_manager_config.ConfigurePkgManager()
 
 
 def test_pkg_manager_config(pkg_manager_config_instance, monkeypatch):
