@@ -21,6 +21,7 @@ import os
 from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,6 @@ class PackageUpdates(actions.Action):
             return
 
         if len(packages_to_update) > 0:
-            package_not_up_to_date_skip = os.environ.get("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP", None)
             package_not_up_to_date_error_message = (
                 "The system has %s package(s) not updated based on repositories defined in the system repositories.\n"
                 "List of packages to update: %s.\n\n"
@@ -86,7 +86,7 @@ class PackageUpdates(actions.Action):
                 "Consider updating the packages before proceeding with the conversion."
                 % (len(packages_to_update), " ".join(packages_to_update))
             )
-            if not package_not_up_to_date_skip:
+            if not check_environment_variable_value("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP"):
                 logger.warning(package_not_up_to_date_error_message)
                 self.set_result(
                     level="OVERRIDABLE",

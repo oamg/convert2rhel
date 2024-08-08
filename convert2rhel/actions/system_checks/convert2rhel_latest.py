@@ -25,6 +25,7 @@ from convert2rhel import __version__ as running_convert2rhel_version
 from convert2rhel import actions, exceptions, repo, utils
 from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils.environment import check_environment_variable_value
 
 
 logger = logging.getLogger(__name__)
@@ -168,7 +169,7 @@ class Convert2rhelLatest(actions.Action):
         formatted_available_version = _format_EVR(*precise_available_version)
 
         if ver_compare < 0:
-            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
+            if check_environment_variable_value("CONVERT2RHEL_ALLOW_OLDER_VERSION"):
                 diagnosis = (
                     "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
