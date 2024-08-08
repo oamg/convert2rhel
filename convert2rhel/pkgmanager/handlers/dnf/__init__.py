@@ -86,6 +86,11 @@ class DnfTransactionHandler(TransactionHandlerBase):
         # going in with the packages in the transaction.
         self._base._ds_callback = DependencySolverProgressIndicatorCallback()
 
+        # Override the exclude option that is loaded from the config and set it to empty.
+        # NOTE(r0x0d): In DNF they have exclude to be `py:excludepkgs`. It is fine to use `exclude` for now as it is
+        # compatible with yum.
+        self._base.conf.exclude = []
+
     def _enable_repos(self):
         """Enable a list of required repositories."""
         self._base.read_all_repos()

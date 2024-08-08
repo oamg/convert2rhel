@@ -267,7 +267,14 @@ class TestHandleNoNewerRHELKernelAvailable:
 
         pkghandler.handle_no_newer_rhel_kernel_available()
 
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--releasever=7Server", "kernel-4.7.2-201.fc24"]
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "--setopt=exclude=",
+            "-y",
+            "--releasever=7Server",
+            "kernel-4.7.2-201.fc24",
+        ]
 
     @centos7
     def test_handle_older_rhel_kernel_not_available(self, pretend_os, monkeypatch):
@@ -294,7 +301,14 @@ class TestHandleNoNewerRHELKernelAvailable:
 
         assert len(utils.remove_pkgs.pkgs) == 1
         assert utils.remove_pkgs.pkgs[0] == "kernel-4.7.4-200.fc24"
-        assert utils.run_subprocess.cmd == ["yum", "install", "-y", "--releasever=7Server", "kernel-4.7.4-200.fc24"]
+        assert utils.run_subprocess.cmd == [
+            "yum",
+            "install",
+            "--setopt=exclude=",
+            "-y",
+            "--releasever=7Server",
+            "kernel-4.7.4-200.fc24",
+        ]
 
 
 class TestReplaceNonRHELInstalledKernel:
