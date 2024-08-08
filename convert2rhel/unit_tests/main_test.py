@@ -695,7 +695,7 @@ class TestRollbackFromMain:
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
-        assert ask_to_continue_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 2
         assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
@@ -803,3 +803,21 @@ def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, retur
     ret = main._handle_inhibitors_found_exception()
 
     assert ret == return_code
+
+
+def test_confirm_user_backup(monkeypatch, caplog):
+    ask_to_continue_mock = mock.Mock()
+
+    monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+
+    main.confirm_user_backup()
+
+    message = (
+        "Convert2RHEL modifies the systems during the analysis and then rolls back these "
+        "changes when the analysis is complete. In rare cases, this rollback can fail. "
+        "By continuing, you confirm that you have made a system backup and verified that "
+        "you can restore from the backup."
+    )
+
+    assert message in caplog.records[-1].message
+    assert ask_to_continue_mock.call_count == 1
