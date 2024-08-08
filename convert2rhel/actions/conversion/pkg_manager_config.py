@@ -23,15 +23,15 @@ from convert2rhel import actions, redhatrelease
 logger = logging.getLogger(__name__)
 
 
-class PkgManagerConfig(actions.Action):
-    id = "PKG_MANAGER_CONFIG"
+class ConfigurePkgManager(actions.Action):
+    id = "CONFIGURE_PKG_MANAGER"
 
     def run(self):
         """
         Check if the distroverpkg tag inside the package manager config has been modified before the conversion and if so
         comment it out and write to the file.
         """
-        super(PkgManagerConfig, self).run()
+        super(ConfigurePkgManager, self).run()
 
         logger.task("Convert: Patch package manager configuration file")
         pmc = redhatrelease.PkgManagerConf()
