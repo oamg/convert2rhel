@@ -33,7 +33,7 @@ INITRAMFS_FILEPATH = "/boot/initramfs-%s.img"
 """The path to the initramfs image in a system."""
 
 
-def _is_initramfs_file_valid(filepath):
+def is_initramfs_file_valid(filepath):
     """Internal function to verify if an initramfs file is corrupted.
 
     This method will rely on using lsinitrd to do the validation. If the
@@ -63,47 +63,3 @@ def _is_initramfs_file_valid(filepath):
         return False
 
     return True
-
-
-def check_kernel_boot_files():
-    """Check if the required kernel files exist and are valid under the boot partition."""
-    # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
-    # we check for `kernel-core`. This is not true regarding the 7.* releases.
-    kernel_name = "kernel-core" if system_info.version.major >= 8 else "kernel"
-
-    # Either the package is returned or not. The return_code will be 0 in
-    # either case, so we don't care about checking for that here.
-    output, _ = run_subprocess(["rpm", "-q", "--last", kernel_name], print_output=False)
-
-    # We are parsing the latest kernel installed on the system, which at this
-    # point, should be a RHEL kernel. Since we can't get the kernel version
-    # from `uname -r`, as it requires a reboot in order to take place, we are
-    # detecting the latest kernel by using `rpm` and figuring out which was the
-    # latest kernel installed.
-    latest_installed_kernel = output.split("\n")[0].split(" ")[0]
-    latest_installed_kernel = latest_installed_kernel[len(kernel_name + "-") :]
-    grub2_config_file = grub.get_grub_config_file()
-    initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
-    vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel
-
-    logger.info("Checking if the '%s' file exists.", vmlinuz_file)
-    vmlinuz_exists = os.path.exists(vmlinuz_file)
-    if not vmlinuz_exists:
-        logger.info("The vmlinuz file is not present.")
-
-    is_initramfs_valid = _is_initramfs_file_valid(initramfs_file)
-
-    if not is_initramfs_valid or not vmlinuz_exists:
-        logger.warning(
-            "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-            "of your system.\nIn order to fix this problem you may need to free/increase space in your boot partition"
-            " and then run the following commands in your terminal:\n"
-            "1. yum reinstall %s-%s -y\n"
-            "2. grub2-mkconfig -o %s\n"
-            "3. reboot",
-            kernel_name,
-            latest_installed_kernel,
-            grub2_config_file,
-        )
-    else:
-        logger.info("The initramfs and vmlinuz files are valid.")
