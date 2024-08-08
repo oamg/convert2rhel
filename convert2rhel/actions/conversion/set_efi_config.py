@@ -51,7 +51,7 @@ class NewDefaultEfiBin(actions.Action):
         if not new_default_efibin:
             self.set_result(
                 level="ERROR",
-                id="RHEL_UEFI_BINARIES_NOT_FOUND",
+                id="NOT_FOUND_RHEL_UEFI_BINARIES",
                 title="RHEL UEFI binaries not found",
                 description="None of the expected RHEL UEFI binaries exist.",
                 diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: {} .".format(
@@ -78,7 +78,7 @@ class EfibootmgrUtilityInstalled(actions.Action):
         if not os.path.exists("/usr/sbin/efibootmgr"):
             self.set_result(
                 level="ERROR",
-                id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
+                id="NOT_INSTALLED_EFIBOOTMGR_UTILITY",
                 title="UEFI boot manager utility not found",
                 description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
                 remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
@@ -188,7 +188,7 @@ class RemoveEfiCentos(actions.Action):
             logger.warning(warning_message)
             self.add_message(
                 level="WARNING",
-                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
+                id="NOT_REMOVED_CENTOS_EFI_DIRECTORY",
                 title="Centos EFI directory was not removed",
                 description=warning_message,
             )

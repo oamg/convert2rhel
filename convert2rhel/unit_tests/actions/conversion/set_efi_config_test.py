@@ -76,12 +76,10 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
     monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     new_default_efi_bin_instance.run()
-    print("HEREEEEEEEEEEE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(new_default_efi_bin_instance.result)
     unit_tests.assert_actions_result(
         new_default_efi_bin_instance,
         level="ERROR",
-        id="RHEL_UEFI_BINARIES_NOT_FOUND",
+        id="NOT_FOUND_RHEL_UEFI_BINARIES",
         title="RHEL UEFI binaries not found",
         description="None of the expected RHEL UEFI binaries exist.",
         diagnosis="Bootloader couldn't be migrated due to missing RHEL EFI binaries: /boot/efi/EFI/redhat/shimx64.efi, /boot/efi/EFI/redhat/grubx64.efi .",
@@ -96,7 +94,7 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
     unit_tests.assert_actions_result(
         efi_bootmgr_utility_installed_instance,
         level="ERROR",
-        id="EFIBOOTMGR_UTILITY_NOT_INSTALLED",
+        id="NOT_INSTALLED_EFIBOOTMGR_UTILITY",
         title="UEFI boot manager utility not found",
         description="Couldn't find the UEFI boot manager which is required for us to install and verify a RHEL boot entry.",
         remediations="Install the efibootmgr utility using the following command:\n\n 1. yum install efibootmgr",
@@ -208,7 +206,7 @@ def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="CENTOS_EFI_DIRECTORY_NOT_REMOVED",
+                id="NOT_REMOVED_CENTOS_EFI_DIRECTORY",
                 title="Centos EFI directory was not removed",
                 description="The folder %s is left untouched. You may remove the folder manually"
                 " after you ensure there is no custom data you would need." % grub.CENTOS_EFIDIR_CANONICAL_PATH,
