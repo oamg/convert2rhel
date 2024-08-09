@@ -17,6 +17,7 @@
 __metaclass__ = type
 
 import os
+import re
 import sys
 
 from collections import namedtuple
@@ -309,110 +310,124 @@ def test_multiple_auth_src_cli(argv, message, output, caplog, monkeypatch, globa
     assert convert2rhel.toolopts.tool_opts.password == output["password"]
 
 
-@pytest.mark.parametrize(
-    ("content", "expected_message"),
-    (
+class TestParseConfigFile:
+    def test_paths_not_found(self):
+        with pytest.raises(OSError, match="No such file or directory: '/c/not/exists'"):
+            convert2rhel.toolopts.options_from_config_files(cfg_path="/c/not/exists")
+
+    @pytest.mark.parametrize(("st_mode",), ((0o622,),))
+    def test_configs_without_required_permission(self, monkeypatch, tmpdir, st_mode):
+        monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", [])
+        config_file = tmpdir.join("convert2rhel.ini")
+        config_file.write("\n")
+        config_file = str(config_file)
+        os.chmod(config_file, st_mode)
+        expected = re.escape("The %s file must only be accessible by the owner (0600)" % config_file)
+        with pytest.raises(SystemExit, match=expected):
+            convert2rhel.toolopts.options_from_config_files(cfg_path=config_file)
+
+    @pytest.mark.parametrize(
+        ("content", "expected_message"),
         (
-            """
+            (
+                """\
 [subscription_manager]
 # userame =
-            """,
-            "No options found for subscription_manager. It seems to be empty or commented.",
-        ),
-        (
-            """
+                """,
+                "No options found for subscription_manager. It seems to be empty or commented.",
+            ),
+            (
+                """\
 [subscription_manager]
 incorect_option = yes
-            """,
-            "Unsupported option",
-        ),
-        (
-            """
+                """,
+                "Unsupported option",
+            ),
+            (
+                """\
 [invalid_header]
 username = correct_username
-            """,
-            "Couldn't find header",
+                """,
+                "Couldn't find header",
+            ),
         ),
-    ),
-)
-def test_options_from_config_files_invalid_head_and_options(content, expected_message, tmpdir, caplog):
-    config_file = tmpdir.join("convert2rhel.ini")
-    config_file.write(content)
-    config_file = str(config_file)
-    os.chmod(config_file, 0o600)
+    )
+    def test_options_from_config_files_invalid_head_and_options(self, content, expected_message, tmpdir, caplog):
+        config_file = tmpdir.join("convert2rhel.ini")
+        config_file.write(content)
+        config_file = str(config_file)
+        os.chmod(config_file, 0o600)
 
-    opts = convert2rhel.toolopts.options_from_config_files(config_file)
+        opts = convert2rhel.toolopts.options_from_config_files(config_file)
 
-    assert not opts
-    assert expected_message in caplog.text
+        assert not opts
+        assert expected_message in caplog.text
 
-
-@pytest.mark.parametrize(
-    ("content", "output"),
-    (
+    @pytest.mark.parametrize(
+        ("content", "output"),
         (
-            """
+            (
+                """\
 [subscription_manager]
 username = correct_username
             """,
-            {"username": "correct_username"},
-        ),
-        # Test if we will unquote this correctly
-        (
-            """
+                {"username": "correct_username"},
+            ),
+            (
+                """\
 [subscription_manager]
 username = "correct_username"
             """,
-            {"username": '"correct_username"'},
-        ),
-        (
-            """
+                {"username": '"correct_username"'},
+            ),
+            (
+                """\
 [subscription_manager]
 password = correct_password
             """,
-            {"password": "correct_password"},
-        ),
-        (
-            """
+                {"password": "correct_password"},
+            ),
+            (
+                """\
 [subscription_manager]
 activation_key = correct_key
 password = correct_password
 username = correct_username
 org = correct_org
             """,
-            {
-                "username": "correct_username",
-                "password": "correct_password",
-                "activation_key": "correct_key",
-                "org": "correct_org",
-            },
-        ),
-        (
-            """
+                {
+                    "username": "correct_username",
+                    "password": "correct_password",
+                    "activation_key": "correct_key",
+                    "org": "correct_org",
+                },
+            ),
+            (
+                """\
 [subscription_manager]
 org = correct_org
             """,
-            {"org": "correct_org"},
-        ),
-        (
-            """
+                {"org": "correct_org"},
+            ),
+            (
+                """\
 [settings]
 incomplete_rollback = 1
             """,
-            {"incomplete_rollback": "1"},
-        ),
-        (
-            """
+                {"incomplete_rollback": "1"},
+            ),
+            (
+                """\
 [subscription_manager]
 org = correct_org
 
 [settings]
 incomplete_rollback = 1
             """,
-            {"org": "correct_org", "incomplete_rollback": "1"},
-        ),
-        (
-            """
+                {"org": "correct_org", "incomplete_rollback": "1"},
+            ),
+            (
+                """\
 [settings]
 incomplete_rollback = 1
 tainted_kernel_module_check_skip = 1
@@ -422,130 +437,130 @@ allow_unavailable_kmods = 1
 configure_host_metering = 1
 skip_kernel_currency_check = 1
             """,
-            {
-                "incomplete_rollback": "1",
-                "tainted_kernel_module_check_skip": "1",
-                "outdated_package_check_skip": "1",
-                "allow_older_version": "1",
-                "allow_unavailable_kmods": "1",
-                "configure_host_metering": "1",
-                "skip_kernel_currency_check": "1",
-            },
+                {
+                    "incomplete_rollback": "1",
+                    "tainted_kernel_module_check_skip": "1",
+                    "outdated_package_check_skip": "1",
+                    "allow_older_version": "1",
+                    "allow_unavailable_kmods": "1",
+                    "configure_host_metering": "1",
+                    "skip_kernel_currency_check": "1",
+                },
+            ),
         ),
-    ),
-)
-def test_options_from_config_files_default(content, output, monkeypatch, tmpdir):
-    """Test config files in default path."""
-    config_file = tmpdir.join("convert2rhel.ini")
-    config_file.write(content)
-    config_file = str(config_file)
-    os.chmod(config_file, 0o600)
+    )
+    def test_options_from_config_files_default(self, content, output, monkeypatch, tmpdir):
+        """Test config files in default path."""
+        config_file = tmpdir.join("convert2rhel.ini")
+        config_file.write(content)
+        config_file = str(config_file)
+        os.chmod(config_file, 0o600)
 
-    paths = ["/nonexisting/path", config_file]
-    monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
-    opts = convert2rhel.toolopts.options_from_config_files(None)
+        paths = ["/nonexisting/path", config_file]
+        monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
+        opts = convert2rhel.toolopts.options_from_config_files(None)
 
-    for key in ["username", "password", "activation_key", "org"]:
-        if key in opts:
-            assert opts[key] == output[key]
+        for key in ["username", "password", "activation_key", "org"]:
+            if key in opts:
+                assert opts[key] == output[key]
 
-
-@pytest.mark.parametrize(
-    ("content", "output", "content_lower_priority"),
-    (
+    @pytest.mark.parametrize(
+        ("content", "output", "content_lower_priority"),
         (
-            """
+            (
+                """\
 [subscription_manager]
 username = correct_username
 activation_key = correct_key
             """,
-            {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
-            """
+                {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
+                """\
 [subscription_manager]
 username = low_prior_username
             """,
-        ),
-        (
-            """
+            ),
+            (
+                """\
 [subscription_manager]
 username = correct_username
 activation_key = correct_key
             """,
-            {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
-            """
+                {"username": "correct_username", "password": None, "activation_key": "correct_key", "org": None},
+                """\
 [subscription_manager]
 activation_key = low_prior_key
             """,
-        ),
-        (
-            """
+            ),
+            (
+                """\
 [subscription_manager]
 activation_key = correct_key
-org = correct_org""",
-            {"username": None, "password": None, "activation_key": "correct_key", "org": "correct_org"},
-            """
+org = correct_org
+    """,
+                {"username": None, "password": None, "activation_key": "correct_key", "org": "correct_org"},
+                """\
 [subscription_manager]
 org = low_prior_org
-            """,
-        ),
-        (
-            """
+                """,
+            ),
+            (
+                """\
 [subscription_manager]
 activation_key = correct_key
 Password = correct_password
-            """,
-            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            """
+                """,
+                {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+                """\
 [subscription_manager]
 password = low_prior_pass
-            """,
-        ),
-        (
-            """
+                """,
+            ),
+            (
+                """\
 [subscription_manager]
 activation_key = correct_key
 Password = correct_password
-            """,
-            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            """
+                """,
+                {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+                """\
 [INVALID_HEADER]
 password = low_prior_pass
-            """,
-        ),
-        (
-            """
+                """,
+            ),
+            (
+                """\
 [subscription_manager]
 activation_key = correct_key
 Password = correct_password
-            """,
-            {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
-            """
+                """,
+                {"username": None, "password": "correct_password", "activation_key": "correct_key", "org": None},
+                """\
 [subscription_manager]
 incorrect_option = incorrect_option
-            """,
+                """,
+            ),
         ),
-    ),
-)
-def test_options_from_config_files_specified(content, output, content_lower_priority, monkeypatch, tmpdir):
-    """Test user specified path for config file."""
-    higher_priority_config_file = tmpdir.join("convert2rhel.ini")
-    higher_priority_config_file.write(content)
-    higher_priority_config_file = str(higher_priority_config_file)
-    os.chmod(higher_priority_config_file, 0o600)
+    )
+    def test_options_from_config_files_specified(self, content, output, content_lower_priority, monkeypatch, tmpdir):
+        """Test user specified path for config file."""
+        higher_priority_config_file = tmpdir.join("convert2rhel.ini")
+        higher_priority_config_file.write(content)
+        higher_priority_config_file = str(higher_priority_config_file)
+        os.chmod(higher_priority_config_file, 0o600)
 
-    lower_priority_config_file = tmpdir.join("convert2rhel_lower.ini")
-    lower_priority_config_file.write(content_lower_priority)
-    lower_priority_config_file = str(lower_priority_config_file)
-    os.chmod(lower_priority_config_file, 0o600)
+        lower_priority_config_file = tmpdir.join("convert2rhel_lower.ini")
+        lower_priority_config_file.write(content_lower_priority)
+        lower_priority_config_file = str(lower_priority_config_file)
+        os.chmod(lower_priority_config_file, 0o600)
 
-    paths = [higher_priority_config_file, lower_priority_config_file]
-    monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
+        paths = [higher_priority_config_file, lower_priority_config_file]
+        monkeypatch.setattr(convert2rhel.toolopts, "CONFIG_PATHS", value=paths)
 
-    opts = convert2rhel.toolopts.options_from_config_files(None)
+        opts = convert2rhel.toolopts.options_from_config_files(None)
 
-    for key in ["username", "password", "activation_key", "org"]:
-        if key in opts:
-            assert opts[key] == output[key]
+        for key in ["username", "password", "activation_key", "org"]:
+            if key in opts:
+                assert opts[key] == output[key]
 
 
 @pytest.mark.parametrize(

@@ -103,13 +103,13 @@ class ToolOpts:
         self.activity = None
 
         # Settings
-        self.incomplete_rollback = None
-        self.tainted_kernel_module_check_skip = None
-        self.outdated_package_check_skip = None
-        self.allow_older_version = None
-        self.allow_unavailable_kmods = None
-        self.configure_host_metering = None
-        self.skip_kernel_currency_check = None
+        self.incomplete_rollback = None  # type: str | None
+        self.tainted_kernel_module_check_skip = None  # type: str | None
+        self.outdated_package_check_skip = None  # type: str | None
+        self.allow_older_version = None  # type: str | None
+        self.allow_unavailable_kmods = None  # type: str | None
+        self.configure_host_metering = None  # type: str | None
+        self.skip_kernel_currency_check = None  # type: str | None
 
     def set_opts(self, supported_opts):
         """Set ToolOpts data using dict with values from config file.
@@ -565,17 +565,38 @@ def options_from_config_files(cfg_path):
     :return: Dict with the supported options alongside their values.
     :rtype: dict[str, str]
     """
-    # Paths for the configuration files. In case we have cfg_path defined (meaning that the user entered something
-    # through the `-c` option), we will insert that option as index 0 in the list of config files paths.
     config_paths = CONFIG_PATHS
+
+    # In case we have cfg_path defined (meaning that the user entered something through the `-c` option), we will insert
+    # that option as index 0 in the list of config files paths.
     if cfg_path:
+        cfg_path = os.path.expanduser(cfg_path)
+        if not os.path.exists(cfg_path):
+            raise OSError(2, "No such file or directory: '%s'" % cfg_path)
+
         config_paths.insert(0, cfg_path)
+
     paths = [os.path.expanduser(path) for path in config_paths if os.path.exists(os.path.expanduser(path))]
 
-    if cfg_path and not paths:
-        raise OSError("No such file or directory: %s" % ", ".join(paths))
+    found_opts = {}
+    if paths:
+        for path in paths:
+            loggerinst.debug("Checking configuration file at %s" % path)
+            # Check for file permission that does not end with "00". There are a few cases where this could break our code:
+            #   1. If the file is only writable by owner (100)
+            #   2. If the file is only executable by owner (200)
+            #   3. If the file is writable and executable by owner (300)
+            # Since we are dealing with configuration files, we do not expect them to be in any of the st_modes above as
+            # they are not likely happening in normal scenarios. In case we ever hit that, we can change that to check
+            # against the `stat` module: https://stackoverflow.com/a/10741797`
+            #
+            # Regardless of that, it should be fine if the file is only readable by owner, or any of the compositions
+            # exaplained in the following thread: https://github.com/oamg/convert2rhel/pull/451#discussion_r833005319
+            if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
+                loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
 
-    found_opts = _parse_options_from_config(paths)
+        found_opts = _parse_options_from_config(paths)
+
     return found_opts
 
 
@@ -591,11 +612,6 @@ def _parse_options_from_config(paths):
     found_opts = {}
 
     for path in reversed(paths):
-        loggerinst.debug("Checking configuration file at %s" % path)
-        # Check for correct permissions on file
-        if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
-            loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
-
         config_file.read(path)
 
         # Mapping of all supported options we can have in the config file
