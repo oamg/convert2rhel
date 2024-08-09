@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, subscription, toolopts, utils
+from convert2rhel import actions, subscription, utils
 from convert2rhel.actions.post_conversion.rhsm_custom_facts_config import RHSMCustomFactsConfig
 
 
