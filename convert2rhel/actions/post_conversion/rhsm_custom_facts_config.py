@@ -18,22 +18,22 @@ __metaclass__ = type
 from convert2rhel import actions, subscription
 
 
-class UpdateRHSMCustomFacts(actions.Action):
+class RHSMCustomFactsConfig(actions.Action):
 
-    id = "Update_RHSM_Custom_Facts"
+    id = "RHSM_CUSTOM_FACTS_CONFIG"
 
     dependencies = ()
 
     def run(self):
-        super(UpdateRHSMCustomFacts, self).run()
+        super(RHSMCustomFactsConfig, self).run()
 
-        ret_code = subscription.update_rhsm_custom_facts()
+        ret_code, output = subscription.update_rhsm_custom_facts()
 
         if ret_code != 0:
             self.add_message(
                 level="WARNING",
                 id="UPDATE_RHSM_CUSTOM_FACTS",
                 title="FailedRHSMUpdateCustomFacts",
-                description="Failed to update the RHSM custom facts with return code 'whatever return code is' and output 'whatever output is'.",
-                diagnosis=None,
+                description="Failed to update the RHSM custom facts with return code: %s and output: %s."
+                % (ret_code, output),
             )

@@ -18,37 +18,49 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, utils
-from convert2rhel.actions.post_conversion.failed_to_update_rhsm_custom_facts import UpdateRHSMCustomFacts
-from convert2rhel.unit_tests import RunSubprocessMocked
+from convert2rhel import actions, subscription, toolopts, utils
+from convert2rhel.actions.post_conversion.rhsm_custom_facts_config import RHSMCustomFactsConfig
+
+
+# from convert2rhel.unit_tests import RunSubprocessMocked
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
+class RunSubprocessMocked:
+    def __call__(self, *args, **kwargs):
+        return MockCompletedProcess()
+
+
+class MockCompletedProcess:
+    def __init__(self):
+        self.returncode = 1
+
+
 @pytest.fixture
-def update_rhsm_custom_facts_instance():
-    return UpdateRHSMCustomFacts()
+def rhsm_custom_facts_config_instance():
+    return RHSMCustomFactsConfig()
 
 
-@mock.patch("convert2rhel.toolopts.tool_opts.no_rhsm", False)
-def test_update_rhsm_custom_fatcs_failure(update_rhsm_custom_facts_instance, monkeypatch):
+def test_rhsm_custom_facts_config(rhsm_custom_facts_config_instance, monkeypatch):
     # need to mock runsubprocess
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    monkeypatch.setattr(
+        subscription, "update_rhsm_custom_facts", mock.Mock(return_value=(1, "Unable to update RHSM custom facts"))
+    )
 
-    update_rhsm_custom_facts_instance.run()
-
-    # expected = set((actions.ActionMessage(level="WARNING", id="UPDATE_RHSM_CUSTOM_FACTS", title="FailedRHSMUpdateCustomFacts", description=message, diagnosis=None),))
     expected = {
         actions.ActionMessage(
             level="WARNING",
             title="FailedRHSMUpdateCustomFacts",
             id="UPDATE_RHSM_CUSTOM_FACTS",
-            description="Failed to update the RHSM custom facts with return code 'whatever return code is' and output 'whatever output is'.",
-            diagnosis=None,
+            description="Failed to update the RHSM custom facts with return code: 1 and output: Unable to update RHSM custom facts.",
         )
     }
 
-    assert expected.issuperset(update_rhsm_custom_facts_instance.messages)
-    assert expected.issubset(update_rhsm_custom_facts_instance.messages)
+    rhsm_custom_facts_config_instance.run()
+
+    assert expected.issuperset(rhsm_custom_facts_config_instance.messages)
+    assert expected.issubset(rhsm_custom_facts_config_instance.messages)
