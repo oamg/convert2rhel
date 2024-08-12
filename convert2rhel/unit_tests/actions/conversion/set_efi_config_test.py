@@ -206,10 +206,9 @@ def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="NOT_REMOVED_CENTOS_EFI_DIRECTORY",
-                title="Centos EFI directory could not be removed",
-                description="Failed to remove the folder %s with error: 'Could not remove folder'. You may remove the folder manually"
-                " after you ensure there is no custom data you would need." % grub.CENTOS_EFIDIR_CANONICAL_PATH,
+                id="NOT_REMOVED_CENTOS_UEFI_DIRECTORY",
+                title="CentOS UEFI directory couldn't be removed",
+                description="Failed to remove the /boot/efi/EFI/centos/ directory as files still exist. During conversion we make sure to copy over files needed to their RHEL counterpart. However, some files we didn't expect likely exist in the directory that needs human oversight. Make sure that the files within the directory is taken care of and proceed with deleting the directory manually after conversion. We received error: 'Could not remove folder'.",
             ),
         )
     )
@@ -232,7 +231,7 @@ def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instan
     unit_tests.assert_actions_result(
         replace_efi_boot_entry_instance,
         level="ERROR",
-        id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
-        title="Failed to replace EFI boot entry",
-        description="The EFI boot entry could not be replaced due to the following error: 'Bootloader error'",
+        id="FAILED_TO_REPLACE_UEFI_BOOT_ENTRY",
+        title="Failed to replace UEFI boot entry to RHEL",
+        description="As the current UEFI bootloader entry could be invalid or missing we need to ensure that a RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following error: 'Bootloader error'",
     )
