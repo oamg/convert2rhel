@@ -372,8 +372,7 @@ def prepare_system():
 
 def post_ponr_changes():
     """Start the conversion itself"""
-    loggerinst.task("Final: Update GRUB2 configuration")
-    grub.update_grub_after_conversion()
+    post_ponr_conversion()
 
     loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
     utils.remove_tmp_dir()

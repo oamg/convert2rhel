@@ -267,7 +267,7 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "_raise_for_skipped_failures", raise_for_skipped_failures_mock)
     monkeypatch.setattr(report, "_summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
-    monkeypatch.setattr(grub, "update_grub_after_conversion", update_grub_after_conversion_mock)
+    monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
