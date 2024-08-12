@@ -33,6 +33,8 @@ class NewDefaultEfiBin(actions.Action):
         """Check that the expected RHEL UEFI binaries exist."""
         super(NewDefaultEfiBin, self).run()
 
+        logger.task("Convert: Configure the bootloader")
+
         if not grub.is_efi():
             logger.info("BIOS detected. Nothing to do.")
             return
@@ -181,15 +183,14 @@ class RemoveEfiCentos(actions.Action):
         try:
             os.rmdir(CENTOS_EFIDIR_CANONICAL_PATH)
         except (OSError, IOError) as err:
-            warning_message = (
-                "Failed to remove the folder %s with error: '%s'. You may remove the folder manually"
-                " after you ensure there is no custom data you would need." % (CENTOS_EFIDIR_CANONICAL_PATH, err)
+            warning_message = "Failed to remove the {dir} directory as files still exist. During conversion we make sure to copy over files needed to their RHEL counterpart. However, some files we didn't expect likely exist in the directory that needs human oversight. Make sure that the files within the directory is taken care of and proceed with deleting the directory manually after conversion. We received error: '{err}'.".format(
+                dir=CENTOS_EFIDIR_CANONICAL_PATH, err=err
             )
             logger.warning(warning_message)
             self.add_message(
                 level="WARNING",
-                id="NOT_REMOVED_CENTOS_EFI_DIRECTORY",
-                title="Centos EFI directory could not be removed",
+                id="NOT_REMOVED_CENTOS_UEFI_DIRECTORY",
+                title="CentOS UEFI directory couldn't be removed",
                 description=warning_message,
             )
 
@@ -217,7 +218,8 @@ class ReplaceEfiBootEntry(actions.Action):
         except grub.BootloaderError as e:
             self.set_result(
                 level="ERROR",
-                id="FAILED_TO_REPLACE_EFI_BOOT_ENTRY",
-                title="Failed to replace EFI boot entry",
-                description="The EFI boot entry could not be replaced due to the following error: '%s'" % e.message,
+                id="FAILED_TO_REPLACE_UEFI_BOOT_ENTRY",
+                title="Failed to replace UEFI boot entry to RHEL",
+                description="As the current UEFI bootloader entry could be invalid or missing we need to ensure that a RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following error: '%s'"
+                % e.message,
             )
