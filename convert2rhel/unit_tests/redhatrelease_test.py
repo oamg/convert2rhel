@@ -18,6 +18,7 @@
 __metaclass__ = type
 
 import os
+import sys
 
 import pytest
 import six
@@ -109,7 +110,7 @@ def test_pkg_manager_is_modified(monkeypatch, pkg_type, subprocess_ret, expected
 
 
 @pytest.mark.parametrize("modified", (True, False))
-def test_pkg_manager_patch(monkeypatch, modified, caplog):
+def test_pkg_manager_patch(monkeypatch, modified, caplog, tmp_path):
     is_modified = mock.Mock(return_value=modified)
     monkeypatch.setattr(PkgManagerConf, "is_modified", value=is_modified)
     _comment_out_distroverpkg_tag = mock.Mock()
@@ -118,11 +119,13 @@ def test_pkg_manager_patch(monkeypatch, modified, caplog):
         "_comment_out_distroverpkg_tag",
         value=_comment_out_distroverpkg_tag,
     )
-    _write_altered_pkg_manager_conf = mock.Mock()
-    monkeypatch.setattr(PkgManagerConf, "_write_altered_pkg_manager_conf", value=_write_altered_pkg_manager_conf)
+    monkeypatch.setattr(
+        PkgManagerConf,
+        "_pkg_manager_conf_path",
+        value=tmp_path,
+    )
 
-    PkgManagerConf().patch()
-
+    PkgManagerConf(config_path=tmp_path / "yum.conf").patch()
     if modified:
         _comment_out_distroverpkg_tag.assert_called_once()
         assert "patched" in caplog.text
