@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class ConfigurePkgManager(actions.Action):
     id = "CONFIGURE_PKG_MANAGER"
+    dependencies = ("CONVERT_SYSTEM_PACKAGES",)
 
     def run(self):
         """
