@@ -70,21 +70,26 @@ class KernelBootFiles(actions.Action):
             return
 
         remediations = (
-                "In order to fix this problem you may need to free/increase space in your boot partition"
-                " and then run the following commands in your terminal:\n"
-                "1. yum reinstall %s-%s -y\n"
-                "2. grub2-mkconfig -o %s\n"
-                "3. reboot" % (kernel_name, latest_installed_kernel, grub2_config_file)
+            "In order to fix this problem you might need to free/increase space in your boot partition" \
+            " and then run the following commands in your terminal:\n"
+            "1. `yum reinstall {kernel_name}-{latest_installed_kernel} -y`\n"
+            "2. `grub2-mkconfig -o {grub2_config_file}`\n"
+            "3. `reboot`".format(
+                kernel_name=kernel_name,
+                latest_installed_kernel=latest_installed_kernel,
+                grub2_config_file=grub2_config_file
             )
+        )
         logger.warning(
-            "Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-            "of your system.\n%s", remediations
+            "Couldn't verify the kernel boot files in the boot partition. This" \
+            " might cause problems during the next boot of your system.\n" \
+            "{0}".format(remediations),
         )
         self.add_message(
             level="WARNING",
             id="UNABLE_TO_VERIFY_KERNEL_BOOT_FILES",
-            title="Unable to verify kernel boot files",
-            description="Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-            "of your system.",
+            title="Unable to verify kernel boot files and boot partition",
+            description="We failed to determine whether boot partition is configured correctly and that boot" \
+                " files exists. This may cause problems during the next boot of your system.",
             remediations=remediations,
         )
