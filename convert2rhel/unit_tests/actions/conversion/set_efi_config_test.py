@@ -40,8 +40,8 @@ def efi_bootmgr_utility_installed_instance():
 
 
 @pytest.fixture
-def copy_grub_files_instance():
-    return set_efi_config.CopyGrubFiles()
+def move_grub_files_instance():
+    return set_efi_config.MoveGrubFiles()
 
 
 @pytest.fixture
@@ -130,10 +130,10 @@ def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_insta
         ),
     ),
 )
-def test_copy_grub_files(
+def test_move_grub_files(
     available_files,
     monkeypatch,
-    copy_grub_files_instance,
+    move_grub_files_instance,
     global_system_info,
     tmpdir,
 ):
@@ -146,28 +146,28 @@ def test_copy_grub_files(
     rhel_efidir = tmpdir.join("rhel").mkdir()
     monkeypatch.setattr(set_efi_config, "RHEL_EFIDIR_CANONICAL_PATH", str(rhel_efidir))
 
-    copy_grub_files_instance.run()
+    move_grub_files_instance.run()
 
     for file in available_files:
         assert os.path.join(str(rhel_efidir), file)
 
 
-def test_copy_grub_files_non_centos(monkeypatch, copy_grub_files_instance, caplog, global_system_info):
+def test_move_grub_files_non_centos(monkeypatch, move_grub_files_instance, caplog, global_system_info):
     global_system_info.id = "oracle"
     monkeypatch.setattr(systeminfo, "system_info", global_system_info)
-    copy_grub_files_instance.run()
-    assert "Did not perform copying of GRUB files" in caplog.text
+    move_grub_files_instance.run()
+    assert "Did not perform moving of GRUB files" in caplog.text
 
 
-def test_copy_grub_files_error(monkeypatch, caplog, copy_grub_files_instance, global_system_info):
+def test_move_grub_files_error(monkeypatch, caplog, move_grub_files_instance, global_system_info):
     monkeypatch.setattr(os.path, "exists", lambda file: False)
-    monkeypatch.setattr(shutil, "copy2", mock.Mock())
+    monkeypatch.setattr(shutil, "move", mock.Mock())
     global_system_info.id = "centos"
     monkeypatch.setattr(systeminfo, "system_info", global_system_info)
 
-    copy_grub_files_instance.run()
+    move_grub_files_instance.run()
     unit_tests.assert_actions_result(
-        copy_grub_files_instance,
+        move_grub_files_instance,
         level="ERROR",
         id="UNABLE_TO_FIND_REQUIRED_FILE_FOR_GRUB_CONFIG",
         title="Couldn't find system GRUB config",
@@ -176,24 +176,24 @@ def test_copy_grub_files_error(monkeypatch, caplog, copy_grub_files_instance, gl
 
 
 @centos7
-def test_copy_grub_files_io_error(
+def test_move_grub_files_io_error(
     monkeypatch,
     caplog,
     pretend_os,
-    copy_grub_files_instance,
+    move_grub_files_instance,
 ):
-    monkeypatch.setattr(shutil, "copy2", mock.Mock())
-    shutil.copy2.side_effect = IOError(13, "Permission denied")
-    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True]))
-    copy_grub_files_instance.run()
+    monkeypatch.setattr(shutil, "move", mock.Mock())
+    shutil.move.side_effect = IOError(13, "Permission denied")
+    monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True, False]))
+    move_grub_files_instance.run()
 
     unit_tests.assert_actions_result(
-        copy_grub_files_instance,
+        move_grub_files_instance,
         level="ERROR",
-        id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
-        title="GRUB files have not been copied to boot directory",
+        id="GRUB_FILES_NOT_MOVED_TO_BOOT_DIRECTORY",
+        title="GRUB files have not been moved to boot directory",
         description=(
-            "I/O error(13): 'Permission denied'. Some GRUB files have not been copied to /boot/efi/EFI/redhat."
+            "I/O error(13): 'Permission denied'. Some GRUB files have not been moved to /boot/efi/EFI/redhat."
         ),
     )
 
@@ -210,7 +210,7 @@ def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
                 level="WARNING",
                 id="NOT_REMOVED_CENTOS_UEFI_DIRECTORY",
                 title="CentOS UEFI directory couldn't be removed",
-                description="Failed to remove the /boot/efi/EFI/centos/ directory as files still exist. During conversion we make sure to copy over files needed to their RHEL counterpart. However, some files we didn't expect likely exist in the directory that needs human oversight. Make sure that the files within the directory is taken care of and proceed with deleting the directory manually after conversion. We received error: 'Could not remove folder'.",
+                description="Failed to remove the /boot/efi/EFI/centos/ directory as files still exist. During conversion we make sure to move over files needed to their RHEL counterpart. However, some files we didn't expect likely exist in the directory that needs human oversight. Make sure that the files within the directory is taken care of and proceed with deleting the directory manually after conversion. We received error: 'Could not remove folder'.",
             ),
         )
     )
