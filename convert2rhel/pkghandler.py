@@ -279,7 +279,7 @@ def get_third_party_pkgs():
 def get_installed_pkgs_w_different_key_id(key_ids, name="*"):
     """Return list of all the packages (yum.rpmsack.RPMInstalledPackage objects in case
     of yum and hawkey.Package objects in case of dnf) that are not signed
-    by the specific OS GPG keys. key_ids of the GPG keys are passed as a
+    by the specific OS GPG keys. GPG Key IDs of the GPG keys are passed as a
     list in the key_ids parameter. The packages can be optionally
     filtered by name.
     """

@@ -110,9 +110,9 @@ class SystemInfo:
         self.version = None
         # Platform architecture
         self.arch = None
-        # key_ids of the original operating system GPG keys
+        # GPG key IDs of the original operating system GPG keys
         self.key_ids_orig_os = None
-        # key_ids of RHEL GPG keys available at:
+        # IDs of GPG keys are available at:
         #  https://access.redhat.com/security/team/key/
         self.key_ids_rhel = [
             # RPM-GPG-KEY-redhat-release

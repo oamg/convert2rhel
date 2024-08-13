@@ -868,8 +868,8 @@ def find_keyid(keyfile):
 
     :arg keyfile: The filename that contains the gpg key.
 
-    .. note:: rpm doesn't use the full gpg key_id so don't use that even though it would be
-        more secure.
+    .. note:: rpm doesn't use the full gpg fingerprint so don't use that even though it would be
+        more secure, instead use the key id.
     """
     # Newer gpg versions have several easier ways to do this:
     # gpg --with-colons --show-keys keyfile (Can pipe keyfile)
