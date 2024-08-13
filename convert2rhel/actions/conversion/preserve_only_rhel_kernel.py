@@ -69,7 +69,12 @@ class InstallRhelKernel(actions.Action):
         # Or none of the kernel packages installed is possible to be handled
         # during the main transaction.
         if not rhel_kernels:
-            info_message = "Conflict of kernels: The running kernel has the same version as the latest RHEL kernel."
+            info_message = (
+                "Conflict of kernels: The running kernel has the same version as the latest RHEL kernel. "
+                "The kernel package could not be replaced during the main transaction. "
+                "We will try to install a lower version of the package, "
+                "remove the conflicting kernel and then update to the latest security patched version."
+            )
             loggerinst.info("\n%s" % info_message)
             self.add_message(
                 level="INFO",

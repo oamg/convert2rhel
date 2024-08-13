@@ -1072,4 +1072,4 @@ def get_highest_package_version(pkgs):
         return max(pkgs[1])
     except ValueError:
         loggerinst.debug("The list of %s packages is empty." % pkgs[0])
-        return None
+        raise
