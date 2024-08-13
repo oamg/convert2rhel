@@ -158,19 +158,22 @@ def test_check_kernel_boot_files_missing(
             actions.ActionMessage(
                 level="WARNING",
                 id="UNABLE_TO_VERIFY_KERNEL_BOOT_FILES",
-                title="Unable to verify kernel boot files",
-                description="Couldn't verify the kernel boot files in the boot partition. This may cause problems during the next boot "
-                "of your system.",
+                title="Unable to verify kernel boot files and boot partition",
+                description="We failed to determine whether boot partition is configured correctly and that boot"
+                " files exists. This may cause problems during the next boot of your system.",
                 diagnosis=None,
-                remediations="In order to fix this problem you may need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
-                "1. yum reinstall kernel-core- -y\n"
-                "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
+                remediations="In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
+                "1. yum reinstall kernel-core-6.9.9-200.fc40.x86_64 -y\n"
+                "2. grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg\n"
                 "3. reboot",
             ),
         )
     )
 
     kernel_boot_files_instance.run()
+    print(expected)
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(kernel_boot_files_instance.messages)
     assert "Couldn't verify the kernel boot files in the boot partition." in caplog.records[-1].message
     assert expected.issuperset(kernel_boot_files_instance.messages)
     assert expected.issubset(kernel_boot_files_instance.messages)

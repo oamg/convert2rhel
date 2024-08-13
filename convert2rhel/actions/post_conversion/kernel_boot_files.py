@@ -72,9 +72,9 @@ class KernelBootFiles(actions.Action):
         remediations = (
             "In order to fix this problem you might need to free/increase space in your boot partition" \
             " and then run the following commands in your terminal:\n"
-            "1. `yum reinstall {kernel_name}-{latest_installed_kernel} -y`\n"
-            "2. `grub2-mkconfig -o {grub2_config_file}`\n"
-            "3. `reboot`".format(
+            "1. yum reinstall {kernel_name}-{latest_installed_kernel} -y\n"
+            "2. grub2-mkconfig -o {grub2_config_file}\n"
+            "3. reboot".format(
                 kernel_name=kernel_name,
                 latest_installed_kernel=latest_installed_kernel,
                 grub2_config_file=grub2_config_file
