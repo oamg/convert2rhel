@@ -125,7 +125,7 @@ def test_pkg_manager_patch(monkeypatch, modified, caplog, tmp_path):
         value=tmp_path,
     )
 
-    PkgManagerConf(config_path=tmp_path / "yum.conf").patch()
+    PkgManagerConf(config_path=str(tmp_path / "yum.conf")).patch()
     if modified:
         _comment_out_distroverpkg_tag.assert_called_once()
         assert "patched" in caplog.text
