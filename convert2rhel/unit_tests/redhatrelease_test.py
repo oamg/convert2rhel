@@ -18,7 +18,6 @@
 __metaclass__ = type
 
 import os
-import sys
 
 import pytest
 import six
