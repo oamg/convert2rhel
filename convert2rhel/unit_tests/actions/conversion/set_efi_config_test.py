@@ -192,7 +192,9 @@ def test_copy_grub_files_io_error(
         level="ERROR",
         id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
         title="GRUB files have not been copied to boot directory",
-        description=("I/O error(13): Permission denied Some GRUB files have not been copied to /boot/efi/EFI/redhat."),
+        description=(
+            "I/O error(13): 'Permission denied'. Some GRUB files have not been copied to /boot/efi/EFI/redhat."
+        ),
     )
 
 

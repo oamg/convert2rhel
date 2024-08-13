@@ -155,7 +155,7 @@ class CopyGrubFiles(actions.Action):
                     id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
                     title="GRUB files have not been copied to boot directory",
                     description=(
-                        "I/O error(%s): %s Some GRUB files have not been copied to /boot/efi/EFI/redhat."
+                        "I/O error(%s): '%s'. Some GRUB files have not been copied to /boot/efi/EFI/redhat."
                         % (err.errno, err.strerror)
                     ),
                 )
