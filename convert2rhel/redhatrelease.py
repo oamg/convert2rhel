@@ -62,7 +62,7 @@ class PkgManagerConf:
     _pkg_manager_conf_content = ""  # type: str
 
     def __init__(self, config_path=None):  # type: (str|None) -> None
-        if config_path is None:
+        if not config_path:
             self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
         else:
             self._pkg_manager_conf_path = config_path
