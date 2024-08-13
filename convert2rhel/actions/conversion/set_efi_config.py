@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class NewDefaultEfiBin(actions.Action):
     id = "NEW_DEFAULT_EFI_BIN"
+    dependencies = ("FIX_DEFAULT_KERNEL",)
 
     def run(self):
         """Check that the expected RHEL UEFI binaries exist."""
@@ -87,30 +88,31 @@ class EfibootmgrUtilityInstalled(actions.Action):
             )
 
 
-class CopyGrubFiles(actions.Action):
-    id = "COPY_GRUB_FILES"
+class MoveGrubFiles(actions.Action):
+    id = "MOVE_GRUB_FILES"
+    dependencies = ("EFIBOOTMGR_UTILITY_INSTALLED",)
 
     def run(self):
-        """Copy grub files from centos/ dir to the /boot/efi/EFI/redhat/ dir.
+        """Move grub files from centos/ dir to the /boot/efi/EFI/redhat/ dir.
 
         The grub.cfg, grubenv, ... files are not present in the redhat/ directory
         after the conversion on a CentOS Linux system. These files are usually created
         during the OS installation by anaconda and have to be present in the
         redhat/ directory after the conversion.
 
-        The copy of the centos/ directory should be ok. In case of the conversion
+        The move of the centos/ directory should be ok. In case of the conversion
         from Oracle Linux, the redhat/ directory is already used.
         """
-        super(CopyGrubFiles, self).run()
+        super(MoveGrubFiles, self).run()
 
         if systeminfo.system_info.id != "centos":
-            logger.debug("Did not perform copying of GRUB files - only related to CentOS Linux.")
+            logger.debug("Did not perform moving of GRUB files - only related to CentOS Linux.")
             return
 
         # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
         #  the different grub content...
         # E.g. if the efibin is located in a different directory, are these two files valid?
-        logger.info("Copying GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
+        logger.info("Moving GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
         src_files = [
             os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename) for filename in ["grubenv", "grub.cfg", "user.cfg"]
         ]
@@ -136,26 +138,34 @@ class CopyGrubFiles(actions.Action):
             return
 
         for src_file in src_files:
+            # Skip non-existing file in destination directory
+            if not os.path.exists(src_file):
+                logger.debug(
+                    "The %s file does not exist in %s folder. Moving skipped."
+                    % (os.path.basename(src_file), CENTOS_EFIDIR_CANONICAL_PATH)
+                )
+                continue
             # Skip already existing file in destination directory
             dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
             if os.path.exists(dst_file):
                 logger.debug(
-                    "The %s file already exists in %s folder. Copying skipped."
+                    "The %s file already exists in %s folder. Moving skipped."
                     % (os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH)
                 )
                 continue
 
-            logger.info("Copying '%s' to '%s'" % (src_file, dst_file))
+            logger.info("Moving '%s' to '%s'" % (src_file, dst_file))
+
             try:
-                shutil.copy2(src_file, dst_file)
+                shutil.move(src_file, dst_file)
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
                 self.set_result(
                     level="ERROR",
-                    id="GRUB_FILES_NOT_COPIED_TO_BOOT_DIRECTORY",
-                    title="GRUB files have not been copied to boot directory",
+                    id="GRUB_FILES_NOT_MOVED_TO_BOOT_DIRECTORY",
+                    title="GRUB files have not been moved to boot directory",
                     description=(
-                        "I/O error(%s): '%s'. Some GRUB files have not been copied to /boot/efi/EFI/redhat."
+                        "I/O error(%s): '%s'. Some GRUB files have not been moved to /boot/efi/EFI/redhat."
                         % (err.errno, err.strerror)
                     ),
                 )
@@ -163,13 +173,13 @@ class CopyGrubFiles(actions.Action):
 
 class RemoveEfiCentos(actions.Action):
     id = "REMOVE_EFI_CENTOS"
-    dependencies = ("COPY_GRUB_FILES",)
+    dependencies = ("MOVE_GRUB_FILES",)
 
     def run(self):
         """Remove the /boot/efi/EFI/centos/ directory when no UEFI files remains.
 
         The centos/ directory after the conversion contains usually just grubenv,
-        grub.cfg, .. files only. Which we copy into the redhat/ directory. If no
+        grub.cfg, .. files only. Which we move into the redhat/ directory. If no
         other UEFI files are present, we can remove this dir. However, if additional
         UEFI files are present, we should keep the directory for now, until we
         deal with it.
@@ -183,9 +193,14 @@ class RemoveEfiCentos(actions.Action):
         try:
             os.rmdir(CENTOS_EFIDIR_CANONICAL_PATH)
         except (OSError, IOError) as err:
-            warning_message = "Failed to remove the {dir} directory as files still exist. During conversion we make sure to copy over files needed to their RHEL counterpart. However, some files we didn't expect likely exist in the directory that needs human oversight. Make sure that the files within the directory is taken care of and proceed with deleting the directory manually after conversion. We received error: '{err}'.".format(
-                dir=CENTOS_EFIDIR_CANONICAL_PATH, err=err
-            )
+            warning_message = (
+                "Failed to remove the {dir} directory as files still exist."
+                " During conversion we make sure to move over files needed to their RHEL counterpart."
+                " However, some files we didn't expect likely exist in the directory that needs human oversight."
+                " Make sure that the files within the directory is taken care of and proceed with deleting the directory"
+                " manually after conversion. We received error: '{err}'."
+            ).format(dir=CENTOS_EFIDIR_CANONICAL_PATH, err=err)
+
             logger.warning(warning_message)
             self.add_message(
                 level="WARNING",
@@ -197,7 +212,7 @@ class RemoveEfiCentos(actions.Action):
 
 class ReplaceEfiBootEntry(actions.Action):
     id = "REPLACE_EFI_BOOT_ENTRY"
-    dependencies = ("REMOVE_EFI_CENTOS",)
+    dependencies = ("REMOVE_EFI_CENTOS", "EFIBOOTMGR_UTILITY_INSTALLED")
 
     def run(self):
         """Replace the current UEFI bootloader entry with the RHEL one.
@@ -209,7 +224,7 @@ class ReplaceEfiBootEntry(actions.Action):
         set as default.
 
         The current (original) UEFI bootloader entry is removed under some conditions
-        (see _remove_orig_boot_entry() for more info).
+        (see `py:grub._remove_orig_boot_entry()` for more info).
         """
         super(ReplaceEfiBootEntry, self).run()
 
@@ -220,6 +235,9 @@ class ReplaceEfiBootEntry(actions.Action):
                 level="ERROR",
                 id="FAILED_TO_REPLACE_UEFI_BOOT_ENTRY",
                 title="Failed to replace UEFI boot entry to RHEL",
-                description="As the current UEFI bootloader entry could be invalid or missing we need to ensure that a RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following error: '%s'"
-                % e.message,
+                description=(
+                    "As the current UEFI bootloader entry could be invalid or missing we need to ensure that a "
+                    "RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following"
+                    " error: '{err}'".format(err=e.message)
+                ),
             )
