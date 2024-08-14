@@ -227,7 +227,7 @@ def test_remove_efi_centos_non_centos(monkeypatch, remove_efi_centos_instance, g
 
 
 def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instance):
-
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     monkeypatch.setattr(grub, "replace_efi_boot_entry", mock.Mock(side_effect=grub.BootloaderError("Bootloader error")))
     replace_efi_boot_entry_instance.run()
     unit_tests.assert_actions_result(
