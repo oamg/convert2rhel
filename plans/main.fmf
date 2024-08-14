@@ -56,7 +56,9 @@ prepare+:
       missing: fail
     - name: Install general dependencies
       how: install
-      package: rpmdevtools
+      package:
+        - rpmdevtools
+        - yum-utils
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

@@ -3,7 +3,7 @@ import socket
 
 import pytest
 
-from conftest import TEST_VARS, SystemInformationRelease, _get_full_kernel_title, grub_setup_workaround
+from conftest import TEST_VARS, SystemInformationRelease, get_full_kernel_title, grub_setup_workaround
 
 
 def configure_connection():
@@ -56,7 +56,7 @@ def test_prepare_system(shell, satellite_registration):
         # Keep this just as a safety measure
         shell("yum install kernel -y --disablerepo=* --enablerepo=Satellite_Engineering*")
         latest_kernel = shell("rpm -q --last kernel | head -1 | cut -d ' ' -f1 | sed 's/kernel-//'").output.strip()
-        default_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
+        default_kernel_title = get_full_kernel_title(shell, kernel=latest_kernel)
         grub_setup_workaround(shell)
         shell(f"grub2-set-default '{default_kernel_title.strip()}'")
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")

@@ -85,10 +85,10 @@ def satellite_curl_command():
 SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
 
-@pytest.fixture()
-def shell(tmp_path):
+def live_shell():
     """
     Live shell.
+    Callable directly.
     """
 
     def factory(command, silent=False, hide_command=False):
@@ -113,6 +113,136 @@ def shell(tmp_path):
         return namedtuple("Result", ["returncode", "output"])(returncode, output)
 
     return factory
+
+
+@pytest.fixture(name="shell")
+def shell_fixture(tmp_path):
+    """
+    Live shell fixture.
+    """
+    return live_shell()
+
+
+class SubscriptionManager:
+    def __init__(self):
+        self.shell = live_shell()
+
+    def add_keys_and_certificates(self):
+        """
+        Add the SSL certificate for accessing the CDN and the redhat RPM GPG key.
+        """
+        self.shell(
+            "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
+        )
+        self.shell(
+            "curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt"
+        )
+
+        return
+
+    def add_client_tools_repo(self):
+        """
+        Add the client tools repository to install subscription manager from.
+        """
+        version = "7-server" if SystemInformationRelease.version.major == 7 else SystemInformationRelease.version.major
+        repo_url = f"https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-{version}.repo"
+
+        self.shell(f"yum-config-manager --add-repo {repo_url}")
+
+        # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
+        # otherwise the dnf will complain with dependency issues.
+        if "centos-8" in SYSTEM_RELEASE_ENV:
+            self.shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools-for-rhel-8.repo")
+
+        return
+
+    def install_package(self, package_name="subscription-manager"):
+        """
+        Install a package.
+        :param package_name: The package to be installed. Default is subscription-manager.
+        :type package_name: str
+        """
+        command = f"yum install -y {package_name}"
+        # rhn-client-tools package obsoletes subscription-manager on Oracle Linux
+        # set the obsoletes option to 0 to be able to install the package
+        if SystemInformationRelease.distribution == "oracle":
+            command += " --setopt=obsoletes=0"
+
+        return self.shell(command)
+
+    def remove_package(self, package_name="subscription-manager*"):
+        """
+        Removes a package.
+        :param package_name: The package to be installed. Default is subscription-manager*.
+        :type package_name: str
+        """
+        command = f"yum remove -y {package_name}"
+        return self.shell(command)
+
+    def remove_client_tools_repo(self):
+        """
+        Remove the client tools repository file.
+        """
+        command = "rm -f /etc/yum.repos.d/client-tools-for-rhel*.repo"
+
+        return self.shell(command)
+
+    def remove_keys_and_certificates(self):
+        """
+        Remove the SSL certificate for accessing the CDN and the redhat RPM GPG key.
+        """
+        self.shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
+        self.shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
+
+        return
+
+    def unregister(self):
+        """
+        Remove potential leftover subscription, unregister the system.
+        """
+        # Remove potential leftover subscription
+        self.shell("subscription-manager remove --all")
+        # Remove potential leftover registration
+        self.shell("subscription-manager unregister")
+
+        return
+
+    def prepare_full_workflow(self):
+        """
+        Usual full preparation workflow.
+        Calls, where applicable:
+            # only on Oracle Linux
+            self.remove_package(package_name="rhn-client-tools")
+            self.add_keys_and_certificates()
+            self.add_client_tools_repo()
+            self.install_package()
+        """
+        if SystemInformationRelease.distribution == "oracle":
+            self.remove_package(package_name="rhn-client-tools")
+        self.add_keys_and_certificates()
+        self.add_client_tools_repo()
+        self.install_package()
+
+        return
+
+    def teardown_full_workflow(self):
+        """
+        Usual full teardown workflow.
+        Calls where applicable:
+            self.unregister()
+            self.remove_package()
+            self.remove_client_tools_repo()
+            self.remove_keys_and_certificates()
+        """
+        self.unregister()
+        self.remove_package()
+        self.remove_client_tools_repo()
+        self.remove_keys_and_certificates()
+
+        return
+
+
+SUBMAN = SubscriptionManager()
 
 
 @pytest.fixture()
@@ -451,14 +581,13 @@ def remove_repositories(shell, backup_directory):
     # Move all repos to other location, so it is not being used
     assert shell(f"mv -v /etc/yum.repos.d/* {backup_dir}").returncode == 0
     assert len(os.listdir("/etc/yum.repos.d/")) == 0
-    assert os.path.exists("/etc/yum.repos.d")
 
     yield
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         # Make sure the reposdir is present
         # It gets removed with the *-release package on EL9 systems
-        shell("mkdir /etc/yum.repos.d")
+        shell("mkdir -p /etc/yum.repos.d")
         # Return repositories to their original location
         assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
 
@@ -520,10 +649,10 @@ def _load_json_schema(path):
 def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
-    For Oracle Linux we're using the _add_client_tools_repo_oracle to enable the client-tools repository
-    to install the subscription-manager package from.
-    We call the subman installation with the no obsolete flag to be able to install the package even on Oracle Linux
-     where the subscription-manger is obsolete and replaced by rhn-client* packages when installing subman.
+    We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
+        This does not apply to CentOS 8.5 since recently dependency conflicts caused inability to install the package
+        from client tools, repo. We install the package from the native repositories.
+    The rhn-client-tools package obsoletes the subscription-manager, so we remove the package on Oracle Linux.
     By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
@@ -537,16 +666,8 @@ def pre_registered(shell, request):
         password = TEST_VARS[password_key]
         print(">>> Using parametrized username and password requested in the fixture.")
 
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        # Add the client-tools repository for Oracle linux to install subscription-manager from
-        _add_client_tools_repo(shell)
+    SUBMAN.prepare_full_workflow()
 
-    assert shell("yum install --setopt=obsoletes=0 -y subscription-manager").returncode == 0
-    # The SSL certificate for accessing cdn.redhat.com is intentionally missing from
-    # the subscription-manager-rhsm-certificates package on CentOS Linux 7
-    shell(
-        "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
-    )
     # Register the system
     assert (
         shell(
@@ -571,9 +692,6 @@ def pre_registered(shell, request):
 
     yield
 
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        _remove_client_tools_repo(shell)
-
     # For some scenarios we do not pre-register the system, therefore we do not have the original UUID
     # and do not need to verify it stays the same
     if "C2R_TESTS_CHECK_RHSM_UUID_MATCH" in os.environ:
@@ -587,15 +705,11 @@ def pre_registered(shell, request):
     # The "pre_registered system" test requires to remain registered even after the conversion is completed,
     # so the check "enabled repositories" after the conversion can be executed.
     if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
-        assert shell("subscription-manager remove --all").returncode == 0
-        shell("subscription-manager unregister")
+        SUBMAN.unregister()
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
-        assert shell("yum remove -y subscription-manager").returncode == 0
-        # Remove the redhat-uep.pem certificate, as it won't get removed with the sub-man package on CentOS 7
-        if "centos-7" in SYSTEM_RELEASE_ENV:
-            shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
+        SUBMAN.teardown_full_workflow()
 
 
 @pytest.fixture()
@@ -641,12 +755,13 @@ def environment_variables(request):
     return _unset_env_var
 
 
-def _get_full_kernel_title(shell, kernel=None):
+def get_full_kernel_title(shell, kernel=None):
     """
     Helper function.
     Get the full kernel boot entry title.
     :param kernel: kernel pacakge VRA (version-release.architecture)
     :type kernel: str
+    :param shell: Live shell fixture
 
     :return: The full boot entry title for the given kernel.
     :rtype: str
@@ -678,6 +793,14 @@ def outdated_kernel(shell, hybrid_rocky_image):
             # The whole setup needed happens after
             pass
 
+        # There won't be much changes for EL 7 packages anymore
+        # We can hardcode this then
+        # The release part differs a bit on CentOS and Oracle,
+        # so going with wildcard asterisk to generalize
+        elif SystemInformationRelease.version.major == 7:
+            older_kernel = "kernel-3.10.0-1160.118*"
+            assert shell(f"yum install -y {older_kernel}").returncode == 0
+
         # Try to downgrade kernel version, if there is not multiple versions installed already.
         # If the kernel downgrade fails, assume it's not possible and try to install from
         # an older repo. This should only happen when Alma and Rocky has just landed on
@@ -688,12 +811,12 @@ def outdated_kernel(shell, hybrid_rocky_image):
             # For that we need to use the vault url and bump te current minor down one version.
             major_ver = SystemInformationRelease.version.major
             minor_ver = SystemInformationRelease.version.minor
-            minor_ver -= 1
-            if minor_ver < 0:
+            previous_minor_ver = minor_ver - 1
+            if minor_ver == 0:
                 # In case we're on a x.0 version, there is not an older repo to work with.
                 # Skip the test if so
                 pytest.skip("There is no older kernel to install for this system.")
-            releasever = ".".join((str(major_ver), str(minor_ver)))
+            releasever = ".".join((str(major_ver), str(previous_minor_ver)))
             old_repo = None
             if SystemInformationRelease.distribution == "alma":
                 old_repo = f"https://vault.almalinux.org/{releasever}/BaseOS/x86_64/os/"
@@ -702,11 +825,10 @@ def outdated_kernel(shell, hybrid_rocky_image):
             # Install the kernel from the url
             shell(f"yum install kernel -y --repofromurl 'oldrepo,{old_repo}'")
 
-        # Get the oldest kernel VRA
-        # Sort the versions numerically by each item using
-        oldest_kernel = shell("rpm -q kernel | awk -F'kernel-' '{print $2}' | rpmdev-sort | head -1").output.strip()
+        # Get the oldest kernel version
+        oldest_kernel = shell("rpm -q kernel | rpmdev-sort | awk -F'kernel-' '{print $2}' | head -1").output.strip()
         # Get the full kernel title from grub to set later
-        default_kernel_title = _get_full_kernel_title(shell, kernel=oldest_kernel)
+        default_kernel_title = get_full_kernel_title(shell, kernel=oldest_kernel)
         grub_setup_workaround(shell)
         # Set the older kernel as default
         shell(f"grub2-set-default '{default_kernel_title.strip()}'")
@@ -720,15 +842,12 @@ def outdated_kernel(shell, hybrid_rocky_image):
         # We need to get the name of the latest kernel
         # present in the repositories
 
-        # Install 'yum-utils' required by the repoquery command
-        shell("yum install yum-utils -y")
-
         # Get the name of the latest kernel
         latest_kernel = shell(
             "repoquery --quiet --qf '%{BUILDTIME}\t%{VERSION}-%{RELEASE}' kernel 2>/dev/null | tail -n 1 | awk '{printf $NF}'"
         ).output
 
-        full_boot_kernel_title = _get_full_kernel_title(shell, kernel=latest_kernel)
+        full_boot_kernel_title = get_full_kernel_title(shell, kernel=latest_kernel)
 
         # Set the latest kernel as the one we want to reboot to
         shell(f"grub2-set-default '{full_boot_kernel_title.strip()}'")
@@ -758,7 +877,9 @@ def yum_conf_exclude(shell, backup_directory, request):
     if hasattr(request, "param"):
         exclude = request.param
         print(">>> Using parametrized packages requested in the fixture.")
-    yum_configs = ["/etc/yum.conf", "/etc/dnf/dnf.conf"]
+    yum_configs_all = ["/etc/yum.conf", "/etc/dnf/dnf.conf"]
+    # work only with existing config files
+    yum_configs = [conf for conf in yum_configs_all if os.path.exists(conf)]
     backup_dir = os.path.join(backup_directory, "yumconf")
     shell(f"mkdir -v {backup_dir}")
     for yum_config in yum_configs:
@@ -791,38 +912,17 @@ def yum_conf_exclude(shell, backup_directory, request):
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         for yum_config in yum_configs:
             config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-            assert shell(f"mv {config_bak} {yum_config}").returncode == 0
-
-
-def _add_client_tools_repo(shell):
-    """
-    Helper function.
-    Runs only on Oracle Linux system
-    Create an ubi repo for its respective major version to install subscription-manager from.
-    """
-    repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo"
-    if SystemInformationRelease.version.major == 8:
-        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo"
-    elif SystemInformationRelease.version.major == 7:
-        repo_url = "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo"
-
-    # Add the redhat-release GPG key
-    assert shell(f"curl -o /etc/yum.repos.d/client-tools-for-tests.repo {repo_url}")
-    shell("curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt")
-
-
-def _remove_client_tools_repo(shell):
-    """
-    Helper function.
-    Remove the client tools repositories and the redhat-release GPG key
-    on the Oracle Linux systems.
-    Created as a function given we need to be able to call this during
-    the test execution not just the teardown phase.
-    """
-    # Remove the client-tools repofile
-    shell("rm -f /etc/yum.repos.d/client-tools-for-tests.repo")
-    # Remove the redhat-release GPG key
-    shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
+            # if /etc/dnf/dnf.conf existed prior, create /etc/yum.conf as a symlink to it
+            dnf_conf = yum_configs_all[1]
+            yum_conf = yum_configs_all[0]
+            # if there are both config files on the system, we can assume, that /etc/yum.conf
+            # is just a symlink to /etc/dnf/dnf.conf
+            # Otherwise just restore whatever config exists on the system as is.
+            if len(yum_configs) == 2:
+                assert shell(f"mv {config_bak} {dnf_conf}").returncode == 0
+                Path(yum_conf).symlink_to(dnf_conf)
+            else:
+                assert shell(f"mv {config_bak} {dnf_conf}").returncode == 0
 
 
 @pytest.fixture
@@ -844,7 +944,8 @@ def satellite_registration(shell, request):
         sat_curl_command = SAT_REG_FILE[sat_curl_command_key]
         print(">>> Using parametrized curl command requested in the fixture.")
     if "oracle" in SYSTEM_RELEASE_ENV:
-        _add_client_tools_repo(shell)
+        SUBMAN.add_keys_and_certificates()
+        SUBMAN.add_client_tools_repo()
 
     # Make sure it returned some value, otherwise it will fail.
     assert sat_curl_command, "The registration command is empty."
@@ -856,7 +957,7 @@ def satellite_registration(shell, request):
     assert shell(f"chmod +x {sat_script} && /bin/bash {sat_script}").returncode == 0
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        _remove_client_tools_repo(shell)
+        SUBMAN.remove_client_tools_repo()
 
     ### This is a workaround which might be removed, when we enable the Satellite repositories by default
     repos_to_enable = shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output.split()
@@ -867,11 +968,8 @@ def satellite_registration(shell, request):
 
     # Remove the subman packages installed by the registration script
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        # Remove potential leftover subscription
-        shell("subscription-manager remove --all")
-        # Remove potential leftover registration
-        shell("subscription-manager unregister")
-        assert shell("yum remove -y subscription-manager*")
+        SUBMAN.unregister()
+        SUBMAN.teardown_full_workflow()
 
 
 @pytest.fixture
@@ -893,6 +991,9 @@ def backup_directory(shell, request):
     assert backup_dir_name, "Did not manage to parse the function's pytest marker"
     backup_path = os.path.join(backup_path_base, backup_dir_name)
 
+    if int(os.environ["TMT_REBOOT_COUNT"]) > 0 and os.path.exists(backup_path):
+        pytest.skip("Backup path created already.")
+
     assert shell(f"mkdir {backup_path}").returncode == 0
 
     yield backup_path
@@ -907,16 +1008,14 @@ def install_and_set_up_subman_to_stagecdn(shell):
     rhsm.baseurl and server.hostname to be changed.
     This might be dropped when ELS, 8.10, etc. goes actually GA.
     """
-    # Add the client tools repository to install the subscription-manager from
-    # This is mainly for Oracle Linux but does not hurt to do the same for CentOS as well
-    _add_client_tools_repo(shell)
-    shell(f"yum install --setopt=obsoletes=0 subscription-manager -y")
+    # Install subscription-manager
+    SUBMAN.prepare_full_workflow()
 
     # Point the server hostname to the staging environment,
     # so we don't need to pass it to convert2rhel explicitly
     # RHSM baseurl gets pointed to a stage cdn
     shell(
-        "subscription-manager config --rhsm.baseurl=https://{}  --server.hostname={}".format(
+        "subscription-manager config --rhsm.baseurl=https://{} --server.hostname={}".format(
             TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
         ),
         silent=True,
@@ -925,8 +1024,7 @@ def install_and_set_up_subman_to_stagecdn(shell):
     yield
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        shell("yum remove -y subscription-manager")
-        _remove_client_tools_repo(shell)
+        SUBMAN.teardown_full_workflow()
 
 
 @pytest.fixture(scope="session", autouse=True)

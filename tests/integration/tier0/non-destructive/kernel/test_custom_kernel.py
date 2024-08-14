@@ -4,7 +4,7 @@ import re
 import pexpect.exceptions
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, _get_full_kernel_title, grub_setup_workaround
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, get_full_kernel_title, grub_setup_workaround
 
 
 def _cross_vendor_kernel():
@@ -43,13 +43,13 @@ def _cross_vendor_kernel():
     elif distro == "stream-9":
         install_what = "alma-9-kernel"
 
-    repo_from_path = install_what_kernel_mapping.get(install_what)
+    repo_url = install_what_kernel_mapping.get(install_what)
 
-    return repo_from_path
+    return repo_url
 
 
 @pytest.fixture(scope="function")
-def custom_kernel(shell, hybrid_rocky_image):
+def custom_kernel(shell, hybrid_rocky_image, backup_directory):
     """
     Fixture for test_custom_kernel.
     Install CentOS kernel on Oracle Linux and vice versa to mimic the custom
@@ -57,19 +57,21 @@ def custom_kernel(shell, hybrid_rocky_image):
     Remove the current installed kernel and install the machine default kernel
     after the test.
     """
-    repo_from_path = _cross_vendor_kernel()
+    repo_url = _cross_vendor_kernel()
     custom_kernel_installed = None
+    # Create a temporary file to store the original kernel NVRA
+    kernel_info_storage = os.path.join(backup_directory, "original-kernel")
+    # Store the current running kernel NVRA in a file
+    shell("echo $(uname -r) >> %s" % kernel_info_storage)
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        yum_call = f"yum --disablerepo=* --repofrompath=customkernelrepo,{repo_from_path}"
+        yum_call = f"yum --disablerepo=* --repofrompath=customkernelrepo,{repo_url}"
 
         # Query for all kernels in the repoquery
         # grep -v exclude any .src packages
         # rpmdev-sort sort packages by version
         # tail -1 the last in the list as the latest one
         #   (we don't really care about the version, install the latest to mitigate any potential dependency issues)
-        available_kernel_version = shell(
-            f"{yum_call} repoquery kernel | grep -v '.src' | rpmdev-sort | tail -1"
-        ).output.strip()
+        available_kernel_version = shell(f"{yum_call} --quiet repoquery kernel | rpmdev-sort | tail -1").output.strip()
 
         # Install the kernel from the path provided by the _cross_vendor_kernel
         # This way we don't rely on any specific version of kernel hardcoded and install what's available in the repository
@@ -77,9 +79,9 @@ def custom_kernel(shell, hybrid_rocky_image):
         # Call without the gpg check, so we won't need to import the GPG key
         assert shell(f"{yum_call} install -y --nogpgcheck {available_kernel_version}").returncode == 0
 
-        custom_kernel_installed = re.sub("kernel-(?:\d+:)?", "", available_kernel_version)
+        custom_kernel_installed = re.sub(r"kernel-(?:\d+:)?", "", available_kernel_version)
         # Assemble the full title of the custom kernel and set it as default to boot to
-        grub_substring = _get_full_kernel_title(shell, kernel=custom_kernel_installed)
+        grub_substring = get_full_kernel_title(shell, kernel=custom_kernel_installed)
         assert shell(f"grub2-set-default '{grub_substring}'").returncode == 0
         shell("tmt-reboot -t 600")
 
@@ -88,8 +90,9 @@ def custom_kernel(shell, hybrid_rocky_image):
     if os.environ["TMT_REBOOT_COUNT"] == "1":
         # This is kind of naive, but we assume the second latest installed kernel is the original one
         # We use head to filter the first two lines of the output and tail to filter the bottom line
-        original_kernel = os.popen("rpm -q --last kernel | head -2 | tail -1 | cut -d ' ' -f1").read().strip()
-        original_kernel_title = _get_full_kernel_title(shell, kernel=original_kernel.replace("kernel-", ""))
+        with open(kernel_info_storage, "r") as f:
+            original_kernel = f.readline().rstrip()
+        original_kernel_title = get_full_kernel_title(shell, kernel=original_kernel)
         # Install back the CentOS 8.5 original kernel
         if "centos-8-latest" in SYSTEM_RELEASE_ENV:
             assert shell(f"yum reinstall -y kernel").returncode == 0
