@@ -14,7 +14,8 @@
 convert2rhel/             @oamg/convert2rhel-developers
 
 # Integration tests
-tests/integration         @danmyway @kokesak @SerCantus
+tests/                    @oamg/conversions-qe
+plans/                    @oamg/conversions-qe
 
 # Packaging
 packaging/                @Venefilyn @bocekm @pr-watson @r0x0d @bookwar
