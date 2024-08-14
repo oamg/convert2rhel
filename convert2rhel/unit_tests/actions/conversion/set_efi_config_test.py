@@ -237,3 +237,10 @@ def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instan
         title="Failed to replace UEFI boot entry to RHEL",
         description="As the current UEFI bootloader entry could be invalid or missing we need to ensure that a RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following error: 'Bootloader error'",
     )
+
+
+def test_replace_efi_boot_entry_non_uefi(monkeypatch, replace_efi_boot_entry_instance, caplog):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
+    replace_efi_boot_entry_instance.run()
+    assert "did not perform UEFI bootloader entry replacement" in caplog.text
+    unit_tests.assert_actions_result(replace_efi_boot_entry_instance, level="SUCCESS")
