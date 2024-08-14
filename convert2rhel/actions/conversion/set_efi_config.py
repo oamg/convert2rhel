@@ -220,13 +220,20 @@ class ReplaceEfiBootEntry(actions.Action):
         The current UEFI bootloader entry could be invalid or misleading. It's
         expected that the new bootloader entry will refer to one of the standard UEFI binary
         files provided by Red Hat inside the RHEL_EFIDIR_CANONICAL_PATH.
-        The new UEFI bootloader entry is always created / registered and set
+        The new UEFI bootloader entry is always created / registered and
         set as default.
 
         The current (original) UEFI bootloader entry is removed under some conditions
         (see `py:grub._remove_orig_boot_entry()` for more info).
         """
         super(ReplaceEfiBootEntry, self).run()
+
+        if not grub.is_efi():
+            logger.debug(
+                "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader "
+                "entry replacement."
+            )
+            return
 
         try:
             grub.replace_efi_boot_entry()
