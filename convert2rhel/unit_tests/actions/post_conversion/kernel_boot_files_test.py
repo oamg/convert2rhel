@@ -20,7 +20,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import actions, checks
+from convert2rhel import actions, checks, grub
 from convert2rhel.actions.post_conversion import kernel_boot_files
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
@@ -132,6 +132,7 @@ def test_check_kernel_boot_files_missing(
             ]
         ),
     )
+    # monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     boot_folder = tmpdir.mkdir("/boot")
     if create_initramfs:
         initramfs_file = boot_folder.join("initramfs-%s.img")
@@ -163,8 +164,8 @@ def test_check_kernel_boot_files_missing(
                 " files exists. This may cause problems during the next boot of your system.",
                 diagnosis=None,
                 remediations="In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
-                "1. yum reinstall kernel-core-6.9.9-200.fc40.x86_64 -y\n"
-                "2. grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg\n"
+                "1. yum reinstall kernel-core- -y\n"
+                "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
                 "3. reboot",
             ),
         )
