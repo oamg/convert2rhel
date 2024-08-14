@@ -29,6 +29,9 @@ class RHSMCustomFactsConfig(actions.Action):
 
         ret_code, output = subscription.update_rhsm_custom_facts()
 
+        if not output:
+            return None
+
         if ret_code != 0:
             self.add_message(
                 level="WARNING",
