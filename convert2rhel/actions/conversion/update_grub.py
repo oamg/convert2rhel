@@ -53,8 +53,14 @@ class UpdateGrub(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="GRUB2_CONFIG_CREATION_FAILED",
-                title="GRUB2 config file generation failed",
-                description="The GRUB2 config file generation failed.",
+                title="The grub2-mkconfig call failed to complete",
+                description=(
+                    "The grub2-mkconfig call failed with output: '{0}'. The conversion will continue but there"
+                    " may be issues with the current grub2 config and image formats.".format(output)
+                ),
+                remediations="If there are issues with the current grub2 config and image we recommend manually "
+                "re-generating them with 'grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg' and"
+                "'grub2-install [block device, e.g. /dev/sda]'.",
             )
             return
 
@@ -72,9 +78,10 @@ class UpdateGrub(actions.Action):
             except grub.BootloaderError as e:
                 self.set_result(
                     level="ERROR",
-                    id="BOOTLOADER_ERROR",
-                    title="Bootloader error detected",
-                    description="A bootloader error has occurred, please look at the diagnosis for more information.",
+                    id="FAILED_TO_IDENTIFY_GRUB2_BLOCK_DEVICE",
+                    title="Failed to identify GRUB2 block device",
+                    description="The block device could not be identified, please look at the diagnosis "
+                    "for more information.",
                     diagnosis=str(e),
                 )
                 return
@@ -89,8 +96,13 @@ class UpdateGrub(actions.Action):
                 self.add_message(
                     level="WARNING",
                     id="GRUB2_INSTALL_FAILED",
-                    title="Couldn't install the new images with GRUB2",
-                    description="The new images could not be installed with GRUB2.",
+                    title="The grub2-install call failed to complete",
+                    description=(
+                        "The grub2-install call failed with output: '{0}'. The conversion will continue but"
+                        " there may be issues with the current grub2 image formats.".format(output)
+                    ),
+                    remediations="If there are issues with the current grub2 image we recommend manually"
+                    " re-generating it with 'grub2-install [block device, e.g. /dev/sda]'.",
                 )
                 return
 
