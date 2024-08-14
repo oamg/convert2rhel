@@ -204,7 +204,8 @@ def main_locked():
         return ConversionExitCodes.SUCCESSFUL
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
-        _handle_main_exceptions(process_phase, pre_conversion_results)
+        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+        _handle_main_exceptions(process_phase, results)
 
         return _handle_inhibitors_found_exception()
     except exceptions.CriticalError as err:
