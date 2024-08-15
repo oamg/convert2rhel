@@ -33,6 +33,7 @@ class ListNonRedHatPkgsLeft(actions.Action):
         Red Hat-signed ones during the conversion.
         """
         super(ListNonRedHatPkgsLeft, self).run()
+        loggerinst.task("Convert: List remaining non-Red Hat packages")
         loggerinst.info("Listing packages not signed by Red Hat")
         non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
         if not non_red_hat_pkgs:
