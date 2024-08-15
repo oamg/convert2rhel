@@ -49,45 +49,56 @@ def get_system_release_content():
         loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
-class YumConf:
-    _yum_conf_path = "/etc/yum.conf"
+class PkgManagerConf:
+    """
+    Check if the config file of the systems package manager has been modified and if it has then
+    remove those changes before the conversion completes.
+    .. note::
+        The pkg manager config file path only needs to be set to yum.conf as there is a symlink between yum and dnf.
+    This means that on dnf systems the dnf.conf will be modified even the path is for the yum.conf.
+    """
 
-    def __init__(self):
-        self._yum_conf_content = utils.get_file_content(self._yum_conf_path)
+    _pkg_manager_conf_path = ""  # type: str
+    _pkg_manager_conf_content = ""  # type: str
+
+    def __init__(self, config_path=None):  # type: (str|None) -> None
+        if not config_path:
+            self._pkg_manager_conf_path = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
+        else:
+            self._pkg_manager_conf_path = config_path
+        self._pkg_manager_conf_content = utils.get_file_content(self._pkg_manager_conf_path)
 
     def patch(self):
         """Comment out the distroverpkg variable in yum.conf so yum can determine
         release version ($releasever) based on the installed redhat-release
         package.
         """
-        if YumConf.is_modified():
-            # When the user touches the yum.conf before executing the conversion, then during the conversion yum as a
+        if self.is_modified():
+            # When the user touches the yum/dnf config before executing the conversion, then during the conversion yum/dmf as a
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
-            self._write_altered_yum_conf()
-            loggerinst.info("%s patched." % self._yum_conf_path)
+            self._write_altered_pkg_manager_conf()
+            loggerinst.info("%s patched." % self._pkg_manager_conf_path)
         else:
-            loggerinst.info("Skipping patching, yum configuration file not modified")
+            loggerinst.info("Skipping patching, package manager configuration file has not been modified.")
 
         return
 
     def _comment_out_distroverpkg_tag(self):
-        if re.search(r"^distroverpkg=", self._yum_conf_content, re.MULTILINE):
-            self._yum_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._yum_conf_content)
+        if re.search(r"^distroverpkg=", self._pkg_manager_conf_content, re.MULTILINE):
+            self._pkg_manager_conf_content = re.sub(r"\n(distroverpkg=).*", r"\n#\1", self._pkg_manager_conf_content)
 
-    def _write_altered_yum_conf(self):
-        with open(self._yum_conf_path, "w") as file_to_write:
-            file_to_write.write(self._yum_conf_content)
+    def _write_altered_pkg_manager_conf(self):
+        with open(self._pkg_manager_conf_path, "w") as file_to_write:
+            file_to_write.write(self._pkg_manager_conf_content)
 
-    @staticmethod
-    def is_modified():
+    def is_modified(self):
         """Return true if the YUM/DNF configuration file has been modified by the user."""
-        conf = "/etc/yum.conf" if pkgmanager.TYPE == "yum" else "/etc/dnf/dnf.conf"
 
-        output, _ = utils.run_subprocess(["rpm", "-Vf", conf], print_output=False)
+        output, _ = utils.run_subprocess(["rpm", "-Vf", self._pkg_manager_conf_path], print_output=False)
         # rpm -Vf does not return information about the queried file but about all files owned by the rpm
         # that owns the queried file. Character '5' on position 3 means that the file was modified.
-        return True if re.search(r"^.{2}5.*? %s$" % conf, output, re.MULTILINE) else False
+        return True if re.search(r"^.{2}5.*? %s$" % self._pkg_manager_conf_path, output, re.MULTILINE) else False
 
 
 # Code to be executed upon module import

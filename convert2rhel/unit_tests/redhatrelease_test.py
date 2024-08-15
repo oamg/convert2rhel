@@ -29,16 +29,16 @@ from six.moves import mock
 
 from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
 from convert2rhel import pkgmanager, redhatrelease, systeminfo, utils
-from convert2rhel.redhatrelease import YumConf, get_system_release_filepath
+from convert2rhel.redhatrelease import PkgManagerConf, get_system_release_filepath
 from convert2rhel.systeminfo import system_info
 
 
-YUM_CONF_WITHOUT_DISTROVERPKG = """[main]
+PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG = """[main]
 installonly_limit=3
 
 #  This is the default"""
 
-YUM_CONF_WITH_DISTROVERPKG = """[main]
+PKG_MANAGER_CONF_WITH_DISTROVERPKG = """[main]
 installonly_limit=3
 distroverpkg=centos-release
 
@@ -48,40 +48,42 @@ distroverpkg=centos-release
 SUPPORTED_RHEL_VERSIONS = [7, 8]
 
 
-def test_get_yum_conf_content(monkeypatch):
-    monkeypatch.setattr(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
+@pytest.fixture()
+def pkg_manager_conf_instance():
+    return PkgManagerConf()
 
-    yum_conf = redhatrelease.YumConf()
 
-    assert "Dummy file to read" in yum_conf._yum_conf_content
+def test_get_pkg_manager_conf_content(monkeypatch):
+    pkg_manager_conf = redhatrelease.PkgManagerConf(config_path=unit_tests.DUMMY_FILE)
+    assert "Dummy file to read" in pkg_manager_conf._pkg_manager_conf_content
 
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
-def test_patch_yum_conf_missing_distroverpkg(version, monkeypatch):
-    monkeypatch.setattr(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
+def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
+
     monkeypatch.setattr(system_info, "version", version)
-    yum_conf = redhatrelease.YumConf()
-    yum_conf._yum_conf_content = YUM_CONF_WITHOUT_DISTROVERPKG
+    pkg_manager_conf = pkg_manager_conf_instance
+    pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
-    yum_conf._comment_out_distroverpkg_tag()
+    pkg_manager_conf._comment_out_distroverpkg_tag()
 
-    assert "distroverpkg=" not in yum_conf._yum_conf_content
-    assert yum_conf._yum_conf_content.count("distroverpkg=") == 0
+    assert "distroverpkg=" not in pkg_manager_conf._pkg_manager_conf_content
+    assert pkg_manager_conf._pkg_manager_conf_content.count("distroverpkg=") == 0
 
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
-def test_patch_yum_conf_existing_distroverpkg(version, monkeypatch):
-    monkeypatch.setattr(redhatrelease.YumConf, "_yum_conf_path", unit_tests.DUMMY_FILE)
+def test_patch_pkg_manager_conf_existing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
+
     monkeypatch.setattr(system_info, "version", systeminfo.Version(version, 0))
-    yum_conf = redhatrelease.YumConf()
-    yum_conf._yum_conf_content = YUM_CONF_WITH_DISTROVERPKG
+    pkg_manager_conf = pkg_manager_conf_instance
+    pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITH_DISTROVERPKG
 
     # Call just this function to avoid unmockable built-in write func
-    yum_conf._comment_out_distroverpkg_tag()
+    pkg_manager_conf._comment_out_distroverpkg_tag()
 
-    assert "#distroverpkg=" in yum_conf._yum_conf_content
-    assert yum_conf._yum_conf_content.count("#distroverpkg=") == 1
+    assert "#distroverpkg=" in pkg_manager_conf._pkg_manager_conf_content
+    assert pkg_manager_conf._pkg_manager_conf_content.count("#distroverpkg=") == 1
 
 
 @pytest.mark.parametrize(
@@ -96,36 +98,39 @@ def test_patch_yum_conf_existing_distroverpkg(version, monkeypatch):
         ("unknown", "anything", False),
     ),
 )
-def test_yum_is_modified(monkeypatch, pkg_type, subprocess_ret, expected_result):
+def test_pkg_manager_is_modified(monkeypatch, pkg_type, subprocess_ret, expected_result):
     monkeypatch.setattr(pkgmanager, "TYPE", value=pkg_type)
 
     run_subprocess = unit_tests.RunSubprocessMocked(return_string=subprocess_ret)
     monkeypatch.setattr(utils, "run_subprocess", value=run_subprocess)
+    pkg_manager_conf = redhatrelease.PkgManagerConf()
 
-    assert YumConf.is_modified() == expected_result
+    assert pkg_manager_conf.is_modified() == expected_result
 
 
 @pytest.mark.parametrize("modified", (True, False))
-def test_yum_patch(monkeypatch, modified, caplog):
+def test_pkg_manager_patch(monkeypatch, modified, caplog, tmp_path):
     is_modified = mock.Mock(return_value=modified)
-    monkeypatch.setattr(YumConf, "is_modified", value=is_modified)
+    monkeypatch.setattr(PkgManagerConf, "is_modified", value=is_modified)
     _comment_out_distroverpkg_tag = mock.Mock()
     monkeypatch.setattr(
-        YumConf,
+        PkgManagerConf,
         "_comment_out_distroverpkg_tag",
         value=_comment_out_distroverpkg_tag,
     )
-    _write_altered_yum_conf = mock.Mock()
-    monkeypatch.setattr(YumConf, "_write_altered_yum_conf", value=_write_altered_yum_conf)
+    monkeypatch.setattr(
+        PkgManagerConf,
+        "_pkg_manager_conf_path",
+        value=tmp_path,
+    )
 
-    YumConf().patch()
-
+    PkgManagerConf(config_path=str(tmp_path / "yum.conf")).patch()
     if modified:
         _comment_out_distroverpkg_tag.assert_called_once()
         assert "patched" in caplog.text
     else:
         _comment_out_distroverpkg_tag.assert_not_called()
-        assert "Skipping patching, yum configuration file not modified" in caplog.text
+        assert "Skipping patching, package manager configuration file has not been modified" in caplog.text
 
 
 @pytest.mark.parametrize(("is_file", "exception"), ((True, False), (False, True)))
