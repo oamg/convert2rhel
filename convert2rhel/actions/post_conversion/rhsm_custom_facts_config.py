@@ -15,7 +15,12 @@
 
 __metaclass__ = type
 
+import logging
+
 from convert2rhel import actions, subscription
+
+
+loggerinst = logging.getLogger(__name__)
 
 
 class RHSMCustomFactsConfig(actions.Action):
@@ -30,6 +35,7 @@ class RHSMCustomFactsConfig(actions.Action):
         ret_code, output = subscription.update_rhsm_custom_facts()
 
         if not output:
+            loggerinst.info("No output skipping this step")
             return None
 
         if ret_code != 0:

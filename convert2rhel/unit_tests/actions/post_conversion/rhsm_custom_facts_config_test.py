@@ -64,3 +64,14 @@ def test_rhsm_custom_facts_config(rhsm_custom_facts_config_instance, monkeypatch
 
     assert expected.issuperset(rhsm_custom_facts_config_instance.messages)
     assert expected.issubset(rhsm_custom_facts_config_instance.messages)
+
+
+def test_rhsm_custom_facts_config_no_output(rhsm_custom_facts_config_instance, monkeypatch, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
+    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", mock.Mock(return_value=(1, " ")))
+
+    message = "No output skipping this step"
+
+    rhsm_custom_facts_config_instance.run()
+
+    assert message in caplog.records[-1].message
