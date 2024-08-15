@@ -21,7 +21,7 @@ import pytest
 import six
 
 from convert2rhel import actions, grub, unit_tests, utils
-from convert2rhel.actions.conversion import update_grub
+from convert2rhel.actions.post_conversion import update_grub
 from convert2rhel.unit_tests import RunSubprocessMocked, run_subprocess_side_effect
 
 
