@@ -20,14 +20,13 @@ import pytest
 import six
 
 from convert2rhel import utils
-from convert2rhel.actions.post_conversion import lock_releasever
+from convert2rhel.actions.conversion import lock_releasever
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
-from convert2rhel.unit_tests.conftest import centos7, centos8
+from convert2rhel.unit_tests.conftest import centos8
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 from convert2rhel import unit_tests
 
