@@ -57,7 +57,7 @@ def replace_efi_boot_entry_instance():
 @pytest.mark.parametrize(
     ("is_efi", "efi_file_exists", "log_msg"),
     (
-        (False, None, "BIOS detected"),
+        (False, None, "did not perform check of RHEL UEFI binaries"),
         (True, True, "UEFI binary found"),
     ),
 )
@@ -87,8 +87,17 @@ def test_new_default_efi_bin_error(new_default_efi_bin_instance, monkeypatch):
     )
 
 
+def test_efi_bootmgr_utility_installed_non_uefi(monkeypatch, efi_bootmgr_utility_installed_instance, caplog):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
+    efi_bootmgr_utility_installed_instance.run()
+    assert "did not perform check of UEFI boot manager utility." in caplog.text
+    unit_tests.assert_actions_result(efi_bootmgr_utility_installed_instance, level="SUCCESS")
+
+
 def test_efi_bootmgr_utility_installed_error(efi_bootmgr_utility_installed_instance, monkeypatch):
     monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
+
     efi_bootmgr_utility_installed_instance.run()
 
     unit_tests.assert_actions_result(
@@ -153,17 +162,26 @@ def test_move_grub_files(
 
 
 def test_move_grub_files_non_centos(monkeypatch, move_grub_files_instance, caplog, global_system_info):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     global_system_info.id = "oracle"
     monkeypatch.setattr(systeminfo, "system_info", global_system_info)
     move_grub_files_instance.run()
     assert "Did not perform moving of GRUB files" in caplog.text
 
 
-def test_move_grub_files_error(monkeypatch, caplog, move_grub_files_instance, global_system_info):
+def test_move_grub_files_non_uefi(monkeypatch, move_grub_files_instance, caplog):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
+    move_grub_files_instance.run()
+    assert "did not perform moving of Grub2 files." in caplog.text
+    unit_tests.assert_actions_result(move_grub_files_instance, level="SUCCESS")
+
+
+def test_move_grub_files_error(monkeypatch, move_grub_files_instance, global_system_info):
     monkeypatch.setattr(os.path, "exists", lambda file: False)
     monkeypatch.setattr(shutil, "move", mock.Mock())
     global_system_info.id = "centos"
     monkeypatch.setattr(systeminfo, "system_info", global_system_info)
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
 
     move_grub_files_instance.run()
     unit_tests.assert_actions_result(
@@ -178,13 +196,14 @@ def test_move_grub_files_error(monkeypatch, caplog, move_grub_files_instance, gl
 @centos7
 def test_move_grub_files_io_error(
     monkeypatch,
-    caplog,
     pretend_os,
     move_grub_files_instance,
 ):
     monkeypatch.setattr(shutil, "move", mock.Mock())
     shutil.move.side_effect = IOError(13, "Permission denied")
     monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True, False]))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
+
     move_grub_files_instance.run()
 
     unit_tests.assert_actions_result(
@@ -199,7 +218,7 @@ def test_move_grub_files_io_error(
 
 
 def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
-
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     monkeypatch.setattr(os, "rmdir", mock.Mock())
     os.rmdir.side_effect = OSError("Could not remove folder")
     remove_efi_centos_instance.run()
@@ -218,7 +237,15 @@ def test_remove_efi_centos_warning(monkeypatch, remove_efi_centos_instance):
     assert expected.issubset(remove_efi_centos_instance.messages)
 
 
+def test_remove_efi_centos_non_uefi(monkeypatch, remove_efi_centos_instance, caplog):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
+    remove_efi_centos_instance.run()
+    assert "did not perform removal of CentOS UEFI directory." in caplog.text
+    unit_tests.assert_actions_result(remove_efi_centos_instance, level="SUCCESS")
+
+
 def test_remove_efi_centos_non_centos(monkeypatch, remove_efi_centos_instance, global_system_info, caplog):
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
     global_system_info.id = "oracle"
     monkeypatch.setattr(systeminfo, "system_info", global_system_info)
     remove_efi_centos_instance.run()
@@ -242,5 +269,5 @@ def test_replace_efi_boot_entry_error(monkeypatch, replace_efi_boot_entry_instan
 def test_replace_efi_boot_entry_non_uefi(monkeypatch, replace_efi_boot_entry_instance, caplog):
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
     replace_efi_boot_entry_instance.run()
-    assert "did not perform UEFI bootloader entry replacement" in caplog.text
+    assert "did not perform UEFI bootloader entry replacement." in caplog.text
     unit_tests.assert_actions_result(replace_efi_boot_entry_instance, level="SUCCESS")

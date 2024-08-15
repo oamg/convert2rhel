@@ -37,7 +37,9 @@ class NewDefaultEfiBin(actions.Action):
         logger.task("Convert: Configure the bootloader")
 
         if not grub.is_efi():
-            logger.info("BIOS detected. Nothing to do.")
+            logger.info(
+                "Unable to collect data about UEFI on a BIOS system, did not perform check of RHEL UEFI binaries."
+            )
             return
 
         new_default_efibin = None
@@ -78,6 +80,13 @@ class EfibootmgrUtilityInstalled(actions.Action):
         """Check if the Efibootmgr utility is installed"""
         super(EfibootmgrUtilityInstalled, self).run()
 
+        if not grub.is_efi():
+            logger.info(
+                "Unable to collect data about UEFI on a BIOS system, did not perform check of UEFI boot manager"
+                " utility."
+            )
+            return
+
         if not os.path.exists("/usr/sbin/efibootmgr"):
             self.set_result(
                 level="ERROR",
@@ -104,6 +113,10 @@ class MoveGrubFiles(actions.Action):
         from Oracle Linux, the redhat/ directory is already used.
         """
         super(MoveGrubFiles, self).run()
+
+        if not grub.is_efi():
+            logger.info("Unable to collect data about UEFI on a BIOS system, did not perform moving of Grub2 files.")
+            return
 
         if systeminfo.system_info.id != "centos":
             logger.debug("Did not perform moving of GRUB files - only related to CentOS Linux.")
@@ -186,6 +199,12 @@ class RemoveEfiCentos(actions.Action):
         """
         super(RemoveEfiCentos, self).run()
 
+        if not grub.is_efi():
+            logger.info(
+                "Unable to collect data about UEFI on a BIOS system, did not perform removal of CentOS UEFI directory."
+            )
+            return
+
         if systeminfo.system_info.id != "centos":
             logger.debug("Did not perform removal of EFI files - only related to CentOS Linux.")
             # nothing to do
@@ -229,7 +248,7 @@ class ReplaceEfiBootEntry(actions.Action):
         super(ReplaceEfiBootEntry, self).run()
 
         if not grub.is_efi():
-            logger.debug(
+            logger.info(
                 "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader "
                 "entry replacement."
             )
