@@ -47,6 +47,12 @@ class LockReleaseverInRHELRepositories(actions.Action):
         # available.
         if not system_info.eus_system or tool_opts.no_rhsm:
             loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
+            self.add_message(
+                id="SKIPPED_LOCK_RELEASEVER_IN_RHEL_REPOSITORIES",
+                level="INFO",
+                title="Skipped releasever lock",
+                description="Releasever lock is needed only when converting to RHEL EUS using RHSM.",
+            )
             return
         loggerinst.info(
             "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."

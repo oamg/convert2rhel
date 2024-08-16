@@ -19,7 +19,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import utils
+from convert2rhel import actions, utils
 from convert2rhel.actions.conversion import lock_releasever
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
@@ -70,3 +70,5 @@ def test_lock_releasever_in_rhel_repositories(
 def test_lock_releasever_in_rhel_repositories_not_eus(lock_releasever_in_rhel_repositories_instance, caplog):
     lock_releasever_in_rhel_repositories_instance.run()
     assert "Skipping locking RHEL repositories to a specific EUS minor version." in caplog.records[-1].message
+    assert expected.issuperset(lock_releasever_in_rhel_repositories_instance.messages)
+    assert expected.issubset(lock_releasever_in_rhel_repositories_instance.messages)
