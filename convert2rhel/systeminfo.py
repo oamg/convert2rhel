@@ -75,14 +75,12 @@ class Version(namedtuple("Version", ["major", "minor"])):
     Example:
     >>> ver1 = Version(7, 9)
     >>> ver2 = Version(8, None)
-    >>> repr(ver1)
-    '7.9'
+    >>> ver1
+    7.9
     >>> repr(ver2)
     '8'
     >>> print(ver1.major, ver1.minor)
     7 9
-    >>> print(ver2)
-    Version(8, None)
     """
 
     def __repr__(self):
@@ -96,9 +94,9 @@ class Version(namedtuple("Version", ["major", "minor"])):
         :rtype: str
         """
         if self.minor:
-            return "%s.%s" % (self.major, self.minor)
+            return "{major}.{minor}".format(major=self.major, minor=self.minor)
 
-        return "%s" % self.major
+        return "{major}".format(major=self.major)
 
 
 class SystemInfo:
@@ -186,7 +184,7 @@ class SystemInfo:
     def print_system_information(self):
         """Print system related information."""
         self.logger.info("%-20s %s" % ("Name:", self.name))
-        self.logger.info("%-20s %s" % ("OS version:", repr(self.version)))
+        self.logger.info("%-20s %s" % ("OS version:", self.version))
         self.logger.info("%-20s %s" % ("Architecture:", self.arch))
         self.logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
 
@@ -390,12 +388,9 @@ class SystemInfo:
             return releasever_cfg or RELEASE_VER_MAPPING[repr(self.version)]
         except KeyError:
             self.logger.critical(
-                "%s of version %s is not allowed for conversion.\n"
-                "Allowed versions are: %s"
-                % (
-                    self.name,
-                    repr(self.version),
-                    list(RELEASE_VER_MAPPING.keys()),
+                "{os_name} of version {current_version} is not allowed for conversion.\n"
+                "Allowed versions are: {allowed_versions}".format(
+                    os_name=self.name, current_version=self.version, allowed_versions=list(RELEASE_VER_MAPPING.keys())
                 )
             )
 
