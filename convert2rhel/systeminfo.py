@@ -66,7 +66,39 @@ EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
 ELS_RELEASE_DATE = "2024-06-12"
 
-Version = namedtuple("Version", ["major", "minor"])
+
+class Version(namedtuple("Version", ["major", "minor"])):
+    """
+    A namedtuple based class.
+    Represents a system version.
+
+    Example:
+    >>> ver1 = Version(7, 9)
+    >>> ver2 = Version(8, None)
+    >>> repr(ver1)
+    '7.9'
+    >>> repr(ver2)
+    '8'
+    >>> print(ver1.major, ver1.minor)
+    7 9
+    >>> print(ver2)
+    Version(8, None)
+    """
+
+    def __repr__(self):
+        """
+        Return a string representation of the version.
+
+        The string is in 'major.minor' format, if minor is None (generally on Stream-like systems)
+        return just 'major' version as a string.
+
+        :return: The string representation of the version.
+        :rtype: str
+        """
+        if self.minor:
+            return "%s.%s" % (self.major, self.minor)
+
+        return "%s" % self.major
 
 
 class SystemInfo:
@@ -79,8 +111,6 @@ class SystemInfo:
         self.distribution_id = None
         # Major and minor version of the operating system (e.g. version.major == 8, version.minor == 7)
         self.version = None
-        # String of the system version, either joined major and minor version (8.5, 9.4) or just the major version
-        self.version_str = None
         # Platform architecture
         self.arch = None
         # Fingerprints of the original operating system GPG keys
@@ -133,7 +163,6 @@ class SystemInfo:
         self.id = system_release_data["id"]
         self.distribution_id = system_release_data["distribution_id"]
         self.version = system_release_data["version"]
-        self.version_str = system_release_data["version_str"]
 
         self.arch = self._get_architecture()
 
@@ -157,7 +186,7 @@ class SystemInfo:
     def print_system_information(self):
         """Print system related information."""
         self.logger.info("%-20s %s" % ("Name:", self.name))
-        self.logger.info("%-20s %s" % ("OS version:", self.version_str))
+        self.logger.info("%-20s %s" % ("OS version:", repr(self.version)))
         self.logger.info("%-20s %s" % ("Architecture:", self.arch))
         self.logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
 
@@ -248,7 +277,6 @@ class SystemInfo:
             "version": version,
             "distribution_id": distribution_id,
             "full_version": full_version,
-            "version_str": ".".join(map(str, version)) if version.minor is not None else str(version.major),
         }
 
     def _get_architecture(self):
@@ -359,14 +387,14 @@ class SystemInfo:
         releasever_cfg = self._get_cfg_opt("releasever")
         try:
             # return config value or corresponding releasever from the RELEASE_VER_MAPPING
-            return releasever_cfg or RELEASE_VER_MAPPING[self.version_str]
+            return releasever_cfg or RELEASE_VER_MAPPING[repr(self.version)]
         except KeyError:
             self.logger.critical(
                 "%s of version %s is not allowed for conversion.\n"
                 "Allowed versions are: %s"
                 % (
                     self.name,
-                    self.version_str,
+                    repr(self.version),
                     list(RELEASE_VER_MAPPING.keys()),
                 )
             )
@@ -430,7 +458,7 @@ class SystemInfo:
         :return: Whether or not the current system has an EUS correspondent in RHEL.
         :rtype: bool
         """
-        current_version = self.version_str
+        current_version = repr(self.version)
 
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
             self.logger.info("EUS argument detected, automatically evaluating system as EUS")
@@ -495,7 +523,7 @@ class SystemInfo:
         release_info = {
             "id": self.distribution_id,
             "name": self.name,
-            "version": self.version_str,
+            "version": repr(self.version),
         }
 
         return release_info
