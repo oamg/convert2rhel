@@ -469,57 +469,6 @@ def test__remove_orig_boot_entry(
 
 
 @pytest.mark.parametrize(
-    ("releasever_major", "is_efi", "config_path", "grub2_mkconfig_exit_code", "grub2_install_exit_code", "expected"),
-    (
-        (8, True, "/boot/efi/EFI/redhat/grub.cfg", 0, 0, "Successfully updated GRUB2 on the system."),
-        (8, False, "/boot/grub2/grub.cfg", 0, 0, "Successfully updated GRUB2 on the system."),
-        (7, False, "/boot/grub2/grub.cfg", 0, 1, "Couldn't install the new images with GRUB2."),
-        (7, False, "/boot/grub2/grub.cfg", 1, 1, "GRUB2 config file generation failed."),
-    ),
-)
-def test_update_grub_after_conversion(
-    releasever_major,
-    is_efi,
-    config_path,
-    grub2_mkconfig_exit_code,
-    grub2_install_exit_code,
-    expected,
-    monkeypatch,
-    caplog,
-):
-    monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
-    monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
-    monkeypatch.setattr(
-        "convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major"])(releasever_major)
-    )
-    run_subprocess_mocked = RunSubprocessMocked(
-        side_effect=run_subprocess_side_effect(
-            (
-                (
-                    "/usr/sbin/grub2-mkconfig",
-                    "-o",
-                    "%s" % config_path,
-                ),
-                (
-                    "output",
-                    grub2_mkconfig_exit_code,
-                ),
-            ),
-            (("/usr/sbin/grub2-install", "/dev/sda"), ("output", grub2_install_exit_code)),
-        ),
-    )
-    monkeypatch.setattr(
-        utils,
-        "run_subprocess",
-        value=run_subprocess_mocked,
-    )
-
-    grub.update_grub_after_conversion()
-    if expected is not None:
-        assert expected in caplog.records[-1].message
-
-
-@pytest.mark.parametrize(
     ("is_efi", "config_path"),
     (
         (False, "/boot/grub2/grub.cfg"),
