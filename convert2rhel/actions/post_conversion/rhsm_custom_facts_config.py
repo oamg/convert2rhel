@@ -35,7 +35,6 @@ class RHSMCustomFactsConfig(actions.Action):
         ret_code, output = subscription.update_rhsm_custom_facts()
 
         if not output:
-            loggerinst.info("No output skipping this step")
             return None
 
         if ret_code != 0:
@@ -43,6 +42,7 @@ class RHSMCustomFactsConfig(actions.Action):
                 level="WARNING",
                 id="UPDATE_RHSM_CUSTOM_FACTS",
                 title="FailedRHSMUpdateCustomFacts",
-                description="Failed to update the RHSM custom facts with return code: %s and output: %s."
-                % (ret_code, output),
+                description="Failed to update the RHSM custom facts with return code: {0} and output: {1}.".format(
+                    ret_code, output
+                ),
             )

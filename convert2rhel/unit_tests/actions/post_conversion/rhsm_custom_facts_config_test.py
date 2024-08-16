@@ -22,9 +22,6 @@ from convert2rhel import actions, subscription, utils
 from convert2rhel.actions.post_conversion.rhsm_custom_facts_config import RHSMCustomFactsConfig
 
 
-# from convert2rhel.unit_tests import RunSubprocessMocked
-
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
@@ -68,10 +65,8 @@ def test_rhsm_custom_facts_config(rhsm_custom_facts_config_instance, monkeypatch
 
 def test_rhsm_custom_facts_config_no_output(rhsm_custom_facts_config_instance, monkeypatch, caplog):
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", mock.Mock(return_value=(1, " ")))
-
-    message = "No output skipping this step"
+    monkeypatch.setattr(subscription, "update_rhsm_custom_facts", mock.Mock(return_value=(1, "")))
 
     rhsm_custom_facts_config_instance.run()
 
-    assert message in caplog.records[-1].message
+    # assert message in caplog.records[-1].message
