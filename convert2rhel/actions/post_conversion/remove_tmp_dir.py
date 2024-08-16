@@ -40,9 +40,9 @@ class RemoveTmpDir(actions.Action):
         temporary directory does not exist.
         """
         super(RemoveTmpDir, self).run()
-        
+
         loggerinst.task("Final: Remove temporary folder %s" % utils.TMP_DIR)
-        
+
         try:
             shutil.rmtree(self.tmp_dir)
             loggerinst.info("Temporary folder %s removed" % self.tmp_dir)
