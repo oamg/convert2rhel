@@ -206,17 +206,6 @@ class TestShowEula:
         assert len(caplog.records) == 1
 
 
-def test_post_ponr_conversion(monkeypatch):
-    post_ponr_set_efi_configuration_mock = mock.Mock()
-    lock_releasever_in_rhel_repositories_mock = mock.Mock()
-
-    monkeypatch.setattr(subscription, "lock_releasever_in_rhel_repositories", lock_releasever_in_rhel_repositories_mock)
-
-    main.post_ponr_conversion()
-
-    assert lock_releasever_in_rhel_repositories_mock.call_count == 1
-
-
 def test_help_exit(monkeypatch, tmp_path):
     """
     Check that --help exits before we enter main_locked().
@@ -252,7 +241,6 @@ def test_main(monkeypatch, tmp_path):
     run_post_actions_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
-    post_ponr_conversion_mock = mock.Mock()
     rpm_files_diff_mock = mock.Mock()
     update_grub_after_conversion_mock = mock.Mock()
     remove_tmp_dir_mock = mock.Mock()
@@ -280,7 +268,6 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "_raise_for_skipped_failures", raise_for_skipped_failures_mock)
     monkeypatch.setattr(report, "_summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
-    monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
     monkeypatch.setattr(grub, "update_grub_after_conversion", update_grub_after_conversion_mock)
     monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
@@ -306,7 +293,6 @@ def test_main(monkeypatch, tmp_path):
     assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
-    assert post_ponr_conversion_mock.call_count == 1
     assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
@@ -639,11 +625,11 @@ class TestRollbackFromMain:
         clean_yum_metadata_mock = mock.Mock()
         run_pre_actions_mock = mock.Mock()
         run_post_actions_mock = mock.Mock()
+        post_ponr_changes_mock = mock.Mock(side_effect=Exception)
         find_actions_of_severity_mock = mock.Mock(return_value=[])
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
         ask_to_continue_mock = mock.Mock()
-        post_ponr_conversion_mock = mock.Mock(side_effect=Exception)
         summary_as_json_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
 
@@ -667,7 +653,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity_mock)
         monkeypatch.setattr(report, "_summary", report_summary_mock)
         monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
-        monkeypatch.setattr(main, "post_ponr_conversion", post_ponr_conversion_mock)
+        monkeypatch.setattr(main, "post_ponr_changes", post_ponr_changes_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
         monkeypatch.setattr(subscription, "update_rhsm_custom_facts", update_rhsm_custom_facts_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
@@ -688,7 +674,6 @@ class TestRollbackFromMain:
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
         assert ask_to_continue_mock.call_count == 1
-        assert post_ponr_conversion_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1

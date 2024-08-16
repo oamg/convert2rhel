@@ -372,8 +372,6 @@ def prepare_system():
 
 def post_ponr_changes():
     """Start the conversion itself"""
-    post_ponr_conversion()
-
     loggerinst.task("Final: Update GRUB2 configuration")
     grub.update_grub_after_conversion()
 
@@ -391,13 +389,6 @@ def post_ponr_changes():
 
     loggerinst.task("Final: Update RHSM custom facts")
     subscription.update_rhsm_custom_facts()
-
-
-def post_ponr_conversion():
-    """Perform main steps for system conversion."""
-
-    loggerinst.task("Convert: Lock releasever in RHEL repositories")
-    subscription.lock_releasever_in_rhel_repositories()
 
 
 #
