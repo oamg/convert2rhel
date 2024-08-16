@@ -159,9 +159,6 @@ def test_update_grub_action_messages(
     )
 
     update_grub_instance.run()
-    print(expected)
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(update_grub_instance.messages)
     assert expected.issuperset(update_grub_instance.messages)
     assert expected.issubset(update_grub_instance.messages)
 
