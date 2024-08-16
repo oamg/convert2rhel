@@ -1,6 +1,6 @@
 import socket
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SubscriptionManager, SystemInformationRelease
+from conftest import TEST_VARS, SubscriptionManager
 
 
 def setup_proxy(shell):
@@ -92,23 +92,10 @@ def setup_rhsm(shell):
         == 0
     )
 
-    client_tools_repo = "client-tools-for-rhel-7-server.repo"
-    major_version = SystemInformationRelease.version.major
-    if major_version in (8, 9):
-        client_tools_repo = f"client-tools-for-rhel-{major_version}.repo"
-
-    ct_repo_shell_call = f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/{client_tools_repo} \
-                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}"
-
-    assert shell(ct_repo_shell_call, silent=True).returncode == 0
-
-    # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
-    # otherwise the dnf will complain with dependency issues.
-    if "centos-8" in SYSTEM_RELEASE_ENV:
-        shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
-
-    # Install subscription-manager
+    # Add the client tools repository and install subscription-manager
     subman = SubscriptionManager()
+    subman.remove_package(package_name="rhn-client-tools")
+    subman.add_client_tools_repo()
     subman.install_package()
 
     shell(

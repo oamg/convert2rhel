@@ -61,6 +61,13 @@ class InstallRhelKernel(actions.Action):
         #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
         # When calling install, yum/dnf essentially reports all the already installed versions.
         already_installed = re.findall(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
+
+        # Mitigates an edge case, when the kernel meta-package might not be installed prior to the conversion
+        # with only kernel-core being on the system.
+        # During that scenario the kernel meta package gets actually installed leaving the already_installed unmatched
+        if not already_installed:
+            return
+
         # Get list of kernel pkgs not signed by Red Hat
         non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_fingerprint(
             system_info.fingerprints_rhel, "kernel"

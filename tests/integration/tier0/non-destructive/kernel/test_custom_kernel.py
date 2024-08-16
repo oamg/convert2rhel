@@ -17,8 +17,10 @@ def _cross_vendor_kernel():
     """
     # This mapping includes cross vendor kernels and their respective grub substrings to set for boot
     install_what_kernel_mapping = {
-        "oracle-7-kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/",
-        "centos-7-kernel": "http://vault.centos.org/centos/7/os/x86_64/",
+        # Given there won't be any more updates to the el7 repositories, we can get away
+        # with hard-coding the kernel rpm url.
+        "oracle-7-kernel": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/kernel-3.10.0-1160.118.1.0.1.el7.x86_64.rpm",
+        "centos-7-kernel": "https://vault.centos.org/centos/7/updates/x86_64/Packages/kernel-3.10.0-1160.118.1.el7.x86_64.rpm",
         "oracle-8-kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/",
         "centos-8-kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/",
         "stream-9-kernel": "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/",
@@ -64,32 +66,38 @@ def custom_kernel(shell, hybrid_rocky_image, backup_directory):
     # Store the current running kernel NVRA in a file
     shell("echo $(uname -r) >> %s" % kernel_info_storage)
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        yum_call = f"yum --disablerepo=* --repofrompath=customkernelrepo,{repo_url}"
+        # The version of yum on el7 like systems does not allow the --repofrompath option.
+        # Therefore, we need to install the rpm directly
+        if SystemInformationRelease.version.major == 7:
+            kernel_to_install = repo_url
+            cross_vendor_kernel = re.sub(".*kernel-", "", kernel_to_install).rstrip(".rpm")
+            shell(f"yum install -y {kernel_to_install}")
 
-        # Query for all kernels in the repoquery
-        # grep -v exclude any .src packages
-        # rpmdev-sort sort packages by version
-        # tail -1 the last in the list as the latest one
-        #   (we don't really care about the version, install the latest to mitigate any potential dependency issues)
-        available_kernel_version = shell(f"{yum_call} --quiet repoquery kernel | rpmdev-sort | tail -1").output.strip()
+        else:
+            yum_call = f"yum --disablerepo=* --repofrompath=customkernelrepo,{repo_url}"
 
-        # Install the kernel from the path provided by the _cross_vendor_kernel
-        # This way we don't rely on any specific version of kernel hardcoded and install what's available in the repository
-        # Disable all other repositories
-        # Call without the gpg check, so we won't need to import the GPG key
-        assert shell(f"{yum_call} install -y --nogpgcheck {available_kernel_version}").returncode == 0
+            # Query for all kernels in the repoquery
+            # grep -v exclude any .src packages
+            # rpmdev-sort sort packages by version
+            # tail -1 the last in the list as the latest one
+            #   (we don't really care about the version, install the latest to mitigate any potential dependency issues)
+            kernel_to_install = shell(f"{yum_call} --quiet repoquery kernel | rpmdev-sort | tail -1").output.strip()
 
-        custom_kernel_installed = re.sub(r"kernel-(?:\d+:)?", "", available_kernel_version)
+            # Install the kernel from the path provided by the _cross_vendor_kernel
+            # This way we don't rely on any specific version of kernel hardcoded and install what's available in the repository
+            # Disable all other repositories
+            # Call without the gpg check, so we won't need to import the GPG key
+            assert shell(f"{yum_call} install -y --nogpgcheck {kernel_to_install}").returncode == 0
+
+            cross_vendor_kernel = re.sub(r"kernel-(?:\d+:)?", "", kernel_to_install)
         # Assemble the full title of the custom kernel and set it as default to boot to
-        grub_substring = get_full_kernel_title(shell, kernel=custom_kernel_installed)
+        grub_substring = get_full_kernel_title(shell, kernel=cross_vendor_kernel)
         assert shell(f"grub2-set-default '{grub_substring}'").returncode == 0
         shell("tmt-reboot -t 600")
 
     yield
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
-        # This is kind of naive, but we assume the second latest installed kernel is the original one
-        # We use head to filter the first two lines of the output and tail to filter the bottom line
         with open(kernel_info_storage, "r") as f:
             original_kernel = f.readline().rstrip()
         original_kernel_title = get_full_kernel_title(shell, kernel=original_kernel)

@@ -20,7 +20,11 @@ def _assign_enable_repo_opt(shell):
         #   1/ minor version matches EUS eligible version
         #   2/ the system distribution does snapshots of said versions
         #   3/ the current version is not the latest one available (i.e. not in the EUS phase yet)
-        if system_version.minor in (4, 6, 8) and system_distribution != "oracle" and "latest" not in SYSTEM_RELEASE_ENV:
+        if (
+            system_version.minor in (2, 4, 6, 8)
+            and system_distribution != "oracle"
+            and "latest" not in SYSTEM_RELEASE_ENV
+        ):
             repos = (
                 f"rhel-{system_version.major}-for-x86_64-baseos-eus-rpms",
                 f"rhel-{system_version.major}-for-x86_64-appstream-eus-rpms",

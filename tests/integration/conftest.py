@@ -138,8 +138,6 @@ class SubscriptionManager:
             "curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://www.redhat.com/security/data/fd431d51.txt"
         )
 
-        return
-
     def add_client_tools_repo(self):
         """
         Add the client tools repository to install subscription manager from.
@@ -153,8 +151,6 @@ class SubscriptionManager:
         # otherwise the dnf will complain with dependency issues.
         if "centos-8" in SYSTEM_RELEASE_ENV:
             self.shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools-for-rhel-8.repo")
-
-        return
 
     def install_package(self, package_name="subscription-manager"):
         """
@@ -194,8 +190,6 @@ class SubscriptionManager:
         self.shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
         self.shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
 
-        return
-
     def unregister(self):
         """
         Remove potential leftover subscription, unregister the system.
@@ -203,16 +197,15 @@ class SubscriptionManager:
         # Remove potential leftover subscription
         self.shell("subscription-manager remove --all")
         # Remove potential leftover registration
-        self.shell("subscription-manager unregister")
+        command = "subscription-manager unregister"
 
-        return
+        return self.shell(command)
 
-    def prepare_full_workflow(self):
+    def set_up_requirements(self):
         """
         Usual full preparation workflow.
         Calls, where applicable:
-            # only on Oracle Linux
-            self.remove_package(package_name="rhn-client-tools")
+            self.remove_package(package_name="rhn-client-tools") # only on Oracle Linux
             self.add_keys_and_certificates()
             self.add_client_tools_repo()
             self.install_package()
@@ -223,9 +216,7 @@ class SubscriptionManager:
         self.add_client_tools_repo()
         self.install_package()
 
-        return
-
-    def teardown_full_workflow(self):
+    def clean_up(self):
         """
         Usual full teardown workflow.
         Calls where applicable:
@@ -238,11 +229,6 @@ class SubscriptionManager:
         self.remove_package()
         self.remove_client_tools_repo()
         self.remove_keys_and_certificates()
-
-        return
-
-
-SUBMAN = SubscriptionManager()
 
 
 @pytest.fixture()
@@ -650,13 +636,13 @@ def pre_registered(shell, request):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
-        This does not apply to CentOS 8.5 since recently dependency conflicts caused inability to install the package
-        from client tools, repo. We install the package from the native repositories.
     The rhn-client-tools package obsoletes the subscription-manager, so we remove the package on Oracle Linux.
     By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
+    subman = SubscriptionManager()
+
     username = TEST_VARS["RHSM_USERNAME"]
     password = TEST_VARS["RHSM_PASSWORD"]
     # Use custom keys when the fixture is parametrized
@@ -666,7 +652,7 @@ def pre_registered(shell, request):
         password = TEST_VARS[password_key]
         print(">>> Using parametrized username and password requested in the fixture.")
 
-    SUBMAN.prepare_full_workflow()
+    subman.set_up_requirements()
 
     # Register the system
     assert (
@@ -705,11 +691,11 @@ def pre_registered(shell, request):
     # The "pre_registered system" test requires to remain registered even after the conversion is completed,
     # so the check "enabled repositories" after the conversion can be executed.
     if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
-        SUBMAN.unregister()
+        subman.unregister()
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
-        SUBMAN.teardown_full_workflow()
+        subman.clean_up()
 
 
 @pytest.fixture()
@@ -766,6 +752,8 @@ def get_full_kernel_title(shell, kernel=None):
     :return: The full boot entry title for the given kernel.
     :rtype: str
     """
+    if not kernel:
+        raise ValueError("The kernel argument is probably empty")
     # Get the full name of the kernel (ignore rescue kernels)
     full_title = shell(
         f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
@@ -797,7 +785,7 @@ def outdated_kernel(shell, hybrid_rocky_image):
         # We can hardcode this then
         # The release part differs a bit on CentOS and Oracle,
         # so going with wildcard asterisk to generalize
-        elif SystemInformationRelease.version.major == 7:
+        if SystemInformationRelease.version.major == 7:
             older_kernel = "kernel-3.10.0-1160.118*"
             assert shell(f"yum install -y {older_kernel}").returncode == 0
 
@@ -812,7 +800,7 @@ def outdated_kernel(shell, hybrid_rocky_image):
             major_ver = SystemInformationRelease.version.major
             minor_ver = SystemInformationRelease.version.minor
             previous_minor_ver = minor_ver - 1
-            if minor_ver == 0:
+            if minor_ver <= 0:
                 # In case we're on a x.0 version, there is not an older repo to work with.
                 # Skip the test if so
                 pytest.skip("There is no older kernel to install for this system.")
@@ -822,6 +810,8 @@ def outdated_kernel(shell, hybrid_rocky_image):
                 old_repo = f"https://vault.almalinux.org/{releasever}/BaseOS/x86_64/os/"
             elif SystemInformationRelease.distribution == "rocky":
                 old_repo = f"https://dl.rockylinux.org/vault/rocky/{releasever}/BaseOS/x86_64/os/"
+            else:
+                pytest.fail("This should not happen.")
             # Install the kernel from the url
             shell(f"yum install kernel -y --repofromurl 'oldrepo,{old_repo}'")
 
@@ -877,31 +867,44 @@ def yum_conf_exclude(shell, backup_directory, request):
     if hasattr(request, "param"):
         exclude = request.param
         print(">>> Using parametrized packages requested in the fixture.")
+    # /etc/yum.conf is either a standalone config file for yum, on EL7 systems
+    # or a symlink to the /etc/dnf/dnf.conf config file on dnf based systems
+    # we want to be able to restore this state after the test finishes.
     yum_configs_all = ["/etc/yum.conf", "/etc/dnf/dnf.conf"]
-    # work only with existing config files
+    # figure out which config files are on the system
     yum_configs = [conf for conf in yum_configs_all if os.path.exists(conf)]
     backup_dir = os.path.join(backup_directory, "yumconf")
     shell(f"mkdir -v {backup_dir}")
-    for yum_config in yum_configs:
-        config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-        config = configparser.ConfigParser()
-        config.read(yum_config)
 
-        assert shell(f"cp -v {yum_config} {config_bak}").returncode == 0
+    yum_conf = yum_configs_all[0]
+    dnf_conf = yum_configs_all[1]
+    yum_conf_bak = os.path.join(backup_dir, os.path.basename(yum_conf))
+    dnf_conf_bak = os.path.join(backup_dir, os.path.basename(dnf_conf))
+    # if there are both config files on the system, we can assume, that /etc/yum.conf
+    # is just a symlink to /etc/dnf/dnf.conf, and we work with just the regular file
+    if len(yum_configs) == 2:
+        modified_config = dnf_conf
+    else:
+        modified_config = yum_conf
 
-        pkgs_to_exclude = " ".join(exclude)
-        # If there is already an `exclude` section, append to the existing value
-        if config.has_option("main", "exclude"):
-            pre_existing_value = config.get("main", "exclude")
-            config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
-        else:
-            config.set("main", "exclude", pkgs_to_exclude)
+    assert shell(f"cp -v {modified_config} {backup_dir}").returncode == 0
 
-        with open(yum_config, "w") as configfile:
-            config.write(configfile, space_around_delimiters=False)
+    config = configparser.ConfigParser()
+    config.read(modified_config)
 
-        assert config.has_option("main", "exclude")
-        assert all(pkg in config.get("main", "exclude") for pkg in exclude)
+    pkgs_to_exclude = " ".join(exclude)
+    # If there is already an `exclude` section, append to the existing value
+    if config.has_option("main", "exclude"):
+        pre_existing_value = config.get("main", "exclude")
+        config.set("main", "exclude", f"{pre_existing_value} {pkgs_to_exclude}")
+    else:
+        config.set("main", "exclude", pkgs_to_exclude)
+
+    with open(modified_config, "w") as configfile:
+        config.write(configfile, space_around_delimiters=False)
+
+    assert config.has_option("main", "exclude")
+    assert all(pkg in config.get("main", "exclude") for pkg in exclude)
 
     yield
 
@@ -911,18 +914,16 @@ def yum_conf_exclude(shell, backup_directory, request):
     # the system information from the then non-existent file
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         for yum_config in yum_configs:
-            config_bak = os.path.join(backup_dir, os.path.basename(yum_config))
-            # if /etc/dnf/dnf.conf existed prior, create /etc/yum.conf as a symlink to it
-            dnf_conf = yum_configs_all[1]
-            yum_conf = yum_configs_all[0]
-            # if there are both config files on the system, we can assume, that /etc/yum.conf
-            # is just a symlink to /etc/dnf/dnf.conf
-            # Otherwise just restore whatever config exists on the system as is.
-            if len(yum_configs) == 2:
-                assert shell(f"mv {config_bak} {dnf_conf}").returncode == 0
-                Path(yum_conf).symlink_to(dnf_conf)
-            else:
-                assert shell(f"mv {config_bak} {dnf_conf}").returncode == 0
+            # Remove the files first in case we get some pollution by convert2rhel
+            shell(f"rm -f {yum_config}")
+
+        # if there are both config files on the system prior, restore /etc/dnf/dnf.conf
+        # file and re-create the /etc/yum.conf symlink
+        if len(yum_configs) == 2:
+            assert shell(f"mv {dnf_conf_bak} {dnf_conf}").returncode == 0
+            Path(yum_conf).symlink_to(dnf_conf)
+        else:
+            assert shell(f"mv {yum_conf_bak} {yum_conf}").returncode == 0
 
 
 @pytest.fixture
@@ -936,6 +937,7 @@ def satellite_registration(shell, request):
     """
     # Get the curl command for the respective system
     # from the conftest function
+    subman = SubscriptionManager()
     sat_curl_command = satellite_curl_command()
     sat_script = "/var/tmp/register_to_satellite.sh"
     # If the fixture is parametrized, use the parameter as the key to get the curl command
@@ -944,8 +946,8 @@ def satellite_registration(shell, request):
         sat_curl_command = SAT_REG_FILE[sat_curl_command_key]
         print(">>> Using parametrized curl command requested in the fixture.")
     if "oracle" in SYSTEM_RELEASE_ENV:
-        SUBMAN.add_keys_and_certificates()
-        SUBMAN.add_client_tools_repo()
+        subman.add_keys_and_certificates()
+        subman.add_client_tools_repo()
 
     # Make sure it returned some value, otherwise it will fail.
     assert sat_curl_command, "The registration command is empty."
@@ -953,11 +955,19 @@ def satellite_registration(shell, request):
     # Curl the Satellite registration script silently
     assert shell(f"{sat_curl_command} -o {sat_script}", silent=True).returncode == 0
 
+    # This is just a mitigation of rhn-client-tools pkg obsoleting subscription-manager during upgrade
+    # TODO remove when https://github.com/theforeman/foreman/pull/10280 gets merged and or foreman 3.12 is out
+    # Should be around November 2024
+    if "oracle" in SystemInformationRelease.distribution:
+        shell(
+            fr"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {sat_script}"
+        )
+
     # Make the script executable and run the registration
     assert shell(f"chmod +x {sat_script} && /bin/bash {sat_script}").returncode == 0
 
     if "oracle" in SYSTEM_RELEASE_ENV:
-        SUBMAN.remove_client_tools_repo()
+        subman.remove_client_tools_repo()
 
     ### This is a workaround which might be removed, when we enable the Satellite repositories by default
     repos_to_enable = shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output.split()
@@ -968,8 +978,7 @@ def satellite_registration(shell, request):
 
     # Remove the subman packages installed by the registration script
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        SUBMAN.unregister()
-        SUBMAN.teardown_full_workflow()
+        subman.clean_up()
 
 
 @pytest.fixture
@@ -1008,8 +1017,9 @@ def install_and_set_up_subman_to_stagecdn(shell):
     rhsm.baseurl and server.hostname to be changed.
     This might be dropped when ELS, 8.10, etc. goes actually GA.
     """
+    subman = SubscriptionManager()
     # Install subscription-manager
-    SUBMAN.prepare_full_workflow()
+    subman.set_up_requirements()
 
     # Point the server hostname to the staging environment,
     # so we don't need to pass it to convert2rhel explicitly
@@ -1024,7 +1034,7 @@ def install_and_set_up_subman_to_stagecdn(shell):
     yield
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        SUBMAN.teardown_full_workflow()
+        subman.clean_up()
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -47,10 +47,13 @@ def test_prepare_system(shell, satellite_registration):
     # We could remove all the system repositories before the update, but in case
     # there is also an update of the <system>-release package the repositories would get restored.
     # Therefore, we update the system with all repositories disabled enabling only the Satellite.
-    assert shell("yum update -y --disablerepo=* --enablerepo=Satellite_Engineering*")
+    # Additionally, we exclude the rhn-client-tools which consistently stubbornly obsoletes and replaces
+    # the subscription-manager
+    assert shell("yum update -y --disablerepo=* --enablerepo=Satellite_Engineering* -x rhn-client-tools")
 
-    # We have deliberately skipped setting the standard RHCK as a running kernel ansible task during the host preparation
-    # that is done, so we do not end up with kernel version ahead of the one available on the Satellite server
+    # We have deliberately skipped the ansible task setting the standard RHCK as a running kernel
+    # during the host preparation. That is, so we do not end up with a kernel version
+    # ahead of the one available on the Satellite server
     if SystemInformationRelease.distribution == "oracle":
         # The latest RHCK should be installed at this point already by the system update
         # Keep this just as a safety measure
