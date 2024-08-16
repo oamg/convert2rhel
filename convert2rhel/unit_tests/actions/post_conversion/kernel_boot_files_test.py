@@ -172,9 +172,6 @@ def test_check_kernel_boot_files_missing(
     )
 
     kernel_boot_files_instance.run()
-    print(expected)
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(kernel_boot_files_instance.messages)
     assert "Couldn't verify the kernel boot files in the boot partition." in caplog.records[-1].message
     assert expected.issuperset(kernel_boot_files_instance.messages)
     assert expected.issubset(kernel_boot_files_instance.messages)
