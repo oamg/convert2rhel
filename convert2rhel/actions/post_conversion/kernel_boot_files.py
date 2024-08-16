@@ -65,7 +65,7 @@ class KernelBootFiles(actions.Action):
         logger.info("Checking if the '%s' file exists.", initramfs_file)
         is_initramfs_valid = checks.is_initramfs_file_valid(initramfs_file)
 
-        if is_initramfs_valid or vmlinuz_exists:
+        if is_initramfs_valid and vmlinuz_exists:
             logger.info("The initramfs and vmlinuz files are valid.")
             return
 
