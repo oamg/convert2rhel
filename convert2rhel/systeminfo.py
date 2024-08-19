@@ -49,6 +49,7 @@ RELEASE_VER_MAPPING = {
     "9.2": "9.2",
     "9.1": "9.1",
     "9.0": "9.0",
+    "9": "9",  # CentOS Stream and similar
     "8.10": "8.10",
     "8.9": "8.9",
     "8.8": "8.8",
@@ -56,6 +57,7 @@ RELEASE_VER_MAPPING = {
     "8.6": "8.6",
     "8.5": "8.5",
     "8.4": "8.4",
+    "8": "8",  # CentOS Stream and similar
     "7.9": "7Server",
 }
 
@@ -64,7 +66,37 @@ EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
 ELS_RELEASE_DATE = "2024-06-12"
 
-Version = namedtuple("Version", ["major", "minor"])
+
+class Version(namedtuple("Version", ["major", "minor"])):
+    """
+    A namedtuple based class.
+    Represents a system version.
+
+    Example:
+    >>> ver1 = Version(7, 9)
+    >>> ver2 = Version(8, None)
+    >>> ver1
+    7.9
+    >>> repr(ver2)
+    '8'
+    >>> print(ver1.major, ver1.minor)
+    7 9
+    """
+
+    def __repr__(self):
+        """
+        Return a string representation of the version.
+
+        The string is in 'major.minor' format, if minor is None (generally on Stream-like systems)
+        return just 'major' version as a string.
+
+        :return: The string representation of the version.
+        :rtype: str
+        """
+        if self.minor:
+            return "{major}.{minor}".format(major=self.major, minor=self.minor)
+
+        return "{major}".format(major=self.major)
 
 
 class SystemInfo:
@@ -152,7 +184,7 @@ class SystemInfo:
     def print_system_information(self):
         """Print system related information."""
         self.logger.info("%-20s %s" % ("Name:", self.name))
-        self.logger.info("%-20s %d.%d" % ("OS version:", self.version.major, self.version.minor))
+        self.logger.info("%-20s %s" % ("OS version:", self.version))
         self.logger.info("%-20s %s" % ("Architecture:", self.arch))
         self.logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
 
@@ -224,17 +256,16 @@ class SystemInfo:
             minor = int(version_numbers[1])
         else:
             # In case there are no minor versions specified in the release string, we assume that we are using CentOS
-            # Stream or a similar distribution, which is continuosly going slightly ahead of the latest released minor
-            # version of RHEL up until the end of its lifecycle. Thus its "ephemeral" minor version is always higher
+            # Stream or a similar distribution, which is continuously going slightly ahead of the latest released minor
+            # version of RHEL up until the end of its lifecycle. Thus, its "ephemeral" minor version is always higher
             # than RHEL X.0-X.9.
 
             # The Stream lifecycle stops with the RHEL X.10 minor release, when the Stream goes EOL and RHEL catches
-            # up with it. After that the Stream-like system can be converted to RHEL X.10 without a downgrade.
+            # up with it. Only after that the Stream-like system can be converted to RHEL X.10 without a downgrade.
 
-            # Therefore to enable the simplest conversion from CentOS Stream at its EOL date, we hardcode the
-            # CentOS Stream minor version to 10.
-
-            minor = 10
+            # For the Stream conversions we utilize only the major version for specifying the releasever,
+            # assuming the rhelX/X/ repository namespace mirrors the latest available rhelX/X.Y/ namespace.
+            minor = None
 
         version = Version(major, minor)
 
@@ -354,16 +385,12 @@ class SystemInfo:
         releasever_cfg = self._get_cfg_opt("releasever")
         try:
             # return config value or corresponding releasever from the RELEASE_VER_MAPPING
-            return releasever_cfg or RELEASE_VER_MAPPING[".".join(map(str, self.version))]
+            return releasever_cfg or RELEASE_VER_MAPPING[repr(self.version)]
         except KeyError:
             self.logger.critical(
-                "%s of version %d.%d is not allowed for conversion.\n"
-                "Allowed versions are: %s"
-                % (
-                    self.name,
-                    self.version.major,
-                    self.version.minor,
-                    list(RELEASE_VER_MAPPING.keys()),
+                "{os_name} of version {current_version} is not allowed for conversion.\n"
+                "Allowed versions are: {allowed_versions}".format(
+                    os_name=self.name, current_version=self.version, allowed_versions=list(RELEASE_VER_MAPPING.keys())
                 )
             )
 
@@ -426,7 +453,7 @@ class SystemInfo:
         :return: Whether or not the current system has an EUS correspondent in RHEL.
         :rtype: bool
         """
-        current_version = "%s.%s" % (self.version.major, self.version.minor)
+        current_version = repr(self.version)
 
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
             self.logger.info("EUS argument detected, automatically evaluating system as EUS")
@@ -476,11 +503,11 @@ class SystemInfo:
         return status
 
     def get_system_release_info(self, system_release_content=None):
-        """Return the system release information as an dictionary
+        """Return the system release information as a dictionary
 
-        This function aims to retrieve the system release information in an dictionary format.
+        This function aims to retrieve the system release information in a dictionary format.
         This can be used before and after we modify the system-release file on the system,
-        as it have a parameter to to read from the contents of a system-release file (if called from somewhere else).
+        as it have a parameter to read from the contents of a system-release file (if called from somewhere else).
 
         :param system_release_content: The contents of the system_release file if needed.
         :type system_release_content: str
@@ -488,12 +515,10 @@ class SystemInfo:
         :rtype: dict[str, str]
         """
 
-        system_release_data = self.parse_system_release_content(system_release_content)
-
         release_info = {
-            "id": system_release_data["distribution_id"],
-            "name": system_release_data["name"],
-            "version": "%s.%s" % (system_release_data["version"].major, system_release_data["version"].minor),
+            "id": self.distribution_id,
+            "name": self.name,
+            "version": repr(self.version),
         }
 
         return release_info
@@ -501,7 +526,7 @@ class SystemInfo:
 
 def is_systemd_managed_service_running(service):
     """Get service status from systemd."""
-    # Reloading, activating, etc will return None which means to retry
+    # Reloading, activating, etc. will return None which means to retry
     running = None
 
     output, _ = utils.run_subprocess(["/usr/bin/systemctl", "show", "-p", "ActiveState", service], print_output=False)
