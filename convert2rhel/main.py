@@ -174,9 +174,6 @@ def main_locked():
         process_phase = ConversionPhase.POST_PONR_CHANGES
         post_conversion_results = actions.run_post_actions()
 
-        # TODO(r0x0d): Remove this after migrating all functions to Actions.
-        post_ponr_changes()
-
         _raise_for_skipped_failures(post_conversion_results)
         report.post_conversion_report(
             results=post_conversion_results,
@@ -363,17 +360,6 @@ def prepare_system():
 
     loggerinst.task("Prepare: Clean yum cache metadata")
     pkgmanager.clean_yum_metadata()
-
-
-#
-# Running the conversion
-#
-
-
-def post_ponr_changes():
-    """Start the conversion itself"""
-    loggerinst.task("Final: Update RHSM custom facts")
-    subscription.update_rhsm_custom_facts()
 
 
 #
