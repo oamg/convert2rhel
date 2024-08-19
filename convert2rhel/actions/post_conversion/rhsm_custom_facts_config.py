@@ -40,8 +40,8 @@ class RHSMCustomFactsConfig(actions.Action):
         if ret_code != 0:
             self.add_message(
                 level="WARNING",
-                id="UPDATE_RHSM_CUSTOM_FACTS",
-                title="FailedRHSMUpdateCustomFacts",
+                id="FAILED_TO_UPDATE_RHSM_CUSTOM_FACTS",
+                title="Failed to update RHSM custom facts",
                 description="Failed to update the RHSM custom facts with return code: {0} and output: {1}.".format(
                     ret_code, output
                 ),

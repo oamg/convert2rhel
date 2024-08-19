@@ -42,8 +42,8 @@ def test_rhsm_custom_facts_config(rhsm_custom_facts_config_instance, monkeypatch
     expected = {
         actions.ActionMessage(
             level="WARNING",
-            title="FailedRHSMUpdateCustomFacts",
-            id="UPDATE_RHSM_CUSTOM_FACTS",
+            title="Failed to update RHSM custom facts",
+            id="FAILED_TO_UPDATE_RHSM_CUSTOM_FACTS",
             description="Failed to update the RHSM custom facts with return code: 1 and output: Unable to update RHSM custom facts.",
         )
     }
