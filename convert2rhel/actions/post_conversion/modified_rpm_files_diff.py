@@ -49,7 +49,7 @@ class ModifiedRPMFilesDiff(actions.Action):
                 level="INFO",
                 id="SKIPPED_MODIFIED_RPM_FILES_DIFF",
                 title="Skipped comparison of 'rpm -Va' output from before and after the conversion.",
-                description="Comparison of 'rpm -Va' output was skipped due missing output "
+                description="Comparison of 'rpm -Va' output was not performed due to missing output "
                 "of the 'rpm -Va' run before the conversion.",
                 diagnosis="This is caused mainly by using '--no-rpm-va' argument for convert2rhel.",
             )

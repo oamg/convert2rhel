@@ -241,7 +241,6 @@ def test_main(monkeypatch, tmp_path):
     run_post_actions_mock = mock.Mock()
     clear_versionlock_mock = mock.Mock()
     ask_to_continue_mock = mock.Mock()
-    remove_tmp_dir_mock = mock.Mock()
     restart_system_mock = mock.Mock()
     finish_collection_mock = mock.Mock()
     check_kernel_boot_files_mock = mock.Mock()
@@ -266,7 +265,6 @@ def test_main(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "_raise_for_skipped_failures", raise_for_skipped_failures_mock)
     monkeypatch.setattr(report, "_summary", report_summary_mock)
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
-    monkeypatch.setattr(utils, "remove_tmp_dir", remove_tmp_dir_mock)
     monkeypatch.setattr(utils, "restart_system", restart_system_mock)
     monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
     monkeypatch.setattr(checks, "check_kernel_boot_files", check_kernel_boot_files_mock)
@@ -290,7 +288,6 @@ def test_main(monkeypatch, tmp_path):
     assert report_summary_mock.call_count == 2
     assert clear_versionlock_mock.call_count == 1
     assert ask_to_continue_mock.call_count == 1
-    assert remove_tmp_dir_mock.call_count == 1
     assert restart_system_mock.call_count == 1
     assert finish_collection_mock.call_count == 1
     assert check_kernel_boot_files_mock.call_count == 1
