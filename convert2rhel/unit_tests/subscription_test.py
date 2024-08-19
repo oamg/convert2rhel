@@ -30,7 +30,7 @@ import six
 
 from convert2rhel import exceptions, pkghandler, pkgmanager, repo, subscription, toolopts, unit_tests, utils
 from convert2rhel.backup import files
-from convert2rhel.systeminfo import Version, system_info
+from convert2rhel.systeminfo import Version
 from convert2rhel.unit_tests import (
     PromptUserMocked,
     RunSubprocessMocked,

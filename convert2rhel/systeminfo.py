@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-import difflib
 import logging
 import os
 import re
@@ -28,7 +27,7 @@ from collections import namedtuple
 from six.moves import configparser
 
 from convert2rhel import logger, utils
-from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME, tool_opts
+from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME, tool_opts
 from convert2rhel.utils import run_subprocess
 
 

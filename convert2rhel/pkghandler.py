@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-import glob
 import logging
 import os
 import os.path

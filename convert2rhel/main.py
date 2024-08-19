@@ -20,9 +20,9 @@ __metaclass__ = type
 import logging
 import os
 
-from convert2rhel import actions, applock, backup, breadcrumbs, checks, exceptions
+from convert2rhel import actions, applock, backup, breadcrumbs, exceptions
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, redhatrelease, subscription, systeminfo, toolopts, utils
+from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, toolopts, utils
 from convert2rhel.actions import level_for_raw_action_data, report
 
 
