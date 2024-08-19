@@ -922,7 +922,7 @@ def update_rhsm_custom_facts():
             loggerinst.info("RHSM custom facts uploaded successfully.")
     else:
         loggerinst.info("Skipping updating RHSM custom facts.")
-    return None
+    return None, None
 
 
 def get_rhsm_facts():
