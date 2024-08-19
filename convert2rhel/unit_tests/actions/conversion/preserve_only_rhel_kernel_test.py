@@ -153,13 +153,19 @@ class TestInstallRhelKernel:
             GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
         )
         install_rhel_kernel_instance.run()
+        info_message = (
+            "Conflict of kernels: The running kernel has the same version as the latest RHEL kernel. "
+            "The kernel package could not be replaced during the main transaction. "
+            "We will try to install a lower version of the package, "
+            "remove the conflicting kernel and then update to the latest security patched version."
+        )
         expected = set(
             (
                 actions.ActionMessage(
                     level="INFO",
                     id="CONFLICT_OF_KERNELS",
                     title="Conflict of installed kernel versions",
-                    description="Conflict of kernels: One of the installed kernels has the same version as the latest RHEL kernel.",
+                    description=info_message,
                     diagnosis=None,
                     remediations=None,
                 ),
