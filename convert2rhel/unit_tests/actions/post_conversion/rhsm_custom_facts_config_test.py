@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, subscription, unit_tests, utils
+from convert2rhel import actions, subscription, utils
 from convert2rhel.actions.post_conversion.rhsm_custom_facts_config import RHSMCustomFactsConfig
 from convert2rhel.unit_tests import RunSubprocessMocked
 
