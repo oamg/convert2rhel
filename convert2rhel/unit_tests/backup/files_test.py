@@ -2,7 +2,6 @@ __metaclass__ = type
 
 import hashlib
 import os
-import shutil
 
 import pytest
 import six

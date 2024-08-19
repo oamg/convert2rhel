@@ -1,4 +1,4 @@
-from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease
+from conftest import SystemInformationRelease
 
 
 def test_install_dependency_packages(shell):

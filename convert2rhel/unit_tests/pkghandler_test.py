@@ -37,18 +37,16 @@ from convert2rhel.pkghandler import (
     _get_packages_to_update_yum,
     get_total_packages_to_update,
 )
-from convert2rhel.systeminfo import Version, system_info
+from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
     DownloadPkgMocked,
     FormatPkgInfoMocked,
     GetInstalledPkgInformationMocked,
-    GetInstalledPkgsByFingerprintMocked,
     GetInstalledPkgsWDifferentFingerprintMocked,
     RemovePkgsMocked,
     RunSubprocessMocked,
-    StoreContentToFileMocked,
     SysExitCallableObject,
     TestPkgObj,
     create_pkg_information,

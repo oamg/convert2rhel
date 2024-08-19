@@ -20,10 +20,8 @@ __metaclass__ = type
 import logging
 import os
 import re
-import shutil
 
-from convert2rhel import backup, systeminfo, utils
-from convert2rhel.backup.files import RestorableFile
+from convert2rhel import systeminfo, utils
 
 
 logger = logging.getLogger(__name__)

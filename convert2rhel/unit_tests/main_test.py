@@ -27,9 +27,9 @@ import six
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, checks, exceptions
+from convert2rhel import actions, applock, backup, exceptions
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, redhatrelease, subscription, toolopts, utils
+from convert2rhel import main, pkghandler, pkgmanager, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info
