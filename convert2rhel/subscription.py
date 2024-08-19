@@ -917,10 +917,12 @@ def update_rhsm_custom_facts():
                 ret_code,
                 output,
             )
+            return ret_code, output
         else:
             loggerinst.info("RHSM custom facts uploaded successfully.")
     else:
         loggerinst.info("Skipping updating RHSM custom facts.")
+    return None, None
 
 
 def get_rhsm_facts():
