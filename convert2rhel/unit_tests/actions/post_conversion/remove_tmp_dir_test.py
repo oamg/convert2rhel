@@ -20,7 +20,7 @@ import os
 
 import pytest
 
-from convert2rhel import unit_tests
+from convert2rhel import actions, unit_tests
 from convert2rhel.actions.post_conversion import remove_tmp_dir
 
 
@@ -58,7 +58,19 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
         "The folder %s is left untouched. You may remove the folder manually"
         " after you ensure there is no preserved data you would need." % path
     )
+    expected = set(
+        (
+            actions.ActionMessage(
+                id="UNSUCCESSFUL_REMOVE_TMP_DIR",
+                level="WARNING",
+                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=path),
+                description=expected_message,
+            ),
+        ),
+    )
     assert expected_message in caplog.text
+    assert expected.issubset(remove_tmp_dir_instance.messages)
+    assert expected.issuperset(remove_tmp_dir_instance.messages)
     os.chmod(path, 0o700)
 
 

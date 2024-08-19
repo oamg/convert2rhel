@@ -28,7 +28,7 @@ loggerinst = logging.getLogger(__name__)
 
 class RemoveTmpDir(actions.Action):
     id = "REMOVE_TMP_DIR"
-    dependencies = ()
+    dependencies = ("UPDATE_GRUB",)
     tmp_dir = TMP_DIR
 
     def run(self):
@@ -57,3 +57,10 @@ class RemoveTmpDir(actions.Action):
                 " after you ensure there is no preserved data you would need." % self.tmp_dir
             )
             loggerinst.warning(warning_message)
+
+            self.add_message(
+                level="WARNING",
+                id="UNSUCCESSFUL_REMOVE_TMP_DIR",
+                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=self.tmp_dir),
+                description=warning_message,
+            )
