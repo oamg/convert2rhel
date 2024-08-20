@@ -631,24 +631,6 @@ def environment_variables(request):
     return _unset_env_var
 
 
-# TODO remove when https://issues.redhat.com/browse/RHELC-1389 resolved
-@pytest.fixture(autouse=True, scope="function")
-def remediation_out_of_date_packages(shell):
-    """
-    Remediation fixture.
-    There is an open issue https://issues.redhat.com/browse/RHELC-1389
-    The python3-syspurpose package is left outdated on the system in some cases,
-    causing subsequent tests to fail.
-    Update the package at the end of each test function if needed.
-    """
-    problematic_packages = ["python3-syspurpose"]
-
-    yield
-
-    for package in problematic_packages:
-        shell(f"yum update -y {package}")
-
-
 def _create_old_repo(distro: str, repo_name: str):
     """
     Create a repo on system with content that is older than the latest released version.
