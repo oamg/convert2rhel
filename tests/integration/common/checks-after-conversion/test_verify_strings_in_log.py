@@ -31,3 +31,22 @@ def test_traceback_not_present(log_file_data):
     traceback_str = r"traceback"
     match = re.search(traceback_str, log_file_data, re.IGNORECASE)
     assert match is None, "Traceback found in the log file data."
+
+
+def test_check_empty_exclude_in_critical_commands(log_file_data):
+    """
+    Verify that convert2rhel used `--setopt=exclude=` in every `repoquery` and `yumdownloader` call.
+    Reference ticket: https://issues.redhat.com/browse/RHELC-774
+    """
+    number_of_repoquery_calls = len(re.findall("Calling command 'repoquery", log_file_data))
+    number_of_repoquery_calls_with_exclude = len(
+        re.findall("Calling command 'repoquery.*--setopt=exclude=\s.*", log_file_data)
+    )
+    assert number_of_repoquery_calls != 0
+    assert number_of_repoquery_calls == number_of_repoquery_calls_with_exclude
+
+    number_of_yumdownloader_calls = len(re.findall("Calling command 'yumdownloader", log_file_data))
+    number_of_yumdownloader_calls_with_exclude = len(
+        re.findall("Calling command 'yumdownloader.*--setopt=exclude=\s.*", log_file_data)
+    )
+    assert number_of_yumdownloader_calls == number_of_yumdownloader_calls_with_exclude

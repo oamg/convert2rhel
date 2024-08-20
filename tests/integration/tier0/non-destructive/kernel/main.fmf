@@ -33,20 +33,6 @@ tag+:
         pytest -m test_verify_latest_kernel_check_passes_with_failed_repoquery
 
 
-/yum_exclude_kernel:
-    summary+: |
-        Exclude kernel|kernel-core defined in yum config
-    description+: |
-        Verify, the conversion does not raise:
-        'Could not find any kernel from repositories to compare against the loaded kernel.'
-        When `exclude=kernel kernel-core` is defined in yum.conf
-        Verify IS_LOADED_KERNEL_LATEST has succeeded is raised and terminate the utility.
-    tag+:
-        - yum-exclude-kernel
-    test: |
-        pytest -m test_latest_kernel_check_with_yum_exclude_kernel_option
-
-
 /outdated_kernel_error:
     summary+: |
         Outdated kernel version installed

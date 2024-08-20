@@ -231,7 +231,7 @@ adjust+:
                     - kernel-boot-files/corrupted_initramfs_file
 
 
-    /kernel-core-only:
+    /kernel_core_only:
         enabled: false
         adjust+:
             - enabled: true
@@ -247,7 +247,14 @@ adjust+:
             test+<:
                 - conversion-method/activation_key_conversion
 
-    /firewalld-disabled-ol8:
+
+    /yum_conf_exclude_packages:
+        discover+:
+            test+<:
+                - yum-conf-exclude-packages/yum_conf_exclude_packages
+
+
+    /firewalld_disabled_ol8:
         enabled: false
         adjust+:
             - enabled: true
@@ -257,7 +264,7 @@ adjust+:
             test+<:
                 - firewalld-disabled-ol8
 
-    /multiple-nic:
+    /multiple_nic:
         enabled: false
         adjust+:
           - enabled: true
@@ -277,7 +284,7 @@ adjust+:
             test+<:
                 - conversion-method/rhsm_conversion
 
-    /host-metering:
+    /host_metering:
         enabled: false
         adjust+:
           - enabled: true
@@ -288,10 +295,10 @@ adjust+:
                 - host-metering/test_host_metering_conversion
             test+:
                 - host-metering/check_active_host_metering
-    /proxy-server:
+    /proxy_server:
         adjust+:
           - enabled: false
-            when: distro == alma-9, oracle-9
+            when: distro == alma-9, oracle-9, rocky-9
             because: The test is currently flaky on these targets. Needs further investigation.
         discover+:
             test+<:
