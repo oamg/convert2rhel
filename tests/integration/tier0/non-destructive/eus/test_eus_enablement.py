@@ -102,7 +102,8 @@ def test_eus_enablement(
             # If is_eus is True, expect a corresponding EUS message displayed
             if is_eus:
                 c2r.expect_exact(
-                    "The system version corresponds to a RHEL Extended Update Support (EUS) release.",
+                    "Trying to enable the following RHEL repositories: "
+                    "rhel-8-for-x86_64-baseos-eus-rpms, rhel-8-for-x86_64-appstream-eus-rpms",
                     timeout=120,
                 )
             c2r.expect("Repositories enabled through subscription-manager", timeout=120)
@@ -125,6 +126,5 @@ def test_rhsm_non_eus_account(convert2rhel):
     ) as c2r:
         c2r.expect_exact("Error: 'rhel-8-for-x86_64-baseos-eus-rpms' does not match a valid repository ID.")
         c2r.expect_exact("Error: 'rhel-8-for-x86_64-appstream-eus-rpms' does not match a valid repository ID.")
-        c2r.expect_exact("The RHEL EUS repositories are not possible to enable.")
-        c2r.expect_exact("Trying to enable standard RHEL repositories as a fallback.")
+        c2r.expect_exact("SUBSCRIBE_SYSTEM::FAILED_TO_ENABLE_RHSM_REPOSITORIES")
     assert c2r.exitstatus == 0

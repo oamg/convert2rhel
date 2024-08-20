@@ -28,11 +28,6 @@ adjust+:
       pytest -m test_els_enablement
 
 /non_els_account:
-    # We expect this test to fail given a missing logic in the convert2rhel code,
-    # see https://issues.redhat.com/browse/RHELC-1554
-    # this is a safety measure to enable the test when the issue gets fixed
-    result: xfail
-
     description: |
         Verify that Convert2RHEL is working properly when ELS repositories are not available for conversions
         (the account does not have the ELS SKU available) to RHEL ELS version (7.9)
