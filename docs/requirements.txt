@@ -1,2 +1,2 @@
-Sphinx==7.4.7  # Locked for now, issues with CentOS Stream 9 not having >py3.9
+Sphinx==8.0.2  # Locked for now, issues with CentOS Stream 9 not having >py3.9
 sphinx_autodoc_typehints==2.2.3
