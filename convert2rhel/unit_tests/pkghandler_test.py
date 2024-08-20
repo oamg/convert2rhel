@@ -1797,3 +1797,54 @@ def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, cap
     for package, repo in result.items():
         assert package in packages
         assert repo == "N/A"
+
+
+@pytest.mark.parametrize(
+    (
+        "packages",
+        "expected",
+    ),
+    [
+        (
+            (
+                "kernels",
+                [
+                    "kernel-0:6.10.5-500.fc40.x86_64",
+                    "kernel-0:6.8.5-301.fc40.x86_64",
+                    "kernel-0:6.8.6-301.fc40.x86_64",
+                    "kernel-0:6.10.6-200.fc40.x86_64",
+                ],
+            ),
+            "kernel-0:6.10.6-200.fc40.x86_64",
+        ),
+        (
+            (
+                "kernels",
+                [
+                    "kernel-0:6.8.5-301.fc40.x86_64",
+                ],
+            ),
+            "kernel-0:6.8.5-301.fc40.x86_64",
+        ),
+        (
+            (
+                "kernels",
+                [
+                    "kernel-0:12.8.5-301.fc40.x86_64",
+                    "kernel-1:1.1.5-101.fc40.x86_64",
+                ],
+            ),
+            "kernel-1:1.1.5-101.fc40.x86_64",
+        ),
+    ],
+)
+def test_get_highest_package_version(packages, expected):
+    result = pkghandler.get_highest_package_version(pkgs=packages)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize("packages", ("void", []))
+def test_get_highest_package_version_value_err(packages):
+    with pytest.raises(ValueError):
+        pkghandler.get_highest_package_version(pkgs=packages)

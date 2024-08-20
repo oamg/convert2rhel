@@ -26,6 +26,12 @@ from collections import namedtuple
 
 import rpm
 
+
+try:
+    from packaging.version import Version
+except ImportError:
+    from distutils.version import LooseVersion as Version  # pylint: disable=W4901
+
 from convert2rhel import backup, pkgmanager, repo, utils
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
@@ -1068,8 +1074,16 @@ def get_highest_package_version(pkgs):
 
     :raises ValueError: If the list is empty, raise a ValueError.
     """
+    name, pkg_list = pkgs
+
+    def _get_comparable_nevra(nevra):
+        # Parse the NEVRA string
+        parsed_name, epoch, version, release, arch = parse_pkg_string(nevra)
+        # Convert version to a Version object for correct comparison
+        return epoch, Version(version), release
+
     try:
-        return max(pkgs[1])
+        return max(pkg_list, key=_get_comparable_nevra)
     except ValueError:
         loggerinst.debug("The list of %s packages is empty." % pkgs[0])
         raise
