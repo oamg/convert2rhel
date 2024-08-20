@@ -86,7 +86,7 @@ class InstallRhelKernel(actions.Action):
             kernel_update_needed = True
 
         # In this case all kernel packages were already replaced during the main transaction
-        elif not non_rhel_kernels:
+        if not non_rhel_kernels:
             return
 
         # At this point we need to decide if the highest package version in the rhel_kernels list
@@ -109,9 +109,8 @@ class InstallRhelKernel(actions.Action):
             # than the latest one available in the RHEL repositories.
             # That might happen and happened before, when the original vendor patches the package
             # with a higher release number.
-            else:
-                pkghandler.handle_no_newer_rhel_kernel_available()
-                kernel_update_needed = True
+            pkghandler.handle_no_newer_rhel_kernel_available()
+            kernel_update_needed = True
 
         if kernel_update_needed:
             pkghandler.update_rhel_kernel()
