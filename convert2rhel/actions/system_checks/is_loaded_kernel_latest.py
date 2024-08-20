@@ -15,16 +15,17 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
 from convert2rhel import actions, repo
+from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class IsLoadedKernelLatest(actions.Action):

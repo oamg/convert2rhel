@@ -15,13 +15,13 @@
 
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import actions, utils
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class DuplicatePackages(actions.Action):

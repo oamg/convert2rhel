@@ -15,14 +15,14 @@
 
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.toolopts import tool_opts
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class CustomReposAreValid(actions.Action):

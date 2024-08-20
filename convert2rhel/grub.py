@@ -17,14 +17,15 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 import re
 
 from convert2rhel import systeminfo, utils
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 GRUB2_BIOS_ENTRYPOINT = "/boot/grub2"
 """The entrypoint path of the BIOS GRUB2"""

@@ -15,12 +15,11 @@
 
 __metaclass__ = type
 
-import logging
-
 from convert2rhel import actions, redhatrelease
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class ConfigurePkgManager(actions.Action):

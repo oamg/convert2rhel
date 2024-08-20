@@ -16,17 +16,17 @@
 __metaclass__ = type
 
 
-import logging
 import os
 
 from convert2rhel import actions, systeminfo
+from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class ConfigureHostMetering(actions.Action):

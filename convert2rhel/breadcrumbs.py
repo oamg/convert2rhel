@@ -18,7 +18,6 @@
 __metaclass__ = type
 
 import json
-import logging
 import os
 import re
 import sys
@@ -26,6 +25,7 @@ import sys
 from datetime import datetime
 
 from convert2rhel import pkghandler, toolopts, utils
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import files
 
@@ -40,7 +40,7 @@ RHSM_CUSTOM_FACTS_FILE = os.path.join(RHSM_CUSTOM_FACTS_FOLDER, "convert2rhel.fa
 # Unique identifier under the RHSM custom facts.
 RHSM_CUSTOM_FACTS_NAMESPACE = "conversions"
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class Breadcrumbs:
@@ -188,13 +188,13 @@ class Breadcrumbs:
 
     def _save_migration_results(self):
         """Write the results of the breadcrumbs to the migration-results file."""
-        loggerinst.info("Writing breadcrumbs to '%s'.", MIGRATION_RESULTS_FILE)
+        logger.info("Writing breadcrumbs to '%s'.", MIGRATION_RESULTS_FILE)
         _write_obj_to_array_json(path=MIGRATION_RESULTS_FILE, new_object=self.data, key="activities")
 
     def _save_rhsm_facts(self):
         """Write the results of the breadcrumbs to the rhsm custom facts file."""
         if not os.path.exists(RHSM_CUSTOM_FACTS_FOLDER):
-            loggerinst.debug("No RHSM facts folder found at '%s'. Creating a new one..." % RHSM_CUSTOM_FACTS_FOLDER)
+            logger.debug("No RHSM facts folder found at '%s'. Creating a new one..." % RHSM_CUSTOM_FACTS_FOLDER)
             # Using mkdir_p here as the `/etc/rhsm` might not exist at all.
             # Usually this can happen if we fail in the first run and we want to
             # save the custom facts gathered so far, or, if the `--no-rhsm` option
@@ -204,7 +204,7 @@ class Breadcrumbs:
             files.mkdir_p(RHSM_CUSTOM_FACTS_FOLDER)
 
         data = utils.flatten(dictionary=self.data, parent_key=RHSM_CUSTOM_FACTS_NAMESPACE)
-        loggerinst.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
+        logger.info("Writing RHSM custom facts to '%s'.", RHSM_CUSTOM_FACTS_FILE)
         # We don't need to use `_write_obj_to_array_json` function here, because
         # we only care about dumping the facts without having multiple copies of
         # it.
@@ -212,7 +212,7 @@ class Breadcrumbs:
 
     def print_data_collection(self):
         """Print information about data collection and ask for acknowledgement."""
-        loggerinst.info(
+        logger.info(
             "The convert2rhel utility generates a %s file that contains the below data about the system conversion."
             " The subscription-manager then uploads the data to the server the system is registered to.\n"
             "- The Convert2RHEL command as executed\n"

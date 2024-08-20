@@ -18,15 +18,15 @@
 __metaclass__ = type
 
 import hashlib
-import logging
 import os
 import shutil
 
 from convert2rhel import exceptions
 from convert2rhel.backup import BACKUP_DIR, RestorableChange
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class RestorableFile(RestorableChange):
@@ -53,16 +53,16 @@ class RestorableFile(RestorableChange):
         if self.enabled:
             return
 
-        loggerinst.info("Backing up %s." % self.filepath)
+        logger.info("Backing up %s." % self.filepath)
         if os.path.isfile(self.filepath):
             try:
                 backup_path = self._hash_backup_path()
                 self.backup_path = backup_path
                 shutil.copy2(self.filepath, backup_path)
-                loggerinst.debug("Copied %s to %s." % (self.filepath, backup_path))
+                logger.debug("Copied %s to %s." % (self.filepath, backup_path))
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
-                loggerinst.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
+                logger.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
                     title="Failed to copy file to the backup directory.",
@@ -75,7 +75,7 @@ class RestorableFile(RestorableChange):
                     diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
                 )
         else:
-            loggerinst.info("Can't find %s.", self.filepath)
+            logger.info("Can't find %s.", self.filepath)
             return
 
         # Set the enabled value
@@ -120,12 +120,12 @@ class RestorableFile(RestorableChange):
         :raises IOError: When the backed up file is missing.
         """
         if rollback:
-            loggerinst.task("Rollback: Restore %s from backup" % self.filepath)
+            logger.task("Rollback: Restore %s from backup" % self.filepath)
         else:
-            loggerinst.info("Restoring %s from backup" % self.filepath)
+            logger.info("Restoring %s from backup" % self.filepath)
 
         if not self.enabled:
-            loggerinst.info("%s hasn't been backed up." % self.filepath)
+            logger.info("%s hasn't been backed up." % self.filepath)
             return
 
         # Possible exceptions will be handled in the BackupController
@@ -135,10 +135,10 @@ class RestorableFile(RestorableChange):
             os.remove(self.backup_path)
 
         if rollback:
-            loggerinst.info("File %s restored." % self.filepath)
+            logger.info("File %s restored." % self.filepath)
             super(RestorableFile, self).restore()
         else:
-            loggerinst.debug("File %s restored." % self.filepath)
+            logger.debug("File %s restored." % self.filepath)
             # not setting enabled to false since this is not being rollback
             # restoring the backed up file for conversion purposes
 
@@ -146,9 +146,9 @@ class RestorableFile(RestorableChange):
         """Remove restored file from original place, backup isn't removed"""
         try:
             os.remove(self.filepath)
-            loggerinst.debug("File %s removed." % self.filepath)
+            logger.debug("File %s removed." % self.filepath)
         except (OSError, IOError):
-            loggerinst.debug("Couldn't remove restored file %s" % self.filepath)
+            logger.debug("Couldn't remove restored file %s" % self.filepath)
 
     def __eq__(self, value):
         if hash(self) == hash(value):
@@ -174,14 +174,14 @@ class MissingFile(RestorableChange):
             return
 
         if os.path.isfile(self.filepath):
-            loggerinst.debug(
+            logger.debug(
                 "The file {filepath} is present on the system before conversion, skipping it.".format(
                     filepath=self.filepath
                 )
             )
             return
 
-        loggerinst.info("Marking file {filepath} as missing on system.".format(filepath=self.filepath))
+        logger.info("Marking file {filepath} as missing on system.".format(filepath=self.filepath))
         super(MissingFile, self).enable()
 
     def restore(self):
@@ -196,13 +196,13 @@ class MissingFile(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Remove file created during conversion {filepath}".format(filepath=self.filepath))
+        logger.task("Rollback: Remove file created during conversion {filepath}".format(filepath=self.filepath))
 
         if not os.path.isfile(self.filepath):
-            loggerinst.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
+            logger.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
         else:
             # Possible exceptions will be handled in the BackupController
             os.remove(self.filepath)
-            loggerinst.info("File {filepath} removed".format(filepath=self.filepath))
+            logger.info("File {filepath} removed".format(filepath=self.filepath))
 
             super(MissingFile, self).restore()

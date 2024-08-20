@@ -17,14 +17,15 @@
 
 __metaclass__ = type
 
-import logging
+
 import re
 
 from convert2rhel import subscription, utils
 from convert2rhel.backup import RestorableChange
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class RestorableSystemSubscription(RestorableChange):
@@ -51,14 +52,14 @@ class RestorableSystemSubscription(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: RHSM-related actions")
+        logger.task("Rollback: RHSM-related actions")
 
         try:
             subscription.unregister_system()
         except subscription.UnregisterError as e:
-            loggerinst.warning(str(e))
+            logger.warning(str(e))
         except OSError:
-            loggerinst.warning("subscription-manager not installed, skipping")
+            logger.warning("subscription-manager not installed, skipping")
 
         super(RestorableSystemSubscription, self).restore()
 
@@ -81,7 +82,7 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
 
     def restore(self):
         if self._is_attached:
-            loggerinst.task("Rollback: Removing auto-attached subscription")
+            logger.task("Rollback: Removing auto-attached subscription")
             subscription.remove_subscription()
             super(RestorableAutoAttachmentSubscription, self).restore()
 
@@ -123,7 +124,7 @@ class RestorableDisableRepositories(RestorableChange):
 
         if repositories:
             self._repos_to_enable = repositories
-            loggerinst.debug("Repositories enabled in the system prior to the conversion: %s" % ",".join(repositories))
+            logger.debug("Repositories enabled in the system prior to the conversion: %s" % ",".join(repositories))
 
         subscription.disable_repos()
         super(RestorableDisableRepositories, self).enable()
@@ -132,10 +133,10 @@ class RestorableDisableRepositories(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Restoring state of the repositories")
+        logger.task("Rollback: Restoring state of the repositories")
 
         if self._repos_to_enable:
-            loggerinst.debug("Repositories to enable: %s" % ",".join(self._repos_to_enable))
+            logger.debug("Repositories to enable: %s" % ",".join(self._repos_to_enable))
 
             # This is not the ideal state. We should really have a generic
             # class for enabling/disabling the repositories we have touched for

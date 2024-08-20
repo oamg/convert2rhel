@@ -15,14 +15,12 @@
 
 __metaclass__ = type
 
-import logging
-
-from convert2rhel import actions
+from convert2rhel import actions, logger
 from convert2rhel.pkghandler import get_installed_pkgs_w_different_fingerprint, print_pkg_info
 from convert2rhel.systeminfo import system_info
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger.root_logger.getChild(__name__)
 
 
 class ListNonRedHatPkgsLeft(actions.Action):

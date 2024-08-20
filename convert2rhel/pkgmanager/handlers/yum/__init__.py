@@ -18,12 +18,12 @@
 __metaclass__ = type
 
 import hashlib
-import logging
 import os
 import re
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
 from convert2rhel.backup.packages import RestorablePackage
+from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
@@ -32,7 +32,7 @@ from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import remove_pkgs
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
 
 MAX_NUM_OF_ATTEMPTS_TO_RESOLVE_DEPS = 3
@@ -56,9 +56,9 @@ def _resolve_yum_problematic_dependencies(output):
     """
     packages_to_remove = []
     if output:
-        loggerinst.debug("Dependency resolution failed:\n- %s" % "\n- ".join(output))
+        logger.debug("Dependency resolution failed:\n- %s" % "\n- ".join(output))
     else:
-        loggerinst.debug("Dependency resolution failed with no detailed message reported by yum.")
+        logger.debug("Dependency resolution failed with no detailed message reported by yum.")
 
     for package in output:
         resolve_error = re.findall(EXTRACT_PKG_FROM_YUM_DEPSOLVE, str(package))
@@ -69,7 +69,7 @@ def _resolve_yum_problematic_dependencies(output):
     if packages_to_remove:
         # Need to make each item in the list unique, one pkg can be present more times in the list.
         packages_to_remove = list(set(packages_to_remove))
-        loggerinst.debug(
+        logger.debug(
             "Removing problematic packages to continue with the conversion:\n%s",
             "\n".join(packages_to_remove),
         )
@@ -87,9 +87,9 @@ def _resolve_yum_problematic_dependencies(output):
         )
         remove_pkgs(pkgs_to_remove=packages_to_remove, critical=True)
 
-        loggerinst.debug("Finished backing up and removing the packages.")
+        logger.debug("Finished backing up and removing the packages.")
     else:
-        loggerinst.warning("Unable to resolve dependency issues.")
+        logger.warning("Unable to resolve dependency issues.")
 
 
 class YumTransactionHandler(TransactionHandlerBase):
@@ -159,13 +159,13 @@ class YumTransactionHandler(TransactionHandlerBase):
         # Set the download progress display
         self._base.repos.setProgressBar(PackageDownloadCallback())
         enabled_repos = system_info.get_enabled_rhel_repos()
-        loggerinst.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
+        logger.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
         try:
             for repo in enabled_repos:
                 self._base.repos.enableRepo(repo)
         except pkgmanager.Errors.RepoError as e:
-            loggerinst.debug("Loading repository metadata failed: %s" % e)
-            loggerinst.critical_no_exit("Failed to populate repository metadata.")
+            logger.debug("Loading repository metadata failed: %s" % e)
+            logger.critical_no_exit("Failed to populate repository metadata.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_ENABLE_REPOS",
                 title="Failed to enable repositories.",
@@ -184,10 +184,10 @@ class YumTransactionHandler(TransactionHandlerBase):
         # Related issue: https://issues.redhat.com/browse/RHELC-1130, see comments
         # to get more proper description of solution
         for old_package, new_package in system_info.swap_pkgs.items():
-            loggerinst.debug("Checking if %s installed for later swap." % old_package)
+            logger.debug("Checking if %s installed for later swap." % old_package)
             is_installed = system_info.is_rpm_installed(old_package)
             if is_installed:
-                loggerinst.debug("Package %s will be swapped to %s during conversion." % (old_package, new_package))
+                logger.debug("Package %s will be swapped to %s during conversion." % (old_package, new_package))
                 # Order of operations based on YUM implementation of swap:
                 # https://github.com/rpm-software-management/yum/blob/master/yumcommands.py#L3488
                 self._base.remove(pattern=old_package)
@@ -204,7 +204,7 @@ class YumTransactionHandler(TransactionHandlerBase):
         original_os_pkgs = get_system_packages_for_replacement()
         self._enable_repos()
 
-        loggerinst.info("Adding %s packages to the yum transaction set.", system_info.name)
+        logger.info("Adding %s packages to the yum transaction set.", system_info.name)
 
         try:
             for pkg in original_os_pkgs:
@@ -226,14 +226,14 @@ class YumTransactionHandler(TransactionHandlerBase):
                         pkgmanager.Errors.ReinstallRemoveError,
                         pkgmanager.Errors.DowngradeError,
                     ):
-                        loggerinst.warning("Package %s not available in RHEL repositories.", pkg)
+                        logger.warning("Package %s not available in RHEL repositories.", pkg)
 
             # Swapping the packages needs to be after the operations
             # If not, swapped packages are removed from transaction as obsolete
             self._swap_base_os_specific_packages()
         except pkgmanager.Errors.NoMoreMirrorsRepoError as e:
-            loggerinst.debug("Got the following exception message: %s", e)
-            loggerinst.critical_no_exit("There are no suitable mirrors available for the loaded repositories.")
+            logger.debug("Got the following exception message: %s", e)
+            logger.critical_no_exit("There are no suitable mirrors available for the loaded repositories.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_LOAD_REPOSITORIES",
                 title="Failed to find suitable mirrors for the load repositories.",
@@ -270,7 +270,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             return that message, otherwise, return None.
         :rtype: str | None
         """
-        loggerinst.info("Resolving the dependencies of the packages in the yum transaction set.")
+        logger.info("Resolving the dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()
 
         if ret_code == 1:
@@ -289,12 +289,12 @@ class YumTransactionHandler(TransactionHandlerBase):
 
         if validate_transaction:
             self._base.conf.tsflags.append("test")
-            loggerinst.info(
+            logger.info(
                 "Downloading and validating the yum transaction set, no modifications to the system will happen "
                 "this time."
             )
         else:
-            loggerinst.info(
+            logger.info(
                 "Replacing %s packages. This process may take some time to finish.",
                 system_info.name,
             )
@@ -317,8 +317,8 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumDownloadError
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
-            loggerinst.debug("Got the following exception message: %s", e)
-            loggerinst.critical_no_exit("Failed to validate the yum transaction.")
+            logger.debug("Got the following exception message: %s", e)
+            logger.critical_no_exit("Failed to validate the yum transaction.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate yum transaction.",
@@ -327,9 +327,9 @@ class YumTransactionHandler(TransactionHandlerBase):
             )
 
         if validate_transaction:
-            loggerinst.info("Successfully validated the yum transaction set.")
+            logger.info("Successfully validated the yum transaction set.")
         else:
-            loggerinst.info("System packages replaced successfully.")
+            logger.info("System packages replaced successfully.")
 
     def run_transaction(self, validate_transaction=False):
         """Run the yum transaction.
@@ -354,14 +354,14 @@ class YumTransactionHandler(TransactionHandlerBase):
                     if "Depsolving loop limit reached" not in messages and validate_transaction:
                         _resolve_yum_problematic_dependencies(messages)
 
-                    loggerinst.info("Retrying to resolve dependencies %s", attempts)
+                    logger.info("Retrying to resolve dependencies %s", attempts)
                     attempts += 1
                 else:
                     resolve_deps_finished = True
                     break
 
             if not resolve_deps_finished:
-                loggerinst.critical_no_exit("Failed to resolve dependencies in the transaction.")
+                logger.critical_no_exit("Failed to resolve dependencies in the transaction.")
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_RESOLVE_DEPENDENCIES",
                     title="Failed to resolve dependencies.",

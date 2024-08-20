@@ -17,7 +17,7 @@
 
 __metaclass__ = type
 
-import logging
+
 import tempfile
 
 from contextlib import closing
@@ -25,6 +25,7 @@ from contextlib import closing
 from six.moves import urllib
 
 from convert2rhel import exceptions
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import TMP_DIR, store_content_to_file
@@ -34,7 +35,7 @@ DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
 DEFAULT_YUM_VARS_DIR = "/etc/yum/vars"
 DEFAULT_DNF_VARS_DIR = "/etc/dnf/vars"
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 def get_rhel_repoids():
@@ -52,7 +53,7 @@ def get_rhel_repoids():
     else:
         repos_needed = system_info.default_rhsm_repoids
 
-    loggerinst.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
+    logger.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
 
     return repos_needed
 
@@ -116,14 +117,14 @@ def download_repofile(repofile_url):
                     "The requested repository file seems to be empty. No content received when checking for url: %s"
                     % repofile_url
                 )
-                loggerinst.critical_no_exit(description)
+                logger.critical_no_exit(description)
                 raise exceptions.CriticalError(
                     id_="REPOSITORY_FILE_EMPTY_CONTENT",
                     title="No content available in a repository file",
                     description=description,
                 )
 
-            loggerinst.info("Successfully downloaded a repository file from %s." % repofile_url)
+            logger.info("Successfully downloaded a repository file from %s." % repofile_url)
             return contents.decode()
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(

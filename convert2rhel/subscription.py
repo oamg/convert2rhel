@@ -19,7 +19,6 @@ __metaclass__ = type
 
 import hashlib
 import json
-import logging
 import os
 import re
 
@@ -32,13 +31,14 @@ import dbus.exceptions
 
 from convert2rhel import backup, exceptions, i18n, pkghandler, repo, utils
 from convert2rhel.backup.packages import RestorablePackageSet
+from convert2rhel.logger import root_logger
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import _should_subscribe, tool_opts
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # We need to translate config settings between names used for the subscription-manager DBus API and
 # names used for the RHSM config file.  This is the mapping for the settings we care about.
@@ -98,13 +98,13 @@ class SubscriptionAutoAttachmentError(Exception):
 
 def remove_subscription():
     """Remove all subscriptions added from auto attachment"""
-    loggerinst.info("Removing auto attached subscriptions.")
+    logger.info("Removing auto attached subscriptions.")
     subscription_removal_cmd = ["subscription-manager", "remove", "--all"]
     output, ret_code = utils.run_subprocess(subscription_removal_cmd, print_output=False)
     if ret_code != 0:
         raise SubscriptionRemovalError("Subscription removal result\n%s" % output)
     else:
-        loggerinst.info("Subscription removal successful.")
+        logger.info("Subscription removal successful.")
 
 
 def auto_attach_subscription():
@@ -116,14 +116,14 @@ def auto_attach_subscription():
     if ret_code != 0:
         raise SubscriptionAutoAttachmentError("Unsuccessful auto attachment of a subscription.")
     else:
-        loggerinst.info("Subscription attachment successful.")
+        logger.info("Subscription attachment successful.")
 
     return True
 
 
 def unregister_system():
     """Unregister the system from RHSM."""
-    loggerinst.info("Unregistering the system.")
+    logger.info("Unregistering the system.")
     # We are calling run_subprocess with rpm here because of a bug in
     # Oracle/CentOS Linux 7 in which the process always exits with 1 in case of
     # a rollback when KeyboardInterrupt is raised.  To avoid many changes and
@@ -134,7 +134,7 @@ def unregister_system():
     # https://github.com/rpm-software-management/rpm/blob/rpm-4.11.x/lib/rpmdb.c#L640
     _, ret_code = utils.run_subprocess(["rpm", "--quiet", "-q", "subscription-manager"])
     if ret_code != 0:
-        loggerinst.info("The subscription-manager package is not installed.")
+        logger.info("The subscription-manager package is not installed.")
         return
 
     unregistration_cmd = ["subscription-manager", "unregister"]
@@ -142,7 +142,7 @@ def unregister_system():
     if ret_code != 0:
         raise UnregisterError("System unregistration result:\n%s" % output)
     else:
-        loggerinst.info("System unregistered successfully.")
+        logger.info("System unregistered successfully.")
 
 
 def register_system():
@@ -159,7 +159,7 @@ def register_system():
                 MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE,
             )
 
-        loggerinst.info(
+        logger.info(
             "%sRegistering the system using subscription-manager ...",
             attempt_msg,
         )
@@ -172,11 +172,11 @@ def register_system():
         # - in RHEL 9 before 9.2: https://bugzilla.redhat.com/show_bug.cgi?id=2121350
         # Explicitly unregister here to workaround that in any version,
         # to not have to do version checks, keeping things simpler.
-        loggerinst.info("Unregistering the system to clear the server's state for our registration.")
+        logger.info("Unregistering the system to clear the server's state for our registration.")
         try:
             unregister_system()
         except UnregisterError as e:
-            loggerinst.warning(str(e))
+            logger.warning(str(e))
 
         # Hack: currently, on RHEL7, subscription-manager unregister is
         # reporting that the system is not registered but then calling the
@@ -188,7 +188,7 @@ def register_system():
         #
         # For the short term, we are going to stop the rhsm service to work
         # around this issue.  It should restart on its own when needed:
-        loggerinst.info(
+        logger.info(
             "Stopping the RHSM service so that registration does not think that the host is already registered."
         )
         try:
@@ -196,7 +196,7 @@ def register_system():
         except StopRhsmError as e:
             # The system really might not be registered yet and also not running rhsm
             # so ignore the error and try to register the system.
-            loggerinst.info(str(e))
+            logger.info(str(e))
 
         # Register the system
         registration_cmd = RegistrationCommand.from_tool_opts(tool_opts)
@@ -209,7 +209,7 @@ def register_system():
                 # RHELC-16
                 os_release_file.restore(rollback=False)
         except (OSError, IOError) as e:
-            loggerinst.critical_no_exit(
+            logger.critical_no_exit(
                 "Failed to restore the /etc/os-release file needed for subscribing the system with message: %s" % str(e)
             )
             raise exceptions.CriticalError(
@@ -226,12 +226,12 @@ def register_system():
             # RHELC-16
             # Will be removed only if the registration succeed
             os_release_file.remove()
-            loggerinst.info("System registration succeeded.")
+            logger.info("System registration succeeded.")
         except KeyboardInterrupt:
             # When the user hits Control-C to exit, we shouldn't retry
             raise
         except Exception as e:
-            loggerinst.info("System registration failed with error: %s" % str(e))
+            logger.info("System registration failed with error: %s" % str(e))
             troublesome_exception = e
             sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
             attempt += 1
@@ -241,7 +241,7 @@ def register_system():
 
     else:  # While-else
         # We made the maximum number of subscription-manager retries and still failed
-        loggerinst.critical_no_exit("Unable to register the system through subscription-manager.")
+        logger.critical_no_exit("Unable to register the system through subscription-manager.")
         raise exceptions.CriticalError(
             id_="FAILED_TO_SUBSCRIBE_SYSTEM",
             title="Failed to subscribe system.",
@@ -267,7 +267,7 @@ def refresh_subscription_info():
             "Asking subscription-manager to reexamine its configuration failed: %s; output: %s" % (ret_code, output)
         )
 
-    loggerinst.info("subscription-manager has reloaded its configuration.")
+    logger.info("subscription-manager has reloaded its configuration.")
 
 
 def _stop_rhsm():
@@ -276,7 +276,7 @@ def _stop_rhsm():
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
         raise StopRhsmError("Stopping RHSM failed with code: %s; output: %s" % (ret_code, output))
-    loggerinst.info("RHSM service stopped.")
+    logger.info("RHSM service stopped.")
 
 
 class RegistrationCommand:
@@ -344,29 +344,29 @@ class RegistrationCommand:
         :arg tool_opts: The :class:`convert2rhel.toolopts.ToolOpts` structure to
             retrieve the subscription-manager information from.
         """
-        loggerinst.info("Gathering subscription-manager registration info ... ")
+        logger.info("Gathering subscription-manager registration info ... ")
 
         registration_attributes = {}
         if tool_opts.org:
-            loggerinst.info("    ... organization detected")
+            logger.info("    ... organization detected")
             registration_attributes["org"] = tool_opts.org
 
         if tool_opts.activation_key:
             # Activation key has been passed
             # -> username/password not required
             # -> organization required
-            loggerinst.info("    ... activation key detected")
+            logger.info("    ... activation key detected")
             registration_attributes["activation_key"] = tool_opts.activation_key
 
         else:
             # No activation key -> username/password required
             if tool_opts.username and tool_opts.password:
-                loggerinst.info("    ... activation key not found, using given username and password")
+                logger.info("    ... activation key not found, using given username and password")
             else:
-                loggerinst.info("    ... activation key not found, username and password required")
+                logger.info("    ... activation key not found, username and password required")
 
             if tool_opts.username:
-                loggerinst.info("    ... username detected")
+                logger.info("    ... username detected")
                 username = tool_opts.username
             else:
                 username = ""
@@ -376,7 +376,7 @@ class RegistrationCommand:
             registration_attributes["username"] = username
 
             if tool_opts.password:
-                loggerinst.info("    ... password detected")
+                logger.info("    ... password detected")
                 password = tool_opts.password
             else:
                 password = ""
@@ -386,13 +386,13 @@ class RegistrationCommand:
             registration_attributes["password"] = password
 
         if tool_opts.rhsm_hostname:
-            loggerinst.debug("    ... using custom RHSM hostname")
+            logger.debug("    ... using custom RHSM hostname")
             registration_attributes["rhsm_hostname"] = tool_opts.rhsm_hostname
         if tool_opts.rhsm_port:
-            loggerinst.debug("    ... using custom RHSM port")
+            logger.debug("    ... using custom RHSM port")
             registration_attributes["rhsm_port"] = tool_opts.rhsm_port
         if tool_opts.rhsm_prefix:
-            loggerinst.debug("    ... using custom RHSM prefix")
+            logger.debug("    ... using custom RHSM prefix")
             registration_attributes["rhsm_prefix"] = tool_opts.rhsm_prefix
 
         return cls(**registration_attributes)
@@ -439,14 +439,14 @@ class RegistrationCommand:
         # if we need one in the future.
         REGISTER_OPTS_DICT = dbus.Dictionary({}, signature="sv", variant_level=1)
 
-        loggerinst.debug("Getting a handle to the system dbus")
+        logger.debug("Getting a handle to the system dbus")
         system_bus = dbus.SystemBus()
 
         # Create a new bus so we can talk to rhsm privately (For security:
         # talking on the system bus might be eavesdropped in certain scenarios)
-        loggerinst.debug("Getting a subscription-manager RegisterServer object from dbus")
+        logger.debug("Getting a subscription-manager RegisterServer object from dbus")
         register_server = system_bus.get_object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
-        loggerinst.debug("Starting a private DBus to talk to subscription-manager")
+        logger.debug("Starting a private DBus to talk to subscription-manager")
         address = register_server.Start(
             i18n.SUBSCRIPTION_MANAGER_LOCALE,
             dbus_interface="com.redhat.RHSM1.RegisterServer",
@@ -454,17 +454,17 @@ class RegistrationCommand:
 
         try:
             # Use the private bus to register the machine
-            loggerinst.debug("Connecting to the private DBus")
+            logger.debug("Connecting to the private DBus")
             private_bus = dbus.connection.Connection(address)
 
             try:
                 if self.password:
                     if self.org:
-                        loggerinst.info("Organization: %s", utils.OBFUSCATION_STRING)
-                    loggerinst.info("Username: %s", utils.OBFUSCATION_STRING)
-                    loggerinst.info("Password: %s", utils.OBFUSCATION_STRING)
-                    loggerinst.info("Connection Options: %s", self.connection_opts)
-                    loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
+                        logger.info("Organization: %s", utils.OBFUSCATION_STRING)
+                    logger.info("Username: %s", utils.OBFUSCATION_STRING)
+                    logger.info("Password: %s", utils.OBFUSCATION_STRING)
+                    logger.info("Connection Options: %s", self.connection_opts)
+                    logger.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (
                         self.org or "",
                         self.username,
@@ -484,10 +484,10 @@ class RegistrationCommand:
                     )
 
                 else:
-                    loggerinst.info("Organization: %s", utils.OBFUSCATION_STRING)
-                    loggerinst.info("Activation Key: %s", utils.OBFUSCATION_STRING)
-                    loggerinst.info("Connection Options: %s", self.connection_opts)
-                    loggerinst.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
+                    logger.info("Organization: %s", utils.OBFUSCATION_STRING)
+                    logger.info("Activation Key: %s", utils.OBFUSCATION_STRING)
+                    logger.info("Connection Options: %s", self.connection_opts)
+                    logger.info("Locale settings: %s", i18n.SUBSCRIPTION_MANAGER_LOCALE)
                     args = (
                         self.org,
                         [self.activation_key],
@@ -526,7 +526,7 @@ class RegistrationCommand:
 
         finally:
             # Always shut down the private bus
-            loggerinst.debug("Shutting down private DBus instance")
+            logger.debug("Shutting down private DBus instance")
             register_server.Stop(
                 i18n.SUBSCRIPTION_MANAGER_LOCALE,
                 dbus_interface="com.redhat.RHSM1.RegisterServer",
@@ -554,7 +554,7 @@ class RegistrationCommand:
         #         dbus_interface="com.redhat.RHSM1.ConfigServer",
         #     )
         if self.connection_opts:
-            loggerinst.info("Setting RHSM connection configuration.")
+            logger.info("Setting RHSM connection configuration.")
             sub_man_config_command = ["subscription-manager", "config"]
             for option, value in self.connection_opts.items():
                 sub_man_config_command.append("--%s=%s" % (CONNECT_OPT_NAME_TO_CONFIG_KEY[option], value))
@@ -563,12 +563,12 @@ class RegistrationCommand:
             if ret_code != 0:
                 raise ValueError("Error setting the subscription-manager connection configuration: %s" % output)
 
-            loggerinst.info("Successfully set RHSM connection configuration.")
+            logger.info("Successfully set RHSM connection configuration.")
 
 
 def is_registered():
     """Check if the machine we're running on is registered with subscription-manager."""
-    loggerinst.debug("Checking whether the host was registered.")
+    logger.debug("Checking whether the host was registered.")
     output, ret_code = utils.run_subprocess(["subscription-manager", "identity"])
 
     # Registered: ret_code 0 and output like:
@@ -577,12 +577,12 @@ def is_registered():
     # org name: 13460994
     # org ID: 13460994
     if ret_code == 0:
-        loggerinst.debug("Host was registered.")
+        logger.debug("Host was registered.")
         return True
 
     # Unregistered: ret_code 1 and output like:
     # This system is not yet registered. Try 'subscription-manager register --help' for more information.
-    loggerinst.debug("Host was not registered.")
+    logger.debug("Host was not registered.")
     return False
 
 
@@ -672,36 +672,36 @@ def attach_subscription():
     """
     # check if SCA is enabled
     if is_sca_enabled():
-        loggerinst.info("Simple Content Access is enabled, skipping subscription attachment")
+        logger.info("Simple Content Access is enabled, skipping subscription attachment")
         if tool_opts.pool:
-            loggerinst.warning(
+            logger.warning(
                 "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached."
             )
         return True
 
     if tool_opts.activation_key:
-        loggerinst.info("Using the activation key provided through the command line...")
+        logger.info("Using the activation key provided through the command line...")
         return True
     pool = ["subscription-manager", "attach"]
     if tool_opts.auto_attach:
         pool.append("--auto")
-        loggerinst.info("Auto-attaching compatible subscriptions to the system ...")
+        logger.info("Auto-attaching compatible subscriptions to the system ...")
     elif tool_opts.pool:
         # The subscription pool ID has been passed through a command line
         # option
         pool.extend(["--pool", tool_opts.pool])
-        loggerinst.info("Attaching provided subscription pool ID to the system ...")
+        logger.info("Attaching provided subscription pool ID to the system ...")
     elif not tool_opts.auto_attach and not tool_opts.pool:
         # defaulting to --auto similiar to the functioning of subscription-manager
         pool.append("--auto")
-        loggerinst.info("Auto-attaching compatible subscriptions to the system ...")
+        logger.info("Auto-attaching compatible subscriptions to the system ...")
 
     _, ret_code = utils.run_subprocess(pool)
 
     if ret_code != 0:
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
-        loggerinst.critical_no_exit(
+        logger.critical_no_exit(
             "Unsuccessful attachment of a subscription. Please refer to https://access.redhat.com/management/"
             " where you can either enable the SCA, create an activation key, or find a Pool ID of the subscription"
             " you wish to use and pass it to convert2rhel through the `--pool` CLI option."
@@ -721,13 +721,13 @@ def get_pool_id(sub_raw_attrs):
     if pool_id:
         return pool_id.group(1)
 
-    loggerinst.critical("Cannot parse the subscription pool ID from string:\n%s" % sub_raw_attrs)
+    logger.critical("Cannot parse the subscription pool ID from string:\n%s" % sub_raw_attrs)
 
 
 def verify_rhsm_installed():
     """Make sure that subscription-manager has been installed."""
     if not pkghandler.get_installed_pkg_information("subscription-manager"):
-        loggerinst.critical_no_exit(
+        logger.critical_no_exit(
             "The subscription-manager package is not installed correctly. You could try manually installing it before running convert2rhel"
         )
         raise exceptions.CriticalError(
@@ -737,7 +737,7 @@ def verify_rhsm_installed():
             remediations="Manually installing subscription-manager before running convert2rhel.",
         )
     else:
-        loggerinst.info("subscription-manager installed correctly.")
+        logger.info("subscription-manager installed correctly.")
 
 
 def disable_repos():
@@ -750,7 +750,7 @@ def disable_repos():
     cmd.extend(disable_cmd)
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
-        loggerinst.critical_no_exit("Could not disable subscription-manager repositories:\n%s" % output)
+        logger.critical_no_exit("Could not disable subscription-manager repositories:\n%s" % output)
         raise exceptions.CriticalError(
             id_="FAILED_TO_DISABLE_SUBSCRIPTION_MANAGER_REPOSITORIES",
             title="Could not disable repositories through subscription-manager.",
@@ -758,7 +758,7 @@ def disable_repos():
             diagnosis="Failed to disable repositories: %s." % (output),
         )
 
-    loggerinst.info("Repositories disabled.")
+    logger.info("Repositories disabled.")
 
 
 def enable_repos(rhel_repoids):
@@ -781,7 +781,7 @@ def enable_repos(rhel_repoids):
     """
     repos_to_enable = tool_opts.enablerepo if tool_opts.enablerepo else rhel_repoids
 
-    loggerinst.info("Trying to enable the following RHEL repositories: %s" % ", ".join(repos_to_enable))
+    logger.info("Trying to enable the following RHEL repositories: %s" % ", ".join(repos_to_enable))
     submgr_enable_repos(repos_to_enable)
 
     system_info.submgr_enabled_repos = repos_to_enable
@@ -796,14 +796,14 @@ def submgr_enable_repos(repos_to_enable):
     output, ret_code = utils.run_subprocess(enable_cmd, print_output=False)
     if ret_code != 0:
         description = "Repositories were not possible to enable through subscription-manager:\n%s" % output
-        loggerinst.critical_no_exit(description)
+        logger.critical_no_exit(description)
         raise exceptions.CriticalError(
             id_="FAILED_TO_ENABLE_RHSM_REPOSITORIES",
             title="Failed to enable RHSM repositories",
             description=description,
         )
 
-    loggerinst.info("Repositories enabled through subscription-manager")
+    logger.info("Repositories enabled through subscription-manager")
 
 
 def needed_subscription_manager_pkgs():
@@ -836,10 +836,10 @@ def needed_subscription_manager_pkgs():
     # `get_installed_pkg_information()` again.
     installed_submgr_pkgs = [pkg.nevra.name for pkg in installed_submgr_pkgs]
 
-    loggerinst.debug("Need the following packages: %s" % utils.format_sequence_as_message(subscription_manager_pkgs))
-    loggerinst.debug("Detected the following packages: %s" % utils.format_sequence_as_message(installed_submgr_pkgs))
+    logger.debug("Need the following packages: %s" % utils.format_sequence_as_message(subscription_manager_pkgs))
+    logger.debug("Detected the following packages: %s" % utils.format_sequence_as_message(installed_submgr_pkgs))
 
-    loggerinst.debug("Packages we will install: %s" % utils.format_sequence_as_message(to_install_pkgs))
+    logger.debug("Packages we will install: %s" % utils.format_sequence_as_message(to_install_pkgs))
 
     return to_install_pkgs
 
@@ -892,21 +892,21 @@ def update_rhsm_custom_facts():
     "breadcrumbs" from convert2rhel as RHSM facts.
     """
     if not tool_opts.no_rhsm:
-        loggerinst.info("Updating RHSM custom facts collected during the conversion.")
+        logger.info("Updating RHSM custom facts collected during the conversion.")
         cmd = ["subscription-manager", "facts", "--update"]
         output, ret_code = utils.run_subprocess(cmd, print_output=False)
 
         if ret_code != 0:
-            loggerinst.warning(
+            logger.warning(
                 "Failed to update the RHSM custom facts with return code '%s' and output '%s'.",
                 ret_code,
                 output,
             )
             return ret_code, output
         else:
-            loggerinst.info("RHSM custom facts uploaded successfully.")
+            logger.info("RHSM custom facts uploaded successfully.")
     else:
-        loggerinst.info("Skipping updating RHSM custom facts.")
+        logger.info("Skipping updating RHSM custom facts.")
     return None, None
 
 
@@ -918,16 +918,16 @@ def get_rhsm_facts():
     """
     rhsm_facts = {}
     if tool_opts.no_rhsm:
-        loggerinst.info("Ignoring RHSM facts collection. --no-rhsm is used.")
+        logger.info("Ignoring RHSM facts collection. --no-rhsm is used.")
         return rhsm_facts
 
-    loggerinst.info("Reading RHSM facts file.")
+    logger.info("Reading RHSM facts file.")
     try:
         with open(RHSM_FACTS_FILE, mode="r") as handler:
             rhsm_facts = json.load(handler)
-            loggerinst.info("RHSM facts loaded.")
+            logger.info("RHSM facts loaded.")
     except (IOError, ValueError) as e:
-        loggerinst.critical_no_exit(
+        logger.critical_no_exit(
             "Failed to get the RHSM facts : %s." % e,
         )
     return rhsm_facts

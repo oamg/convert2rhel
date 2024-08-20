@@ -15,14 +15,15 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 LINK_KMODS_RH_POLICY = "https://access.redhat.com/third-party-software-support"
 LINK_PREVENT_KMODS_FROM_LOADING = "https://access.redhat.com/solutions/41278"

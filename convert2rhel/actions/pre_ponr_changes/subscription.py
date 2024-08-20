@@ -15,7 +15,7 @@
 
 __metaclass__ = type
 
-import logging
+
 import os.path
 
 from convert2rhel import actions, backup, exceptions, pkghandler, repo, subscription, toolopts, utils
@@ -25,9 +25,10 @@ from convert2rhel.backup.subscription import (
     RestorableDisableRepositories,
     RestorableSystemSubscription,
 )
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # Source and target directories for the cdn.redhat.com domain ssl ca cert that:
 # - we tell customers to use when installing convert2rhel from that domain

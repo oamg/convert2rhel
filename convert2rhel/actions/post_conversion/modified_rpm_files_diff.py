@@ -16,16 +16,15 @@
 __metaclass__ = type
 
 import difflib
-import logging
 import os
 
 from convert2rhel import actions, utils
-from convert2rhel.logger import LOG_DIR
+from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class ModifiedRPMFilesDiff(actions.Action):
