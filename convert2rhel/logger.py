@@ -25,9 +25,9 @@ CRITICAL            (50)    Calls critical() function and sys.exit(1)
 ERROR               (40)    Prints error message using date/time
 WARNING             (30)    Prints warning message using date/time
 INFO                (20)    Prints info message (no date/time, just plain message)
-TASK                (15)    CUSTOM LABEL - Prints a task header message (using asterisks)
+TASK                (20)    CUSTOM LABEL - Prints a task header message (using asterisks)
 DEBUG               (10)    Prints debug message (using date/time)
-FILE                (5)     CUSTOM LABEL - Outputs with the DEBUG label but only to a file
+FILE                (10)    CUSTOM LABEL - Outputs with the DEBUG label but only to a file
 """
 
 import logging
@@ -40,19 +40,6 @@ from time import gmtime, strftime
 
 
 LOG_DIR = "/var/log/convert2rhel"
-
-# get root logger
-logger = logging.getLogger("convert2rhel")
-
-
-class LogLevelCriticalNoExit:
-    level = 50
-    label = "CRITICAL"
-
-
-class LogLevelTask:
-    level = 15
-    label = "TASK"
 
 
 class LogLevelFile:
@@ -95,7 +82,7 @@ class LogfileBufferHandler(BufferingHandler):
 
         :return logging.Handler: Either the found FileHandler setup or temporary NullHandler
         """
-        for handler in logger.handlers:
+        for handler in root_logger.handlers:
             if hasattr(handler, "name") and handler.name == self._handler_name:
                 return handler
         return logging.NullHandler()
@@ -122,21 +109,16 @@ def setup_logger_handler():
     from your application's main start point.
     """
     # set custom labels
-    logging.addLevelName(LogLevelTask.level, LogLevelTask.label)
     logging.addLevelName(LogLevelFile.level, LogLevelFile.label)
-    logging.addLevelName(LogLevelCriticalNoExit.level, LogLevelCriticalNoExit.label)
-    logging.Logger.task = _task
-    logging.Logger.file = _file
     logging.Logger.debug = _debug
     logging.Logger.critical = _critical
-    logging.Logger.critical_no_exit = _critical_no_exit
 
     # enable raising exceptions
     logging.raiseExceptions = True
     # propagate
-    logger.propagate = True
+    root_logger.propagate = True
     # set default logging level
-    logger.setLevel(LogLevelFile.level)
+    root_logger.setLevel(LogLevelFile.level)
 
     # create sys.stdout handler for info/debug
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -144,10 +126,10 @@ def setup_logger_handler():
     formatter.disable_colors(should_disable_color_output())
     stdout_handler.setFormatter(formatter)
     stdout_handler.setLevel(logging.DEBUG)
-    logger.addHandler(stdout_handler)
+    root_logger.addHandler(stdout_handler)
 
     # can flush logs to the file that were logged before initializing the file handler
-    logger.addHandler(LogfileBufferHandler(capacity=100))
+    root_logger.addHandler(LogfileBufferHandler(capacity=100))
 
 
 def add_file_handler(log_name, log_dir):
@@ -169,15 +151,15 @@ def add_file_handler(log_name, log_dir):
     formatter.disable_colors(True)
     filehandler.setFormatter(formatter)
     filehandler.setLevel(LogLevelFile.level)
-    logger.addHandler(filehandler)
+    root_logger.addHandler(filehandler)
 
     # We now have a FileHandler added, but we still need the logs from before
     # this point. Luckily we have the memory buffer that we can flush logs from
-    for handler in logger.handlers:
+    for handler in root_logger.handlers:
         if hasattr(handler, "name") and handler.name == "logfile_buffer_handler":
             handler.close()
             # after we've flushed to the file we don't need the handler anymore
-            logger.removeHandler(handler)
+            root_logger.removeHandler(handler)
             break
 
 
@@ -233,25 +215,12 @@ def archive_old_logger_files(log_name, log_dir):
     shutil.move(current_log_file, archive_log_file)
 
 
-def _task(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelTask.level):
-        self._log(LogLevelTask.level, msg, args, **kwargs)
-
-
-def _file(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelFile.level):
-        self._log(LogLevelFile.level, msg, args, **kwargs)
-
-
 def _critical(self, msg, *args, **kwargs):
     if self.isEnabledFor(logging.CRITICAL):
         self._log(logging.CRITICAL, msg, args, **kwargs)
-        sys.exit(msg)
-
-
-def _critical_no_exit(self, msg, *args, **kwargs):
-    if self.isEnabledFor(LogLevelCriticalNoExit.level):
-        self._log(LogLevelCriticalNoExit.level, msg, args, **kwargs)
+        extra = kwargs.pop("extra", {})
+        if not extra.get("no_exit"):
+            sys.exit(msg)
 
 
 def _debug(self, msg, *args, **kwargs):
@@ -299,33 +268,82 @@ class CustomFormatter(logging.Formatter):
         self.color_disabled = value
 
     def format(self, record):
-        if record.levelno == LogLevelTask.level:
-            temp = "*" * (90 - len(record.msg) - 25)
-            fmt_orig = "\n[%(asctime)s] %(levelname)s - [%(message)s] " + temp
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "OKGREEN")
-            self._fmt = new_fmt
-            self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
-        elif record.levelno in [logging.INFO]:
-            self._fmt = "%(message)s"
-            self.datefmt = ""
-        elif record.levelno in [logging.WARNING]:
-            fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "WARNING")
-            self._fmt = new_fmt
-            self.datefmt = ""
-        elif record.levelno >= logging.ERROR:
-            # Error, Critical, Critical_no_exit
-            fmt_orig = "%(levelname)s - %(message)s"
-            new_fmt = fmt_orig if self.color_disabled else colorize(fmt_orig, "FAIL")
-            self._fmt = new_fmt
-            self.datefmt = ""
-        else:
-            self._fmt = "[%(asctime)s] %(levelname)s - %(message)s"
-            self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
+        """Format tasks, etc
 
+        :param logging.LogRecord record: Logger-provided LogRecord that is
+        provided when we use logging.warning() etc.
+        :return str: The formatted log message
+        """
+        fmt_orig = "[%(asctime)s] %(levelname)s - %(message)s"  # DEBUG default
+        self.datefmt = "%Y-%m-%dT%H:%M:%S%z"  # DEBUG default
+
+        # Used when providing is_task in the extra field
+        # e.g. logging.warning("Testing", extra={"is_task": True})
+        is_task = getattr(record, "is_task", False)
+
+        color = self._getLogLevelColor(record, is_task)
+        if is_task:
+            asterisks = "*" * (90 - len(record.msg) - 25)
+            fmt_orig = "\n[%(asctime)s] TASK - [%(message)s] " + asterisks
+            self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
+        elif record.levelno >= logging.WARNING:
+            fmt_orig = "%(levelname)s - %(message)s"
+        elif record.levelno >= logging.INFO:
+            fmt_orig = "%(message)s"
+            self.datefmt = ""
+
+        # apply colors to log if set
+        new_fmt = fmt_orig
+        if color and not self.color_disabled:
+            new_fmt = colorize(fmt_orig, color)
+
+        self._fmt = new_fmt
         if hasattr(self, "_style"):
             # Python 3 has _style for formatter
             # Overwriting the style _fmt gets the result we want
             self._style._fmt = self._fmt
 
         return super(CustomFormatter, self).format(record)
+
+    def _getLogLevelColor(self, record, is_task=False):
+        if is_task:
+            return "OKGREEN"
+        elif record.levelno >= logging.WARNING:
+            return "WARNING"
+        elif record.levelno >= logging.ERROR:
+            return "FAIL"
+        return None
+
+
+class CustomLogger(logging.Logger):
+    """Logger with extra features to cover Convert2RHEL usage.
+
+    Without this we lack the code-completion and hinting necessary when defining custom messages.
+
+    Within the codebase we want to log for different scenarios and to improve backwards compatibility.
+    We have a custom task function for logging all the different steps we have within the codebase
+    and it helps the user to differenciate between normal logs and different steps within the execution.
+
+    critical_no_exit custom function is for when we want to raise a critical exception without throwing
+    a SystemExit. This is here for backwards compatibility and will eventually be replaced by critical
+    as we do not want critical function to exit.
+
+    file is deprecated and will be removed.
+    """
+
+    def __init__(self, name, level=0):
+        super(CustomLogger, self).__init__(name, level)
+
+    def critical_no_exit(self, message, *args, **kwargs):
+        return self.critical(message, extra={"no_exit": True}, *args, **kwargs)
+
+    def task(self, message, *args, **kwargs):
+        return self.info(message, extra={"is_task": True}, *args, **kwargs)
+
+    def file(self, message, *args, **kwargs):
+        return self.debug(message, *args, **kwargs)
+
+
+# get root logger
+logging.setLoggerClass(CustomLogger)
+root_logger = logging.getLogger("convert2rhel")  # type: CustomLogger # type: ignore

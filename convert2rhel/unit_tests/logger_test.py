@@ -204,3 +204,21 @@ def test_logfile_buffer_handler(read_std):
     stdouterr_out, _ = read_std()
     assert "message 1" not in stdouterr_out
     assert "message 2" in stdouterr_out
+
+
+class TestCustomFormatter:
+    """For testing the Custom Formatter to work as expected."""
+
+    def test_task_logger(self, read_std):
+        logger = logging.getLogger("convert2rhel")
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        formatter = logger_module.CustomFormatter("%(message)s")
+        formatter.disable_colors(True)
+        stdout_handler.setFormatter(formatter)
+        stdout_handler.setLevel(logging.DEBUG)
+        logger.addHandler(stdout_handler)
+
+        logger.info("Testing", extra={"is_task": True})
+
+        stdouterr_out, stdouterr_err = read_std()
+        assert "TASK - [Testing]" in stdouterr_out
