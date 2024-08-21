@@ -70,9 +70,9 @@ class InstallRhelKernel(actions.Action):
         # during the main transaction.
         if not rhel_kernels:
             info_message = (
-                "Conflict of kernels: The running kernel has the same version as the latest RHEL kernel. "
-                "The kernel package could not be replaced during the main transaction. "
-                "We will try to install a lower version of the package, "
+                "Conflict of kernels: The running kernel has the same version as the latest RHEL kernel.\n"
+                "The kernel package could not be replaced during the main transaction.\n"
+                "We will try to install a lower version of the package,\n"
                 "remove the conflicting kernel and then update to the latest security patched version."
             )
             loggerinst.info("\n%s" % info_message)
@@ -85,8 +85,10 @@ class InstallRhelKernel(actions.Action):
             pkghandler.handle_no_newer_rhel_kernel_available()
             kernel_update_needed = True
 
-        # In this case all kernel packages were already replaced during the main transaction
-        if not non_rhel_kernels:
+        # In this case all kernel packages were already replaced during the main transaction.
+        # Having elif here to prevent breaking the action. Otherwise, when the first condition applies,
+        # and the pkghandler.handle_no_newer_rhel_kernel_available() we can assume the Action finished.
+        elif not non_rhel_kernels:
             return
 
         # At this point we need to decide if the highest package version in the rhel_kernels list
@@ -95,7 +97,11 @@ class InstallRhelKernel(actions.Action):
             latest_installed_non_rhel_kernel = pkghandler.get_highest_package_version(
                 ("non-RHEL kernel", non_rhel_kernels)
             )
+            loggerinst.debug(
+                "Latest installed kernel version from the original vendor: %s" % latest_installed_non_rhel_kernel
+            )
             latest_installed_rhel_kernel = pkghandler.get_highest_package_version(("RHEL kernel", rhel_kernels))
+            loggerinst.debug("Latest installed RHEL kernel version: %s" % latest_installed_rhel_kernel)
             is_rhel_kernel_higher = pkghandler.compare_package_versions(
                 latest_installed_rhel_kernel, latest_installed_non_rhel_kernel
             )
@@ -178,12 +184,12 @@ class FixInvalidGrub2Entries(actions.Action):
                 loggerinst.debug("Removing boot entry %s" % entry)
                 os.remove(entry)
 
-        # Removing a boot entry that used to be the default makes grubby to choose a different entry as default, but we will
-        # call grub --set-default to set the new default on all the proper places, e.g. for grub2-editenv
+        # Removing a boot entry that used to be the default makes grubby to choose a different entry as default,
+        # but we will call grub --set-default to set the new default on all the proper places, e.g. for grub2-editenv
         output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--default-kernel"], print_output=False)
         if ret_code:
-            # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions, grub should
-            # pick one entry in any case.
+            # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions,
+            # grub should pick one entry in any case.
             description = "Couldn't get the default GRUB2 boot loader entry:\n%s" % output
             loggerinst.warning(description)
             self.add_message(
