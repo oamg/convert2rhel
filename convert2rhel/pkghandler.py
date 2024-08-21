@@ -1056,3 +1056,27 @@ def _parse_pkg_with_dnf(pkg):
 
     pkg_ver_components = (name, epoch, version, release, arch)
     return pkg_ver_components
+
+
+def get_highest_package_version(pkgs):
+    """
+    Get the highest version from the provided list of packages.
+    :param pkgs: A tuple containing the name of the package list (as a string) and the list of package versions (as a list of strings).
+    :type pkgs: tuple(str,list[str])
+    :return: Return a single package with the highest version.
+    :rtype: str
+
+    :raises ValueError: If the list is empty, raise a ValueError.
+    """
+    name, nevra_list = pkgs
+
+    if not nevra_list:
+        loggerinst.debug("The list of %s packages is empty." % name)
+        raise ValueError
+
+    highest_version = nevra_list[0]
+
+    for nevra in nevra_list[1:]:
+        highest_version = nevra if compare_package_versions(nevra, highest_version) == 1 else highest_version
+
+    return highest_version

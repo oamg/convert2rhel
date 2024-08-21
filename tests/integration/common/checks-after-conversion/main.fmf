@@ -148,7 +148,7 @@ order: 52
     summary+: |
         Run yum check
     description+: |
-        After conversion check verifying yum check is able to finis without any issues.
+        After conversion verify that yum check is able to finish without any issues.
     test: pytest -m test_yum_check
 
 /check_firewalld_errors:
@@ -157,3 +157,12 @@ order: 52
     description+: |
         Verify that firewalld is not reporting any issues in the logs.
     test: pytest -m test_check_firewalld_errors
+
+/yum_check_update:
+    summary+: |
+      Run yum check-update
+    description+: |
+      After the conversion verify yum check-update does not return outdated package.
+      Validated packages:
+        - kernel*
+    test: pytest -m test_yum_check_update

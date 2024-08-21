@@ -66,107 +66,184 @@ def kernel_packages_install_instance():
     return preserve_only_rhel_kernel.KernelPkgsInstall()
 
 
+@pytest.fixture
+def update_kernel_instance():
+    return preserve_only_rhel_kernel.UpdateKernel()
+
+
 class TestInstallRhelKernel:
     @pytest.mark.parametrize(
         (
             "subprocess_output",
-            "is_only_rhel_kernel",
-            "expected",
+            "pkgs_w_diff_fingerprint",
+            "no_newer_kernel_call",
+            "update_kernel",
+            "action_message",
+            "action_result",
         ),
         (
-            ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", True, False),
-            ("Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version", False, True),
-            ("Installed:\nkernel", False, False),
-        ),
-        ids=(
-            "Kernels collide and installed is already RHEL. Do not update.",
-            "Kernels collide and installed is not RHEL and older. Update.",
-            "Kernels do not collide. Install RHEL kernel and do not update.",
+            (
+                # Info about installed kernel from yum contains the same version as is listed in the different fingerprint pkgs
+                # The latest installed kernel is from CentOS
+                "Package kernel-4.18.0-193.el8.x86_64 is already installed.",
+                [
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="193.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="183.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                ],
+                1,
+                True,
+                set(
+                    (
+                        actions.ActionMessage(
+                            level="INFO",
+                            id="CONFLICT_OF_KERNELS",
+                            title="Conflict of installed kernel versions",
+                            description="Conflict of kernels: The running kernel has the same version as the latest RHEL kernel.\n"
+                            "The kernel package could not be replaced during the main transaction.\n"
+                            "We will try to install a lower version of the package,\n"
+                            "remove the conflicting kernel and then update to the latest security patched version.",
+                        ),
+                    ),
+                ),
+                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
+            ),
+            (
+                # Output from yum contains different version than is listed in different fingerprint
+                # Rhel kernel already installed with centos kernels
+                "Package kernel-4.18.0-205.el8.x86_64 is already installed.",
+                [
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="193.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="183.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                ],
+                0,
+                False,
+                set(()),
+                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
+            ),
+            (
+                # Only rhel kernel already installed
+                "Package kernel-4.18.0-205.el8.x86_64 is already installed.",
+                [],
+                0,
+                False,
+                set(()),
+                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
+            ),
+            (
+                # Output from yum contains different version than is listed in different fingerprint
+                # Rhel kernel already installed in older versin than centos kernel
+                "Package kernel-4.18.0-183.el8.x86_64 is already installed.",
+                [
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="193.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                ],
+                1,
+                True,
+                set(()),
+                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
+            ),
         ),
     )
-    @centos7
+    @centos8
     def test_install_rhel_kernel(
-        self, subprocess_output, is_only_rhel_kernel, expected, pretend_os, install_rhel_kernel_instance, monkeypatch
+        self,
+        monkeypatch,
+        subprocess_output,
+        pkgs_w_diff_fingerprint,
+        install_rhel_kernel_instance,
+        no_newer_kernel_call,
+        update_kernel,
+        pretend_os,
+        action_message,
+        action_result,
     ):
-        update_rhel_kernel_mock = mock.Mock()
+        """Test the logic of kernel installation&update"""
+        handle_no_newer_rhel_kernel_available = mock.Mock()
 
         monkeypatch.setattr(
             utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output, return_code=0)
         )
-        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-        monkeypatch.setattr(pkghandler, "update_rhel_kernel", value=update_rhel_kernel_mock)
-
-        pkg_selection = "empty" if is_only_rhel_kernel else "kernels"
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection=pkg_selection),
+            GetInstalledPkgsWDifferentFingerprintMocked(return_value=pkgs_w_diff_fingerprint),
         )
+        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", handle_no_newer_rhel_kernel_available)
+
         install_rhel_kernel_instance.run()
-        if expected:
-            update_rhel_kernel_mock.assert_called_once()
+
+        assert handle_no_newer_rhel_kernel_available.call_count == no_newer_kernel_call
+        assert preserve_only_rhel_kernel._kernel_update_needed == update_kernel
+        assert action_message.issuperset(install_rhel_kernel_instance.messages)
+        assert action_message.issubset(install_rhel_kernel_instance.messages)
+        assert action_result == install_rhel_kernel_instance.result
 
     @pytest.mark.parametrize(
-        ("subprocess_output",),
+        ("subprocess_output", "subprocess_return", "action_message", "action_result"),
         (
-            ("Package kernel-2.6.32-754.33.1.el7.x86_64 already installed and latest version",),
-            ("Package kernel-4.18.0-193.el8.x86_64 is already installed.",),
+            (
+                "yum command failed",
+                1,
+                set(()),
+                actions.ActionResult(
+                    level="ERROR",
+                    id="FAILED_TO_INSTALL_RHEL_KERNEL",
+                    title="Failed to install RHEL kernel",
+                    description="There was an error while attempting to install the RHEL kernel from yum.",
+                    remediations="Please check that you can access the repositories that provide the RHEL kernel.",
+                ),
+            ),
         ),
     )
-    @centos7
-    def test_install_rhel_kernel_already_installed_regexp(
-        self, subprocess_output, pretend_os, monkeypatch, install_rhel_kernel_instance
+    @centos8
+    def test_install_rhel_kernel_yum_fail(
+        self,
+        monkeypatch,
+        subprocess_output,
+        subprocess_return,
+        action_message,
+        action_result,
+        install_rhel_kernel_instance,
+        pretend_os,
     ):
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
         monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+            utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output, return_code=subprocess_return)
         )
 
         install_rhel_kernel_instance.run()
 
-        assert pkghandler.get_installed_pkgs_w_different_fingerprint.call_count == 1
-
-    @centos7
-    def test_install_rhel_kernel_error(self, pretend_os, install_rhel_kernel_instance, monkeypatch):
-
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
-        install_rhel_kernel_instance.run()
-        unit_tests.assert_actions_result(
-            install_rhel_kernel_instance,
-            level="ERROR",
-            id="FAILED_TO_INSTALL_RHEL_KERNEL",
-            title="Failed to install RHEL kernel",
-            description="There was an error while attempting to install the RHEL kernel from yum.",
-            remediations="Please check that you can access the repositories that provide the RHEL kernel.",
-        )
-
-    @centos7
-    def test_install_rhel_kernel_info_msg(self, pretend_os, install_rhel_kernel_instance, monkeypatch):
-        subprocess_output = "Package kernel-3.10.0-1127.19.1.el7.x86_64 already installed and latest version"
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
-        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
-        )
-        install_rhel_kernel_instance.run()
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="INFO",
-                    id="CONFLICT_OF_KERNELS",
-                    title="Conflict of installed kernel versions",
-                    description="Conflict of kernels: One of the installed kernels has the same version as the latest RHEL kernel.",
-                    diagnosis=None,
-                    remediations=None,
-                ),
-            )
-        )
-        assert expected.issuperset(install_rhel_kernel_instance.messages)
-        assert expected.issubset(install_rhel_kernel_instance.messages)
+        assert action_message.issuperset(install_rhel_kernel_instance.messages)
+        assert action_message.issubset(install_rhel_kernel_instance.messages)
+        assert action_result == install_rhel_kernel_instance.result
 
 
 class TestKernelPkgsInstall:
@@ -524,3 +601,22 @@ class TestFixDefaultKernel:
 
         for record in info_records:
             assert not re.search("Boot kernel [^ ]\\+ was changed to [^ ]\\+", record.message)
+
+
+class TestUpdateKernel:
+    @pytest.mark.parametrize(
+        ("update_kernel"),
+        (
+            (True),
+            (False),
+        ),
+    )
+    @centos8
+    def test_update_kernel(self, monkeypatch, update_kernel_instance, update_kernel, pretend_os):
+        preserve_only_rhel_kernel._kernel_update_needed = update_kernel
+        update_rhel_kernel = mock.Mock()
+        monkeypatch.setattr(pkghandler, "update_rhel_kernel", update_rhel_kernel)
+
+        update_kernel_instance.run()
+
+        assert (update_rhel_kernel.call_count == 1) == update_kernel
