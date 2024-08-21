@@ -315,6 +315,8 @@ class TestRollbackFromMain:
         assert "No changes were made to the system." in caplog.records[-2].message
 
     def test_main_traceback_in_clear_versionlock(self, caplog, monkeypatch, tmp_path):
+        ask_to_continue_mock = mock.Mock(return_value=True)
+
         monkeypatch.setattr(applock, "_DEFAULT_LOCK_DIR", str(tmp_path))
         monkeypatch.setattr(utils, "require_root", RequireRootMocked())
         monkeypatch.setattr(main, "initialize_file_logging", InitializeFileLoggingMocked())
@@ -334,6 +336,8 @@ class TestRollbackFromMain:
             ),
         )
 
+        monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
+
         # Mock rollback items
         monkeypatch.setattr(main, "rollback_changes", RollbackChangesMocked())
         monkeypatch.setattr(main, "provide_status_after_rollback", PrintInfoAfterRollbackMocked())
@@ -349,6 +353,7 @@ class TestRollbackFromMain:
         assert system_info.resolve_system_info.call_count == 1
         assert breadcrumbs.collect_early_data.call_count == 1
         assert pkghandler.clear_versionlock.call_count == 1
+        assert ask_to_continue_mock.call_count == 1
 
         assert main.rollback_changes.call_count == 0
         assert main.provide_status_after_rollback.call_count == 0
@@ -372,6 +377,7 @@ class TestRollbackFromMain:
         clean_yum_metadata_mock = mock.Mock()
         run_pre_actions_mock = mock.Mock(side_effect=Exception("Action Framework Crashed"))
         clear_versionlock_mock = mock.Mock()
+        ask_to_continue_mock = mock.Mock(return_value=True)
         summary_as_txt_mock = mock.Mock()
 
         # Mock the rollback calls
@@ -391,6 +397,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
         monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(breadcrumbs, "finish_collection", finish_collection_mock)
@@ -411,6 +418,7 @@ class TestRollbackFromMain:
         assert clean_yum_metadata_mock.call_count == 1
         assert run_pre_actions_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert should_subscribe_mock.call_count == 1
         assert update_rhsm_custom_facts_mock.call_count == 1
@@ -436,6 +444,7 @@ class TestRollbackFromMain:
         run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
+        ask_to_continue_mock = mock.Mock(return_value=True)
         find_actions_of_severity_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
 
@@ -456,6 +465,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
         monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(report, "_summary", report_summary_mock)
@@ -480,6 +490,7 @@ class TestRollbackFromMain:
         assert report_summary_mock.call_count == 1
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert should_subscribe_mock.call_count == 1
         assert update_rhsm_custom_facts_mock.call_count == 1
@@ -507,6 +518,7 @@ class TestRollbackFromMain:
             (system_info, "print_system_information", mock.Mock()),
             (breadcrumbs, "collect_early_data", mock.Mock()),
             (pkghandler, "clear_versionlock", mock.Mock()),
+            (utils, "ask_to_continue", mock.Mock(return_value=True)),
             (pkgmanager, "clean_yum_metadata", mock.Mock()),
             (actions, "run_pre_actions", mock.Mock()),
             (report, "_summary", mock.Mock()),
@@ -530,6 +542,7 @@ class TestRollbackFromMain:
         assert system_info.print_system_information.call_count == 1
         assert breadcrumbs.collect_early_data.call_count == 1
         assert pkghandler.clear_versionlock.call_count == 1
+        assert utils.ask_to_continue.call_count == 1
         assert pkgmanager.clean_yum_metadata.call_count == 1
         assert actions.run_pre_actions.call_count == 1
         assert report._summary.call_count == 1
@@ -553,6 +566,7 @@ class TestRollbackFromMain:
         run_pre_actions_mock = mock.Mock()
         report_summary_mock = mock.Mock()
         clear_versionlock_mock = mock.Mock()
+        ask_to_continue_mock = mock.Mock(return_value=True)
         summary_as_json_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
 
@@ -572,6 +586,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(system_info, "print_system_information", print_system_information_mock)
         monkeypatch.setattr(breadcrumbs, "collect_early_data", collect_early_data_mock)
         monkeypatch.setattr(pkghandler, "clear_versionlock", clear_versionlock_mock)
+        monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
         monkeypatch.setattr(pkgmanager, "clean_yum_metadata", clean_yum_metadata_mock)
         monkeypatch.setattr(actions, "run_pre_actions", run_pre_actions_mock)
         monkeypatch.setattr(report, "_summary", report_summary_mock)
@@ -595,6 +610,7 @@ class TestRollbackFromMain:
         assert run_pre_actions_mock.call_count == 1
         assert report_summary_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 1
         assert finish_collection_mock.call_count == 1
         assert should_subscribe_mock.call_count == 1
         assert update_rhsm_custom_facts_mock.call_count == 1
@@ -661,7 +677,7 @@ class TestRollbackFromMain:
         assert find_actions_of_severity_mock.call_count == 1
         assert clear_versionlock_mock.call_count == 1
         assert report_summary_mock.call_count == 2
-        assert ask_to_continue_mock.call_count == 1
+        assert ask_to_continue_mock.call_count == 2
         assert finish_collection_mock.call_count == 1
         assert summary_as_json_mock.call_count == 1
         assert summary_as_txt_mock.call_count == 1
@@ -771,8 +787,9 @@ def test_handle_inhibitors_found_exception(monkeypatch, rollback_failures, retur
 
 
 def test_confirm_user_backup(monkeypatch, caplog):
-    ask_to_continue_mock = mock.Mock()
+    ask_to_continue_mock = mock.Mock(return_value=True)
 
+    # Mock the ask_to_continue function
     monkeypatch.setattr(utils, "ask_to_continue", ask_to_continue_mock)
 
     main.confirm_user_backup()
