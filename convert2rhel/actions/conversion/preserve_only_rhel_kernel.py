@@ -24,6 +24,8 @@ from convert2rhel import actions, pkghandler, pkgmanager, utils
 from convert2rhel.systeminfo import system_info
 
 
+_kernel_update_needed = None
+
 loggerinst = logging.getLogger(__name__)
 
 
@@ -36,9 +38,13 @@ class InstallRhelKernel(actions.Action):
         super(InstallRhelKernel, self).run()
         loggerinst.task("Convert: Prepare kernel")
 
+        # Solution for RHELC-1707
+        # Update is needed in the UpdateKernel action
+        global _kernel_update_needed  # pylint: disable=global-statement
+
         loggerinst.info("Installing RHEL kernel ...")
         output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
-        kernel_update_needed = False
+        _kernel_update_needed = False
 
         if ret_code != 0:
             self.set_result(
@@ -83,7 +89,7 @@ class InstallRhelKernel(actions.Action):
                 description=info_message,
             )
             pkghandler.handle_no_newer_rhel_kernel_available()
-            kernel_update_needed = True
+            _kernel_update_needed = True
 
         # In this case all kernel packages were already replaced during the main transaction.
         # Having elif here to prevent breaking the action. Otherwise, when the first condition applies,
@@ -116,10 +122,7 @@ class InstallRhelKernel(actions.Action):
             # That might happen and happened before, when the original vendor patches the package
             # with a higher release number.
             pkghandler.handle_no_newer_rhel_kernel_available()
-            kernel_update_needed = True
-
-        if kernel_update_needed:
-            pkghandler.update_rhel_kernel()
+            _kernel_update_needed = True
 
 
 class VerifyRhelKernelInstalled(actions.Action):
@@ -295,3 +298,20 @@ class KernelPkgsInstall(actions.Action):
             if name != "kernel":
                 loggerinst.info("Installing RHEL %s" % name)
                 pkgmanager.call_yum_cmd("install", args=[name])
+
+
+class UpdateKernel(actions.Action):
+    id = "UPDATE_KERNEL"
+    dependencies = ("FIX_DEFAULT_KERNEL",)
+
+    def run(self):
+        super(UpdateKernel, self).run()
+        # Solution for RHELC-1707
+        # This variable is set in the InstallRhelKernel action
+        global _kernel_update_needed
+
+        if _kernel_update_needed:
+            # Note: Info message is in the function
+            pkghandler.update_rhel_kernel()
+        else:
+            loggerinst.info("RHEL kernel already present in latest version. Update not needed.\n")

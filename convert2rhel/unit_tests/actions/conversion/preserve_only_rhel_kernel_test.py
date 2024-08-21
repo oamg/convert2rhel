@@ -66,13 +66,18 @@ def kernel_packages_install_instance():
     return preserve_only_rhel_kernel.KernelPkgsInstall()
 
 
+@pytest.fixture
+def update_kernel_instance():
+    return preserve_only_rhel_kernel.UpdateKernel()
+
+
 class TestInstallRhelKernel:
     @pytest.mark.parametrize(
         (
             "subprocess_output",
             "pkgs_w_diff_fingerprint",
             "no_newer_kernel_call",
-            "update_kernel_call",
+            "update_kernel",
             "action_message",
             "action_result",
         ),
@@ -98,7 +103,7 @@ class TestInstallRhelKernel:
                     ),
                 ],
                 1,
-                1,
+                True,
                 set(
                     (
                         actions.ActionMessage(
@@ -135,7 +140,7 @@ class TestInstallRhelKernel:
                     ),
                 ],
                 0,
-                0,
+                False,
                 set(()),
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
@@ -144,7 +149,7 @@ class TestInstallRhelKernel:
                 "Package kernel-4.18.0-205.el8.x86_64 is already installed.",
                 [],
                 0,
-                0,
+                False,
                 set(()),
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
@@ -162,7 +167,7 @@ class TestInstallRhelKernel:
                     ),
                 ],
                 1,
-                1,
+                True,
                 set(()),
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
@@ -176,14 +181,13 @@ class TestInstallRhelKernel:
         pkgs_w_diff_fingerprint,
         install_rhel_kernel_instance,
         no_newer_kernel_call,
-        update_kernel_call,
+        update_kernel,
         pretend_os,
         action_message,
         action_result,
     ):
         """Test the logic of kernel installation&update"""
         handle_no_newer_rhel_kernel_available = mock.Mock()
-        update_rhel_kernel = mock.Mock()
 
         monkeypatch.setattr(
             utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output, return_code=0)
@@ -194,12 +198,11 @@ class TestInstallRhelKernel:
             GetInstalledPkgsWDifferentFingerprintMocked(return_value=pkgs_w_diff_fingerprint),
         )
         monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", handle_no_newer_rhel_kernel_available)
-        monkeypatch.setattr(pkghandler, "update_rhel_kernel", update_rhel_kernel)
 
         install_rhel_kernel_instance.run()
 
         assert handle_no_newer_rhel_kernel_available.call_count == no_newer_kernel_call
-        assert update_rhel_kernel.call_count == update_kernel_call
+        assert preserve_only_rhel_kernel._kernel_update_needed == update_kernel
         assert action_message.issuperset(install_rhel_kernel_instance.messages)
         assert action_message.issubset(install_rhel_kernel_instance.messages)
         assert action_result == install_rhel_kernel_instance.result
@@ -598,3 +601,22 @@ class TestFixDefaultKernel:
 
         for record in info_records:
             assert not re.search("Boot kernel [^ ]\\+ was changed to [^ ]\\+", record.message)
+
+
+class TestUpdateKernel:
+    @pytest.mark.parametrize(
+        ("update_kernel"),
+        (
+            (True),
+            (False),
+        ),
+    )
+    @centos8
+    def test_update_kernel(self, monkeypatch, update_kernel_instance, update_kernel, pretend_os):
+        preserve_only_rhel_kernel._kernel_update_needed = update_kernel
+        update_rhel_kernel = mock.Mock()
+        monkeypatch.setattr(pkghandler, "update_rhel_kernel", update_rhel_kernel)
+
+        update_kernel_instance.run()
+
+        assert (update_rhel_kernel.call_count == 1) == update_kernel
