@@ -488,6 +488,7 @@ class TestDownload_pkg:
         assert [
             "yumdownloader",
             "-v",
+            "--setopt=exclude=",
             "--destdir=%s" % dest,
             "--setopt=reposdir=%s" % reposdir,
             "--disablerepo=*",

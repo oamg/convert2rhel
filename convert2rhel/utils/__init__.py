@@ -642,7 +642,7 @@ def download_pkg(
     loggerinst.debug("Downloading the %s package." % pkg)
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
-    cmd = ["yumdownloader", "-v", "--destdir=%s" % dest]
+    cmd = ["yumdownloader", "-v", "--setopt=exclude=", "--destdir=%s" % dest]
     if reposdir:
         cmd.append("--setopt=reposdir=%s" % reposdir)
 
