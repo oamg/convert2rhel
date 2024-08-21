@@ -1,7 +1,7 @@
 from conftest import TEST_VARS
 
 
-def test_satellite_conversion(convert2rhel, satellite_registration):
+def test_satellite_conversion(convert2rhel, fixture_satellite):
     """
     Conversion method using the Satellite credentials for registration.
     Use the provided curl command to download the registration script to a file,

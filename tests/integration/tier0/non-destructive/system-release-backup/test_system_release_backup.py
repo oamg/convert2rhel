@@ -39,8 +39,8 @@ def test_inhibitor_missing_system_release(shell, convert2rhel, system_release_mi
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
-def test_inhibitor_os_release_restored(shell, convert2rhel, satellite_registration, remove_repositories):
+@pytest.mark.parametrize("fixture_satellite", ["RHEL_CONTENT_SAT_REG"], indirect=True)
+def test_inhibitor_os_release_restored(shell, convert2rhel, fixture_satellite, remove_repositories):
     """
     We remove all the system repositories from the usual location.
     Since the host is registered through Satellite having access only to the RHEL repositories,
@@ -64,11 +64,11 @@ def test_inhibitor_os_release_restored(shell, convert2rhel, satellite_registrati
     assert shell("find /etc/os-release").returncode == 0
 
 
-@pytest.mark.parametrize("satellite_registration", ["RHEL_CONTENT_SAT_REG"], indirect=True)
+@pytest.mark.parametrize("fixture_satellite", ["RHEL_CONTENT_SAT_REG"], indirect=True)
 def test_override_inhibitor_os_release_restored(
     shell,
     convert2rhel,
-    satellite_registration,
+    fixture_satellite,
     remove_repositories,
 ):
     """

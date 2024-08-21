@@ -28,7 +28,7 @@ def configure_connection():
 
 
 @pytest.mark.prepare_isolated_system
-def test_prepare_system(shell, satellite_registration):
+def test_prepare_system(shell, fixture_satellite):
     """
     Perform all the steps to make the system appear to be offline.
     Register to the Satellite server.

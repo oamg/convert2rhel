@@ -52,36 +52,6 @@ TEST_VARS = dotenv_values("/var/tmp/.env")
 SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
 
 
-SAT_REG_COMMAND = {
-    "alma-8-latest": SAT_REG_FILE["ALMA8_SAT_REG"],
-    "alma-9-latest": SAT_REG_FILE["ALMA9_SAT_REG"],
-    "alma-8.8": SAT_REG_FILE["ALMA88_SAT_REG"],
-    "rocky-8-latest": SAT_REG_FILE["ROCKY8_SAT_REG"],
-    "rocky-8.8": SAT_REG_FILE["ROCKY88_SAT_REG"],
-    "rocky-9-latest": SAT_REG_FILE["ROCKY9_SAT_REG"],
-    "oracle-8-latest": SAT_REG_FILE["ORACLE8_SAT_REG"],
-    "oracle-9-latest": SAT_REG_FILE["ORACLE9_SAT_REG"],
-    "centos-8-latest": SAT_REG_FILE["CENTOS8_SAT_REG"],
-    "oracle-7": SAT_REG_FILE["ORACLE7_SAT_REG"],
-    "centos-7": SAT_REG_FILE["CENTOS7_SAT_REG"],
-    "stream-8-latest": SAT_REG_FILE["STREAM8_SAT_REG"],
-    "stream-9-latest": SAT_REG_FILE["STREAM9_SAT_REG"],
-}
-
-
-def satellite_curl_command():
-    """
-    Get the Satellite registration command for the respective system.
-    """
-    sat_curl_command = None
-    try:
-        sat_curl_command = SAT_REG_COMMAND[SYSTEM_RELEASE_ENV]
-    except KeyError:
-        print(f"Key not found in satellite registration command dictionary: {SYSTEM_RELEASE_ENV}")
-
-    return sat_curl_command
-
-
 SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
 
 
@@ -927,61 +897,6 @@ def yum_conf_exclude(shell, backup_directory, request):
 
 
 @pytest.fixture
-def satellite_registration(shell, request):
-    """
-    Fixture
-    Register the system to the Satellite server
-    By default it acquires the curl command from the satellite_curl_command function
-    Can be parametrized with requesting a different key from the SAT_REG_FILE(.sat_reg_file):
-    @pytest.mark.parametrize("satellite_registration", ["DIFFERENT_KEY"], indirect=True)
-    """
-    # Get the curl command for the respective system
-    # from the conftest function
-    subman = SubscriptionManager()
-    sat_curl_command = satellite_curl_command()
-    sat_script = "/var/tmp/register_to_satellite.sh"
-    # If the fixture is parametrized, use the parameter as the key to get the curl command
-    if hasattr(request, "param"):
-        sat_curl_command_key = request.param
-        sat_curl_command = SAT_REG_FILE[sat_curl_command_key]
-        print(">>> Using parametrized curl command requested in the fixture.")
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        subman.add_keys_and_certificates()
-        subman.add_client_tools_repo()
-
-    # Make sure it returned some value, otherwise it will fail.
-    assert sat_curl_command, "The registration command is empty."
-
-    # Curl the Satellite registration script silently
-    assert shell(f"{sat_curl_command} -o {sat_script}", silent=True).returncode == 0
-
-    # This is just a mitigation of rhn-client-tools pkg obsoleting subscription-manager during upgrade
-    # TODO remove when https://github.com/theforeman/foreman/pull/10280 gets merged and or foreman 3.12 is out
-    # Should be around November 2024
-    if "oracle" in SystemInformationRelease.distribution:
-        shell(
-            fr"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {sat_script}"
-        )
-
-    # Make the script executable and run the registration
-    assert shell(f"chmod +x {sat_script} && /bin/bash {sat_script}").returncode == 0
-
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        subman.remove_client_tools_repo()
-
-    ### This is a workaround which might be removed, when we enable the Satellite repositories by default
-    repos_to_enable = shell("subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'").output.split()
-    for repo in repos_to_enable:
-        shell(f"subscription-manager repos --enable {repo}")
-
-    yield
-
-    # Remove the subman packages installed by the registration script
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
-
-
-@pytest.fixture
 def backup_directory(shell, request):
     """
     Fixture.
@@ -1078,3 +993,97 @@ def keep_centos_pointed_to_vault(shell):
         sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
         print("TESTS >>> Resetting the repos to vault")
         shell(sed_repos_to_vault, silent=True)
+
+
+class Satellite:
+    def __init__(self, key=SYSTEM_RELEASE_ENV):
+        self.shell = live_shell()
+        # Key on which upon the command is selected
+        self.key = key
+        # File containing registration commands
+        self._sat_reg_commands = dotenv_values("/var/tmp/.env_sat_reg")
+        self._sat_script_location = "/var/tmp/register_to_satellite.sh"
+        self.subman = SubscriptionManager()
+
+    def get_satellite_curl_command(self):
+        """
+        Get the Satellite registration command for the respective system.
+        """
+        if not self._sat_reg_commands:
+            pytest.fail(
+                f"The {self._sat_reg_file} either not found or empty.\
+                It is required for the satellite conversion to work."
+            )
+
+        return self._sat_reg_commands.get(self.key)
+
+    def _curl_the_satellite_script(self, curl_command):
+        assert (
+            self.shell(f"{curl_command} -o {self._sat_script_location}", silent=True).returncode == 0
+        ), "Failed to curl the satellite script to the machine."
+
+        # [danmyway] This is just a mitigation of rhn-client-tools pkg obsoleting subscription-manager during upgrade
+        # TODO remove when https://github.com/theforeman/foreman/pull/10280 gets merged and or foreman 3.12 is out
+        # Should be around November 2024
+        if "oracle-7.9" in SystemInformationRelease.system_release:
+            self.shell(
+                fr"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {self._sat_script_location}"
+            )
+
+    def _run_satellite_reg_script(self):
+        assert (
+            self.shell(f"chmod +x {self._sat_script_location} && /bin/bash {self._sat_script_location}").returncode == 0
+        ), "Falied to run the satellite registration script."
+
+    def register(self):
+        curl_command = self.get_satellite_curl_command()
+
+        # Subscription-manager is not in Oracle repositories so we have to add
+        # our own client-tools-repo with subscription-manager package.
+        if "oracle" in SYSTEM_RELEASE_ENV:
+            self.subman.add_keys_and_certificates()
+            self.subman.add_client_tools_repo()
+
+        # Make sure it returned some value, otherwise it will fail.
+        assert curl_command, "The registration command is empty."
+
+        # Curl the Satellite registration script silently
+        self._curl_the_satellite_script(curl_command)
+
+        # Make the script executable and run the registration
+        self._run_satellite_reg_script()
+
+        ### This is a workaround which might be removed, when we enable the Satellite repositories by default
+        repos_to_enable = self.shell(
+            "subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'"
+        ).output.split()
+        for repo in repos_to_enable:
+            self.shell(f"subscription-manager repos --enable {repo}")
+
+    def unregister(self):
+        """
+        Remove the subman packages installed by the registration script
+        """
+        self.subman.clean_up()
+
+
+@pytest.fixture()
+def fixture_satellite(request):
+    """
+    Fixture.
+    Register the system to the Satellite server. Wrapper around satellite class and its methods.
+    Can be parametrized with requesting a different key from the SAT_REG_FILE("/var/tmp/.env_sat_reg"):
+    @pytest.mark.parametrize("fixture_satellite", ["DIFFERENT_KEY"], indirect=True)
+    """
+    sat_curl_command_key = SYSTEM_RELEASE_ENV
+    if hasattr(request, "param"):
+        sat_curl_command_key = request.param
+        print(">>> Using parametrized curl command requested in the fixture.")
+    satellite = Satellite(key=sat_curl_command_key)
+
+    satellite.register()
+
+    yield
+
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        satellite.unregister()

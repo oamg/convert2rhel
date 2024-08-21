@@ -24,10 +24,10 @@ def collect_enabled_repositories(shell):
     return enabled_repositories
 
 
-@pytest.mark.parametrize("satellite_registration", ["RHEL7_AND_CENTOS7_SAT_REG"], indirect=True)
+@pytest.mark.parametrize("fixture_satellite", ["RHEL7_AND_CENTOS7_SAT_REG"], indirect=True)
 @pytest.mark.parametrize("rhel_repo_enabled", [False, True])
 def test_enabled_repositories_after_analysis(
-    shell, convert2rhel, satellite_registration, remove_repositories, rhel_repo_enabled
+    shell, convert2rhel, fixture_satellite, remove_repositories, rhel_repo_enabled
 ):
     """Test analysis systems not connected to the Internet but requiring sub-mgr (e.g. managed by Satellite).
 
@@ -36,10 +36,6 @@ def test_enabled_repositories_after_analysis(
         - Run the analysis and assert that we successfully enabled the RHSM repositories
         - Collect the enabled repositories after the tool run to compare with the repositories prior to the analysis
     """
-
-    # Enable CentOS repos manually because they are disabled by default in our satellite instance
-    shell("subscription-manager repos --enable='Satellite_Engineering_CentOS_7_Updates_x86_64'")
-    shell("subscription-manager repos --enable='Satellite_Engineering_CentOS_7_Base_x86_64'")
 
     if rhel_repo_enabled:
         # To enable RHEL repos we also need to put the 69.pem certificate to the
