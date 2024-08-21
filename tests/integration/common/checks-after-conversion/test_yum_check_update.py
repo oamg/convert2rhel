@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.parametrize("package", ["kernel"])
+@pytest.mark.parametrize("package", ["kernel*"])
 def test_yum_check_update(shell, package):
     """
     After the conversion verify yum check-update does not return outdated package.

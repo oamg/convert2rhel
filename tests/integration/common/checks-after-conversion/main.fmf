@@ -161,6 +161,8 @@ order: 52
 /yum_check_update:
     summary+: |
       Run yum check-update
-    description+:
+    description+: |
       After the conversion verify yum check-update does not return outdated package.
+      Validated packages:
+        - kernel*
     test: pytest -m test_yum_check_update
