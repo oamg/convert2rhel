@@ -152,6 +152,7 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 - Pick correct report results after inhibitors
 - Detect a newer version of RHEL kernel in the main transaction
 - Override exclude option during yumdownloader call
+- Fix edge case of kernel meta package not the on system
 
 * Tue Jul 23 2024 Freya Gustavsson <fgustavs@redhat.com> 2.0.1
 - Fix files being backed up multiple times and causing rollback errors
