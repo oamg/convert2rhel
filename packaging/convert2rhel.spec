@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        2.0.1
+Version:        2.1.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -124,6 +124,35 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Wed Aug 21 2024 Preston Watson <prwatson@redhat.com> 2.1.0
+- Use public CDN instead of paywalled CDN and FTP
+- Remove RuntimeWarning caused by bufsize value of run_subprocess
+- Port ModifiedRPMFilesDiff to Action framework
+- Port preserve_only_rhel_kernel to Action framework
+- Include all reports in post-conversion report
+- Port list_non_red_hat_pkgs_left to Action framework
+- Port post_ponr_set_efi_configuration to Action framework
+- Port PkgManagerConf to Action framework
+- Port lock_releasever_in_rhel_repositories to Action framework
+- Port update_grub_after_conversion to Action framework
+- Port remove_tmp_dir to Action framework
+- Port kernel_boot_files to Action framework
+- Port hostmetering to Action framework
+- Disregard minor version with CentOS Stream
+- Port breadcrumbs.finish_collection to action framework
+- Port update_rhsm_custom_facts to Action framework
+- Remove RHSM repositories enablement fallback
+- Fix CodeQL error uninitialized variable
+- Fix duplicating backups
+- Use no_rhsm to detect if enablerepos should be disabled
+- Add --els to convert2rhel man page and synopsis.
+- Fix of super(run()) call inside action
+- Fix rpm -Va parsing and improve speed
+- Prevent kernel being excluded in repoquery calls
+- Pick correct report results after inhibitors
+- Detect a newer version of RHEL kernel in the main transaction
+- Override exclude option during yumdownloader call
+
 * Tue Jul 23 2024 Freya Gustavsson <fgustavs@redhat.com> 2.0.1
 - Fix files being backed up multiple times and causing rollback errors
 - Fix conversions failing with third-party repositories
