@@ -171,6 +171,23 @@ class TestInstallRhelKernel:
                 set(()),
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
+            (
+                # Output from yum contains info about installing some package - corner case
+                "Installing kernel-4.18.0-183.el8.x86_64",
+                [
+                    create_pkg_information(
+                        name="kernel",
+                        version="4.18.0",
+                        release="193.el8",
+                        arch="x86_64",
+                        packager="CentOS",
+                    ),
+                ],
+                0,
+                False,
+                set(()),
+                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
+            ),
         ),
     )
     @centos8
