@@ -29,6 +29,7 @@ DISTRO_CONVERSION_MAPPING = {
     ),
     "Red Hat Enterprise Linux release 9.4 (Plow)": (
         {"id": "null", "name": "Oracle Linux Server", "version": "9.4"},
+        {"id": "null", "name": "CentOS Stream", "version": "9"},
         {"id": "Seafoam Ocelot", "name": "AlmaLinux", "version": "9.4"},
         {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.4"},
     ),
