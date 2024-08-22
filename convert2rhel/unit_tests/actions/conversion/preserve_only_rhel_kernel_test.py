@@ -104,19 +104,7 @@ class TestInstallRhelKernel:
                 ],
                 1,
                 True,
-                set(
-                    (
-                        actions.ActionMessage(
-                            level="INFO",
-                            id="CONFLICT_OF_KERNELS",
-                            title="Conflict of installed kernel versions",
-                            description="Conflict of kernels: The running kernel has the same version as the latest RHEL kernel.\n"
-                            "The kernel package could not be replaced during the main transaction.\n"
-                            "We will try to install a lower version of the package,\n"
-                            "remove the conflicting kernel and then update to the latest security patched version.",
-                        ),
-                    ),
-                ),
+                set(()),
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
             (

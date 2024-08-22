@@ -89,12 +89,6 @@ class InstallRhelKernel(actions.Action):
                 "remove the conflicting kernel and then update to the latest security patched version."
             )
             loggerinst.info("\n%s" % info_message)
-            self.add_message(
-                level="INFO",
-                id="CONFLICT_OF_KERNELS",
-                title="Conflict of installed kernel versions",
-                description=info_message,
-            )
             pkghandler.handle_no_newer_rhel_kernel_available()
             _kernel_update_needed = True
 
