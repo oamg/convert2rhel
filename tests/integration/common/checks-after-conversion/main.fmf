@@ -159,6 +159,8 @@ order: 52
     test: pytest -m test_check_firewalld_errors
 
 /yum_check_update:
+    # This needs to run before the system gets unregistered
+    order: 51
     summary+: |
       Run yum check-update
     description+: |
