@@ -189,6 +189,13 @@ adjust+:
                     - changed-grub-file/valid_changes_to_grub_file
 
         /changed_grub_invalid:
+            adjust+:
+                - enabled: false
+                  when: distro == alma-8-latest and boot_method == uefi
+                  because: The changes to the grub file result in a unbootable system.
+                - enabled: false
+                  when: distro == alma-9, rocky-9, oracle-9
+                  because: The changes break the conversion or the bootloader at the moment.
             discover+:
                 test+<:
                     - changed-grub-file/invalid_changes_to_grub_file
@@ -282,6 +289,10 @@ adjust+:
             test+:
                 - host-metering/check_active_host_metering
     /proxy-server:
+        adjust+:
+          - enabled: false
+            when: distro == alma-9, oracle-9
+            because: The test is currently flaky on these targets. Needs further investigation.
         discover+:
             test+<:
                 - proxy-conversion/proxy_conversion

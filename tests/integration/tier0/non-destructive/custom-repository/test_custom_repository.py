@@ -1,38 +1,44 @@
 import pytest
 
-from conftest import SystemInformationRelease
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease
 
 
-class AssignRepositoryVariables:
+def _assign_enable_repo_opt():
     """
-    Helper class.
+    Helper function.
     Assign correct repofile content, name and enable_repo_opt to their respective major/eus system version.
     """
-
-    repofile_epel7 = "rhel7"
-    repofile_epel8 = "rhel8"
-    repofile_epel8_eus = "rhel8-eus"
-    enable_repo_opt_epel7 = (
-        "--enablerepo rhel-7-server-rpms --enablerepo rhel-7-server-optional-rpms "
-        "--enablerepo rhel-7-server-extras-rpms"
-    )
-    enable_repo_opt_epel8 = "--enablerepo rhel-8-for-x86_64-baseos-rpms --enablerepo rhel-8-for-x86_64-appstream-rpms"
-    enable_repo_opt_epel8_eus = (
-        "--enablerepo rhel-8-for-x86_64-baseos-eus-rpms --enablerepo rhel-8-for-x86_64-appstream-eus-rpms"
-    )
-
     system_version = SystemInformationRelease.version
+    system_distribution = SystemInformationRelease.distribution
+    repos = ("rhel-7-server-rpms", "rhel-7-server-optional-rpms", "rhel-7-server-extras-rpms")
+    enable_opt = "--enablerepo"
+    repofile = f"rhel{system_version.major}"
 
-    if system_version.major == 7:
-        repofile = repofile_epel7
-        enable_repo_opt = enable_repo_opt_epel7
-    elif system_version.major == 8:
-        if system_version.minor == 8:
-            repofile = repofile_epel8_eus
-            enable_repo_opt = enable_repo_opt_epel8_eus
+    if system_version.major in (8, 9):
+        # We want to go for EUS repositories only where really applicable
+        #   1/ minor version matches EUS eligible version
+        #   2/ the system distribution does snapshots of said versions
+        #   3/ the current version is not the latest one available (i.e. not in the EUS phase yet)
+        if system_version.minor in (4, 6, 8) and system_distribution != "oracle" and "latest" not in SYSTEM_RELEASE_ENV:
+            repos = (
+                f"rhel-{system_version.major}-for-x86_64-baseos-eus-rpms",
+                f"rhel-{system_version.major}-for-x86_64-appstream-eus-rpms",
+            )
+            # Append '-eus' to the name of the repofile
+            repofile += "-eus"
         else:
-            repofile = repofile_epel8
-            enable_repo_opt = enable_repo_opt_epel8
+            repos = (
+                f"rhel-{system_version.major}-for-x86_64-baseos-rpms",
+                f"rhel-{system_version.major}-for-x86_64-appstream-rpms",
+            )
+
+    # Join the --enablerepo <repo> on whitespace
+    enable_repo_opt = " ".join(f"{enable_opt} {repo}" for repo in repos)
+
+    return repofile, enable_repo_opt
+
+
+REPOFILE, ENABLE_REPO_OPT = _assign_enable_repo_opt()
 
 
 @pytest.fixture(scope="function")
@@ -42,11 +48,11 @@ def custom_repository(shell):
     Set up custom repositories.
     Tear down after the test.
     """
-    assert shell(f"cp files/{AssignRepositoryVariables.repofile}.repo /etc/yum.repos.d/")
+    assert shell(f"cp files/{REPOFILE}.repo /etc/yum.repos.d/")
 
     yield
 
-    assert shell(f"rm -f /etc/yum.repos.d/{AssignRepositoryVariables.repofile}.repo").returncode == 0
+    assert shell(f"rm -f /etc/yum.repos.d/{REPOFILE}.repo").returncode == 0
 
 
 def test_custom_valid_repo_without_rhsm(shell, convert2rhel, custom_repository):
@@ -54,9 +60,7 @@ def test_custom_valid_repo_without_rhsm(shell, convert2rhel, custom_repository):
     Verify that --enablerepo is not skipped when subscription-manager is disabled.
     Verify that the passed repositories are accessible.
     """
-    with convert2rhel(
-        "-y --no-rhsm {} --debug".format(AssignRepositoryVariables.enable_repo_opt), unregister=True
-    ) as c2r:
+    with convert2rhel("-y --no-rhsm {} --debug".format(ENABLE_REPO_OPT), unregister=True) as c2r:
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
         c2r.sendcontrol("c")
 
@@ -75,4 +79,4 @@ def test_custom_invalid_repo_without_rhsm(shell, convert2rhel, custom_repository
 
     assert c2r.exitstatus == 2
 
-    assert shell("rpm -qi kernel").returncode == 0
+    assert shell("rpm -q kernel").returncode == 0

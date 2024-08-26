@@ -34,6 +34,19 @@ adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: stream-8-latest
       when: distro == stream-8-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: oracle-9-latest
+      when: distro == oracle-9-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: alma-9-latest
+      when: distro == alma-9-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-9-latest
+      when: distro == rocky-9-latest
+    # NOT A PART OF THE CI YET
+    - environment+:
+        SYSTEM_RELEASE_ENV: stream-9-latest
+      when: distro == stream-9-latest
 
 prepare+:
     - name: install latest copr build
@@ -41,6 +54,11 @@ prepare+:
       copr: '@oamg/convert2rhel'
       package: convert2rhel
       missing: fail
+    - name: Install general dependencies
+      how: install
+      package:
+        - rpmdevtools
+        - yum-utils
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

@@ -68,7 +68,7 @@ def test_latest_kernel_check_with_yum_exclude_kernel_option(convert2rhel, yum_co
     assert c2r.exitstatus == 1
 
 
-def test_outdated_kernel_error(kernel, shell, convert2rhel):
+def test_outdated_kernel_error(outdated_kernel, shell, convert2rhel):
     """
     System has non latest kernel installed.
     Verify the IS_LOADED_KERNEL_LATEST.INVALID_KERNEL_VERSION is raised.

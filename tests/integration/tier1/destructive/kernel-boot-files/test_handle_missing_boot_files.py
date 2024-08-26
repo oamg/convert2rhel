@@ -1,8 +1,7 @@
 import os
-import re
 import subprocess
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 INITRAMFS_FILE = "/boot/initramfs-%s.img"
@@ -50,7 +49,7 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
     """
 
     kernel_name = "kernel"
-    if re.match(r"^(centos|oracle|alma|rocky|stream)-8", SYSTEM_RELEASE_ENV):
+    if SystemInformationRelease.version.major in (8, 9):
         kernel_name = "kernel-core"
 
     with convert2rhel(
@@ -61,7 +60,7 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
             TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
-        c2r.expect("Convert: List remaining non-Red Hat packages")
+        c2r.expect("Prepare: Final modifications to the system")
 
         kernel_version = get_latest_installed_kernel_version(kernel_name)
 
@@ -74,11 +73,13 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
 
         assert c2r.expect("Couldn't verify the kernel boot files in the boot partition.") == 0
 
-        # We have to restore the boot files in order to use the checks-after-conversion tests to
-        # assert that the rest of the conversion has succeeded.
-        # We'll do that the same way we're telling the user in a warning message how to fix the problem.
-        # That is by reinstalling the RHEL kernel and re-running grub2-mkconfig.
-        assert shell("yum reinstall {}-{} -y".format(kernel_name, kernel_version)).returncode == 0
-        assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0
-
     assert c2r.exitstatus == 0
+
+    # We have to restore the boot files in order to use the checks-after-conversion tests to
+    # assert that the rest of the conversion has succeeded.
+    # We'll do that the same way we're telling the user in a warning message how to fix the problem.
+    # That is by reinstalling the RHEL kernel and re-running grub2-mkconfig.
+    reinstall_command = "yum reinstall {}-{} -y".format(kernel_name, kernel_version)
+
+    assert shell(reinstall_command).returncode == 0
+    assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0

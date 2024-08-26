@@ -29,6 +29,21 @@ def _check_enabled_repos_rhel7(enabled_repos: str = "", els: bool = False):
     assert repo in enabled_repos
 
 
+def _check_enabled_repos_rhel9(enabled_repos: str = "", eus: bool = False):
+    """Helper function to assert correct RHEL 9 repositories are enabled after the conversion."""
+    baseos_repo = ""
+    appstream_repo = ""
+    if eus:
+        baseos_repo = "rhel-9-for-x86_64-baseos-eus-rpms"
+        appstream_repo = "rhel-9-for-x86_64-appstream-eus-rpms"
+    else:
+        baseos_repo = "rhel-9-for-x86_64-baseos-rpms"
+        appstream_repo = "rhel-9-for-x86_64-appstream-rpms"
+
+    assert baseos_repo in enabled_repos
+    assert appstream_repo in enabled_repos
+
+
 def test_enabled_repositories(shell):
     """
     Verify that the correct repositories (including EUS/ELS if applies) are enabled after the conversion.
@@ -38,6 +53,9 @@ def test_enabled_repositories(shell):
         enabled_repos = shell("yum repolist").output
         system_release = SystemInformationRelease()
         assert "redhat" in system_release.distribution
+        # Handle the special test case scenario where we use the
+        # account with the EUS repositories available
+        is_eus = os.path.exists("/eus_repos_used")
 
         if system_release.version.major == 7:
             # Handle the special test case scenario where we use the
@@ -45,10 +63,9 @@ def test_enabled_repositories(shell):
             is_els = os.path.exists("/els_repos_used")
             _check_enabled_repos_rhel7(enabled_repos, els=is_els)
         elif system_release.version.major == 8:
-            # Handle the special test case scenario where we use the
-            # account with the EUS repositories available
-            is_eus = os.path.exists("/eus_repos_used")
             _check_enabled_repos_rhel8(enabled_repos, eus=is_eus)
+        elif system_release.version.major == 9:
+            _check_enabled_repos_rhel9(enabled_repos, eus=is_eus)
     finally:
         # We need to unregister the system after the conversion
         shell("subscription-manager unregister")

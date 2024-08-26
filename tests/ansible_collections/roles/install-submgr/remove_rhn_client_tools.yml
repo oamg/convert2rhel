@@ -1,6 +1,0 @@
-- hosts: all
-  tasks:
-    - name: remove rhn client tools
-      yum:
-        name: rhn-client-tools
-        state: absent

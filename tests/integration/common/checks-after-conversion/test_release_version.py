@@ -27,6 +27,11 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "Cerulean Leopard", "name": "AlmaLinux", "version": "8.10"},
         {"id": "Green Obsidian", "name": "Rocky Linux", "version": "8.10"},
     ),
+    "Red Hat Enterprise Linux release 9.4 (Plow)": (
+        {"id": "null", "name": "Oracle Linux Server", "version": "9.4"},
+        {"id": "Seafoam Ocelot", "name": "AlmaLinux", "version": "9.4"},
+        {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.4"},
+    ),
 }
 
 

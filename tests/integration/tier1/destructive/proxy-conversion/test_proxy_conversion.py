@@ -1,6 +1,6 @@
 import socket
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, SubscriptionManager
 
 
 def setup_proxy(shell):
@@ -91,36 +91,12 @@ def setup_rhsm(shell):
         ).returncode
         == 0
     )
-    if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7"):
-        assert (
-            shell(
-                f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo \
-                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
-                silent=True,
-            ).returncode
-            == 0
-        )
-    else:
-        assert (
-            shell(
-                f"curl -o /etc/yum.repos.d/client-tools.repo https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo \
-                    --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
-                silent=True,
-            ).returncode
-            == 0
-        )
-        # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
-        # otherwise the dnf will complain with dependency issues.
-        if "centos-8" in SYSTEM_RELEASE_ENV:
-            shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools.repo")
 
-    # On Oracle Linux 7 a "rhn-client-tools" package may be present on
-    # the system which prevents "subscription-manager" to be installed.
-    if "oracle" in SYSTEM_RELEASE_ENV:
-        shell("yum remove rhn-client-tools -y")
-        shell("echo 'exclude=rhn-client*' >> /etc/yum.conf")
-
-    shell("yum -y install subscription-manager subscription-manager-rhsm-certificates")
+    # Add the client tools repository and install subscription-manager
+    subman = SubscriptionManager()
+    subman.remove_package(package_name="rhn-client-tools")
+    subman.add_client_tools_repo()
+    subman.install_package()
 
     shell(
         f"subscription-manager config --server.proxy_hostname={TEST_VARS['PROXY_SERVER']} --server.proxy_port={TEST_VARS['PROXY_PORT']}",

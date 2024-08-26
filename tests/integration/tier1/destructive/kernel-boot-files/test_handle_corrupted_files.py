@@ -1,8 +1,7 @@
 import os
-import re
 import subprocess
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 INITRAMFS_FILE = "/boot/initramfs-%s.img"
@@ -78,7 +77,7 @@ def test_handling_corrupted_initramfs_file(convert2rhel, shell):
         data than removing random parts of it.
     """
     kernel_name = "kernel"
-    if re.match(r"^(centos|oracle|alma|rocky|stream)-8", SYSTEM_RELEASE_ENV):
+    if SystemInformationRelease.version.major in (8, 9):
         kernel_name = "kernel-core"
 
     with convert2rhel(
@@ -89,7 +88,7 @@ def test_handling_corrupted_initramfs_file(convert2rhel, shell):
             TEST_VARS["RHSM_POOL"],
         )
     ) as c2r:
-        c2r.expect("Convert: List remaining non-Red Hat packages")
+        c2r.expect("Prepare: Final modifications to the system")
 
         kernel_version = get_latest_installed_kernel_version(kernel_name)
 
