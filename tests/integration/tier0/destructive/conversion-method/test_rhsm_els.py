@@ -1,3 +1,5 @@
+import pytest
+
 from conftest import TEST_VARS
 
 

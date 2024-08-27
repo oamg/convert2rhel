@@ -199,6 +199,17 @@ class SubscriptionManager:
             silent=True,
         )
 
+    def set_up_to_stagecdn(self):
+        # Point the server hostname to the staging environment,
+        # so we don't need to pass it to convert2rhel explicitly
+        # RHSM baseurl gets pointed to a stage cdn
+        self.shell(
+            "subscription-manager config --rhsm.baseurl=https://{} --server.hostname={}".format(
+                TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
+            ),
+            silent=True,
+        )
+
     def clean_up(self):
         """
         Usual full teardown workflow.
@@ -1044,7 +1055,11 @@ def workaround_remove_uek():
 
 def workaround_grub_setup(shell):
     """
+<<<<<<< HEAD
     Workaround.
+=======
+    Workaround fixture.
+>>>>>>> 20d0fb67 (Rearange functions in conftest.py)
     /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
     Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
     as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
