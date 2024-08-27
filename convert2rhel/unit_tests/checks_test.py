@@ -44,3 +44,26 @@ def testis_initramfs_file_valid(latest_installed_kernel, subprocess_output, expe
     if not expected:
         assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
         assert "Output of lsinitrd: {}".format(subprocess_output[0]) in caplog.records[-1].message
+
+
+@pytest.mark.parametrize(
+    ("latest_installed_kernel", "subprocess_output", "expected", "file_content"),
+    (("6.1.7-200.fc37.x86_64", ("can't decode byte", 99), False, b"\xF8\x88\x80\x80\x80"),),
+)
+def test_is_initramfs_file_valid_unicodedecodeerror(
+    latest_installed_kernel, subprocess_output, expected, file_content, tmpdir, caplog, monkeypatch
+):
+    initramfs_file = tmpdir.mkdir("/boot").join("initramfs-%s.img")
+    initramfs_file = str(initramfs_file)
+    initramfs_file = initramfs_file % latest_installed_kernel
+    with open(initramfs_file, mode="wb") as f:
+        f.write(file_content)
+
+    monkeypatch.setattr(checks, "INITRAMFS_FILEPATH", initramfs_file)
+    monkeypatch.setattr(checks, "run_subprocess", RunSubprocessMocked(return_value=subprocess_output))
+    result = checks.is_initramfs_file_valid(initramfs_file)
+    assert result == expected
+
+    if not expected:
+        assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
+        assert "Output of lsinitrd: %s" % subprocess_output[0] in caplog.records[-1].message
