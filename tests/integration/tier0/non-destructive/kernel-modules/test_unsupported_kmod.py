@@ -48,16 +48,15 @@ def test_inhibitor_with_unavailable_kmod_loaded(kmod_in_different_directory, con
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.parametrize("envars", [["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"]])
+@pytest.mark.parametrize("environment_variables", ["CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"], indirect=True)
 def test_override_inhibitor_with_unavailable_kmod_loaded(
-    kmod_in_different_directory, convert2rhel, environment_variables, envars
+    kmod_in_different_directory, convert2rhel, environment_variables
 ):
     """
     This test verifies that setting the environment variable "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"
     will override the check error when there is an kernel module unavailable in RHEL detected.
     The environment variable is set through the test metadata.
     """
-    environment_variables(envars)
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
@@ -108,8 +107,8 @@ def test_inhibitor_with_force_loaded_tainted_kmod(shell, convert2rhel, forced_km
     assert c2r.exitstatus == 1
 
 
-@pytest.mark.parametrize("envars", [["CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP"]])
-def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods, environment_variables, envars):
+@pytest.mark.parametrize("environment_variables", ["CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP"], indirect=True)
+def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods, environment_variables):
     """
     In this test case we force load kmod and verify that the TAINTED_KMODS.TAINTED_KMODS_DETECTED
     is overridable by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'
@@ -117,7 +116,6 @@ def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods,
     Force loaded kmods are denoted (FE) where F = module was force loaded E = unsigned module was loaded.
     Convert2RHEL sees force loaded kmod as tainted.
     """
-    environment_variables(envars)
     with convert2rhel(
         "--serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
