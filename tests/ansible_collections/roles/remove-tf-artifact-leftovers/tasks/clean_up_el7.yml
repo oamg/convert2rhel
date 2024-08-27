@@ -50,7 +50,9 @@
   with_items:
     - epel-release
     - tps-devel
-    - python-jsonpatch
+    # The python-jsonpatch is required by cloud-init so we actually have to keep this package. Keeping it commented
+    # out so we know about it and potentially solve the problem with it in the future.
+    #- python-jsonpatch
   ignore_errors: true
 
 - name: Clean yum metadata

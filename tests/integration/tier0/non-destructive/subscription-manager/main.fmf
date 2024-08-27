@@ -18,13 +18,8 @@ tag+:
         removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
         backed up and re-installed during the rollback together with the certificate.
 
-    adjust+:
-        - enabled: true
-          when: >
-              distro == centos-8
-
     environment+:
-        TEST_REQUIRES: subscription-manager
+        C2R_TESTS_SUBMAN_CLEANUP: 1
 
     test: |
         pytest -m test_sub_man_rollback

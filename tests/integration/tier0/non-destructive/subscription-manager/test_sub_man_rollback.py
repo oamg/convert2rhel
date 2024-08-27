@@ -1,7 +1,7 @@
 from conftest import TEST_VARS
 
 
-def test_sub_man_rollback(convert2rhel, shell, required_packages):
+def test_sub_man_rollback(convert2rhel, shell, fixture_subman):
     """
     Verify that convert2rhel removes and backs up the original vendor subscription-manager packages, including
     python3-syspurpose and python3-cloud-what which are also built out of the subscription-manager SRPM.
@@ -32,3 +32,5 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages):
             c2r.expect("WARNING - Abnormal exit! Performing rollback", timeout=10)
 
         assert c2r.exitstatus == 1
+
+        assert shell("rpm -q subscription-manager").returncode == 0
