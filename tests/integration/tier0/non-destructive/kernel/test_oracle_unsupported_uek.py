@@ -3,7 +3,7 @@ import os
 import pexpect.exceptions
 import pytest
 
-from conftest import TEST_VARS, grub_setup_workaround
+from conftest import TEST_VARS, workaround_grub_setup
 
 
 @pytest.fixture(scope="function")
@@ -15,7 +15,7 @@ def unbreakable_kernel(shell):
     """
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         assert shell("yum install -y kernel-uek").returncode == 0
-        grub_setup_workaround(shell)
+        workaround_grub_setup(shell)
         kernel_version = shell("rpm -q --last kernel-uek | head -1 | cut -d ' ' -f1 | sed 's/kernel-uek-//'").output
         assert shell(f"grubby --set-default /boot/vmlinuz-{kernel_version}").returncode == 0
         shell("tmt-reboot -t 600")

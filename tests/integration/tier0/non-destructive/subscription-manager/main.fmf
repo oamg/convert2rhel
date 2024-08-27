@@ -18,14 +18,6 @@ tag+:
         removed during the conversion run. This test makes sure that subscription-manager and its dependencies are correctly
         backed up and re-installed during the rollback together with the certificate.
 
-    adjust+:
-        - enabled: true
-          when: >
-              distro == centos-8
-
-    environment+:
-        TEST_REQUIRES: subscription-manager
-
     test: |
         pytest -m test_sub_man_rollback
 
@@ -51,7 +43,6 @@ tag+:
             5. Verify that convert2rhel won't unregister the system at any point and the UUID is same before and after the run.
         environment+:
             C2R_TESTS_CHECK_RHSM_UUID_MATCH: 1
-            C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
             pytest -m test_pre_registered_wont_unregister
         tag+:
@@ -70,8 +61,6 @@ tag+:
             3. Run convert2rhel with provided credentials
             4. Verify that convert2rhel re-registered the system
             4. Exit at the point of no return.
-        environment+:
-            C2R_TESTS_SUBMAN_CLEANUP: 1
         test: |
             pytest -m test_pre_registered_re_register
         tag+:

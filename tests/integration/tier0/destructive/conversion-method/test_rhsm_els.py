@@ -1,7 +1,7 @@
 from conftest import TEST_VARS
 
 
-def test_rhsm_with_els_system_conversion(convert2rhel, shell, install_and_set_up_subman_to_stagecdn):
+def test_rhsm_with_els_system_conversion(convert2rhel, shell, fixture_subman):
     """
     Verify that Convert2RHEL is working properly when ELS repositories are used during the conversion.
     Verify that the correct repositories are enabled after the conversion (in one of the check-after-conversion tests).

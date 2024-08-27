@@ -3,13 +3,13 @@ import re
 
 import jsonschema
 
-from conftest import TEST_VARS, _load_json_schema
+from conftest import TEST_VARS, load_json_schema
 from pexpect import EOF
 
 
 PRE_CONVERSION_REPORT_JSON = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
 PRE_CONVERSION_REPORT_TXT = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"
-PRE_CONVERSION_REPORT_JSON_SCHEMA = _load_json_schema(path="../../../../../schemas/assessment-schema-1.2.json")
+PRE_CONVERSION_REPORT_JSON_SCHEMA = load_json_schema(path="../../../../../schemas/assessment-schema-1.2.json")
 
 
 def _validate_report():
@@ -27,7 +27,7 @@ def _validate_report():
         report_data = report_txt.read()
         assert re.search(headers, report_data)
 
-    report_data_json = _load_json_schema(PRE_CONVERSION_REPORT_JSON)
+    report_data_json = load_json_schema(PRE_CONVERSION_REPORT_JSON)
 
     # If some difference between generated json and its schema invoke exception
     try:

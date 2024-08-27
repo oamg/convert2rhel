@@ -171,7 +171,7 @@ class SubscriptionManager:
 
         return self.shell(command)
 
-    def set_up_requirements(self):
+    def set_up_requirements(self, use_staging_cdn=False):
         """
         Usual full preparation workflow.
         Calls, where applicable:
@@ -179,12 +179,26 @@ class SubscriptionManager:
             self.add_keys_and_certificates()
             self.add_client_tools_repo()
             self.install_package()
+            self.set_up_to_stagecdn() # only when use_staging_cdn is True
         """
         if SystemInformationRelease.distribution == "oracle":
             self.remove_package(package_name="rhn-client-tools")
         self.add_keys_and_certificates()
         self.add_client_tools_repo()
         self.install_package()
+        if use_staging_cdn:
+            self.set_up_to_stagecdn()
+
+    def set_up_to_stagecdn(self):
+        # Point the server hostname to the staging environment,
+        # so we don't need to pass it to convert2rhel explicitly
+        # RHSM baseurl gets pointed to a stage cdn
+        self.shell(
+            "subscription-manager config --rhsm.baseurl=https://{0} --server.hostname={1}".format(
+                TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
+            ),
+            silent=True,
+        )
 
     def clean_up(self):
         """
@@ -199,6 +213,24 @@ class SubscriptionManager:
         self.remove_package()
         self.remove_client_tools_repo()
         self.remove_keys_and_certificates()
+
+
+@pytest.fixture()
+def fixture_subman():
+    """
+    Fixture.
+    Set up the subscription manager on the system. Wrapper around SubscriptionManager class and its methods.
+    By default sets the subscription manager to the stagecdn (needed for SCA Enabled accounts). If you want
+    to disable it, please edit this fixture to utilize parametrization.
+    """
+    subman = SubscriptionManager()
+
+    subman.set_up_requirements(use_staging_cdn=True)
+
+    yield
+
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        subman.clean_up()
 
 
 @pytest.fixture()
@@ -505,27 +537,6 @@ def log_file_data():
 
 
 @pytest.fixture(scope="function")
-def required_packages(shell):
-    """
-    Installs packages based on values under TEST_REQUIRES envar in tmt metadata, when called.
-    """
-    try:
-        required_packages = os.environ.get("TEST_REQUIRES").split(" ")
-        for package in required_packages:
-            print(f"\nPREPARE: Installing required {package}")
-            assert shell(f"yum install -y {package}")
-
-        yield
-
-        for package in required_packages:
-            print(f"\nCLEANUP: Removing previously installed required {package}")
-            assert shell(f"yum remove -y *{package}*")
-
-    except KeyError:
-        raise
-
-
-@pytest.fixture(scope="function")
 def remove_repositories(shell, backup_directory):
     """
     Fixture.
@@ -545,59 +556,6 @@ def remove_repositories(shell, backup_directory):
         shell("mkdir -p /etc/yum.repos.d")
         # Return repositories to their original location
         assert shell(f"mv {backup_dir}/* /etc/yum.repos.d/").returncode == 0
-
-
-@pytest.fixture(autouse=True)
-def missing_os_release_package_workaround(shell):
-    # TODO(danmyway) remove when/if the issue gets fixed
-    """
-    Fixture to workaround issues with missing `*-linux-release`
-    package, after incomplete rollback.
-    """
-    # run only after the test finishes
-    yield
-
-    os_to_pkg_mapping = {
-        "centos-7": ["centos-release"],
-        "centos-8": ["centos-linux-release"],
-        "almalinux": ["almalinux-release"],
-        "rocky": ["rocky-release"],
-        "oracle": ["oraclelinux-release"],
-        "stream": ["centos-stream-release"],
-    }
-
-    # Run only for non-destructive tests.
-    # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        os_name = SystemInformationRelease.distribution
-        os_ver = SystemInformationRelease.version.major
-        if "centos" in os_name:
-            os_key = f"{os_name}-{os_ver}"
-        else:
-            os_key = os_name
-
-        system_release_pkgs = os_to_pkg_mapping.get(os_key)
-
-        if os_key == "oracle":
-            system_release_pkgs.append(f"oraclelinux-release-el{SystemInformationRelease.version.major}")
-
-        for pkg in system_release_pkgs:
-            installed = shell(f"rpm -q {pkg}").returncode
-            if installed == 1:
-                shell(f"yum install -y --releasever={os_ver} {pkg}")
-
-        # Since we try to mitigate any damage caused by the incomplete rollback
-        # try to update the system, in case anything got downgraded
-        print("TESTS >>> Updating the system.")
-        shell("yum update -y", silent=True)
-
-
-def _load_json_schema(path):
-    """Load the JSON schema from the system."""
-    assert os.path.exists(path)
-
-    with open(path, mode="r") as handler:
-        return json.load(handler)
 
 
 @pytest.fixture
@@ -660,7 +618,7 @@ def pre_registered(shell, request):
         subman.unregister()
 
     # We do not need to spend time on performing the cleanup for some test cases (destructive)
-    if "C2R_TESTS_SUBMAN_CLEANUP" in os.environ:
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         subman.clean_up()
 
 
@@ -705,27 +663,6 @@ def environment_variables(request):
             assert envar not in os.environ
 
     return _unset_env_var
-
-
-def get_full_kernel_title(shell, kernel=None):
-    """
-    Helper function.
-    Get the full kernel boot entry title.
-    :param kernel: kernel pacakge VRA (version-release.architecture)
-    :type kernel: str
-    :param shell: Live shell fixture
-
-    :return: The full boot entry title for the given kernel.
-    :rtype: str
-    """
-    if not kernel:
-        raise ValueError("The kernel argument is probably empty")
-    # Get the full name of the kernel (ignore rescue kernels)
-    full_title = shell(
-        f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
-    ).output.strip()
-
-    return full_title
 
 
 @pytest.fixture(scope="function")
@@ -785,7 +722,7 @@ def outdated_kernel(shell, hybrid_rocky_image):
         oldest_kernel = shell("rpm -q kernel | rpmdev-sort | awk -F'kernel-' '{print $2}' | head -1").output.strip()
         # Get the full kernel title from grub to set later
         default_kernel_title = get_full_kernel_title(shell, kernel=oldest_kernel)
-        grub_setup_workaround(shell)
+        workaround_grub_setup(shell)
         # Set the older kernel as default
         shell(f"grub2-set-default '{default_kernel_title.strip()}'")
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
@@ -921,76 +858,6 @@ def backup_directory(shell, request):
     shell(f"rm -rf {backup_path}")
 
 
-@pytest.fixture()
-def install_and_set_up_subman_to_stagecdn(shell):
-    """
-    A fixture to install subscription-manager and set up to point to a testing environments.
-    rhsm.baseurl and server.hostname to be changed.
-    This might be dropped when ELS, 8.10, etc. goes actually GA.
-    """
-    subman = SubscriptionManager()
-    # Install subscription-manager
-    subman.set_up_requirements()
-
-    # Point the server hostname to the staging environment,
-    # so we don't need to pass it to convert2rhel explicitly
-    # RHSM baseurl gets pointed to a stage cdn
-    shell(
-        "subscription-manager config --rhsm.baseurl=https://{} --server.hostname={}".format(
-            TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
-        ),
-        silent=True,
-    )
-
-    yield
-
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def workaround_remove_uek():
-    """
-    Fixture to remove the Unbreakable Enterprise Kernel package.
-    The package might cause dependency issues.
-    Reference issue https://issues.redhat.com/browse/RHELC-1544
-    """
-    if SystemInformationRelease.distribution == "oracle":
-        subprocess.run(
-            ["yum", "remove", "-y", "kernel-uek"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
-    yield
-
-
-def grub_setup_workaround(shell):
-    """
-    Workaround fixture.
-    /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
-    Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
-    as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
-    than the latest.
-    """
-    if SystemInformationRelease.version.major == 9:
-        print("TESTS >>> Setting grub default to correct values.")
-        shell(r"sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub")
-
-
-@pytest.fixture(autouse=True)
-def keep_centos_pointed_to_vault(shell):
-    """
-    Fixture.
-    In some rare cases we (re)install the centos-release package.
-    This overwrites the repofiles to its default state using mirrorlist instead of vault
-    which won't work since the EOL.
-    Make sure the repositories are pointed to the vault to keep the system usable.
-    """
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
-        sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
-        print("TESTS >>> Resetting the repos to vault")
-        shell(sed_repos_to_vault, silent=True)
-
-
 class Satellite:
     def __init__(self, key=SYSTEM_RELEASE_ENV):
         self.shell = live_shell()
@@ -1083,3 +950,122 @@ def fixture_satellite(request):
 
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         satellite.unregister()
+
+
+#### Common functions ####
+def load_json_schema(path):
+    """Load the JSON schema from the system."""
+    assert os.path.exists(path)
+
+    with open(path, mode="r") as handler:
+        return json.load(handler)
+
+
+def get_full_kernel_title(shell, kernel=None):
+    """
+    Helper function.
+    Get the full kernel boot entry title.
+    :param kernel: kernel pacakge VRA (version-release.architecture)
+    :type kernel: str
+    :param shell: Live shell fixture
+
+    :return: The full boot entry title for the given kernel.
+    :rtype: str
+    """
+    if not kernel:
+        raise ValueError("The kernel argument is probably empty")
+    # Get the full name of the kernel (ignore rescue kernels)
+    full_title = shell(
+        f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
+    ).output.strip()
+
+    return full_title
+
+
+#### Workaround fixtures ####
+@pytest.fixture(autouse=True)
+def workaround_missing_os_release_package(shell):
+    # TODO(danmyway) remove when/if the issue gets fixed
+    """
+    Fixture to workaround issues with missing `*-linux-release`
+    package, after incomplete rollback.
+    """
+    # run only after the test finishes
+    yield
+
+    os_to_pkg_mapping = {
+        "centos-7": ["centos-release"],
+        "centos-8": ["centos-linux-release"],
+        "almalinux": ["almalinux-release"],
+        "rocky": ["rocky-release"],
+        "oracle": ["oraclelinux-release"],
+        "stream": ["centos-stream-release"],
+    }
+
+    # Run only for non-destructive tests.
+    # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        os_name = SystemInformationRelease.distribution
+        os_ver = SystemInformationRelease.version.major
+        if "centos" in os_name:
+            os_key = f"{os_name}-{os_ver}"
+        else:
+            os_key = os_name
+
+        system_release_pkgs = os_to_pkg_mapping.get(os_key)
+
+        if os_key == "oracle":
+            system_release_pkgs.append(f"oraclelinux-release-el{SystemInformationRelease.version.major}")
+
+        for pkg in system_release_pkgs:
+            installed = shell(f"rpm -q {pkg}").returncode
+            if installed == 1:
+                shell(f"yum install -y --releasever={os_ver} {pkg}")
+
+        # Since we try to mitigate any damage caused by the incomplete rollback
+        # try to update the system, in case anything got downgraded
+        print("TESTS >>> Updating the system.")
+        shell("yum update -y", silent=True)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def workaround_remove_uek():
+    """
+    Fixture to remove the Unbreakable Enterprise Kernel package.
+    The package might cause dependency issues.
+    Reference issue https://issues.redhat.com/browse/RHELC-1544
+    """
+    if SystemInformationRelease.distribution == "oracle":
+        subprocess.run(
+            ["yum", "remove", "-y", "kernel-uek"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+    yield
+
+
+def workaround_grub_setup(shell):
+    """
+    Workaround.
+    /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
+    Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
+    as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
+    than the latest.
+    """
+    if SystemInformationRelease.version.major == 9:
+        print("TESTS >>> Setting grub default to correct values.")
+        shell(r"sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub")
+
+
+@pytest.fixture(autouse=True)
+def workaround_keep_centos_pointed_to_vault(shell):
+    """
+    Fixture.
+    In some rare cases we (re)install the centos-release package.
+    This overwrites the repofiles to its default state using mirrorlist instead of vault
+    which won't work since the EOL.
+    Make sure the repositories are pointed to the vault to keep the system usable.
+    """
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
+        sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+        print("TESTS >>> Resetting the repos to vault")
+        shell(sed_repos_to_vault, silent=True)
