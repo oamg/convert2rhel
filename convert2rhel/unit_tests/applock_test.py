@@ -67,16 +67,6 @@ def test_applock_basic_lock_idempotent(tmp_lock):
     os.unlink(tmp_lock._pidfile)
 
 
-def test_applock_basic_reap(tmp_lock):
-    """Test the case where the lockfile was held by a process
-    that has exited."""
-    old_pid = subprocess.check_output("/bin/echo $$", shell=True, universal_newlines=True)
-    with open(tmp_lock._pidfile, "w") as f:
-        f.write(old_pid)
-    tmp_lock.try_to_lock()
-    os.unlink(tmp_lock._pidfile)
-
-
 def test_applock_bogus_lock(tmp_lock):
     """Test the case where the lock file exists, but has bogus data."""
     with open(tmp_lock._pidfile, "w") as f:

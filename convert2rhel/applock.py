@@ -18,7 +18,6 @@
 __metaclass__ = type
 
 import errno
-import fcntl
 import logging
 import os
 import stat
@@ -47,16 +46,14 @@ class ApplicationLock:
 
     The implementation uses a standard Linux PID file. When a program
     that uses ApplicationLock starts, it writes its process ID to a
-    file in /var/run/lock. If the file already exists, it reads the
-    PID and checks to see if the process is still running. If the
-    process is still running, it raises ApplicationLockedError. If the
-    process is not running, it removes the file and tries to lock it
-    again.
+    file in /var/run/lock. If the file already exists, it reads and
+    reports the PID that it finds.
 
-    File locking: to avoid a race condition in which another process
-    overwrites the PID file between the time we check for the process's
-    existence and we unlink the stale lockfile, we lock the file using
-    BSD file locking.
+    While it would be nice to try to clean up a stale process ID file
+    (i.e., a file created by a process that has exited) that opens up
+    a race condition that would require us to leave the process ID
+    file pointer open across the invocation of several methods, which
+    would complicate the code more than the feature is worth.
 
     For safety, unexpected conditions, like garbage in the file or
     bad permissions, are treated as if the application is locked,
@@ -96,9 +93,6 @@ class ApplicationLock:
         # Note that NamedTemporaryFile will clean up the file it created,
         # but the lockfile we created by doing the link will stay around.
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pid", prefix=self._name, dir=_DEFAULT_LOCK_DIR) as f:
-            # Elsewhere in the code, we use flock() on this file;
-            # using that call on a group- or world-readable file poses an
-            # extreme security risk.
             # stat.S_IRUSR = Owner has read permission
             # stat.S_IWUSR = Owner has write permission
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR)
@@ -114,41 +108,35 @@ class ApplicationLock:
         loggerinst.debug("%s." % self)
         return True
 
+    def _get_pid_from_file(self):
+        """If the lock file exists, return the process ID stored in
+        the file. No check is made whether the process exists. Because
+        of the way we create the lock file, the case where it has bad
+        data or is empty is a pathological case.
+
+        :returns: The process ID, or None if the file does not exist.
+        :raises ApplicationLockedError: Bad data in the file.
+        """
+        try:
+            with open(self._pidfile, "r") as filep:
+                file_contents = filep.read()
+                pid = int(file_contents.rstrip())
+                if pid:
+                    return pid
+        except ValueError:
+            raise ApplicationLockedError("%s has invalid contents" % (self._pidfile))
+        except (IOError, OSError) as exc:
+            if exc.errno == errno.ENOENT:
+                return None
+            raise
+        return None
+
     @property
     def is_locked(self):
         """Test whether this object was locked by this instance of
         the application."""
-        try:
-            with open(self._pidfile, "r") as filep:
-                # fcntl.LOCK_EX = Acquire an exclusive lock
-                fcntl.flock(filep, fcntl.LOCK_EX)
-                try:
-                    file_contents = filep.read()
-                    pid = int(file_contents.rstrip())
-                    if pid:
-                        return pid == self._pid
-                finally:
-                    # fcntl.LOCK_UN = Release an existing lock
-                    fcntl.flock(filep, fcntl.LOCK_UN)
-        except (IOError, OSError) as exc:
-            if exc.errno == errno.ENOENT:
-                pass
-        return False
-
-    @staticmethod
-    def _pid_exists(pid):
-        """Test whether a particular process exists."""
-        try:
-            # Bulletproofing: avoid killing init or all processes.
-            if pid > 1:
-                os.kill(pid, 0)
-        except OSError as exc:
-            # The only other (theoretical) possibility is EPERM, which
-            # would mean the process exists and therefore we should return
-            # True.
-            if exc.errno == errno.ESRCH:
-                return False
-        return True
+        pid = self._get_pid_from_file()
+        return pid == self._pid
 
     def _safe_unlink(self):
         """Unlink the lock file. If the unlink fails because the file
@@ -176,30 +164,10 @@ class ApplicationLock:
         """
         if self._try_create():
             return
-        with open(self._pidfile, "r") as filep:
-            # fcntl.LOCK_EX = Acquire an exclusive lock
-            fcntl.flock(filep, fcntl.LOCK_EX)
-            try:
-                file_contents = filep.read()
-                pid = int(file_contents.rstrip())
-                if pid == self._pid:
-                    return
-                if self._pid_exists(pid):
-                    raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
-                # The lock file was created by a process that has exited;
-                # remove it and try again.
-                loggerinst.info("Cleaning up lock held by exited process %d." % pid)
-                self._safe_unlink()
-            except ValueError:
-                raise ApplicationLockedError("%s has invalid contents" % (self._pidfile))
-            finally:
-                # fcntl.LOCK_UN = Release an existing lock
-                fcntl.flock(filep, fcntl.LOCK_UN)
-
-        if not self._try_create():
-            # Between the unlink and our attempt to create the lock
-            # file, another process got there first.
-            raise ApplicationLockedError("%s is locked" % self._pidfile)
+        pid = self._get_pid_from_file()
+        if pid == self._pid:
+            return
+        raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
 
     def unlock(self):
         """Release the lock on this application.
