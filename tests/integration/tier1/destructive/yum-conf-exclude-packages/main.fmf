@@ -1,0 +1,13 @@
+summary+: |
+    Exclude kernel* and redhat-release-server packages in yum conf
+description+: |
+  This tests verifies that it is possible to do a full conversion when
+  the all kernel packages (kernel*) and redhat-release-server is set to be excluded
+  in the yum configuration file.
+
+tag+:
+    - kernel
+link:
+    - verifies: https://issues.redhat.com/browse/RHELC-774
+/yum_conf_exclude_packages:
+    test: pytest -m test_yum_conf_exclude_packages

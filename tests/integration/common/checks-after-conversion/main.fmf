@@ -113,7 +113,7 @@ order: 52
 
 /verify_string_in_log:
     summary+: |
-        Requested string is present in logfile
+        Requested string is present in a logfile
     description+: |
         Essentially a sanity check verifying required strings are present in a logfile.
         In some cases, we do not need to catch an output during the conversion
@@ -151,6 +151,13 @@ order: 52
         tag+:
             - traceback-not-present
         test: pytest -m test_traceback_not_present
+
+    /check_empty_exclude_in_critical_commands:
+        summary+: |
+            Verify that convert2rhel used `--setopt=exclude= ` in every `repoquery` and `yumdownloader` call.
+        test: pytest -m test_check_empty_exclude_in_critical_commands
+        link:
+            - verifies: https://issues.redhat.com/browse/RHELC-774
 
 /yum_check:
     summary+: |
