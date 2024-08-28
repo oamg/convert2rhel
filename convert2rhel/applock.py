@@ -99,6 +99,8 @@ class ApplicationLock:
             # Elsewhere in the code, we use flock() on this file;
             # using that call on a group- or world-readable file poses an
             # extreme security risk.
+            # stat.S_IRUSR = Owner has read permission
+            # stat.S_IWUSR = Owner has write permission
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR)
             f.write(str(self._pid) + "\n")
             f.flush()
