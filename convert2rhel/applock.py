@@ -193,6 +193,7 @@ class ApplicationLock:
             except ValueError:
                 raise ApplicationLockedError("%s has invalid contents" % (self._pidfile))
             finally:
+                # fcntl.LOCK_UN = Release an existing lock
                 fcntl.flock(filep, fcntl.LOCK_UN)
 
         if not self._try_create():
