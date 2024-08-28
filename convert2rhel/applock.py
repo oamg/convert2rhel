@@ -176,6 +176,7 @@ class ApplicationLock:
         if self._try_create():
             return
         with open(self._pidfile, "r") as filep:
+            # fcntl.LOCK_EX = Acquire an exclusive lock
             fcntl.flock(filep, fcntl.LOCK_EX)
             try:
                 file_contents = filep.read()
