@@ -128,6 +128,7 @@ class ApplicationLock:
                     if pid:
                         return pid == self._pid
                 finally:
+                    # fcntl.LOCK_UN = Release an existing lock
                     fcntl.flock(filep, fcntl.LOCK_UN)
         except (IOError, OSError) as exc:
             if exc.errno == errno.ENOENT:
