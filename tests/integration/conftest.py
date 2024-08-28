@@ -11,8 +11,7 @@ import warnings
 
 from collections import namedtuple
 from contextlib import contextmanager
-from fileinput import FileInput
-from typing import ContextManager, Optional
+from typing import ContextManager
 
 import click
 import pexpect
@@ -213,31 +212,6 @@ class SubscriptionManager:
         self.remove_package()
         self.remove_client_tools_repo()
         self.remove_keys_and_certificates()
-
-
-def fixture_subman(request):
-    """
-    Fixture.
-    Set up the subscription manager on the system. Wrapper around SubscriptionManager class and its methods.
-    Can be parametrized to set the subscription manager to the stagecdn (needed for SCA Enabled accounts):
-    @pytest.mark.parametrize("fixture_subman", ["set_to_stage=true"], indirect=True)
-    """
-    subman = SubscriptionManager()
-
-    subman.set_up_requirements()
-
-    if hasattr(request, "param"):
-        set_to_stage = request.param
-        print(f">>> Using parametrized option requested in the fixture - {set_to_stage}.")
-        if set_to_stage == "set_to_stage=true":
-            subman.set_up_to_stagecdn()
-
-    # TODO: should we add register here?
-    # Resolve under the: https://issues.redhat.com/browse/RHELC-1134
-    yield
-
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
 
 
 @pytest.fixture()
