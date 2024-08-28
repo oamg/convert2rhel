@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 @pytest.fixture(scope="function")
@@ -65,19 +65,19 @@ def test_inhibitor_releasever_noexistent_release(convert2rhel, config_at, os_rel
     Verify that running not allowed OS release inhibits the conversion.
     Modify the /etc/system-release file to set the releasever to an unsupported version (e.g. x.1.1111)
     """
-    with config_at(Path("/etc/system-release")).replace_line(
-        "release .+",
-        f"release {os_release.version[0]}.11.1111",
-    ):
-        with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --debug".format(
-                TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_SCA_USERNAME"],
-                TEST_VARS["RHSM_SCA_PASSWORD"],
-            ),
-            unregister=True,
-        ) as c2r:
-            c2r.expect(
-                f"CRITICAL - {os_release.name} of version {os_release.version[0]}.11 is not allowed for conversion."
-            )
-        assert c2r.exitstatus == 1
+    shell(
+        f"sed -i 's/release {SystemInformationRelease.version.major}.{SystemInformationRelease.version.minor}/release {SystemInformationRelease.version.major}.11.11111/' /etc/system-release"
+    )
+    with convert2rhel(
+        "analyze -y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_USERNAME"],
+            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_POOL"],
+        ),
+        unregister=True,
+    ) as c2r:
+        c2r.expect(
+            f"CRITICAL - .* of version {SystemInformationRelease.version.major}.11 is not allowed for conversion."
+        )
+    assert c2r.exitstatus == 1
