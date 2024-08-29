@@ -119,9 +119,9 @@ def main():
             return main_locked()
     except applock.ApplicationLockedError as exc:
         loggerinst.warning(str(exc))
-        loggerinst.warning("Another copy of convert2rhel may be running.\n")
-        loggerinst.warning("If you are certain that no other convert2rhel process\n")
-        loggerinst.warning("is running, remove the lock file and try again\n")
+        loggerinst.warning("Another copy of convert2rhel may be running.")
+        loggerinst.warning("If you are certain that no other convert2rhel process")
+        loggerinst.warning("is running, remove the lock file and try again.\n")
         loggerinst.warning("\nNo changes were made to the system.\n")
         return ConversionExitCodes.FAILURE
 
