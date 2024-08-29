@@ -55,6 +55,16 @@ def duplicate_packages_action():
             "package1.x86_64\npackage1.i686\npackage1.s390x\npackage2.x86_64\npackage2.ppc64le\n",
             ["package1.x86_64", "package1.i686", "package1.s390x", "package2.x86_64", "package2.ppc64le"],
         ),
+        (
+            Version(9, 4),
+            "package1.x86_64\npackage1.s390x\npackage2.x86_64\npackage2.ppc64le\n",
+            ["package1.x86_64", "package1.s390x", "package2.x86_64", "package2.ppc64le"],
+        ),
+        (
+            Version(9, 4),
+            "package1.x86_64\npackage1.i686\npackage1.s390x\npackage2.x86_64\npackage2.ppc64le\n",
+            ["package1.x86_64", "package1.i686", "package1.s390x", "package2.x86_64", "package2.ppc64le"],
+        ),
     ),
 )
 def test_duplicate_packages_error(

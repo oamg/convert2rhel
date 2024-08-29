@@ -42,7 +42,7 @@ class DuplicatePackages(actions.Action):
             self.duplicate_packages_failure()
             return
         # For el8 machines we can depend on just the return code being 1 to know the check failed
-        if system_info.version.major == 8 and ret_code == 1:
+        if system_info.version.major >= 8 and ret_code == 1:
             self.duplicate_packages_failure()
             return
         duplicate_packages = filter(None, output.split("\n"))
