@@ -916,9 +916,9 @@ def backup_directory(shell, request):
     backup_path = os.path.join(backup_path_base, backup_dir_name)
 
     if int(os.environ["TMT_REBOOT_COUNT"]) > 0 and os.path.exists(backup_path):
-        pytest.skip("Backup path created already.")
-
-    assert shell(f"mkdir {backup_path}").returncode == 0
+        print(f"\nBackup path {backup_path} is already created. Skipping for now.")
+    else:
+        assert shell(f"mkdir {backup_path}").returncode == 0
 
     yield backup_path
 
