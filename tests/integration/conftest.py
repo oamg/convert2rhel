@@ -741,12 +741,6 @@ def outdated_kernel(shell, hybrid_rocky_image):
         pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        # Verify that there is multiple kernels installed
-        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
-            # We don't need to do anything at this point
-            # The whole setup needed happens after
-            pass
-
         # There won't be much changes for EL 7 packages anymore
         # We can hardcode this then
         # The release part differs a bit on CentOS and Oracle,
@@ -755,11 +749,17 @@ def outdated_kernel(shell, hybrid_rocky_image):
             older_kernel = "kernel-3.10.0-1160.118*"
             assert shell(f"yum install -y {older_kernel}").returncode == 0
 
+        # Verify that there is multiple kernels installed
+        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
+            # We don't need to do anything at this point
+            # The whole setup needed happens after
+            pass
+
         # Try to downgrade kernel version, if there is not multiple versions installed already.
         # If the kernel downgrade fails, assume it's not possible and try to install from
         # an older repo. This should only happen when Alma and Rocky has just landed on
         # a fresh minor version.
-        elif shell("yum downgrade kernel -y").returncode != 0:
+        elif shell("yum downgrade kernel -y").returncode == 1:
             # Assuming this can only happen with Alma and Rocky we'll try to install an older kernel
             # from a previous minor version.
             # For that we need to use the vault url and bump te current minor down one version.
