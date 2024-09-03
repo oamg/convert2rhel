@@ -41,7 +41,7 @@ class DuplicatePackages(actions.Action):
         if system_info.version.major == 7 and "name or service not known" in output.lower():
             self.duplicate_packages_failure()
             return
-        # For el8 machines we can depend on just the return code being 1 to know the check failed
+        # For el8+ machines we can depend on just the return code being 1 to know the check failed
         if system_info.version.major >= 8 and ret_code == 1:
             self.duplicate_packages_failure()
             return
