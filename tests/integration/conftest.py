@@ -228,6 +228,12 @@ def fixture_subman():
 
     yield
 
+    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
+    # so the check "enabled repositories" after the conversion can be executed.
+    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
+        subman.unregister()
+
+    # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         subman.clean_up()
 
@@ -448,7 +454,7 @@ def remove_repositories(shell, backup_directory):
 
 
 @pytest.fixture
-def pre_registered(shell, request):
+def pre_registered(shell, request, fixture_subman):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
@@ -457,8 +463,6 @@ def pre_registered(shell, request):
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
-    subman = SubscriptionManager()
-
     username = TEST_VARS["RHSM_SCA_USERNAME"]
     password = TEST_VARS["RHSM_SCA_PASSWORD"]
     # Use custom keys when the fixture is parametrized
@@ -468,18 +472,16 @@ def pre_registered(shell, request):
         password = TEST_VARS[password_key]
         print(">>> Using parametrized username and password requested in the fixture.")
 
-    subman.set_up_requirements()
-
     # Register the system
     assert (
         shell(
-            "subscription-manager register --serverurl {} --username {} --password {}".format(
+            "subscription-manager register --serverurl {0} --username {1} --password {2}".format(
                 TEST_VARS["RHSM_SERVER_URL"], username, password
             ),
             hide_command=True,
         ).returncode
         == 0
-    )
+    ), f"Failed to pre-register the system. The subscription manager call has failed."
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -500,15 +502,6 @@ def pre_registered(shell, request):
 
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
-
-    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
-    # so the check "enabled repositories" after the conversion can be executed.
-    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
-        subman.unregister()
-
-    # We do not need to spend time on performing the cleanup for some test cases (destructive)
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
 
 
 @pytest.fixture()

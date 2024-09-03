@@ -48,7 +48,6 @@ els_enablement_parameters = [
 ]
 
 
-@pytest.mark.parametrize("fixture_subman", ["set_to_stage=true"], indirect=True)
 @pytest.mark.parametrize(
     "additional_option, repoid_message, modified_startdate, modified_releasever, recommend_els_msg_displayed",
     els_enablement_parameters,
