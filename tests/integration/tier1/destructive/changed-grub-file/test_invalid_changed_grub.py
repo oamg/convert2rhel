@@ -23,11 +23,10 @@ def test_invalid_changes_to_grub_file(convert2rhel):
         print(line, end="")
 
     with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         assert c2r.expect("GRUB2 config file generation failed.") == 0

@@ -19,15 +19,13 @@ def test_empty_user_response_username_and_password(convert2rhel):
 
         retries = 0
         while True:
-            c2r.sendline(TEST_VARS["RHSM_USERNAME"])
-            print("Sending username:", TEST_VARS["RHSM_USERNAME"])
+            c2r.sendline(TEST_VARS["RHSM_SCA_USERNAME"])
             c2r.expect("Password: ")
             c2r.sendline()
             try:
                 assert c2r.expect("Password", timeout=300) == 0
                 # Provide password, expect successful registration and subscription prompt
-                c2r.sendline(TEST_VARS["RHSM_PASSWORD"])
-                print("Sending password")
+                c2r.sendline(TEST_VARS["RHSM_SCA_PASSWORD"])
                 assert c2r.expect("System registration succeeded", timeout=180) == 0
                 break
             except Exception:

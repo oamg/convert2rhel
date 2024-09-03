@@ -60,11 +60,10 @@ def test_httpd_package_transaction_error(shell, convert2rhel, handle_packages):
     """
     # run c2r analyze to verify the yum transaction
     with convert2rhel(
-        "analyze -y --serverurl {} --username {} --password {} --pool {} --debug".format(
+        "analyze -y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
-            TEST_VARS["RHSM_POOL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         index = c2r.expect_exact(

@@ -89,7 +89,10 @@ def test_eus_enablement(
     eus_mapping_update(modified_mapping)
     with convert2rhel(
         "analyze -y --debug --serverurl {} -u {} -p {} {}".format(
-            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"], additional_option
+            TEST_VARS["RHSM_SERVER_URL"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
+            additional_option,
         )
     ) as c2r:
         c2r.expect(repoid_message, timeout=120)
@@ -115,11 +118,13 @@ def test_rhsm_non_eus_account(convert2rhel):
     Verify that Convert2RHEL is working properly when EUS repositories are not available for conversions
     (the account does not have the EUS SKU available) to RHEL EUS minor versions (8.6, ...)
     and the --eus option is provided. The regular repositories should be enabled as a fallback option.
+    We're deliberately using SCA disabled account for this scenario.
     """
 
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug --eus".format(
             TEST_VARS["RHSM_SERVER_URL"],
+            # We're deliberately using SCA disabled account for this scenario.
             TEST_VARS["RHSM_NON_EUS_USERNAME"],
             TEST_VARS["RHSM_NON_EUS_PASSWORD"],
         )

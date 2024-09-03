@@ -96,11 +96,13 @@ def test_rhsm_non_els_account(convert2rhel):
     Verify that Convert2RHEL is working properly when ELS repositories are not available for conversions
     (the account does not have the ELS SKU available) to RHEL ELS version (7.9)
     and the --els option is provided. The regular repositories should be enabled as a fallback option.
+    We're deliberately using SCA disabled account for this scenario.
     """
 
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug --els".format(
             TEST_VARS["RHSM_SERVER_URL"],
+            # We're deliberately using SCA disabled account for this
             TEST_VARS["RHSM_USERNAME"],
             TEST_VARS["RHSM_PASSWORD"],
         )

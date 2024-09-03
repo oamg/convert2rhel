@@ -56,8 +56,8 @@ def test_run_conversion_with_host_metering(shell, convert2rhel):
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_SCA_USERNAME"],
+            TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
         c2r.expect("Installing host-metering packages")

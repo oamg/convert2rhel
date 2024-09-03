@@ -31,11 +31,10 @@ def test_releasever_modified_in_c2r_config(convert2rhel, os_release, c2r_config,
     """
     with c2r_config.replace_line(pattern="releasever=.*", repl="releasever=333"):
         with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --debug".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             ),
             unregister=True,
         ) as c2r:
@@ -71,11 +70,10 @@ def test_inhibitor_releasever_noexistent_release(convert2rhel, config_at, os_rel
         f"release {os_release.version[0]}.11.1111",
     ):
         with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --debug".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             ),
             unregister=True,
         ) as c2r:

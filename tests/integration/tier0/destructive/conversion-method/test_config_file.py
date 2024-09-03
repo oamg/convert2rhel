@@ -26,7 +26,7 @@ def test_conversion_with_config_file(convert2rhel):
     Use config file to feed the credentials for the registration and verify a successful conversion.
     """
     activation_key = "[subscription_manager]\nactivation_key = {}\norg = {}".format(
-        TEST_VARS["RHSM_KEY"], TEST_VARS["RHSM_ORG"]
+        TEST_VARS["RHSM_SCA_KEY"], TEST_VARS["RHSM_SCA_ORG"]
     )
     config = [Config("~/.convert2rhel.ini", activation_key)]
     create_files(config)

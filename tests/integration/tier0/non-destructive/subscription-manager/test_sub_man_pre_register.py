@@ -42,7 +42,7 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
     """
     with convert2rhel(
         "--debug --serverurl {} --username {} --password {}".format(
-            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_USERNAME"], TEST_VARS["RHSM_PASSWORD"]
+            TEST_VARS["RHSM_SERVER_URL"], TEST_VARS["RHSM_SCA_USERNAME"], TEST_VARS["RHSM_SCA_PASSWORD"]
         )
     ) as c2r:
         # We need to get past the data collection acknowledgement.
@@ -74,10 +74,12 @@ def test_unregistered_no_credentials(shell, convert2rhel):
     assert c2r.exitstatus == 2
 
 
+@pytest.mark.parametrize("pre_registered", [("RHSM_USERNAME", "RHSM_PASSWORD")], indirect=True)
 def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system
     without an attached subscription will try auto attaching the subscription.
+    SCA disabled account is used for this scenario.
     """
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
@@ -101,6 +103,7 @@ def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registere
     without an attached subscription will try auto attaching the subscription.
     When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
     error is raised.
+    We're deliberately using SCA disabled account without any available subscriptions for this scenario.
     """
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.

@@ -19,11 +19,10 @@ def test_sub_man_rollback(convert2rhel, shell, required_packages):
     # due to not being able to expand the $releasever variable
     for run in range(2):
         with convert2rhel(
-            "-y --serverurl {} --username {} --password {} --pool {} --debug".format(
+            "-y --serverurl {} --username {} --password {} --debug".format(
                 TEST_VARS["RHSM_SERVER_URL"],
-                TEST_VARS["RHSM_USERNAME"],
-                TEST_VARS["RHSM_PASSWORD"],
-                TEST_VARS["RHSM_POOL"],
+                TEST_VARS["RHSM_SCA_USERNAME"],
+                TEST_VARS["RHSM_SCA_PASSWORD"],
             )
         ) as c2r:
             assert c2r.expect("Validate the dnf transaction") == 0

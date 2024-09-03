@@ -221,13 +221,12 @@ def convert2rhel(shell):
     >>>     (
     >>>         "-y "
     >>>         "--serverurl {} --username {} "
-    >>>         "--password {} --pool {} "
+    >>>         "--password {} "
     >>>         "--debug"
     >>>     ).format(
     >>>         TEST_VARS["RHSM_SERVER_URL"],
-    >>>         TEST_VARS["RHSM_USERNAME"],
-    >>>         TEST_VARS["RHSM_PASSWORD"],
-    >>>         TEST_VARS["RHSM_POOL"],
+    >>>         TEST_VARS["RHSM_SCA_USERNAME"],
+    >>>         TEST_VARS["RHSM_SCA_PASSWORD"],
     >>>     )
     >>> ) as c2r:
     >>>     c2r.expect("Kernel is compatible with RHEL")
@@ -607,14 +606,14 @@ def pre_registered(shell, request):
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
     The rhn-client-tools package obsoletes the subscription-manager, so we remove the package on Oracle Linux.
-    By default, the RHSM_USERNAME and RHSM_PASSWORD is passed to the subman registration.
+    By default, the RHSM_SCA_USERNAME and RHSM_SCA_PASSWORD is passed to the subman registration.
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
     subman = SubscriptionManager()
 
-    username = TEST_VARS["RHSM_USERNAME"]
-    password = TEST_VARS["RHSM_PASSWORD"]
+    username = TEST_VARS["RHSM_SCA_USERNAME"]
+    password = TEST_VARS["RHSM_SCA_PASSWORD"]
     # Use custom keys when the fixture is parametrized
     if hasattr(request, "param"):
         username_key, password_key = request.param
@@ -634,9 +633,6 @@ def pre_registered(shell, request):
         ).returncode
         == 0
     )
-
-    if "C2R_TESTS_NOSUB" not in os.environ:
-        assert shell("subscription-manager attach --pool {}".format(TEST_VARS["RHSM_POOL"])).returncode == 0
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -745,12 +741,6 @@ def outdated_kernel(shell, hybrid_rocky_image):
         pytest.skip("The `kernel` fixture has already run.")
 
     if os.environ["TMT_REBOOT_COUNT"] == "0":
-        # Verify that there is multiple kernels installed
-        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
-            # We don't need to do anything at this point
-            # The whole setup needed happens after
-            pass
-
         # There won't be much changes for EL 7 packages anymore
         # We can hardcode this then
         # The release part differs a bit on CentOS and Oracle,
@@ -759,11 +749,17 @@ def outdated_kernel(shell, hybrid_rocky_image):
             older_kernel = "kernel-3.10.0-1160.118*"
             assert shell(f"yum install -y {older_kernel}").returncode == 0
 
+        # Verify that there is multiple kernels installed
+        if int(shell("rpm -q kernel | wc -l").output.strip()) > 1:
+            # We don't need to do anything at this point
+            # The whole setup needed happens after
+            pass
+
         # Try to downgrade kernel version, if there is not multiple versions installed already.
         # If the kernel downgrade fails, assume it's not possible and try to install from
         # an older repo. This should only happen when Alma and Rocky has just landed on
         # a fresh minor version.
-        elif shell("yum downgrade kernel -y").returncode != 0:
+        elif shell("yum downgrade kernel -y").returncode == 1:
             # Assuming this can only happen with Alma and Rocky we'll try to install an older kernel
             # from a previous minor version.
             # For that we need to use the vault url and bump te current minor down one version.

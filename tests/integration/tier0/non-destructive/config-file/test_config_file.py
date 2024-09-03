@@ -140,8 +140,8 @@ def test_config_standard_paths_priority_diff_methods(convert2rhel, shell):
             # fmt: off
             (
                 "[subscription_manager]\n"
-                f"activation_key    = {TEST_VARS['RHSM_KEY']}\n"
-                f"org               = {TEST_VARS['RHSM_ORG']}\n"
+                f"activation_key    = {TEST_VARS['RHSM_SCA_KEY']}\n"
+                f"org               = {TEST_VARS['RHSM_SCA_ORG']}\n"
             ),
             # fmt: on
         ),
@@ -182,8 +182,8 @@ def test_config_standard_paths_priority(convert2rhel):
             # fmt: off
             (
                 "[subscription_manager]\n"
-                f"username = {TEST_VARS['RHSM_USERNAME']}\n"
-                f"password = {TEST_VARS['RHSM_PASSWORD']}\n"
+                f"username = {TEST_VARS['RHSM_SCA_USERNAME']}\n"
+                f"password = {TEST_VARS['RHSM_SCA_PASSWORD']}\n"
             ),
             # fmt: on
         ),
