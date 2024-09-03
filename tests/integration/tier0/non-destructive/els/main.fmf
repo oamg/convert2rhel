@@ -32,7 +32,9 @@ adjust+:
         Verify that Convert2RHEL is working properly when ELS repositories are not available for conversions
         (the account does not have the ELS SKU available) to RHEL ELS version (7.9)
         and the --els option is provided. The regular repositories should be enabled as a fallback option.
+        We're deliberately using SCA disabled account for this scenario.
     tag+:
         - test-rhsm-non-els-account
+        - non-sca
     test: |
       pytest -m test_rhsm_non_els_account

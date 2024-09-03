@@ -40,5 +40,6 @@ adjust+:
         should be enabled.
     tag+:
         - test-rhsm-non-eus-account
+        - non-sca
     test: |
       pytest -m test_rhsm_non_eus_account

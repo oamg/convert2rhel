@@ -99,6 +99,7 @@ tag+:
             pytest -m test_no_sca_not_subscribed
         tag+:
             - no-sca-not-subscribed
+            - non-sca
 
     /no_sca_subscription_attachment_error:
         summary+: |
@@ -108,7 +109,9 @@ tag+:
             without an attached subscription will try auto attaching the subscription.
             When the attachment fails, the SUBSCRIBE_SYSTEM::NO_ACCESS_TO_RHEL_REPOS
             error is raised.
+            We're deliberately using SCA disabled account without any available subscriptions for this scenario.
         test: |
             pytest -m test_no_sca_subscription_attachment_error
         tag+:
             - no-sca-subscription-attachment-error
+            - non-sca
