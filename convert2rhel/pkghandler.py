@@ -95,11 +95,11 @@ PackageInformation = namedtuple(
 def get_installed_pkgs_by_key_id(key_ids, name=""):
     """
     Return list of names of installed packages that are signed by the specific
-    OS GPG keys. key_ids of the GPG keys are passed as a list in the
+    OS GPG keys. Key IDs of the GPG keys are passed as a list in the
     key_ids parameter.
     The packages can be optionally filtered by name.
 
-    :param key_ids: key_ids to filter packages found
+    :param key_ids: Key IDs to filter packages found
     :type key_ids: list[str]
     :param name: Name of a package to filter. Defaults to empty string
     :type name: str

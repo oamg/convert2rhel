@@ -170,7 +170,7 @@ class SystemInfo:
         self.default_rhsm_repoids = self._get_default_rhsm_repoids()
         self.eus_rhsm_repoids = self._get_eus_rhsm_repoids()
         self.els_rhsm_repoids = self._get_els_rhsm_repoids()
-        self.key_ids_orig_os = self._get_gpg_key_key_ids()
+        self.key_ids_orig_os = self._get_gpg_key_ids()
         self.generate_rpm_va()
         self.releasever = self._get_releasever()
         self.kmods_to_ignore = self._get_kmods_to_ignore()
@@ -330,7 +330,7 @@ class SystemInfo:
                 "Internal error: %s option not found in %s config file." % (option_name, self.cfg_filename)
             )
 
-    def _get_gpg_key_key_ids(self):
+    def _get_gpg_key_ids(self):
         return self._get_cfg_opt("gpg_key_ids").split()
 
     def _get_excluded_pkgs(self):

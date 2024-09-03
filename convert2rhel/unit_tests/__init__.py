@@ -430,7 +430,6 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
 
     # Prebake several return values for a couple different use cases
 
-    # key_ids
     pkg1 = create_pkg_information(name="pkg1", key_id="199e2f91fd431d51")  # RHEL
     pkg2 = create_pkg_information(name="pkg2", key_id="72f97b74ec551f03")  # OL
     pkg3 = create_pkg_information(
