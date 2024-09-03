@@ -32,7 +32,6 @@ class InstallRhelKernel(actions.Action):
     id = "INSTALL_RHEL_KERNEL"
     dependencies = ("CONVERT_SYSTEM_PACKAGES",)
 
-
     def run(self):
         """Install and update the RHEL kernel."""
         super(InstallRhelKernel, self).run()
@@ -69,9 +68,7 @@ class InstallRhelKernel(actions.Action):
             return
 
         # Get list of kernel pkgs not signed by Red Hat
-        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_key_id(
-            system_info.key_ids_rhel, "kernel"
-        )
+        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel")
         # Extract the NEVRA from the package object to a list
         non_rhel_kernels = [pkghandler.get_pkg_nevra(kernel) for kernel in non_rhel_kernels_pkg_info]
         rhel_kernels = [kernel for kernel in already_installed if kernel not in non_rhel_kernels]
@@ -124,6 +121,7 @@ class InstallRhelKernel(actions.Action):
             # with a higher release number.
             pkghandler.handle_no_newer_rhel_kernel_available()
             _kernel_update_needed = True
+
 
 class VerifyRhelKernelInstalled(actions.Action):
     id = "VERIFY_RHEL_KERNEL_INSTALLED"
