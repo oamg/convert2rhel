@@ -41,7 +41,7 @@ tag+:
             In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is set.
             Note that after the test, the $releasever variable is unset.
             That is due to the incomplete rollback not being able to back up/restore the *-linux-release
-            package, the issue gets resolved by the (auto used) missing_os_release_package_workaround fixture.
+            package, the issue gets resolved by the (auto used) `workaround_missing_os_release_package` fixture.
         environment+:
             CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
             CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1

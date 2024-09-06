@@ -55,7 +55,7 @@ els_enablement_parameters = [
 )
 def test_els_enablement(
     convert2rhel,
-    install_and_set_up_subman_to_stagecdn,
+    fixture_subman,
     els_mock,
     additional_option,
     repoid_message,

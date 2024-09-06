@@ -81,7 +81,7 @@ def test_override_inhibitor_os_release_restored(
     Ref ticket: OAMG-5457.
     Note that after the test, the $releasever variable is unset.
     That is due to the incomplete rollback not being able to back up/restore the *-linux-release
-    package, the issue gets resolved by the (autoused) missing_os_release_package_workaround fixture.
+    package, the issue gets resolved by the (autoused) `workaround_missing_os_release_package` fixture.
     """
     assert shell("find /etc/os-release").returncode == 0
 

@@ -4,7 +4,7 @@ import re
 import pexpect.exceptions
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, get_full_kernel_title, grub_setup_workaround
+from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, get_full_kernel_title, workaround_grub_setup
 
 
 def _cross_vendor_kernel():
@@ -105,7 +105,7 @@ def custom_kernel(shell, hybrid_rocky_image, backup_directory):
         if "centos-8-latest" in SYSTEM_RELEASE_ENV:
             assert shell(f"yum reinstall -y kernel").returncode == 0
 
-        grub_setup_workaround(shell)
+        workaround_grub_setup(shell)
         assert shell(f"grub2-set-default '{original_kernel_title}'").returncode == 0
         shell("grub2-mkconfig -o /boot/grub2/grub.cfg")
         # Reboot
