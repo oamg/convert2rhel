@@ -135,6 +135,9 @@ adjust+:
             adjust+:
                 - enabled: true
                   when: distro == centos-7, oracle-7
+                  because: |
+                    This scenario uses a lot of unsupported environment variables
+                    thus making it unsupported. We are OK with running it only on EL7 system.
             environment+:
                 # Bypass the kernel check, since the installed kernel is an older version
                 CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
