@@ -18,6 +18,9 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
             "SUBSCRIBE_SYSTEM has succeeded",
