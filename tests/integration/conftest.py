@@ -11,8 +11,7 @@ import warnings
 
 from collections import namedtuple
 from contextlib import contextmanager
-from fileinput import FileInput
-from typing import ContextManager, Optional
+from typing import ContextManager
 
 import click
 import pexpect
@@ -229,6 +228,12 @@ def fixture_subman():
 
     yield
 
+    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
+    # so the check "enabled repositories" after the conversion can be executed.
+    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
+        subman.unregister()
+
+    # We do not need to spend time on performing the cleanup for some test cases (destructive)
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         subman.clean_up()
 
@@ -376,97 +381,6 @@ def convert2rhel(shell):
     return factory
 
 
-@dataclasses.dataclass
-class OsRelease:
-    """Dataclass representing the content of /etc/os-release."""
-
-    name: str
-    version: str
-    id: str
-    id_like: str
-    version_id: str
-    pretty_name: str
-    home_url: str
-    bug_report_url: str
-    ansi_color: Optional[str] = None
-    cpe_name: Optional[str] = None
-    platform_id: Optional[str] = None
-
-    @classmethod
-    def create_from_file(cls, file: Path):
-        assert file.exists(), f"File doesn't exist: {str(file)}"
-        res = {}
-        with open(file) as os_release_f:
-            for line in os_release_f:
-                try:
-                    param, value = line.strip().split("=")
-                except ValueError:
-                    # we're skipping lines which can't be split based on =
-                    pass
-                else:
-                    if param.lower() in cls.__annotations__:
-                        res[param.lower()] = value.strip('"')
-        return cls(**res)
-
-
-@pytest.fixture()
-def os_release():
-    return OsRelease.create_from_file(Path("/etc/os-release"))
-
-
-class ConfigUtils:
-    """Convenient features to work with configs (or any other text files).
-
-    Created specifically to simplify writing integration tests, which requires
-    adjusting some configs.
-    """
-
-    def __init__(self, config_path: Path):
-        self.config_path = config_path
-
-    @contextmanager
-    def replace_line(self, pattern: str, repl: str):
-        """Iterates over config file lines and do re.sub for each line.
-
-        Parameters are the same as in re.sub
-        (https://docs.python.org/3/library/re.html#re.sub)
-
-        Example:
-        >>> with c2r_config.replace_line(pattern="releasever=.*", repl=f"releasever=9"):
-        >>>     # do something here (the config is changed)
-        >>>     pass
-        >>> # config is restored at this point
-        """
-        logger.info(f"Scanning {str(self.config_path)} for {repr(pattern)} and replace with {repr(repl)}")
-        search = re.compile(pattern)
-        backup_suffix = ".bak"
-        try:
-            with FileInput(files=[str(self.config_path)], inplace=True, backup=backup_suffix) as f:
-                for line in f:
-                    new_line = search.sub(repl, line)
-                    if line != new_line:
-                        logger.debug(f"{repr(line.strip())} replaced with\n{repr(new_line.strip())}")
-                    # need to write to stdout to write the line to the file
-                    print(new_line, end="")
-            yield
-        finally:
-            backup_config = self.config_path.with_suffix(self.config_path.suffix + backup_suffix)
-            backup_config.replace(self.config_path)
-            logger.debug("ConfigUtils file was restored to the origin state")
-
-
-@pytest.fixture()
-def c2r_config(os_release):
-    """ConfigUtils object with already loaded convert2rhel config."""
-    release_id2conf = {"centos": "centos", "ol": "oracle", "almalinux": "almalinux", "rocky": "rocky"}
-    config_path = (
-        Path("/usr/share/convert2rhel/configs/")
-        / f"{release_id2conf[os_release.id]}-{os_release.version[0]}-x86_64.cfg"
-    )
-    assert config_path.exists(), f"Can't find Convert2RHEL config file.\n{str(config_path)} - does not exist."
-    return ConfigUtils(config_path)
-
-
 class SystemInformationRelease:
     """
     Helper class.
@@ -501,25 +415,6 @@ class SystemInformationRelease:
                 int(match_version.group(1)), int(match_version.group(2))
             )
             system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
-
-
-@pytest.fixture()
-def config_at():
-    """Factory of the ConfigUtils object.
-
-    Created for simplicity injecting it into your testing unit (no need to import).
-
-    Example:
-    >>> with config_at(Path("/etc/system-release")).replace_line(
-    >>>     "release .+",
-    >>>     f"release {os_release.version[0]}.1.1111",
-    >>> ):
-    """
-
-    def factory(path: Path) -> ConfigUtils:
-        return ConfigUtils(path)
-
-    return factory
 
 
 @pytest.fixture()
@@ -559,7 +454,7 @@ def remove_repositories(shell, backup_directory):
 
 
 @pytest.fixture
-def pre_registered(shell, request):
+def pre_registered(shell, request, fixture_subman):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
@@ -568,8 +463,6 @@ def pre_registered(shell, request):
     Can be parametrized by requesting a different KEY from the TEST_VARS file.
     @pytest.mark.parametrize("pre_registered", [("DIFFERENT_USERNAME", "DIFFERENT_PASSWORD")], indirect=True)
     """
-    subman = SubscriptionManager()
-
     username = TEST_VARS["RHSM_SCA_USERNAME"]
     password = TEST_VARS["RHSM_SCA_PASSWORD"]
     # Use custom keys when the fixture is parametrized
@@ -579,18 +472,16 @@ def pre_registered(shell, request):
         password = TEST_VARS[password_key]
         print(">>> Using parametrized username and password requested in the fixture.")
 
-    subman.set_up_requirements()
-
     # Register the system
     assert (
         shell(
-            "subscription-manager register --serverurl {} --username {} --password {}".format(
+            "subscription-manager register --serverurl {0} --username {1} --password {2}".format(
                 TEST_VARS["RHSM_SERVER_URL"], username, password
             ),
             hide_command=True,
         ).returncode
         == 0
-    )
+    ), f"Failed to pre-register the system. The subscription manager call has failed."
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
@@ -611,15 +502,6 @@ def pre_registered(shell, request):
 
         # Validate it matches with UUID prior to the conversion
         assert original_registration_uuid == post_c2r_registration_uuid
-
-    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
-    # so the check "enabled repositories" after the conversion can be executed.
-    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
-        subman.unregister()
-
-    # We do not need to spend time on performing the cleanup for some test cases (destructive)
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
 
 
 @pytest.fixture()
@@ -644,25 +526,25 @@ def hybrid_rocky_image(shell):
 def environment_variables(request):
     """
     Fixture.
-    Sets and unsets required environment variables.
-    Environment variable(s) needs to be passed as a list(s) to pytest parametrize.
+    Set and unset required environment variables.
     Usage:
-    @pytest.mark.parametrize("envars", [["LIST", "OF"], ["ENVIRONMENT", "VARIABLES"]])
+    @pytest.mark.parametrize("environment_variables", ["CONVERT2RHEL_UNSUPPORTED"], indirect=True)
+    @pytest.mark.parametrize("environment_variables", [["FIRST", "TEST", "EXECUTION"], ["SECOND", "TEST", "EXECUTION"]], indirect=True)
     """
 
-    def _set_env_var(envars):
-        for envar in envars:
-            os.environ[envar] = "1"
+    if hasattr(request, "param"):
+        env_vars = request.param
+        if not isinstance(env_vars, list):
+            env_vars = [env_vars]
 
-    yield _set_env_var
+        for e in env_vars:
+            os.environ[e] = "1"
 
-    def _unset_env_var(envars):
-        for envar in envars:
-            if envar in os.environ:
-                del os.environ[envar]
-            assert envar not in os.environ
+        yield
 
-    return _unset_env_var
+        for e in env_vars:
+            os.environ.pop(e, None)
+            assert e not in os.environ, f"The removal of the environment variable - '{e}' failed"
 
 
 @pytest.fixture(scope="function")

@@ -94,6 +94,8 @@ order: 49
     description: |
         Verify that Convert2RHEL is working properly when ELS repositories are used during the conversion.
         Verify that the correct repositories are enabled after the conversion (in one of the check-after-conversion tests).
+    environment+:
+        C2R_TESTS_SUBMAN_REMAIN_REGISTERED: 1
     tag+:
         - rhsm-els-conversion
     test: pytest -m test_rhsm_with_els_system_conversion

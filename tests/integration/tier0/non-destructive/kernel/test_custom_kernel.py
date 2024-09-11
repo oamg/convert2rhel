@@ -63,9 +63,10 @@ def custom_kernel(shell, hybrid_rocky_image, backup_directory):
     custom_kernel_installed = None
     # Create a temporary file to store the original kernel NVRA
     kernel_info_storage = os.path.join(backup_directory, "original-kernel")
-    # Store the current running kernel NVRA in a file
-    shell("echo $(uname -r) >> %s" % kernel_info_storage)
     if os.environ["TMT_REBOOT_COUNT"] == "0":
+        # Store the current running kernel NVRA in a file
+        shell("echo $(uname -r) > %s" % kernel_info_storage)
+
         # The version of yum on el7 like systems does not allow the --repofrompath option.
         # Therefore, we need to install the rpm directly
         if SystemInformationRelease.version.major == 7:
@@ -101,9 +102,6 @@ def custom_kernel(shell, hybrid_rocky_image, backup_directory):
         with open(kernel_info_storage, "r") as f:
             original_kernel = f.readline().rstrip()
         original_kernel_title = get_full_kernel_title(shell, kernel=original_kernel)
-        # Install back the CentOS 8.5 original kernel
-        if "centos-8-latest" in SYSTEM_RELEASE_ENV:
-            assert shell(f"yum reinstall -y kernel").returncode == 0
 
         workaround_grub_setup(shell)
         assert shell(f"grub2-set-default '{original_kernel_title}'").returncode == 0
