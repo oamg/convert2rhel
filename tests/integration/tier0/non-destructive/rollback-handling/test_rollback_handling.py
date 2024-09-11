@@ -179,6 +179,9 @@ def test_proper_rhsm_clean_up(shell, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         # Wait till the system is properly registered and subscribed, then
         # send the interrupt signal to the c2r process.
         c2r.expect("Prepare: Get RHEL repository IDs")

@@ -105,6 +105,9 @@ def test_successful_report(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         # Assert that we start rollback first
         c2r.expect("Rollback: RHSM-related actions")
 
