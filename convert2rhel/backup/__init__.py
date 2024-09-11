@@ -19,11 +19,11 @@ __metaclass__ = type
 
 import abc
 import hashlib
-import logging
 import os
 
 import six
 
+from convert2rhel.logger import root_logger
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.utils import TMP_DIR
 
@@ -31,7 +31,7 @@ from convert2rhel.utils import TMP_DIR
 # Directory for temporary backing up files, packages and other relevant stuff.
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 def get_backedup_system_repos():
@@ -74,7 +74,7 @@ class BackupController:
         # if it is, we skip it
         for r in self._restorables:
             if r == restorable:
-                loggerinst.debug("Skipping: {} has already been backed up".format(restorable.__class__.__name__))
+                logger.debug("Skipping: {} has already been backed up".format(restorable.__class__.__name__))
                 return
 
         restorable.enable()
@@ -130,7 +130,7 @@ class BackupController:
             except (Exception, SystemExit) as e:
                 # Don't let a failure in one restore influence the others
                 message = "Error while rolling back a %s: %s" % (restorable.__class__.__name__, str(e))
-                loggerinst.warning(message)
+                logger.warning(message)
                 # Add the rollback failures to the list
                 self._rollback_failures.append(message)
 

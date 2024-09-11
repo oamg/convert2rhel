@@ -15,13 +15,13 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 import re
 
 from convert2rhel import actions, backup, exceptions
 from convert2rhel.backup.files import MissingFile, RestorableFile
-from convert2rhel.logger import LOG_DIR
+from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.pkghandler import VERSIONLOCK_FILE_PATH
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
@@ -42,7 +42,7 @@ RPM_VA_REGEX = re.compile(
 )
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class BackupRedhatRelease(actions.Action):
@@ -50,7 +50,7 @@ class BackupRedhatRelease(actions.Action):
 
     def run(self):
         """Backup redhat release file before starting conversion process"""
-        loggerinst.task("Prepare: Backup Redhat Release Files")
+        logger.task("Prepare: Backup Redhat Release Files")
 
         super(BackupRedhatRelease, self).run()
 
@@ -77,20 +77,20 @@ class BackupRepository(actions.Action):
 
     def run(self):
         """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
-        loggerinst.task("Prepare: Backup Repository Files")
+        logger.task("Prepare: Backup Repository Files")
 
         super(BackupRepository, self).run()
 
-        loggerinst.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
+        logger.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
 
         if not os.listdir(DEFAULT_YUM_REPOFILE_DIR):
-            loggerinst.info("Repository folder %s seems to be empty.", DEFAULT_YUM_REPOFILE_DIR)
+            logger.info("Repository folder %s seems to be empty.", DEFAULT_YUM_REPOFILE_DIR)
 
         for repo in os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
             if not repo.endswith(".repo"):
-                loggerinst.info("Skipping backup as %s is not a repository file." % repo)
+                logger.info("Skipping backup as %s is not a repository file." % repo)
                 continue
 
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
@@ -103,15 +103,15 @@ class BackupYumVariables(actions.Action):
 
     def run(self):
         """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
-        loggerinst.task("Prepare: Backup variables")
+        logger.task("Prepare: Backup variables")
 
         super(BackupYumVariables, self).run()
 
-        loggerinst.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
+        logger.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
         self._backup_variables(path=DEFAULT_YUM_VARS_DIR)
 
         if system_info.version.major >= 8:
-            loggerinst.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
+            logger.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
             self._backup_variables(path=DEFAULT_DNF_VARS_DIR)
 
     def _backup_variables(self, path):
@@ -129,7 +129,7 @@ class BackupYumVariables(actions.Action):
             variable_files_backed_up = True
 
         if not variable_files_backed_up:
-            loggerinst.info("No variables files backed up.")
+            logger.info("No variables files backed up.")
 
 
 class BackupPackageFiles(actions.Action):
@@ -144,7 +144,7 @@ class BackupPackageFiles(actions.Action):
         """Backup changed package files"""
         super(BackupPackageFiles, self).run()
 
-        loggerinst.task("Prepare: Backup package files")
+        logger.task("Prepare: Backup package files")
 
         package_files_changes = self._get_changed_package_files()
 
@@ -168,7 +168,7 @@ class BackupPackageFiles(actions.Action):
                     restorable_file = RestorableFile(file["path"])
                     backup.backup_control.push(restorable_file)
                 else:
-                    loggerinst.debug(
+                    logger.debug(
                         "File {filepath} already backed up - not backing up again".format(filepath=file["path"])
                     )
 
@@ -189,14 +189,14 @@ class BackupPackageFiles(actions.Action):
         # Catch the IOError due Python 2 compatibility
         except IOError as err:
             if os.environ.get("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None):
-                loggerinst.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
+                logger.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
                 # Return empty list results in no backup of the files
                 return data
             else:
                 # The file should be there
                 # If missing conversion is in unknown state
-                loggerinst.warning("Error(%s): %s" % (err.errno, err.strerror))
-                loggerinst.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
+                logger.warning("Error(%s): %s" % (err.errno, err.strerror))
+                logger.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
 
         lines = output.strip().split("\n")
         for line in lines:
@@ -214,7 +214,7 @@ class BackupPackageFiles(actions.Action):
         if not match:  # line not matching the regex
             if line.strip() != "":
                 # Line is not empty string
-                loggerinst.debug("Skipping invalid output %s" % line)
+                logger.debug("Skipping invalid output %s" % line)
             return {"status": None, "file_type": None, "path": None}
 
         line = line.split()

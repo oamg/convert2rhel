@@ -17,7 +17,7 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 import re
 import time
@@ -135,7 +135,7 @@ class SystemInfo:
         self.cfg_filename = None
         self.cfg_content = None
         self.system_release_file_content = None
-        self.logger = None
+        self.logger = logger.root_logger.getChild(__name__)
         # IDs of the default Red Hat CDN repositories that correspond to the current system
         self.default_rhsm_repoids = None
         # IDs of the Extended Update Support (EUS) Red Hat CDN repositories that correspond to the current system
@@ -152,7 +152,6 @@ class SystemInfo:
         self.booted_kernel = ""
 
     def resolve_system_info(self):
-        self.logger = logging.getLogger(__name__)
         self.system_release_file_content = self.get_system_release_file_content()
 
         system_release_data = self.parse_system_release_content()

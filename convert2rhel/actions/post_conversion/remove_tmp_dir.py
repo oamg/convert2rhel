@@ -16,14 +16,14 @@
 __metaclass__ = type
 
 import errno
-import logging
 import shutil
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.utils import TMP_DIR
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = root_logger.getChild(__name__)
 
 
 class RemoveTmpDir(actions.Action):

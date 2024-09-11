@@ -18,16 +18,16 @@
 __metaclass__ = type
 
 import errno
-import logging
 import os
 import shutil
 
 from convert2rhel import exceptions, utils
 from convert2rhel.backup import RestorableChange
+from convert2rhel.logger import root_logger
 from convert2rhel.utils import files
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class RestorableRpmKey(RestorableChange):
@@ -112,14 +112,14 @@ class RestorablePEMCert(RestorableChange):
             return
 
         if os.path.exists(self._target_cert_path):
-            loggerinst.info("Certificate already present at %s. Skipping copy." % self._target_cert_path)
+            logger.info("Certificate already present at %s. Skipping copy." % self._target_cert_path)
             self.previously_installed = True
         else:
             try:
                 files.mkdir_p(self._target_cert_dir)
                 shutil.copy2(self._source_cert_path, self._target_cert_dir)
             except OSError as err:
-                loggerinst.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))
+                logger.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_CERTIFICATE",
                     title="Failed to install certificate.",
@@ -128,18 +128,18 @@ class RestorablePEMCert(RestorableChange):
                     % (self._get_source_cert_path, self._target_cert_dir, err.errno, err.strerror),
                 )
 
-            loggerinst.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
+            logger.info("Certificate %s copied to %s." % (self._cert_filename, self._target_cert_dir))
 
         super(RestorablePEMCert, self).enable()
 
     def restore(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""
-        loggerinst.task("Rollback: Remove installed certificate")
+        logger.task("Rollback: Remove installed certificate")
 
         if self.enabled and not self.previously_installed:
             self._restore()
         else:
-            loggerinst.info("Certificate %s was present before conversion. Skipping removal." % self._cert_filename)
+            logger.info("Certificate %s was present before conversion. Skipping removal." % self._cert_filename)
 
         super(RestorablePEMCert, self).restore()
 
@@ -170,13 +170,13 @@ class RestorablePEMCert(RestorableChange):
             if "not owned by any package" in output:
                 file_unowned = True
             elif "No such file or directory" in output:
-                loggerinst.info("Certificate already removed from %s" % self._target_cert_path)
+                logger.info("Certificate already removed from %s" % self._target_cert_path)
             else:
-                loggerinst.warning(
+                logger.warning(
                     "Unable to determine if a package owns certificate %s. Skipping removal." % self._target_cert_path
                 )
         else:
-            loggerinst.info(
+            logger.info(
                 "A package was installed that owns the certificate %s. Skipping removal." % self._target_cert_path
             )
 
@@ -187,11 +187,11 @@ class RestorablePEMCert(RestorableChange):
 
         try:
             os.remove(self._target_cert_path)
-            loggerinst.info("Certificate %s removed" % self._target_cert_path)
+            logger.info("Certificate %s removed" % self._target_cert_path)
         except OSError as err:
             if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
-                loggerinst.info("No certificates found to be removed.")
+                logger.info("No certificates found to be removed.")
                 return
 
             # Will be handled in BackupController
@@ -201,12 +201,12 @@ class RestorablePEMCert(RestorableChange):
 def _get_cert(cert_dir):
     """Return the .pem certificate filename."""
     if not os.access(cert_dir, os.R_OK | os.X_OK):
-        loggerinst.critical("Error: Could not access %s." % cert_dir)
+        logger.critical("Error: Could not access %s." % cert_dir)
     pem_filename = None
     for filename in os.listdir(cert_dir):
         if filename.endswith(".pem"):
             pem_filename = filename
             break
     if not pem_filename:
-        loggerinst.critical("Error: No certificate (.pem) found in %s." % cert_dir)
+        logger.critical("Error: No certificate (.pem) found in %s." % cert_dir)
     return pem_filename

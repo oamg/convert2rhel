@@ -17,7 +17,7 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
 from convert2rhel import exceptions, repo, utils
@@ -25,10 +25,11 @@ from convert2rhel.backup import BACKUP_DIR, RestorableChange
 
 # Fine to import call_yum_cmd for now, but we really should figure out a way to
 # split this out.
+from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 # NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
@@ -85,18 +86,18 @@ class RestorablePackage(RestorableChange):
             return
 
         if not os.path.isdir(BACKUP_DIR):
-            loggerinst.warning("Can't access %s" % BACKUP_DIR)
+            logger.warning("Can't access %s" % BACKUP_DIR)
             return
 
-        loggerinst.info("Backing up the packages: %s." % ",".join(self.pkgs))
-        loggerinst.debug("Using repository files stored in %s." % self.reposdir)
+        logger.info("Backing up the packages: %s." % ",".join(self.pkgs))
+        logger.debug("Using repository files stored in %s." % self.reposdir)
 
         if self.reposdir:
             # Check if the reposdir exists and if the directory is empty
             if (os.path.exists(self.reposdir) and len(os.listdir(self.reposdir)) == 0) or not os.path.exists(
                 self.reposdir
             ):
-                loggerinst.info("The repository directory %s seems to be empty or non-existent.")
+                logger.info("The repository directory %s seems to be empty or non-existent.")
                 self.reposdir = None
 
         for pkg in self.pkgs:
@@ -124,9 +125,9 @@ class RestorablePackage(RestorableChange):
 
         utils.remove_orphan_folders()
 
-        loggerinst.task("Rollback: Install removed packages")
+        logger.task("Rollback: Install removed packages")
         if not self._backedup_pkgs_paths:
-            loggerinst.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
+            logger.warning("Couldn't find a backup for %s package." % ",".join(self.pkgs))
             raise exceptions.CriticalError(
                 id_="FAILED_TO_INSTALL_PACKAGES",
                 title="Couldn't find package backup",
@@ -145,23 +146,23 @@ class RestorablePackage(RestorableChange):
         """Install packages locally available."""
 
         if not self._backedup_pkgs_paths:
-            loggerinst.info("No package to install.")
+            logger.info("No package to install.")
             return False
 
         cmd = ["rpm", "-i"]
         if replace:
             cmd.append("--replacepkgs")
 
-        loggerinst.info("Installing packages:\t%s" % ", ".join(self.pkgs))
+        logger.info("Installing packages:\t%s" % ", ".join(self.pkgs))
         for pkg in self._backedup_pkgs_paths:
             cmd.append(pkg)
 
         output, ret_code = utils.run_subprocess(cmd, print_output=False)
         if ret_code != 0:
             pkgs_as_str = utils.format_sequence_as_message(self.pkgs)
-            loggerinst.debug(output.strip())
+            logger.debug(output.strip())
             if critical:
-                loggerinst.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
+                logger.critical_no_exit("Error: Couldn't install %s packages." % pkgs_as_str)
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_PACKAGES",
                     title="Couldn't install packages.",
@@ -175,7 +176,7 @@ class RestorablePackage(RestorableChange):
                     % (pkgs_as_str, cmd, output, ret_code),
                 )
 
-            loggerinst.warning("Couldn't install %s packages." % pkgs_as_str)
+            logger.warning("Couldn't install %s packages." % pkgs_as_str)
             return False
 
         return True
@@ -249,12 +250,12 @@ class RestorablePackageSet(RestorableChange):
         exit early.
         """
         if not self.pkgs_to_install:
-            loggerinst.info("All packages were already installed")
+            logger.info("All packages were already installed")
             return
 
         formatted_pkgs_sequence = utils.format_sequence_as_message(self.pkgs_to_install)
 
-        loggerinst.debug("RPMs scheduled for installation: %s" % formatted_pkgs_sequence)
+        logger.debug("RPMs scheduled for installation: %s" % formatted_pkgs_sequence)
 
         output, ret_code = call_yum_cmd(
             command="install",
@@ -271,7 +272,7 @@ class RestorablePackageSet(RestorableChange):
         )
 
         if ret_code:
-            loggerinst.critical_no_exit(
+            logger.critical_no_exit(
                 "Failed to install scheduled packages. Check the yum output below for details:\n\n %s" % output
             )
             raise exceptions.CriticalError(
@@ -284,8 +285,8 @@ class RestorablePackageSet(RestorableChange):
 
         # Need to do this here instead of in pkghandler.call_yum_cmd() to avoid
         # double printing the output if an error occurred.
-        loggerinst.info(output.rstrip("\n"))
-        loggerinst.info("\nPackages we installed or updated:\n%s" % formatted_pkgs_sequence)
+        logger.info(output.rstrip("\n"))
+        logger.info("\nPackages we installed or updated:\n%s" % formatted_pkgs_sequence)
 
         # We could rely on these always being installed/updated when
         # self.enabled is True but putting the values into separate attributes
@@ -298,8 +299,8 @@ class RestorablePackageSet(RestorableChange):
         if not self.enabled:
             return
 
-        loggerinst.task("Rollback: Remove installed packages")
-        loggerinst.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
+        logger.task("Rollback: Remove installed packages")
+        logger.info("Removing set of installed pkgs: %s" % utils.format_sequence_as_message(self.installed_pkgs))
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 
         super(RestorablePackageSet, self).restore()

@@ -16,17 +16,16 @@
 __metaclass__ = type
 
 import glob
-import logging
 import os
 import re
 
-from convert2rhel import actions, pkghandler, pkgmanager, utils
+from convert2rhel import actions, logger, pkghandler, pkgmanager, utils
 from convert2rhel.systeminfo import system_info
 
 
 _kernel_update_needed = None
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger.root_logger.getChild(__name__)
 
 
 class InstallRhelKernel(actions.Action):
@@ -228,8 +227,6 @@ class FixDefaultKernel(actions.Action):
         RHEL7 and kernel-core for RHEL8.
         """
         super(FixDefaultKernel, self).run()
-
-        loggerinst = logging.getLogger(__name__)
 
         loggerinst.info("Checking for incorrect boot kernel")
         kernel_sys_cfg = utils.get_file_content("/etc/sysconfig/kernel")

@@ -16,14 +16,14 @@
 __metaclass__ = type
 
 import datetime
-import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import ELS_RELEASE_DATE, system_info
 from convert2rhel.toolopts import tool_opts
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class ElsSystemCheck(actions.Action):

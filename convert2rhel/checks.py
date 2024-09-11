@@ -15,13 +15,14 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
+from convert2rhel.logger import root_logger
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 VMLINUZ_FILEPATH = "/boot/vmlinuz-%s"

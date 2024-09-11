@@ -36,7 +36,7 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
     global_tool_opts.debug = True  # debug entries > stdout if True
     logger_module.setup_logger_handler()
     logger_module.add_file_handler(log_name=log_fname, log_dir=str(tmpdir))
-    logger = logging.getLogger(__name__)
+    logger = logger_module.root_logger.getChild(__name__)
 
     # emitting some log entries
     logger.info("Test info: %s", "data")
@@ -56,7 +56,7 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
 def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
     monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
     logger_module.setup_logger_handler()
-    logger = logging.getLogger(__name__)
+    logger = logger_module.root_logger.getChild(__name__)
     global_tool_opts.debug = True
     logger.debug("debug entry 1: %s", "data")
     stdouterr_out, stdouterr_err = read_std()
@@ -77,20 +77,20 @@ def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
     assert "debug entry 2: data" not in stdouterr_out
 
 
-class TestCustomLogger:
+class Testroot_logger:
     @pytest.mark.parametrize(
         ("log_method_name", "level_name"),
         (
-            ("task", "TASK"),
+            ("task", "INFO"),
             ("file", "DEBUG"),
             ("warning", "WARNING"),
             ("critical_no_exit", "CRITICAL"),
         ),
     )
     def test_logger_custom_logger(self, log_method_name, level_name, caplog):
-        """Test CustomLogger."""
+        """Test root_logger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.root_logger.getChild(__name__)
         log_method = getattr(logger, log_method_name)
 
         log_method("Some task: %s", "data")
@@ -100,9 +100,9 @@ class TestCustomLogger:
         assert caplog.records[-1].levelname == level_name
 
     def test_logger_critical(self, caplog):
-        """Test CustomLogger."""
+        """Test root_logger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
+        logger = logger_module.root_logger.getChild(__name__)
 
         with pytest.raises(SystemExit):
             logger.critical("Critical error: %s", "data")
@@ -117,31 +117,19 @@ class TestCustomLogger:
             "file",
             "debug",
             "warning",
-            "critical_no_exit",
         ],
     )
     def test_logger_custom_logger_insufficient_level(self, log_method_name, caplog):
-        """Test CustomLogger."""
+        """Test root_logger."""
         logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.CRITICAL + 40)
+        logger = logger_module.root_logger
+        logger.setLevel(logging.CRITICAL)
         log_method = getattr(logger, log_method_name)
 
         log_method("Some task: %s", "data")
 
         assert "Some task: data" not in caplog.text
         assert not caplog.records
-
-    def test_logger_critical_insufficient_level(self, caplog):
-        """Test CustomLogger."""
-        logger_module.setup_logger_handler()
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.CRITICAL + 40)
-
-        logger.critical("Critical error: %s", "data")
-
-        assert not caplog.records
-        assert "Critical error: data\n" not in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -204,3 +192,21 @@ def test_logfile_buffer_handler(read_std):
     stdouterr_out, _ = read_std()
     assert "message 1" not in stdouterr_out
     assert "message 2" in stdouterr_out
+
+
+class TestCustomFormatter:
+    """For testing the Custom Formatter to work as expected."""
+
+    def test_task_logger(self, read_std):
+        logger = logging.getLogger("convert2rhel")
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        formatter = logger_module.CustomFormatter("%(message)s")
+        formatter.disable_colors(True)
+        stdout_handler.setFormatter(formatter)
+        stdout_handler.setLevel(logging.DEBUG)
+        logger.addHandler(stdout_handler)
+
+        logger.info("Testing", extra={"is_task": True})
+
+        stdouterr_out, stdouterr_err = read_std()
+        assert "TASK - [Testing]" in stdouterr_out

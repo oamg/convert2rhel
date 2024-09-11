@@ -17,15 +17,16 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 import re
 
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup.files import RestorableFile
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 OS_RELEASE_FILEPATH = "/etc/os-release"
 
@@ -35,7 +36,7 @@ def get_system_release_filepath():
     release_filepath = "/etc/system-release"  # RHEL 7/8 based OSes
     if os.path.isfile(release_filepath):
         return release_filepath
-    loggerinst.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
+    logger.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
 
 
 def get_system_release_content():
@@ -46,7 +47,7 @@ def get_system_release_content():
     try:
         return utils.get_file_content(filepath)
     except EnvironmentError as err:
-        loggerinst.critical("%s\n%s file is essential for running this tool." % (err, filepath))
+        logger.critical("%s\n%s file is essential for running this tool." % (err, filepath))
 
 
 class PkgManagerConf:
@@ -78,9 +79,9 @@ class PkgManagerConf:
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
             self._write_altered_pkg_manager_conf()
-            loggerinst.info("%s patched." % self._pkg_manager_conf_path)
+            logger.info("%s patched." % self._pkg_manager_conf_path)
         else:
-            loggerinst.info("Skipping patching, package manager configuration file has not been modified.")
+            logger.info("Skipping patching, package manager configuration file has not been modified.")
 
         return
 

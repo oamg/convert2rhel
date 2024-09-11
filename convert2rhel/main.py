@@ -17,7 +17,7 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
 from convert2rhel import actions, applock, backup, breadcrumbs, exceptions
@@ -26,7 +26,7 @@ from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, toolo
 from convert2rhel.actions import level_for_raw_action_data, report
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger_module.root_logger.getChild(__name__)
 
 
 class _AnalyzeExit(Exception):

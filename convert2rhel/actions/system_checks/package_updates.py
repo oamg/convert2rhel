@@ -15,15 +15,16 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 
 from convert2rhel import actions, pkgmanager, utils
+from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class PackageUpdates(actions.Action):

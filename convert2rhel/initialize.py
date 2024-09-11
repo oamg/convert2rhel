@@ -24,7 +24,7 @@ from convert2rhel import i18n
 from convert2rhel import logger as logger_module
 
 
-loggerinst = logging.getLogger(__name__)
+loggerinst = logger_module.root_logger.getChild(__name__)
 
 
 def disable_root_logger():
@@ -37,7 +37,7 @@ def disable_root_logger():
     bad user data could end up causing the dbus logging to log rhsm passwords
     and other credentials.
     """
-    logging.getLogger().addHandler(logging.NullHandler())
+    logger_module.root_logger.addHandler(logging.NullHandler())
 
 
 def initialize_logger():

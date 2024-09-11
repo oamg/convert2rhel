@@ -18,7 +18,6 @@ __metaclass__ = type
 
 import argparse
 import copy
-import logging
 import os
 import re
 import sys
@@ -26,9 +25,10 @@ import sys
 from six.moves import configparser, urllib
 
 from convert2rhel import __version__, utils
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # Paths for configuration files
 CONFIG_PATHS = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
@@ -352,7 +352,7 @@ class CLI:
 
         if parsed_opts.no_rpm_va:
             if tool_opts.activity == "analysis":
-                loggerinst.warning(
+                logger.warning(
                     "We will proceed with ignoring the --no-rpm-va option as running rpm -Va"
                     " in the analysis mode is essential for a complete rollback to the original"
                     " system state at the end of the analysis."
@@ -366,7 +366,7 @@ class CLI:
                     " incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment"
                     " variable. Otherwise, remove the --no-rpm-va option."
                 )
-                loggerinst.critical(message)
+                logger.critical(message)
 
         if parsed_opts.username:
             tool_opts.username = parsed_opts.username
@@ -387,12 +387,12 @@ class CLI:
                 for repo in duplicate_repos:
                     message += "\n%s" % repo
                 message += "\nThis ambiguity may have unintended consequences."
-                loggerinst.warning(message)
+                logger.warning(message)
 
         if parsed_opts.no_rhsm:
             tool_opts.no_rhsm = True
             if not tool_opts.enablerepo:
-                loggerinst.critical("The --enablerepo option is required when --no-rhsm is used.")
+                logger.critical("The --enablerepo option is required when --no-rhsm is used.")
 
         if parsed_opts.eus:
             tool_opts.eus = True
@@ -417,11 +417,11 @@ class CLI:
 
         if parsed_opts.serverurl:
             if tool_opts.no_rhsm:
-                loggerinst.warning("Ignoring the --serverurl option. It has no effect when --no-rhsm is used.")
+                logger.warning("Ignoring the --serverurl option. It has no effect when --no-rhsm is used.")
             # WARNING: We cannot use the following helper until after no_rhsm,
             # username, password, activation_key, and organization have been set.
             elif not _should_subscribe(tool_opts):
-                loggerinst.warning(
+                logger.warning(
                     "Ignoring the --serverurl option. It has no effect when no credentials to subscribe the system were given."
                 )
             else:
@@ -440,7 +440,7 @@ class CLI:
                     # to their internal subscription-manager server but it
                     # would really be passed externally.  That's not a good
                     # security practice.
-                    loggerinst.critical(
+                    logger.critical(
                         "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
                         "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
                         "Supplied serverurl: %s\nError: %s" % (parsed_opts.serverurl, e)
@@ -465,7 +465,7 @@ class CLI:
 
         # Security notice
         if tool_opts.password or tool_opts.activation_key:
-            loggerinst.warning(
+            logger.warning(
                 "Passing the RHSM password or activation key through the --activationkey or --password options is"
                 " insecure as it leaks the values through the list of running processes. We recommend using the safer"
                 " --config-file option instead."
@@ -473,43 +473,43 @@ class CLI:
 
         # Checks of multiple authentication sources
         if tool_opts.password and tool_opts.activation_key:
-            loggerinst.warning(
+            logger.warning(
                 "Either a password or an activation key can be used for system registration."
                 " We're going to use the activation key."
             )
 
         # Config files matches
         if config_opts.username and parsed_opts.username:
-            loggerinst.warning(
+            logger.warning(
                 "You have passed the RHSM username through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
         if config_opts.org and parsed_opts.org:
-            loggerinst.warning(
+            logger.warning(
                 "You have passed the RHSM org through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
         if (config_opts.activation_key or config_opts.password) and (parsed_opts.activationkey or parsed_opts.password):
-            loggerinst.warning(
+            logger.warning(
                 "You have passed either the RHSM password or activation key through both the command line and the"
                 " configuration file. We're going to use the command line values."
             )
 
         if (tool_opts.org and not tool_opts.activation_key) or (not tool_opts.org and tool_opts.activation_key):
-            loggerinst.critical(
+            logger.critical(
                 "Either the --org or the --activationkey option is missing. You can't use one without the other."
             )
 
         if (parsed_opts.password or config_opts.password) and not (parsed_opts.username or config_opts.username):
-            loggerinst.warning(
+            logger.warning(
                 "You have passed the RHSM password without an associated username. Please provide a username together"
                 " with the password."
             )
 
         if (parsed_opts.username or config_opts.username) and not (parsed_opts.password or config_opts.password):
-            loggerinst.warning(
+            logger.warning(
                 "You have passed the RHSM username without an associated password. Please provide a password together"
                 " with the username."
             )
@@ -521,7 +521,7 @@ def _log_command_used():
     and the logfile
     """
     command = " ".join(utils.hide_secrets(sys.argv))
-    loggerinst.info("convert2rhel command used:\n{0}".format(command))
+    logger.info("convert2rhel command used:\n{0}".format(command))
 
 
 def options_from_config_files(cfg_path=None):
@@ -562,7 +562,7 @@ def options_from_config_files(cfg_path=None):
     for path in paths:
         if os.path.exists(path):
             if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
-                loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
+                logger.critical("The %s file must only be accessible by the owner (0600)" % path)
             config_file.read(path)
 
             for header in config_file.sections():
@@ -572,11 +572,11 @@ def options_from_config_files(cfg_path=None):
                             # Solving priority
                             if supported_opts[option.lower()] is None:
                                 supported_opts[option] = config_file.get(header, option)
-                                loggerinst.debug("Found %s in %s" % (option, path))
+                                logger.debug("Found %s in %s" % (option, path))
                         else:
-                            loggerinst.warning("Unsupported option %s in %s" % (option, path))
+                            logger.warning("Unsupported option %s in %s" % (option, path))
                 elif header not in headers and header != "DEFAULT":
-                    loggerinst.warning("Unsupported header %s in %s." % (header, path))
+                    logger.warning("Unsupported header %s in %s." % (header, path))
 
     return supported_opts
 

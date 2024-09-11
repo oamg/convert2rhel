@@ -15,15 +15,16 @@
 
 __metaclass__ = type
 
-import logging
+
 import os
 import re
 
 from convert2rhel import actions, systeminfo
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # Path to the firewalld config file.
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"

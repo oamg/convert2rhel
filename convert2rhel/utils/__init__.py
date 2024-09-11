@@ -20,7 +20,6 @@ __metaclass__ = type
 import fcntl
 import getpass
 import json
-import logging
 import multiprocessing
 import os
 import re
@@ -40,9 +39,10 @@ import rpm
 from six import moves
 
 from convert2rhel import exceptions, i18n
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # A string we're using to replace sensitive information (like an RHSM password) in logs, terminal output, etc.
 OBFUSCATION_STRING = "*" * 5
@@ -260,12 +260,12 @@ def run_as_child_process(func):
             # API) will keep executing until they finish their execution and
             # ignore the call for termination issued by the parent. To avoid
             # having "zombie" processes, we need to wait for them to finish.
-            loggerinst.warning("Terminating child process...")
+            logger.warning("Terminating child process...")
             if process.is_alive():
-                loggerinst.debug("Process with pid %s is alive", process.pid)
+                logger.debug("Process with pid %s is alive", process.pid)
                 process.terminate()
 
-            loggerinst.debug("Process with pid %s exited", process.pid)
+            logger.debug("Process with pid %s exited", process.pid)
 
             # If there is a KeyboardInterrupt raised while the child process is
             # being executed, let's just re-raise it to the stack and move on.
@@ -280,7 +280,7 @@ def run_as_child_process(func):
 
 def require_root():
     if os.geteuid() != 0:
-        loggerinst.critical("The tool needs to be run under the root user.\nNo changes were made to the system.")
+        logger.critical("The tool needs to be run under the root user.\nNo changes were made to the system.")
 
 
 def get_file_content(filename, as_list=False):
@@ -325,7 +325,7 @@ def restart_system():
     if tool_opts.restart:
         run_subprocess(["reboot"])
     else:
-        loggerinst.warning("In order to boot the RHEL kernel, restart of the system is needed.")
+        logger.warning("In order to boot the RHEL kernel, restart of the system is needed.")
 
 
 def run_subprocess(cmd, print_cmd=True, print_output=True):
@@ -343,7 +343,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         raise TypeError("cmd should be a list, not a str")
 
     if print_cmd:
-        loggerinst.debug("Calling command '%s'" % " ".join(cmd))
+        logger.debug("Calling command '%s'" % " ".join(cmd))
 
     process = subprocess.Popen(  # pylint: disable=consider-using-with
         # Popen is only a context manager in Python-3.2+
@@ -357,7 +357,7 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         line = line.decode("utf8")
         output += line
         if print_output:
-            loggerinst.info(line.rstrip("\n"))
+            logger.info(line.rstrip("\n"))
 
     # Call communicate() to wait for the process to terminate so that we can
     # get the return code.
@@ -402,7 +402,7 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
         raise TypeError("cmd should be a list, not a str")
 
     if print_cmd:
-        loggerinst.debug("Calling command '%s'" % " ".join(cmd))
+        logger.debug("Calling command '%s'" % " ".join(cmd))
 
     process = PexpectSpawnWithDimensions(
         cmd[0],
@@ -435,7 +435,7 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
 
     output = process.before.decode()
     if print_output:
-        loggerinst.info(output.rstrip("\n"))
+        logger.info(output.rstrip("\n"))
 
     return output, return_code
 
@@ -514,7 +514,7 @@ def ask_to_continue():
         if cont == "y":
             break
         if cont == "n":
-            loggerinst.critical("User canceled the conversion\n")
+            logger.critical("User canceled the conversion\n")
 
 
 def prompt_user(question, password=False):
@@ -531,7 +531,7 @@ def prompt_user(question, password=False):
         response = getpass.getpass(color_question)
     else:
         response = moves.input(color_question)
-    loggerinst.info("\n")
+    logger.info("\n")
 
     return response
 
@@ -543,10 +543,10 @@ def log_traceback(debug):
     traceback_str = get_traceback_str()
     if debug:
         # Print the traceback to the user when debug option used
-        loggerinst.debug(traceback_str)
+        logger.debug(traceback_str)
     else:
         # Print the traceback to the log file in any way
-        loggerinst.file(traceback_str)
+        logger.file(traceback_str)
 
 
 def get_traceback_str():
@@ -559,11 +559,11 @@ def remove_tmp_dir():
     """Remove temporary folder (TMP_DIR), not needed post-conversion."""
     try:
         shutil.rmtree(TMP_DIR)
-        loggerinst.info("Temporary folder %s removed" % TMP_DIR)
+        logger.info("Temporary folder %s removed" % TMP_DIR)
     except OSError as err:
-        loggerinst.warning("Failed removing temporary folder %s\nError (%s): %s" % (TMP_DIR, err.errno, err.strerror))
+        logger.warning("Failed removing temporary folder %s\nError (%s): %s" % (TMP_DIR, err.errno, err.strerror))
     except TypeError:
-        loggerinst.warning("TypeError error while removing temporary folder %s" % TMP_DIR)
+        logger.warning("TypeError error while removing temporary folder %s" % TMP_DIR)
 
 
 class DictWListValues(dict):
@@ -639,7 +639,7 @@ def download_pkg(
     """
     from convert2rhel.systeminfo import system_info
 
-    loggerinst.debug("Downloading the %s package." % pkg)
+    logger.debug("Downloading the %s package." % pkg)
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
     cmd = ["yumdownloader", "-v", "--setopt=exclude=", "--destdir=%s" % dest]
@@ -681,8 +681,8 @@ def download_pkg(
         report_on_a_download_error(output, pkg)
         return None
 
-    loggerinst.info("Successfully downloaded the %s package." % pkg)
-    loggerinst.debug("Path of the downloaded package: %s" % path)
+    logger.info("Successfully downloaded the %s package." % pkg)
+    logger.debug("Path of the downloaded package: %s" % path)
 
     return path
 
@@ -703,7 +703,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
     pkgs_removed = []
 
     if not pkgs_to_remove:
-        loggerinst.info("No package to remove")
+        logger.info("No package to remove")
         return pkgs_removed
 
     pkgs_failed_to_remove = []
@@ -712,7 +712,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
         # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
         # epoch in NEVRA returned by dnf is handled by rpm just fine.
         nvra = _remove_epoch_from_yum_nevra_notation(nevra)
-        loggerinst.info("Removing package: %s" % nvra)
+        logger.info("Removing package: %s" % nvra)
         _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
             pkgs_failed_to_remove.append(nevra)
@@ -722,7 +722,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
     if pkgs_failed_to_remove:
         pkgs_as_str = format_sequence_as_message(pkgs_failed_to_remove)
         if critical:
-            loggerinst.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
+            logger.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
             raise exceptions.CriticalError(
                 id_="FAILED_TO_REMOVE_PACKAGES",
                 title="Couldn't remove packages.",
@@ -730,7 +730,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
                 diagnosis="Couldn't remove %s." % pkgs_as_str,
             )
         else:
-            loggerinst.warning("Couldn't remove %s." % pkgs_as_str)
+            logger.warning("Couldn't remove %s." % pkgs_as_str)
 
     return pkgs_removed
 
@@ -760,7 +760,7 @@ def report_on_a_download_error(output, pkg):
     :param output: Output of the yumdownloader call
     :param pkg: Name of a package to be downloaded
     """
-    loggerinst.warning("Output from the yumdownloader call:\n%s" % output)
+    logger.warning("Output from the yumdownloader call:\n%s" % output)
 
     # Note: Using toolopts here is a temporary solution. We need to
     # restructure this to raise an exception on error and have the caller
@@ -791,7 +791,7 @@ def report_on_a_download_error(output, pkg):
 
     if toolopts.tool_opts.activity == "conversion":
         if "CONVERT2RHEL_INCOMPLETE_ROLLBACK" not in os.environ:
-            loggerinst.critical(
+            logger.critical(
                 "Couldn't download the %s package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
                 "Check to make sure that the %s repositories are enabled"
@@ -800,14 +800,14 @@ def report_on_a_download_error(output, pkg):
                 " 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'." % (pkg, system_info.name)
             )
         else:
-            loggerinst.warning(
+            logger.warning(
                 "Couldn't download the %s package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
                 "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing"
                 " conversion." % pkg
             )
     else:
-        loggerinst.critical(
+        logger.critical(
             "Couldn't download the %s package which is needed to do a rollback of this action."
             " Check to make sure that the %s repositories are enabled and the package is"
             " updated to its latest version.\n"
@@ -826,7 +826,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
       RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
     """
     if not output:
-        loggerinst.warning("The output of running yumdownloader is unexpectedly empty. Command:\n%s" % cmd)
+        logger.warning("The output of running yumdownloader is unexpectedly empty. Command:\n%s" % cmd)
         return None
 
     rpm_name_match = re.search(r"\S+\.rpm", output)
@@ -837,7 +837,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
     elif pkg_nevra_match:
         path = os.path.join(dest, pkg_nevra_match.group(1) + ".rpm")
     else:
-        loggerinst.warning(
+        logger.warning(
             "Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
             "Command:\n%s\nOutput:\n%s" % (cmd, output)
         )
@@ -942,9 +942,7 @@ def find_keyid(keyfile):
             # If we get here, we tried and failed to rmtree five times
             # Don't make this fatal but do let the user know so they can clean
             # it up themselves.
-            loggerinst.info(
-                "Failed to remove temporary directory %s that held Red Hat gpg public keys." % temporary_dir
-            )
+            logger.info("Failed to remove temporary directory %s that held Red Hat gpg public keys." % temporary_dir)
 
     keyid = None
     for line in output.splitlines():
@@ -1046,7 +1044,7 @@ def hide_secrets(
         sanitized_list.append(arg)
 
     if hide_next:
-        loggerinst.debug(
+        logger.debug(
             "Passed arguments had an option, '{0}', without an expected secret parameter".format(sanitized_list[-1])
         )
 

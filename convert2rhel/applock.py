@@ -18,13 +18,14 @@
 __metaclass__ = type
 
 import errno
-import logging
 import os
 import tempfile
 
+from convert2rhel.logger import root_logger
+
 
 _DEFAULT_LOCK_DIR = "/var/run/lock"
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class ApplicationLockedError(Exception):
@@ -98,7 +99,7 @@ class ApplicationLock:
                 if exc.errno == errno.EEXIST:
                     return False
                 raise exc
-        loggerinst.debug("%s." % self)
+        logger.debug("%s." % self)
         return True
 
     @property
@@ -151,7 +152,7 @@ class ApplicationLock:
             raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
         # The lock file was created by a process that has exited;
         # remove it and try again.
-        loggerinst.info("Cleaning up lock held by exited process %d." % pid)
+        logger.info("Cleaning up lock held by exited process %d." % pid)
         os.unlink(self._pidfile)
         self.try_to_lock(_recursive=True)
 
@@ -166,7 +167,7 @@ class ApplicationLock:
             return
         os.unlink(self._pidfile)
         self._locked = False
-        loggerinst.debug("%s." % self)
+        logger.debug("%s." % self)
 
     def __enter__(self):
         self.try_to_lock()

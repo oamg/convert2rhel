@@ -15,15 +15,15 @@
 
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_installed_pkg_information
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {

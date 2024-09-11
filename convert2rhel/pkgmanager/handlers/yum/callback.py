@@ -58,12 +58,12 @@
 
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import pkgmanager
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
 
 # We need to double inherit here, both from the callback class and the base
@@ -106,9 +106,9 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):  # pylint: d
         if self.last_package_seen != name:
             # Metadata download abut repositories will be sent to this class too.
             if name.endswith(".rpm"):
-                loggerinst.info("Downloading package: %s", name)
+                logger.info("Downloading package: %s", name)
             else:
-                loggerinst.debug("Downloading repository metadata: %s", name)
+                logger.debug("Downloading repository metadata: %s", name)
 
         self.last_package_seen = name
 
@@ -162,7 +162,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):  # pyli
         # not matter if it is the same update or not, so, the below statement
         # prevents the same message being sent more than once to the user.
         if self.last_package_seen != package:
-            loggerinst.info(message)
+            logger.info(message)
 
         self.last_package_seen = package
 
@@ -182,7 +182,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):  # pyli
         # no matter if the messages are empty or not, so, the below statement
         # prevents the same message being sent to the user with empty strings.
         if msgs:
-            loggerinst.info("Scriptlet output %s: %s", package, msgs)
+            logger.info("Scriptlet output %s: %s", package, msgs)
 
     def errorlog(self, msg):
         """Report an error that occurred during the transaction.
@@ -190,4 +190,4 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):  # pyli
         :param msg: The error message sent by the API.
         :type message: str
         """
-        loggerinst.error("Transaction error: %s", msg)
+        logger.error("Transaction error: %s", msg)

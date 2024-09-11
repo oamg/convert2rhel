@@ -20,7 +20,6 @@ import abc
 import collections
 import importlib
 import itertools
-import logging
 import pkgutil
 import traceback
 
@@ -29,9 +28,10 @@ from functools import wraps
 import six
 
 from convert2rhel import utils
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 #: Status code of an Action.

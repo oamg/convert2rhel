@@ -15,15 +15,15 @@
 
 __metaclass__ = type
 
-import logging
 import os
 import shutil
 
 from convert2rhel import actions, grub, systeminfo
 from convert2rhel.grub import CENTOS_EFIDIR_CANONICAL_PATH, RHEL_EFIDIR_CANONICAL_PATH
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class NewDefaultEfiBin(actions.Action):

@@ -15,13 +15,13 @@
 
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import actions
+from convert2rhel.logger import root_logger
 from convert2rhel.utils import get_file_content
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 def readonly_mount_detection(mount_point):

@@ -60,12 +60,12 @@
 #       https://github.com/rpm-software-management/dnf/blob/4.7.0/dnf/cli/output.py
 __metaclass__ = type
 
-import logging
 
 from convert2rhel import pkgmanager
+from convert2rhel.logger import root_logger
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
 
 
@@ -101,18 +101,18 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
             message = self._DEPSOLVE_MODES[mode]
         except KeyError:
             message = None
-            loggerinst.debug("Unknown operation (%s) for package '%s'." % (mode, pkg))
+            logger.debug("Unknown operation (%s) for package '%s'." % (mode, pkg))
 
         if message:
-            loggerinst.info(message, pkg)
+            logger.info(message, pkg)
 
     def start(self):
         """Handle the beginning of the dependency resolution process."""
-        loggerinst.info("Starting dependency resolution process.")
+        logger.info("Starting dependency resolution process.")
 
     def end(self):
         """Handle the end of the dependency resolution process."""
-        loggerinst.info("Finished dependency resolution process.")
+        logger.info("Finished dependency resolution process.")
 
 
 class PackageDownloadCallback(pkgmanager.DownloadProgress):
@@ -217,7 +217,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                 message = "(%d/%d): %s" % (self.done_files, self.total_files, package)
 
         if message:
-            loggerinst.info(message)
+            logger.info(message)
 
 
 class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
@@ -248,7 +248,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         # We don't have any package or action (actually, it's probably that it
         # will be all empty), let's just return earlier.
         if action is None or package is None:
-            loggerinst.debug("No action or package was provided in the callback.")
+            logger.debug("No action or package was provided in the callback.")
             return
 
         # Here we convert the package to a str because we just need to do a
@@ -265,7 +265,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         # no matter if it is the same update or not, so, the below statement
         # prevents the same message being sent more than once to the user.
         if self.last_package_seen != package:
-            loggerinst.info(message)
+            logger.info(message)
 
         self.last_package_seen = package
 
@@ -283,7 +283,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         # no matter if the messages are empty or not, so, the below statement
         # prevents the same message being sent to the user with empty strings.
         if msgs:
-            loggerinst.warning("Scriptlet output: %s", msgs.decode())
+            logger.warning("Scriptlet output: %s", msgs.decode())
 
     def error(self, message):
         """Report an error that occurred during the transaction.
@@ -291,4 +291,4 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         :param message: The error message sent by the API.
         :type message: str
         """
-        loggerinst.error("Transaction error: %s", message)
+        logger.error("Transaction error: %s", message)

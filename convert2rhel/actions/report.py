@@ -17,7 +17,6 @@ __metaclass__ = type
 
 import copy
 import json
-import logging
 import textwrap
 
 from convert2rhel import utils
@@ -29,10 +28,10 @@ from convert2rhel.actions import (
     format_action_status_message,
     level_for_combined_action_data,
 )
-from convert2rhel.logger import colorize
+from convert2rhel.logger import colorize, root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 #: The filename to store the results of running preassessment
 CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"

@@ -17,16 +17,16 @@
 
 __metaclass__ = type
 
-import logging
 
 from contextlib import contextmanager
 
 from convert2rhel import utils
+from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
 
-loggerinst = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 try:
     # this is used in pkghandler.py to parse version strings in the _parse_pkg_with_yum function
@@ -99,13 +99,13 @@ def clean_yum_metadata():
     output, ret_code = utils.run_subprocess(
         ("yum", "clean", "metadata", "--enablerepo=*", "--quiet"), print_output=False
     )
-    loggerinst.debug("Output of yum clean metadata:\n%s" % output)
+    logger.debug("Output of yum clean metadata:\n%s" % output)
 
     if ret_code != 0:
-        loggerinst.warning("Failed to clean yum metadata:\n%s" % output)
+        logger.warning("Failed to clean yum metadata:\n%s" % output)
         return
 
-    loggerinst.info("Cached repositories metadata cleaned successfully.")
+    logger.info("Cached repositories metadata cleaned successfully.")
 
 
 @contextmanager
@@ -258,6 +258,6 @@ def call_yum_cmd(
     # handle when yum returns non-zero code when there is nothing to do
     nothing_to_do_error_exists = stdout.endswith("Error: Nothing to do\n")
     if returncode == 1 and nothing_to_do_error_exists:
-        loggerinst.debug("Yum has nothing to do. Ignoring.")
+        logger.debug("Yum has nothing to do. Ignoring.")
         returncode = 0
     return stdout, returncode
