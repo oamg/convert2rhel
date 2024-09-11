@@ -751,7 +751,7 @@ def test_main_already_running_conversion(monkeypatch, caplog, tmpdir):
     monkeypatch.setattr(main, "main_locked", mock.Mock(side_effect=applock.ApplicationLockedError("failed")))
 
     assert main.main() == 1
-    assert "Another copy of convert2rhel is running.\n" in caplog.records[-2].message
+    assert "Another copy of convert2rhel may be running.\n" in caplog.records[-4].message
     assert "\nNo changes were made to the system.\n" in caplog.records[-1].message
 
 
